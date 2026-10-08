@@ -43,3 +43,15 @@ Each area workflow (for example [`backend.yml`](../../.github/workflows/backend.
 - **When it runs:** only on pull requests, after the area's static checks succeed and no coverage-producing suite failed or was cancelled. A failed suite already fails the gate, and its partial LCOV would only add a misleading coverage failure.
 
 `./ci/coverage-artifacts.sh area-check` runs the same check locally when `coverage-artifacts/` holds the area's full LCOV and `COVERAGE_AREA`, `COVERAGE_BASE` and `COVERAGE_HEAD` are set.
+
+## Collector scope parity
+
+Before merging area artifacts, `./ci/coverage-artifacts.sh area-check` runs
+[`ci/check-coverage-scope.mts`](../../ci/check-coverage-scope.mts). It checks every tracked path
+that has a positive coverage threshold and is included by the gate’s scope against the default
+Vitest collector scope. A path that the gate expects but the collector ignores fails the command.
+Zero-threshold, unmatched and gate-ignored paths do not require collection.
+
+This repository-wide audit runs as a CI command. The Vitest tests exercise the same comparison
+with small synthetic path sets and the real configuration, including a collector exclusion that
+must be detected. Run `node ci/check-coverage-scope.mts` from the checkout root for a local audit.

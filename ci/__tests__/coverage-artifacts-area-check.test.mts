@@ -11,7 +11,7 @@ const execFileAsync = promisify(execFile)
 
 // The fake coverage-check logs its arguments and snapshots the generated --rules file; the fake git
 // reports web/trailing.ts as a whitespace-only change.
-async function makeFakeBinDir(options: { checkExitCode?: number } = {}) {
+async function makeFakeBinDir(options: { checkExitCode?: number; auditGitExitCode?: number } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-ci-bin-'))
   const argsPath = join(dir, 'coverage-check-args.txt')
   const rulesPath = join(dir, 'area-rules.yml')
@@ -33,6 +33,10 @@ fi
   await writeFile(
     join(dir, 'git'),
     `#!/usr/bin/env bash
+if [ "$1" = "ls-files" ]; then
+  printf 'backend/services/coverage-fixture.mts\\0'
+  exit ${options.auditGitExitCode ?? 0}
+fi
 if [ "$1" = "diff" ] && [ "$3" = "--ignore-space-at-eol" ]; then exit 0; fi
 if [ "$1" = "diff" ]; then printf '%s\\n' 'web/trailing.ts'; exit 0; fi
 exit 1
@@ -55,7 +59,9 @@ async function makeArtifactsDir(withLcov: boolean) {
   return dir
 }
 
-async function runAreaCheck(options: { checkExitCode?: number; withLcov?: boolean } = {}) {
+async function runAreaCheck(
+  options: { checkExitCode?: number; withLcov?: boolean; auditGitExitCode?: number } = {},
+) {
   const fake = await makeFakeBinDir(options)
   const mergedDir = await mkdtemp(join(tmpdir(), 'voucha-coverage-artifacts-merged-'))
   const run = execFileAsync('./ci/coverage-artifacts.sh', ['area-check'], {
@@ -104,6 +110,12 @@ describe('coverage-artifacts.sh area-check', () => {
       code: 1,
       stderr: expect.stringContaining('lambdas area coverage gate'),
     })
+    await expect(readFile(argsPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('stops before merging artifacts when the scope audit cannot list tracked paths', async () => {
+    const { argsPath, run } = await runAreaCheck({ auditGitExitCode: 7 })
+    await expect(run).rejects.toMatchObject({ code: 1 })
     await expect(readFile(argsPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
