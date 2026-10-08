@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished, vi } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import {
   createTestUserDirect,
@@ -9,10 +9,7 @@ import {
   insertTestPost,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import {
-  processReportIntegrityCheck,
-  processBackfillReportIntegrityForEntity,
-} from './processors.mts'
+import { processReportIntegrityCheck, processBackfillReportIntegrity } from './processors.mts'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
 import type { PrivateUser } from '@services/users/types'
 import { reportIntegrityQueue } from '@queues/report-integrity/queues'
@@ -95,14 +92,41 @@ describe('processBackfillReportIntegrity', () => {
       entityId: postId,
     })
 
-    const result = await processBackfillReportIntegrityForEntity({
+    const admissions: Array<ReturnType<typeof reportIntegrityQueue.addBulk>> = []
+    const addBulk = reportIntegrityQueue.addBulk
+    const admissionSpy = vi.spyOn(reportIntegrityQueue, 'addBulk')
+    onTestFinished(async () => {
+      const settled = await Promise.allSettled(admissions)
+      const errors: unknown[] = []
+      for (const admission of settled) {
+        if (admission.status === 'rejected') errors.push(admission.reason)
+      }
+      try {
+        admissionSpy.mockRestore()
+      } catch (err) {
+        errors.push(err)
+      }
+      if (errors.length) throw new AggregateError(errors, 'Owned report admissions failed')
+    }, 5_000)
+    admissionSpy.mockImplementation((jobs, ...options) => {
+      const admission = addBulk.call(reportIntegrityQueue, jobs, ...options)
+      if (
+        jobs.some(job => job.name === 'processReportIntegrityCheck' && job.data.entityId === postId)
+      ) {
+        admissions.push(admission)
+      }
+      return admission
+    })
+
+    const result = await processBackfillReportIntegrity({
       entityType: 'post',
       entityId: postId,
     })
     expect(result.enqueued).toBeGreaterThanOrEqual(1)
 
+    const jobs = (await Promise.all(admissions)).flat()
     const waiting = await Promise.all(
-      result.jobIds.map(id => readEnqueuedJob(reportIntegrityQueue, { id })),
+      jobs.flatMap(job => (job ? [readEnqueuedJob(reportIntegrityQueue, { id: job.id })] : [])),
     )
     const found = waiting.find(
       j =>
