@@ -26,6 +26,23 @@ subtracts pool totals, or changes the raw `process.getActiveResourcesInfo()` det
 for the detection state machine and [CI Reference](../ci.md) for its CI
 diagnostic.
 
+## Scoped Transaction Query Completion
+
+`runWithCapturedQueries` in [`query-capture.mts`](../../../backend/data-stores/psql/query-capture.mts)
+retains its scoped SQL capture and handler result, and always records completed transaction
+snapshots. Its handler context provides `subscribe(listener)` with synchronous, idempotent
+unsubscribe. Live events retain original executor, promise, and rejection identities; snapshots
+contain copied serializable SQL values, status, and guarded error summaries. Existing consumers
+may ignore the added diagnostics; existing artifacts do not serialize them automatically.
+
+Handler settlement deactivates listeners immediately. Returning the handler result does not wait
+for unfinished descendants: consumers needing cleanup explicitly await the nonthrowing
+`completionDrain` after releasing held resources and settling their owned work. Rejected handlers
+retain their original error. Metadata and callback failures cannot replace query results or
+rejections. The wrapper calls the real executor once and returns its original promise. Raw pools
+and unwrapped autocommit queries are outside this boundary. Completed advisory-lock SQL proves
+acquisition, not entry into a later server-side lock wait.
+
 ## Query access references
 
 - <a id="query-helpers"></a>[Query Helpers](reference-query-helpers.md)

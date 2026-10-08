@@ -7,7 +7,7 @@ import type {
   Transaction,
 } from '@vouchington/postgres'
 import { psql } from './runtime.mts'
-import { maybeCaptureQuery } from './query-capture.mts'
+import { captureTransactionQuery as captureQuery } from './query-capture.mts'
 import type { QueryExecutor, QueryOptions, PoolClient, TransactionQuery } from './types.mts'
 
 type AdapterTransactionOptions = Psql['withTransactionOptions']
@@ -26,7 +26,6 @@ const postRollbackActions = new WeakMap<QueryExecutor, PostRollbackAction[]>()
 const postCommitActionOwners = new WeakMap<QueryExecutor, QueryExecutor>()
 const postCommitActionOwnersByClient = new WeakMap<PoolClient, QueryExecutor>()
 const postCommitActionScopes = new AsyncLocalStorage<PostCommitActionScope>()
-const captureAwareQueries = new WeakSet<QueryExecutor>()
 
 const runWithTransactionOptions = psql.withTransactionOptions as AdapterTransactionOptions
 
@@ -174,18 +173,6 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
   })
 
   return ownedTransaction
-}
-
-function captureQuery<Query extends QueryExecutor>(query: Query): Query {
-  if (captureAwareQueries.has(query)) return query
-  const captureAwareQuery = new Proxy(query, {
-    apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
-      maybeCaptureQuery(argumentsList[0], argumentsList[1])
-      return Reflect.apply(target, thisArgument, argumentsList)
-    },
-  }) as Query
-  captureAwareQueries.add(captureAwareQuery)
-  return captureAwareQuery
 }
 
 function commitPostCommitActionScope(scope: PostCommitActionScope): void {
