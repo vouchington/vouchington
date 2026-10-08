@@ -111,7 +111,7 @@ export function checkNoMistakesTestPolicy({
     errors.push(`${routeSelectorTestPath} must not call the live route-selector graph`)
   }
 
-  // Live analysis and loadRepoTopology() calls are the `forbidden-calls` rule in .no-mistakes.yml.
+  // Live analysis and loadRepoTopology() calls are `forbidden-calls` rules in .no-mistakes.yml.
   for (const path of testPaths.toSorted()) {
     if (spawnsNoMistakesCli(readRepoFile(root, path))) {
       errors.push(`${path}: no-mistakes CLI from Vitest`)

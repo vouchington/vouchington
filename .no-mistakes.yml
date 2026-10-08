@@ -829,7 +829,7 @@ rules:
   - name: Vitest tests do not run live no-mistakes analysis
     rule: forbidden-calls
     scope: repository
-    # Mock tests replace these modules, so their calls never take the no-mistakes machine lock.
+    # Mock tests replace no-mistakes, so their calls never take its machine-wide lock.
     exclude:
       - '**/*.mock.test.*'
     options:
@@ -845,6 +845,15 @@ rules:
         - moduleExport: { module: no-mistakes, export: resolveCheck }
         - moduleExport: { module: no-mistakes, export: testsPlan }
         - moduleExport: { module: no-mistakes, export: validateMermaidMarkdown }
+  - name: Vitest tests do not load the live workflow topology
+    rule: forbidden-calls
+    scope: repository
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
         - function: { file: ci/repo-topology.mts, symbol: loadRepoTopology }
   - name: exported error classes are constructed in production
     rule: unconstructed-error-class

@@ -16,9 +16,9 @@ spelling is preserved in JSON while job, input, secret, and output resolution fo
 case-insensitive semantics. Consumers that need graph traversal should import `ciTopology` and
 `createWorkflowTopologyIndex` from `'no-mistakes'`. Vitest tests must not call `ciTopology()` or [`loadRepoTopology()`](../../ci/repo-topology.mts).
 Live topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts)
-in static-code-analysis after `no-mistakes check`. The `Vitest tests do not run live no-mistakes
-analysis` `forbidden-calls` rule in [`.no-mistakes.yml`](../../.no-mistakes.yml) rejects live
-analysis and `loadRepoTopology()` calls from non-mock Vitest tests. Vitest tests must not spawn the
+in static-code-analysis after `no-mistakes check`. `forbidden-calls` rules in
+[`.no-mistakes.yml`](../../.no-mistakes.yml) reject live no-mistakes analysis calls from non-mock
+Vitest tests and `loadRepoTopology()` calls from every Vitest test. Vitest tests must not spawn the
 `no-mistakes` CLI. [`ci/check-no-mistakes-test-policy.mts`](../../ci/check-no-mistakes-test-policy.mts)
 audits tracked tests for CLI spawns and the ordered workflow commands in the same static-analysis
 job; its [`tiny fixture tests`](../../ci/no-mistakes-ci-contention.test.mts) never call no-mistakes,

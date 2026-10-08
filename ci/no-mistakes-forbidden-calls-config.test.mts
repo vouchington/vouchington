@@ -62,6 +62,7 @@ describe('no-mistakes forbidden-calls config', () => {
       'Tests do not create a database',
       'Vitest tests do not assert benchmarks',
       'Vitest tests do not run live no-mistakes analysis',
+      'Vitest tests do not load the live workflow topology',
       'integration tests do not call mock helpers',
     ])
 
@@ -215,8 +216,18 @@ describe('no-mistakes forbidden-calls config', () => {
             'testsPlan',
             'validateMermaidMarkdown',
           ].map(name => ({ moduleExport: { module: 'no-mistakes', export: name } })),
-          { function: { file: 'ci/repo-topology.mts', symbol: 'loadRepoTopology' } },
         ],
+      },
+    })
+    expect(rule('Vitest tests do not load the live workflow topology')).toEqual({
+      name: 'Vitest tests do not load the live workflow topology',
+      rule: 'forbidden-calls',
+      scope: 'repository',
+      options: {
+        roots: [{ vitest: true }],
+        traversal: 'file',
+        unknownCalls: 'ignore',
+        targets: [{ function: { file: 'ci/repo-topology.mts', symbol: 'loadRepoTopology' } }],
       },
     })
     expect(withoutBaseline(rule('integration tests do not call mock helpers'))).toEqual({
