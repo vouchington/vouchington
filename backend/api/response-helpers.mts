@@ -7,7 +7,7 @@ import { assertNotSuspended } from '@services/users/suspension-guard'
 import {
   assertRequestContractOperation,
   markRequestContractValidated,
-} from './request-contract-enforcement.mts'
+} from './request-contract-enforcement-helpers.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [

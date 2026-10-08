@@ -2,13 +2,14 @@ import { createServer, type Server } from 'node:http'
 import { createApp } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
+import undici from 'undici'
 import { describe, expect, it, vi } from 'vitest'
 import { validateRequestContract } from './response-helpers.mts'
 import { sentryCaptureExceptionMock } from '../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   installRequestContractEnforcement,
   REQUEST_CONTRACT_VALIDATION_MISSING,
-} from './request-contract-enforcement.mts'
+} from './request-contract-enforcement-helpers.mts'
 
 async function runRequest(
   app: ReturnType<typeof createApp>,
@@ -16,6 +17,7 @@ async function runRequest(
   path: string,
   requestBody?: string,
 ): Promise<{ status: number; text: string; json: () => unknown }> {
+  const dispatcher = new undici.Agent()
   const server: Server = createServer(app.callback())
   server.listen(0, '127.0.0.1')
   await new Promise<void>((resolve, reject) => {
@@ -26,8 +28,9 @@ async function runRequest(
   try {
     const address = server.address()
     if (!address || typeof address === 'string') throw new Error('Expected a TCP server address')
-    const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
+    const response = await undici.fetch(`http://127.0.0.1:${address.port}${path}`, {
       method,
+      dispatcher,
       ...(requestBody !== undefined
         ? { body: requestBody, headers: { 'content-type': 'application/json' } }
         : {}),
@@ -40,6 +43,7 @@ async function runRequest(
     })
     server.closeAllConnections()
     await closed
+    await dispatcher.close()
   }
 }
 

@@ -53,7 +53,7 @@ different operation, and reports an input-bearing contracted route that finishes
 validation. Existing handler calls remain in place so authentication, authorization, rate limiting,
 and anti-enumeration checks retain their ordering. The remaining coverage limit is routes that no
 test exercises. The runtime check and inventory share the explicit
-[exemptions](../../../../../backend/api/request-contract-exemptions.mts).
+[exemptions](../../../../../backend/api/request-contract-exemptions-helpers.mts).
 
 An input-bearing handler that returns without validation reports its route key through `onError`.
 If no response has started, it returns `500` with code `REQUEST_CONTRACT_VALIDATION_MISSING`;

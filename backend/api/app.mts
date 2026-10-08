@@ -11,7 +11,7 @@ import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
 import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
-import { installRequestContractEnforcement } from './request-contract-enforcement.mts'
+import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 import {
   getErrorResponseCode,
   getErrorResponseMessage,

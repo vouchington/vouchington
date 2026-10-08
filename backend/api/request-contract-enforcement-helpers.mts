@@ -1,6 +1,6 @@
 import type { Application, Context, Handler, RouteBuilder } from '@jongleberry/api-server'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
-import { REQUEST_CONTRACT_EXEMPTIONS } from './request-contract-exemptions.mts'
+import { REQUEST_CONTRACT_EXEMPTIONS } from './request-contract-exemptions-helpers.mts'
 
 export const REQUEST_CONTRACT_VALIDATION_MISSING = 'REQUEST_CONTRACT_VALIDATION_MISSING'
 
@@ -12,10 +12,15 @@ declare module '@jongleberry/api-server' {
 }
 
 type RouteMethod = 'delete' | 'get' | 'patch' | 'post' | 'put'
-type RequestContractError = Error & {
-  code: string
-  status: number
-  tags: Record<string, string>
+class RequestContractError extends Error {
+  readonly code = REQUEST_CONTRACT_VALIDATION_MISSING
+  readonly status = 500
+  readonly tags: Record<string, string>
+
+  constructor(operation: string) {
+    super(`Request contract validation did not run for ${operation}`)
+    this.tags = { route_key: operation }
+  }
 }
 
 /** Wraps route registration so every matched handler carries its checked-in operation key. */
@@ -84,9 +89,5 @@ export function requestContractNeedsValidation(
 }
 
 function createMissingValidationError(operation: string): RequestContractError {
-  return Object.assign(new Error(`Request contract validation did not run for ${operation}`), {
-    code: REQUEST_CONTRACT_VALIDATION_MISSING,
-    status: 500,
-    tags: { route_key: operation },
-  })
+  return new RequestContractError(operation)
 }
