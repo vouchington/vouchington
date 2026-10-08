@@ -222,16 +222,19 @@ examples describe the review baseline, rather than the current generated snapsho
 - Every other FK column ends in its target's last word, singular: `individual_cards.card_id → topics`
   becomes `card_topic_id`, and `user_landing_page_items.review_id → posts` becomes `review_post_id`.
   Words the column's own table already implies may be dropped: `admin_import_rows.batch_id`
-  (pointing at `admin_import_batches`) stays. Two cases also pass: a column named after a non-`id`
-  referenced column (`github_user_id → github_accounts.github_user_id`), and `<x>_id` pointing at
-  `retained_<x>_identities`.
+  (pointing at `admin_import_batches`) stays. Two cases also pass for current tables: a column named
+  after a non-`id` referenced column (`github_user_id → github_accounts.github_user_id`), and
+  `<x>_id` pointing at `retained_<x>_identities`. The first case is a foreign key on an outside
+  key, which [R3](#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data) now forbids:
+  these keys are being converted to ids under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21). Don't add new ones.
 - **A column with a fixed set of values is an enum type or a foreign key to a lookup table, never
   `text`/`varchar`.** Today ≈90 text columns are pinned to string literals by a CHECK (12 of them to
   a single value), and 13 more (`post_admission_reservations.{route,scope,source,…}`,
   `agent_moderations.moderation_transparency_category`, …) have no constraint at all.
   - **Enum** when the values are defined in code and change only with a migration plus a code
     change (almost every case here).
-  - **Lookup table** (`<thing>_types` rows, FK column `<thing>_type_id` or the natural key) when
+  - **Lookup table** (`<thing>_types` rows, FK column `<thing>_type_id`) when
     rows carry attributes, or when new values arrive at runtime (`media_types`,
     `user_permission_types`, `user_role_types`).
   - Columns with the same values share one enum (12 groups today, e.g. the three
@@ -244,8 +247,12 @@ examples describe the review baseline, rather than the current generated snapsho
     sets them. An enum would reject a new value and lose the record.
     - A vendor we authenticate (`stripe_events.stripe_event_type_id`, `amazon_ses_bounce_events.amazon_ses_bounce_subtype_id`,
       `ai_usage_records.openai_service_tier_id`, `verified_identities.identity_document_type_id`): a lookup table that
-      the writer fills on first sight, using the `upsertMediaTypes` pattern
-      (`backend/services/urls/content-types.mts`: normalize, advisory lock, insert).
+      the writer fills on first sight. The table has a uuid `id` key, and the vendor string is a
+      unique column. The writer normalizes the string and gets the id with
+      `INSERT … ON CONFLICT … DO UPDATE … RETURNING id`. A no-op `DO UPDATE` makes `RETURNING`
+      give the id whether the row is new or already there. The existing `upsertMediaTypes` writer
+      (`backend/services/urls/media-types.mts`) is the model for the normalizing and the syntax
+      check.
     - MIME types (the 3 copyright email/evidence `mime_type` columns and
       `rss_feed_items.enclosure_type`): an FK to the one MIME lookup table. `media_types`
       becomes `media_types`, because it no longer holds only URL content types. The writer checks
