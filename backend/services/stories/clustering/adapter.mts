@@ -1,6 +1,10 @@
+import type { OwnedTransaction } from '@data-stores/psql'
+import { getStoryClusteringClassifierSystemUserId } from '@services/users/system-users'
+import sql from 'sql-template-strings'
 import {
   lockRssFeedItemClassifierInput,
   type ClassifierRunAdapter,
+  type ClassifierRunSubject,
 } from '@services/classifier-runs'
 import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-clustering-classifier'
 import { captureStoryClusteringCandidates } from './candidates.mts'
@@ -33,7 +37,7 @@ export type StoryClusteringRunAdapter = ClassifierRunAdapter<
 export function createStoryClusteringRunAdapter(): StoryClusteringRunAdapter {
   return {
     slug: STORY_CLUSTERING_CLASSIFIER_SLUG,
-    lockCurrent: lockRssFeedItemClassifierInput,
+    lockCurrent: lockStoryClusteringInput,
     resolve: (_subject, _current, query) => resolveStoryClusteringRunConfiguration(query),
     captureStoryCandidates: captureStoryClusteringCandidates,
     ready: hasCurrentStoryClusteringEmbedding,
@@ -41,4 +45,13 @@ export function createStoryClusteringRunAdapter(): StoryClusteringRunAdapter {
     requestsEveryEligibleFeedItem: true,
     applyEffects: applyStoryClusteringEffects,
   }
+}
+
+/** Take the shared actor before any item: candidate foreign keys also lock other items. */
+async function lockStoryClusteringInput(query: OwnedTransaction, subject: ClassifierRunSubject) {
+  const actorId = await getStoryClusteringClassifierSystemUserId()
+  await query(sql`/* lockStoryClusteringActor */
+    SELECT fn_lock_active_user_for_mutation(${actorId}::uuid)
+  `)
+  return lockRssFeedItemClassifierInput(query, subject)
 }
