@@ -642,7 +642,8 @@ History details (decision 15):
   is also wrong when the subquery returns NULLs.
 - Tables, whatever their width, are read and returned with explicit column lists: no `SELECT *`,
   `alias.*` or `RETURNING *` (decision 21). A view may be read with `*`, because its column list
-  is the reviewed contract.
+  is the reviewed contract. Enforced by `postgres-explicit-columns` (`maxColumns: 0`,
+  `checkReturning: true`).
 - No `OFFSET`. An optimizer fence is a `MATERIALIZED` CTE, not `OFFSET 0`.
 
 ## R7 — Every table, column and view has a comment
