@@ -2452,6 +2452,20 @@ rules:
         - '**/test-helpers/**'
         - backend/scripts/**
 
+  - name: development runtime helper queries identify executed statements
+    rule: postgres-require-query-annotation
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      include:
+        - backend/test-helpers/entities/create-test-entities.mts
+        - backend/test-helpers/entities/rss-feeds.mts
+        - backend/test-helpers/entities/topics/core.mts
+        - backend/test-helpers/entities/urls.mts
+        - backend/test-helpers/entities/users-direct.mts
+
   - name: do not wrap set operations in correlated EXISTS
     rule: postgres-sql-shape-policy
     scope: repository

@@ -30,7 +30,7 @@ export function parseSource(code: string): ParseResult {
   // (node-utils.js builds each token via `ast.text.slice(start, end)`) — roughly half of a parsed
   // AST's retained size. Nothing in this repo reads `ast.tokens`; drop the reference immediately
   // after parsing (explicit `undefined`, not `delete`, so the field stays traceable in the type)
-  // so streaming callers (repo-file-policy/ast-pass.mts) don't pay for it.
+  // so schema freshness checks do not retain unused token arrays.
   result.ast.tokens = undefined
   return result
 }

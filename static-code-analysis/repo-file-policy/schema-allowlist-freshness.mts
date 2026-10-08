@@ -1,25 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { SharedContext } from 'vouchington-tooling/shared-context'
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-import { isNode, parseSource, type ParsedAst, walk } from '../targeted-guardrails/ast-utils.mts'
-import { checkPostgresRuntimeSource } from './postgres-runtime-guard.mts'
+import { isNode, parseSource, walk } from '../targeted-guardrails/ast-utils.mts'
 
-const RUNTIME_FILE_RE = /^backend\/.*\.(?:mts|ts)$/
-
-// Files scanned separately from the per-file AST pass below: they're allowlists of
-// table.column pairs, checked once each against the current schema snapshot rather than parsed
-// per tracked file.
+// Allowlists of table.column pairs, checked once each against the current schema snapshot.
 const SCHEMA_ALLOWLIST_FILES = [
   'backend/test-helpers/data-stores/psql/schema-static-analysis/uuid-allowlists.mts',
   'backend/test-helpers/data-stores/psql/schema-static-analysis/timestamp-allowlists.mts',
 ]
-
-/** Selects the backend TypeScript files this guard inspects (includes test code, deliberately). */
-export function matchesPostgresRuntimeFile(file: string): boolean {
-  return RUNTIME_FILE_RE.test(file)
-}
 
 export function findStaleSchemaAllowlistEntries(
   allowlistCode: string,
@@ -68,35 +57,4 @@ export function checkStaleSchemaAllowlistEntries(
       errors.push(`::error file=${file}::stale PostgreSQL schema allowlist entry: ${entry}`)
     }
   }
-}
-
-/**
- * Whole-guard entry point: thin loop over `checkPostgresRuntimeSource`, parsing each matched file
- * itself, followed by the stale-allowlist check. Production (`repo-file-policy/index.mts`) no
- * longer calls this — it runs `checkPostgresRuntimeSource` through the shared streaming pass in
- * `ast-pass.mts` instead, so every guard parses each file once instead of once per guard, then
- * calls `checkStaleSchemaAllowlistEntries` directly. This export stays as a directly-testable
- * unit for the Postgres-runtime guard.
- */
-export function checkPostgresRuntimeGuard(
-  repoRoot: string,
-  trackedFiles: string[],
-  schema: Pick<SchemaSnapshot, 'tables'>,
-  errors: string[],
-  ctx?: SharedContext,
-): void {
-  for (const file of trackedFiles) {
-    if (!matchesPostgresRuntimeFile(file)) continue
-    const code = ctx?.readTrackedFile?.(file) ?? readFileSync(join(repoRoot, file), 'utf8')
-    if (code === null) continue
-    let ast: ParsedAst
-    try {
-      ast = parseSource(code).ast
-    } catch {
-      continue
-    }
-    errors.push(...checkPostgresRuntimeSource(file, code, ast))
-  }
-
-  checkStaleSchemaAllowlistEntries(repoRoot, trackedFiles, schema, errors)
 }
