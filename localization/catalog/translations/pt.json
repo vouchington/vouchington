@@ -3740,6 +3740,7 @@
 {"id":"copy.native.credentials.apiAudience","value":"API"},
 {"id":"copy.native.credentials.catalogLoadFailed","value":"Não foi possível carregar as configurações de credenciais"},
 {"id":"copy.native.credentials.chooseScopes","value":"Escolher escopos"},
+{"id":"copy.native.credentials.confirmRevokeGrant","value":"Revogar o acesso a {app}?"},
 {"id":"copy.native.credentials.invalidSelection","value":"Escolha pelo menos uma permissão"},
 {"id":"copy.native.credentials.requires","value":"Requer {scope}"},
 {"id":"copy.native.dotnet.auth.appleSignIn","value":"Início de sessão com a Apple"},
