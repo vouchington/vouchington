@@ -40,6 +40,8 @@ in `config.mts` must be bumped whenever resizing behavior changes.
 - `widths` — allowed output widths; picks nearest ≤ requested, never upscales, falls back to smallest
 - `qualities` — allowed JPEG/WebP/AVIF quality presets; requests clamp to this list
 - `maxHeight` — maximum rendered height for all images
+- `MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE` — `off`, `report`, or `enforce`; the OG registry read runs only under `enforce`
+- `MEDIA_DELIVERY_REGISTRY_TABLE` and `MEDIA_DELIVERY_REGISTRY_REGION` — the edge authority table and region supplied by infrastructure for OG dependency reads
 - `MAX_INPUT_IMAGE_BYTES` — 50 MB compressed cap for origin S3 objects and sideload fetches (HTTP 413 on `/images/*` and `/sideload/*`; `/og/*` degrades to the placeholder avatar)
 - `MAX_INPUT_PIXELS` — 24 MP decoded Sharp cap (HTTP 413 on the resize pipeline; `/og/*` degrades to the placeholder); sized for the 512 MB Lambda
 
@@ -100,6 +102,7 @@ Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.16
 - Renders a 1200×630 PNG with `satori` (flexbox layout → SVG) and `sharp` (SVG → PNG), using bundled `@fontsource/inter` `.woff` files
 - `satori` shapes text with `harfbuzzjs`, which reads `hb.wasm` from the bundle's directory when it loads. `scripts/copy-og-assets.mts` copies it and the fonts into the zip; without `hb.wasm` every OG render fails
 - Landing cards fetch an allowed dependency's image directly from the source bucket via `fetchImageFromS3` (no HTTP fetch — required for the IPv6-only egress flip) and normalize it to a 192×192 circle; a missing, oversize (50 MB / 24 MP), unauthorized, or unfetchable avatar falls back to an initial-letter avatar and never fails the request
+- Under `enforce`, each signed placement tuple gets a strongly consistent registry read on a cache miss; the `/og/*` edge check protects warm cache hits. A registry error or missing registry configuration drops every dependency and returns `Cache-Control: no-store`, because the CloudFront policy has a default TTL. Cards without dependencies make no registry read and remain cacheable. Under `off` or `report`, dependencies are unknown, avatars are omitted, and the card remains cacheable.
 - Bypasses the cache contract below entirely: OG responses are never written to the cache bucket and are re-rendered on every invocation. The `/og/<base64url>` path is already content-addressed, so CloudFront's own edge cache (not this Lambda's S3 render cache) is what makes repeat requests cheap. `CACHE_VERSION` does not apply to this route — instead, bump `OG_RENDERER_VERSION` in `web/lib/seo/og-image-url.ts` whenever the renderer output changes (see issue #8046), which mints new `/og/` paths and lets old immutable-cached PNGs age out untouched.
 
 ## Cache Contract

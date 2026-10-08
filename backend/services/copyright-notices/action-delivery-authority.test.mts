@@ -11,7 +11,7 @@ import {
   stageAllCurrentImagePlacementDeliveryRecords,
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
-import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,

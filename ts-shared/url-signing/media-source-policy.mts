@@ -26,6 +26,10 @@ export type PlacementSourcePolicy = {
   imageId: string
 }
 
+export function getImagePlacementDeliveryKey(input: PlacementSourcePolicy): string {
+  return `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
+}
+
 export function isCurrentSideloadRoute(pathname: string): boolean {
   return /^\/sideload\/v2\/[^/]+$/.test(pathname)
 }

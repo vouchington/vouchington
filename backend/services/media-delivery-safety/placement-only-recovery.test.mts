@@ -20,7 +20,7 @@ import {
   getTestPlacementRepairForeignKey,
   readTestPlacementDeliveryColumns,
 } from '@voucha/test-helpers/entities/placement-delivery-schema'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   processMediaDeliveryRegistryRecord,
   prepublishImagePlacementDenial,

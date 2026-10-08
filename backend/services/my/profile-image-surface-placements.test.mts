@@ -4,7 +4,7 @@ import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from '@services/
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
-import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   createTestUserDirect,
   completeTestMediaDeliveryRecord,

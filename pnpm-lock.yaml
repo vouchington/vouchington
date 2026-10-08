@@ -13527,6 +13527,9 @@ importers:
 
   lambdas/image-resize:
     dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.1146.0
+        version: 3.1146.0
       '@aws-sdk/client-s3':
         specifier: ^3.1146.0
         version: 3.1146.0

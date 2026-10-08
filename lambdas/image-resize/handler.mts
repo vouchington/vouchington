@@ -1,10 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { resolveRuntimeSecret } from '@lambdas/shared/ssm-secret'
-import {
-  SIDELOAD_SIGNING_KEYS_ENV,
-  type DependencyAuthorization,
-  type PlacementSourcePolicy,
-} from '@ts-shared/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV, type PlacementSourcePolicy } from '@ts-shared/url-signing'
 import { isOgRequest, isSideloadRequest, parseRouterRequest } from './request/index.mts'
 import { fetchImageFromUrl as defaultFetchImageFromUrl } from './http/index.mts'
 import { buildErrorResponse } from './response/index.mts'
@@ -17,6 +13,7 @@ import {
 import { LambdaError } from './errors.mts'
 import { normalizeS3Request, normalizeSideloadRequest } from './handler-normalize.mts'
 import { handleOgRequest } from './handler-og.mts'
+import { authorizeOgDependencies, type OgDependencyAuthorizationResult } from './og/authorize.mts'
 import {
   defaultImageRequestDependencies,
   type ImageRequestDependencies,
@@ -29,13 +26,13 @@ export interface LambdaHandlerDependencies extends ImageRequestDependencies {
   fetchImageFromUrl: typeof defaultFetchImageFromUrl
   authorizeDependencies: (
     dependencies: readonly PlacementSourcePolicy[],
-  ) => Promise<readonly DependencyAuthorization[]>
+  ) => Promise<OgDependencyAuthorizationResult>
 }
 
 const defaultLambdaHandlerDependencies: LambdaHandlerDependencies = {
   ...defaultImageRequestDependencies,
   fetchImageFromUrl: defaultFetchImageFromUrl,
-  authorizeDependencies: async dependencies => dependencies.map(() => 'unknown'),
+  authorizeDependencies: authorizeOgDependencies,
 }
 
 export function createLambdaHandler(

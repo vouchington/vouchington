@@ -23,7 +23,7 @@ import {
   getImagePlacementForCopyright,
   getImagePlacementCopyrightOwner,
 } from '@services/images/placements'
-import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety/delivery-registry-types'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { completeCopyrightMandatoryHumanReview, processCopyrightActionIntent } from './index.mts'
 
