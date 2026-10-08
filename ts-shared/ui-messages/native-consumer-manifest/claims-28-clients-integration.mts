@@ -8,8 +8,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_28_CLIENTS_INTEGRATION = [
   },
   { key: 'native.common.relatedArticles', consumers: ['dotnet', 'swift'] },
   { key: 'native.common.relatedArticlesMore', consumers: ['dotnet', 'swift'] },
-  { key: 'native.credentials.adminAudience', consumers: ['dotnet', 'swift'] },
-  { key: 'native.credentials.audience', consumers: ['dotnet', 'swift'] },
   { key: 'native.dotnet.chatConversation.subagentStep', consumers: ['dotnet'] },
   { key: 'native.swift.chatMessageBubble.subagentSteps', consumers: ['swift'] },
   { key: 'native.swift.chatMessageBubble.subagentText', consumers: ['dotnet', 'swift'] },
