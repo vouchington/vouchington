@@ -24,15 +24,15 @@ export async function withTestPostPublicationShadowAuditLock<T>(run: () => Promi
     key: SHADOW_AUDIT_LOCK_KEY,
     timeout: '20s',
   })
-  const previous = await getTestPostPublicationShadowAuditCheckpoint()
   try {
-    return await run()
-  } finally {
+    const previous = await getTestPostPublicationShadowAuditCheckpoint()
     try {
-      await setTestPostPublicationShadowAuditCheckpoint(previous ?? null)
+      return await run()
     } finally {
-      await lock.release()
+      await setTestPostPublicationShadowAuditCheckpoint(previous ?? null)
     }
+  } finally {
+    await lock.release()
   }
 }
 
