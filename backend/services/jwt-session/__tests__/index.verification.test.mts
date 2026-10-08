@@ -1,4 +1,4 @@
-import { it, expect, describe } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createDeviceAndSessionTokens, verifyDeviceAndSessionTokens } from '../index.mts'
 import * as jose from 'jose'
 import {
@@ -11,6 +11,16 @@ import {
 import { v7 } from 'uuid'
 
 describe('index.verification', () => {
+  beforeEach(() => {
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-06T12:00:00.000Z'))
+  })
+
+  afterEach(() => vi.useRealTimers())
+
   async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
     const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
     const jwk = await jose.exportJWK(privateKey)
@@ -109,9 +119,10 @@ describe('index.verification', () => {
       VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([edgeKey]),
     }
     const previousPublicKeys = process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-    process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64 = encodeJwkSetForEnv([
-      derivePublicJwk(edgeKey),
-    ])
+    vi.stubEnv(
+      'VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64',
+      encodeJwkSetForEnv([derivePublicJwk(edgeKey)]),
+    )
 
     try {
       const deviceToken = await signDeviceJwt(
@@ -149,11 +160,7 @@ describe('index.verification', () => {
         verifyDeviceAndSessionTokens({ deviceToken, sessionToken: forgedUserSessionToken }),
       ).resolves.toBe(false)
     } finally {
-      if (previousPublicKeys === undefined) {
-        delete process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-      } else {
-        process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64 = previousPublicKeys
-      }
+      vi.stubEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', previousPublicKeys)
     }
   })
 
@@ -162,8 +169,8 @@ describe('index.verification', () => {
     const sid = v7()
     const previousEdgePublicKeys = process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
     const previousPublicKeys = process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
-    delete process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-    delete process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
+    vi.stubEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', undefined)
+    vi.stubEnv('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64', undefined)
 
     try {
       const deviceToken = await signDeviceJwt(
@@ -187,16 +194,8 @@ describe('index.verification', () => {
         verifyDeviceAndSessionTokens({ deviceToken, sessionToken }),
       ).resolves.toMatchObject({ did, sid, uid: null })
     } finally {
-      if (previousEdgePublicKeys === undefined) {
-        delete process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-      } else {
-        process.env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64 = previousEdgePublicKeys
-      }
-      if (previousPublicKeys === undefined) {
-        delete process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
-      } else {
-        process.env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 = previousPublicKeys
-      }
+      vi.stubEnv('VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64', previousEdgePublicKeys)
+      vi.stubEnv('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64', previousPublicKeys)
     }
   })
 
