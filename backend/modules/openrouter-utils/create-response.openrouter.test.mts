@@ -9,7 +9,7 @@ describe('OpenRouter Responses', () => {
     const response = await createOpenRouterResponse({
       model: 'openai/gpt-6-luna',
       input: 'Reply with exactly OK.',
-      max_output_tokens: 64,
+      max_output_tokens: 1024,
       safety_identifier: 'openrouter-credentialed-contract',
       service_tier: 'flex',
       prompt_cache_key: 'openrouter-credentialed-contract-v1',
