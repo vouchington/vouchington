@@ -4,21 +4,15 @@ import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import {
   fetchRssFeed,
   getRssFeedsToFetch,
-  isCrawlPrioritizationEnabled,
   getTierSlaMs,
   type RssFeedCrawlTier,
 } from '@services/rss-feeds'
 import type { Job } from 'glide-mq'
 
-// Preserved from the original flat-TTL dispatcher: feeds fetched within 5 minutes are skipped by
-// the selection query and worker staleness check.
-const FALLBACK_TTL = 5 * 60_000
-
 type RssFeedsDispatcherDependencies = {
   enqueueBulkFetchRssFeeds: typeof enqueueBulkFetchRssFeeds
   getRssFeedsToFetch: typeof getRssFeedsToFetch
   getTierSlaMs: typeof getTierSlaMs
-  isCrawlPrioritizationEnabled: typeof isCrawlPrioritizationEnabled
 }
 type FetchRssFeedDependencies = {
   fetchRssFeed: typeof fetchRssFeed
@@ -39,27 +33,10 @@ export async function processRssFeedsDispatcher(
     enqueueBulkFetchRssFeeds,
     getRssFeedsToFetch,
     getTierSlaMs,
-    isCrawlPrioritizationEnabled,
     ...dependencies,
   }
-  // Read the prioritization flag once so a mid-run config toggle cannot make the
-  // fetch query and the enqueue strategy disagree.
-  const prioritized = deps.isCrawlPrioritizationEnabled()
-
-  // In tiered mode the ttl arg is ignored (the MV-backed query computes per-tier
-  // staleness itself); in flat mode it is the single staleness window.
-  const feeds = prioritized
-    ? await deps.getRssFeedsToFetch({ prioritized: true })
-    : await deps.getRssFeedsToFetch({ prioritized: false, ttl: FALLBACK_TTL })
+  const feeds = await deps.getRssFeedsToFetch()
   if (feeds.length === 0) return { count: 0 }
-
-  if (!prioritized) {
-    await deps.enqueueBulkFetchRssFeeds(
-      feeds.map(f => f.id),
-      { ttl: FALLBACK_TTL },
-    )
-    return { count: feeds.length }
-  }
 
   // Group feeds by (tier, ttl) so each group shares one priority value and TTL.
   // Backfill feeds use ttl=undefined so the worker does not reapply the full tier SLA check.

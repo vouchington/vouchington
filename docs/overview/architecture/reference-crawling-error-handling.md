@@ -41,10 +41,8 @@ flowchart TD
   S[01:00 UTC scheduler refresh-rss-feed-crawl-tiers] --> J[refreshMaterializedView]
   J --> V[mv_rss_feed_crawl_tiers]
   V --> D[dispatchRssFeeds every minute]
-  D -->|tiered mode| T[Due feeds by tier SLA]
-  D -->|flat fallback| F[Enabled feeds by flat TTL]
+  D -->|tiered dispatch| T[Due feeds by tier SLA]
   T --> Q[enqueue fetchRssFeed]
-  F --> Q
   Q --> R[fetchRssFeed]
 ```
 

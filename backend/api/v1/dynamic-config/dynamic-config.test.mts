@@ -175,6 +175,11 @@ describe('dynamic-config', () => {
         .expect(400)
 
       await request
+        .patch('/api/v1/dynamic-config/namespaces/rss-feed-crawl-config')
+        .send({ config: { should_ignore_robots_txt: 'yes' } })
+        .expect(400)
+
+      await request
         .patch('/api/v1/dynamic-config/namespaces/user-import-export-config')
         .send({ config: { sync_export_max_items: 50_001 } })
         .expect(400)

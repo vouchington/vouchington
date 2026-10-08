@@ -4,11 +4,9 @@ Prioritized, tiered crawl scheduling for RSS feeds.
 
 ## Background
 
-All enabled RSS feeds are eligible for periodic crawling. Without prioritization every feed is
-treated equally, so a feed followed by thousands of users gets the same cadence as one with zero
-followers. Tiered crawling assigns each feed a target fetch-SLA based on its relative importance.
-The dispatcher prioritizes feeds that are past their SLA, then backfills with not-yet-due feeds up
-to the capacity budget.
+All enabled RSS feeds are eligible for periodic crawling. Tiered crawling assigns each feed a target
+fetch SLA based on its relative importance. The dispatcher prioritizes feeds that are past their
+SLA, then backfills with not-yet-due feeds up to the capacity budget.
 
 ## Crawl Score and Tiers (materialized view)
 
@@ -61,17 +59,13 @@ re-tier job on the `rss-feeds` queue.
 
 `processRssFeedsDispatcher` runs every minute and calls `getRssFeedsToFetch()`:
 
-- **Tiered mode** (`enabled = true`): `LEFT JOIN mv_rss_feed_crawl_tiers` to read each feed's
-  `crawl_tier`/`crawl_score`.
-  - **Due bucket**: feeds whose `last_fetched_at` is older than their tier SLA, ordered by
-    `crawl_score DESC, id ASC`.
-  - **Backfill bucket**: not-yet-due feeds that were last fetched at least the tier-1 SLA ago,
-    ordered by time-until-deadline ASC then `crawl_score DESC` — fills spare capacity up to
-    `capacity_budget` (default 100).
-  - **New feeds** not yet in the view default to **tier 5** (`COALESCE(crawl_tier, 5)`) and are
-    still dispatched, so a freshly created feed is never missed before the next nightly refresh.
-- **Flat fallback** (`enabled = false`): all enabled feeds past a single TTL, oldest first, up to
-  `limit`.
+- **Due bucket**: feeds whose `last_fetched_at` is older than their tier SLA, ordered by
+  `crawl_score DESC, id ASC`.
+- **Backfill bucket**: not-yet-due feeds that were last fetched at least the tier-1 SLA ago,
+  ordered by time-until-deadline ASC then `crawl_score DESC` — fills spare capacity up to
+  `capacity_budget` (default 100).
+- **New feeds** not yet in the view default to **tier 5** (`COALESCE(crawl_tier, 5)`) and are
+  still dispatched, so a freshly created feed is never missed before the next nightly refresh.
 
 Feeds are grouped by `crawl_tier` and enqueued with matching glide-mq priority constants
 (`TIER_PRIORITY` in `backend/queues/rss-feeds/config.mts`): tier 1 -> priority 1, tier 5 -> priority 20. Backfill feeds omit the per-tier SLA TTL (so they are not throttled for the full SLA window) but still use the default short dedup window (`RSS_FEEDS_DEFAULTS.deduplicationTtlMs`, 60s) via `enqueueBulkFetchRssFeeds`. Forced/manual refreshes set `skipDeduplication` so an explicit refresh is not dropped behind a recently queued normal fetch.
@@ -82,15 +76,14 @@ Key: `rss-feed-crawl-config`, editable through `/admin/dynamic-config`. Score we
 percentile thresholds are **not** configured here — they are baked into the materialized-view SQL.
 Only the dispatch knobs are tunable at runtime:
 
-| Field             | Type    | Default    | Constraints       | Description                                          |
-| ----------------- | ------- | ---------- | ----------------- | ---------------------------------------------------- |
-| `enabled`         | boolean | `true`     | -                 | Toggle tiered crawl mode. False = flat TTL fallback. |
-| `tier1_sla_ms`    | number  | `300000`   | 1 ms to 7 days    | Tier 1 fetch SLA in milliseconds (5 min).            |
-| `tier2_sla_ms`    | number  | `900000`   | 1 ms to 7 days    | Tier 2 fetch SLA in milliseconds (15 min).           |
-| `tier3_sla_ms`    | number  | `3600000`  | 1 ms to 7 days    | Tier 3 fetch SLA in milliseconds (1 hour).           |
-| `tier4_sla_ms`    | number  | `7200000`  | 1 ms to 7 days    | Tier 4 fetch SLA in milliseconds (2 hours).          |
-| `tier5_sla_ms`    | number  | `86400000` | 1 ms to 7 days    | Tier 5 fetch SLA in milliseconds (24 hours).         |
-| `capacity_budget` | number  | `100`      | 1 to 10,000 feeds | Max feeds dispatched per dispatcher run.             |
+| Field             | Type   | Default    | Constraints       | Description                                  |
+| ----------------- | ------ | ---------- | ----------------- | -------------------------------------------- |
+| `tier1_sla_ms`    | number | `300000`   | 1 ms to 7 days    | Tier 1 fetch SLA in milliseconds (5 min).    |
+| `tier2_sla_ms`    | number | `900000`   | 1 ms to 7 days    | Tier 2 fetch SLA in milliseconds (15 min).   |
+| `tier3_sla_ms`    | number | `3600000`  | 1 ms to 7 days    | Tier 3 fetch SLA in milliseconds (1 hour).   |
+| `tier4_sla_ms`    | number | `7200000`  | 1 ms to 7 days    | Tier 4 fetch SLA in milliseconds (2 hours).  |
+| `tier5_sla_ms`    | number | `86400000` | 1 ms to 7 days    | Tier 5 fetch SLA in milliseconds (24 hours). |
+| `capacity_budget` | number | `100`      | 1 to 10,000 feeds | Max feeds dispatched per dispatcher run.     |
 
 ## Crawl history retention
 
