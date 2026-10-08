@@ -36,7 +36,7 @@ describe('penalizeBlockedHostnameAttempt', () => {
     expect(penalty!.created_by_id).toBe(moderationSystemUserId)
     expect(penalty!.penalty_multiplier).toBe(DEFAULT_PENALTY_MULTIPLIER)
     expect(penalty!.revoked_at).toBeNull()
-  }, 60_000)
+  })
 
   it('stacks: multiple calls create multiple penalty rows', async () => {
     const testUser = (await createTestUserDirect({
@@ -50,7 +50,7 @@ describe('penalizeBlockedHostnameAttempt', () => {
     const penalties = await getTestPenaltiesByUserId(testUser.id)
     const attemptPenalties = penalties.filter(p => p.reason === 'blocked_hostname_attempt')
     expect(attemptPenalties.length).toBe(3)
-  }, 60_000)
+  })
 
   it('does not affect other users', async () => {
     const penalizedUser = (await createTestUserDirect({
@@ -62,8 +62,11 @@ describe('penalizeBlockedHostnameAttempt', () => {
 
     await penalizeBlockedHostnameAttempt(penalizedUser.id)
 
+    const ownPenalties = await getTestPenaltiesByUserId(penalizedUser.id)
+    expect(ownPenalties.filter(p => p.reason === 'blocked_hostname_attempt')).toHaveLength(1)
+
     const otherPenalties = await getTestPenaltiesByUserId(otherUser.id)
     const attemptPenalties = otherPenalties.filter(p => p.reason === 'blocked_hostname_attempt')
     expect(attemptPenalties.length).toBe(0)
-  }, 60_000)
+  })
 })
