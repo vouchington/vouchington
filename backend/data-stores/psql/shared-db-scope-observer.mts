@@ -1,3 +1,5 @@
+import type { QueryExecutor } from './types.mts'
+
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
 export const sharedDbScopeTables = {
   listCopyrightStaffQueue: 'copyright_notices',
@@ -55,6 +57,7 @@ export type SharedDbScopeEvent = {
   table: (typeof sharedDbScopeTables)[SharedDbScopeOperation]
   scope: SharedDbScope
   keysetRead?: SharedDbKeysetRead
+  transaction?: QueryExecutor
 }
 export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 
@@ -65,12 +68,14 @@ export function observeSharedDbScope(
   operation: SharedDbScopeOperation,
   scope: SharedDbScope,
   keysetRead?: SharedDbKeysetRead,
+  transaction?: QueryExecutor,
 ): void {
   ;(globalThis as unknown as ObserverHost)[observerKey]?.({
     operation,
     table: sharedDbScopeTables[operation],
     scope,
     ...(keysetRead ? { keysetRead } : {}),
+    ...(transaction ? { transaction } : {}),
   })
 }
 

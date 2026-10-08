@@ -20,19 +20,18 @@ export type RetainedRelationCleanupCursor = {
   cursor_relation_id: string | null
 }
 
-/** Reads the finite family cursor inventory without changing worker progress. */
-export async function readRetainedRelationCleanupCursors(): Promise<
-  RetainedRelationCleanupCursor[]
-> {
+/** Enum primary keys bound this inventory to the elected families; reads never change progress. */
+export async function readRetainedRelationCleanupCursors(
+  options: QueryOptions = {},
+): Promise<RetainedRelationCleanupCursor[]> {
   const { rows } = await read<RetainedRelationCleanupCursor>(
     `/* readRetainedRelationCleanupCursors */
      SELECT entity_relation, cursor_subject_id, cursor_relation_id
      FROM retained_relation_identity_cleanup_cursors
      ORDER BY entity_relation LIMIT $1`,
-    [electedRelationMetadata.length + 1],
+    [electedRelationMetadata.length],
+    options,
   )
-  if (rows.length > electedRelationMetadata.length)
-    throw new Error('Retained relation cleanup cursor inventory exceeds the elected family count')
   return rows
 }
 
@@ -55,6 +54,8 @@ export async function cleanupRetainedRelationIdentities(
     observeSharedDbScope(
       'cleanupRetainedRelationIdentities',
       sharedDbIdsScope(keys?.flatMap(key => [key.subjectId, key.relationId])),
+      undefined,
+      options?.query,
     )
     pages.push(
       // oxlint-disable-next-line no-await-in-loop -- each concrete family owns an independent bounded transaction.

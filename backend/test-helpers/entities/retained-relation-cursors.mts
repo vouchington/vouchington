@@ -1,6 +1,11 @@
+import { registerRetainedRelationCleanupReservation } from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { electedRelationMetadata } from '../../services/users/relation-impact-targets.mts'
-import { cleanupRetainedRelationIdentities } from '../../services/data-retention/cleanup-retained-relation-identities.mts'
+import {
+  cleanupRetainedRelationIdentities,
+  readRetainedRelationCleanupCursors,
+  type RetainedRelationCleanupCursor,
+} from '../../services/data-retention/cleanup-retained-relation-identities.mts'
 import {
   insertTestRetainedIdentityRoot,
   insertTestRetainedRelationIdentity,
@@ -50,10 +55,7 @@ export async function restoreTestRetainedRelationCleanupCursor(
 }
 
 export async function getRetainedRelationCleanupCursors(): Promise<string[]> {
-  const { rows } = await read<{ entity_relation: string }>(
-    '/* getRetainedRelationCleanupCursors */ SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
-  )
-  return rows.map(row => row.entity_relation)
+  return (await readRetainedRelationCleanupCursors()).map(row => row.entity_relation)
 }
 
 /** Real transaction reservation for exact owned relation fixtures; always rolls back. */
@@ -64,9 +66,11 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
     hasRelation: (table: string, subject: string, relation: string) => Promise<boolean>
     cleanup: typeof cleanupRetainedRelationIdentities
     cursorNames: () => Promise<string[]>
+    cursorRows: () => Promise<RetainedRelationCleanupCursor[]>
   }) => Promise<Result>,
 ): Promise<Result> {
   const query = await beginTransaction()
+  let closeReservation: (() => void) | undefined
   let outcome: { ok: true; value: Result } | { ok: false; error: unknown }
   try {
     for (const metadata of electedRelationMetadata) {
@@ -75,6 +79,7 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
         [`retained-relation-cleanup:${metadata.table_name}`],
       )
     }
+    closeReservation = registerRetainedRelationCleanupReservation(query)
     outcome = {
       ok: true,
       value: await handler({
@@ -86,11 +91,8 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
         cleanup: (pageSize, keys, options) =>
           cleanupRetainedRelationIdentities(pageSize, keys, { ...options, query }),
         cursorNames: async () =>
-          (
-            await query<{ entity_relation: string }>(
-              '/* readReservedRetainedRelationCleanupCursorNames */ SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
-            )
-          ).rows.map(row => row.entity_relation),
+          (await readRetainedRelationCleanupCursors({ query })).map(row => row.entity_relation),
+        cursorRows: () => readRetainedRelationCleanupCursors({ query }),
       }),
     }
   } catch (err) {
@@ -98,11 +100,23 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
   }
   const cleanupErrors: unknown[] = []
   try {
+    closeReservation?.()
+  } catch (err) {
+    cleanupErrors.push(err)
+  }
+  try {
     await query.rollback()
   } catch (err) {
     cleanupErrors.push(err)
   }
-  if (!outcome.ok) throw outcome.error
+  if (!outcome.ok) {
+    if (cleanupErrors.length > 0)
+      throw new AggregateError(
+        [outcome.error, ...cleanupErrors],
+        'Relation fixture and rollback failed',
+      )
+    throw outcome.error
+  }
   if (cleanupErrors.length > 0)
     throw new AggregateError(cleanupErrors, 'Relation fixture rollback failed')
   return outcome.value

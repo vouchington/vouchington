@@ -1,3 +1,9 @@
+import type { QueryExecutor } from '../backend/data-stores/psql/types.mts'
+import {
+  registerRetainedRelationCleanupReservation,
+  rejectUnscopedSharedDbCall,
+  markSharedDbScopeViolationsReported,
+} from './vitest-shared-db-scope-violations.mts'
 import { describe, expect, it, vi } from 'vitest'
 import {
   observeSharedDbScope,
@@ -83,6 +89,89 @@ describe('shared database scope observer', () => {
       expect(events).toMatchObject([{ operation: 'getRecoverableOAuthAuthorizationIds' }])
     } finally {
       dispose()
+    }
+  })
+})
+
+describe('retained relation transaction admission', () => {
+  it('admits only the registered executor, operation, test and active lifetime', () => {
+    const query: QueryExecutor = async () => {
+      throw new Error('Boundary test must not execute SQL')
+    }
+    const other: QueryExecutor = async () => {
+      throw new Error('Boundary test must not execute SQL')
+    }
+    const event: SharedDbScopeEvent = {
+      operation: 'cleanupRetainedRelationIdentities',
+      table: 'retained_relation_identity_cleanup_cursors',
+      scope: { kind: 'global' },
+      transaction: query,
+    }
+    const state = { ...expect.getState() }
+    const close = registerRetainedRelationCleanupReservation(query)
+    try {
+      expect(() => rejectUnscopedSharedDbCall(event)).not.toThrow()
+      expect(() => registerRetainedRelationCleanupReservation(query)).toThrow(
+        'one active test transaction',
+      )
+      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: other })).toThrow('requires')
+      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: undefined })).toThrow(
+        'requires',
+      )
+      expect(() =>
+        rejectUnscopedSharedDbCall({
+          ...event,
+          operation: 'cleanupRetainedIdentityRoots',
+          table: 'retained_identity_cleanup_cursors',
+        }),
+      ).toThrow('requires')
+      expect.setState({ currentTestName: `${state.currentTestName}:different` })
+      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
+      expect.setState({ currentTestName: undefined })
+      expect(() => rejectUnscopedSharedDbCall({ ...event, transaction: other })).toThrow('requires')
+      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
+      expect(() => registerRetainedRelationCleanupReservation(other)).toThrow(
+        'one active test transaction',
+      )
+      expect.setState({ currentTestName: state.currentTestName })
+      close()
+      close()
+      expect(() => rejectUnscopedSharedDbCall(event)).toThrow('requires')
+      const nextClose = registerRetainedRelationCleanupReservation(query)
+      try {
+        close()
+        expect(() => rejectUnscopedSharedDbCall(event)).not.toThrow()
+      } finally {
+        nextClose()
+      }
+    } finally {
+      expect.setState({ currentTestName: state.currentTestName })
+      close()
+      markSharedDbScopeViolationsReported(state.testPath!)
+    }
+  })
+
+  it('preserves active admission across module re-evaluation', async () => {
+    const query: QueryExecutor = async () => {
+      throw new Error('Boundary test must not execute SQL')
+    }
+    const close = registerRetainedRelationCleanupReservation(query)
+    try {
+      vi.resetModules()
+      const fresh = await import('./vitest-shared-db-scope-violations.mts')
+      expect(() =>
+        fresh.rejectUnscopedSharedDbCall({
+          operation: 'cleanupRetainedRelationIdentities',
+          table: 'retained_relation_identity_cleanup_cursors',
+          scope: { kind: 'global' },
+          transaction: query,
+        }),
+      ).not.toThrow()
+      expect(() => fresh.registerRetainedRelationCleanupReservation(query)).toThrow(
+        'one active test transaction',
+      )
+    } finally {
+      close()
     }
   })
 })

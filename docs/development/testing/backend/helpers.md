@@ -755,3 +755,7 @@ from calls that create or retire provider mappings.
 - Backend context and test conventions: [../AGENTS.md](../../../../backend/AGENTS.md)
 - Mocking policy: [../services/AGENTS.md](../../../../backend/services/AGENTS.md)
 - PostgreSQL (entity helpers align with schema): [../data-stores/psql/README.md](../../postgresql/README.md)
+
+### Retained relation cleanup reservation
+
+`withTestRetainedRelationCleanupReservation` acquires every elected-family advisory transaction lock before admitting the normal global worker call. Admission matches the actual query executor, active test, and retained-relation operation; it closes before the helper awaits rollback. Worker deletes and cursor checkpoints remain in that transaction and are rolled back, including on assertion or registration failure. A handler failure retains its original identity unless rollback also fails, when both errors are reported in an `AggregateError`. A rollback failure always fails the test. Calls outside the reservation, on another executor, or from another test remain rejected by the shared-database scope guard. This is trusted test infrastructure: registration must stay after successful lock acquisition and must never be used to admit committed global writes.
