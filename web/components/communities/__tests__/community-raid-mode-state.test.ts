@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityRestriction, CommunityRestrictionsResponseBody } from '@/types/api-responses'
 import {
   formatRestrictionExpiry,
@@ -9,7 +9,19 @@ import {
   raidModeReducer,
 } from '../community-raid-mode-state'
 
+const proofNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T23:59:59.900Z')
+const ONE_HOUR_MS = 60 * 60 * 1000
+
 describe('community raid mode state', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(proofNow)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('updates selected restrictions and form fields', () => {
     const withLinks = raidModeReducer(initialRaidModeState, {
       type: 'toggleRestriction',
@@ -49,14 +61,17 @@ describe('community raid mode state', () => {
     const expiresAt = getExpiresAt('1h')
 
     expect(expiresAt).toEqual(expect.any(String))
+    expect(expiresAt).toBe(new Date(proofNow.getTime() + ONE_HOUR_MS).toISOString())
     expect(getExpiresAt('manual')).toBeNull()
-    expect(getActiveRestrictions(makeRestrictionData())).toHaveLength(1)
+    const active = getActiveRestrictions(makeRestrictionData())
+    expect(active).toHaveLength(1)
+    expect(active.map(restriction => restriction.id)).toEqual(['active'])
   })
 })
 
 function makeRestrictionData(): CommunityRestrictionsResponseBody {
-  const activeExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-  const expiredAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const activeExpiresAt = new Date(proofNow.getTime() + ONE_HOUR_MS).toISOString()
+  const expiredAt = new Date(proofNow.getTime() - ONE_HOUR_MS).toISOString()
 
   return {
     results: [
