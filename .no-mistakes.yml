@@ -842,7 +842,9 @@ rules:
         - moduleExport: { module: no-mistakes, export: check }
         - moduleExport: { module: no-mistakes, export: ciTopology }
         - moduleExport: { module: no-mistakes, export: ciTopologyImpact }
+        - moduleExport: { module: no-mistakes, export: importUsages }
         - moduleExport: { module: no-mistakes, export: resolveCheck }
+        - moduleExport: { module: no-mistakes, export: symbols }
         - moduleExport: { module: no-mistakes, export: testsPlan }
         - moduleExport: { module: no-mistakes, export: validateMermaidMarkdown }
   - name: Vitest tests do not load the live workflow topology

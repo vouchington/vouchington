@@ -142,6 +142,9 @@ jobs:
       - name: Check web route localization selector map
         run: node static-code-analysis/i18n-extract/route-selector-map.mts --check --diagnostics
         timeout-minutes: 2
+      - name: Check Storybook browser optimizeDeps
+        run: node ci/check-storybook-browser-optimize-deps.mts
+        timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: |
