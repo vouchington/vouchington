@@ -1,7 +1,7 @@
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { bedrock_embeddings_batch_creation } from '@queues/bedrock-embeddings-batch/queues'
 import type { BedrockEmbeddingsBatchCreationJob } from '@queues/bedrock-embeddings-batch/types'
-import { Worker, type Queue, type Job } from 'glide-mq'
+import { Worker, type Queue, type Job, type WorkerOptions } from 'glide-mq'
 import { handleBedrockRateLimit, UnrecoverableError } from '@modules/queue-errors'
 import { processEmbeddingCreationJob } from '../processors/creation.mts'
 
@@ -26,6 +26,7 @@ async function processEmbeddingCreationWorkerJob(job: Job, worker: Worker) {
 
 export async function createEmbeddingCreationWorker(
   queue: Queue = bedrock_embeddings_batch_creation,
+  options: Pick<WorkerOptions, 'blockTimeout' | 'promotionInterval'> = {},
 ): Promise<Worker> {
   // Capacity discovery and cloud reservation are separate operations. One globally active creation
   // job preserves provider budgets; delayed jobs yield this slot without retaining an ordering lane.
@@ -39,6 +40,7 @@ export async function createEmbeddingCreationWorker(
       concurrency: 1,
       lockDuration: 300_000,
       stalledInterval: 30_000,
+      ...options,
     },
   )
   return worker
