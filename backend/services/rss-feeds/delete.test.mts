@@ -27,8 +27,10 @@ import {
   insertTestUrlDirect,
   listTestPostPublicationImpactTopicIds,
   listTestPostPublicationImpactPostIds,
+  overrideDynamicConfigFieldsForTest,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import { createRssFeed } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -155,6 +157,30 @@ describe('delete', () => {
     await addTopicAliasCategoryToRssFeedItem(itemId, aliasId)
     const feedLocked = Promise.withResolvers<void>()
     const releaseFeed = Promise.withResolvers<void>()
+    const aliasesLocked = Promise.withResolvers<void>()
+    void feedLocked.promise.catch(() => {})
+    void aliasesLocked.promise.catch(() => {})
+    const actors: Promise<PromiseSettledResult<unknown>[]>[] = []
+    let restoreAliasSpy: (() => void) | undefined
+    let cleanup: Promise<unknown[]> | undefined
+    let cleanupHandled = false
+    function drain(): Promise<unknown[]> {
+      return (cleanup ??= (async () => {
+        releaseFeed.resolve()
+        const settled = (await Promise.all(actors)).flat()
+        const restored = await Promise.allSettled([
+          Promise.resolve().then(() => restoreAliasSpy?.()),
+        ])
+        return [...settled, ...restored].flatMap(result =>
+          result.status === 'rejected' ? [result.reason] : [],
+        )
+      })())
+    }
+    onTestFinished(async () => {
+      if (cleanupHandled) return
+      const errors = await drain()
+      if (errors.length) throw new AggregateError(errors, 'RSS deletion actors failed')
+    })
     async function holdFeedPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
       await lockPostPublicationRssFeedScopes(query, [feed.id])
@@ -162,28 +188,40 @@ describe('delete', () => {
       await releaseFeed.promise
       await query.commit()
     }
-    const holder = holdFeedPublicationScope()
-    await feedLocked.promise
     const lockAliases = topicAliasPublication.lockTopicAliasPublicationScopes
-    const aliasesLocked = Promise.withResolvers<void>()
-    const aliasSpy = vi
-      .spyOn(topicAliasPublication, 'lockTopicAliasPublicationScopes')
-      .mockImplementation(async (query, topicAliasIds) => {
-        await lockAliases(query, topicAliasIds)
-        aliasesLocked.resolve()
-      })
-    const deletion = hardDeleteRssFeedById(feed.id)
+    let outcome: { ok: true } | { ok: false; error: unknown }
     try {
+      const holder = holdFeedPublicationScope()
+      actors.push(Promise.allSettled([holder]))
+      void holder.catch(feedLocked.reject)
+      await feedLocked.promise
+      const aliasSpy = vi.spyOn(topicAliasPublication, 'lockTopicAliasPublicationScopes')
+      restoreAliasSpy = () => aliasSpy.mockRestore()
+      aliasSpy.mockImplementation(async (query, topicAliasIds) => {
+        await lockAliases(query, topicAliasIds)
+        if (topicAliasIds.includes(aliasId)) aliasesLocked.resolve()
+      })
+      const deletion = hardDeleteRssFeedById(feed.id)
+      actors.push(Promise.allSettled([deletion]))
+      void deletion.catch(aliasesLocked.reject)
       await aliasesLocked.promise
       await expect(contendForTopicAliasPublicationScope()).rejects.toMatchObject({
         code: '55P03',
       })
-    } finally {
       releaseFeed.resolve()
-      aliasSpy.mockRestore()
+      await holder
+      await expect(deletion).resolves.toBe(true)
+      outcome = { ok: true }
+    } catch (err) {
+      outcome = { ok: false, error: err }
     }
-    await holder
-    await expect(deletion).resolves.toBe(true)
+    const errors = (await drain()).filter(err => outcome.ok || !Object.is(err, outcome.error))
+    cleanupHandled = true
+    if (!outcome.ok) {
+      if (errors.length) throw new AggregateError([outcome.error, ...errors], 'RSS cleanup failed')
+      throw outcome.error
+    }
+    if (errors.length) throw new AggregateError(errors, 'RSS cleanup failed')
 
     async function contendForTopicAliasPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
@@ -206,6 +244,10 @@ describe('delete', () => {
   })
 
   it('retains every bounded page of high-fanout post impacts before a feed cascade', async () => {
+    const restoreConfig = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      rss_feed_hard_delete_capture_batch_size: 2,
+    })
+    onTestFinished(restoreConfig)
     const feed = await createFeed('hard-batch')
     const topic = await createTestTopic({ user: adminUser })
     const url = await insertTestUrlDirect(
@@ -214,7 +256,7 @@ describe('delete', () => {
     )
     if (!url) throw new Error('Expected RSS batch item URL')
     const { postIds } = await insertTestStoryCategoryPublicationBatch({
-      count: 1_001,
+      count: 3,
       categoryText: 'publication-batch',
       createdById: adminUser.id,
       rssFeedId: feed.id,
@@ -230,7 +272,7 @@ describe('delete', () => {
     await expect(listTestPostPublicationImpactTopicIds(work.id)).resolves.toEqual(
       [feed.topic_id as string, topic.id].toSorted(),
     )
-  }, 60_000)
+  }, 30_000)
 
   it('hardDeleteRssFeedByIdAsCurrentUser throws 403 for non-admin', async () => {
     const feed = await createFeed('hard-auth-fail')
