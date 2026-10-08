@@ -27,10 +27,8 @@ import type {
   CopyrightTrustedFlaggerCreateRequest,
 } from './trusted-flagger-request-types.mts'
 
-const path = '/api/v1/copyright-trusted-flaggers'
-const listRoute = `GET:${path}`
-const createRoute = `POST:${path}`
-const itemRoute = `GET:${path}/:id`
+const listRoute = 'GET:/api/v1/copyright-trusted-flaggers'
+const createRoute = 'POST:/api/v1/copyright-trusted-flaggers'
 const listParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
@@ -141,7 +139,7 @@ app
     const currentUser = await requireAuthAndRateLimit(
       ctx,
       currentUserCanReviewCopyrightNotices,
-      itemRoute,
+      'GET:/api/v1/copyright-trusted-flaggers/:id',
     )
     assertNotSuspended(currentUser)
     const id = validateUUIDParam(ctx, 'id')
@@ -159,12 +157,14 @@ app
     ctx.set('Allow', 'GET')
     ctx.setStatus(405)
     ctx.response.empty()
+    ctx.throw(405, 'Method Not Allowed')
   })
   .delete((ctx: Context) => {
     apiOpenApiNoContent('DELETE:/api/v1/copyright-trusted-flaggers/:id', 405)
     ctx.set('Allow', 'GET')
     ctx.setStatus(405)
     ctx.response.empty()
+    ctx.throw(405, 'Method Not Allowed')
   })
 
 app.route('/api/v1/copyright-trusted-flaggers/:id/status-changes').post(async (ctx: Context) => {

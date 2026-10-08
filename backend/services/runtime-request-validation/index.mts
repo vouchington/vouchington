@@ -27,8 +27,10 @@ export class RuntimeRequestValidatorRegistry {
   )
 
   private readonly registry: RequestContractValidatorRegistry
+  private readonly contracts: RuntimeRequestContractsBundle
 
   constructor(bundle: RuntimeRequestContractsBundle) {
+    this.contracts = bundle
     this.registry = new RequestContractValidatorRegistry(bundle)
   }
 
@@ -47,6 +49,14 @@ export class RuntimeRequestValidatorRegistry {
 
   hasOperation(operation: string): boolean {
     return this.registry.hasOperation(operation)
+  }
+
+  hasInputCarriers(operation: string): boolean {
+    const contract = this.contracts.operations[operation]
+    return (
+      contract !== undefined &&
+      ['body', 'header', 'path', 'query'].some(carrier => Object.hasOwn(contract, carrier))
+    )
   }
 
   /**

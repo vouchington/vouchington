@@ -47,9 +47,18 @@ stale keys in the request, response, and admin-response maps, and stale exemptio
 The explicit exemption list is capped at 56 API v1 routes, following the audited scope decision
 in [#298](https://github.com/vouchington/vouchington/issues/298#issuecomment-6050864125).
 
-The inventory proves that the declared contracts cover registered routes. It does not prove that
-the validator runs on every request; route integration tests own that execution and ordering
-behavior.
+The inventory proves that the declared contracts cover registered routes. At runtime, the API
+records the registered operation key on the request context, rejects a validator call that names a
+different operation, and reports an input-bearing contracted route that finishes without invoking
+validation. Existing handler calls remain in place so authentication, authorization, rate limiting,
+and anti-enumeration checks retain their ordering. The remaining coverage limit is routes that no
+test exercises. The runtime check and inventory share the explicit
+[exemptions](../../../../../backend/api/request-contract-exemptions.mts).
+
+An input-bearing handler that returns without validation reports its route key through `onError`.
+If no response has started, it returns `500` with code `REQUEST_CONTRACT_VALIDATION_MISSING`;
+otherwise it reports the missing call without replacing the response. Thrown preamble errors
+keep their existing status and response.
 
 ## Adoption
 

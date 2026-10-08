@@ -4,6 +4,7 @@ import {
   parseJsonBody,
   requireAuth,
   validateUUIDParam,
+  validateRequestContract,
 } from '../response-helpers.mts'
 import {
   authenticateOAuthClient,
@@ -140,6 +141,7 @@ app.route('/api/v1/oauth/authorization-requests/:id').get(async (ctx: Context) =
     authorizationContext.browserBindingHash,
   )
   ctx.assert(request, 404, 'Not Found')
+  validateRequestContract(ctx, 'GET:/api/v1/oauth/authorization-requests/:id', { path: ctx.params })
   ctx.json({ authorization_request: request })
 })
 
@@ -152,10 +154,15 @@ app.route('/api/v1/oauth/authorization-requests/:id/decisions').post(async (ctx:
   assertNotSuspended(currentUser)
   const body = await parseJsonBody<{ decision?: unknown }>(ctx)
   ctx.assert(body?.decision === 'approve' || body?.decision === 'deny', 422, 'Invalid decision')
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/oauth/authorization-requests/:id/decisions', {
+    path: ctx.params,
+    body,
+  })
   const session = await ctx.getSessionTokenData()
   const result = await decideOAuthAuthorizationRequest(
     currentUser.id,
-    validateUUIDParam(ctx, 'id'),
+    id,
     body.decision,
     createOAuthBrowserBindingHash(session.did, session.sid),
   )

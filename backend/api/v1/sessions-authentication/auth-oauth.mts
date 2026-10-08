@@ -65,6 +65,10 @@ app.route('/api/v1/auth/oauth/:provider/continue').post(async ctx => {
   )
   const provider = assertValidProvider(ctx.params.provider ?? '')
   if (currentUser) {
+    // Already-authenticated continuation ignores the provider body.
+    validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/continue', {
+      path: ctx.params,
+    })
     ctx.json({
       user: {
         id: currentUser.id,

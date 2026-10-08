@@ -112,6 +112,22 @@ describe('Google Play RTDN lifecycle integration', () => {
         },
       }),
     )
+    const validationError = new Error('Rejected carrier')
+    await expect(
+      ingestGooglePlayRtdnPush({
+        rawBody,
+        authorization: `Bearer ${jwt}`,
+        environment: 'test',
+        applicationId,
+        trust,
+        onVerified: () => {
+          throw validationError
+        },
+        enqueue: async () => {
+          throw new Error('Must not enqueue a rejected carrier')
+        },
+      }),
+    ).rejects.toBe(validationError)
     const ingress = await ingestGooglePlayRtdnPush({
       rawBody,
       authorization: `Bearer ${jwt}`,
@@ -120,6 +136,7 @@ describe('Google Play RTDN lifecycle integration', () => {
       trust,
       enqueue: async () => undefined,
     })
+    expect(ingress.replayed).toBe(false)
     const conflictingBody = Buffer.from(
       JSON.stringify({
         message: {

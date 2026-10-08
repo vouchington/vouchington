@@ -7,7 +7,14 @@ import { ingestAppleAppStoreNotification } from './notification-ingress.mts'
 import type { AppleNotificationVerifier } from './types.mts'
 
 describe('Apple App Store notification ingress persistence', () => {
-  afterEach(() => memberships.obliterate({ force: true }))
+  const ownedEvidenceIds = new Set<string>()
+  afterEach(async () => {
+    for (const evidenceId of ownedEvidenceIds) {
+      const job = await memberships.getJob(`apple-notification__${evidenceId}`)
+      await job?.remove()
+    }
+    ownedEvidenceIds.clear()
+  })
 
   it('durably deduplicates an accepted notification before queueing its lineage', async () => {
     const notificationId = randomUUID()
@@ -19,7 +26,18 @@ describe('Apple App Store notification ingress persistence', () => {
       verifier: makeVerifier(notificationId),
     }
 
+    const validationError = new Error('Rejected carrier')
+    await expect(
+      ingestAppleAppStoreNotification({
+        ...options,
+        onVerified: () => {
+          throw validationError
+        },
+      }),
+    ).rejects.toBe(validationError)
     const first = await ingestAppleAppStoreNotification(options)
+    ownedEvidenceIds.add(first.evidenceId)
+    expect(first.replayed).toBe(false)
     const replay = await ingestAppleAppStoreNotification(options)
     const storedEvidence = await getTestMembershipProviderEvidence(first.evidenceId)
 
@@ -41,12 +59,13 @@ describe('Apple App Store notification ingress persistence', () => {
 
   it('rejects a notification identifier replayed for another lineage', async () => {
     const notificationId = randomUUID()
-    await ingestAppleAppStoreNotification({
+    const first = await ingestAppleAppStoreNotification({
       evidence: { signedPayload: `signed-notification-${notificationId}` },
       environment: 'test',
       applicationId: 'ai.voucha.ios',
       verifier: makeVerifier(notificationId),
     })
+    ownedEvidenceIds.add(first.evidenceId)
 
     await expect(
       ingestAppleAppStoreNotification({

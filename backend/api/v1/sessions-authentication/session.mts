@@ -94,6 +94,7 @@ app
       ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))
     } else {
       await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
+      validateRequestContract(ctx, 'DELETE:/api/v1/session', { body: {} })
       dt = ctx.cookies.get('dt')
       st = ctx.cookies.get('st')
     }

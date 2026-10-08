@@ -34,7 +34,8 @@ each bullet below. This pattern is used by:
   follow it, unlike the Bluesky and OAuth-authorizations routes above. `LogoutRequest` keeps both
   fields non-optional in the generated contract precisely so the pair stays enforced once supplied —
   do not loosen the type to "fix" a test that expects the schema to run unconditionally; move the
-  call, not the contract.
+  call, not the contract. The no-binding branch also calls the adapter with no body carrier to
+  verify its route key and record execution without applying the pair schema to an absent binding.
 - MFA verification routes with an attempt-limit counter (e.g. TOTP, passkey MFA) — the counter check
   runs before the schema check, so a caller that has already exhausted attempts sees the existing
   limit response rather than a schema diagnostic for a request that will be blocked regardless.
@@ -67,7 +68,8 @@ bare `401` with no schema diagnostic, and before any service call.
   map at all.
 - `GET /api/v1/auth/oauth/:provider/broker-callback` and `GET /api/v1/auth/bluesky/callback` are
   redirect-only provider callback targets. The former has only a `path` schema for `:provider`; the
-  latter has no generated operation at all. Neither validates a query or body carrier.
+  latter has no generated operation at all. The broker callback validates its path after rate
+  limiting and provider checks; neither validates a query or body carrier.
 - `PUT /api/v1/auth/oauth/:provider/connect` and `POST /api/v1/auth/oauth/:provider/continue`
   validate against a fully permissive `Record_string_unknown` schema (any JSON object, no property
   constraints) because the accepted body varies per OAuth provider. The schema still rejects a

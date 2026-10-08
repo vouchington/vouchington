@@ -25,6 +25,7 @@ export async function ingestGooglePlayRtdnPush(options: {
   authorization: string | undefined
   environment: GooglePlayMembershipProviderEnvironment
   applicationId: string
+  onVerified?: () => void
   trust: GoogleOidcTrustMaterial | null
   enqueue: (job: {
     evidenceId: string
@@ -39,6 +40,7 @@ export async function ingestGooglePlayRtdnPush(options: {
   if (oidc !== 'valid') throw new InvalidGooglePlayRtdnError()
   const rtdn = parseGooglePlayRtdn(options.rawBody, options.applicationId)
   if (!rtdn) throw new InvalidGooglePlayRtdnError()
+  options.onVerified?.()
   if ('kind' in rtdn && rtdn.kind === 'ignored')
     return { evidenceId: rtdn.messageId, replayed: true }
   const lookup = createHash('sha256')

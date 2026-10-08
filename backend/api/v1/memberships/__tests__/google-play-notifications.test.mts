@@ -1,8 +1,12 @@
 import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import {
+  acquireTestPostgresAdvisoryLock,
+  type TestPostgresAdvisoryLock,
+} from '@voucha/test-helpers/postgres-advisory-lock'
 import { googleOidcValkeyTrustStore } from '@services/memberships/google'
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
@@ -11,9 +15,21 @@ const audience = 'https://example.com/google-play-route'
 const serviceAccountEmail = 'play-route@example.iam.gserviceaccount.com'
 
 describe('Google Play RTDN ingress route', () => {
+  let trustLock: TestPostgresAdvisoryLock | undefined
+  beforeAll(async () => {
+    // The provider publishes one global trust snapshot; reserve it across parallel copies.
+    trustLock = await acquireTestPostgresAdvisoryLock({
+      namespace: 0x474f4944,
+      key: 1,
+      timeout: '25s',
+    })
+  })
   afterEach(async () => {
     vi.unstubAllEnvs()
     await googleOidcValkeyTrustStore.save({ keysById: {}, expiresAt: new Date(0) })
+  })
+  afterAll(async () => {
+    await trustLock?.release()
   })
 
   it('fails retryably when Pub/Sub identity is not configured', async () => {
@@ -38,7 +54,12 @@ describe('Google Play RTDN ingress route', () => {
       testNotification: { version: '1.0' },
     }
     const envelope = {
+      subscription: 'projects/synthetic/subscriptions/play-notifications',
+      deliveryAttempt: 1,
       message: {
+        attributes: { source: 'play' },
+        publishTime: '2026-01-01T00:00:00Z',
+        orderingKey: '',
         messageId: `synthetic-${randomUUID()}`,
         data: Buffer.from(JSON.stringify(notification)).toString('base64'),
       },
@@ -128,8 +149,8 @@ describe('Google Play RTDN ingress route', () => {
     })
   })
 
-  // Specialized ingress: the OIDC bearer and re-serialized raw envelope own validation, so the shared
-  // JSON contract adapter is intentionally absent. Body-parse failures stay 401 and never reach ingest.
+  // OIDC and protocol verification precede carrier validation. Body-parse failures
+  // stay 401 and never reach the authenticated carrier check.
   it('answers an oversized envelope with the specialized 401, not a schema 422', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     vi.stubEnv('GOOGLE_PLAY_PUBSUB_AUDIENCE', audience)

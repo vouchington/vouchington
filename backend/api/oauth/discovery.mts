@@ -1,6 +1,6 @@
 import app from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { setAnonymousPublicCacheHeaders } from '../response-helpers.mts'
+import { setAnonymousPublicCacheHeaders, validateRequestContract } from '../response-helpers.mts'
 import {
   buildOAuthAuthorizationServerMetadata,
   buildOAuthProtectedResourceMetadata,
@@ -27,6 +27,7 @@ app.route('/.well-known/oauth-protected-resource/api/v1/admin/mcp').get((ctx: Co
 app.route('/api/v1/oauth/native-clients/:app').get((ctx: Context) => {
   const nativeApp = NATIVE_OAUTH_CLIENT_APPS.find(app => app === ctx.params.app)
   ctx.assert(nativeApp, 404, 'Not Found')
+  validateRequestContract(ctx, 'GET:/api/v1/oauth/native-clients/:app', { path: ctx.params })
   sendDiscoveryDocument(ctx, getNativeOAuthClientDocument(nativeApp))
 })
 

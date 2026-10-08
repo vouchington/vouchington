@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import app from '../app.mts'
 import { unsubscribeEmailToken } from '@services/users'
+import { validateRequestContract } from '../response-helpers.mts'
 import { UNSUBSCRIBE_MEDIA_TYPES } from './unsubscribe-media-types.mts'
 
 app.route('/api/v1/email-unsubscribe').post(
@@ -13,6 +14,7 @@ app.route('/api/v1/email-unsubscribe').post(
         : typeof ctx.query.token === 'string'
           ? ctx.query.token
           : ''
+    validateRequestContract(ctx, 'POST:/api/v1/email-unsubscribe', { body: { token } })
     await unsubscribeEmailToken(token)
     ctx.json({ ok: true })
   },

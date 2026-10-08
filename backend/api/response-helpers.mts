@@ -4,6 +4,10 @@ import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
 import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 import { assertNotSuspended } from '@services/users/suspension-guard'
+import {
+  assertRequestContractOperation,
+  markRequestContractValidated,
+} from './request-contract-enforcement.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
@@ -104,7 +108,9 @@ export function validateRequestContract(
   operation: string,
   input: Parameters<RuntimeRequestValidatorRegistry['validateAuthenticated']>[1],
 ): void {
+  assertRequestContractOperation(ctx, operation)
   const error = RuntimeRequestValidatorRegistry.shared.validateAuthenticated(operation, input)
+  markRequestContractValidated(ctx)
   if (error) ctx.throw(422, error.message)
 }
 export async function parseJsonBody<T = unknown>(ctx: Context, maxSize = '1mb'): Promise<T> {

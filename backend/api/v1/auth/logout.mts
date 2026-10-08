@@ -26,6 +26,9 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   const dt = ctx.cookies.get('dt')
   const st = ctx.cookies.get('st')
   const binding = await parseLogoutPushBinding(ctx)
+  // Without a push binding this branch consumes no contract body carrier.
+  // Keep the optional-pair preconditions and their existing errors in the parser.
+  if (!binding) validateRequestContract(ctx, 'POST:/api/v1/auth/logout', {})
 
   if (dt && st) {
     const verified = await verifyDeviceAndSessionTokens({

@@ -19,6 +19,7 @@ describe('RuntimeRequestValidatorRegistry', () => {
         },
       },
       'POST:/api/v1/permissive': { body: { type: 'object', additionalProperties: true } },
+      'GET:/api/v1/no-input': {},
       'GET:/api/v1/items/:id': {
         path: {
           type: 'object',
@@ -53,6 +54,12 @@ describe('RuntimeRequestValidatorRegistry', () => {
 
   it('accepts permissive schemas', () => {
     expect(registry.validateBody('POST:/api/v1/permissive', { arbitrary: true })).toBeNull()
+  })
+
+  it('detects input carriers from the registry bundle passed to its constructor', () => {
+    expect(registry.hasInputCarriers('POST:/api/v1/items')).toBe(true)
+    expect(registry.hasInputCarriers('GET:/api/v1/no-input')).toBe(false)
+    expect(registry.hasInputCarriers('GET:/api/v1/unknown')).toBe(false)
   })
 
   it('normalizes Node-style lowercase headers against generated header contracts', () => {

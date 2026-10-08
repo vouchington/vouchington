@@ -17,6 +17,7 @@ import { isAdminUser } from '@services/users'
 import { isCopyrightMcpDecisionToolsEnabled } from '@services/copyright-notices/config'
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
 import { chargeMcpToolCalls } from './mcp-route-rate-limit-helpers.mts'
+import { validateRequestContract } from './response-helpers.mts'
 import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 
 // Stateless MCP Streamable HTTP for both MCP routes. The bearer credential (an OAuth access token,
@@ -95,6 +96,8 @@ export async function dispatchMcpRequest(
       }
 
       const parsedBody = await readBody(ctx, audit)
+      // The HTTP carrier is open; the MCP SDK still owns JSON-RPC and tool validation.
+      validateRequestContract(ctx, `POST:${config.routePath}`, { body: parsedBody })
       const user = buildMcpContextUser(owner)
       const copyrightDecisionToolsEnabled =
         config.audience === 'admin' ? await isCopyrightMcpDecisionToolsEnabled() : false

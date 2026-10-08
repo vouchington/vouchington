@@ -1,5 +1,6 @@
 /* oxlint-disable vitest/require-top-level-describe -- registered as a Vitest setupFile; the top-level vi.mock('@sentry/node') and beforeEach reset hook must register before worker preloads import onError's Sentry wrapper, so they cannot be wrapped in a describe block. */
-import { beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
+import { REQUEST_CONTRACT_VALIDATION_MISSING } from '../api/request-contract-enforcement.mts'
 
 // Mock the external @sentry/node SDK for the whole backend-mocks project.
 //
@@ -62,3 +63,16 @@ export const sentryCaptureMessageMock = sentryMocks.captureMessage
 export const sentryFlushMock = sentryMocks.flush
 export const sentryAddBreadcrumbMock = sentryMocks.addBreadcrumb
 export const sentrySuppressTracingMock = sentryMocks.suppressTracing
+
+// Already-started responses cannot become 500s. Fail the owning route test when
+// enforcement reported a skipped validator, even if its original response passed.
+afterEach(() => {
+  for (const [error] of sentryMocks.captureException.mock.calls) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      error.code === REQUEST_CONTRACT_VALIDATION_MISSING
+    )
+      throw error
+  }
+})
