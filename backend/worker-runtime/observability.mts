@@ -7,6 +7,7 @@ import {
   trackQueueWorkerJobCompletedEvent,
 } from '@services/analytics'
 import { WorkerLogger } from './logger.mts'
+import { formatErrorTree } from './format-error-tree.mts'
 import { scrubJobData } from './scrub-job-data.mts'
 import type { SqsConsumer, SqsMessage } from './sqs-consumer.mts'
 
@@ -113,7 +114,7 @@ function onFailed(worker: Worker, job: Job | undefined, error: Error) {
             ...(jobData && { job_data: jobData }),
           },
           getDuration(job),
-          error,
+          formatErrorTree(error),
         )
       }
     }

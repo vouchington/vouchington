@@ -104,6 +104,8 @@ numbers, UUID/ULID-shaped ids, and short enum-like strings pass through unchange
 capped at 32 (sorted) and arrays at 10 items, four levels deep, to bound payload size. Local
 development `WorkerLogger` still prints unscrubbed, truncated job data — that path is off on
 staging and production.
+The deployed `job failed:` line ends with the error's tree: every `AggregateError` entry and
+`cause`, bounded to 5 levels and 20 nested errors.
 
 ## See Also
 
