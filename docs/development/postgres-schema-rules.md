@@ -222,16 +222,19 @@ examples describe the review baseline, rather than the current generated snapsho
 - Every other FK column ends in its target's last word, singular: `individual_cards.card_id → topics`
   becomes `card_topic_id`, and `user_landing_page_items.review_id → posts` becomes `review_post_id`.
   Words the column's own table already implies may be dropped: `admin_import_rows.batch_id`
-  (pointing at `admin_import_batches`) stays. Two cases also pass: a column named after a non-`id`
-  referenced column (`github_user_id → github_accounts.github_user_id`), and `<x>_id` pointing at
-  `retained_<x>_identities`.
+  (pointing at `admin_import_batches`) stays. Two cases also pass for current tables: a column named
+  after a non-`id` referenced column (`github_user_id → github_accounts.github_user_id`), and
+  `<x>_id` pointing at `retained_<x>_identities`. The first case is a foreign key on an outside
+  key, which [R3](#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data) now forbids:
+  these keys are being converted to ids under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21). Don't add new ones.
 - **A column with a fixed set of values is an enum type or a foreign key to a lookup table, never
   `text`/`varchar`.** Today ≈90 text columns are pinned to string literals by a CHECK (12 of them to
   a single value), and 13 more (`post_admission_reservations.{route,scope,source,…}`,
   `agent_moderations.moderation_transparency_category`, …) have no constraint at all.
   - **Enum** when the values are defined in code and change only with a migration plus a code
     change (almost every case here).
-  - **Lookup table** (`<thing>_types` rows, FK column `<thing>_type_id` or the natural key) when
+  - **Lookup table** (`<thing>_types` rows, FK column `<thing>_type_id`) when
     rows carry attributes, or when new values arrive at runtime (`media_types`,
     `user_permission_types`, `user_role_types`).
   - Columns with the same values share one enum (12 groups today, e.g. the three
@@ -244,8 +247,12 @@ examples describe the review baseline, rather than the current generated snapsho
     sets them. An enum would reject a new value and lose the record.
     - A vendor we authenticate (`stripe_events.stripe_event_type_id`, `amazon_ses_bounce_events.amazon_ses_bounce_subtype_id`,
       `ai_usage_records.openai_service_tier_id`, `verified_identities.identity_document_type_id`): a lookup table that
-      the writer fills on first sight, using the `upsertMediaTypes` pattern
-      (`backend/services/urls/content-types.mts`: normalize, advisory lock, insert).
+      the writer fills on first sight. The table has a uuid `id` key, and the vendor string is a
+      unique column. The writer normalizes the string and gets the id with
+      `INSERT … ON CONFLICT … DO UPDATE … RETURNING id`. A no-op `DO UPDATE` makes `RETURNING`
+      give the id whether the row is new or already there. The existing `upsertMediaTypes` writer
+      (`backend/services/urls/media-types.mts`) is the model for the normalizing and the syntax
+      check.
     - MIME types (the 3 copyright email/evidence `mime_type` columns and
       `rss_feed_items.enclosure_type`): an FK to the one MIME lookup table. `media_types`
       becomes `media_types`, because it no longer holds only URL content types. The writer checks
@@ -328,6 +335,15 @@ This extends the prelaunch relational-storage rule.
 - A reference is an FK column or an FK child row. It is never a UUID array, a type/id pair, or an
   id inside JSON. The exception is a history document (R4 `changes jsonb`), which records
   ids as they were when it was written.
+- **Join on ids, never on text.** A string that comes from outside is a unique or generated column,
+  never a primary or foreign key: a vendor or external-account id, an edge or cache key, a slug, an
+  email address. Turn it into an id once, where it enters, and reference and join by that id from
+  then on. Keys are uuid ids, or enums for fixed value sets. Hashtag and category text matching is
+  the only exception, because the text itself is what is being matched. Looking up outside input by
+  its unique text (a slug, a hostname, a login token) is fine; joining tables on that text is not.
+  Existing code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
 - **A `uuid` column ending in `_id` belongs to a foreign key.** A single-column or a composite FK
   both count. Today (before the vote-table split) 72 columns have none. 69 of them don't point at a row that must exist, and
   each keeps its reason as a pattern exemption or an allow entry (NM-3 `postgres-column-naming` (jonathanong/no-mistakes#1057) `requireForeignKey`):
@@ -641,6 +657,20 @@ History details (decision 15):
   index.
 - Test existence with `EXISTS`, not `COUNT(*) > 0`. Use `NOT EXISTS`, not `NOT IN (SELECT…)`, which
   is also wrong when the subquery returns NULLs.
+- **A `view_*` view is read only by its key.** Searches, lists and pages pick their ids from base
+  tables with an index, then read the view by those ids. Never filter, sort, page or count on a
+  view's columns. If you do, the view computes every row before the page is cut, so the cost grows
+  with the table rather than the page. Totals and rankings across a whole table (platform stats,
+  trending) read precomputed results, such as a materialized view or maintained counters. Existing
+  code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
+- **Never bound ids in SQL with `uuidv7(...)`.** It is volatile, so a predicate that calls it is
+  only a filter: it can't use an index or skip partitions. Pass a bound computed in TypeScript
+  (`getMinUUIDv7ForDate`) as a parameter, or use a STABLE SQL helper that PostgreSQL can inline.
+  Existing code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
 - Tables, whatever their width, are read and returned with explicit column lists: no `SELECT *`,
   `alias.*` or `RETURNING *` (decision 21). A view may be read with `*`, because its column list
   is the reviewed contract. Enforced by `postgres-explicit-columns` (`maxColumns: 0`,
