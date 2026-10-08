@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { postPublicationWorkConfig } from './work-limits.mts'
 import {
   beginTransaction,
   createTestPost,
@@ -41,85 +43,109 @@ describe('bounded publication identity snapshots', () => {
     expect((await readTestPublicationReceipt(candidate.id))?.snapshotId).toBe(snapshot.snapshotId)
   })
   it('reuses the completed first post while the second post stages without advancing effects', async () => {
-    const { candidate, user } = await createSnapshotWork()
-    const second = await createTestPost({ user })
-    await insertTestPublicationTopicSlugFanout(second.id, user.id, 51)
-    await using query = await beginTransaction()
-    const pending = await recordPostPublicationChange(query, {
-      scope: { type: 'author', authorUserId: user.id },
-      reason: 'post_updated',
+    const snapshotLimit = 8
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      identity_snapshot_page_size: snapshotLimit,
     })
-    await query.commit()
-    const work = await claimPostPublicationDirtyWork(pending, 120)
-    if (!work) throw new Error('Expected author snapshot lease')
-    let page = await reconcilePostPublicationDirtyWork(work, 20)
-    expect(page.hasIncompleteSnapshots).toBe(true)
-    expect(page.topicIds).toHaveLength(0)
-    expect(page.identityKeys).toHaveLength(0)
-    const firstId = page.posts.find(post => post.id === candidate.id)?.identity_snapshot_id
-    expect(firstId).toBeTypeOf('string')
-    for (let attempt = 0; attempt < 10 && page.hasIncompleteSnapshots; attempt += 1) {
-      page = await reconcilePostPublicationDirtyWork(work, 20)
-      expect(page.posts.find(post => post.id === candidate.id)?.identity_snapshot_id).toBe(firstId)
+    onTestFinished(restore)
+    try {
+      const { candidate, user } = await createSnapshotWork()
+      const second = await createTestPost({ user })
+      await insertTestPublicationTopicSlugFanout(second.id, user.id, 5)
+      await using query = await beginTransaction()
+      const pending = await recordPostPublicationChange(query, {
+        scope: { type: 'author', authorUserId: user.id },
+        reason: 'post_updated',
+      })
+      await query.commit()
+      const work = await claimPostPublicationDirtyWork(pending, 120)
+      if (!work) throw new Error('Expected author snapshot lease')
+      let page = await reconcilePostPublicationDirtyWork(work, 20)
+      expect(page.hasIncompleteSnapshots).toBe(true)
+      expect(page.topicIds).toHaveLength(0)
+      expect(page.identityKeys).toHaveLength(0)
+      const firstId = page.posts.find(post => post.id === candidate.id)?.identity_snapshot_id
+      expect(firstId).toBeTypeOf('string')
+      for (let attempt = 0; attempt < 10 && page.hasIncompleteSnapshots; attempt += 1) {
+        page = await reconcilePostPublicationDirtyWork(work, 20)
+        expect(page.posts.find(post => post.id === candidate.id)?.identity_snapshot_id).toBe(
+          firstId,
+        )
+      }
+      expect(page.hasIncompleteSnapshots).toBe(false)
+      expect(page.posts.map(post => post.id)).toEqual([candidate.id, second.id].toSorted())
+      expect(page.posts.every(post => post.identity_snapshot_id !== undefined)).toBe(true)
+    } finally {
+      restore()
     }
-    expect(page.hasIncompleteSnapshots).toBe(false)
-    expect(page.posts.map(post => post.id)).toEqual([candidate.id, second.id].toSorted())
-    expect(page.posts.every(post => post.identity_snapshot_id !== undefined)).toBe(true)
   })
-  it('pages actual 1001 topic, slug and feed sources with exact eventual membership', async () => {
-    const user = await createTestUser()
-    if (!user) throw new Error('Expected fanout author')
-    const post = await createTestPost({ user })
-    const fixtures = await insertTestPublicationTopicSlugFanout(post.id, user.id, 1001)
-    const feedIds = await insertTestPublicationFeedFanout(post.id, user.id, fixtures.topicIds)
-    await using query = await beginTransaction()
-    const pending = await recordPostPublicationChange(query, {
-      scope: { type: 'post', postId: post.id },
-      reason: 'post_updated',
+  it('pages actual bounded topic, slug and feed sources with exact eventual membership', async () => {
+    const snapshotLimit = 3
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      identity_snapshot_page_size: snapshotLimit,
     })
-    await query.commit()
-    const work = await claimPostPublicationDirtyWork(pending, 120)
-    if (!work) throw new Error('Expected snapshot lease')
-    const [candidate] = await listPublicationCandidates(work, 1, [post.id])
-    if (!candidate) throw new Error('Expected snapshot candidate')
-    let previousCount = 0
-    let previousCursor: string | null = null
-    let snapshotId: string | undefined
-    let complete = false
-    for (let page = 0; page < 40; page += 1) {
-      const result = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
-      snapshotId ??= result.snapshotId
-      expect(result.snapshotId).toBe(snapshotId)
-      const stored = await readTestPublicationSnapshot(snapshotId)
-      expect(stored.keys.length - previousCount).toBeLessThanOrEqual(100)
-      expect(stored.keys.length).toBeGreaterThanOrEqual(previousCount)
-      expect(result.complete || stored.sourceCursor !== previousCursor).toBe(true)
-      previousCursor = stored.sourceCursor
-      previousCount = stored.keys.length
-      complete = result.complete
-      if (complete) break
+    onTestFinished(restore)
+    try {
+      const user = await createTestUser()
+      if (!user) throw new Error('Expected fanout author')
+      const post = await createTestPost({ user })
+      const fixtures = await insertTestPublicationTopicSlugFanout(
+        post.id,
+        user.id,
+        snapshotLimit + 1,
+      )
+      const feedIds = await insertTestPublicationFeedFanout(post.id, user.id, fixtures.topicIds)
+      await using query = await beginTransaction()
+      const pending = await recordPostPublicationChange(query, {
+        scope: { type: 'post', postId: post.id },
+        reason: 'post_updated',
+      })
+      await query.commit()
+      const work = await claimPostPublicationDirtyWork(pending, 120)
+      if (!work) throw new Error('Expected snapshot lease')
+      const [candidate] = await listPublicationCandidates(work, 1, [post.id])
+      if (!candidate) throw new Error('Expected snapshot candidate')
+      let previousCount = 0
+      let previousCursor: string | null = null
+      let snapshotId: string | undefined
+      let complete = false
+      for (let page = 0; page < 40; page += 1) {
+        const result = await materializePostPublicationIdentitySnapshot(work, candidate)
+        snapshotId ??= result.snapshotId
+        expect(result.snapshotId).toBe(snapshotId)
+        const stored = await readTestPublicationSnapshot(snapshotId)
+        expect(stored.keys.length - previousCount).toBeLessThanOrEqual(snapshotLimit)
+        expect(stored.keys.length).toBeGreaterThanOrEqual(previousCount)
+        expect(result.complete || stored.sourceCursor !== previousCursor).toBe(true)
+        previousCursor = stored.sourceCursor
+        previousCount = stored.keys.length
+        complete = result.complete
+        if (complete) break
+      }
+      expect(complete).toBe(true)
+      const stored = await readTestPublicationSnapshot(snapshotId!)
+      expect(
+        stored.keys
+          .filter(key => key.kind === 'topic')
+          .map(key => key.value)
+          .toSorted(),
+      ).toEqual(fixtures.topicIds.toSorted())
+      expect(stored.keys.filter(key => key.kind === 'post_slug').map(key => key.value)).toEqual(
+        expect.arrayContaining(fixtures.slugs),
+      )
+      expect(
+        stored.keys
+          .filter(key => key.kind === 'rss_feed')
+          .map(key => key.value)
+          .toSorted(),
+      ).toEqual(feedIds.toSorted())
+      expect(await materializePostPublicationIdentitySnapshot(work, candidate)).toEqual({
+        snapshotId,
+        complete: true,
+      })
+    } finally {
+      restore()
     }
-    expect(complete).toBe(true)
-    const stored = await readTestPublicationSnapshot(snapshotId!)
-    expect(
-      stored.keys
-        .filter(key => key.kind === 'topic')
-        .map(key => key.value)
-        .toSorted(),
-    ).toEqual(fixtures.topicIds.toSorted())
-    expect(stored.keys.filter(key => key.kind === 'post_slug').map(key => key.value)).toEqual(
-      expect.arrayContaining(fixtures.slugs),
-    )
-    expect(
-      stored.keys
-        .filter(key => key.kind === 'rss_feed')
-        .map(key => key.value)
-        .toSorted(),
-    ).toEqual(feedIds.toSorted())
-    expect(await materializePostPublicationIdentitySnapshot(work, candidate, 100)).toEqual({
-      snapshotId,
-      complete: true,
-    })
   })
   it('resumes interrupted pages and reuses a completed attempt', async () => {
     const { work, candidate } = await createSnapshotWork()
