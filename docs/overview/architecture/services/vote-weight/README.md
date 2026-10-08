@@ -22,7 +22,7 @@ A user's vote weight starts at `1.0` and is multiplied by factors based on the c
 - `adminSetVoteWeight(userId, weight)` — sets weight and stamps `vote_weight_admin_set_at`
 - `adminClearVoteWeight(userId)` — clears the admin override; caller should enqueue recalculation
 - `enqueueElectionUpdatesForUser(userId)` — re-enqueues election stats jobs for all entities the user has voted on and returns the IDs of jobs actually submitted
-- `findUsersNeedingVoteWeightRecalculation(afterId, limit)` — cursor-based scan for users whose weight is stale relative to age thresholds or current membership authority
+- `findUsersNeedingVoteWeightRecalculation(afterId, limit, options?)` — cursor-based scan for users whose weight is stale relative to age thresholds or current membership authority. Internal callers may supply a reference `now` and at most 100 validated, deduplicated `userIds` for targeted batches; empty selections return no work. Omitted time keeps the database transaction clock, and omitted IDs retain the normal full-population scan. Selected scans keep the same ascending cursor and next-cursor protocol
 
 ## Access Control
 
