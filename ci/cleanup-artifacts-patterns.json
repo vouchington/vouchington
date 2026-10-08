@@ -9,6 +9,7 @@
     "postgresql-snapshot-*",
     "web-build-timings-*",
     "backend-junit-shard-*",
+    "retained-relation-bootstrap-*",
     "backend-modules-junit",
     "tooling-junit",
     "ts-shared-junit",
