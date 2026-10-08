@@ -28,7 +28,7 @@ describe('list routes - request contract validation', () => {
       .send({ name: `Validation ${createRandomString(8)}`, visibility: 'public' })
       .expect(201)
     listId = created.body.list.id
-  }, 60_000)
+  }, 5_000)
 
   describe('anonymous callers', () => {
     it.each([

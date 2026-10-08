@@ -14,7 +14,7 @@ describe('feed routes - request contract validation', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 60_000)
+  }, 5_000)
 
   describe.each(feeds)('$kind feed', ({ kind, path }) => {
     it('returns 401 without a validation diagnostic for an anonymous caller', async () => {
