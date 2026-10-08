@@ -17,23 +17,12 @@ Repo-scoped Claude Code configuration. Each subdirectory is loaded by Claude Cod
 ## Required agent plugins
 
 The approved workflow skills are portable plugin skills with thin Vouchington adapters, not copied
-implementations. Claude Code project settings register the `vouchington` and `jonathanong`
-marketplaces and enable the workflow, testing, database, security-triage, and pr-shepherd plugins. Claude prompts for
-the required trust/install consent on first use:
-
-```bash
-# Claude Code
-claude plugin marketplace add vouchington/vouchington-tooling --scope project --sparse .claude-plugin plugins
-claude plugin marketplace add jonathanong/pr-shepherd --scope project
-claude plugin install vouchington-workflow@vouchington --scope project
-claude plugin install vouchington-testing@vouchington --scope project
-claude plugin install vouchington-database@vouchington --scope project
-claude plugin install security-triage@vouchington --scope project
-claude plugin install pr-shepherd@jonathanong --scope project
-```
-
-Claude Code reads the project settings when it starts from this repository. After approving the
-marketplace trust prompt, restart Claude Code and verify provisioning before using an adapter:
+implementations. No repository file declares a plugin or marketplace: vouchington-machines enables
+the workflow, testing, database, security-triage, and pr-shepherd plugins and registers the
+`vouchington` and `jonathanong` marketplaces in each machine's user settings (`./configure-agents.sh`,
+then `./diagnose-agents.sh --repo <worktree>`). Claude prompts for the required trust/install consent
+on first use, and installs a newly enabled plugin in the background, so the first session after
+configuring may not have it yet. Verify provisioning before using an adapter:
 
 ```bash
 claude plugin marketplace list
@@ -45,12 +34,25 @@ claude plugin details security-triage@vouchington
 claude plugin details pr-shepherd@jonathanong
 ```
 
-The commands must show both marketplaces and all five installed plugins. The project declarations
+The commands must show both marketplaces and all five installed plugins. The machine declarations
 are intentionally unversioned; marketplace updates resolve the current plugin manifest. If any
-entry is missing or reports a load error, run the explicit install commands above.
-Restart Claude Code from the repository root, then verify again. The checked-in settings declare
-the required plugins; user trust and local installation state remain environment-owned and cannot
-be completed by a repository test.
+entry is missing or reports a load error, rerun the machine configuration, or install by hand into
+user scope, never project scope, which would write a declaration into this repository:
+
+```bash
+claude plugin marketplace add vouchington/vouchington-tooling --scope user --sparse .claude-plugin plugins
+claude plugin marketplace add jonathanong/pr-shepherd --scope user
+claude plugin install vouchington-workflow@vouchington --scope user
+claude plugin install vouchington-testing@vouchington --scope user
+claude plugin install vouchington-database@vouchington --scope user
+claude plugin install security-triage@vouchington --scope user
+claude plugin install pr-shepherd@jonathanong --scope user
+```
+
+Restart Claude Code from the repository root, then verify again. User trust and local installation
+state remain environment-owned and cannot be completed by a repository test. A Claude cloud session
+has no plugins: each adapter then reads the installed
+`node_modules/vouchington-tooling/skills/<name>/SKILL.md` copy of its canonical skill.
 
 The upstream workflow, testing, and database plugins each ship one canonical `skills/` tree
 through both their `.claude-plugin` and `.codex-plugin` manifests. Claude Code and Codex adapters

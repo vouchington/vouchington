@@ -1,18 +1,63 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-// This test is the mechanical guard (three-surface consistency + narrowness). For the rationale
-// behind which command families stay excluded vs. sandboxed — why gh/docker/pnpm/mutating-git need
-// the OS-sandbox bypass, and why read-only git is deliberately left excluded too — see
+// Host runtime policy (sandbox, approvals, models, status line, plugins, MCP servers) belongs to the
+// user's agent config, which vouchington-machines writes. This project owns hooks, narrow
+// permissions, deny rules, worktree setup, and the sandbox exclusions for its own dev/ scripts; the
+// project permissions and Codex rules below are what these guards cover. Rationale:
 // docs/development/agent-sandbox.md.
 
 const repoFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const repoPathExists = (path: string) => existsSync(new URL(`../${path}`, import.meta.url))
 
-const claudeSettings = JSON.parse(repoFile('.claude/settings.json')) as {
-  permissions: { allow: string[] }
-  sandbox: { excludedCommands: string[]; filesystem: { allowWrite: string[] } }
+const claudeSettings = JSON.parse(repoFile('.claude/settings.json')) as Record<string, unknown> & {
+  permissions: { allow: string[] } & Record<string, unknown>
+  sandbox?: { excludedCommands?: string[] } & Record<string, unknown>
 }
+const codexConfig = repoFile('.codex/config.toml')
 const codexRules = repoFile('.codex/rules/default.rules')
+
+const CLAUDE_MACHINE_KEYS = [
+  'model',
+  'effortLevel',
+  'advisorModel',
+  'statusLine',
+  'useAutoModeDuringPlan',
+  'env',
+  'enabledPlugins',
+  'extraKnownMarketplaces',
+  'enabledMcpjsonServers',
+  'mcpServers',
+]
+const CODEX_MACHINE_KEYS = [
+  'sandbox_mode',
+  'sandbox_workspace_write',
+  'default_permissions',
+  'permissions',
+  'approval_policy',
+  'approvals_reviewer',
+  'model',
+  'model_reasoning_effort',
+  'plan_mode_reasoning_effort',
+  'model_provider',
+  'model_providers',
+  'notify',
+  'mcp_servers',
+  'plugins',
+  'marketplaces',
+]
+
+// Top-level keys and table roots of a TOML document, enough to see whether a key is present.
+function tomlRoots(source: string): string[] {
+  const roots = new Set<string>()
+  for (const line of source.split('\n')) {
+    const table = /^\s*\[\[?\s*([A-Za-z0-9_-]+)/u.exec(line)
+    const key = /^([A-Za-z0-9_-]+)\s*=/u.exec(line)
+    const root = table?.[1] ?? key?.[1]
+    if (root) roots.add(root)
+  }
+  return [...roots]
+}
 
 const codexRuleFor = (pattern: string[]) =>
   `prefix_rule(pattern=${JSON.stringify(pattern).replaceAll(',', ', ')}, decision="allow")`
@@ -37,57 +82,74 @@ function codexAllowPrefixes(source: string): string[] {
   })
 }
 
-function claudeExclusionCoversPrefix(exclusion: string, prefix: string): boolean {
-  if (exclusion.endsWith(' *')) {
-    const command = exclusion.slice(0, -2)
-    return !command.includes('*') && (prefix === command || prefix.startsWith(`${command} `))
-  }
-  // A Codex prefix also allows appended arguments. Claude's exact entry covers only the bare
-  // command, so the corresponding trailing-wildcard exclusion must exist for full containment.
-  return false
-}
+describe('host runtime policy stays out of the project', () => {
+  it('keeps machine-owned keys out of Claude settings', () => {
+    const present = CLAUDE_MACHINE_KEYS.filter(key => key in claudeSettings)
+    if ('defaultMode' in claudeSettings.permissions) present.push('permissions.defaultMode')
+    expect(present).toEqual([])
+  })
 
-function unmatchedCodexAllows(source: string, excludedCommands: string[]): string[] {
-  return codexAllowPrefixes(source).filter(
-    prefix => !excludedCommands.some(exclusion => claudeExclusionCoversPrefix(exclusion, prefix)),
-  )
-}
+  it('keeps only dev/ script exclusions in the Claude sandbox block', () => {
+    // The 19 generic exclusions (git, gh, docker, pnpm, npx tools, ps) are machine policy.
+    expect(Object.keys(claudeSettings.sandbox ?? {})).toEqual(['excludedCommands'])
+    const excluded = claudeSettings.sandbox?.excludedCommands ?? []
+    expect(excluded.filter(entry => !/^(?:\.\/dev\/|node dev\/)/u.test(entry))).toEqual([])
+  })
 
-describe('agent sandbox configuration', () => {
-  it('keeps one mechanically guarded Codex rules source', () => {
+  it('keeps machine-owned keys out of Codex config', () => {
+    expect(tomlRoots(codexConfig).filter(key => CODEX_MACHINE_KEYS.includes(key))).toEqual([])
+  })
+
+  it('has no Cursor or Grok sandbox profile and no native hook source', () => {
+    const present = [
+      '.cursor/sandbox.json',
+      '.grok/sandbox.toml',
+      // Cursor and Grok load .claude/settings.json through Claude-compat; a native hook file
+      // double-fires.
+      '.cursor/hooks.json',
+      '.grok/hooks',
+    ].filter(repoPathExists)
+    expect(present).toEqual([])
+  })
+
+  it('keeps sandbox and approval choices out of the Cursor CLI config', () => {
+    const cli = JSON.parse(repoFile('.cursor/cli.json')) as Record<string, unknown>
+    expect(['sandbox', 'approvalMode', 'model'].filter(key => key in cli)).toEqual([])
+  })
+
+  it('tests the key scanner against a fixture', () => {
+    expect(
+      tomlRoots('# note\nsandbox_mode = "x"\n[sandbox_workspace_write]\n[[hooks.PreToolUse]]\n'),
+    ).toEqual(['sandbox_mode', 'sandbox_workspace_write', 'hooks'])
+  })
+})
+
+describe('Cursor worktree setup', () => {
+  it('uses a setup-worktree command array, not a unix script-path array', () => {
+    const config = JSON.parse(repoFile('.cursor/worktrees.json')) as {
+      'setup-worktree'?: unknown
+      'setup-worktree-unix'?: unknown
+    }
+
+    expect(config['setup-worktree-unix']).toBeUndefined()
+    expect(config['setup-worktree']).toEqual(['./dev/initialize monorepo'])
+  })
+
+  it('ignores Cursor worktree runtime state', () => {
+    expect(repoFile('.gitignore')).toContain('.cursor/worktrees')
+  })
+})
+
+describe('Codex project rules', () => {
+  it('keeps one mechanically guarded rules source', () => {
     const ruleFiles = readdirSync(new URL('../.codex/rules/', import.meta.url))
       .filter(path => path.endsWith('.rules'))
       .toSorted()
     expect(ruleFiles).toEqual(['default.rules'])
   })
 
-  it('covers every Codex unsandboxed allow with a Claude sandbox exclusion', () => {
-    expect(codexAllowPrefixes(codexRules).length).toBeGreaterThan(0)
-    expect(unmatchedCodexAllows(codexRules, claudeSettings.sandbox.excludedCommands)).toEqual([])
-  })
-
-  it('rejects a deliberate Codex-only sandbox bypass', () => {
-    const rules = `${codexRuleFor(['pnpm', 'exec'])}\n${codexRuleFor(['pnpm', 'dlx'])}`
-    expect(unmatchedCodexAllows(rules, ['pnpm exec *'])).toEqual(['pnpm dlx'])
-  })
-
-  it('requires trailing wildcards at command boundaries', () => {
-    const rules = [
-      ['node', 'dev/example.mts'],
-      ['git', 'log'],
-      ['git-log'],
-      ['pnpm', 'exec'],
-      ['pnpm', 'execute'],
-      ['npx', 'vitest'],
-    ]
-      .map(codexRuleFor)
-      .join('\n')
-    expect(
-      unmatchedCodexAllows(rules, ['node dev/example.mts', 'git *', 'pnpm exec *', 'npx *test']),
-    ).toEqual(['node dev/example.mts', 'git-log', 'pnpm execute', 'npx vitest'])
-  })
-
   it('parses every rule and fails closed on unsupported prefix syntax', () => {
+    expect(codexAllowPrefixes(codexRules).length).toBeGreaterThan(0)
     expect(
       codexAllowPrefixes(
         '# comment\n prefix_rule( pattern = ["git", "log"], decision = "allow" ) # comment\nprefix_rule(pattern=["git"], decision="forbidden")\n',
@@ -104,10 +166,7 @@ describe('agent sandbox configuration', () => {
     )
   })
 
-  // The Claude review-skip for dev/ commands (the blanket rules plus a narrow allow rule for each
-  // dev/ entry below) is pinned in claude-settings-dev-allow.test.mts; these tests cover only OS
-  // escalation and Codex.
-  it('excludes all official dev/ scripts from the Claude sandbox and pre-approves them in Codex', () => {
+  it('pre-approves each official dev/ script', () => {
     const scripts = [
       './dev/initialize',
       './dev/tmux',
@@ -123,38 +182,25 @@ describe('agent sandbox configuration', () => {
       './dev/unstick-locks',
       './dev/valkey-logs',
     ]
-    for (const script of scripts) {
-      const excludedCommands = claudeSettings.sandbox.excludedCommands
-      expect(excludedCommands).toContain(script)
-      expect(excludedCommands).toContain(`${script} *`)
-      expect(codexRules).toContain(codexRuleFor([script]))
+    for (const script of scripts) expect(codexRules).toContain(codexRuleFor([script]))
+    expect(codexRules).toContain(codexRuleFor(['node', 'dev/pr-description.mts']))
+  })
+
+  it('does not allow broad bare git, gh, or npx bypasses', () => {
+    for (const pattern of [['git'], ['gh'], ['rtk'], ['npx']]) {
+      expect(codexRules).not.toContain(codexRuleFor(pattern))
     }
+    expect(claudeSettings.permissions.allow).not.toContain('Bash(npx *)')
   })
 
-  it('does not allow broad bare git/gh sandbox bypasses', () => {
-    expect(codexRules).not.toContain(codexRuleFor(['git']))
-    expect(codexRules).not.toContain(codexRuleFor(['gh']))
-    expect(codexRules).not.toContain(codexRuleFor(['rtk']))
-  })
-
-  it('allows the specific npx tool invocations used by the local dev loop', () => {
-    const npxTools = ['pr-shepherd', 'vitest', 'oxlint', 'oxfmt', 'no-mistakes']
-    for (const tool of npxTools) {
-      const allow = claudeSettings.permissions.allow
-      const excludedCommands = claudeSettings.sandbox.excludedCommands
-      expect(allow).toContain(`Bash(npx ${tool} *)`)
-      expect(excludedCommands).toContain(`npx ${tool} *`)
+  it('allows the specific npx tool invocations used by the local dev loop in both agents', () => {
+    for (const tool of ['pr-shepherd', 'vitest', 'oxlint', 'oxfmt', 'no-mistakes']) {
+      expect(claudeSettings.permissions.allow).toContain(`Bash(npx ${tool} *)`)
       expect(codexRules).toContain(codexRuleFor(['npx', tool]))
     }
   })
 
-  it('does not allow a broad bare npx sandbox bypass', () => {
-    expect(claudeSettings.permissions.allow).not.toContain('Bash(npx *)')
-    expect(claudeSettings.sandbox.excludedCommands).not.toContain('npx *')
-    expect(codexRules).not.toContain(codexRuleFor(['npx']))
-  })
-
-  it('keeps the remaining git/gh prefixes', () => {
+  it('keeps the remaining git and gh prefixes', () => {
     for (const pattern of [
       ['git', 'log'],
       ['git', 'fetch'],
@@ -172,7 +218,8 @@ describe('agent sandbox configuration', () => {
     }
   })
 
-  it('does not pre-approve the review-bypass git/gh families removed from Claude allow', () => {
+  it('does not pre-approve the review-bypass git, gh, or pnpm families', () => {
+    const normalizedRules = codexRules.replace(/\s+/g, ' ')
     for (const pattern of [
       ['git', 'rebase'],
       ['git', 'stash'],
@@ -180,36 +227,25 @@ describe('agent sandbox configuration', () => {
       ['gh', 'run'],
       ['gh', 'api'],
       ['gh', 'workflow'],
-    ]) {
-      const normalizedRules = codexRules.replace(/\s+/g, ' ')
-      expect(normalizedRules).not.toContain(codexRuleFor(pattern))
-    }
-  })
-
-  it('keeps broad arbitrary pnpm execution forms on the sandboxed path', () => {
-    for (const pattern of [
       ['pnpm', 'dlx'],
       ['pnpm', '--filter'],
       ['pnpm', '--dir'],
     ]) {
-      expect(codexRules).not.toContain(codexRuleFor(pattern))
+      expect(normalizedRules).not.toContain(codexRuleFor(pattern))
     }
-    expect(claudeSettings.sandbox.excludedCommands).not.toContain('pnpm --dir *')
   })
 
-  it('allows the bare pr-shepherd CLI invocation across all three surfaces', () => {
-    expect(claudeSettings.permissions.allow).toContain('Bash(pr-shepherd *)')
-    expect(claudeSettings.sandbox.excludedCommands).toContain('pr-shepherd *')
+  it('allows the bare pr-shepherd and no-mistakes CLIs in Claude and Codex', () => {
+    const allow = claudeSettings.permissions.allow
+    expect(allow).toContain('Bash(pr-shepherd *)')
+    expect(allow).toContain('Bash(no-mistakes)')
+    expect(allow).toContain('Bash(no-mistakes *)')
+    expect(allow).toContain('Bash(pnpm exec no-mistakes *)')
     expect(codexRules).toContain(codexRuleFor(['pr-shepherd']))
-    expect(claudeSettings.permissions.allow).toContain('Bash(no-mistakes)')
-    expect(claudeSettings.permissions.allow).toContain('Bash(no-mistakes *)')
-    expect(claudeSettings.permissions.allow).toContain('Bash(pnpm exec no-mistakes *)')
-    expect(claudeSettings.sandbox.excludedCommands).toContain('no-mistakes')
-    expect(claudeSettings.sandbox.excludedCommands).toContain('no-mistakes *')
     expect(codexRules).toContain(codexRuleFor(['no-mistakes']))
   })
 
-  it('allows the required agent-blackboard snapshot commands in Claude', () => {
+  it('allows the agent-blackboard snapshot commands the distill skill runs', () => {
     expect(claudeSettings.permissions.allow).toContain(
       'Bash(pnpm exec agent-blackboard snapshot partition *)',
     )
@@ -218,38 +254,13 @@ describe('agent sandbox configuration', () => {
     )
   })
 
-  it('excludes the pr-description dev script from the Claude sandbox and allows them in Codex', () => {
-    const scripts = ['dev/pr-description.mts']
-    for (const script of scripts) {
-      const excludedCommands = claudeSettings.sandbox.excludedCommands
-      expect(excludedCommands).toContain(`node ${script}`)
-      expect(excludedCommands).toContain(`node ${script} *`)
-      expect(codexRules).toContain(codexRuleFor(['node', script]))
-    }
-  })
-
-  it('allows `ps aux` process introspection across all three surfaces', () => {
+  it('allows `ps aux` process introspection in Claude and Codex', () => {
     expect(claudeSettings.permissions.allow).toContain('Bash(ps aux)')
     expect(claudeSettings.permissions.allow).toContain('Bash(ps aux *)')
-    expect(claudeSettings.sandbox.excludedCommands).toContain('ps aux')
-    expect(claudeSettings.sandbox.excludedCommands).toContain('ps aux *')
     expect(codexRules).toContain(codexRuleFor(['ps', 'aux']))
   })
 
-  it('grants macOS /tmp and /var write roots under their resolved /private paths too', () => {
-    const allowWrite = claudeSettings.sandbox.filesystem.allowWrite
-    const symlinkedRoots = allowWrite.filter(root => /^\/(?:tmp|var)(?:\/|$)/u.test(root))
-
-    expect(symlinkedRoots).toContain('/tmp')
-    for (const root of symlinkedRoots) expect(allowWrite).toContain(`/private${root}`)
-  })
-
-  it('allows the pnpm install and test families across the Claude sandbox and Codex', () => {
-    const excludedCommands = claudeSettings.sandbox.excludedCommands
-    for (const command of ['pnpm install', 'pnpm test']) {
-      expect(excludedCommands).toContain(command)
-      expect(excludedCommands).toContain(`${command} *`)
-    }
+  it('allows the pnpm install and test families in Codex', () => {
     for (const pattern of [
       ['pnpm', 'install'],
       ['pnpm', 'test'],

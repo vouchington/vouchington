@@ -18,11 +18,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   `--approve-mcps`). Search for `journal_append` before concluding the server is unavailable.
 - CLI allow/deny tokens: [`cli.json`](../../../.cursor/cli.json). Auto-review guidance:
   [`permissions.json`](../../../.cursor/permissions.json).
-- OS sandbox: [`sandbox.json`](../../../.cursor/sandbox.json). Matches Codex `workspace-write`
-  extra writable roots (pnpm store, pnpm cache/state, no-mistakes cache, cargo,
-  macOS temp) and allows outbound network. Private/RFC1918 and
-  localhost stay hard-blocked by Cursor, so Docker, Postgres, Valkey, and local
-  stack commands still need unsandboxed runs — see
+- OS sandbox: no project file. The user's `~/.cursor/cli-config.json` (vouchington-machines) selects
+  the sandbox mode. Private/RFC1918 and localhost stay hard-blocked by Cursor, so Docker, Postgres,
+  Valkey, and local stack commands still need unsandboxed runs — see
   [start-of-work.md](../../../.agents/skills/agent-workflow/start-of-work.md).
 - Agents Window / `agent --worktree` setup: [`worktrees.json`](../../../.cursor/worktrees.json)
   runs `./dev/initialize monorepo` through the generic `setup-worktree`

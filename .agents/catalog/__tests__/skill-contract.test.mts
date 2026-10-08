@@ -119,44 +119,35 @@ describe('Vouchington workflow skill adapters', () => {
     expect(skill).toContain('isValidSessionId')
   })
 
-  it('documents the required upstream plugins for both Claude and Codex', () => {
+  it('documents the machine-installed upstream plugins and declares none in the project', () => {
     const claudeReadme = read('.claude/README.md')
     const codexReadme = read('.codex/README.md')
-    const claudeSettings = JSON.parse(read('.claude/settings.json')) as {
-      enabledPlugins: Record<string, boolean>
-      extraKnownMarketplaces: Record<string, unknown>
-    }
+    const claudeSettings = JSON.parse(read('.claude/settings.json')) as Record<string, unknown>
     const parity = read('docs/development/agent-harness-parity.md')
+    const plugins = [
+      'vouchington-workflow@vouchington',
+      'vouchington-testing@vouchington',
+      'vouchington-database@vouchington',
+      'security-triage@vouchington',
+      'pr-shepherd@jonathanong',
+    ]
 
-    expect(claudeReadme).toContain('claude plugin install vouchington-workflow@vouchington')
-    expect(claudeReadme).toContain('claude plugin install vouchington-testing@vouchington')
-    expect(claudeReadme).toContain('claude plugin install vouchington-database@vouchington')
-    expect(claudeReadme).toContain('claude plugin install security-triage@vouchington')
-    expect(claudeReadme).toContain('claude plugin install pr-shepherd@jonathanong')
+    for (const plugin of plugins) {
+      expect(claudeReadme).toContain(`claude plugin details ${plugin}`)
+      expect(claudeReadme).toContain(`claude plugin install ${plugin} --scope user`)
+    }
+    for (const plugin of plugins.map(name => name.split('@')[0])) {
+      expect(codexReadme).toContain(`\`${plugin}\``)
+    }
+    expect(codexReadme).toContain('install-dependencies.sh')
+    expect(codexReadme).not.toContain('codex plugin add')
+    expect(codexReadme).not.toContain('codex plugin marketplace add')
     expect(claudeReadme).toContain('claude plugin marketplace list')
-    expect(claudeReadme).toContain('claude plugin details vouchington-workflow@vouchington')
-    expect(claudeReadme).toContain('claude plugin details vouchington-testing@vouchington')
-    expect(claudeReadme).toContain('claude plugin details vouchington-database@vouchington')
-    expect(claudeReadme).toContain('claude plugin details security-triage@vouchington')
-    expect(claudeReadme).toContain('claude plugin details pr-shepherd@jonathanong')
+    expect(claudeReadme).not.toContain('--scope project')
     expect(claudeReadme).toContain('`.claude-plugin`')
     expect(claudeReadme).toContain('`.codex-plugin`')
-    expect(codexReadme).toContain('codex plugin add vouchington-workflow@vouchington')
-    expect(codexReadme).toContain('codex plugin add vouchington-testing@vouchington')
-    expect(codexReadme).toContain('codex plugin add vouchington-database@vouchington')
-    expect(codexReadme).toContain('codex plugin add security-triage@vouchington')
-    expect(codexReadme).toContain('codex plugin add pr-shepherd@jonathanong')
-    expect(claudeSettings.enabledPlugins['vouchington-workflow@vouchington']).toBe(true)
-    expect(claudeSettings.enabledPlugins['vouchington-testing@vouchington']).toBe(true)
-    expect(claudeSettings.enabledPlugins['vouchington-database@vouchington']).toBe(true)
-    expect(claudeSettings.enabledPlugins['security-triage@vouchington']).toBe(true)
-    expect(claudeSettings.enabledPlugins['pr-shepherd@jonathanong']).toBe(true)
-    expect(claudeSettings.extraKnownMarketplaces.vouchington).toEqual({
-      source: { repo: 'vouchington/vouchington-tooling', source: 'github' },
-    })
-    expect(claudeSettings.extraKnownMarketplaces.jonathanong).toEqual({
-      source: { repo: 'jonathanong/pr-shepherd', source: 'github' },
-    })
+    expect(claudeSettings).not.toHaveProperty('enabledPlugins')
+    expect(claudeSettings).not.toHaveProperty('extraKnownMarketplaces')
     expect(parity).toContain('vouchington-workflow plugin')
     expect(parity).toContain('vouchington-testing plugin')
     expect(parity).toContain('vouchington-database plugin')

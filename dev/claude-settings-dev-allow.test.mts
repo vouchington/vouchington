@@ -8,10 +8,11 @@ import { plainForcePushReason } from './plain-force-push.mts'
 
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
-// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
-// that leaves the OS sandbox also keeps a narrow allow rule, because auto mode may drop the blanket
-// ones and Claude Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain
-// spelling of a path that escapes dev/. Rationale:
+// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command in
+// `sandbox.excludedCommands` (the only project sandbox key; the rest of the sandbox is machine
+// policy) also keeps a narrow allow rule, because auto mode may drop the blanket ones and Claude
+// Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain spelling of a
+// path that escapes dev/. Rationale:
 // docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
@@ -53,6 +54,18 @@ describe('Claude review-skip for dev/ commands', () => {
     expect(allowPatterns.filter(isDevCommand).toSorted()).toEqual(
       ['./dev/*', 'node dev/*', ...unsandboxedDevCommands].toSorted(),
     )
+  })
+
+  it('excludes only dev/ scripts from the sandbox, each as an exact entry plus a wildcard twin', () => {
+    const excluded = claudeSettings.sandbox.excludedCommands
+    expect(excluded.length).toBeGreaterThan(0)
+    for (const entry of excluded) {
+      const command = entry.endsWith(' *') ? entry.slice(0, -2) : entry
+      expect(isDevCommand(command)).toBe(true)
+      expect(entry).not.toContain('..')
+      expect(excluded).toContain(command)
+      expect(excluded).toContain(`${command} *`)
+    }
   })
 
   it.each([
