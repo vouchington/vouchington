@@ -46,6 +46,7 @@ export async function cleanupRetainedMediaBindings(
     : null
   const { rows: candidates } = await query<{ placement_id: string; image_id: string }>(
     `/* listRetainedMediaBindingCleanupCandidates */
+     -- no-mistakes-disable-next-line postgres-required-predicates: the first cleanup page may have neither a placement-ID list nor a cursor
      SELECT placement_id, image_id FROM retained_image_placement_bindings
      WHERE (
        $1::uuid[] IS NOT NULL AND placement_id = ANY($1::uuid[])

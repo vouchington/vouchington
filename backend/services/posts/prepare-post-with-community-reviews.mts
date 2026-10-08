@@ -3,6 +3,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import createHttpError from 'http-errors'
 import type { CommunityPostReview } from '@services/communities/types'
 import { getPostByAny } from './get.mts'
@@ -93,6 +94,7 @@ export const preparePostWithCommunityReviews = async (
         SELECT COALESCE(
           (
             SELECT NULLIF(TRIM(rfi.data->>'title'), '')
+            -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
             FROM rss_feed_items rfi
             WHERE rfi.url_id = ${updates.url_id}
               AND rfi.deleted_at IS NULL
@@ -103,6 +105,7 @@ export const preparePostWithCommunityReviews = async (
             SELECT NULLIF(TRIM(c.title), '')
             FROM crawls c
             WHERE c.url_id = ${updates.url_id}
+              AND c.id >= ${getMinUUIDv7ForParentHistory(updates.url_id)}::uuid
               AND c.completed_at IS NOT NULL
               AND c.network_error IS NULL
               AND c.response_status_code BETWEEN 200 AND 299

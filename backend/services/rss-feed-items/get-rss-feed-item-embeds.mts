@@ -58,6 +58,7 @@ export async function getRssFeedItemEmbedsByItems(
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_url ELSE NULL END AS embed_oembed_url,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_resolved_at ELSE NULL END AS embed_oembed_resolved_at
       FROM canonical_urls cu
+      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through joins; no bound URL ID is supplied for crawl history
       JOIN crawls c ON c.url_id = cu.canonical_id
       WHERE c.completed_at IS NOT NULL AND c.network_error IS NULL
         AND c.response_status_code BETWEEN 200 AND 299
@@ -121,6 +122,7 @@ export async function getRssFeedItemEmbedsByItems(
         END AS display_player_height,
         (c.embed_oembed_resolved_at IS NOT NULL) AS display_embed_metadata_resolved
       FROM canonical_urls cu
+      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through joins; no bound URL ID is supplied for crawl history
       JOIN crawls c ON c.url_id = cu.canonical_id
       WHERE c.completed_at IS NOT NULL AND c.network_error IS NULL
         AND c.response_status_code BETWEEN 200 AND 299

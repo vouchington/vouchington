@@ -2,6 +2,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { Post } from './types.mts'
 import { read, type TransactionQuery } from '@data-stores/psql'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { createPost, preparePostWithCommunityReviews } from './create.mts'
 
@@ -80,6 +81,7 @@ async function resolveLinkPostTitle(urlId: string): Promise<string> {
       COALESCE(
         (
           SELECT NULLIF(TRIM(rfi.data->>'title'), '')
+          -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
           FROM rss_feed_items rfi
           WHERE rfi.url_id = ${urlId}
             AND rfi.deleted_at IS NULL
@@ -90,6 +92,7 @@ async function resolveLinkPostTitle(urlId: string): Promise<string> {
           SELECT NULLIF(TRIM(c.title), '')
           FROM crawls c
           WHERE c.url_id = ${urlId}
+            AND c.id >= ${getMinUUIDv7ForParentHistory(urlId)}::uuid
             AND c.completed_at IS NOT NULL
             AND c.network_error IS NULL
             AND c.response_status_code BETWEEN 200 AND 299

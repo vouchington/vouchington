@@ -22,12 +22,14 @@ only defines query-writing and verification rules.
   their configured target column.
 - Voter-only deletion/export has no target key and intentionally scans each range. Preserve the
   per-child `user_id` indexes and keep explicit partition counts modest.
-- `session_referral_attributions` reads bound `session_id`, `referrer_user_id`, or `user_id` — none of
-  which constrain `id` — so they will probe every child once explicit ranges are attached; costs
-  nothing today with the default-only launch layout. `getNetworkEffects` already bounds
-  `id > $periodStartUuid` and prunes correctly. `deleteOldReferralAttributionBatch()` binds
-  `id < cutoffId` and will also prune correctly once explicit ranges exist — the batch-delete path
-  benefits most from pruning since it is the highest-volume reader.
+- `session_referral_attributions` create, delete, converted-row, and signup-update queries filter
+  `referrer_user_id` and bound `id >= getMinUUIDv7ForParentHistory(referrerId)`: the referrer user
+  exists before attribution insert, and `referrer_user_id` is never reassigned (deletion only sets it
+  to null). Session-only and converted-user lookups lack that parent bound and intentionally probe
+  every child once explicit ranges are attached. The default-only launch layout has one child.
+  `getNetworkEffects` already bounds `id > $periodStartUuid` and prunes correctly.
+  `deleteOldReferralAttributionBatch()` binds `id < cutoffId` and will also prune correctly once
+  explicit ranges exist; the batch-delete path benefits most because it is the highest-volume reader.
 
 ## Plan Verification
 

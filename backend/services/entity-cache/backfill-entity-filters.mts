@@ -7,7 +7,9 @@ export async function backfillPostsBloomFilter(): Promise<void> {
   const { posts } = entityCacheBloomFilters
   const [{ rows: r1 }, { rows: r2 }] = await Promise.all([
     read(
-      '/* backfillPostsBloomFilter */ SELECT COUNT(*)::int AS count FROM posts WHERE deleted_at IS NULL',
+      `/* backfillPostsBloomFilter */
+      -- no-mistakes-disable-next-line postgres-required-predicates: Bloom filter capacity must count all live entity IDs across partitions
+      SELECT COUNT(*)::int AS count FROM posts WHERE deleted_at IS NULL`,
       [],
     ),
     read('/* backfillPostsBloomFilter */ SELECT COUNT(*)::int AS count FROM post_slugs', []),
@@ -135,7 +137,9 @@ async function* communitiesKeysFromDb(): AsyncGenerator<string> {
 export async function backfillRssFeedItemsBloomFilter(): Promise<void> {
   const { rss_feed_items } = entityCacheBloomFilters
   const { rows } = await read(
-    '/* backfillRssFeedItemsBloomFilter */ SELECT COUNT(*)::int AS count FROM rss_feed_items WHERE deleted_at IS NULL',
+    `/* backfillRssFeedItemsBloomFilter */
+    -- no-mistakes-disable-next-line postgres-required-predicates: Bloom filter capacity must count all live entity IDs across partitions
+    SELECT COUNT(*)::int AS count FROM rss_feed_items WHERE deleted_at IS NULL`,
     [],
   )
   const count = rows[0]?.count ?? 0

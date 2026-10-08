@@ -11,6 +11,7 @@ export async function getEngagement(_range: GrowthRange, periodStart: Date): Pro
       SELECT
         COUNT(*)::INT AS cnt,
         DATE(uuid_extract_timestamp(id)) AS day
+      -- no-mistakes-disable-next-line postgres-required-predicates: engagement aggregates a time window across target post_id partitions
       FROM post_votes
       WHERE id > ${periodStartUuid}
         AND score IS NOT NULL

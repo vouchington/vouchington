@@ -31,6 +31,7 @@ export async function reconcilePostContentNotificationVisibility(
 
   const { rowCount } = await client.query(
     `/* pruneIneligiblePostContentNotifications */
+      -- no-mistakes-disable-next-line postgres-required-predicates: publication visibility reconciliation updates notifications for every recipient user_id
       UPDATE notifications notification
       SET deleted_at = CURRENT_TIMESTAMP,
           delete_reason = 'system_pruned'
@@ -66,6 +67,7 @@ export async function reconcileRssFeedItemContentNotificationVisibility(
 
   const { rowCount } = await client.query(
     `/* pruneIneligibleRssFeedItemContentNotifications */
+      -- no-mistakes-disable-next-line postgres-required-predicates: publication visibility reconciliation updates notifications for every recipient user_id
       UPDATE notifications notification
       SET deleted_at = CURRENT_TIMESTAMP,
           delete_reason = 'system_pruned'
@@ -87,6 +89,7 @@ async function restoreSystemPrunedManualPostNotifications(
 ): Promise<void> {
   await client.query(
     `/* restoreSystemPrunedManualPostNotifications */
+      -- no-mistakes-disable-next-line postgres-required-predicates: publication visibility reconciliation updates notifications for every recipient user_id
       UPDATE notifications notification
       SET deleted_at = NULL,
           delete_reason = NULL
@@ -105,6 +108,7 @@ async function restoreSystemPrunedManualRssFeedItemNotifications(
 ): Promise<void> {
   await client.query(
     `/* restoreSystemPrunedManualRssFeedItemNotifications */
+      -- no-mistakes-disable-next-line postgres-required-predicates: publication visibility reconciliation updates notifications for every recipient user_id
       UPDATE notifications notification
       SET deleted_at = NULL,
           delete_reason = NULL

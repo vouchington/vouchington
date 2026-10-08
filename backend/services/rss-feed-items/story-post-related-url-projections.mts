@@ -30,6 +30,7 @@ export async function markStoryPostRelatedUrlProjectionsForStories(
         SELECT post_stories.post_id, post_stories.story_id,
           (
             SELECT rss_feed_items.id
+            -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
             FROM rss_feed_items
             WHERE rss_feed_items.story_id = post_stories.story_id
               AND rss_feed_items.deleted_at IS NULL

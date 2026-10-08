@@ -40,8 +40,8 @@ export async function lockPost(
       WHERE p.id = ${postId}
         AND p.deleted_at IS NULL
       RETURNING
-        (SELECT community_id FROM posts WHERE id = post_id) AS community_id,
-        (SELECT created_by_id FROM posts WHERE id = post_id) AS created_by_id
+        (SELECT community_id FROM posts WHERE id = post_locks.post_id) AS community_id,
+        (SELECT created_by_id FROM posts WHERE id = post_locks.post_id) AS created_by_id
       `,
     )
     return rows[0] ?? null

@@ -37,6 +37,7 @@ async function readStoryRepresentatives(
     LEFT JOIN stories story ON story.id = wanted.story_id AND story.deleted_at IS NULL
     LEFT JOIN LATERAL (
       SELECT candidate.id
+      -- no-mistakes-disable-next-line postgres-required-predicates: candidate items were created before their story cluster and span item-ID partitions
       FROM rss_feed_items candidate
       CROSS JOIN rss_feed_items subject
       WHERE subject.id = ${subjectItemId}

@@ -22,6 +22,7 @@ export async function getUrlEmbedByUrlId(
         rfi.media_type::text AS media_type, rfi.video_id, rfi.video_platform,
         rfi.enclosure_url, enclosure_media_type.mime_type AS enclosure_type, rfi.duration_seconds, rfi.thumbnail_url,
         NULLIF(TRIM(rfi.data->>'player_url'), '') AS rss_player_url, NULLIF(TRIM(rfi.data->>'title'), '') AS item_title
+      -- no-mistakes-disable-next-line postgres-required-predicates: RSS item URL can change on upsert, so an item may predate its current url_id
       FROM rss_feed_items rfi
       LEFT JOIN media_types enclosure_media_type ON enclosure_media_type.id = rfi.enclosure_media_type_id
       WHERE rfi.url_id = ${urlId}
@@ -59,6 +60,7 @@ export async function getUrlEmbedByUrlId(
         CASE WHEN ${access === 'administrator'} THEN c.meta_tags ELSE NULL END AS meta_tags,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_url ELSE NULL END AS embed_oembed_url,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_resolved_at ELSE NULL END AS embed_oembed_resolved_at
+      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through a join and may differ from the supplied URL; no bound canonical URL ID exists in this query
       FROM crawls c
       CROSS JOIN canonical_url cu
       WHERE c.url_id = cu.id
@@ -124,6 +126,7 @@ export async function getUrlEmbedByUrlId(
           ELSE NULL
         END AS display_player_height,
         (c.embed_oembed_resolved_at IS NOT NULL) AS display_embed_metadata_resolved
+      -- no-mistakes-disable-next-line postgres-required-predicates: canonical URL is derived through a join and may differ from the supplied URL; no bound canonical URL ID exists in this query
       FROM crawls c
       CROSS JOIN canonical_url cu
       WHERE c.url_id = cu.id

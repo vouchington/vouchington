@@ -105,6 +105,7 @@ export async function getCommunityAgentPromptFalsePositiveEstimate(
           AND cpr.rejected_at IS NULL
           AND p.approved_at IS NOT NULL
       )::integer AS historical_approved_count
+    -- no-mistakes-disable-next-line postgres-required-predicates: a prompt/community simulation totals flagged moderation history across post_id partitions
     FROM agent_moderations am
     JOIN community_agent_prompts cap ON cap.id = am.prompt_id
     LEFT JOIN view_posts p ON p.id = am.post_id

@@ -25,6 +25,7 @@ export async function getStoryWithItemCount(
       s.deleted_at,
       COUNT(rfi.id)::int AS item_count
     FROM stories s
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
     LEFT JOIN rss_feed_items rfi ON rfi.story_id = s.id AND rfi.deleted_at IS NULL
     WHERE s.id = ${id}
       AND s.deleted_at IS NULL
@@ -43,6 +44,7 @@ export async function getStoryItemIds(
   const { rows } = await read(
     sql`/* getStoryItemIds */
     SELECT id
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
     FROM rss_feed_items
     WHERE story_id = ${storyId}
       AND deleted_at IS NULL
@@ -114,6 +116,7 @@ export async function getStoryItemSummaries(
         )
         ORDER BY rfi.published_at ASC
       ) FILTER (WHERE rfi.data->>'title' IS NOT NULL AND rfi.data->>'title' <> '') AS item_summaries
+    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
     FROM rss_feed_items rfi
     WHERE rfi.story_id = ${storyId}
       AND rfi.deleted_at IS NULL

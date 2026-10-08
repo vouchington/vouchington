@@ -38,6 +38,7 @@ export async function reconcilePostVoteDrift(
   const query = sql`/* reconcilePostVoteDrift */
     WITH sample AS (
       SELECT id
+      -- no-mistakes-disable-next-line postgres-required-predicates: the newest-N sample has an unbounded first page and spans post-ID partitions
       FROM posts
       WHERE deleted_at IS NULL
         AND (${samplePostIds}::uuid[] IS NULL OR id = ANY(${samplePostIds}::uuid[]))

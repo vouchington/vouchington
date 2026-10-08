@@ -18,6 +18,7 @@ export async function markStoryPostRelatedUrlProjection(
   }>(
     `/* markStoryPostRelatedUrlProjection:highWater */
       SELECT
+        -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
         (SELECT id FROM rss_feed_items
          WHERE story_id = $1 AND deleted_at IS NULL
          ORDER BY id DESC LIMIT 1) AS sweep_upper_bound_source_id,

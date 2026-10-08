@@ -50,6 +50,7 @@ async function readTopicResults(
       effective_lower_threshold::float8 AS effective_lower_threshold,
       effective_upper_threshold::float8 AS effective_upper_threshold, raw_response,
       scope_category, scope_community_id, topic_id AS entity_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: decision batch results span topic_id partitions; only batch_id is supplied
     FROM topic_classifier_results
     WHERE batch_id = ${batchId}
     ORDER BY topic_id

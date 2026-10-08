@@ -579,6 +579,13 @@ Known gaps:
   relative path is not matched and is not scanned by any rule.
 - A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
   inside the scope are not tracked. The repository has no such site today.
+- An optional executor expression such as `(options?.query ?? read)(sql)` is not tracked; the
+  existing `getCommunityMemberBatch` table-wide select is a repro for `postgres-explicit-columns`.
+- Cursor helpers such as `createAsyncGeneratorFromCursor` and
+  `executeHandlerWithCursorInBatches` are not executor calls recognized by these rules. For example,
+  `postKeysFromDb` and `rssFeedItemsKeysFromDb` scan partitioned tables by cursor without an `id`
+  bound. Their full-history bloom-filter rebuild is intentional, but the configured
+  `postgres-required-predicates` rule does not inspect these SQL arguments.
 
 The two `postgres-lock-ordering` entries split the backend by catalog coverage. The catalog entry
 covers production code and also requires deterministic ordering. The entry without a catalog scans

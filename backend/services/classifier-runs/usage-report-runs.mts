@@ -86,6 +86,7 @@ export async function readClassifierRunUsage(
       (SELECT count(*)::int FROM classifier_decision_calls call
         WHERE call.batch_id = run.decision_batch_id) AS shard_count,
       (SELECT count(*)::int FROM (
+        -- no-mistakes-disable-next-line postgres-required-predicates: batch-wide usage counts results for every topic_id partition
         SELECT 1 FROM topic_classifier_results result
           WHERE result.batch_id = run.decision_batch_id
         UNION ALL
