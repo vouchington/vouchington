@@ -105,7 +105,13 @@ const entityCase = (
 })
 
 export const entityProvenanceApiFixtureCases: ApiFixtureCase[] = [false, true].flatMap(staff => [
-  entityCase('communities', '/api/v1/communities', { q: 'test' }, communitySearch(staff), staff),
+  entityCase(
+    'communities',
+    '/api/v1/communities',
+    { q: 'test', limit: '20' },
+    communitySearch(staff),
+    staff,
+  ),
   entityCase('topics', '/api/v1/topics', { q: 'test' }, topicSearch(staff), staff),
   entityCase('lists', '/api/v1/lists', { limit: '25' }, entityPage('list', listRows(staff)), staff),
   entityCase('rss-feeds', '/api/v1/rss-feeds', { limit: '25' }, rssFeedSearch(staff), staff),

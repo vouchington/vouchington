@@ -90236,6 +90236,7 @@
       "migratedFrom": [],
       "path": "/api/v1/communities",
       "query": {
+        "limit": "20",
         "q": "test"
       },
       "responseSchema": {
@@ -90332,6 +90333,7 @@
       "migratedFrom": [],
       "path": "/api/v1/communities",
       "query": {
+        "limit": "20",
         "q": "test"
       },
       "responseSchema": {
