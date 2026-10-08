@@ -75,7 +75,7 @@ describe('handler.og', () => {
         ),
       captureCacheWriteError: vi.fn<(error: unknown) => void>(),
       authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
-        async dependencies => dependencies.map(() => 'unknown'),
+        async dependencies => ({ states: dependencies.map(() => 'unknown'), cacheable: true }),
       ),
     }
 
@@ -126,7 +126,7 @@ describe('handler.og', () => {
       { source: mockEnvConfig, sideload: mockSideloadConfig },
       {
         ...dependencies,
-        authorizeDependencies: async () => ['allow'],
+        authorizeDependencies: async () => ({ states: ['allow'], cacheable: true }),
       },
     )
     const event = createMockOgEvent({
@@ -178,6 +178,7 @@ describe('handler.og', () => {
 
     expect(result.statusCode).toBe(200)
     expect(dependencies.fetchImageFromS3).not.toHaveBeenCalled()
+    expect(result.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
   })
 
   it('falls back to an initial-letter avatar when no avatarImageId is present', async () => {
@@ -202,7 +203,7 @@ describe('handler.og', () => {
       { source: mockEnvConfig, sideload: mockSideloadConfig },
       {
         ...dependencies,
-        authorizeDependencies: async () => ['allow'],
+        authorizeDependencies: async () => ({ states: ['allow'], cacheable: true }),
       },
     )
     const event = createMockOgEvent({

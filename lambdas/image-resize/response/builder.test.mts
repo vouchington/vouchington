@@ -88,6 +88,14 @@ describe('buildResponse', () => {
     expect(response.headers?.['Cache-Control']).toBe('public, max-age=31536000, immutable')
   })
 
+  it('overrides cache control for an uncertain successful render', () => {
+    const response = buildResponse(200, Buffer.from('image'), 'png', {
+      cacheControl: 'no-store',
+    })
+    expect(response.headers?.['Cache-Control']).toBe('no-store')
+    expect(response.headers?.['Content-Type']).toBe('image/png')
+  })
+
   it('should not cache error responses', () => {
     const response = buildResponse(404, 'Not found')
 

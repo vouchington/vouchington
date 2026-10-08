@@ -3,6 +3,7 @@ import { buildSideloadImageUrl } from './index.mts'
 import {
   authorizeDependencyStates,
   firstPartyMediaBlockedHosts,
+  getImagePlacementDeliveryKey,
   isCurrentSideloadRoute,
   isFirstPartyMediaUrl,
   isPlacementSourcePolicy,
@@ -60,6 +61,18 @@ describe('media source policy', () => {
     expect(() =>
       parseMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'true' }),
     ).toThrow('Invalid MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE')
+  })
+
+  it('builds the exact image placement registry key', () => {
+    expect(
+      getImagePlacementDeliveryKey({
+        placementId: '018f6b2e-7c3a-7b2a-8c11-6a5e4d3c2b1a',
+        revision: 2,
+        imageId: '018f6b2e-7c3a-7b2a-9c11-6a5e4d3c2b1a',
+      }),
+    ).toBe(
+      'image-placement:018f6b2e-7c3a-7b2a-8c11-6a5e4d3c2b1a:2:018f6b2e-7c3a-7b2a-9c11-6a5e4d3c2b1a',
+    )
   })
 
   it('blocks configured image origins and ignores an unparsable host alias', () => {

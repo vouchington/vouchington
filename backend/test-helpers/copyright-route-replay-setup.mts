@@ -6,7 +6,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
-import { getImagePlacementDeliveryKey } from '../services/media-delivery-safety/delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'

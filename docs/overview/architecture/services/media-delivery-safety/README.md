@@ -111,9 +111,13 @@ The exact observed marker token is acknowledged before a separate scheduled, cur
 orphan sweep may remove an unreferenced binding and then its image root. A committed registry
 reference keeps those identities pinned; cleanup never authorizes a route.
 
-OG cards carry signed placement tuples in their URL. Until the image-resize Lambda reads the
-edge registry (#1097), it treats every dependency as `unknown` and drops the avatar. A card
-with no dependencies needs no placement authority lookup.
+OG cards carry signed placement tuples in their URL. On a cache miss, the image-resize Lambda
+reads each tuple's current state from the DynamoDB edge registry and embeds the avatar only
+when every dependency is allowed. An unavailable authority lookup drops the avatar and returns
+`Cache-Control: no-store`. On a cache hit, the `/og/*` viewer-request check authorizes the same
+tuples before CloudFront serves the card. Both reads run only in `enforce` mode; in `off` and
+`report`, the Lambda drops avatars and does not read the registry. A card without dependencies
+needs no registry read and stays cacheable.
 
 ```mermaid
 flowchart LR

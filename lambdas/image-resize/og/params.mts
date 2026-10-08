@@ -42,7 +42,7 @@ function requireStringArray(obj: Record<string, unknown>, key: string): string[]
   return value.slice(0, MAX_TOP_CATEGORIES)
 }
 
-const MAX_OG_DEPENDENCIES = 4
+export const MAX_OG_DEPENDENCIES = 4
 
 function readDependencies(obj: Record<string, unknown>): PlacementSourcePolicy[] {
   const value = obj.dependencies

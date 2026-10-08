@@ -6,6 +6,7 @@ export {
   TRANSFORMED_SIDELOAD_CACHE_PREFIX,
   authorizeDependencyStates,
   firstPartyMediaBlockedHosts,
+  getImagePlacementDeliveryKey,
   isCurrentSideloadRoute,
   isFirstPartyMediaUrl,
   isPlacementSourcePolicy,

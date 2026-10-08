@@ -70,7 +70,7 @@ describe('handler.sideload', () => {
           .mockRejectedValue(new HttpOperationError('Mock sideload fetch failure', 500)),
         captureCacheWriteError: vi.fn<(error: unknown) => void>(),
         authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
-          async dependencies => dependencies.map(() => 'unknown'),
+          async dependencies => ({ states: dependencies.map(() => 'unknown'), cacheable: true }),
         ),
       }
 

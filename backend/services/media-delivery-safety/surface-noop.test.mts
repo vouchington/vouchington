@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { processMediaDeliveryRegistryRecord } from './index.mts'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { updateCommunity } from '../communities/update.mts'
 import { getTopicByAny } from '../topics/get.mts'
 import { updateTopic } from '../topics/update.mts'

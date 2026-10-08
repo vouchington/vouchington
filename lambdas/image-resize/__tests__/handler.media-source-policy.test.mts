@@ -67,7 +67,7 @@ describe('media source policy before cache delivery', () => {
           contentType: 'image/jpeg',
         }),
       captureCacheWriteError: vi.fn<(error: unknown) => void>(),
-      authorizeDependencies: async () => ['allow'],
+      authorizeDependencies: async () => ({ states: ['allow'], cacheable: true }),
     }
     handler = createLambdaHandler(environments, dependencies)
   })
@@ -112,7 +112,7 @@ describe('media source policy before cache delivery', () => {
   it('does not read avatar bytes for an unknown or withheld dependency', async () => {
     const denied = createLambdaHandler(environments, {
       ...dependencies,
-      authorizeDependencies: async () => ['unknown'],
+      authorizeDependencies: async () => ({ states: ['unknown'], cacheable: true }),
     })
     const event = {
       path: `/og/${toBase64Url(

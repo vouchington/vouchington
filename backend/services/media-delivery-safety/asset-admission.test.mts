@@ -15,7 +15,7 @@ import {
   setTestDeliveryUserImageInTransaction,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   lockImageAssetAdmission,
   lockImageDeliveryMutation,

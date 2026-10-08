@@ -13,6 +13,8 @@ export async function handleOgRequest(
   config: EnvironmentConfig,
   dependencies: OgRenderDependencies,
 ): Promise<APIGatewayProxyResult> {
-  const png = await renderOgImage(request.params, config, dependencies)
-  return buildResponse(200, png, 'png')
+  const { png, cacheable } = await renderOgImage(request.params, config, dependencies)
+  return buildResponse(200, png, 'png', {
+    cacheControl: cacheable ? undefined : 'no-store',
+  })
 }

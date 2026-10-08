@@ -33,6 +33,7 @@ export function buildResponse(
   statusCode: number,
   body: Buffer | string,
   format?: OutputFormat,
+  options: { cacheControl?: string } = {},
 ): APIGatewayProxyResult {
   if (Buffer.isBuffer(body) && body.byteLength > MAX_API_GATEWAY_IMAGE_BYTES) {
     return buildErrorResponse(413, 'Rendered image exceeds maximum response size')
@@ -40,7 +41,7 @@ export function buildResponse(
   const isBuffer = Buffer.isBuffer(body)
   const isSuccess = statusCode >= 200 && statusCode < 300
 
-  const headers = responseHeaders(isSuccess, isBuffer, format)
+  const headers = responseHeaders(isSuccess, isBuffer, format, options.cacheControl)
 
   return {
     statusCode,
@@ -54,10 +55,12 @@ function responseHeaders(
   isSuccess: boolean,
   isBuffer: boolean,
   format?: OutputFormat,
+  cacheControl?: string,
 ): Record<string, string> {
   const headers: Record<string, string> = {
     'Cross-Origin-Resource-Policy': 'cross-origin',
-    'Cache-Control': isSuccess ? 'public, max-age=31536000, immutable' : 'no-store',
+    'Cache-Control':
+      cacheControl ?? (isSuccess ? 'public, max-age=31536000, immutable' : 'no-store'),
   }
   if (isBuffer && format) {
     headers['Content-Type'] = FORMAT_TO_CONTENT_TYPE[format]

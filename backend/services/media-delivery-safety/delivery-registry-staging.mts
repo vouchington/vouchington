@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 
 /** @public Post-image registry staging seam exercised against real PostgreSQL placements. */
 export async function stagePostImagePlacementDeliveryRecords(

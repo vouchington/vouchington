@@ -41,6 +41,7 @@
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/media": "^0.2.0",
     "http-assert": "^1.5.0",

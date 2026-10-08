@@ -15,7 +15,7 @@ import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entit
 import { listTestMediaDeliveryCoverageGaps } from '@voucha/test-helpers/media-delivery-coverage'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { processMediaDeliveryRegistryRecord, stageImagePlacementDeliveryRecord } from './index.mts'
 
 const RUNBOOK = join(

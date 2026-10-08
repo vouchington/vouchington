@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
-import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,

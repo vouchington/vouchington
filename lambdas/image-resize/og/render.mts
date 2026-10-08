@@ -1,13 +1,10 @@
 import satori from 'satori'
 import sharp from 'sharp'
-import {
-  authorizeDependencyStates,
-  type DependencyAuthorization,
-  type PlacementSourcePolicy,
-} from '@ts-shared/url-signing'
+import { authorizeDependencyStates, type PlacementSourcePolicy } from '@ts-shared/url-signing'
 import type { EnvironmentConfig } from '../config.mts'
 import type { createS3Client, fetchImageFromS3 } from '../s3/index.mts'
 import type { OgParams } from './params.mts'
+import type { OgDependencyAuthorizationResult } from './authorize.mts'
 import { loadInterFonts } from './fonts.mts'
 import { resolveAvatarDataUri } from './avatar.mts'
 import { buildGenericCardNode } from './generic-card.mts'
@@ -19,7 +16,7 @@ export interface OgRenderDependencies {
   fetchImageFromS3: typeof fetchImageFromS3
   authorizeDependencies: (
     dependencies: readonly PlacementSourcePolicy[],
-  ) => Promise<readonly DependencyAuthorization[]>
+  ) => Promise<OgDependencyAuthorizationResult>
 }
 
 // OG cards render fresh on every invocation instead of going through
@@ -35,10 +32,10 @@ export async function renderOgImage(
   params: OgParams,
   config: EnvironmentConfig,
   dependencies: OgRenderDependencies,
-): Promise<Buffer> {
+): Promise<{ png: Buffer; cacheable: boolean }> {
   const fonts = loadInterFonts()
 
-  const avatarDataUri = await authorizedAvatarDataUri(params, config, dependencies)
+  const { avatarDataUri, cacheable } = await authorizedAvatarDataUri(params, config, dependencies)
 
   const node =
     params.type === 'generic'
@@ -57,17 +54,28 @@ export async function renderOgImage(
     fonts,
   })
 
-  return sharp(Buffer.from(svg)).png().toBuffer()
+  return { png: await sharp(Buffer.from(svg)).png().toBuffer(), cacheable }
 }
 
 async function authorizedAvatarDataUri(
   params: OgParams,
   config: EnvironmentConfig,
   dependencies: OgRenderDependencies,
-): Promise<string | undefined> {
-  if (params.type !== 'landing' || params.dependencies.length === 0) return undefined
-  const states = await dependencies.authorizeDependencies(params.dependencies)
-  if (states.length !== params.dependencies.length) return undefined
-  if (authorizeDependencyStates(states) !== 'allow') return undefined
-  return resolveAvatarDataUri(params.dependencies[0]!.imageId, config, dependencies)
+): Promise<{ avatarDataUri?: string; cacheable: boolean }> {
+  if (params.type !== 'landing' || params.dependencies.length === 0) {
+    return { cacheable: true }
+  }
+  try {
+    const { states, cacheable } = await dependencies.authorizeDependencies(params.dependencies)
+    if (states.length !== params.dependencies.length) return { cacheable: false }
+    if (authorizeDependencyStates(states) !== 'allow') return { cacheable }
+    const avatarDataUri = await resolveAvatarDataUri(
+      params.dependencies[0]!.imageId,
+      config,
+      dependencies,
+    )
+    return { avatarDataUri, cacheable }
+  } catch {
+    return { cacheable: false }
+  }
 }
