@@ -37,7 +37,7 @@ describe('search', () => {
     for (const item of upsertedItems) {
       await addDummyEmbeddingToRssFeedItem(item.id, { embedding: MOCK_EMBEDDING })
     }
-  }, 60_000)
+  }, 5_000)
 
   describe('toolsSearchRssFeedItemIds', () => {
     beforeEach(() => {
