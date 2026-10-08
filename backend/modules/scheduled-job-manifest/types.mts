@@ -69,9 +69,6 @@ export type ScheduledJobDefinition = {
    * when a sub-minute cadence has no justification. No job is justified today.
    */
   subMinuteJustification?: string
-  stagingHourlyFloor?: {
-    bypassJustification: string
-  }
 }
 
 export type ScheduledJobManifest = {

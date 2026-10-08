@@ -17,9 +17,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'reconcileStoryPostRelatedUrlProjections',
     registration: 'sequential',
     repeat: { every: 300_000 },
-    stagingHourlyFloor: {
-      bypassJustification: 'Five-minute recovery bounds durable story URL projection.',
-    },
     template: {
       name: 'processReconcileStoryPostRelatedUrlProjections' as StoryPostRelatedUrlProjectionJobs,
       data: {},

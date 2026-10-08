@@ -12,9 +12,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'reconcile-post-publication',
     registration: 'sequential',
     repeat: { every: 300_000 },
-    stagingHourlyFloor: {
-      bypassJustification: 'Five-minute recovery bounds immutable publication change work.',
-    },
     template: {
       name: 'processReconcilePostPublication',
       data: {},

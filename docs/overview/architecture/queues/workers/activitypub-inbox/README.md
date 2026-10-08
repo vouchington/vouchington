@@ -24,7 +24,8 @@ minutes.
 Storage is independently bounded from queue retry. Unverified envelopes expire one hour after
 receipt and are rejected at 10,000 rows or 256 MiB of exact `raw_body` bytes. Verified operational
 failures expire seven days after the immutable first failure, including across manual rearm.
-`cleanupExpiredDeliveries` runs every five minutes, deletes unverified rows before verified
+`cleanupExpiredDeliveries` runs every five minutes (hourly on staging; see the
+[storage policy](../../../backend/modules/activitypub-inbox-storage-policy/README.md)), deletes unverified rows before verified
 failures, skips active leases younger than thirty minutes, and commits at most twenty 500-row
 `FOR UPDATE SKIP LOCKED` batches. It runs ahead of delivery and recovery work so a saturated queue
 cannot delay reclaiming expired capacity. Each batch and successful-run storage snapshot is

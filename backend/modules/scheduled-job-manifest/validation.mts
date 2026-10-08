@@ -1,5 +1,4 @@
 import type { ScheduledJobManifest } from './types.mts'
-import { validateStagingHourlyFloorBypass } from './staging-hourly-floor-validation.mts'
 
 export function validateScheduledJobManifests(manifests: readonly ScheduledJobManifest[]): void {
   const schedulerKeys = new Set<string>()
@@ -26,16 +25,6 @@ export function validateScheduledJobManifests(manifests: readonly ScheduledJobMa
           job.repeat,
           `${manifest.queueName}/${job.schedulerId}`,
           job.subMinuteJustification,
-        )
-        validateStagingHourlyFloorBypass(
-          job,
-          job.repeat,
-          `${manifest.queueName}/${job.schedulerId}`,
-        )
-      }
-      if (job.stagingHourlyFloor !== undefined && job.environment === 'production') {
-        throw new Error(
-          `${manifest.queueName}/${job.schedulerId} cannot bypass the staging hourly floor when environment is production`,
         )
       }
       if (job.operatorSurfaces.length === 0) {

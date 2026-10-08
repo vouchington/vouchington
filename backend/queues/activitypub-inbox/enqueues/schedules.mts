@@ -41,10 +41,6 @@ export const scheduledJobManifest = defineScheduledJobManifest('activitypub-inbo
   {
     schedulerId: 'activitypub-inbox-cleanup',
     repeat: { every: CLEANUP_INTERVAL_MS },
-    stagingHourlyFloor: {
-      bypassJustification:
-        'Unverified ActivityPub storage is security-bounded to one hour and must be reclaimed promptly.',
-    },
     template: {
       name: 'cleanupExpiredDeliveries',
       data: {},
