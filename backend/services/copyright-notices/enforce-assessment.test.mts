@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { assertLeadingQueryAnnotation } from '@vouchington/postgres'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import {
   enforceCopyrightAssessment,
   searchPendingCopyrightEnforcementAssessmentIds,
@@ -86,6 +88,10 @@ async function createEnforcementFixture() {
 }
 
 describe('copyright assessment enforcement', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('imposes nothing for an assessment that was rejected before enforcement runs', async () => {
     const { assessment, moderator, notice, submission } = await createEnforcementFixture()
     await appendCopyrightSubmissionAssessment({
@@ -143,4 +149,43 @@ describe('copyright assessment enforcement', () => {
     await expect(listed()).resolves.toEqual([])
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
   })
+
+  it('annotates every statement while enforcing an owed assessment under the production contract', async () => {
+    const { assessment, notice } = await createEnforcementFixture()
+    enableProductionAnnotationContract()
+
+    const { queries } = await withCapturedTestQueries(() =>
+      enforceCopyrightAssessment(assessment.id),
+    )
+
+    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
+    expect(queries.length).toBeGreaterThan(0)
+    for (const { text } of queries) assertLeadingQueryAnnotation(text, {})
+    expect(
+      queries.some(({ text }) => text.startsWith('/* readFirstOwedCopyrightEnforcementTarget */')),
+    ).toBe(true)
+  })
+
+  it('pages owned pending assessments under the production annotation contract', async () => {
+    const { assessment } = await createEnforcementFixture()
+    enableProductionAnnotationContract()
+
+    const { result, queries } = await withCapturedTestQueries(() =>
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+    )
+
+    expect(result).toEqual([assessment.id])
+    expect(queries.length).toBeGreaterThan(0)
+    for (const { text } of queries) assertLeadingQueryAnnotation(text, {})
+    expect(
+      queries.some(({ text }) =>
+        text.startsWith('/* searchPendingCopyrightEnforcementAssessmentIds */'),
+      ),
+    ).toBe(true)
+  })
 })
+
+function enableProductionAnnotationContract() {
+  vi.stubEnv('NODE_ENV', 'development')
+  vi.stubEnv('VITEST', 'false')
+}

@@ -11,7 +11,8 @@ export type AutomaticEnforcementScope = Date | 'all' | null
 
 /**
  * Builds `SELECT <select> FROM ... WHERE ...` over every unrestricted target a notice assessment
- * still owes. Callers append their own filter, ordering and limit.
+ * still owes. Callers append their own filter, ordering and limit; callers executing this fragment
+ * alone prepend a leading query annotation.
  *
  * An assessment owes its notice's targets when it is a current, compliant notice assessment whose
  * screening is current and whose form has no rejected review. A target is owed until it has any

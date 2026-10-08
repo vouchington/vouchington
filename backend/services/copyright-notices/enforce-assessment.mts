@@ -53,11 +53,16 @@ async function readFirstOwedTarget(
   automaticSince: Date | null,
 ): Promise<OwedTarget | undefined> {
   const { rows } = await write<OwedTarget>(
-    pendingCopyrightEnforcementSql(
-      `target.id AS target_id, submission.copyright_notice_id AS notice_id,
+    sql`/* readFirstOwedCopyrightEnforcementTarget */
+      `
+      .append(
+        pendingCopyrightEnforcementSql(
+          `target.id AS target_id, submission.copyright_notice_id AS notice_id,
       assessment.assessed_by_id AS imposed_by_id`,
-      automaticSince,
-    ).append(sql`\n      AND assessment.id = ${assessmentId}\n    ORDER BY target.id LIMIT 1`),
+          automaticSince,
+        ),
+      )
+      .append(sql`\n      AND assessment.id = ${assessmentId}\n    ORDER BY target.id LIMIT 1`),
   )
   return rows[0]
 }
