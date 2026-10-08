@@ -13,18 +13,20 @@ Feature flags use the `DynamicConfig` class from `@data-stores/valkey`, which st
 
 ## Current Flags
 
-| Flag                      | Type    | Default | Description                                                |
-| ------------------------- | ------- | ------- | ---------------------------------------------------------- |
-| `memberships`             | boolean | `false` | Enable membership features                                 |
-| `membershipStripeBilling` | boolean | `false` | Enable Stripe purchase calls when `memberships` is also on |
-| `chat`                    | boolean | `false` | Registered key; transcript routes do not depend on it      |
-| `combinedSearch`          | boolean | `false` | Use the combined command-search backend endpoint           |
-| `support`                 | boolean | `false` | Registered key; no in-app support route exists             |
-| `fediverse`               | boolean | `false` | Enable Fediverse navigation and search UI                  |
+| Flag                         | Type    | Default | Description                                                                                                                                      |
+| ---------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `memberships`                | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `membershipStripeBilling`. Membership pages and purchase APIs stay available. |
+| `membershipStripeBilling`    | boolean | `false` | Shows Stripe purchase controls on the web plans page together with `memberships`. New Stripe purchase intents use `membership-billing`.          |
+| `membershipAppleBilling`     | boolean | `false` | Registered frontend visibility key with no web reader. New Apple purchase intents use `membership-billing`.                                      |
+| `membershipGoogleBilling`    | boolean | `false` | Registered frontend visibility key with no web reader. New Google Play purchase intents use `membership-billing`.                                |
+| `membershipMicrosoftBilling` | boolean | `false` | Registered frontend visibility key with no web reader. New Microsoft Store purchase intents use `membership-billing`.                            |
+| `chat`                       | boolean | `false` | Registered key with no transcript-route or navigation consumer.                                                                                  |
+| `combinedSearch`             | boolean | `false` | Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints.                                  |
+| `support`                    | boolean | `false` | Registered key with no in-app support route.                                                                                                     |
+| `fediverse`                  | boolean | `false` | Fediverse navigation, command-search tab, and PeerTube discovery affordances.                                                                    |
 
-The Dynamic Config registry still describes `chat` and `support` using retired UI terminology.
-Those descriptions do not indicate active entrypoints; the current consumers and route ownership
-above determine what the flags affect.
+The `feature-flags` Dynamic Config field descriptions are the operator copy for this catalog.
+New provider purchase intents use the separate `membership-billing` namespace.
 
 ## Adding a New Flag
 
