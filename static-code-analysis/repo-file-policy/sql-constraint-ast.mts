@@ -1,33 +1,25 @@
-import { parseSql } from 'vouchington-tooling/sql-ast'
+import { parsePostgresSql } from 'no-mistakes'
 
-export function extractPolymorphicTargetTables(
+export async function extractPolymorphicTargetTables(
   content: string,
-): Array<{ location: number; tableName: string }> {
+): Promise<Array<{ location: number; tableName: string }>> {
+  const facts = await parsePostgresSql({ sql: content })
+  if (facts.diagnostics.length > 0) {
+    throw new Error(facts.diagnostics.map(diagnostic => diagnostic.message).join('\n'))
+  }
+
   const tables: Array<{ location: number; tableName: string }> = []
-  const parseResult = parseSql(content)
-  for (const rawStmt of parseResult.stmts ?? []) {
-    const node = rawStmt.stmt
-    if (!node || !('CreateStmt' in node)) continue
-    const statement = node.CreateStmt
-    const tableName = statement.relation?.relname
+  for (const statement of facts.statements) {
+    if (statement.kind !== 'createTable') continue
+    const tableName = statement.table.parts.at(-1)?.value
     if (!tableName) continue
     const columns = new Map(
-      (statement.tableElts ?? []).flatMap(element => {
-        if (!element || !('ColumnDef' in element)) return []
-        const column = element.ColumnDef
-        const generated = (column.constraints ?? []).some(
-          constraint =>
-            constraint &&
-            'Constraint' in constraint &&
-            constraint.Constraint?.contype === 'CONSTR_GENERATED',
-        )
-        return column.colname ? [[column.colname, generated] as const] : []
-      }),
+      statement.columns.map(column => [column.name.value, column.generated !== null] as const),
     )
     const entityType = columns.get('entity_type')
     const entityId = columns.get('entity_id')
     if (entityType === undefined || entityId === undefined || entityType || entityId) continue
-    tables.push({ location: rawStmt.stmt_location ?? 0, tableName })
+    tables.push({ location: statement.span.start.offset, tableName })
   }
   return tables
 }

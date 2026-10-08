@@ -13,11 +13,11 @@ import {
   checkStaleLegacyEditedInPlaceMarkerEntries,
 } from './edited-in-place-marker-guard.mts'
 
-export function checkMigrationSqlGuard(
+export async function checkMigrationSqlGuard(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
-): void {
+): Promise<void> {
   const observedPolymorphicTargets = new Set<string>()
   const observedLegacyMarkerMigrations = new Set<string>()
   for (const file of trackedFiles) {
@@ -28,7 +28,7 @@ export function checkMigrationSqlGuard(
     const content = readFileSync(filePath, 'utf8')
     checkEditedInPlaceMarkerWording(file, content, observedLegacyMarkerMigrations, errors)
     const stripped = stripSqlComments(content)
-    for (const target of extractPolymorphicTargetTables(stripped)) {
+    for (const target of await extractPolymorphicTargetTables(stripped)) {
       observedPolymorphicTargets.add(target.tableName)
       if (ALLOWED_POLYMORPHIC_TARGET_TABLES.has(target.tableName)) continue
       errors.push(

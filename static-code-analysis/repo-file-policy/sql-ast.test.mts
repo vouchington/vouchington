@@ -21,9 +21,9 @@ describe('sql-ast local consume wrappers', () => {
     expect(table.tableName).toBe('MixedCase')
   })
 
-  it('rejects stored entity pairs but permits generated compatibility columns', () => {
+  it('rejects stored entity pairs but permits generated compatibility columns', async () => {
     expect(
-      extractPolymorphicTargetTables(`
+      await extractPolymorphicTargetTables(`
         CREATE TABLE unsafe_targets (entity_type text, entity_id uuid);
         CREATE TABLE compatible_targets (
           topic_id uuid REFERENCES topics ON DELETE CASCADE,
@@ -32,5 +32,20 @@ describe('sql-ast local consume wrappers', () => {
         );
       `),
     ).toEqual([{ location: expect.any(Number), tableName: 'unsafe_targets' }])
+  })
+
+  it('keeps the parser byte offset for a quoted table after a multibyte comment', async () => {
+    const content = '-- é\nCREATE TABLE public."MixedCase" (entity_type text, entity_id uuid);'
+    expect(await extractPolymorphicTargetTables(content)).toEqual([
+      { location: Buffer.byteLength('-- é\n'), tableName: 'MixedCase' },
+    ])
+  })
+
+  it('rejects malformed SQL even after a valid CREATE TABLE', async () => {
+    await expect(
+      extractPolymorphicTargetTables(
+        'CREATE TABLE targets (entity_type text, entity_id uuid); CREATE TABLE (',
+      ),
+    ).rejects.toThrow(/sql parser error/)
   })
 })

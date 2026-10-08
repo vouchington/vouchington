@@ -31,4 +31,18 @@ describe('migration constraint guard', () => {
       stdout: expect.stringContaining('polymorphic entity_type/entity_id targets'),
     })
   })
+
+  it('permits generated entity columns backed by a concrete foreign key', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      'backend/data-stores/psql/migrations/0999-generated-target.sql',
+      `CREATE TABLE targets (
+        topic_id uuid REFERENCES topics(id),
+        entity_type text GENERATED ALWAYS AS ('topic') STORED,
+        entity_id uuid GENERATED ALWAYS AS (topic_id) STORED
+      );`,
+    )
+    await expect(run(dir)).resolves.toEqual({ stdout: 'All checks passed.' })
+  })
 })

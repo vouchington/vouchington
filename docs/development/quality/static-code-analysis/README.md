@@ -649,7 +649,8 @@ SQL text guards under `repo-file-policy/` share PostgreSQL comment, quote, liter
 statement handling through `sql-scanner.mts`, a re-export of `vouchington-tooling/sql-scanner`.
 Guards that need migration `CREATE TABLE` metadata, or a full parse of a fragment, use
 `sql-ast.mts`, a re-export of `vouchington-tooling/sql-ast` (`@libpg-query/parser@18`).
-`extractPolymorphicTargetTables` stays local because it looks for `entity_type` / `entity_id`.
+`extractPolymorphicTargetTables` keeps the product-specific `entity_type` / `entity_id` policy
+locally while consuming typed `CREATE TABLE` facts from `no-mistakes`.
 Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column` owns migration ADD
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in
 its original pre-launch `CREATE TABLE`.
