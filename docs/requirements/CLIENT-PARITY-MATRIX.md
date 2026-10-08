@@ -154,6 +154,15 @@ The hosted OAuth consent screen always appears. Every mutating user-MCP tool req
 Free member's in-app agent receives read tools only; there is no native exception. Native app
 implementation is tracked by [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
+The approved MCP consolidation in [#2356](https://github.com/vouchington/vouchington/issues/2356)
+keeps the two OAuth resources. [#2431](https://github.com/vouchington/vouchington/issues/2431)
+checks tool-local schema references and records client/model-context findings before production
+tool names or input envelopes change. [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
+tracks native adoption as a dependent of the producer: the approved mapping uses a closed
+`{option, arguments}` envelope for merged tools and validates each option's structured result.
+Existing production tools retain their
+current contracts until those producer slices land.
+
 Native agents receive MCP tool schemas and results, including the same authorization, plan, scope,
 rate-limit, quota, audit, and untrusted-content handling as other user-MCP clients. This includes
 the current paged contracts: `get_topic_details` returns parents and one bounded page of children

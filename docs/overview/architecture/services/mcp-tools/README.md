@@ -27,6 +27,17 @@ value); the call path reports it through `onError` and returns the generic tool-
 never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
 whole-response bound (step 4), so JSON escaping counts for them too.
 
+**Tool-local references.** Each input and output schema can carry its own root `$defs` and use
+`$ref: "#/$defs/…"`. Listing and catalog generation preserve those schemas; argument and
+structured-result validation resolve references within the schema being validated. Input and
+output definitions have separate namespaces. The focused
+[`build-tool-result.test.mts`](../../../../../backend/services/mcp-tools/build-tool-result.test.mts)
+fixture exercises discovery and calls through the official TypeScript SDK client and our stateless
+HTTP handler, invalid arguments/results, generated artifacts and listing parity. This proves our
+server boundary and that SDK path; external-client findings and the consolidation gate remain in
+[#2431](https://github.com/vouchington/vouchington/issues/2431). Production tool consolidation and
+schema factoring follow that gate.
+
 **One source of truth.** The checked-in `api-fixtures/v1/request-contracts.json` carries a
 `responses` map with the response schema of every route whose 200 body is a named response type,
 keyed like `operations`, and a `components` map of every named type. `route-response-schema.mts` in
