@@ -1,7 +1,11 @@
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 import type { StorybookConfig } from '@storybook/nextjs-vite'
-import { buildStorybookAliases, transformWorkspaceMts } from './vite-config-helpers'
+import {
+  buildStorybookAliases,
+  supplyStorybookParentRenderTree,
+  transformWorkspaceMts,
+} from './vite-config-helpers'
 import { createStorybookUseDirectiveLogFilter } from './use-directive-log'
 
 const config: StorybookConfig = {
@@ -40,7 +44,12 @@ const config: StorybookConfig = {
     return {
       ...viteConfig,
       base: process.env.STORYBOOK_BASE_PATH ?? '/storybook/',
-      plugins: [transformWorkspaceMts, ...(viteConfig.plugins ?? []), directiveLogs.plugin],
+      plugins: [
+        supplyStorybookParentRenderTree,
+        transformWorkspaceMts,
+        ...(viteConfig.plugins ?? []),
+        directiveLogs.plugin,
+      ],
       build: {
         ...viteConfig.build,
         rolldownOptions: {
