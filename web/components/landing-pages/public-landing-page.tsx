@@ -43,6 +43,7 @@ export function PublicLandingPageView({ data, canonicalPath, t }: Props) {
           subtitle={data.landing_page.subtitle}
           title={data.landing_page.title}
           userMarkdown={data.user.markdown}
+          detectedLanguage={data.user.lingua_rs_detected_language}
           username={data.user.username}
         />
 
