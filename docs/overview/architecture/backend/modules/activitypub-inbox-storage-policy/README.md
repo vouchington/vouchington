@@ -11,8 +11,13 @@ caps unverified storage at 10,000 rows or 256 MiB of exact raw request bytes, ru
 five minutes in bounded batches, and reserves a 30-minute processing lease. Capacity rejections
 ask remote senders to retry after five minutes.
 
-These are deployment invariants, not environment overrides. Changing one requires updating the
-database constraints and triggers, cleanup behavior, alarms, and contract tests together.
+These are deployment invariants, not environment overrides, with one scheduling exception: the
+[staging hourly floor](../scheduled-job-manifest/README.md#staging-hourly-floor) runs staging
+cleanup hourly so staging Aurora can auto-pause. On staging, an expired unverified delivery can
+stay stored for up to about two hours, and a full unverified store can keep returning `503` for up
+to about an hour despite the five-minute retry hint. Production runs cleanup every five minutes.
+Changing any value requires updating the database constraints and triggers, cleanup behavior,
+alarms, and contract tests together.
 
 Exact admission accounting deliberately serializes delivery writes through the singleton counter
 row. That keeps concurrent cap decisions correct at the bounded scale; any future throughput-driven

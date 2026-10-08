@@ -78,7 +78,9 @@ Full technical design: [Fediverse Federation architecture](../../overview/archit
   10,000 rows and 256 MiB of exact raw-body bytes; a full unverified store returns `503` with
   `Retry-After: 300`, while already-verified cached signers remain admissible. Operational failures
   retain at most seven days from their immutable first failure. Five-minute, lease-aware cleanup
-  deletes expired rows in bounded batches. A typed lifecycle facade owns all fenced delivery
+  deletes expired rows in bounded batches; staging runs it hourly, so staging retention can exceed
+  these bounds ([storage policy](../../overview/architecture/backend/modules/activitypub-inbox-storage-policy/README.md)).
+  A typed lifecycle facade owns all fenced delivery
   transitions; the dedup
   reservation, core effect, and envelope completion commit atomically, with only Follow Accept
   enqueueing after commit. There is no queryable AP **outbox** collection endpoint; outbound
