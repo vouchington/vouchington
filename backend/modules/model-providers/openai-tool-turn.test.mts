@@ -82,7 +82,7 @@ describe('callOpenAIToolTurn', () => {
           name: 'search_topics',
           arguments: '{"query":"rust"}',
         },
-        { type: 'function_call_output', call_id: 'call_1', output: '{"topics":[]}' },
+        { type: 'function_call_output', call_id: 'call_1', output: 'Error: {"topics":[]}' },
       ],
     })
     expect(result).toMatchObject({

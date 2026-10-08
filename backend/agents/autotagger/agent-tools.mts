@@ -79,8 +79,10 @@ export async function runSearchTopicsTool(
   search: SearchTopics,
 ): Promise<{ content: string; isError: boolean }> {
   const query = (input as { query?: unknown } | null)?.query
-  if (typeof query !== 'string' || query.trim() === '' || query.length > MAX_QUERY_LENGTH)
+  if (typeof query !== 'string' || query.trim() === '')
     return { content: 'query must be a non-empty string.', isError: true }
+  if (query.length > MAX_QUERY_LENGTH)
+    return { content: `query must be at most ${MAX_QUERY_LENGTH} characters.`, isError: true }
   const hits = await search(query.trim())
   const topics = await Promise.all(
     hits.map(async hit => ({

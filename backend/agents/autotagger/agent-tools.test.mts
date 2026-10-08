@@ -85,7 +85,6 @@ describe('runSearchTopicsTool', () => {
     ['no query', {}],
     ['an empty query', { query: '   ' }],
     ['a non-string query', { query: 3 }],
-    ['an oversized query', { query: 'x'.repeat(201) }],
     ['no input', null],
   ])('returns an error result for %s without searching', async (_name, input) => {
     const search = vi.fn<SearchTopics>()
@@ -93,6 +92,17 @@ describe('runSearchTopicsTool', () => {
     await expect(runSearchTopicsTool(input, new Set(), search)).resolves.toMatchObject({
       isError: true,
     })
+    expect(search).not.toHaveBeenCalled()
+  })
+})
+
+describe('runSearchTopicsTool with an oversized query', () => {
+  it('tells the model the length limit instead of calling the search', async () => {
+    const search = vi.fn<SearchTopics>()
+
+    await expect(
+      runSearchTopicsTool({ query: 'x'.repeat(201) }, new Set(), search),
+    ).resolves.toEqual({ content: 'query must be at most 200 characters.', isError: true })
     expect(search).not.toHaveBeenCalled()
   })
 })

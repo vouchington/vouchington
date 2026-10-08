@@ -45,7 +45,7 @@ async function leasedAgentRun(create: Create = createAutotaggerPostFixture) {
   return { fixture, applied, accepted, rejected, lease }
 }
 
-/** A caller that answers each turn from `answer`, or submits `ids` on the first turn. */
+/** A caller that submits `ids` on every turn it is called. */
 function submitting(...ids: string[]) {
   return vi.fn<AgentToolTurnCaller>(() =>
     Promise.resolve(makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: ids } }])),

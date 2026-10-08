@@ -58,8 +58,8 @@ its two tools and `agent-instructions.mts` the prompt.
   candidates, so nothing outside the set can be tagged. There is no probability, threshold,
   negative vote or Jev model on C7's `classifiers` row: the seed inserts the row (primitive
   `agent`) and no prompt version, and the instructions live in code.
-- **Bounds:** `agent_max_turns` (6), `agent_max_tool_calls` (8) and `agent_max_output_tokens`
-  (3000) in `autotagger-paid-limits`. Running out of any of them, or repeating the same calls, ends
+- **Bounds:** `agent_max_turns`, `agent_max_tool_calls` and `agent_max_output_tokens` in
+  `autotagger-paid-limits` (defaults in `limits-config.mts`). Running out of any of them, or repeating the same calls, ends
   the run with no topics added (a bound is a stop, never a reason to guess); the output-token
   figure is the total across turns and caps each turn at what is left. Tool calls past the bound
   are refused with an instruction to submit.

@@ -12,8 +12,6 @@ export type GenerateToolTurnOptions = {
   deps?: AnthropicToolDeps & OpenAIDeps
 }
 
-/* no-mistakes: integration=anthropic */
-/* no-mistakes: integration=openai */
 /**
  * One turn of a tool-using agent on whichever provider the caller selected. Every result carries
  * the served model, response id and provider-neutral usage, and requires at least one tool call;

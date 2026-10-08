@@ -393,7 +393,7 @@ only a static manifest entry. The repository does not yet have a web admin page 
 endpoints are reachable by API and a web admin page is future work. Staff mutation
 controls stay web-only, as in the staff action history handoff below.
 
-#2370 makes the reasoning autotagger (`autotagger-agent`, C7) a tool-using agent instead of a Jev
+Issue #2370 makes the reasoning autotagger (`autotagger-agent`, C7) a tool-using agent instead of a Jev
 classifier. The classifier list now returns it with `primitive: "agent"` (a fourth
 `ClassifierPrimitive` value) and `active_prompt_version: null`, because it has no prompt version,
 model or thresholds; it exposes no candidates or threshold revisions to manage. Nothing consumes

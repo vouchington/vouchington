@@ -26,7 +26,8 @@ function toInputItems(message: AgentTurnMessage): InputItem[] {
     return message.results.map(result => ({
       type: 'function_call_output' as const,
       call_id: result.callId,
-      output: result.content,
+      // The Responses API has no error flag, so a failed call says so in its text, as Anthropic's does.
+      output: result.isError ? `Error: ${result.content}` : result.content,
     }))
   }
   return [
