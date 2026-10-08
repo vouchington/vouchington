@@ -10,7 +10,6 @@ export type RssFeedCrawlNumberField =
   | 'capacity_budget'
 
 const DEFAULTS = {
-  enabled: true,
   should_ignore_robots_txt: true,
   tier1_sla_ms: 5 * 60_000,
   tier2_sla_ms: 15 * 60_000,
@@ -41,7 +40,6 @@ export const RSS_FEED_CRAWL_MAX_VALUES: Record<RssFeedCrawlNumberField, number> 
 export const rssFeedCrawlConfig = new DynamicConfig({
   key: 'rss-feed-crawl-config',
   fieldTypes: {
-    enabled: 'boolean',
     should_ignore_robots_txt: 'boolean',
     tier1_sla_ms: 'number',
     tier2_sla_ms: 'number',
@@ -52,11 +50,6 @@ export const rssFeedCrawlConfig = new DynamicConfig({
   },
   defaultFields: DEFAULTS,
 })
-
-export function isCrawlPrioritizationEnabled(): boolean {
-  const value = rssFeedCrawlConfig.getFields().enabled
-  return typeof value === 'boolean' ? value : DEFAULTS.enabled
-}
 
 export function isRobotsTxtIgnoredForFeeds(): boolean {
   const value = rssFeedCrawlConfig.getFields().should_ignore_robots_txt

@@ -4,7 +4,6 @@ import { contributionLimitConfig } from '@services/contribution-gating/limits-co
 import { RSS_FEED_CRAWL_MAX_VALUES } from '@services/rss-feeds/crawl-config'
 
 const VALID_RSS_FEED_CRAWL_FIELDS = {
-  enabled: true,
   should_ignore_robots_txt: true,
   tier1_sla_ms: 1,
   tier2_sla_ms: 2,
@@ -22,6 +21,11 @@ describe('dynamic-config-admin registry validators', () => {
     expect(() => entry?.validate?.({ read_tier0: 0 })).toThrow(
       'Field read_tier0 must be a positive finite number',
     )
+  })
+
+  it('does not expose the removed RSS crawl mode switch', () => {
+    const entry = getDynamicConfigRegistryEntry('rss-feed-crawl-config')
+    expect(entry?.fields).not.toHaveProperty('enabled')
   })
 
   it('rejects reCAPTCHA thresholds outside the score range', () => {
