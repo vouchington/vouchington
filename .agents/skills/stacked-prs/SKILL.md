@@ -113,7 +113,9 @@ submit the layers as drafts with `gh stack submit --auto` while the lower PR is 
 unqueued. Verify remote registration before asking to merge or enqueue the lower PR; an open PR
 already in the merge queue cannot be added to a new stack. If it was queued externally, stop
 registration attempts and report the blocker. Do not dequeue it without authorization or rewrite
-it; continue upper work that does not rewrite the queued layer, then recover after it merges.
+it; continue upper work that does not rewrite the queued layer. When it leaves the queue, re-read
+its state: retry registration if it is still open and unqueued, or use merged-layer recovery below
+if it merged. If it closed without merging, report the broken dependency before proceeding.
 Do not wait for upper-layer CI or ready status to register the dependency. Do not create empty
 placeholder layers or start work held pending approval merely to preserve a stack.
 
