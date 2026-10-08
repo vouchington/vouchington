@@ -79,6 +79,12 @@ A unique index on `rss_feed_id` enables `REFRESH MATERIALIZED VIEW CONCURRENTLY`
 - **Backfill bucket**: feeds not yet due but last fetched at least the tier-1 SLA ago, ordered by time-until-deadline ASC then `crawl_score DESC`.
 - Total capped at `capacity_budget` (default 100) when no explicit limit is passed; an explicit `limit` caps to `min(limit, capacity_budget)`.
 
+Both buckets share one candidate read. A due feed takes priority group 1 and no deadline;
+otherwise an eligible backfill feed takes group 2 and its tier deadline. The scoring refresh
+likewise shares one materialized feed input between canonical redirect resolution and scoring.
+The [EXPLAIN scenarios](../../../../development/postgresql/explain-analyze/README.md#covered-service-queries)
+budget these reads together with the 30-day hashtag window.
+
 ### Configuration
 
 SLAs and `capacity_budget` live in the `rss-feed-crawl-config` DynamicConfig key and are editable
