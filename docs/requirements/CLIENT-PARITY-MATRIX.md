@@ -206,6 +206,7 @@ catalogue marks one as API-key eligible. The paired native repair is tracked by
 [vouchington-clients#177](https://github.com/vouchington/vouchington-clients/issues/177).
 The native manifest and catalog no longer carry the `native.credentials.adminAudience`
 and `native.credentials.audience` claims; user/API audience values remain available as metadata.
+Land the native picker repair with this catalog cleanup before native release.
 
 The API-key storage column is `scopes` and uses the same generated enum as OAuth grants. API v1
 continues accepting and returning `permissions` as catalogue scope strings; client DTOs and pickers
