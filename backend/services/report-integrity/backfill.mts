@@ -51,6 +51,7 @@ export async function* streamEntitiesWithPendingReportsBatches(
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}
       `
+  query
     .append(postFilter)
     .append(sql`
       GROUP BY mr.post_id, p.post_type

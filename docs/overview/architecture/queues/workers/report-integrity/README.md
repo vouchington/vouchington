@@ -15,7 +15,8 @@ one check.
 ## Backfill and targeted recovery
 
 The periodic dispatcher continues calling `processBackfillReportIntegrity()` without a selector.
-An internal caller recovering one known entity may pass `{ entityType, entityId }`. That path
+An internal caller recovering one known entity uses
+`processBackfillReportIntegrityForEntity({ entityType, entityId })`. That path
 reads only that entity's unresolved reports inside the existing report window, keeps the same
 five-distinct-reporter threshold and live-entity predicates, and yields at most one candidate.
 It uses the same bulk producer and returns persisted `jobIds` alongside `enqueued`; the global

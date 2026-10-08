@@ -32,15 +32,24 @@ export async function processReportIntegrityCheck(
   }
 }
 
-export async function processBackfillReportIntegrity(
-  target?: PendingReportEntity,
-): Promise<{ enqueued: number; jobIds?: string[] }> {
+export async function processBackfillReportIntegrity(): Promise<{ enqueued: number }> {
+  let enqueued = 0
+  for await (const batch of streamEntitiesWithPendingReportsBatches()) {
+    await enqueueReportIntegrityCheckBatch(batch)
+    enqueued += batch.length
+  }
+  return { enqueued }
+}
+
+export async function processBackfillReportIntegrityForEntity(
+  target: PendingReportEntity,
+): Promise<{ enqueued: number; jobIds: string[] }> {
   let enqueued = 0
   const jobIds: string[] = []
   for await (const batch of streamEntitiesWithPendingReportsBatches(target)) {
     const jobs = await enqueueReportIntegrityCheckBatch(batch)
-    if (target) jobIds.push(...jobs.map(job => job.id))
+    jobIds.push(...jobs.map(job => job.id))
     enqueued += batch.length
   }
-  return target ? { enqueued, jobIds } : { enqueued }
+  return { enqueued, jobIds }
 }

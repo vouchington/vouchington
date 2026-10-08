@@ -9,7 +9,10 @@ import {
   insertTestPost,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { processReportIntegrityCheck, processBackfillReportIntegrity } from './processors.mts'
+import {
+  processReportIntegrityCheck,
+  processBackfillReportIntegrityForEntity,
+} from './processors.mts'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
 import type { PrivateUser } from '@services/users/types'
 import { reportIntegrityQueue } from '@queues/report-integrity/queues'
@@ -92,11 +95,14 @@ describe('processBackfillReportIntegrity', () => {
       entityId: postId,
     })
 
-    const result = await processBackfillReportIntegrity({ entityType: 'post', entityId: postId })
+    const result = await processBackfillReportIntegrityForEntity({
+      entityType: 'post',
+      entityId: postId,
+    })
     expect(result.enqueued).toBeGreaterThanOrEqual(1)
 
     const waiting = await Promise.all(
-      (result.jobIds ?? []).map(id => readEnqueuedJob(reportIntegrityQueue, { id })),
+      result.jobIds.map(id => readEnqueuedJob(reportIntegrityQueue, { id })),
     )
     const found = waiting.find(
       j =>
