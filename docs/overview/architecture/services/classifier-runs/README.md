@@ -83,8 +83,20 @@ producer asked for.
 
 ## Lifecycle
 
-Every write locks in one order: the subject (through `adapter.lockCurrent`), the run row, the
-actor, and then the adapter's configuration is re-resolved. A mismatch between the durable run and
+Lifecycle writes acquire the actor's active-user advisory lock before the subject (through
+`adapter.lockCurrent`) and then the run row; the adapter's configuration is re-resolved under
+those locks. The actor id is read from the immutable receipt without a row lock; the durable
+target and resolved actor/configuration are checked under the run lock. Paths that do not need
+an actor lock take the subject and run in the same relative order.
+
+C9's `lockCurrent` also takes its fixed system actor before the RSS item. This applies the same
+order to reservation, preparation reads, supersession and request retirement. It prevents two
+reciprocal reservations from each holding `FOR UPDATE` on their own item while the captured
+candidate foreign key needs `KEY SHARE` on the other's item. Completion also keeps the actor
+before any subject or selected candidate item, preventing the corresponding membership cycle.
+The active-user lock remains transaction-scoped to serialize effects against account deletion.
+Candidate search still runs outside the locked transaction; only the short database phases for
+one story classifier serialize on its actor. A mismatch between the durable run and
 the resolved current state means the run is obsolete and is superseded, never repaired in place.
 
 1. **Request.** `requestClassifierRuns` writes one request per classifier in the caller's

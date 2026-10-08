@@ -38,7 +38,7 @@ export type ClassifierRunTarget = {
 export type LockedClassifierRun<C> = { row: ClassifierRunRow; resolved: ResolvedClassifierRun<C> }
 
 /**
- * Locks the subject, the run and the classifier actor in that order, then re-resolves the
+ * Locks the classifier actor, the subject and the run in that order, then re-resolves the
  * configuration. Null means the run no longer matches current content or configuration and must
  * not produce effects; a mismatch between the durable run and its target is a defect and throws.
  */
@@ -47,6 +47,17 @@ export async function lockClassifierRun<C, L, E>(
   query: OwnedTransaction,
   target: ClassifierRunTarget,
 ): Promise<LockedClassifierRun<C> | null> {
+  // The actor identity is immutable. Read it without a row lock, then re-check the durable
+  // identity under the run lock below; never wait for an actor while holding a subject or run.
+  const { rows: actors } = await query<{ shared_actor_user_id: string }>(sql`
+    /* readClassifierRunActor */
+    SELECT shared_actor_user_id FROM classifier_runs WHERE id = ${target.runId}
+  `)
+  const actor = actors[0]
+  if (!actor) return null
+  await query(sql`/* lockClassifierRunActor */
+    SELECT fn_lock_active_user_for_mutation(${actor.shared_actor_user_id}::uuid)
+  `)
   const current = await adapter.lockCurrent(query, target.subject)
   if (!current?.inputSha256.equals(target.inputSha256)) return null
   const { rows } = await query<ClassifierRunRow>(sql`/* lockClassifierRun */
@@ -67,9 +78,6 @@ export async function lockClassifierRun<C, L, E>(
   const row = rows[0]
   if (!row) return null
   assertRunMatchesTarget(adapter.slug, row, target)
-  await query(sql`/* lockClassifierRunActor */
-    SELECT fn_lock_active_user_for_mutation(${row.shared_actor_user_id}::uuid)
-  `)
   const resolved = await adapter.resolve(target.subject, current, query)
   if (
     !resolved ||
