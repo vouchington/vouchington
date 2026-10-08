@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, onTestFinished, describe, expect, it, vi } from 'vitest'
 import * as jose from 'jose'
 import { v4 as uuidv4, v7 as uuidv7, validate as uuidValidate, version as uuidVersion } from 'uuid'
 import {
@@ -14,7 +14,30 @@ async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
   return { ...jwk, alg: 'RS512', kid, use: 'sig' }
 }
 
+const now = process.env.VOUCH_PROOF_NOW
+  ? Date.parse(process.env.VOUCH_PROOF_NOW)
+  : Date.UTC(2026, 0, 31, 23, 59, 59)
+
+if (
+  !Number.isFinite(now) ||
+  (process.env.VOUCH_PROOF_NOW !== undefined && !process.env.VOUCH_PROOF_NOW.endsWith('Z'))
+) {
+  throw new Error('VOUCH_PROOF_NOW must be a finite UTC timestamp ending in Z')
+}
+
 describe('ensureAnonymousSession', () => {
+  beforeEach(() => {
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(now)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('mints fresh dt and st when no cookies', async () => {
     const result = await ensureAnonymousSession({})
     expect(result.mintedDt).toBe(true)
