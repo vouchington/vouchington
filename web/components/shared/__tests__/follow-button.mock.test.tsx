@@ -1,6 +1,6 @@
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { FollowButton } from '../follow-button'
 import type { User } from '@/types/user'
@@ -139,9 +139,10 @@ describe('follow-button', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
       expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
-      await waitFor(() =>
-        expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow'),
-      )
+      await act(async () => {
+        await mockBookmarkEntity.mock.results.at(-1)!.value
+      })
+      expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow')
     })
 
     it('optimistically toggles to Follow on click when following', async () => {
@@ -155,9 +156,10 @@ describe('follow-button', () => {
       )
       fireEvent.click(screen.getByRole('button', { name: 'Following' }))
       expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
-      await waitFor(() =>
-        expect(mockUnbookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow'),
-      )
+      await act(async () => {
+        await mockUnbookmarkEntity.mock.results.at(-1)!.value
+      })
+      expect(mockUnbookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow')
     })
 
     it('reverts to Follow and shows error toast when bookmarkEntity fails', async () => {
@@ -170,7 +172,10 @@ describe('follow-button', () => {
         />,
       )
       fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
-      await waitFor(() => expect(mockToastError).toHaveBeenCalled())
+      await act(async () => {
+        await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
+      })
+      expect(mockToastError).toHaveBeenCalled()
       expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
     })
 
@@ -184,7 +189,10 @@ describe('follow-button', () => {
         />,
       )
       fireEvent.click(screen.getByRole('button', { name: 'Following' }))
-      await waitFor(() => expect(mockToastError).toHaveBeenCalled())
+      await act(async () => {
+        await mockUnbookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
+      })
+      expect(mockToastError).toHaveBeenCalled()
       expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
     })
 

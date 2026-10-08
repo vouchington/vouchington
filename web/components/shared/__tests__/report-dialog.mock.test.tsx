@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ApiError } from '@/lib/api/error'
 
 const { mockSubmitReport, mockToastError } = vi.hoisted(() => ({
@@ -88,9 +88,10 @@ describe('ReportDialog', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Spam' }))
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
 
-    await waitFor(() => {
-      expect(screen.getByText(/report submitted/i)).toBeDefined()
+    await act(async () => {
+      await mockSubmitReport.mock.results.at(-1)!.value
     })
+    expect(screen.getByText(/report submitted/i)).toBeDefined()
     expect(mockSubmitReport).toHaveBeenCalledWith({
       entityType: 'post',
       entityId: 'post-1',
@@ -113,11 +114,10 @@ describe('ReportDialog', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Other' }))
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
 
-    await waitFor(() => {
-      expect(mockToastError).toHaveBeenCalledWith(
-        'You are reporting too often. Please wait an hour.',
-      )
+    await act(async () => {
+      await mockSubmitReport.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockToastError).toHaveBeenCalledWith('You are reporting too often. Please wait an hour.')
     // Dialog stays open — onOpenChange should not have been called with false by the submit
     expect(onOpenChange).not.toHaveBeenCalledWith(false)
     // Form is still visible
@@ -133,9 +133,10 @@ describe('ReportDialog', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Other' }))
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeDefined()
+    await act(async () => {
+      await mockSubmitReport.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(screen.getByRole('alert')).toBeDefined()
   })
 
   it('shows success state immediately on reopen when sessionStorage flag is set', () => {
@@ -146,13 +147,13 @@ describe('ReportDialog', () => {
 
   it('updates success state when another report control submits the same entity', async () => {
     render(<ReportDialog {...defaultProps} />)
-    window.dispatchEvent(
-      new CustomEvent('voucha:report-submitted', { detail: { key: 'report:post:post-1' } }),
-    )
-
-    await waitFor(() => {
-      expect(screen.getByText(/report submitted/i)).toBeDefined()
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('voucha:report-submitted', { detail: { key: 'report:post:post-1' } }),
+      )
     })
+
+    expect(screen.getByText(/report submitted/i)).toBeDefined()
   })
 
   it('removes the submit button after success', async () => {
@@ -163,9 +164,10 @@ describe('ReportDialog', () => {
     const submitBtn = screen.getByRole('button', { name: 'Submit report' })
     fireEvent.click(submitBtn)
 
-    await waitFor(() => {
-      expect(screen.getByText(/report submitted/i)).toBeDefined()
+    await act(async () => {
+      await mockSubmitReport.mock.results.at(-1)!.value
     })
+    expect(screen.getByText(/report submitted/i)).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Submit report' })).toBeNull()
   })
 })

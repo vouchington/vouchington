@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { render, fireEvent, act } from '@testing-library/react'
 import { ImageUploadButton } from '../image-upload-button'
 
 vi.mock(import('@/lib/api/client/images'), () => {
@@ -62,12 +62,21 @@ describe('ImageUploadButton', () => {
     it('uploads a single file and calls onUploaded', async () => {
       mockUploadImageFile.mockResolvedValue('img-1')
       const onUploaded = vi.fn<VitestLooseMock>()
-      render(<ImageUploadButton onUploaded={onUploaded} />)
+      const uploadEnded = Promise.withResolvers<void>()
+      render(
+        <ImageUploadButton
+          onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
+        />,
+      )
 
       const file = makeFile('photo.jpg')
       fireEvent.change(getFileInput(), { target: { files: [file] } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-1', file))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledWith('img-1', file)
     })
 
     it('does not set multiple attribute when multiple prop is not set', () => {
@@ -84,7 +93,7 @@ describe('ImageUploadButton', () => {
         target: { files: [makeFile('doc.pdf', 'application/pdf')] },
       })
 
-      await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Unsupported format'))
+      expect(mockToastError).toHaveBeenCalledWith('Unsupported format')
       expect(mockUploadImageFile).not.toHaveBeenCalled()
       expect(onUploaded).not.toHaveBeenCalled()
     })
@@ -92,13 +101,20 @@ describe('ImageUploadButton', () => {
     it('shows error toast when upload fails', async () => {
       mockUploadImageFile.mockRejectedValue(new Error('Network error'))
       const onUploaded = vi.fn<VitestLooseMock>()
-      render(<ImageUploadButton onUploaded={onUploaded} />)
+      const uploadEnded = Promise.withResolvers<void>()
+      render(
+        <ImageUploadButton
+          onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
+        />,
+      )
 
       fireEvent.change(getFileInput(), { target: { files: [makeFile('photo.jpg')] } })
 
-      await waitFor(() =>
-        expect(mockToastError).toHaveBeenCalledWith('Failed to upload image. Please try again.'),
-      )
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(mockToastError).toHaveBeenCalledWith('Failed to upload image. Please try again.')
       expect(onUploaded).not.toHaveBeenCalled()
     })
   })
@@ -114,16 +130,21 @@ describe('ImageUploadButton', () => {
       })
       const files = [makeFile('first.png'), makeFile('failed.png'), makeFile('last.png')]
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
         />,
       )
       fireEvent.change(getFileInput(), { target: { files } })
       last.resolve('deduplicated-image')
       first.resolve('deduplicated-image')
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(2))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledTimes(2)
       expect(onUploaded.mock.calls).toEqual([
         ['deduplicated-image', files[0]],
         ['deduplicated-image', files[2]],
@@ -146,10 +167,12 @@ describe('ImageUploadButton', () => {
         .mockResolvedValueOnce('img-2')
         .mockResolvedValueOnce('img-3')
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
 
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
         />,
       )
@@ -157,7 +180,10 @@ describe('ImageUploadButton', () => {
       const files = [makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')]
       fireEvent.change(getFileInput(), { target: { files } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(3))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledTimes(3)
       expect(onUploaded).toHaveBeenCalledWith('img-1', files[0])
       expect(onUploaded).toHaveBeenCalledWith('img-2', files[1])
       expect(onUploaded).toHaveBeenCalledWith('img-3', files[2])
@@ -167,10 +193,12 @@ describe('ImageUploadButton', () => {
     it('slices to maxFiles and shows a warning toast', async () => {
       mockUploadImageFile.mockResolvedValue('img-x')
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
 
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
           maxFiles={2}
         />,
@@ -179,7 +207,10 @@ describe('ImageUploadButton', () => {
       const files = [makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')]
       fireEvent.change(getFileInput(), { target: { files } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(2))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledTimes(2)
       expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining('2 more image'))
       expect(mockUploadImageFile).toHaveBeenCalledTimes(2)
     })
@@ -190,10 +221,12 @@ describe('ImageUploadButton', () => {
       )
       mockUploadImageFile.mockResolvedValue('img-valid')
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
 
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
         />,
       )
@@ -201,7 +234,10 @@ describe('ImageUploadButton', () => {
       const files = [makeFile('good.jpg'), makeFile('bad.pdf', 'application/pdf')]
       fireEvent.change(getFileInput(), { target: { files } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-valid', files[0]))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledWith('img-valid', files[0])
       expect(mockUploadImageFile).toHaveBeenCalledTimes(1)
       expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining('bad.pdf'))
     })
@@ -211,10 +247,12 @@ describe('ImageUploadButton', () => {
         .mockResolvedValueOnce('img-1')
         .mockRejectedValueOnce(new Error('Network error'))
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
 
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
         />,
       )
@@ -222,26 +260,32 @@ describe('ImageUploadButton', () => {
       const files = [makeFile('a.jpg'), makeFile('b.jpg')]
       fireEvent.change(getFileInput(), { target: { files } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(1))
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(onUploaded).toHaveBeenCalledTimes(1)
       expect(mockToastError).toHaveBeenCalledWith('1 of 2 images failed to upload or process.')
     })
 
     it('shows a generic error toast when all uploads fail', async () => {
       mockUploadImageFile.mockRejectedValue(new Error('Network error'))
       const onUploaded = vi.fn<VitestLooseMock>()
+      const uploadEnded = Promise.withResolvers<void>()
 
       render(
         <ImageUploadButton
           onUploaded={onUploaded}
+          onUploadEnd={() => uploadEnded.resolve()}
           multiple
         />,
       )
 
       fireEvent.change(getFileInput(), { target: { files: [makeFile('a.jpg')] } })
 
-      await waitFor(() =>
-        expect(mockToastError).toHaveBeenCalledWith('Failed to upload image. Please try again.'),
-      )
+      await act(async () => {
+        await uploadEnded.promise
+      })
+      expect(mockToastError).toHaveBeenCalledWith('Failed to upload image. Please try again.')
       expect(onUploaded).not.toHaveBeenCalled()
     })
   })

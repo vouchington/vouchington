@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock(import('@/lib/api/client/bookmarks'), () => ({
   bookmarkEntity: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
@@ -85,9 +85,10 @@ describe('SaveButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    await waitFor(() => {
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('calls unbookmarkEntity when already saved and clicked', async () => {
     render(
@@ -98,9 +99,10 @@ describe('SaveButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Saved' }))
-    await waitFor(() => {
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('toggles aria-pressed from false to true on save click', async () => {
     render(
@@ -112,10 +114,9 @@ describe('SaveButton', () => {
     const button = screen.getByRole('button', { name: 'Save' })
     expect(button.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(button)
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Saved' }).getAttribute('aria-pressed')).toBe(
-        'true',
-      )
+    expect(screen.getByRole('button', { name: 'Saved' }).getAttribute('aria-pressed')).toBe('true')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
   })
   it('renders the bookmark icon when not saved', () => {
@@ -147,10 +148,11 @@ describe('SaveButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => {
-      expect(dropdownPreventDefault).toHaveBeenCalled()
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(dropdownPreventDefault).toHaveBeenCalled()
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('prevents menu close and removes from saved items from SaveMenuItem', async () => {
     render(
@@ -163,10 +165,11 @@ describe('SaveButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove from saved items' }))
 
-    await waitFor(() => {
-      expect(dropdownPreventDefault).toHaveBeenCalled()
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(dropdownPreventDefault).toHaveBeenCalled()
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('uses controlled active state for SaveButton toggles', async () => {
     const onActiveChange = vi.fn<VitestLooseMock>()
@@ -181,10 +184,11 @@ describe('SaveButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => {
-      expect(onActiveChange).toHaveBeenCalledWith(true)
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(onActiveChange).toHaveBeenCalledWith(true)
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('uses controlled active state for SaveMenuItem toggles', async () => {
     const onActiveChange = vi.fn<VitestLooseMock>()
@@ -199,10 +203,11 @@ describe('SaveButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove from saved items' }))
 
-    await waitFor(() => {
-      expect(onActiveChange).toHaveBeenCalledWith(false)
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(onActiveChange).toHaveBeenCalledWith(false)
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'save')
   })
   it('uses controlled pending state for SaveButton', () => {
     render(
@@ -281,10 +286,14 @@ describe('SaveButton', () => {
       )
     })
 
-    settle(new Error('network'))
-    await waitFor(() => {
-      expect(onActiveChange).not.toHaveBeenCalled()
-      expect(onPendingChange).not.toHaveBeenCalled()
+    await act(async () => {
+      settle(new Error('network'))
+      await vi
+        .mocked(bookmarkEntity)
+        .mock.results.at(-1)!
+        .value.catch(() => undefined)
     })
+    expect(onActiveChange).not.toHaveBeenCalled()
+    expect(onPendingChange).not.toHaveBeenCalled()
   })
 })

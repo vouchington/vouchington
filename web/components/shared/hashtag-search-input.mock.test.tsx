@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HashtagSearchInput } from './hashtag-search-input'
 
@@ -46,9 +46,8 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy(),
-    )
+    await screen.findByRole('option')
+    expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy()
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Enter' })
 
     expect(onValueChange).toHaveBeenCalledWith('cashback #credit-cards ')
@@ -70,9 +69,8 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(document.querySelectorAll('[data-pw="hashtag-topic-search-option"]')).toHaveLength(2),
-    )
+    await screen.findAllByRole('option')
+    expect(document.querySelectorAll('[data-pw="hashtag-topic-search-option"]')).toHaveLength(2)
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'ArrowDown' })
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'ArrowUp' })
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Escape' })
@@ -81,7 +79,11 @@ describe('HashtagSearchInput', () => {
   })
 
   it('clears suggestions when the hashtag fetch fails', async () => {
-    mockFetchTopics.mockRejectedValue(new Error('failed'))
+    const requested = Promise.withResolvers<void>()
+    mockFetchTopics.mockImplementationOnce(() => {
+      requested.resolve()
+      return Promise.reject(new Error('failed'))
+    })
     render(
       <HashtagSearchInput
         value='cashback #cred'
@@ -90,7 +92,11 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() => expect(mockFetchTopics).toHaveBeenCalled())
+    await act(async () => {
+      await requested.promise
+      await mockFetchTopics.mock.results.at(-1)!.value.catch(() => undefined)
+    })
+    expect(mockFetchTopics).toHaveBeenCalled()
     expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeNull()
   })
 
@@ -130,15 +136,20 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy(),
-    )
+    await screen.findByRole('option')
+    expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy()
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Enter' })
 
     expect(onValueChange).toHaveBeenCalledWith('#credit-cards ')
   })
 
   it('normalizes mobile separators before requesting hashtag suggestions', async () => {
+    const requested = Promise.withResolvers<void>()
+    const response = { results: [], topics: {} }
+    mockFetchTopics.mockImplementationOnce(() => {
+      requested.resolve()
+      return Promise.resolve(response)
+    })
     render(
       <HashtagSearchInput
         value='#credit.cards_rewards'
@@ -147,10 +158,12 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(mockFetchTopics).toHaveBeenCalledWith(
-        expect.objectContaining({ q: 'credit-cards-rewards' }),
-      ),
+    await act(async () => {
+      await requested.promise
+      await mockFetchTopics.mock.results.at(-1)!.value
+    })
+    expect(mockFetchTopics).toHaveBeenCalledWith(
+      expect.objectContaining({ q: 'credit-cards-rewards' }),
     )
   })
 
@@ -164,9 +177,8 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy(),
-    )
+    await screen.findByRole('option')
+    expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeTruthy()
 
     rerender(
       <HashtagSearchInput
@@ -176,8 +188,6 @@ describe('HashtagSearchInput', () => {
       />,
     )
 
-    await waitFor(() =>
-      expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeNull(),
-    )
+    expect(document.querySelector('[data-pw="hashtag-topic-search-option"]')).toBeNull()
   })
 })

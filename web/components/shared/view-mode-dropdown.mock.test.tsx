@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
@@ -68,9 +68,11 @@ describe('ViewModeDropdown', () => {
     const trigger = () => container.querySelector('[data-pw="post-view-toggle-trigger"]')
     expect(trigger()).toBeDisabled()
 
-    render(<ViewModeDropdown {...props} />, { container, hydrate: true })
+    await act(async () => {
+      render(<ViewModeDropdown {...props} />, { container, hydrate: true })
+    })
 
-    await waitFor(() => expect(trigger()).not.toBeDisabled())
+    expect(trigger()).not.toBeDisabled()
   })
 
   it('includes the active view in the trigger accessible name', () => {

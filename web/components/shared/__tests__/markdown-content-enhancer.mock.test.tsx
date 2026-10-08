@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi, type Mock } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MarkdownContentEnhancer } from '../markdown-content-enhancer'
 import { sanitizeHtmlFragment, type SafeHtmlFragment } from '@/lib/html/safe-html-fragment'
 
@@ -54,12 +54,10 @@ describe('MarkdownContentEnhancer', () => {
       )
 
       const link = screen.getByRole('link', { name: 'External' })
-      await waitFor(() => {
-        expect(link).toHaveAttribute(
-          'href',
-          'https://example.com/path?x=1&utm_source=voucha.ai&utm_medium=referral',
-        )
-      })
+      expect(link).toHaveAttribute(
+        'href',
+        'https://example.com/path?x=1&utm_source=voucha.ai&utm_medium=referral',
+      )
     })
 
     it('does not rewrite external anchors when utm is false', async () => {
@@ -71,9 +69,7 @@ describe('MarkdownContentEnhancer', () => {
       )
 
       const link = screen.getByRole('link', { name: 'External' })
-      await waitFor(() => {
-        expect(link).toHaveAttribute('href', 'https://example.com/path')
-      })
+      expect(link).toHaveAttribute('href', 'https://example.com/path')
     })
 
     it('keeps data-no-utm anchors unchanged when utm is true', async () => {
@@ -85,9 +81,7 @@ describe('MarkdownContentEnhancer', () => {
       )
 
       const link = screen.getByRole('link', { name: 'External' })
-      await waitFor(() => {
-        expect(link).toHaveAttribute('href', 'https://example.com/path')
-      })
+      expect(link).toHaveAttribute('href', 'https://example.com/path')
     })
   })
 
@@ -102,7 +96,7 @@ describe('MarkdownContentEnhancer', () => {
       )
       const original = container.querySelector('img')!
 
-      await waitFor(() => expect(original.style.display).toBe('none'))
+      expect(original.style.display).toBe('none')
       const parent = original.parentElement!
       expect(parent.childElementCount).toBe(2)
       unmount()
@@ -119,7 +113,7 @@ describe('MarkdownContentEnhancer', () => {
           features={{ images: true }}
         />,
       )
-      await waitFor(() => expect(mockImage).toHaveBeenCalled())
+      expect(mockImage).toHaveBeenCalled()
       mockImage.mockClear()
 
       rerender(
@@ -129,7 +123,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => expect(getImageCalls(mockImage).at(-1)?.src).toBe('/images/b'))
+      expect(getImageCalls(mockImage).at(-1)?.src).toBe('/images/b')
     })
 
     it('restores the prior display style when image enhancement is disabled', async () => {
@@ -142,7 +136,7 @@ describe('MarkdownContentEnhancer', () => {
           features={{ images: true }}
         />,
       )
-      await waitFor(() => expect(container.querySelector('img')?.style.display).toBe('none'))
+      expect(container.querySelector('img')?.style.display).toBe('none')
 
       rerender(
         <MarkdownContentEnhancer
@@ -151,9 +145,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() =>
-        expect(container.querySelector('img')?.style.display).toBe('inline-block'),
-      )
+      expect(container.querySelector('img')?.style.display).toBe('inline-block')
     })
 
     it('first image is eager and second is lazy when eagerFirstImage=true', async () => {
@@ -168,10 +160,8 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => {
-        // useEffect fires after first render; portals re-render the images via next/image mock
-        expect(mockImage).toHaveBeenCalled()
-      })
+      // useEffect fires after first render; portals re-render the images via next/image mock
+      expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
       expect(calls[0]?.priority).toBe(true)
@@ -191,9 +181,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => {
-        expect(mockImage).toHaveBeenCalled()
-      })
+      expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
       expect(calls[0]?.src).toBe('/sideload/v2/abc?w=800')
@@ -211,9 +199,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => {
-        expect(mockImage).toHaveBeenCalled()
-      })
+      expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
       expect(calls[0]?.src).toBe('/sideload/v2/abc?w=1200&sig=xyz')
@@ -232,9 +218,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => {
-        expect(mockImage).toHaveBeenCalled()
-      })
+      expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
       expect(calls[0]?.src).toBe('https://images.example.com/sideload/v2/abc?sig=xyz&w=800')
@@ -253,9 +237,7 @@ describe('MarkdownContentEnhancer', () => {
         />,
       )
 
-      await waitFor(() => {
-        expect(mockImage).toHaveBeenCalled()
-      })
+      expect(mockImage).toHaveBeenCalled()
 
       const calls = getImageCalls(mockImage)
       expect(calls[0]?.priority).toBe(false)
