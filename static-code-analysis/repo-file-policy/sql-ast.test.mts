@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import { extractCreateTableMetadata, initSqlAst } from './sql-ast.mts'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
+import { stripSqlComments } from './sql-scanner.mts'
 
 describe('sql-ast local consume wrappers', () => {
   beforeAll(() => initSqlAst())
@@ -35,9 +36,14 @@ describe('sql-ast local consume wrappers', () => {
   })
 
   it('keeps the parser byte offset for a quoted table after a multibyte comment', async () => {
-    const content = '-- é\nCREATE TABLE public."MixedCase" (entity_type text, entity_id uuid);'
+    const content = stripSqlComments(
+      '-- é\nCREATE TABLE public."MixedCase" (entity_type text, entity_id uuid);',
+    )
     expect(await extractPolymorphicTargetTables(content)).toEqual([
-      { location: Buffer.byteLength('-- é\n'), tableName: 'MixedCase' },
+      {
+        location: Buffer.byteLength(content.slice(0, content.indexOf('CREATE TABLE'))),
+        tableName: 'MixedCase',
+      },
     ])
   })
 
