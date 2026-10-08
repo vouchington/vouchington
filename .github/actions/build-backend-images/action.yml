@@ -51,6 +51,8 @@ runs:
       id: buildx
       uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
       with:
+        # Hosted runners are ephemeral, so builder teardown only adds post-job tail.
+        cleanup: false
         buildkitd-config-inline: |
           [worker.oci]
             # Keep the proven parallelism ceiling for the api, worker-cpu, and
