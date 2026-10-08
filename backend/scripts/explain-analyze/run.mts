@@ -31,6 +31,7 @@ async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
+    await runMaterializedViewRefreshScenarios()
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runPostFeedShareScenarios()
@@ -47,7 +48,6 @@ async function main() {
     await runClassifierHumanVoteComparisonScenarios()
     await runCopyrightStatementFactsScenarios()
     await runEmbeddingReconciliationScenarios()
-    await runMaterializedViewRefreshScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

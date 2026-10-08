@@ -4,11 +4,12 @@ import { contentHash, postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from 
 // Five old rows per recent row (including back catalogue) make an unbounded scan fail.
 export async function seedTopHashtags(): Promise<void> {
   await using transaction = await beginTransaction()
+  // Keep this fixture outside the heavy-follow scenarios' followed/muted topic ranges.
   const { rows: aliases } = await transaction<{ id: string }>(
-    `/* seedTopHashtagsAlias */ SELECT id FROM topic_aliases WHERE alias = 'seed-alias-0'`,
+    `/* seedTopHashtagsAlias */ SELECT id FROM topic_aliases WHERE alias = 'seed-alias-2499'`,
   )
   const aliasId = aliases[0]?.id
-  if (!aliasId) throw new Error('Top hashtag seed requires seed-alias-0')
+  if (!aliasId) throw new Error('Top hashtag seed requires seed-alias-2499')
   const postIds = [
     ...Array.from({ length: 60 }, (_, i) => seedUuid(1000 + i, '05')),
     ...Array.from({ length: 300 }, (_, i) => seedUuid(65_000 + i, '05')),
