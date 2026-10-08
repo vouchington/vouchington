@@ -61,7 +61,7 @@ describe('membership lineage retention', () => {
     ).resolves.toEqual({ deleted: 1, hasMore: true })
     expect(await getTestUserRaw(refundMember.id)).not.toBeNull()
     expect(await getTestUserRaw(eligibleMember.id)).toBeNull()
-  }, 60_000)
+  })
 
   it('terminalizes active and queued grants before concurrent final account deletion', async () => {
     const window = createTestRetentionWindow()
@@ -110,7 +110,7 @@ describe('membership lineage retention', () => {
       deleted: 0,
       hasMore: false,
     })
-  }, 60_000)
+  })
 
   it('locks the user before racing a grant lifecycle mutation with final deletion', async () => {
     const window = createTestRetentionWindow()
@@ -141,7 +141,7 @@ describe('membership lineage retention', () => {
       deleted: 1,
       hasMore: false,
     })
-  }, 60_000)
+  })
 
   it('preserves an existing terminal grant outcome during final account deletion', async () => {
     const window = createTestRetentionWindow()
@@ -166,7 +166,7 @@ describe('membership lineage retention', () => {
       source_cancelled_at: beforeCleanup!.source_cancelled_at,
       activation_ended_at: beforeCleanup!.activation_ended_at,
     })
-  }, 60_000)
+  })
 
   it('preserves an expired source while recording final grant revocation', async () => {
     const window = createTestRetentionWindow()
@@ -197,7 +197,7 @@ describe('membership lineage retention', () => {
       source_expired_at: beforeCleanup!.source_expired_at,
       activation_ended_at: beforeCleanup!.activation_ended_at,
     })
-  }, 60_000)
+  })
 
   it('retains a lineage through soft deletion and releases it once for concurrent rebind', async () => {
     const window = createTestRetentionWindow()
@@ -245,5 +245,5 @@ describe('membership lineage retention', () => {
     )
     expect(claims.filter(claim => claim.status === 'fulfilled')).toHaveLength(1)
     expect(claims.filter(claim => claim.status === 'rejected')).toHaveLength(1)
-  }, 60_000)
+  })
 })

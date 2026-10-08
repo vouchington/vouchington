@@ -53,7 +53,7 @@ describe('cleanup retention windows', () => {
     expect(await getTestUserRaw(secondEligibleUser.id)).toBeNull()
     expect(await getTestUserRaw(atUpperBoundUser.id)).not.toBeNull()
     expect(await getTestUserRaw(afterUpperBoundUser.id)).not.toBeNull()
-  }, 60_000)
+  })
 
   it('only deletes anonymous referral attributions inside the bounded UUIDv7 window', async () => {
     const window = createTestRetentionWindow()
@@ -156,5 +156,5 @@ describe('retention publication capture', () => {
     await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toHaveLength(
       postIds.length,
     )
-  }, 60_000)
+  })
 })

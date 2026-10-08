@@ -76,7 +76,7 @@ describe('data retention per-run caps', () => {
       false,
       false,
     ])
-  }, 60_000)
+  })
 
   it('lets a per-cleanup override replace the run limits', async () => {
     const window = createTestRetentionWindow()
@@ -104,7 +104,7 @@ describe('data retention per-run caps', () => {
       false,
       false,
     ])
-  }, 60_000)
+  })
 
   it.each([
     ['soft-deleted users', cleanupSoftDeletedUsers],

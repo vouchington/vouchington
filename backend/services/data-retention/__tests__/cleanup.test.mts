@@ -284,7 +284,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(secondResult).toEqual({ deleted: 1, hasMore: true })
     expect(await getTestUserRaw(firstUser.id)).toBeNull()
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
-  }, 60_000)
+  })
 
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof insertTestOAuthAccount)
