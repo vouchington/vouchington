@@ -2,8 +2,8 @@
  * Test-only fixtures shared across this package's dispatch/record test files: a cached
  * remote_actors row (via the real getOrFetchRemoteActorByKeyId with an injected fetch mock —
  * dependency injection, not a module mock, per backend/AGENTS.md's non-web mocking policy), a
- * federation-opted-in user, and the deliverActivity queue-polling helpers used to assert an
- * Accept job was enqueued. This centralized helper uses source-relative imports for its former
+ * federation-opted-in user, and the deliverActivity queue assertion helper used to select an
+ * Accept job. This centralized helper uses source-relative imports for its former
  * owning workspaces to avoid adding higher-layer service dependencies to @voucha/test-helpers.
  */
 
@@ -18,7 +18,6 @@ import {
 } from '../services/remote-actors/index.mts'
 import { updateUserFields } from '../services/users/update-fields.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
-import { readAllQueueJobs } from './queue-jobs.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
 const VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM = generateRsaSha256KeyPair().publicKeyPem
@@ -64,20 +63,6 @@ export async function createFederatedUser(): Promise<PrivateUser> {
   const user = await createTestUserDirect()
   await updateUserFields(user.id, { is_fediverse_federation_enabled: true })
   return user
-}
-
-// Poll until predicate is satisfied or timeout elapses, then return the final job list.
-export async function waitForDeliverActivityJobs(
-  predicate: (jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>) => boolean,
-  timeoutMs = 1000,
-): Promise<Awaited<ReturnType<typeof activitypubDelivery.getJobs>>> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const jobs = await readAllQueueJobs(activitypubDelivery)
-    if (predicate(jobs)) return jobs
-    await new Promise<void>(resolve => setImmediate(resolve))
-  }
-  return readAllQueueJobs(activitypubDelivery)
 }
 
 export function acceptJobsFor(

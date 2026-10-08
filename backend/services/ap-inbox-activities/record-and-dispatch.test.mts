@@ -1,14 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { getEntityRelation, readAllQueueJobs } from '@voucha/test-helpers'
+import { getEntityRelation, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
 import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
   createRemoteActorFixture,
   createFederatedUser,
-  waitForDeliverActivityJobs,
   acceptJobsFor,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
@@ -79,7 +78,6 @@ describe('recordAndDispatchInboundActivity', () => {
   })
 
   it('rolls back duplicate Follow recovery when durable-envelope completion loses its lease', async () => {
-    await activitypubDelivery.obliterate({ force: true })
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
@@ -115,9 +113,7 @@ describe('recordAndDispatchInboundActivity', () => {
       predicate: 'follow',
     })
     expect(await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)).toEqual([])
-    // Fence queue commands issued by the completed service call before reading once. Polling for
-    // an event that must remain absent would otherwise hammer every queue state until timeout.
-    await activitypubDelivery.getJobCounts()
+    expect(result).not.toHaveProperty('postCommitEnqueue')
     const jobs = await readAllQueueJobs(activitypubDelivery)
     expect(acceptJobsFor(jobs, activityId)).toHaveLength(0)
 
@@ -133,10 +129,6 @@ describe('recordAndDispatchInboundActivity', () => {
 })
 
 describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () => {
-  beforeEach(async () => {
-    await activitypubDelivery.obliterate({ force: true })
-  })
-
   it('recovers a lost post-commit Accept when the committed Follow is redelivered', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
@@ -151,7 +143,9 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
 
     const replay = await recordAndDispatchInboundActivity(remoteActor, activity)
-    expect(replay).toEqual({ outcome: 'applied', duplicate: true })
+    expect(replay).toMatchObject({ outcome: 'applied', duplicate: true })
+    expect(replay.postCommitEnqueue).toBeDefined()
+    const acceptJob = await readEnqueuedJob(activitypubDelivery, await replay.postCommitEnqueue)
     const followRelation = getEntityRelationMetadataOrThrow({
       subjectType: 'remote_actor',
       objectType: 'user',
@@ -161,10 +155,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(relation).toHaveLength(1)
     expect(relation[0]).toMatchObject({ deleted_at: null })
 
-    const jobs = await waitForDeliverActivityJobs(
-      j => acceptJobsFor(j, followActivityId).length > 0,
-    )
-    const acceptJobs = acceptJobsFor(jobs, followActivityId)
+    const acceptJobs = acceptJobsFor([acceptJob], followActivityId)
     expect(acceptJobs).toHaveLength(1)
     expect(acceptJobs[0]).toMatchObject({
       activityType: 'Accept',
@@ -190,8 +181,14 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     }
 
     const first = await recordAndDispatchInboundActivity(remoteActor, followActivity)
-    expect(first).toEqual({ outcome: 'applied', duplicate: false })
-    await waitForDeliverActivityJobs(jobs => acceptJobsFor(jobs, followActivityId).length > 0)
+    expect(first).toMatchObject({ outcome: 'applied', duplicate: false })
+    expect(first.postCommitEnqueue).toBeDefined()
+    const originalAcceptJob = await readEnqueuedJob(
+      activitypubDelivery,
+      await first.postCommitEnqueue,
+    )
+    const ownedAcceptJobsBeforeUndo = acceptJobsFor([originalAcceptJob], followActivityId)
+    expect(ownedAcceptJobsBeforeUndo).toHaveLength(1)
 
     const undoActivity = {
       id: `https://remote.example/activities/${randomSuffix()}`,
@@ -202,10 +199,9 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const undoResult = await recordAndDispatchInboundActivity(remoteActor, undoActivity)
     expect(undoResult).toEqual({ outcome: 'applied', duplicate: false })
 
-    await activitypubDelivery.obliterate({ force: true })
-
     const staleReplay = await recordAndDispatchInboundActivity(remoteActor, followActivity)
-    expect(staleReplay).toEqual({ outcome: 'applied', duplicate: true })
+    expect(staleReplay).toMatchObject({ outcome: 'applied', duplicate: true })
+    expect(staleReplay).not.toHaveProperty('postCommitEnqueue')
 
     const followRelation = getEntityRelationMetadataOrThrow({
       subjectType: 'remote_actor',
@@ -216,8 +212,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(relation).toHaveLength(1)
     expect(relation[0]).toMatchObject({ deleted_at: expect.any(Date) })
 
-    await activitypubDelivery.getJobCounts()
     const jobsAfterReplay = await readAllQueueJobs(activitypubDelivery)
-    expect(acceptJobsFor(jobsAfterReplay, followActivityId)).toHaveLength(0)
+    expect(acceptJobsFor(jobsAfterReplay, followActivityId)).toEqual(ownedAcceptJobsBeforeUndo)
   })
 })
