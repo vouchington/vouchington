@@ -89,8 +89,8 @@ export async function createTopicAliasCategoryMappingDirtyRowsForTest(
   if (rows.length === 0) return
   await write(
     `/* createTopicAliasCategoryMappingDirtyRowsForTest */
-      INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias, updated_at)
-      SELECT topic_alias_id, alias, TIMESTAMPTZ '0001-01-01 00:00:00+00'
+      INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)
+      SELECT topic_alias_id, alias
       FROM UNNEST($1::uuid[], $2::text[]) AS input(topic_alias_id, alias)`,
     [rows.map(row => row.topicAliasId), rows.map(row => row.alias)],
   )
