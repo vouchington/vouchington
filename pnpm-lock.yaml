@@ -13094,8 +13094,8 @@ importers:
         specifier: ^0.17.0
         version: 0.17.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       mailparser:
-        specifier: ^3.9.35
-        version: 3.9.35
+        specifier: ^3.9.36
+        version: 3.9.36
     devDependencies:
       '@types/mailparser':
         specifier: ^3.9.0
@@ -20589,9 +20589,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  he@2.0.0:
-    resolution: {integrity: sha512-0jE+JPv08nhXWmI1dULybzqNt34RbkH6Ul6V4cmDONpjYx1SfyObKF38FJLaJ1K7WWD93LWL9lewzk4E1Ria4A==}
-    engines: {node: '>=22'}
+  he@1.2.0:
+    resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
   hex-rgb@4.3.0:
@@ -21257,8 +21256,8 @@ packages:
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
 
-  mailparser@3.9.35:
-    resolution: {integrity: sha512-ID/TGNz3oHa+2iKJ4Y9Q4tNar2gorQYLOXnf7uTeq1ZQltaB8YGP/H84fKNh/t1mpZ7bRzB0e0WAiX7Y31A3Vw==}
+  mailparser@3.9.36:
+    resolution: {integrity: sha512-Fng3OmPN7khG0oVHDwwBIOYxjGu7kFxEuN6NnVV1H2tQYCIWjqvjK6cKvhj2r3XQVToVabP0b4HF+N7YgNdXFQ==}
     engines: {node: '>=20.0.0'}
 
   make-dir@4.0.0:
@@ -29655,7 +29654,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.5
 
-  he@2.0.0: {}
+  he@1.2.0: {}
 
   hex-rgb@4.3.0: {}
 
@@ -30242,11 +30241,11 @@ snapshots:
       '@babel/types': 7.29.8
       source-map-js: 1.2.1
 
-  mailparser@3.9.35:
+  mailparser@3.9.36:
     dependencies:
       '@zone-eu/mailsplit': 5.4.20
       encoding-japanese: 2.4.0
-      he: 2.0.0
+      he: 1.2.0
       html-to-text: 10.0.1
       iconv-lite: 0.7.3
       libmime: 5.4.7
