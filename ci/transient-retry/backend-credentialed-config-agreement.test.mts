@@ -48,7 +48,12 @@ describe('backend-credentialed config agreement', () => {
     const parsed = parseYaml(readTracked(workflowPath)) as YamlWorkflow
     const steps = Object.values(parsed.jobs ?? {}).flatMap(job => job.steps ?? [])
     const runStep = steps.find(step => step.name === 'Run backend credentialed tests')
-    const runText = typeof runStep?.run === 'string' ? runStep.run : ''
+    // The Anthropic project needs the federated token, which only branch runs mint, so it has its
+    // own step that pull-request runs skip; the two steps together run every credentialed project.
+    const anthropicStep = steps.find(step => step.name === 'Run Anthropic credentialed tests')
+    const runText = [runStep?.run, anthropicStep?.run]
+      .filter((text): text is string => typeof text === 'string')
+      .join('\n')
 
     it(`the "Run backend credentialed tests" step still exists in ${workflowPath}`, () => {
       expect(typeof runStep?.run).toBe('string')
@@ -61,7 +66,7 @@ describe('backend-credentialed config agreement', () => {
       },
     )
 
-    it('the step runs exactly the shared credentialed projects, in any order', () => {
+    it('the steps run exactly the shared credentialed projects, in any order', () => {
       const projectFlags = [...runText.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
       expect(projectFlags.toSorted()).toEqual(
         backendCredentialedProjects.map(({ project }) => project).toSorted(),
