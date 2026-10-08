@@ -147,7 +147,7 @@
       "values": ["typesafe", "openrouter"]
     },
     "classifier_primitives": {
-      "values": ["noul", "choice", "score"]
+      "values": ["noul", "choice", "score", "agent"]
     },
     "classifier_run_terminal_failure_kinds": {
       "values": [
@@ -6950,6 +6950,123 @@
           "definition": "CREATE TRIGGER trigger_apple_accounts_updated_at BEFORE UPDATE ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
+      "uniqueConstraints": {}
+    },
+    "autotagger_agent_run_topics": {
+      "checkConstraints": {},
+      "columns": {
+        "run_id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "topic_id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": null,
+      "foreignKeys": {
+        "autotagger_agent_run_topics_run_id_fkey": {
+          "columns": ["run_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_runs",
+          "validated": true
+        },
+        "autotagger_agent_run_topics_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_autotagger_agent_run_topics__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_autotagger_agent_run_topics__topic ON public.autotagger_agent_run_topics USING btree (topic_id, run_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_autotagger_agent_run_topics": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_autotagger_agent_run_topics ON public.autotagger_agent_run_topics USING btree (run_id, topic_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["run_id", "topic_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "bedrock_embedding_batch_entities": {
