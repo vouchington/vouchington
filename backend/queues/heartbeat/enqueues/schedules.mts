@@ -15,9 +15,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'publish-glidemq-stats',
     registration: 'sequential',
     repeat: { every: 300_000 },
-    stagingHourlyFloor: {
-      bypassJustification: 'Five-minute telemetry bounds queue-staleness detection to ten minutes.',
-    },
     template: {
       name: GLIDE_MQ_STATS_JOB_NAME,
       data: {},

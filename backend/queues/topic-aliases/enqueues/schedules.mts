@@ -13,9 +13,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'reconcileTopicAliasCategoryMappings',
     registration: 'sequential',
     repeat: { every: 300_000 },
-    stagingHourlyFloor: {
-      bypassJustification: 'Five-minute reconciliation bounds durable alias-transition recovery.',
-    },
     template: {
       name: 'processReconcileTopicAliasCategoryMappings' as TopicAliasJobs,
       data: {},

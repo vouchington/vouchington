@@ -57,6 +57,11 @@ included). Production always resolves `applyHourlyFloor` to `false` by construct
 `environment: 'production'`-flagged jobs are never clamped even if it were `true` (defense in
 depth — see `register()` in `runtime.mts`).
 
+There are no exceptions: every job that is not `environment: 'production'` fires at most once an
+hour on staging, and the manifest has no per-job opt-out. A job whose production cadence is faster
+than hourly (for example the five-minute ActivityPub inbox cleanup) therefore runs hourly on
+staging; production keeps its declared cadence.
+
 The clamp (`hourly-clamp.mts`) is a **floor, not a target**: only repeats already firing more than
 once per hour are rewritten. `{ every: n }` becomes `{ every: Math.max(n, 3_600_000) }`; a cron
 `pattern` whose minute-field cardinality implies more than one firing per hour is rewritten to

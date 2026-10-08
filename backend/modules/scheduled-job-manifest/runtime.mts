@@ -9,7 +9,6 @@ import type {
   ScheduledJobQueue,
   ScheduledJobRuntimeOptions,
 } from './types.mts'
-import { validateStagingHourlyFloorBypass } from './staging-hourly-floor-validation.mts'
 import { validateScheduledJobRepeat } from './validation.mts'
 
 export async function upsertScheduledJobManifest(
@@ -91,7 +90,6 @@ function register(
 ): Promise<unknown> {
   const resolvedRepeat = resolve(job.repeat)
   validateScheduledJobRepeat(resolvedRepeat, job.schedulerId, job.subMinuteJustification)
-  validateStagingHourlyFloorBypass(job, resolvedRepeat, job.schedulerId)
   // The floor clamps the resolved value, not the definition: a thunk must re-resolve to its
   // real interval on every call, and only the interval actually about to be registered matters.
   // `environment: 'production'` jobs (e.g. psql's dataRetentionCleanup) are excluded here too,
@@ -100,7 +98,7 @@ function register(
   // production-flagged job is never clamped" from correct derivation of applyHourlyFloor by the
   // caller -- the two booleans are computed independently and aren't causally linked.
   const repeat =
-    applyHourlyFloor && job.environment !== 'production' && job.stagingHourlyFloor === undefined
+    applyHourlyFloor && job.environment !== 'production'
       ? clampScheduledJobRepeatToHourlyFloor(resolvedRepeat).repeat
       : resolvedRepeat
   const data =

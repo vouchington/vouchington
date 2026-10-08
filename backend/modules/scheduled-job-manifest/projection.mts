@@ -62,12 +62,7 @@ function clampedSurfaceSchedule(
   schedule: string,
   applyHourlyFloor: boolean,
 ): string {
-  if (
-    !applyHourlyFloor ||
-    job.environment === 'production' ||
-    job.stagingHourlyFloor !== undefined ||
-    typeof job.repeat === 'function'
-  ) {
+  if (!applyHourlyFloor || job.environment === 'production' || typeof job.repeat === 'function') {
     return schedule
   }
   return clampScheduledJobRepeatToHourlyFloor(job.repeat).clamped

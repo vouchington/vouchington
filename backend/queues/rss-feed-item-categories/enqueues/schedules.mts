@@ -13,9 +13,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'reconcileRssFeedItemCategorySnapshots',
     registration: 'sequential',
     repeat: { every: 300_000 },
-    stagingHourlyFloor: {
-      bypassJustification: 'Five-minute recovery bounds durable category snapshots.',
-    },
     template: {
       name: 'processReconcileRssFeedItemCategorySnapshots' as RssFeedItemCategoriesJobs,
       data: {},
