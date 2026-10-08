@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { read, write } from '@data-stores/psql'
-import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import { FLAG_COLUMNS } from './flag-columns.mts'
@@ -75,15 +75,12 @@ export async function getReportIntegrityFlags(
   const flags = rows as ReportIntegrityFlag[]
   const hasNextPage = flags.length > clampedLimit
   const results = hasNextPage ? flags.slice(0, clampedLimit) : flags
-  const lastNode = results[results.length - 1]
-
   return {
     results,
-    page_info: {
-      has_next_page: hasNextPage,
-      end_cursor: hasNextPage && lastNode ? encodeScopedUuidCursor(lastNode.id, cursorScope) : null,
-      start_cursor: results[0] ? encodeScopedUuidCursor(results[0].id, cursorScope) : null,
-    },
+    page_info: buildPageInfo(results, {
+      hasNextPage,
+      getCursor: flag => ({ id: flag.id, scope: cursorScope }),
+    }),
   }
 }
 
