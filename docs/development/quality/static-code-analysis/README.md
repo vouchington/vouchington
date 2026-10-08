@@ -647,10 +647,12 @@ the local checker owns the tracked inventory and diagnostics.
 
 SQL text guards under `repo-file-policy/` share PostgreSQL comment, quote, literal, and
 statement handling through `sql-scanner.mts`, a re-export of `vouchington-tooling/sql-scanner`.
-Guards that need migration `CREATE TABLE` metadata, or a full parse of a fragment, use
-`sql-ast.mts`, a re-export of `vouchington-tooling/sql-ast` (`@libpg-query/parser@18`).
-`extractPolymorphicTargetTables` keeps the product-specific `entity_type` / `entity_id` policy
-locally while consuming typed `CREATE TABLE` facts from `no-mistakes`.
+Monetary storage, polymorphic targets, UUIDv7 timestamps, and moderation-history guards consume
+released `no-mistakes` SQL source facts. Product-specific table/column policy remains local;
+the aggregate awaits their asynchronous entrypoints and diagnostics retain source locations.
+UUIDv7 checks inspect the required root function call rather than promoting a nested call from
+an unrelated expression. Remaining runtime/generated-DDL consumers still use
+`vouchington-tooling/sql-ast` while their replay fact requirements are completed upstream.
 Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column` owns migration ADD
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in
 its original pre-launch `CREATE TABLE`.
