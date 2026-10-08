@@ -42,7 +42,12 @@ try {
   receipt.after = after
   receipt.stage = 'after-create-assert'
   assert.deepEqual(created, expectedPages)
-  assert.deepEqual(after, expectedRows)
+  assert.deepEqual(
+    after.toSorted((a, b) =>
+      a.entity_relation < b.entity_relation ? -1 : a.entity_relation > b.entity_relation ? 1 : 0,
+    ),
+    expectedRows,
+  )
   receipt.stage = 'replay'
   const replayed = await cleanupRetainedRelationIdentities()
   receipt.replayed = replayed
@@ -51,7 +56,12 @@ try {
   receipt.replay = replay
   receipt.stage = 'after-replay-assert'
   assert.deepEqual(replayed, expectedPages)
-  assert.deepEqual(replay, expectedRows)
+  assert.deepEqual(
+    replay.toSorted((a, b) =>
+      a.entity_relation < b.entity_relation ? -1 : a.entity_relation > b.entity_relation ? 1 : 0,
+    ),
+    expectedRows,
+  )
   receipt.state = 'passed'
   receipt.stage = 'complete'
 } catch (err) {
