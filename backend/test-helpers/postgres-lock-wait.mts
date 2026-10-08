@@ -55,15 +55,21 @@ export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
  * Use the adapter-owned primary advisory pool when the held lock and blocked operations can
  * occupy every write connection; the observer must run before the holder is released. The
  * advisory pool has its own finite capacity, so this does not prevent contention with other
- * advisory-pool users or an event-loop stall.
+ * advisory-pool users or an event-loop stall. Passing a previously acquired transaction
+ * executor reserves the observer connection before the holder or blocked operation starts.
+ * Its transaction-local activity snapshot is discarded before each observation.
  */
 export async function waitForTestPostgresLockWaiter(
   holderProcessId: number,
   queryMarker: string,
-  observerPool: 'write' | 'advisoryLock' = 'write',
+  observerPool: 'write' | 'advisoryLock' | QueryExecutor = 'write',
 ): Promise<void> {
   await pollUntilNotNull(
     async () => {
+      if (typeof observerPool === 'function') {
+        await observerPool(sql`/* waitForTestPostgresLockWaiter.refresh */
+          SELECT pg_stat_clear_snapshot()`)
+      }
       const observation = sql`
         /* waitForTestPostgresLockWaiter */
         SELECT EXISTS (
@@ -77,9 +83,11 @@ export async function waitForTestPostgresLockWaiter(
         ) AS waiting
       `
       const { rows } =
-        observerPool === 'advisoryLock'
-          ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
-          : await write<{ waiting: boolean }>(observation)
+        typeof observerPool === 'function'
+          ? await observerPool<{ waiting: boolean }>(observation)
+          : observerPool === 'advisoryLock'
+            ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
+            : await write<{ waiting: boolean }>(observation)
       return rows[0]?.waiting ? true : null
     },
     5_000,

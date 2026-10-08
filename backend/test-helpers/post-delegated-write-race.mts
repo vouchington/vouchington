@@ -1,4 +1,9 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import {
+  advisoryLockPool,
+  beginTransaction,
+  type OwnedTransaction,
+  type QueryExecutor,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   getTestPostgresBackendProcessId,
@@ -118,25 +123,27 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
   queryMarker: string,
   stageChange: (query: QueryExecutor) => Promise<void>,
 ): Promise<T> {
-  const query = await beginTransaction()
+  const observer = await beginTransaction({ client: advisoryLockPool })
+  let query: OwnedTransaction | undefined
   let pending: Promise<T> | undefined
   let result: T | undefined
   let failure: { reason: unknown } | undefined
   const cleanupErrors: unknown[] = []
   let settlementAttempted = false
   try {
+    query = await beginTransaction()
     const processId = await getTestPostgresBackendProcessId(query)
     await stageChange(query)
     pending = operation()
     void pending.catch(() => undefined)
-    await waitForTestPostgresLockWaiter(processId, queryMarker, 'advisoryLock')
+    await waitForTestPostgresLockWaiter(processId, queryMarker, observer)
     settlementAttempted = true
     await query.commit()
     result = await pending
   } catch (err) {
     failure = { reason: err }
   } finally {
-    if (!settlementAttempted) {
+    if (query && !settlementAttempted) {
       try {
         await query.rollback()
       } catch (err) {
@@ -144,7 +151,12 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
       }
     }
     try {
-      await query[Symbol.asyncDispose]()
+      await query?.[Symbol.asyncDispose]()
+    } catch (err) {
+      cleanupErrors.push(err)
+    }
+    try {
+      await observer[Symbol.asyncDispose]()
     } catch (err) {
       cleanupErrors.push(err)
     }
