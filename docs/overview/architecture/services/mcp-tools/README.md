@@ -81,7 +81,7 @@ Instructions do not name tools and may grow by at most 4,000 characters per serv
 base commit. CI measures generated `tools/list` counts, serialized sizes, core and output-aware
 projections, and instruction length after scope, role, plan, and copyright-switch filtering. The
 approved per-server/grant caps are maintained by the
-[catalog budget test](../../../../../backend/services/mcp-tools/catalog/catalog-budgets.test.mts).
+[catalog budget test](../../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.bound.test.mts).
 Personalized topic recommendations also expose the REST filters and `page_info` continuation;
 malformed cursors return the advertised invalid-cursor outcome.
 
