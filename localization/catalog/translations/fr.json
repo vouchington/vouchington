@@ -4611,7 +4611,6 @@
 {"id":"copy.native.swift.chat.stop","value":"Arrêter"},
 {"id":"copy.native.swift.chat.unableToCreateConversation","value":"Impossible de créer la conversation."},
 {"id":"copy.native.swift.chat.unableToPersistOnDeviceResponse","value":"Impossible d’enregistrer la réponse sur l’appareil."},
-{"id":"copy.native.swift.chat.unableToSendMessage","value":"Impossible d’envoyer le message."},
 {"id":"copy.native.swift.chatMessageBubble.subagentText","value":"Texte du sous-agent"},
 {"id":"copy.native.swift.commentThread.ancestorChain","value":"Chaîne des ancêtres"},
 {"id":"copy.native.swift.commentThread.spam","value":"Indésirable"},

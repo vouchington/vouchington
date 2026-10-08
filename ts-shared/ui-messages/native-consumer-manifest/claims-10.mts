@@ -94,7 +94,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_10 = [
   { key: 'native.swift.chat.stop', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.chat.unableToCreateConversation', consumers: ['swift'] },
   { key: 'native.swift.chat.unableToPersistOnDeviceResponse', consumers: ['swift'] },
-  { key: 'native.swift.chat.unableToSendMessage', consumers: ['swift'] },
   { key: 'native.swift.chat.you', consumers: ['swift'] },
   { key: 'native.swift.commentThread.ancestorChain', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.commentThread.best', consumers: ['swift'] },

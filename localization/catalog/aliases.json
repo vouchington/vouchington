@@ -2585,7 +2585,6 @@
 {"alias":"native.swift.chat.stop","consumer":"swift","copyId":"copy.native.swift.chat.stop"},
 {"alias":"native.swift.chat.unableToCreateConversation","consumer":"swift","copyId":"copy.native.swift.chat.unableToCreateConversation"},
 {"alias":"native.swift.chat.unableToPersistOnDeviceResponse","consumer":"swift","copyId":"copy.native.swift.chat.unableToPersistOnDeviceResponse"},
-{"alias":"native.swift.chat.unableToSendMessage","consumer":"swift","copyId":"copy.native.swift.chat.unableToSendMessage"},
 {"alias":"native.swift.chat.you","consumer":"swift","copyId":"copy.extracted.conversationid.conversationPageClient.you_4a5b6c7d"},
 {"alias":"native.swift.commentThread.ancestorChain","consumer":"swift","copyId":"copy.native.swift.commentThread.ancestorChain"},
 {"alias":"native.swift.commentThread.best","consumer":"swift","copyId":"copy.extracted.comments.commentTree.best_c47d21c6"},

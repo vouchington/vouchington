@@ -4611,7 +4611,6 @@
 {"descriptor":null,"id":"copy.native.swift.chat.stop"},
 {"descriptor":null,"id":"copy.native.swift.chat.unableToCreateConversation"},
 {"descriptor":null,"id":"copy.native.swift.chat.unableToPersistOnDeviceResponse"},
-{"descriptor":null,"id":"copy.native.swift.chat.unableToSendMessage"},
 {"descriptor":null,"id":"copy.native.swift.chatMessageBubble.subagentText"},
 {"descriptor":null,"id":"copy.native.swift.commentThread.ancestorChain"},
 {"descriptor":null,"id":"copy.native.swift.commentThread.spam"},
