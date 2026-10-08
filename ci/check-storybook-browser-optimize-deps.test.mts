@@ -100,14 +100,14 @@ describe('Storybook browser optimizeDeps audit', () => {
 
   it('reports undeclared nested children and runtime imports missing exact includes', async () => {
     const root = workspace({
-      'ts-shared/feature-flags/package.json': manifest(),
+      'ts-shared/feature-flags/package.json': '{}',
       'ts-shared/feature-flags/index.ts': '',
       'ts-shared/money/package.json': manifest('@vouchington/utils'),
       'ts-shared/money/index.ts': '',
     })
     const errors = await storybookBrowserOptimizeDepsErrors({
       root,
-      include: ['@ts-shared/money > @vouchington/utils', '@ts-shared/money > uuid'],
+      include: ['@ts-shared/money > @vouchington/utils', '@ts-shared/feature-flags > uuid'],
       firstPartyNames: new Set(),
       readImports: fakeImports({
         'ts-shared/feature-flags': ['@vouchington/utils/feature-flags'],
@@ -115,7 +115,7 @@ describe('Storybook browser optimizeDeps audit', () => {
       }).read,
     })
     expect(errors).toEqual([
-      '@ts-shared/money > uuid: @ts-shared/money does not declare uuid',
+      '@ts-shared/feature-flags > uuid: @ts-shared/feature-flags does not declare uuid',
       "@ts-shared/feature-flags: add '@ts-shared/feature-flags > @vouchington/utils/feature-flags' to storybookBrowserOptimizeDeps",
       "@ts-shared/money: add '@ts-shared/money > @vouchington/utils/money' to storybookBrowserOptimizeDeps",
     ])

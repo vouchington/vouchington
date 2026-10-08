@@ -18,7 +18,6 @@ export type OptimizeDepsAuditInput = {
   include: readonly string[]
   firstPartyNames: Set<string>
   readImports: ReadImportUsages
-  requiredParents?: readonly string[]
 }
 
 /** Maps an `importUsages()` result to the bare runtime specifiers Vite must pre-bundle. */
@@ -67,8 +66,10 @@ function productionSourceFiles(root: string, directory: string): string[] {
 }
 
 function packageRoot(specifier: string): string {
-  const [first, second] = specifier.split('/')
-  return first.startsWith('@') && second ? `${first}/${second}` : first
+  return specifier
+    .split('/')
+    .slice(0, specifier.startsWith('@') ? 2 : 1)
+    .join('/')
 }
 
 /**
@@ -80,10 +81,9 @@ export async function storybookBrowserOptimizeDepsErrors({
   include,
   firstPartyNames,
   readImports,
-  requiredParents = requiredNestedParents,
 }: OptimizeDepsAuditInput): Promise<string[]> {
   const included = new Set(include)
-  const parents = new Set(requiredParents)
+  const parents = new Set<string>(requiredNestedParents)
   const errors: string[] = []
   for (const entry of include) {
     const nested = entry.split(' > ')
