@@ -274,5 +274,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     const upload = steps.find(step => step.name === 'Upload retained relation bootstrap receipt')
     expect(upload?.if).toBe('always()')
     expect(upload?.with?.path).toBe('artifacts/retained-relation-bootstrap.json')
+    expect(upload?.with?.['retention-days']).toBe(1)
+    expect(upload?.with?.overwrite).toBe(true)
   })
 })

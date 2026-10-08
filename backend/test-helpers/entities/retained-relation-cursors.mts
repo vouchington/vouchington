@@ -51,7 +51,7 @@ export async function restoreTestRetainedRelationCleanupCursor(
 
 export async function getRetainedRelationCleanupCursors(): Promise<string[]> {
   const { rows } = await read<{ entity_relation: string }>(
-    'SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
+    '/* getRetainedRelationCleanupCursors */ SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
   )
   return rows.map(row => row.entity_relation)
 }
@@ -88,7 +88,7 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
         cursorNames: async () =>
           (
             await query<{ entity_relation: string }>(
-              'SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
+              '/* readReservedRetainedRelationCleanupCursorNames */ SELECT entity_relation FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
             )
           ).rows.map(row => row.entity_relation),
       }),
