@@ -42,8 +42,8 @@ capabilities.
 ### Lint / unit tests only (no Docker or DB required)
 
 ```bash
-git clone git@github.com:jonathanong/voucha.git
-cd voucha
+git clone git@github.com:vouchington/vouchington.git
+cd vouchington
 ./dev/initialize monorepo  # installs deps and pinned tooling
 ```
 
@@ -52,8 +52,8 @@ See [development/tests.md](tests.md) for the full command matrix.
 ### DB/Valkey-backed backend tests (no full web stack)
 
 ```bash
-git clone git@github.com:jonathanong/voucha.git
-cd voucha
+git clone git@github.com:vouchington/vouchington.git
+cd vouchington
 ./dev/initialize backend    # monorepo + creates DB, starts Valkey container, runs migrations, writes .env
 ```
 
@@ -64,8 +64,8 @@ Next.js, or HTTPS certs. See [development/tests.md](tests.md) for the full comma
 
 ```bash
 # 1. Clone and initialize
-git clone git@github.com:jonathanong/voucha.git
-cd voucha
+git clone git@github.com:vouchington/vouchington.git
+cd vouchington
 ./dev/initialize            # full setup (alias for ./dev/initialize web)
 
 # 2. Start all services
