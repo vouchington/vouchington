@@ -4024,6 +4024,7 @@
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.activeCount"},
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.backfills"},
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.completedCount"},
+{"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.delayedCount"},
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.failedCount"},
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.queueCount"},
 {"descriptor":null,"id":"copy.native.dotnet.engineeringQueues.runBackfill"},
