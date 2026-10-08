@@ -14,10 +14,10 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.13",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.80.0",
+    "no-mistakes": "^0.81.0",
     "oxfmt": "^0.72.0",
     "smol-toml": "^1.9.0",
-    "vouchington-tooling": "^0.37.3",
+    "vouchington-tooling": "^0.38.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
