@@ -4666,7 +4666,6 @@
 {"id":"copy.native.swift.communityRows.transparencyCategories.communityAi","value":"IA da comunidade"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.postClearanceRejection","value":"Rejeição de pré-validação"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.spamDetection","value":"Detecção de spam"},
-{"id":"copy.native.swift.communityRows.transparencyCategories.tag","value":"Marcar"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.unsuspend","value":"Reativar"},
 {"id":"copy.native.swift.communityRows.transparencyEmpty","value":"Não há dados agregados disponíveis para este período."},
 {"id":"copy.native.swift.communityRows.transparencyLocked","value":"É necessário Plus ou Pro para ver dados agregados."},

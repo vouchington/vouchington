@@ -4666,7 +4666,6 @@
 {"id":"copy.native.swift.communityRows.transparencyCategories.communityAi","value":"Community AI"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.postClearanceRejection","value":"Post clearance rejection"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.spamDetection","value":"Spam detection"},
-{"id":"copy.native.swift.communityRows.transparencyCategories.tag","value":"Tag"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.unsuspend","value":"Unsuspend"},
 {"id":"copy.native.swift.communityRows.transparencyEmpty","value":"No aggregate data is available for this period."},
 {"id":"copy.native.swift.communityRows.transparencyLocked","value":"Plus or Pro is required to view aggregate data."},
