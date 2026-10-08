@@ -7,5 +7,4 @@ export {
   type OpenAIResponse,
   type BackgroundResponseHooks,
   type OpenAIResponseAttemptHooks,
-  type OpenAIUsage,
 } from '@modules/openai-utils/create-response'

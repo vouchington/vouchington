@@ -25,7 +25,6 @@
   "scripts": {},
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
-    "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",
     "@modules/utils": "workspace:^",
