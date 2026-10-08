@@ -13,6 +13,7 @@ jobs:
       - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
       - run: node ci/check-no-mistakes-test-policy.mts
       - run: node ci/check-live-workflow-topology.mts
+      - run: node ci/check-storybook-browser-optimize-deps.mts
 `
 
 export const malformedWorkflow = 'jobs: [unterminated\n'

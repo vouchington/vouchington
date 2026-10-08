@@ -54,6 +54,11 @@ describe('no-mistakes CI contention policy', () => {
         job: 'no-mistakes',
         command: 'node ci/check-live-workflow-topology.mts',
       },
+      {
+        path: '.github/workflows/static-code-analysis.yml',
+        job: 'no-mistakes',
+        command: 'node ci/check-storybook-browser-optimize-deps.mts',
+      },
     ])
   })
 
