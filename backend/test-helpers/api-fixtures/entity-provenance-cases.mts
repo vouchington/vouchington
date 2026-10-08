@@ -39,10 +39,10 @@ const variants = <T extends { id: string }>(entity: T, staff = false) => [
 const byId = <T extends { id: string }>(rows: T[]) =>
   Object.fromEntries(rows.map(row => [row.id, row]))
 
-const entityPage = (type: string, rows: Array<{ id: string }>) => ({
+const entityPage = (type: 'community' | 'topic' | 'list', rows: Array<{ id: string }>) => ({
   results: rows.map(row => ({ __entity_type: type, id: row.id })),
   page_info: pageInfo,
-  [`${type}s`]: byId(rows),
+  [type === 'community' ? 'communities' : `${type}s`]: byId(rows),
 })
 
 const communitySearch = (staff: boolean) => ({
@@ -100,7 +100,7 @@ const entityCase = (
   auth: staff ? 'fixture-admin' : 'fixture-user',
   status: 200,
   body,
-  consumers: [],
+  consumers: staff ? [] : ['swift-ui'],
   migratedFrom: [],
 })
 

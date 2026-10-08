@@ -90230,7 +90230,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/communities",
       "bodyFile": "responses/entity-provenance.communities.json",
-      "consumers": [],
+      "consumers": ["swift-ui"],
       "id": "entity-provenance.communities",
       "method": "GET",
       "migratedFrom": [],
@@ -90239,7 +90239,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "c5c045b61caa49ace85ef012d95f33ed2109f24f4af47f621e32ba6aae2e712b",
+        "hash": "8027acba5e51133f0294054d3123ef9c394f5bec37a8619be28fb6154c1928ec",
         "key": "entity-provenance.communities"
       },
       "route": {
@@ -90254,7 +90254,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/topics",
       "bodyFile": "responses/entity-provenance.topics.json",
-      "consumers": [],
+      "consumers": ["swift-ui"],
       "id": "entity-provenance.topics",
       "method": "GET",
       "migratedFrom": [],
@@ -90278,7 +90278,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/lists",
       "bodyFile": "responses/entity-provenance.lists.json",
-      "consumers": [],
+      "consumers": ["swift-ui"],
       "id": "entity-provenance.lists",
       "method": "GET",
       "migratedFrom": [],
@@ -90302,7 +90302,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/rss-feeds",
       "bodyFile": "responses/entity-provenance.rss-feeds.json",
-      "consumers": [],
+      "consumers": ["swift-ui"],
       "id": "entity-provenance.rss-feeds",
       "method": "GET",
       "migratedFrom": [],
@@ -90335,7 +90335,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "c6ecdc7f50054e2015e170d8b458c1a668cbd506bd2fb68b3869b0e7c06d499a",
+        "hash": "78795d73b134631a355c56d76eea89c1ac2d82aea841e28fa703b229b4645033",
         "key": "entity-provenance.communities.staff"
       },
       "route": {
