@@ -27,7 +27,8 @@ to resolve historical-identity retention conflicts before choosing foreign-key b
   Read-after-write, locking, transaction-consistent, and lag-sensitive reads use `write()` or the
   active transaction.
 - Large or unbounded work belongs in a GlideMQ worker, not live API traffic. Use
-  `executeHandlerWithCursorInBatches()` for bounded cursor processing. Pass `readOnly: false` when
+  `executeHandlerWithCursorInBatches()` for memory-bounded streaming; apply
+  [bounded-iteration](../bounded-iteration/SKILL.md) for the required per-run cap. Pass `readOnly: false` when
   the cursor locks rows, must observe a just-written row, or writes within its transaction;
   ordinary replica-safe cursor reads remain read-only.
 - Prefer set-based SQL. Use `psql.pipelineBatch()` only after a local benchmark beats serial and

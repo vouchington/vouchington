@@ -15,7 +15,9 @@
   job's terminal record is trimmed — once 100 more jobs in the same terminal set (completed or
   failed) finish, the record drops and the id releases. Any re-enqueue of the same logical id
   before that trim silently returns `null` instead of re-running it: a bounded retention-window
-  hazard, not a permanent one. Before pairing a stable `jobId` with numeric retention, do one of:
+  hazard, not a permanent one. The claim also holds while the job is waiting or running, when
+  re-enqueue returns `null` too. A trigger arriving mid-run is lost if the running job already read
+  the old state. Before pairing a stable `jobId` with numeric retention, do one of:
   override the default with `removeOnComplete`/`removeOnFail: true` to release the claim the
   moment the job finishes, accepting the loss of that job's entry in the default 100-deep
   terminal-job history (see `bluesky-follow-propagation`); time-bucket the id for periodic
@@ -24,7 +26,12 @@
   a miss (see `ses-inbound`'s reconciler); or, when replay must succeed on demand, pair it with an
   explicit reactivation helper that calls `job.remove()`/`job.retry()` on matching completed/failed
   jobs before re-enqueuing (see `enqueueOrReactivateBulkOAuthAuthorizationExchanges` in
-  `oauth-authorization-exchange`). See [Job Replayability § Rules for New
+  `oauth-authorization-exchange`); or key the id by the entity and triggering event, for example
+  `voteWeight__<userId>__membershipExpired__<membershipId>`. An overlapping sweep that re-reads
+  the same event gets the same id and deduplicates; a new event gets a new id and is enqueued.
+  This guarantees each trigger is enqueued once, not that it runs. If it fails permanently,
+  `removeOnFail: 100` retains it and re-adding the same id returns `null`; retrying it requires the
+  reactivation option above. See [Job Replayability § Rules for New
   Jobs](../requirements/platform/reference-job-replayability-rules-for-new-jobs.md#rules-for-new-jobs).
 - Choose deduplication by semantics: `throttle` for dispatchers, `debounce` only for delay-reset work
   without ordering keys, and `simple` for one-shot suppression. Deduplication never replaces

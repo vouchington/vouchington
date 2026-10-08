@@ -16,6 +16,8 @@ flowchart LR
   B -->|bounded enqueue| Q
 ```
 
+For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents/skills/bounded-iteration/SKILL.md).
+
 ## Contents
 
 - <a id="place-each-responsibility"></a>[Place each responsibility](reference-backend-queues-place-each-responsibility.md)

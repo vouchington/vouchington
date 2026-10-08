@@ -22,5 +22,7 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 6. For effectful worker/RPC or financial (Stripe) operations, fill in the
    [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix).
 
+For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).
+
 Load the installed `glide-mq` skill only when generic GlideMQ API detail is needed; repository
 ownership, replayability, and validation policy remain authoritative here.
