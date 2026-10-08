@@ -218,6 +218,10 @@ The existing Oxlint CI step evaluates its configured TypeScript rules from the e
 nested plugin lists; parity and runtime-backed activation coverage are documented in the
 [static-analysis guide](../../static-code-analysis/README.md).
 
+The live route-catalog bounds check runs once in Static Analysis after selector-map validation;
+[translation checks](reference-tests-translation-catalog-and-locale-checks.md) owns its command
+and fixture boundary.
+
 Static Analysis also runs the [jscpd dead-code baseline gate](quality/static-code-analysis/jscpd/README.md#dead-code-baseline)
 over tracked working-tree files. It rejects new or increased findings in all configured categories
 and stale baseline entries; the separate clone-size threshold retains its existing behavior.
