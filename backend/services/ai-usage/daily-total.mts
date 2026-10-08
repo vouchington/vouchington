@@ -9,8 +9,8 @@ const DAILY_AI_COST_TOTAL_CACHE_TTL_MS = 60_000
 export type DailyAiCostTotal = {
   totalMicrounits: number
   // True when any row in the window has pricing_status = 'unpriced' (calcCostMicrounits,
-  // @modules/openai-utils/pricing.mts, found no pricing-table entry for the model/service-tier
-  // OpenAI actually served, so cost_microunits is NULL). Postgres's SUM() silently skips NULLs,
+  // @modules/model-providers/pricing.mts, found no pricing-table entry for the model/service-tier
+  // the provider actually served, so cost_microunits is NULL). Postgres's SUM() silently skips NULLs,
   // so totalMicrounits alone would under-count real spend here -- callers must fail closed on
   // this flag rather than trust the sum.
   hasUnpricedRows: boolean

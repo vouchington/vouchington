@@ -139,6 +139,7 @@ async function decodeBilledResponse(
       id: record(raw) ? raw.id : undefined,
       model: record(raw) ? raw.model : undefined,
       usage,
+      transport: options.transport,
       requestStartedAt: options.requestStartedAt,
     })
   }

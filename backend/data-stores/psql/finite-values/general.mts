@@ -1,5 +1,7 @@
 // Canonical closed values used by the fresh-bootstrap enum generator.
 export const GENERAL_FINITE_VALUES = {
+  ai_model_providers: ['anthropic', 'openai', 'typesafe'],
+  ai_provider_transports: ['direct', 'openrouter', 'typesafe'],
   ai_usage_record_pricing_statuses: ['priced', 'unpriced'],
   oauth_callback_modes: ['web', 'native'],
   bluesky_link_authorization_statuses: [

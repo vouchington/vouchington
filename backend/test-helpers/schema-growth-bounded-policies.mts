@@ -12,7 +12,7 @@ export const STATIC_IDENTITY_EXCEPTIONS = new Map<string, string>([
 const providerLookups = [
   ['stripe_event_types', 'Stripe event types'],
   ['amazon_ses_bounce_subtypes', 'SES bounce subtypes'],
-  ['openai_service_tiers', 'OpenAI service tiers'],
+  ['ai_service_tiers', 'model provider service tiers'],
   ['identity_document_types', 'Identity provider document types'],
 ] as const
 

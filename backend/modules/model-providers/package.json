@@ -1,0 +1,33 @@
+{
+  "name": "@modules/model-providers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/openrouter-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "ajv": "^8.20.0"
+  }
+}

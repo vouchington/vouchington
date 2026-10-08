@@ -17,8 +17,10 @@ export async function findAiUsageRecordForResponseId(
 ): Promise<TestAiUsageRecordAttribution | null> {
   const { rows } = await read<TestAiUsageRecordAttribution>(sql`/* findAiUsageRecordForResponseId */
     SELECT
-      record.model, record.openai_service_tier_id, record.input_tokens, record.cached_input_tokens,
-      record.output_tokens, record.pricing_status, record.cost_microunits, record.community_id,
+      record.model_provider, record.provider_transport, record.model, record.service_tier_id,
+      record.input_tokens, record.cached_input_tokens, record.cache_write_5m_input_tokens,
+      record.cache_write_1h_input_tokens, record.output_tokens, record.reasoning_output_tokens,
+      record.pricing_status, record.cost_microunits, record.community_id,
       record.agent_slug, record.post_id
     FROM ai_usage_provider_response_keys key
     INNER JOIN ai_usage_records record ON record.id = key.ai_usage_record_id

@@ -70,11 +70,19 @@ export function recordBilledCall(
   return recordAiUsage({
     responseId,
     agentSlug: 'post-classifier',
+    provider: 'typesafe',
+    transport: 'typesafe',
     model: unpriced ? 'unknown-model' : 'typesafe/jev-1.13-20260917',
     serviceTier: 'default',
-    usage: unpriced
-      ? { input_tokens: 12, output_tokens: 3 }
-      : { input_tokens: 12, output_tokens: 3, cost },
+    usage: {
+      inputTokens: 12,
+      cacheReadTokens: 0,
+      cacheWrite5mTokens: 0,
+      cacheWrite1hTokens: 0,
+      outputTokens: 3,
+      reasoningOutputTokens: 0,
+      ...(unpriced ? {} : { reportedCostUsd: cost }),
+    },
     classifierRunId: setup.run.runId,
     latencyMs,
     createdAt: new Date(`${createTestFutureUtcDay()}T12:00:00.000Z`),

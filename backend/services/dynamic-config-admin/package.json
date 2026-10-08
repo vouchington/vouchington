@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/model-providers": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/crawl-boilerplate-removal": "workspace:^",
     "@queues/find-your-friends": "workspace:^",

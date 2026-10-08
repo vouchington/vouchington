@@ -257,6 +257,10 @@ tests:
         integration_suites:
           aws:
             - aws
+      backend-anthropic:
+        integration_suites:
+          anthropic:
+            - anthropic
       backend-bedrock:
         integration_suites:
           bedrock:
@@ -1993,6 +1997,7 @@ rules:
         backend-contract-artifacts: [backend]
         backend-email-templates: [backend]
         backend-postgres-schema: [postgres-schema]
+        backend-anthropic: [backend-credentialed]
         backend-aws: [backend-credentialed]
         backend-bedrock: [backend-credentialed]
         backend-openai: [backend-credentialed]

@@ -108,11 +108,20 @@ describe('getDailyAiCostTotalMicrounits', () => {
     await recordAiUsage({
       responseId: `resp_${randomUUID()}`,
       agentSlug: 'test-daily-total-backdate',
+      provider: 'openai',
+      transport: 'direct',
       // Unpriced on purpose: hasUnpricedRows is a clean boolean signal that the row landed inside
       // the queried day's id range, with no pricing-table math to duplicate in this assertion.
       model: 'unknown-model',
       serviceTier: 'default',
-      usage: { input_tokens: 10, output_tokens: 5 },
+      usage: {
+        inputTokens: 10,
+        cacheReadTokens: 0,
+        cacheWrite5mTokens: 0,
+        cacheWrite1hTokens: 0,
+        outputTokens: 5,
+        reasoningOutputTokens: 0,
+      },
       createdAt: new Date(`${requestDay}T12:00:00.000Z`),
     })
 

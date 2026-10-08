@@ -3,7 +3,11 @@ import {
   claimAndRecordBackgroundResponseUsage,
   type OwnedBackgroundResponseLease,
 } from '@services/openai-background-responses'
-import type { OpenAIUsage } from './create-response.mts'
+import type {
+  LedgerModelProvider,
+  ModelUsage,
+  ProviderTransport,
+} from '@modules/model-providers/types'
 
 export interface BackgroundResponseRegistration {
   responseId: string
@@ -18,7 +22,9 @@ export interface ClassifierUsageAttribution {
 
 interface ClaimRegisteredResponseUsageParams {
   responseId?: string
-  usage: OpenAIUsage
+  provider: LedgerModelProvider
+  transport: ProviderTransport
+  usage: ModelUsage
   model: string
   serviceTier: string
   agentSlug: string
@@ -54,11 +60,18 @@ export async function claimRegisteredResponseUsage({
     return
   }
 
+  // The registry exists only for direct OpenAI background responses, so `provider` and
+  // `transport` (always 'openai' and 'direct' there) are fixed by the claim itself.
   const result = await claimAndRecordBackgroundResponseUsage({
     responseId: registration.responseId,
     leaseToken: registration.lease.leaseToken,
     createdAt: registration.lease.createdAt,
-    ...usage,
+    agentSlug: usage.agentSlug,
+    communityId: usage.communityId,
+    postId: usage.postId,
+    usage: usage.usage,
+    model: usage.model,
+    serviceTier: usage.serviceTier,
   })
   if (result !== 'lost-race') return
   if (await hasRecordedAiUsageResponseId(registration.responseId)) return

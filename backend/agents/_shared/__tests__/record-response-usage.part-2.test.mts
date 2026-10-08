@@ -30,6 +30,7 @@ describe('recordAgentResponseUsage settlement barrier', () => {
       {
         response: responseWithUsage(),
         agentSlug: 'settlement-test',
+        transport: 'direct',
         createdAt: new Date('2026-08-16'),
       },
       { claimRegisteredResponseUsage, latchAccountingUncertainty },
@@ -59,7 +60,7 @@ describe('recordAgentResponseUsage settlement barrier', () => {
 
     await expect(
       recordAgentResponseUsage(
-        { response: responseWithUsage(), agentSlug: 'settlement-test' },
+        { response: responseWithUsage(), agentSlug: 'settlement-test', transport: 'direct' },
         { claimRegisteredResponseUsage, latchAccountingUncertainty },
       ),
     ).rejects.toBe(latchError)

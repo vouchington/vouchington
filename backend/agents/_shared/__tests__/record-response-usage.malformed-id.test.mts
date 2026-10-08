@@ -85,6 +85,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       await recordAgentResponseUsage({
         response: response(invalidId),
         agentSlug: slug,
+        transport: 'direct' as const,
         createdAt: createdAt(day),
       })
 
@@ -105,6 +106,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       const params = {
         response: response(' invalid'),
         agentSlug: slug,
+        transport: 'direct' as const,
         registration: { responseId: registrationId, lease: undefined },
         createdAt: createdAt(day),
       }
@@ -137,6 +139,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       await recordAgentResponseUsage({
         response: response(' invalid'),
         agentSlug: slug,
+        transport: 'direct' as const,
         registration,
       })
 
@@ -149,6 +152,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       await recordAgentResponseUsage({
         response: response(' invalid'),
         agentSlug: slug,
+        transport: 'direct' as const,
         registration,
       })
 
@@ -203,11 +207,13 @@ describe('recordAgentResponseUsage response ID storage', () => {
       await recordAgentResponseUsage({
         response: response(id),
         agentSlug: slug,
+        transport: 'direct' as const,
         createdAt: createdAt(day),
       })
       await recordAgentResponseUsage({
         response: response(id),
         agentSlug: slug,
+        transport: 'direct' as const,
         createdAt: createdAt(day),
       })
 
@@ -226,6 +232,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       await recordAgentResponseUsage({
         response: response(''),
         agentSlug: slug,
+        transport: 'direct' as const,
         createdAt: createdAt(day),
       })
 

@@ -1,16 +1,22 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export * from './ai-usage-classifier-runs.mts'
+
 type InsertTestAiUsageRecordOptions = {
   communityId?: string | null
   postId?: string | null
   classifierRunId?: string | null
   latencyMs?: number | null
   agentSlug?: string
+  provider?: 'anthropic' | 'openai' | 'typesafe'
+  transport?: 'direct' | 'openrouter' | 'typesafe'
   model?: string
   serviceTier?: string
   inputTokens?: number
   cachedInputTokens?: number
+  cacheWrite5mInputTokens?: number
+  cacheWrite1hInputTokens?: number
   outputTokens?: number
   costMicrounits?: number | string
   // 'unpriced' forces cost_microunits to NULL regardless of costMicrounits, matching the real
@@ -32,10 +38,14 @@ export async function insertTestAiUsageRecord(
     classifierRunId = null,
     latencyMs = null,
     agentSlug = 'test-moderator',
+    provider = 'openai',
+    transport = 'direct',
     model = 'gpt-5.4-nano',
     serviceTier = 'flex',
     inputTokens = 100,
     cachedInputTokens = 0,
+    cacheWrite5mInputTokens = 0,
+    cacheWrite1hInputTokens = 0,
     outputTokens = 50,
     costMicrounits = 25,
     pricingStatus = 'priced',
@@ -47,17 +57,19 @@ export async function insertTestAiUsageRecord(
   const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : 'usd'
   const { rows } = await write<{ id: string }>(sql`/* insertTestAiUsageRecord */
     WITH registered_tier AS (
-      INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+      INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
       ON CONFLICT (id) DO NOTHING
     )
     INSERT INTO ai_usage_records (
-      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug, model, openai_service_tier_id,
-      input_tokens, cached_input_tokens, output_tokens, pricing_status, cost_microunits,
-      currency_code
+      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug,
+      model_provider, provider_transport, model, service_tier_id, input_tokens,
+      cached_input_tokens, cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
+      pricing_status, cost_microunits, currency_code
     )
     VALUES (
       COALESCE(${id ?? null}, uuidv7()), ${communityId}, ${postId}, ${classifierRunId},
-      ${latencyMs}, ${agentSlug}, ${model}, ${serviceTier}, ${inputTokens}, ${cachedInputTokens},
+      ${latencyMs}, ${agentSlug}, ${provider}, ${transport}, ${model}, ${serviceTier},
+      ${inputTokens}, ${cachedInputTokens}, ${cacheWrite5mInputTokens}, ${cacheWrite1hInputTokens},
       ${outputTokens}, ${pricingStatus}, ${resolvedCostMicrounits}, ${resolvedCurrencyCode}
     )
     RETURNING id
@@ -66,11 +78,16 @@ export async function insertTestAiUsageRecord(
 }
 
 export type TestAiUsageRecordRow = {
+  model_provider: string
+  provider_transport: string
   model: string
-  openai_service_tier_id: string
+  service_tier_id: string
   input_tokens: number
   cached_input_tokens: number
+  cache_write_5m_input_tokens: number
+  cache_write_1h_input_tokens: number
   output_tokens: number
+  reasoning_output_tokens: number
   pricing_status: string
   cost_microunits: string | null
   community_id: string | null
@@ -88,8 +105,9 @@ export async function findAiUsageRecordForPost(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForPost */
     SELECT
-      model, openai_service_tier_id, input_tokens, cached_input_tokens, output_tokens, pricing_status,
-      cost_microunits, community_id
+      model_provider, provider_transport, model, service_tier_id, input_tokens, cached_input_tokens,
+      cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
+      reasoning_output_tokens, pricing_status, cost_microunits, community_id
     FROM ai_usage_records
     WHERE post_id = ${postId} AND agent_slug = ${agentSlug}
     ORDER BY id DESC
@@ -110,8 +128,9 @@ export async function findAiUsageRecordForAgent(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForAgent */
     SELECT
-      model, openai_service_tier_id, input_tokens, cached_input_tokens, output_tokens, pricing_status,
-      cost_microunits, community_id
+      model_provider, provider_transport, model, service_tier_id, input_tokens, cached_input_tokens,
+      cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
+      reasoning_output_tokens, pricing_status, cost_microunits, community_id
     FROM ai_usage_records
     WHERE agent_slug = ${agentSlug}
       AND input_tokens = ${usage.inputTokens}
@@ -158,43 +177,4 @@ export async function countAiUsageOpenAIResponseKeys(responseId: string): Promis
     WHERE response_id = ${responseId}
   `)
   return Number(rows[0]?.count ?? 0)
-}
-
-export type TestClassifierRunUsageRow = {
-  classifier_run_id: string
-  agent_slug: string
-  input_tokens: number
-  output_tokens: number
-  pricing_status: string
-  cost_microunits: string | null
-  latency_milliseconds: number | null
-}
-
-/** Every ledger row the classifier clients attributed to one run, oldest first. */
-export async function listAiUsageRecordsForClassifierRun(
-  runId: string,
-): Promise<TestClassifierRunUsageRow[]> {
-  const { rows } =
-    await read<TestClassifierRunUsageRow>(sql`/* listAiUsageRecordsForClassifierRun */
-    SELECT classifier_run_id, agent_slug, input_tokens, output_tokens, pricing_status,
-      cost_microunits, latency_milliseconds
-    FROM ai_usage_records
-    WHERE classifier_run_id = ${runId}
-    ORDER BY id
-  `)
-  return rows
-}
-
-/** One ledger row by its id (a partition-pruned read), or null when it does not exist. */
-export async function findAiUsageRecordById(
-  id: string,
-): Promise<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'> | null> {
-  const { rows } = await read<
-    Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'>
-  >(
-    sql`/* findAiUsageRecordById */
-      SELECT classifier_run_id, latency_milliseconds FROM ai_usage_records WHERE id = ${id}
-    `,
-  )
-  return rows[0] ?? null
 }

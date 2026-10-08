@@ -246,6 +246,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'VALKEY_WORKER_QUEUE_URL',
       'OPENAI_API_KEY',
       'OPENROUTER_API_KEY',
+      'ANTHROPIC_API_KEY',
       'CLOUDFLARE_TURNSTILE_SECRET_KEY',
       'GOOGLE_RECAPTCHA_API_KEY',
       'GITHUB_CLIENT_SECRET',
@@ -280,6 +281,9 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     ['VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64'],
   ),
   group('vouchington-infra', 'secret', ['ecs-worker-rollout-secret'], ['LIGHTPANDA_TOKEN']),
+  // The Anthropic client uses ANTHROPIC_API_KEY when set, else this short-lived federated token that
+  // `tests-backend-credentialed.yml` mints per job. Never stored as a repository secret.
+  group('github-actions', 'secret', ['local-worktree'], ['ANTHROPIC_AUTH_TOKEN']),
   group(
     'vouchington-infra',
     'internal',

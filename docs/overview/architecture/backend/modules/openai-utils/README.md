@@ -21,16 +21,10 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
 
 ### Pricing
 
-- `calcCostMicrounits(model, serviceTier, usage): number | null` — computes cost in
-  microunits (1e-6 currency units) from a response's **actual** `model`/`service_tier` and
-  `usage`, using the typed `SUPPORTED_MODEL_TIERS` price table. Returns `null` for any
-  unpriced model/tier pair (e.g. `gpt-5.4-nano:priority`, which has no price row because
-  OpenAI has no Priority-tier offering for that model) rather than guessing.
-- `SupportedModel` — type derived from `SUPPORTED_MODEL_TIERS`, so an unsupported model is a
-  compile error at any call site that constructs one directly.
-- The full pricing matrix, its source/retrieval date, and the refresh procedure for when OpenAI
-  updates pricing or ships a new model live in the private `vouchington/vouchington-docs`
-  repository.
+The price table moved to the provider-neutral [`@modules/model-providers`](../model-providers/README.md#pricing)
+(`calcCostMicrounits(provider, model, serviceTier, usage)`), which prices OpenAI and Anthropic
+alike. `OpenAIUsage` also carries `cache_write_tokens` and `reasoning_tokens` so the ledger can
+record them; `openAIUsageToModelUsage` converts it to the neutral usage shape.
 
 ### Response text
 

@@ -5,6 +5,7 @@ import {
 } from '@services/ai-usage/spend-cap-config'
 import { validateSpendCapConfig } from './registry-ai-usage-validators.mts'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { modelRoutingRegistryEntry } from './registry-model-routing-entry.mts'
 
 export const aiUsageDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
@@ -28,4 +29,5 @@ export const aiUsageDynamicConfigRegistryEntries = [
     },
     validate: validateSpendCapConfig,
   }),
+  modelRoutingRegistryEntry,
 ]

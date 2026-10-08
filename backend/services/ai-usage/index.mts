@@ -1,6 +1,7 @@
 export * from './accounting-uncertainty.mts'
 export * from './authorization.mts'
 export * from './daily-total.mts'
+export * from './model-routing-config.mts'
 export * from './record.mts'
 export * from './spend-cap-config.mts'
 export * from './spend-cap-guard.mts'

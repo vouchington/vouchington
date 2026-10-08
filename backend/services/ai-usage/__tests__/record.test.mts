@@ -12,8 +12,26 @@ import {
 } from '@voucha/test-helpers'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import type { PrivateUser } from '@services/users/types'
+import type { ModelUsage } from '@modules/model-providers/types'
+import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
 import { hasRecordedAiUsageResponseId, recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
+
+function usage(
+  inputTokens: number,
+  outputTokens: number,
+  extra: Partial<ModelUsage> = {},
+): ModelUsage {
+  return {
+    inputTokens,
+    cacheReadTokens: 0,
+    cacheWrite5mTokens: 0,
+    cacheWrite1hTokens: 0,
+    outputTokens,
+    reasoningOutputTokens: 0,
+    ...extra,
+  }
+}
 
 describe('recordAiUsage', () => {
   let user: PrivateUser
@@ -32,9 +50,11 @@ describe('recordAiUsage', () => {
       communityId: community.id,
       postId: null,
       agentSlug: 'test-moderator',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: 200, output_tokens: 100 },
+      usage: usage(200, 100),
     })
 
     // getCommunityAiCostTotals orders DESC by cost with no time bound, so a community can sort past
@@ -64,13 +84,15 @@ describe('recordAiUsage', () => {
       communityId: null,
       postId: post.id,
       agentSlug: 'test-cached-clamp',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: {
+      usage: openAIUsageToModelUsage({
         input_tokens: 100,
         output_tokens: 50,
         input_tokens_details: { cached_tokens: 150 },
-      },
+      }),
     })
 
     const row = await findAiUsageRecordForPost(post.id, 'test-cached-clamp')
@@ -88,9 +110,11 @@ describe('recordAiUsage', () => {
       communityId: null,
       postId: post.id,
       agentSlug: 'test-openrouter-billed-cost',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'openai/gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: 100, output_tokens: 50, cost: 0.001_234_5 },
+      usage: usage(100, 50, { reportedCostUsd: 0.001_234_5 }),
     })
 
     const row = await findAiUsageRecordForPost(post.id, 'test-openrouter-billed-cost')
@@ -107,9 +131,11 @@ describe('recordAiUsage', () => {
       communityId: community.id,
       postId: null,
       agentSlug: 'test-moderator',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'unknown-model',
       serviceTier: 'default',
-      usage: { input_tokens: 10, output_tokens: 5 },
+      usage: usage(10, 5),
       // Backdated off today's UTC day on purpose (#8773 Finding 2): getCommunityAiCostTotals below
       // has no time predicate, so this row's day is otherwise free to pick, and
       // assertDailySpendCapNotBreached fails closed on ANY unpriced row in *today's*
@@ -138,9 +164,11 @@ describe('recordAiUsage', () => {
     const options = {
       responseId,
       agentSlug: 'test-response-id-replay',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: 11, output_tokens: 7 },
+      usage: usage(11, 7),
     }
 
     await expect(recordAiUsage(options)).resolves.toBe('recorded')
@@ -154,9 +182,11 @@ describe('recordAiUsage', () => {
     const options = {
       responseId,
       agentSlug: 'test-response-id-concurrent',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: `future-Tier-${randomUUID()}`,
-      usage: { input_tokens: 12, output_tokens: 8, cost: 0.001 },
+      usage: usage(12, 8, { reportedCostUsd: 0.001 }),
     }
 
     const outcomes = await Promise.all(Array.from({ length: 8 }, () => recordAiUsage(options)))
@@ -173,9 +203,11 @@ describe('recordAiUsage', () => {
     const options = {
       responseId: `decision-${randomUUID()}`,
       agentSlug: 'test-classifier-attribution',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: 11, output_tokens: 7, cost: 0.002 },
+      usage: usage(11, 7, { reportedCostUsd: 0.002 }),
     }
 
     await expect(
@@ -200,9 +232,11 @@ describe('recordAiUsage', () => {
 
     await recordAiUsage({
       agentSlug: 'test-classifier-attribution',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: 5, output_tokens: 2 },
+      usage: usage(5, 2),
       classifierRunId: runId,
       latencyMs: 30,
     })
@@ -217,17 +251,17 @@ describe('recordAiUsage', () => {
     const options = {
       responseId,
       agentSlug: 'test-response-id-atomicity',
+      provider: 'openai' as const,
+      transport: 'direct' as const,
       model: 'gpt-5.4-nano',
       serviceTier: 'flex',
-      usage: { input_tokens: -1, output_tokens: 9 },
+      usage: usage(-1, 9),
     }
 
     await expect(recordAiUsage(options)).rejects.toThrow('violates check constraint')
     await expect(countAiUsageOpenAIResponseKeys(responseId)).resolves.toBe(0)
 
-    await expect(
-      recordAiUsage({ ...options, usage: { input_tokens: 13, output_tokens: 9 } }),
-    ).resolves.toBe('recorded')
+    await expect(recordAiUsage({ ...options, usage: usage(13, 9) })).resolves.toBe('recorded')
     await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
   })
 
@@ -239,9 +273,11 @@ describe('recordAiUsage', () => {
       recordAiUsage({
         responseId,
         agentSlug: 'test-response-id-fence',
+        provider: 'openai' as const,
+        transport: 'direct' as const,
         model: 'gpt-5.4-nano',
         serviceTier: 'flex',
-        usage: { input_tokens: 13, output_tokens: 4 },
+        usage: usage(13, 4),
       }),
     ).resolves.toBe('recorded')
     await expect(hasRecordedAiUsageResponseId(responseId)).resolves.toBe(true)

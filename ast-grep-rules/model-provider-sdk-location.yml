@@ -1,0 +1,52 @@
+id: model-provider-sdk-location
+language: Tsx
+severity: error
+message: >-
+  Model provider SDKs (`openai`, `@anthropic-ai/sdk`) are imported only by the provider modules.
+  Call a model through `@modules/model-providers`; no provider SDK appears outside that layer.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/modules/model-providers/**'
+  - 'backend/modules/openai-utils/**'
+  - 'backend/modules/openrouter-utils/**'
+  - 'backend/test-helpers/**'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  all:
+    - kind: import_statement
+    - regex: "from\\s+['\"](?:openai|@anthropic-ai/sdk)(?:/[^'\"]*)?['\"]"
+examples:
+  - code: |
+      import OpenAI from 'openai'
+    isValid: false
+    file: 'backend/services/other/client.mts'
+  - code: |
+      import { APIError } from 'openai'
+    isValid: false
+    file: 'backend/agents/my-agent/run.mts'
+  - code: |
+      import type { Response } from 'openai/resources/responses/responses'
+    isValid: false
+    file: 'backend/services/other/types.mts'
+  - code: |
+      import Anthropic from '@anthropic-ai/sdk'
+    isValid: false
+    file: 'backend/agents/my-agent/run.mts'
+  - code: |
+      import { generateJson } from '@modules/model-providers'
+    isValid: true
+    file: 'backend/agents/my-agent/run.mts'
+  - code: |
+      import Anthropic from '@anthropic-ai/sdk'
+    isValid: true
+    file: 'backend/modules/model-providers/anthropic-client.mts'
+  - code: |
+      import OpenAI from 'openai'
+    isValid: true
+    file: 'backend/modules/openai-utils/client.mts'
+  - code: |
+      import OpenAI from 'openai'
+    isValid: true
+    file: 'backend/modules/openrouter-utils/client.mts'

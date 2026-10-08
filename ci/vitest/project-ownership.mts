@@ -99,6 +99,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       { project: 'backend-openai', credential: 'OPENAI_API_KEY' },
       { project: 'backend-openrouter', credential: 'OPENROUTER_API_KEY' },
       { project: 'backend-stripe', credential: 'STRIPE_SECRET_KEY' },
+      { project: 'backend-anthropic', credential: 'ANTHROPIC_AUTH_TOKEN (federated)' },
     ],
   },
   {

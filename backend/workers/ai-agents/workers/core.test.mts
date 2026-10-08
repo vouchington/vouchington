@@ -48,8 +48,16 @@ describe('processAIAgentWorkerJob', () => {
       processAIAgent: async () => {
         // Real recordAgentResponseUsage (the plan's single choke point), not a mock -- this is
         // what proves the wiring survives, not just a direct addAccumulatedTokens() call.
-        await recordAgentResponseUsage({ response: usageResponse(100, 20), agentSlug })
-        await recordAgentResponseUsage({ response: usageResponse(50, 5), agentSlug })
+        await recordAgentResponseUsage({
+          response: usageResponse(100, 20),
+          agentSlug,
+          transport: 'direct',
+        })
+        await recordAgentResponseUsage({
+          response: usageResponse(50, 5),
+          agentSlug,
+          transport: 'direct',
+        })
         return 'ok'
       },
     })
@@ -83,7 +91,11 @@ describe('processAIAgentWorkerJob', () => {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
-        await recordAgentResponseUsage({ response: usageResponse(30, 10), agentSlug })
+        await recordAgentResponseUsage({
+          response: usageResponse(30, 10),
+          agentSlug,
+          transport: 'direct',
+        })
         throw thrown
       },
     })
@@ -111,7 +123,11 @@ describe('processAIAgentWorkerJob', () => {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
-        await recordAgentResponseUsage({ response: usageResponse(30, 10), agentSlug })
+        await recordAgentResponseUsage({
+          response: usageResponse(30, 10),
+          agentSlug,
+          transport: 'direct',
+        })
         throw thrownByProcessAIAgent
       },
     })
@@ -132,10 +148,18 @@ describe('processAIAgentWorkerJob', () => {
         ...spendCapDisabled,
         handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
         processAIAgent: async () => {
-          await recordAgentResponseUsage({ response: usageResponse(1000, 1000), agentSlug })
+          await recordAgentResponseUsage({
+            response: usageResponse(1000, 1000),
+            agentSlug,
+            transport: 'direct',
+          })
           firstJobRecordedUsage.resolve()
           await releaseFirstJob.promise
-          await recordAgentResponseUsage({ response: usageResponse(1, 1), agentSlug })
+          await recordAgentResponseUsage({
+            response: usageResponse(1, 1),
+            agentSlug,
+            transport: 'direct',
+          })
           return 'a'
         },
       }),
@@ -145,7 +169,11 @@ describe('processAIAgentWorkerJob', () => {
         processAIAgent: async () => {
           await firstJobRecordedUsage.promise
           try {
-            await recordAgentResponseUsage({ response: usageResponse(7, 0), agentSlug })
+            await recordAgentResponseUsage({
+              response: usageResponse(7, 0),
+              agentSlug,
+              transport: 'direct',
+            })
           } finally {
             releaseFirstJob.resolve()
           }

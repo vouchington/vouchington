@@ -25,6 +25,12 @@
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
     },
+    "ai_model_providers": {
+      "values": ["anthropic", "openai", "typesafe"]
+    },
+    "ai_provider_transports": {
+      "values": ["direct", "openrouter", "typesafe"]
+    },
     "ai_usage_record_pricing_statuses": {
       "values": ["priced", "unpriced"]
     },
@@ -5050,6 +5056,67 @@
         }
       }
     },
+    "ai_service_tiers": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": "When this provider value was first observed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Exact provider value used as the natural lookup key; never normalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        }
+      },
+      "comment": "Model provider service tier names (OpenAI flex/default, Anthropic standard/priority/batch) registered on first sight; each provider owns this open set and exact spelling.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "ai_service_tiers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_service_tiers_pkey ON public.ai_service_tiers USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "ai_usage_provider_response_keys": {
       "checkConstraints": {
         "ai_usage_provider_response_keys_response_id_check": "CHECK (((response_id = TRIM(BOTH FROM response_id)) AND ((char_length(response_id) >= 1) AND (char_length(response_id) <= 100))))"
@@ -5150,13 +5217,18 @@
     },
     "ai_usage_records": {
       "checkConstraints": {
+        "ai_usage_records_cache_write_1h_input_tokens_check": "CHECK ((cache_write_1h_input_tokens >= 0))",
+        "ai_usage_records_cache_write_5m_input_tokens_check": "CHECK ((cache_write_5m_input_tokens >= 0))",
         "ai_usage_records_cached_input_tokens_check": "CHECK ((cached_input_tokens >= 0))",
-        "ai_usage_records_check": "CHECK ((((pricing_status = 'priced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))",
+        "ai_usage_records_check": "CHECK ((((cached_input_tokens + cache_write_5m_input_tokens) + cache_write_1h_input_tokens) <= input_tokens))",
+        "ai_usage_records_check1": "CHECK ((reasoning_output_tokens <= output_tokens))",
+        "ai_usage_records_check2": "CHECK ((((pricing_status = 'priced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))",
         "ai_usage_records_cost_microunits_check": "CHECK (((cost_microunits >= 0) AND (cost_microunits <= '9007199254740991'::bigint)))",
         "ai_usage_records_input_tokens_check": "CHECK ((input_tokens >= 0))",
         "ai_usage_records_latency_milliseconds_check": "CHECK ((latency_milliseconds >= 0))",
         "ai_usage_records_output_tokens_check": "CHECK ((output_tokens >= 0))",
-        "ai_usage_records_pricing_status_check": "CHECK ((pricing_status = ANY (ARRAY['priced'::ai_usage_record_pricing_statuses, 'unpriced'::ai_usage_record_pricing_statuses])))"
+        "ai_usage_records_pricing_status_check": "CHECK ((pricing_status = ANY (ARRAY['priced'::ai_usage_record_pricing_statuses, 'unpriced'::ai_usage_record_pricing_statuses])))",
+        "ai_usage_records_reasoning_output_tokens_check": "CHECK ((reasoning_output_tokens >= 0))"
       },
       "columns": {
         "agent_slug": {
@@ -5170,15 +5242,37 @@
           "ordinalPosition": 5,
           "type": "text"
         },
-        "cached_input_tokens": {
+        "cache_write_1h_input_tokens": {
           "collation": null,
-          "comment": "Of input_tokens, the number served from the prompt cache at the discounted cached-input rate.",
+          "comment": "Of input_tokens, the number written to the prompt cache with 1-hour retention, billed at the 1-hour cache-write rate.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
+          "type": "integer"
+        },
+        "cache_write_5m_input_tokens": {
+          "collation": null,
+          "comment": "Of input_tokens, the number written to the prompt cache at the default (5-minute) retention, billed at the cache-write rate.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "integer"
+        },
+        "cached_input_tokens": {
+          "collation": null,
+          "comment": "Of input_tokens, the number read from the prompt cache at the discounted cache-read rate.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
           "type": "integer"
         },
         "classifier_run_id": {
@@ -5211,7 +5305,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 18,
           "type": "bigint"
         },
         "created_at": {
@@ -5222,7 +5316,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -5233,7 +5327,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "id": {
@@ -5249,13 +5343,13 @@
         },
         "input_tokens": {
           "collation": null,
-          "comment": "Number of input tokens billed for this call, including any cached_input_tokens.",
+          "comment": "Number of input tokens billed for this call: every prompt token, including cached_input_tokens and the cache-write tokens.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "integer"
         },
         "latency_milliseconds": {
@@ -5266,40 +5360,40 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 16,
           "type": "integer"
         },
         "model": {
           "collation": null,
-          "comment": "The OpenAI model actually served, from the response (e.g. gpt-5.4-nano-2026-03-17) — not necessarily the requested alias.",
+          "comment": "The model actually served, from the response (e.g. gpt-6-luna-2026-10-01) — not necessarily the requested alias.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "model_provider": {
+          "collation": null,
+          "comment": "The model provider that served the call.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 6,
-          "type": "text"
-        },
-        "openai_service_tier_id": {
-          "collation": null,
-          "comment": "The OpenAI service tier actually served, from the response (e.g. flex, default) — not necessarily the requested tier.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "text"
+          "type": "ai_model_providers"
         },
         "output_tokens": {
           "collation": null,
-          "comment": "Number of output tokens billed for this call.",
+          "comment": "Number of output tokens billed for this call, including any reasoning_output_tokens.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 14,
           "type": "integer"
         },
         "post_id": {
@@ -5321,11 +5415,44 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 17,
           "type": "ai_usage_record_pricing_statuses"
+        },
+        "provider_transport": {
+          "collation": null,
+          "comment": "How the call reached the provider: direct API, OpenRouter, or the typesafe jev transport.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "ai_provider_transports"
+        },
+        "reasoning_output_tokens": {
+          "collation": null,
+          "comment": "Of output_tokens, the reasoning or thinking tokens when the provider reports them separately; otherwise 0.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15,
+          "type": "integer"
+        },
+        "service_tier_id": {
+          "collation": null,
+          "comment": "The service tier actually served, from the response (e.g. flex, default, standard) — not necessarily the requested tier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
         }
       },
-      "comment": "Append-only per-call LLM usage and cost ledger for every agent that calls OpenAI, not only community moderation.",
+      "comment": "Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.",
       "foreignKeys": {
         "ai_usage_records_community_id_fkey": {
           "columns": ["community_id"],
@@ -5345,15 +5472,6 @@
           "referencedTable": "currencies",
           "validated": true
         },
-        "ai_usage_records_openai_service_tier_id_fkey": {
-          "columns": ["openai_service_tier_id"],
-          "definition": "FOREIGN KEY (openai_service_tier_id) REFERENCES openai_service_tiers(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "openai_service_tiers",
-          "validated": true
-        },
         "ai_usage_records_post_id_fkey": {
           "columns": ["post_id"],
           "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL",
@@ -5361,6 +5479,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "posts",
+          "validated": true
+        },
+        "ai_usage_records_service_tier_id_fkey": {
+          "columns": ["service_tier_id"],
+          "definition": "FOREIGN KEY (service_tier_id) REFERENCES ai_service_tiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "ai_service_tiers",
           "validated": true
         },
         "fk_ai_usage_records__classifier_run": {
@@ -5462,26 +5589,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_ai_usage_records__openai_service_tier_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_usage_records__openai_service_tier_id ON ONLY public.ai_usage_records USING btree (openai_service_tier_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "openai_service_tier_id",
-              "descending": false,
-              "expression": "openai_service_tier_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_ai_usage_records__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5497,6 +5604,26 @@
             }
           ],
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_usage_records__service_tier_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_usage_records__service_tier_id ON ONLY public.ai_usage_records USING btree (service_tier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "service_tier_id",
+              "descending": false,
+              "expression": "service_tier_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -70179,67 +70306,6 @@
       "primaryKey": {
         "columns": ["response_id"],
         "definition": "PRIMARY KEY (response_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "openai_service_tiers": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": "When this provider value was first observed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
-        }
-      },
-      "comment": "OpenAI service tier names registered on first sight; the provider owns this open set and exact spelling.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "openai_service_tiers_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX openai_service_tiers_pkey ON public.openai_service_tiers USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {},

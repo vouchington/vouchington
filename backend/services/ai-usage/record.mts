@@ -1,11 +1,11 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  calcCostMicrounits,
-  getExplicitCostMicrounits,
-  normalizeCachedInputTokens,
-} from '@modules/openai-utils/pricing'
-import type { OpenAIUsage } from '@modules/openai-utils/create-response'
+import { calcCostMicrounits, getReportedCostMicrounits } from '@modules/model-providers/pricing'
+import type {
+  LedgerModelProvider,
+  ModelUsage,
+  ProviderTransport,
+} from '@modules/model-providers/types'
 
 export interface RecordAiUsageOptions {
   /** Provider response or decision id. When present, repeated recording is an idempotent no-op. */
@@ -22,11 +22,14 @@ export interface RecordAiUsageOptions {
   /** Milliseconds from the request leaving to the response body being read, when measured. */
   latencyMs?: number | null
   agentSlug: string
-  /** The model OpenAI actually served (`response.model`), not the requested alias. */
+  provider: LedgerModelProvider
+  /** How the call reached the provider (direct API, OpenRouter, or the jev transport). */
+  transport: ProviderTransport
+  /** The model the provider actually served (`response.model`), not the requested alias. */
   model: string
-  /** The service tier OpenAI actually served (`response.service_tier`), not the requested tier. */
+  /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
-  usage: OpenAIUsage
+  usage: ModelUsage
   /** Runs inside the caller's transaction instead of a fresh connection -- e.g. the
    *  openai-background-responses sweeper (#8836), which must delete its registry row and write
    *  this ledger row atomically so a failure between the two never silently drops the row. */
@@ -54,6 +57,8 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
     classifierRunId,
     latencyMs,
     agentSlug,
+    provider,
+    transport,
     model,
     serviceTier,
     usage,
@@ -61,12 +66,11 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   } = options
   const run = options.query ?? write
   const costMicrounits =
-    getExplicitCostMicrounits(usage) ?? calcCostMicrounits(model, serviceTier, usage)
-  const cachedInputTokens = normalizeCachedInputTokens(usage)
+    getReportedCostMicrounits(usage) ?? calcCostMicrounits(provider, model, serviceTier, usage)
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
       WITH registered_tier AS (
-        INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+        INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
         ON CONFLICT (id) DO NOTHING
       ), claimed_response AS (
         INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
@@ -84,11 +88,16 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           post_id,
           classifier_run_id,
           agent_slug,
+          model_provider,
+          provider_transport,
           model,
-          openai_service_tier_id,
+          service_tier_id,
           input_tokens,
           cached_input_tokens,
+          cache_write_5m_input_tokens,
+          cache_write_1h_input_tokens,
           output_tokens,
+          reasoning_output_tokens,
           latency_milliseconds,
           pricing_status,
           cost_microunits,
@@ -100,11 +109,16 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           ${postId ?? null},
           ${classifierRunId ?? null},
           ${agentSlug},
+          ${provider},
+          ${transport},
           ${model},
           ${serviceTier},
-          ${usage.input_tokens},
-          ${cachedInputTokens},
-          ${usage.output_tokens},
+          ${usage.inputTokens},
+          ${usage.cacheReadTokens},
+          ${usage.cacheWrite5mTokens},
+          ${usage.cacheWrite1hTokens},
+          ${usage.outputTokens},
+          ${usage.reasoningOutputTokens},
           ${latencyMs ?? null},
           ${costMicrounits === null ? 'unpriced' : 'priced'},
           ${costMicrounits},
@@ -121,7 +135,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
 
   await run(sql`/* recordAiUsage */
     WITH registered_tier AS (
-      INSERT INTO openai_service_tiers (id) VALUES (${serviceTier})
+      INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
       ON CONFLICT (id) DO NOTHING
     )
     INSERT INTO ai_usage_records (
@@ -130,11 +144,16 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       post_id,
       classifier_run_id,
       agent_slug,
+      model_provider,
+      provider_transport,
       model,
-      openai_service_tier_id,
+      service_tier_id,
       input_tokens,
       cached_input_tokens,
+      cache_write_5m_input_tokens,
+      cache_write_1h_input_tokens,
       output_tokens,
+      reasoning_output_tokens,
       latency_milliseconds,
       pricing_status,
       cost_microunits,
@@ -146,11 +165,16 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       ${postId ?? null},
       ${classifierRunId ?? null},
       ${agentSlug},
+      ${provider},
+      ${transport},
       ${model},
       ${serviceTier},
-      ${usage.input_tokens},
-      ${cachedInputTokens},
-      ${usage.output_tokens},
+      ${usage.inputTokens},
+      ${usage.cacheReadTokens},
+      ${usage.cacheWrite5mTokens},
+      ${usage.cacheWrite1hTokens},
+      ${usage.outputTokens},
+      ${usage.reasoningOutputTokens},
       ${latencyMs ?? null},
       ${costMicrounits === null ? 'unpriced' : 'priced'},
       ${costMicrounits},
