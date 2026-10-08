@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -8,8 +8,17 @@ describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
   const originalAnalyticsLocalDir = process.env.ANALYTICS_LOCAL_DIR
 
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-05-01T00:00:00.000Z'))
+  })
+
   afterEach(() => {
-    restoreAnalyticsEnv()
+    try {
+      restoreAnalyticsEnv()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('enforces local analytics retention when analytics backend is local', async () => {
@@ -64,6 +73,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         expiredContributionAdmissions: emptyWindow,
         expiredContributionQuotaConsumptions: emptyWindow,
         expiredTopicImportAttempts: emptyWindow,
+        terminalNotificationPushIntents: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -81,7 +91,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
     })
-  }, 60_000)
+  })
 
   function restoreAnalyticsEnv() {
     if (originalAnalyticsBackend === undefined) {

@@ -67,7 +67,7 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     expect(identity?.user_id).toBe(DELETED_USER_ID)
     expect(identity?.status).toBe('revoked')
     expect(identity?.revoked_at).not.toBeNull()
-  }, 60_000)
+  })
 
   it('pseudonymizes an identity-verification attempt before hard-deleting its owner', async () => {
     const window = createTestRetentionWindow()
@@ -81,7 +81,7 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     expect(await getIdentityVerificationAttemptStates(DELETED_USER_ID)).toContainEqual(
       expect.objectContaining({ checkout_session_id: checkoutSessionId, source: 'self_paid' }),
     )
-  }, 60_000)
+  })
 
   it('pseudonymizes a support-grant actor before hard-deleting that administrator', async () => {
     const window = createTestRetentionWindow()
@@ -103,7 +103,7 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     expect(await getIdentityVerificationAttemptStates(target.id)).toContainEqual(
       expect.objectContaining({ source: 'support_grant', granted_by_id: DELETED_USER_ID }),
     )
-  }, 60_000)
+  })
 
   it('keeps multiple consumed included attempts when their owners share the tombstone', async () => {
     const window = createTestRetentionWindow()
@@ -135,5 +135,5 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
         source: 'membership_included',
       }),
     )
-  }, 60_000)
+  })
 })
