@@ -4666,7 +4666,6 @@
 {"id":"copy.native.swift.communityRows.transparencyCategories.communityAi","value":"IA de communauté"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.postClearanceRejection","value":"Rejet de validation préalable"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.spamDetection","value":"Détection du spam"},
-{"id":"copy.native.swift.communityRows.transparencyCategories.tag","value":"Étiqueter"},
 {"id":"copy.native.swift.communityRows.transparencyCategories.unsuspend","value":"Réactiver"},
 {"id":"copy.native.swift.communityRows.transparencyEmpty","value":"Aucune donnée agrégée n’est disponible pour cette période."},
 {"id":"copy.native.swift.communityRows.transparencyLocked","value":"Plus ou Pro est requis pour afficher les données agrégées."},
