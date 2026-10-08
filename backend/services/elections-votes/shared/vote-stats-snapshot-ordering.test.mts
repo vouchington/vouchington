@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { mintUUIDv7 } from '@modules/utils/ids'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUserDirect,
   getPersistedPostVoteStats,
@@ -24,17 +25,23 @@ describe('vote stats snapshot ordering', () => {
     const heldVoter = await createTestUserDirect({
       username: `test-vss-held-vote-second-${suffix}`,
     })
-    await insertPostElectionVote(voter.id, postId, 1, '00000000-0000-7000-8000-000000000001')
+    const [lowerVoteId, higherVoteId] = [mintUUIDv7(), mintUUIDv7()].toSorted()
+    await insertPostElectionVote(voter.id, postId, 1, higherVoteId!)
     const inserted = Promise.withResolvers<void>()
     const releaseVote = Promise.withResolvers<void>()
     const holdingVote = insertPostElectionVoteAndWaitBeforeCommit({
       userId: heldVoter.id,
       postId,
       score: -1,
-      id: '00000000-0000-7000-8000-000000000000',
+      id: lowerVoteId!,
       inserted: inserted.resolve,
       waitBeforeCommit: releaseVote.promise,
     })
+    void holdingVote.catch(inserted.reject)
+    onTestFinished(async () => {
+      releaseVote.resolve()
+      await holdingVote
+    }, 5_000)
     await inserted.promise
 
     try {
@@ -48,24 +55,30 @@ describe('vote stats snapshot ordering', () => {
     const afterCommit = await aggregateElectionVoteStatsFromReplica(POST_ELECTION_CONFIG, postId)
     expect(afterCommit.votes_count_up).toBe(1)
     expect(afterCommit.votes_count_down).toBe(1)
-  }, 60_000)
+  })
 
   it('rejects an equal-xmax snapshot with more in-progress transactions', async () => {
     const { postId, voter } = await createPostAndVoter('equal-xmax')
     const heldVoter = await createTestUserDirect({
       username: `test-vss-equal-xmax-held-${randomBytes(6).toString('hex')}`,
     })
-    await insertPostElectionVote(voter.id, postId, 1, '00000000-0000-7000-8000-000000000001')
+    const [lowerVoteId, higherVoteId] = [mintUUIDv7(), mintUUIDv7()].toSorted()
+    await insertPostElectionVote(voter.id, postId, 1, higherVoteId!)
     const inserted = Promise.withResolvers<void>()
     const releaseVote = Promise.withResolvers<void>()
     const holdingVote = insertPostElectionVoteAndWaitBeforeCommit({
       userId: heldVoter.id,
       postId,
       score: -1,
-      id: '00000000-0000-7000-8000-000000000000',
+      id: lowerVoteId!,
       inserted: inserted.resolve,
       waitBeforeCommit: releaseVote.promise,
     })
+    void holdingVote.catch(inserted.reject)
+    onTestFinished(async () => {
+      releaseVote.resolve()
+      await holdingVote
+    }, 5_000)
     await inserted.promise
     let stale: Awaited<ReturnType<typeof aggregateElectionVoteStatsFromReplica>>
     let fresh: typeof stale
@@ -95,7 +108,7 @@ describe('vote stats snapshot ordering', () => {
       votes_snapshot_xmax: fresh.snapshot.xmax,
       votes_snapshot_xip_count: fresh.snapshot.xipCount,
     })
-  }, 60_000)
+  })
 
   it('rejects a stale zero-vote snapshot after a vote lands', async () => {
     const { postId, voter } = await createPostAndVoter('stale-zero')
@@ -112,7 +125,7 @@ describe('vote stats snapshot ordering', () => {
       votes_snapshot_xmax: fresh.snapshot.xmax,
       votes_snapshot_xip_count: fresh.snapshot.xipCount,
     })
-  }, 60_000)
+  })
 
   it('accepts voter weight and hard-deletion changes without another vote ID', async () => {
     const { postId, voter } = await createPostAndVoter('lifecycle')
@@ -136,7 +149,7 @@ describe('vote stats snapshot ordering', () => {
       updateElectionStatsIfChanged(POST_ELECTION_CONFIG, postId, deleted),
     ).resolves.toBeDefined()
     expect(deleted.votes_count_up).toBe(0)
-  }, 60_000)
+  })
 
   it('does not block hard voter deletion on a held non-author post', async () => {
     const { postId, voter } = await createPostAndVoter('delete-lock')
@@ -149,15 +162,20 @@ describe('vote stats snapshot ordering', () => {
     const locked = Promise.withResolvers<void>()
     const releasePost = Promise.withResolvers<void>()
     const holdingPost = lockTestPostAndWaitBeforeCommit(postId, locked.resolve, releasePost.promise)
+    void holdingPost.catch(locked.reject)
+    onTestFinished(async () => {
+      releasePost.resolve()
+      await holdingPost
+    }, 5_000)
     await locked.promise
 
     try {
       await expect(hardDeleteTestUserWithLockTimeout(voter.id)).resolves.toBeUndefined()
     } finally {
       releasePost.resolve()
+      await holdingPost
     }
-    await holdingPost
-  }, 60_000)
+  })
 })
 
 async function createPostAndVoter(
