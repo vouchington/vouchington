@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { computeTrustTier } from './trust-tier.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TrustTierContext } from './types.mts'
@@ -6,7 +6,8 @@ import { v7 as uuidv7 } from 'uuid'
 
 // Default to a 25h-old account so the 24h cooling period does not apply
 // in tests that focus on OAuth/membership signals, not the cooling period.
-const TWENTY_FIVE_HOURS_AGO = new Date(Date.now() - 25 * 60 * 60 * 1000)
+const NOW = Date.UTC(2026, 0, 31, 23, 59, 59)
+const TWENTY_FIVE_HOURS_AGO = new Date(NOW - 25 * 60 * 60 * 1000)
 
 function createMockUser(overrides: Partial<PrivateUser> = {}): PrivateUser {
   return {
@@ -52,6 +53,15 @@ const baseContext: TrustTierContext = {
 }
 
 describe('computeTrustTier', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('returns tier 0 for a new account (< 24h) regardless of other signals', () => {
     const user = createFreshUser()
     const tier = computeTrustTier(user, baseContext)
