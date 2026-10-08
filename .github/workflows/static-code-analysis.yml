@@ -145,6 +145,9 @@ jobs:
       - name: Check Storybook browser optimizeDeps
         run: node ci/check-storybook-browser-optimize-deps.mts
         timeout-minutes: 2
+      - name: Check classifier golden set imports
+        run: node ci/check-classifier-golden-imports.mts
+        timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: |

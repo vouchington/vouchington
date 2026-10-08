@@ -56,5 +56,6 @@ independent positive examples for each candidate. Every fixture must return exac
 candidate. Each fixture makes one provider call; the tests report call count and elapsed time. C5
 uses each active candidate threshold revision; C6 uses the active prompt version's default-threshold
 revision. Updating expected bands or tolerances is an ordinary reviewed baseline change. The
-import-graph test prevents classifier threshold, prompt-version, or configuration writes from
-entering the harness. This is a regression set, not calibration or threshold tuning.
+[import-graph audit](../../../../development/ci/tooling/README.md) in static code analysis
+prevents classifier threshold, prompt-version, or configuration writes from entering the harness.
+This is a regression set, not calibration or threshold tuning.
