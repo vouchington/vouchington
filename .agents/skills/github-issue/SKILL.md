@@ -35,6 +35,10 @@ it. Otherwise, whether or not an issue exists, ask whether to widen the accepted
 or record a follow-up. Filing an issue records work but does not amend the accepted plan or
 authorize implementation.
 
+A stop condition in an issue names a real decision for a human. Adding or changing an index, or a
+rewrite that returns the same rows, is never one: the worker makes the change and records the plan
+before and after.
+
 Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and `dev/pr-description.mts`
 always operate there. Default `TARGET_REPO` to `vouchington/vouchington`; set another repository
 only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,

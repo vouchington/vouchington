@@ -328,6 +328,15 @@ This extends the prelaunch relational-storage rule.
 - A reference is an FK column or an FK child row. It is never a UUID array, a type/id pair, or an
   id inside JSON. The exception is a history document (R4 `changes jsonb`), which records
   ids as they were when it was written.
+- **Join on ids, never on text.** A string that comes from outside is a unique or generated column,
+  never a primary or foreign key: a vendor or external-account id, an edge or cache key, a slug, an
+  email address. Turn it into an id once, where it enters, and reference and join by that id from
+  then on. Keys are uuid ids, or enums for fixed value sets. Hashtag and category text matching is
+  the only exception, because the text itself is what is being matched. Looking up outside input by
+  its unique text (a slug, a hostname, a login token) is fine; joining tables on that text is not.
+  Existing code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
 - **A `uuid` column ending in `_id` belongs to a foreign key.** A single-column or a composite FK
   both count. Today (before the vote-table split) 72 columns have none. 69 of them don't point at a row that must exist, and
   each keeps its reason as a pattern exemption or an allow entry (NM-3 `postgres-column-naming` (jonathanong/no-mistakes#1057) `requireForeignKey`):
@@ -641,6 +650,20 @@ History details (decision 15):
   index.
 - Test existence with `EXISTS`, not `COUNT(*) > 0`. Use `NOT EXISTS`, not `NOT IN (SELECT…)`, which
   is also wrong when the subquery returns NULLs.
+- **A `view_*` view is read only by its key.** Searches, lists and pages pick their ids from base
+  tables with an index, then read the view by those ids. Never filter, sort, page or count on a
+  view's columns. If you do, the view computes every row before the page is cut, so the cost grows
+  with the table rather than the page. Totals and rankings across a whole table (platform stats,
+  trending) read precomputed results, such as a materialized view or maintained counters. Existing
+  code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
+- **Never bound ids in SQL with `uuidv7(...)`.** It is volatile, so a predicate that calls it is
+  only a filter: it can't use an index or skip partitions. Pass a bound computed in TypeScript
+  (`getMinUUIDv7ForDate`) as a parameter, or use a STABLE SQL helper that PostgreSQL can inline.
+  Existing code that breaks this rule is being fixed under
+  [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
+  unrelated PRs.
 - Tables, whatever their width, are read and returned with explicit column lists: no `SELECT *`,
   `alias.*` or `RETURNING *` (decision 21). A view may be read with `*`, because its column list
   is the reviewed contract. Enforced by `postgres-explicit-columns` (`maxColumns: 0`,

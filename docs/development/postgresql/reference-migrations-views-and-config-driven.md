@@ -59,7 +59,10 @@ when that view's own query passes `is_simple_subquery()`/`is_simple_union_all()`
 with no top-level `WITH` and no plain `UNION` (a `UNION ALL` list is fine). A view that fails this
 check gets materialized as its own unindexed subplan wherever it is joined, and any enclosing query
 that reads it once per output row (a batched-by-id lookup, a scalar subquery correlated to an outer
-id) pays that materialization once per row instead of once total. See
+id) pays that materialization once per row. Even one read with no key restriction derives every
+row of the view, so the cost grows with the table. Callers therefore read a `view_*` only by its
+key and pick the ids from indexed base tables first, as
+[R6](../postgres-schema-rules.md#r6--query-shape) requires. See
 [`view_public_post_eligibility`](../../../backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql) for the shape this
 forces (flat outer SELECT, `UNION ALL` only, no top-level CTE) and the rejected alternative shape it was measured
 against (#10785). Internal existence probes may use nested `MATERIALIZED` CTEs as optimizer
@@ -78,7 +81,9 @@ scope, deduplicating with an outer `COUNT(DISTINCT ...)` if the candidate union 
 duplicate ids. See `count__discussions` in
 [`2025-01-19-topic-metrics.sql`](../../../backend/data-stores/psql/views/2025-01-19-topic-metrics.sql) for a worked example, and
 `count__reviews`/`count__data_points` in the same file for the simpler case where the topic-side
-relation is already the direct join target.
+relation is already the direct join target. This candidate-bind shape is the pattern to follow for
+every search, list, page, and count: the candidate ids come from an indexed relation, and the view
+is read only by those ids.
 
 The alias-side candidate source in that worked example derives ids from
 `relation__post__category__topic_alias` alone (`deleted_at IS NULL AND votes_score_net > 0`), not
