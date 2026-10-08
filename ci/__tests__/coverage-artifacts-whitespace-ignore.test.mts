@@ -22,6 +22,10 @@ exit 0
   await writeFile(
     join(dir, 'git'),
     `#!/usr/bin/env bash
+if [ "$1" = "ls-files" ]; then
+  printf 'web/content.ts\\0'
+  exit 0
+fi
 if [ "$1" = "diff" ] && [ "$2" = "--name-only" ] && [ "$3" = "--ignore-space-at-eol" ]; then
   printf '%s\\n' 'web/content.ts'
   exit 0

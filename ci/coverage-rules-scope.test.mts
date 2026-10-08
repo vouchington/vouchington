@@ -5,42 +5,21 @@ import {
   type DiffLines,
   type LcovData,
 } from 'coverage-check'
-import { matchRule } from 'coverage-check/src/rules.mts'
 import { describe, expect, it } from 'vitest'
 
 import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-config.mts'
-import { trackedFiles } from './test-helpers/tracked-files.mts'
+import { findCoverageScopeMismatches } from './coverage-scope.mts'
 
 const RULES_PATH = '.coverage-rules.yml'
 
-function repoFiles(): string[] {
-  return trackedFiles(process.cwd())
-}
-
-function reachableFiles(): string[] {
-  const { rules, scope } = loadCoverageConfig(RULES_PATH)
-  if (scope === undefined) throw new Error('.coverage-rules.yml is missing its scope block')
-  return repoFiles().filter(file => {
-    if (coverageDisposition(file, scope) === 'ignored') return false
-    const rule = matchRule(file, rules)
-    return rule !== null && rule.patch_coverage_min > 0
-  })
-}
-
 describe('.coverage-rules.yml scope', () => {
   it('ignores generated, declaration, test, and fixture files that no suite ever instruments', () => {
-    const files = repoFiles()
     const { scope } = loadCoverageConfig(RULES_PATH)
     if (scope === undefined) throw new Error('.coverage-rules.yml is missing its scope block')
-    const exampleMatching = (pattern: RegExp): string => {
-      const match = files.find(file => pattern.test(file))
-      if (match === undefined) throw new Error(`no repo file matches ${String(pattern)} to sample`)
-      return match
-    }
-    const declarationFile = exampleMatching(/\.d\.m?ts$/)
-    const testFile = exampleMatching(/backend\/.*\.test\.mts$/)
-    const testHelperFile = exampleMatching(/\/test-helpers\//)
-    const fixtureFile = exampleMatching(/\/fixtures\//)
+    const declarationFile = 'backend/example.d.mts'
+    const testFile = 'backend/example.test.mts'
+    const testHelperFile = 'backend/test-helpers/example.mts'
+    const fixtureFile = 'backend/fixtures/example.mts'
     for (const file of [declarationFile, testFile, testHelperFile, fixtureFile]) {
       expect(coverageDisposition(file, scope)).toBe('ignored')
     }
@@ -65,27 +44,60 @@ describe('.coverage-rules.yml scope', () => {
     expect(missing).toEqual([{ file, lines: [1], rule: 'ts-shared/**' }])
   })
 
-  // Scans every reachable file in the repo, so it scales with repo size rather than the 30s
-  // tooling-project default. A project-wide budget bump is the wrong mechanism here — see the
-  // comment on toolingTestBudget in test-helpers/vitest-config/tooling-projects.mts.
   it('never marks a file ignored that the default Vitest coverage config would still instrument', () => {
-    // Every positive-threshold rule below is backed by a suite running under
-    // coverageConfigForScope(undefined) (see the file-level comment in .coverage-rules.yml). If
-    // scope.ignored drifts looser than that config's `exclude`, a file with real LCOV coverage
-    // would be wrongly treated as never-instrumented and coverage-check would stop verifying it.
-    const files = reachableFiles()
-    const defaultConfig = coverageConfigForScope(undefined)
-    const defaultScope = {
+    const config = coverageConfigForScope(undefined)
+    const instrumentedScope = {
       version: 1 as const,
       analyzer: 'javascript' as const,
-      include: defaultConfig.include as string[],
-      ignored: defaultConfig.exclude as string[],
+      include: config.include as string[],
+      ignored: config.exclude as string[],
     }
+    const paths = [
+      'backend/services/example.mts',
+      'ts-shared/example.mts',
+      'web/components/example.tsx',
+    ]
+    expect(
+      findCoverageScopeMismatches(paths, loadCoverageConfig(RULES_PATH), instrumentedScope),
+    ).toEqual([])
+  })
 
-    const wronglyIgnored = files.filter(
-      file => coverageDisposition(file, defaultScope) === 'ignored',
-    )
+  it('detects a positive-threshold path excluded by the collector', () => {
+    const file = 'backend/services/example.mts'
+    const instrumentedScope = {
+      version: 1 as const,
+      analyzer: 'javascript' as const,
+      include: ['**/*.{mts,ts,tsx}'],
+      ignored: [file],
+    }
+    expect(
+      findCoverageScopeMismatches([file], loadCoverageConfig(RULES_PATH), instrumentedScope),
+    ).toEqual([file])
+  })
 
-    expect(wronglyIgnored).toEqual([])
-  }, 120_000)
+  it('does not charge ignored, zero-threshold or unmatched paths to a collector', () => {
+    const instrumentedScope = {
+      version: 1 as const,
+      analyzer: 'javascript' as const,
+      include: ['**/*.{mts,ts,tsx}'],
+      ignored: ['**/*'],
+    }
+    const paths = ['backend/example.test.mts', 'backend/scripts/example.mts', 'ci/example.mts']
+    expect(
+      findCoverageScopeMismatches(paths, loadCoverageConfig(RULES_PATH), instrumentedScope),
+    ).toEqual([])
+  })
+
+  it('rejects configuration without a scope before processing paths', () => {
+    const config = loadCoverageConfig(RULES_PATH)
+    const instrumentedScope = {
+      version: 1 as const,
+      analyzer: 'javascript' as const,
+      include: ['**/*.mts'],
+      ignored: [],
+    }
+    expect(() =>
+      findCoverageScopeMismatches([], { ...config, scope: undefined }, instrumentedScope),
+    ).toThrow('.coverage-rules.yml is missing its scope block')
+  })
 })
