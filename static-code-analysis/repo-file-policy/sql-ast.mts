@@ -1,7 +1,6 @@
 export {
   extractCreateIndexMetadata,
   extractCreateTableMetadata,
-  extractDropIndexMetadata,
   initSqlAst,
   lineOfUtf8ByteOffset,
   parseSql,
