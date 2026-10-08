@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser, hasTestRetainedImageIdentity } from '@voucha/test-helpers'
 import { createImageUploadUrl } from './create-upload-url.mts'
 import { getImageById } from './get.mts'
@@ -6,6 +6,8 @@ import { deriveUploadStatus } from './get-upload-state.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { MediaError } from '@vouchington/media'
 import { S3Buckets } from '@modules/aws'
+
+const NOW = Date.UTC(2026, 0, 31, 23, 59, 59)
 
 describe('createImageUploadUrl', () => {
   let user: PrivateUser
@@ -19,6 +21,15 @@ describe('createImageUploadUrl', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
+  })
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should create a presigned upload URL', async () => {
@@ -40,12 +51,7 @@ describe('createImageUploadUrl', () => {
     expectNoEmptyChecksumQueryParams(uploadUrl)
     expect(result.expires_at).toBeDefined()
 
-    // Verify expiration is ~1 hour from now
-    const expiresAt = new Date(result.expires_at)
-    const now = new Date()
-    const diffMinutes = (expiresAt.getTime() - now.getTime()) / 1000 / 60
-    expect(diffMinutes).toBeGreaterThan(55)
-    expect(diffMinutes).toBeLessThan(65)
+    expect(result.expires_at).toBe(new Date(NOW + 3600 * 1000).toISOString())
   })
 
   it('should reject unsupported formats', async () => {
