@@ -8,7 +8,9 @@ sequence are part of [Linters and Static Analysis](reference-tests-linters-and-s
 The runtime-backed Oxlint TypeScript-plugin regression belongs to `static-analysis-tools`; run it
 with `pnpm exec vitest run --project static-analysis-tools static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts`.
 The test uses the configured analyzer rather than injecting a plugin; see the
-[static-analysis guide](../../static-code-analysis/README.md).
+[static-analysis guide](../../static-code-analysis/README.md). Whole-catalog route bounds run
+in the normal CI checker; [translation checks](reference-tests-translation-catalog-and-locale-checks.md)
+owns the small-fixture unit boundary.
 
 **Init column:** `monorepo` = `./dev/initialize monorepo` is sufficient. `web` = requires `./dev/initialize web` (Docker, DB, Valkey, `.env`, HTTPS certs, CF Worker env). A row marked `web` here is the tested/documented baseline, not necessarily a hard floor — some `web`-tagged commands only need DB/Valkey and would also pass under `./dev/initialize backend`; when in doubt, initialize `web`.
 
