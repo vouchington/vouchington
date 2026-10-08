@@ -17,6 +17,7 @@ Vouchington-specific policy and pointers.
 - [`skills/agent-workflow/SKILL.md`](../skills/agent-workflow/SKILL.md)
 - [`skills/backend-vitest-test-authoring/SKILL.md`](../skills/backend-vitest-test-authoring/SKILL.md)
 - [`skills/blackboard/SKILL.md`](../skills/blackboard/SKILL.md)
+- [`skills/bounded-iteration/SKILL.md`](../skills/bounded-iteration/SKILL.md)
 - [`skills/chrome-qa/SKILL.md`](../skills/chrome-qa/SKILL.md)
 - [`skills/event-ingress-routing/SKILL.md`](../skills/event-ingress-routing/SKILL.md)
 - [`skills/git-commit-checklist/SKILL.md`](../skills/git-commit-checklist/SKILL.md)
