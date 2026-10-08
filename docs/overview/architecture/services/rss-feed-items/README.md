@@ -167,6 +167,8 @@ preset fallback.
 
 RSS feed items carry category strings (from `<category>` elements or equivalent). Each ingest carries a complete, normalized per-item snapshot: an empty array removes prior rows instead of preserving stale labels. Snapshots are stored in `rss_feed_item_categories` with a `topic_id` column that is `NULL` until an admin maps the category to a topic. Valid hashtag categories also retain their canonical `topic_alias_id`; writes synchronously refresh their category-relation vote stats before the RSS-item cache purge, then debounce the top-hashtag materialized-view refresh without changing the raw RSS label.
 
+Post-upsert fanout waits for embedding, autotagger, notification, and cache work before returning the item rows. Language-detection admission remains best-effort and detached from that row return; the internal fanout result exposes its completion promise to callers that need to observe admission. Collaborative topic votes likewise schedule a debounced stat refresh, so a vote-gated read must follow completion of the relevant elections job.
+
 ### `rss_feed_item_category_rejections` table
 
 Admins can permanently hide a category from the pending triage queue by rejecting it. Rejections are stored in `rss_feed_item_category_rejections (category_text PK, created_at, created_by_id)` and can be reversed.

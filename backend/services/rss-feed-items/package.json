@@ -64,7 +64,6 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@queues/elections": "workspace:^",
     "@services/read-states": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

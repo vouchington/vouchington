@@ -17,6 +17,11 @@ type RssFeedItemEnqueueRow = Pick<
   'id' | 'guid' | 'has_embedding'
 >
 
+type PostUpsertEnqueueOptions = {
+  existingRowsForFanout?: RssFeedItemEnqueueRow[]
+  languageDetectionRows?: RssFeedItemEnqueueRow[]
+}
+
 export const enqueueMissingRssFeedItemEmbeddings = async (
   rows: Array<Pick<RssFeedItemEnqueueRow, 'id' | 'has_embedding'>>,
 ) => {
@@ -36,14 +41,12 @@ export async function enqueueRssFeedItemCategorySnapshotReconciliationBestEffort
   }
 }
 
-export const enqueueRssFeedItemPostUpsertJobs = async (
+/** Exposes admission of the detached language jobs without delaying the row-returning caller. */
+export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
-  options: {
-    existingRowsForFanout?: RssFeedItemEnqueueRow[]
-    languageDetectionRows?: RssFeedItemEnqueueRow[]
-  } = {},
+  options: PostUpsertEnqueueOptions = {},
 ) => {
   const allRowsWithGuids = mergeRssFeedItemRows(itemsToUpsert, existingRows, upsertedRows)
   const fanoutRowsWithGuids = mergeRssFeedItemRows(
@@ -59,12 +62,29 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
     invalidateRssFeedItemsInChunks(fanoutRowsWithGuids.map(row => row.id)),
     enqueueRssFeedItemNotificationReconciliationInChunks(fanoutRowsWithGuids.map(row => row.id)),
   ])
-  void enqueueRssFeedItemLanguageDetection(options.languageDetectionRows ?? upsertedRows)
+  const languageDetectionEnqueue = enqueueRssFeedItemLanguageDetection(
+    options.languageDetectionRows ?? upsertedRows,
+  )
 
-  return allRowsWithGuids.map(row => ({
-    id: row.id,
-    has_embedding: row.has_embedding,
-  }))
+  return {
+    rows: allRowsWithGuids.map(row => ({ id: row.id, has_embedding: row.has_embedding })),
+    languageDetectionEnqueue,
+  }
+}
+
+export const enqueueRssFeedItemPostUpsertJobs = async (
+  itemsToUpsert: RssFeedItemWithHash[],
+  existingRows: RssFeedItemEnqueueRow[],
+  upsertedRows: UpsertedRssFeedItemRow[],
+  options: PostUpsertEnqueueOptions = {},
+) => {
+  const { rows } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+    itemsToUpsert,
+    existingRows,
+    upsertedRows,
+    options,
+  )
+  return rows
 }
 
 function mergeRssFeedItemRows(

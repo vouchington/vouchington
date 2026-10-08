@@ -48,9 +48,8 @@ async function getMapperContext(): Promise<{
  * Returns the written relations. Their vote-stats recompute (which drives whether they surface as
  * "topic chips" on the item, gated by `votes_score_net`) is enqueued fire-and-forget — see
  * services/elections-votes/AGENTS.md's "intentionally asynchronous" design. Callers that read
- * vote-gated data back out (tests included) should poll for each relation's `object_id` to appear
- * in the read side effect rather than depending on `backend/workers/*` (workers/AGENTS.md: workers
- * depend on services, never the reverse).
+ * vote-gated data back out must await the relevant elections job's completion before reading the
+ * view. The service keeps that refresh asynchronous on the vote write path.
  */
 export async function applyCollaborativeTopicRelations(
   rssFeedItemId: string,

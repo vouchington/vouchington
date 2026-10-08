@@ -50,15 +50,11 @@ describe('RSS feed item category snapshot reconciliation', () => {
     ])
     // The notification job is prioritized, which `getJobs('waiting')` excludes until a worker
     // promotes it, so search every state.
-    await expect
-      .poll(async () => {
-        const jobs = await notifications.searchJobs({
-          name: 'processReconcileRssFeedItemNotifications',
-          data: { rssFeedItemId: item!.id },
-        })
-        return jobs.length > 0
-      })
-      .toBe(true)
+    const jobs = await notifications.searchJobs({
+      name: 'processReconcileRssFeedItemNotifications',
+      data: { rssFeedItemId: item!.id },
+    })
+    expect(jobs.length).toBeGreaterThan(0)
     await expect(
       getTestRssFeedItemCategorySnapshotReconciliation(item!.id),
     ).resolves.toBeUndefined()
