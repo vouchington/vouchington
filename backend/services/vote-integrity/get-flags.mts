@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import createHttpError from 'http-errors'
+import { isUUID } from '@modules/utils'
 import { read, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
@@ -22,6 +25,7 @@ export async function getVoteIntegrityFlagByIdFromPrimary(
 
 export type GetVoteIntegrityFlagsOptions = {
   status?: IntegrityFlagStatus
+  ids?: readonly string[]
   after?: string
   limit?: number
 }
@@ -36,7 +40,8 @@ export async function getVoteIntegrityFlags(
 ): Promise<GetVoteIntegrityFlagsResult> {
   const { status, after, limit = 25 } = options
   const clampedLimit = Math.min(Math.max(1, limit), 100)
-  const cursorScope = buildVoteFlagCursorScope(status)
+  const ids = normalizeFlagIds(options.ids)
+  const cursorScope = buildVoteFlagCursorScope(status, ids)
 
   let afterId: string | undefined
   if (after) {
@@ -51,6 +56,8 @@ export async function getVoteIntegrityFlags(
     FROM vote_integrity_flags
     WHERE TRUE
   `)
+
+  if (ids !== undefined) query.append(sql` AND id = ANY(${ids}::uuid[])`)
 
   if (status === 'pending') {
     query.append(sql` AND resolved_at IS NULL`)
@@ -80,10 +87,28 @@ export async function getVoteIntegrityFlags(
   }
 }
 
-function buildVoteFlagCursorScope(status?: IntegrityFlagStatus): string {
+function buildVoteFlagCursorScope(
+  status: IntegrityFlagStatus | undefined,
+  ids: readonly string[] | undefined,
+): string {
   return JSON.stringify({
     resource: 'vote-integrity-flags',
     status: status ?? 'all',
+    ...(ids === undefined
+      ? {}
+      : { ids_sha256: createHash('sha256').update(JSON.stringify(ids)).digest('hex') }),
     order: 'id-desc',
   })
+}
+
+function normalizeFlagIds(ids: readonly string[] | undefined): string[] | undefined {
+  if (ids === undefined) return undefined
+  const message = 'ids must contain at most 100 valid UUIDs'
+  if (!Array.isArray(ids) || ids.length > 100) throw createHttpError(422, message)
+  const normalized = new Set<string>()
+  for (const id of ids) {
+    if (typeof id !== 'string' || !isUUID(id)) throw createHttpError(422, message)
+    normalized.add(id.toLowerCase())
+  }
+  return [...normalized].toSorted()
 }
