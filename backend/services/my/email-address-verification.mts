@@ -99,14 +99,11 @@ async function verifyTokenAndPrimeEmailCache(
     'Email address has already been claimed by another account',
   )
 
-  const { rows: countRows } = await query(
-    sql`/* verifyEmailVerificationToken */ SELECT COUNT(*) AS count FROM user_email_addresses WHERE user_id = ${userId}`,
-  )
-  const isPrimary = Number(countRows[0].count) === 0
-
   await query(sql`/* verifyEmailVerificationToken */
       INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-      VALUES (${userId}, ${normalizedEmailAddress}, ${isPrimary})
+      SELECT ${userId}::uuid, ${normalizedEmailAddress}::text, NOT EXISTS (
+        SELECT 1 FROM user_email_addresses WHERE user_id = ${userId}::uuid
+      )
       ON CONFLICT (user_id, email_address) DO NOTHING
   `)
   await query.commit()
