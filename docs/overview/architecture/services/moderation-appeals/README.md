@@ -16,6 +16,10 @@ transaction. REST creation owns that transaction; delegated MCP creation joins a
 transaction. Failed creation leaves a previously resolved case resolved. The resolution enqueue
 runs only after the owning transaction commits.
 
+`createModerationAppeal` accepts only `{ query }` for a caller-owned transaction. It constructs a
+fresh database options object containing that query when joining; extra own fields such as
+`client` and `readOnly` are rejected. With no query, the service owns a write transaction.
+
 ## Workflow
 
 1. Appellant files an appeal via `createModerationAppeal` (target: warning, ban, or post removal)
