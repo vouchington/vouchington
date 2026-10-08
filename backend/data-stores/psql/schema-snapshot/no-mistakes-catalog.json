@@ -6956,7 +6956,7 @@
       "checkConstraints": {},
       "columns": {
         "run_id": {
-          "comment": null,
+          "comment": "C7 classifier run that owns the answer; deleting the run removes it.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -6966,7 +6966,7 @@
           "ordinalPosition": 1
         },
         "topic_id": {
-          "comment": null,
+          "comment": "Topic the agent reported; always one of the run's captured candidates, and deleting the topic removes the fact.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -6976,7 +6976,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": null,
+      "comment": "C7 answer: the captured candidate topics the run's tool-using agent reported as true of the subject; facts only, so a row is the whole answer and a topic it left out has no row.",
       "foreignKeys": {
         "autotagger_agent_run_topics_run_id_fkey": {
           "columns": ["run_id"],
