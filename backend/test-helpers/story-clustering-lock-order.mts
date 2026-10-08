@@ -1,6 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import { reserveClassifierRun } from '@services/classifier-runs'
-import { createStoryClusteringRunAdapter } from '@services/stories/clustering/adapter'
+import { reserveClassifierRun } from '../services/classifier-runs/index.mts'
+import { createStoryClusteringRunAdapter } from '../services/stories/clustering/adapter.mts'
 import { createTestRssFeed } from './rss-feed-create.mts'
 import {
   createStoryClusteringItem,
