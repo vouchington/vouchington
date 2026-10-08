@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, act } from '@testing-library/react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -184,9 +184,10 @@ describe('FollowerShareActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share with followers' }))
 
-    await waitFor(() => {
-      expect(sharePostWithFollowers).toHaveBeenCalledWith('post-1')
+    await act(async () => {
+      await vi.mocked(sharePostWithFollowers).mock.results.at(-1)!.value
     })
+    expect(sharePostWithFollowers).toHaveBeenCalledWith('post-1')
   })
 
   it('queues an RSS feed item share with followers', async () => {
@@ -204,10 +205,11 @@ describe('FollowerShareActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share with followers' }))
 
-    await waitFor(() => {
-      expect(shareRssFeedItemWithFollowers).toHaveBeenCalledWith('item-1')
-      expect(toast.success).toHaveBeenCalledWith('Share queued')
+    await act(async () => {
+      await vi.mocked(shareRssFeedItemWithFollowers).mock.results.at(-1)!.value
     })
+    expect(shareRssFeedItemWithFollowers).toHaveBeenCalledWith('item-1')
+    expect(toast.success).toHaveBeenCalledWith('Share queued')
   })
 
   it('surfaces share failures', async () => {
@@ -222,8 +224,12 @@ describe('FollowerShareActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Share with followers' }))
 
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalled()
+    await act(async () => {
+      await vi
+        .mocked(sharePostWithFollowers)
+        .mock.results.at(-1)!
+        .value.catch(() => undefined)
     })
+    expect(toast.error).toHaveBeenCalled()
   })
 })

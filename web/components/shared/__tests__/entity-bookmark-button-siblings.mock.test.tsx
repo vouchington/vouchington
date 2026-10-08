@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EntityBookmarkButton } from '../entity-bookmark-button'
@@ -82,9 +82,10 @@ describe('EntityBookmarkButton sibling refetch', () => {
 
     // Click Follow — emits a 'follow' bookmark change for user-42
     fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('user', 'user-42', 'follow')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('user', 'user-42', 'follow')
 
     // Subscribe ('subscribe') and Mute ('mute') have different predicates from 'follow'
     // — they must not react to the change and must not call getEntityBookmarks
@@ -121,14 +122,16 @@ describe('EntityBookmarkButton sibling refetch', () => {
     const followButtons = screen.getAllByRole('button', { name: 'Follow' })
     expect(followButtons.length).toBeGreaterThanOrEqual(2)
     fireEvent.click(followButtons[0]!)
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('user', 'user-42', 'follow')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('user', 'user-42', 'follow')
 
     // The second Follow button has the same predicate — it must refetch
-    await waitFor(() => {
-      expect(mockGetEntityBookmarks).toHaveBeenCalledWith('user', 'user-42')
+    await act(async () => {
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
+    expect(mockGetEntityBookmarks).toHaveBeenCalledWith('user', 'user-42')
   })
 
   it('notifies the follow button when muting a topic causes an implicit server-side unfollow', async () => {
@@ -160,17 +163,17 @@ describe('EntityBookmarkButton sibling refetch', () => {
 
     // Click Mute — backend also removes the follow
     fireEvent.click(screen.getByRole('button', { name: 'Mute' }))
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-99', 'mute')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-99', 'mute')
 
     // Mute button emits 'follow' cascade event — Follow button must refetch and show unsubscribed
-    await waitFor(() => {
-      expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-99')
+    await act(async () => {
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
+    expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-99')
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeDefined()
   })
 })

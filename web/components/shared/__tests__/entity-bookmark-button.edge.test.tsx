@@ -8,7 +8,7 @@ import {
 } from '@/test-helpers/components/shared/entity-bookmark-button-edge.mock-support'
 
 import { emitBookmarkChange } from '@/hooks/use-bookmark-invalidation'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EntityBookmarkButton } from '../entity-bookmark-button'
 
@@ -43,11 +43,12 @@ describe('EntityBookmarkButton Edge Cases', () => {
       />,
     )
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribe to Posts' })).not.toHaveAttribute(
-        'aria-disabled',
-      )
+    await act(async () => {
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(screen.getByRole('button', { name: 'Subscribe to Posts' })).not.toHaveAttribute(
+      'aria-disabled',
+    )
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-1')
   })
 
@@ -68,13 +69,12 @@ describe('EntityBookmarkButton Edge Cases', () => {
     const button = screen.getByRole('button', { name: 'Subscribe' })
     fireEvent.click(button)
 
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
     expect(mockToastError).toHaveBeenCalledWith('Failed to update bookmark. Please try again.')
   })
 
@@ -97,13 +97,12 @@ describe('EntityBookmarkButton Edge Cases', () => {
     const button = screen.getByRole('button', { name: 'Subscribe' })
     fireEvent.click(button)
 
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
     expect(mockToastError).toHaveBeenCalledWith('Custom rate limit message')
   })
 
@@ -130,6 +129,7 @@ describe('EntityBookmarkButton Edge Cases', () => {
 
     await act(async () => {
       resolveBookmarks({ bookmarks: { subscribe_posts: true } })
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
 
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-1')
@@ -167,6 +167,7 @@ describe('EntityBookmarkButton Edge Cases', () => {
 
     await act(async () => {
       resolveBookmarks({ bookmarks: { proxy_follow: true } })
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
 
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('community', 'community-1')

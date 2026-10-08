@@ -1,6 +1,6 @@
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 vi.mock(
@@ -122,10 +122,12 @@ describe('ReportMenuItem', () => {
       />,
     )
     sessionStorage.setItem('report:post:post-1', 'submitted')
-    window.dispatchEvent(
-      new CustomEvent('voucha:report-submitted', { detail: { key: 'report:post:post-1' } }),
-    )
-    await waitFor(() => expect(screen.getByRole('menuitem', { name: /reported/i })).toBeDefined())
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('voucha:report-submitted', { detail: { key: 'report:post:post-1' } }),
+      )
+    })
+    expect(screen.getByRole('menuitem', { name: /reported/i })).toBeDefined()
   })
 
   it('shows "Reported" label when sessionStorage flag is set', () => {

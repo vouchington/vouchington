@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 
@@ -64,11 +64,14 @@ describe('bookmark button request races', () => {
           initialActive
         />,
       )
-      reject(new Error('network'))
-
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: testCase.active })).not.toBeDisabled(),
-      )
+      await act(async () => {
+        reject(new Error('network'))
+        await vi
+          .mocked(bookmarkEntity)
+          .mock.results.at(-1)!
+          .value.catch(() => undefined)
+      })
+      expect(screen.getByRole('button', { name: testCase.active })).not.toBeDisabled()
     })
 
     it(`resets ${testCase.inactive} state when its initial flag changes`, () => {
@@ -115,7 +118,13 @@ describe('bookmark button request races', () => {
         onActiveChange={onActiveChange}
       />,
     )
-    await act(async () => reject(new Error('network')))
+    await act(async () => {
+      reject(new Error('network'))
+      await vi
+        .mocked(bookmarkEntity)
+        .mock.results.at(-1)!
+        .value.catch(() => undefined)
+    })
 
     expect(onActiveChange).toHaveBeenCalledTimes(1)
     expect(toast.error).not.toHaveBeenCalled()
@@ -146,7 +155,10 @@ describe('bookmark button request races', () => {
         onHide={onHide}
       />,
     )
-    await act(async () => resolve({} as Awaited<ReturnType<typeof bookmarkEntity>>))
+    await act(async () => {
+      resolve({} as Awaited<ReturnType<typeof bookmarkEntity>>)
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
+    })
 
     expect(onActiveChange).toHaveBeenCalledTimes(1)
     expect(onHide).not.toHaveBeenCalled()

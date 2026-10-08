@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { UsernameRequiredDialog } from './username-required-dialog'
 import { ApiError } from '@/lib/api/error'
 import { updateMyIdentity } from '@/lib/api/client/my'
@@ -108,11 +108,12 @@ describe('UsernameRequiredDialog', () => {
     mockAvailabilityReset.mockClear()
     fireEvent.submit(input.closest('form')!)
 
-    await waitFor(() => {
-      expect(mockUpdateMyIdentity).toHaveBeenCalledWith({ username: 'myusername' })
-      expect(mockAvailabilityReset).toHaveBeenCalledTimes(1)
-      expect(onUsernameSet).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      await mockUpdateMyIdentity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockUpdateMyIdentity).toHaveBeenCalledWith({ username: 'myusername' })
+    expect(mockAvailabilityReset).toHaveBeenCalledTimes(1)
+    expect(onUsernameSet).toHaveBeenCalledTimes(1)
   })
 
   it('shows error toast and does not call onUsernameSet on ApiError', async () => {
@@ -128,10 +129,11 @@ describe('UsernameRequiredDialog', () => {
     fireEvent.change(input, { target: { value: 'takenname' } })
     fireEvent.submit(input.closest('form')!)
 
-    await waitFor(() => {
-      expect(mockToastError).toHaveBeenCalledWith('Username already taken')
-      expect(onUsernameSet).not.toHaveBeenCalled()
+    await act(async () => {
+      await mockUpdateMyIdentity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockToastError).toHaveBeenCalledWith('Username already taken')
+    expect(onUsernameSet).not.toHaveBeenCalled()
   })
 
   it('shows fallback error toast on unknown error', async () => {
@@ -142,9 +144,10 @@ describe('UsernameRequiredDialog', () => {
     fireEvent.change(input, { target: { value: 'myusername' } })
     fireEvent.submit(input.closest('form')!)
 
-    await waitFor(() => {
-      expect(mockToastError).toHaveBeenCalledWith('Failed to create username')
+    await act(async () => {
+      await mockUpdateMyIdentity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockToastError).toHaveBeenCalledWith('Failed to create username')
   })
 
   it('submits via Enter on the username input through the API client', async () => {
@@ -153,11 +156,12 @@ describe('UsernameRequiredDialog', () => {
 
     const input = getInput() as HTMLInputElement
     fireEvent.change(input, { target: { value: 'enteruser' } })
-    void expectInputEnterSubmits({ input, onSubmit: mockUpdateMyIdentity })
+    await expectInputEnterSubmits({ input, onSubmit: mockUpdateMyIdentity })
 
-    await waitFor(() => {
-      expect(mockUpdateMyIdentity).toHaveBeenCalledWith({ username: 'enteruser' })
+    await act(async () => {
+      await mockUpdateMyIdentity.mock.results.at(-1)!.value.catch(() => undefined)
     })
+    expect(mockUpdateMyIdentity).toHaveBeenCalledWith({ username: 'enteruser' })
   })
 
   it('calls onClose when Cancel is clicked', () => {
