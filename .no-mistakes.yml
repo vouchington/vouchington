@@ -843,9 +843,11 @@ rules:
       unknownCalls: ignore
       targets:
         - moduleExport: { module: no-mistakes, export: analyzeProject }
+        - moduleExport: { module: no-mistakes, export: analyzeTypeScriptModules }
         - moduleExport: { module: no-mistakes, export: check }
         - moduleExport: { module: no-mistakes, export: ciTopology }
         - moduleExport: { module: no-mistakes, export: ciTopologyImpact }
+        - moduleExport: { module: no-mistakes, export: dependencies }
         - moduleExport: { module: no-mistakes, export: importUsages }
         - moduleExport: { module: no-mistakes, export: resolveCheck }
         - moduleExport: { module: no-mistakes, export: symbols }

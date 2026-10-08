@@ -14,6 +14,7 @@ jobs:
       - run: node ci/check-no-mistakes-test-policy.mts
       - run: node ci/check-live-workflow-topology.mts
       - run: node ci/check-storybook-browser-optimize-deps.mts
+      - run: node ci/check-classifier-golden-imports.mts
 `
 
 export const malformedWorkflow = 'jobs: [unterminated\n'

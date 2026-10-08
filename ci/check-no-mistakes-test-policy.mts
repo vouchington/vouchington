@@ -29,6 +29,11 @@ const expectedWorkflowCommands = [
     job: 'no-mistakes',
     command: 'node ci/check-storybook-browser-optimize-deps.mts',
   },
+  {
+    path: workflowPath,
+    job: 'no-mistakes',
+    command: 'node ci/check-classifier-golden-imports.mts',
+  },
 ]
 
 type Workflow = {
@@ -76,7 +81,7 @@ export function relevantWorkflowCommands(root: string, paths: string[]): Workflo
       (definition.steps ?? []).flatMap(step =>
         (typeof step.run === 'string' ? step.run.split('\n') : []).flatMap(line => {
           const command = line.trim()
-          return /^(?:pnpm (?:run|exec) no-mistakes\b|node ci\/(?:check-no-mistakes-test-policy|check-live-workflow-topology|check-storybook-browser-optimize-deps)\.mts(?:\s|$))/u.test(
+          return /^(?:pnpm (?:run|exec) no-mistakes\b|node ci\/(?:check-no-mistakes-test-policy|check-live-workflow-topology|check-storybook-browser-optimize-deps|check-classifier-golden-imports)\.mts(?:\s|$))/u.test(
             command,
           )
             ? [{ path, job, command }]
