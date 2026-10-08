@@ -238,12 +238,11 @@ describe('Vitest timeout policy (#10762, #8078)', () => {
     hookTimeout: project.test?.hookTimeout,
   }))
 
-  // Grounded in the current highest legitimate per-project override (real AWS/OpenAI network
-  // calls, and web-integration's multi-process global setup). A genuinely slower test belongs a
-  // targeted per-test override, not a bump to these ceilings. Inclusive by design: web-integration
-  // deliberately sits exactly at HOOK_TIMEOUT_CEILING_MS, so this must stay `>`, never `>=`.
-  const TEST_TIMEOUT_CEILING_MS = 60_000
-  const HOOK_TIMEOUT_CEILING_MS = 90_000
+  // The owner caps every test and hook at 30 seconds, including explicit overrides.
+  // Keep this hard ceiling separate from the later five-second default rollout.
+  // Inclusive by design: 30 seconds is valid, so compare with `>`, never `>=`.
+  const TEST_TIMEOUT_CEILING_MS = 30_000
+  const HOOK_TIMEOUT_CEILING_MS = 30_000
 
   it('declares an explicit testTimeout on every project (#10762)', () => {
     const missing = projectTimeouts
