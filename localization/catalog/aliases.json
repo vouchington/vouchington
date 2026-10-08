@@ -712,6 +712,7 @@
 {"alias":"native.dotnet.engineeringQueues.activeCount","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.activeCount"},
 {"alias":"native.dotnet.engineeringQueues.backfills","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.backfills"},
 {"alias":"native.dotnet.engineeringQueues.completedCount","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.completedCount"},
+{"alias":"native.dotnet.engineeringQueues.delayedCount","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.delayedCount"},
 {"alias":"native.dotnet.engineeringQueues.failedCount","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.failedCount"},
 {"alias":"native.dotnet.engineeringQueues.queueCount","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.queueCount"},
 {"alias":"native.dotnet.engineeringQueues.runBackfill","consumer":"dotnet","copyId":"copy.native.dotnet.engineeringQueues.runBackfill"},
