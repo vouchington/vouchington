@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process'
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import {
   coverageDisposition,
   findMissingCoverage,
@@ -5,10 +9,11 @@ import {
   type DiffLines,
   type LcovData,
 } from 'coverage-check'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-config.mts'
 import { findCoverageScopeMismatches } from './coverage-scope.mts'
+import { checkCoverageScope } from './check-coverage-scope.mts'
 
 const RULES_PATH = '.coverage-rules.yml'
 
@@ -99,5 +104,41 @@ describe('.coverage-rules.yml scope', () => {
     expect(() =>
       findCoverageScopeMismatches([], { ...config, scope: undefined }, instrumentedScope),
     ).toThrow('.coverage-rules.yml is missing its scope block')
+  })
+})
+
+async function createScopeFixture(file: string): Promise<string> {
+  const cwd = await mkdtemp(join(tmpdir(), 'coverage-scope-fixture-'))
+  onTestFinished(() => rm(cwd, { recursive: true, force: true }))
+  await mkdir(dirname(join(cwd, file)), { recursive: true })
+  await writeFile(join(cwd, file), 'export const fixture = true\n')
+  await writeFile(
+    join(cwd, '.coverage-rules.yml'),
+    [
+      'scope:',
+      '  version: 1',
+      '  analyzer: javascript',
+      '  include: ["**/*.mts"]',
+      '  ignored: []',
+      'rules:',
+      '  - paths: "backend/**"',
+      '    patch_coverage_min: 1',
+      '',
+    ].join('\n'),
+  )
+  execFileSync('git', ['init', '--quiet', '--initial-branch=test-coverage-scope'], { cwd })
+  execFileSync('git', ['add', '--', file, '.coverage-rules.yml'], { cwd })
+  return cwd
+}
+
+describe('coverage scope command', () => {
+  it('accepts tracked paths included by the collector', async () => {
+    const cwd = await createScopeFixture('backend/services/owned.mts')
+    expect(() => checkCoverageScope(cwd)).not.toThrow()
+  })
+
+  it('fails when a positive rule requires a tracked collector exclusion', async () => {
+    const cwd = await createScopeFixture('backend/dev.mts')
+    expect(() => checkCoverageScope(cwd)).toThrow('backend/dev.mts')
   })
 })
