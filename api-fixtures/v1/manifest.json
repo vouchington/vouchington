@@ -8766,7 +8766,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "bodyKind": "content",
-      "hash": "a922d0a8874a43315a62537852c189c888281ec30eae18448b4a218e4ee0b45f",
+      "hash": "833801fbd34613f9c0fcec08fe716fc4d2e669499de260bb2fa1b4f380a97ab6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -9162,8 +9162,8 @@
                         "queue_source": {
                           "required": true,
                           "schema": {
-                            "name": "CommunityModerationQueueSource",
-                            "type": "ref"
+                            "type": "literal",
+                            "value": "report"
                           }
                         },
                         "reason": {
@@ -9439,8 +9439,8 @@
                             "queue_source": {
                               "required": true,
                               "schema": {
-                                "name": "CommunityModerationQueueSource",
-                                "type": "ref"
+                                "type": "literal",
+                                "value": "report"
                               }
                             },
                             "reason": {
@@ -9755,8 +9755,8 @@
                             "queue_source": {
                               "required": true,
                               "schema": {
-                                "name": "CommunityModerationQueueSource",
-                                "type": "ref"
+                                "type": "literal",
+                                "value": "report"
                               }
                             },
                             "reason": {
@@ -9867,6 +9867,232 @@
                                     "value": "reviewed"
                                   }
                                 ]
+                              }
+                            },
+                            "target_available": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": false
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": true
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "target_content": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "ModerationReportTargetContent",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "target_label": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "target_path": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "target_pending_community_review": {
+                              "required": false,
+                              "schema": {
+                                "type": "boolean"
+                              }
+                            },
+                            "target_user_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "admin_action_path": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "community_ban_evasion": {
+                              "required": false,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "CommunityBanEvasionContext",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "created_at": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "entity_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "entity_type": {
+                              "required": true,
+                              "schema": {
+                                "type": "literal",
+                                "value": "post"
+                              }
+                            },
+                            "id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "judgement": {
+                              "required": true,
+                              "schema": {
+                                "type": "null"
+                              }
+                            },
+                            "post_moderation_context": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "PostModerationContext",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "queue_source": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "automod_flag"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "community_review"
+                                  }
+                                ]
+                              }
+                            },
+                            "reason": {
+                              "required": true,
+                              "schema": {
+                                "type": "null"
+                              }
+                            },
+                            "report_count": {
+                              "required": true,
+                              "schema": {
+                                "type": "number"
+                              }
+                            },
+                            "resolved_by_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "reviewed_at": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "status": {
+                              "required": true,
+                              "schema": {
+                                "type": "literal",
+                                "value": "pending"
                               }
                             },
                             "target_available": {
@@ -78129,6 +78355,22 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "POST",
+      "routeTemplate": "/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/communities/posts-automod-flag.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
       "bodyKind": "content",
       "hash": "57d9f965f6a9933c3f8d61183e4858488eb7ce9540106987345c28b1da2b2af1",
@@ -91194,6 +91436,91 @@
     },
     {
       "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderation-queue",
+      "bodyFile": "responses/native.communities.moderation-queue.automod-flag.page-1.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.communities.moderation-queue.automod-flag.page-1",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/communities/moderation-queue.mts"],
+      "path": "/api/v1/communities/test-community/moderation-queue",
+      "query": {
+        "limit": "1",
+        "source": "automod_flag"
+      },
+      "responseSchema": {
+        "hash": "40c09eb57e920c376676a3d2625570310828a5213a9b0114e41bea48126fca64",
+        "key": "native.communities.moderation-queue.automod-flag.page-1"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/moderation-queue"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderation-queue",
+      "bodyFile": "responses/native.communities.moderation-queue.automod-flag.page-2.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.communities.moderation-queue.automod-flag.page-2",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/communities/moderation-queue.mts"],
+      "path": "/api/v1/communities/test-community/moderation-queue",
+      "query": {
+        "after": "eyJjcmVhdGVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDAwMDBaIiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDA5MDIifQ",
+        "limit": "1",
+        "source": "automod_flag"
+      },
+      "responseSchema": {
+        "hash": "99f12219b2793fe99622f5759073073a9d74ae5e01067ee9f9636144ca4ab2b1",
+        "key": "native.communities.moderation-queue.automod-flag.page-2"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/moderation-queue"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderation-queue",
+      "bodyFile": "responses/native.communities.moderation-queue.automod-flag.member.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.communities.moderation-queue.automod-flag.member",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/communities/moderation-queue.mts"],
+      "path": "/api/v1/communities/test-community/moderation-queue",
+      "query": {
+        "limit": "1",
+        "source": "automod_flag"
+      },
+      "responseSchema": {
+        "hash": "f2448a31c50b741db72f61744ebbd061e45b29e050834881248db965109bf313",
+        "key": "native.communities.moderation-queue.automod-flag.member"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/moderation-queue"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/communities/:communitySlug/moderation-analytics",
       "bodyFile": "responses/web.communities.moderation-analytics.default.json",
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
@@ -91341,6 +91668,31 @@
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
       },
       "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal",
+      "bodyFile": "responses/native.communities.automod-flag.dismissal.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.communities.automod-flag.dismissal.default",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/communities/posts-automod-flag.mts"],
+      "path": "/api/v1/communities/test-community/posts/00000000-0000-7000-8000-000000000902/automod-flag/dismissal",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "native.communities.automod-flag.dismissal.default"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "test-community",
+          "postId": "00000000-0000-7000-8000-000000000902"
+        },
+        "routeTemplate": "/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 204
     },
     {
       "auth": "fixture-user",

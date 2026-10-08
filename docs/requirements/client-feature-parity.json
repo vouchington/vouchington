@@ -3017,19 +3017,33 @@
           ]
         },
         "swift": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Communities/CommunityAutomodWorkspaceView.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/Communities/CommunityAutomodActionForm.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/Communities/CommunityDetailActionPanel.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/CommunityAutomodWorkspaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/CommunityAutomodRenderedControlsTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/CommunityAutomodActionVisibilityTests.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/ApiFixtureCoverage.CommunityAutomod.swift"
+          ]
         },
         "dotnet": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/CommunityAutomodFlagsView.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/CommunityAutomodActionView.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/CommunitySectionPage.AutomodFlags.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Communities/CommunityAutomodFlagLifecycleTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/CommunityAutomodFlagsViewTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/CommunityAutomodActionViewTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/CommunityModerationPageAutomodNavigationTests.cs"
+          ]
         }
-      },
-      "gap": {
-        "summary": "Swift and .NET render no community automod flag list, Dismiss action or automod action setting. The queue source, dismissal endpoint and PATCH /api/v1/communities/:idOrSlug/automod-settings are staged in the API fixtures.",
-        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/199"
       }
     },
     {

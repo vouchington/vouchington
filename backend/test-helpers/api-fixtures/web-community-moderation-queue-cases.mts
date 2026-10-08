@@ -1,6 +1,39 @@
 import { community, communityPost, pageInfo, timestamp, user } from './web-community-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
+const automodFlagPostId = '00000000-0000-7000-8000-000000000902'
+const nextAutomodFlagPostId = '00000000-0000-7000-8000-000000000901'
+const automodFlagCursor = Buffer.from(
+  JSON.stringify({ created_at: '2026-01-01T00:00:00.000000Z', id: automodFlagPostId }),
+).toString('base64url')
+
+const automodFlagEntry = {
+  id: automodFlagPostId,
+  entity_type: 'post',
+  entity_id: automodFlagPostId,
+  status: 'pending',
+  queue_source: 'automod_flag',
+  reason: null,
+  report_count: 0,
+  created_at: timestamp,
+  reviewed_at: null,
+  target_available: true,
+  target_label: 'Flagged post',
+  target_content: {
+    kind: 'post',
+    text: 'Flagged post',
+    declared_language: null,
+    lingua_rs_detected_language: null,
+  },
+  target_path: '/discussion/flagged-post',
+  target_user_id: user.id,
+  resolved_by_id: null,
+  judgement: null,
+  admin_action_path: '/discussion/flagged-post',
+  community_ban_evasion: null,
+  post_moderation_context: null,
+}
+
 export const webCommunityModerationQueueApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.communities.modlog.default',
@@ -79,6 +112,69 @@ export const webCommunityModerationQueueApiFixtureCases: ApiFixtureCase[] = [
       viewer_tier: 'moderator',
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderation-queue.mts'],
+  },
+  {
+    id: 'native.communities.moderation-queue.automod-flag.page-1',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderation-queue`,
+    query: { source: 'automod_flag', limit: '1' },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderation-queue',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      entries: [automodFlagEntry],
+      page_info: { has_next_page: true, start_cursor: null, end_cursor: automodFlagCursor },
+      viewer_tier: 'moderator',
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderation-queue.mts'],
+  },
+  {
+    id: 'native.communities.moderation-queue.automod-flag.page-2',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderation-queue`,
+    query: { source: 'automod_flag', limit: '1', after: automodFlagCursor },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderation-queue',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      entries: [
+        {
+          ...automodFlagEntry,
+          id: nextAutomodFlagPostId,
+          entity_id: nextAutomodFlagPostId,
+          target_label: 'Next flagged post',
+          target_content: { ...automodFlagEntry.target_content, text: 'Next flagged post' },
+          target_path: '/discussion/next-flagged-post',
+          admin_action_path: '/discussion/next-flagged-post',
+        },
+      ],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      viewer_tier: 'moderator',
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderation-queue.mts'],
+  },
+  {
+    id: 'native.communities.moderation-queue.automod-flag.member',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderation-queue`,
+    query: { source: 'automod_flag', limit: '1' },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderation-queue',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: { entries: [], page_info: pageInfo, viewer_tier: 'member' },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/moderation-queue.mts'],
   },
 ]

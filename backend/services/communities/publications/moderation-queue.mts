@@ -16,8 +16,7 @@ export { encodeCommunityModerationQueueCursor } from './moderation-queue-cursor.
 
 export type CommunityModerationQueueSource = 'report' | 'community_review' | 'automod_flag'
 
-export type CommunityModerationQueueEntry = PendingModerationReport & {
-  queue_source: CommunityModerationQueueSource
+type CommunityQueueEntryFields = {
   /** Kept explicit so API-contract extraction retains the JSON object rather than its SQL origin. */
   target_content: ModerationReportTargetContent | null
   /** True for private/followers-only targets; the route masks these for member-tier viewers. */
@@ -26,6 +25,19 @@ export type CommunityModerationQueueEntry = PendingModerationReport & {
    * for non-site-staff viewers so the author UUID is not exposed. */
   target_is_anonymous: boolean
 }
+
+export type CommunityModerationQueueEntry =
+  | (PendingModerationReport & CommunityQueueEntryFields & { queue_source: 'report' })
+  | (Omit<
+      PendingModerationReport,
+      'case_id' | 'reason' | 'reporter_user_id' | 'is_system_generated' | 'entity_type'
+    > &
+      CommunityQueueEntryFields & {
+        entity_type: 'post'
+        queue_source: 'community_review' | 'automod_flag'
+        reason: null
+        reporter_user_id: null
+      })
 
 export type SearchCommunityModerationQueueOptions = {
   status?: ModerationReportStatus
@@ -107,7 +119,6 @@ export async function searchCommunityModerationQueue(
     : (rows as CommunityModerationQueueEntry[])
   const labelled = pageRows.map(row => ({
     ...applyDeletedTargetLabel(row),
-    queue_source: row.queue_source,
     target_is_restricted: row.target_is_restricted,
     target_is_anonymous: row.target_is_anonymous,
   }))
