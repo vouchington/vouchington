@@ -147,4 +147,24 @@ describe('callOpenAIToolTurn', () => {
       billedResponse: { model: 'gpt-6-luna', serviceTier: 'unknown-tier' },
     })
   })
+
+  it.each([
+    ['only a retry budget', { maxRetries: 2 }, undefined, { maxRetries: 2 }],
+    ['only a signal', { maxRetries: undefined }, new AbortController().signal, undefined],
+  ])('passes %s to the SDK options', async (_name, requestOverrides, signal, expected) => {
+    const createOpenRouterResponse = vi
+      .fn<CreateOpenRouter>()
+      .mockResolvedValue(openAIResponse([functionCall]) as never)
+
+    await callOpenAIToolTurn(
+      'gpt-6-luna',
+      'openrouter',
+      { ...request, ...requestOverrides },
+      { createOpenRouterResponse },
+      signal,
+    )
+
+    const [, options] = createOpenRouterResponse.mock.calls[0] as unknown as [unknown, unknown]
+    expect(options).toEqual(expected ?? { signal })
+  })
 })

@@ -248,4 +248,39 @@ describe('executeAutotaggerAgentRun failures (real PG)', () => {
       terminal_failure_kind: 'invalid-result',
     })
   })
+
+  it('refuses an attempt cap that is not a positive integer', async () => {
+    const { lease } = await leasedAgentRun()
+
+    await expect(
+      executeAutotaggerAgentRun(
+        { adapter, lease, maxAttempts: 0, signal },
+        dependencies(vi.fn<AgentToolTurnCaller>()),
+      ),
+    ).rejects.toThrow('attempt limit must be positive')
+  })
+
+  it('runs on the configured bounds and the topic search when none are injected', async () => {
+    const { fixture, lease } = await leasedAgentRun()
+    const callTurn = vi
+      .fn<AgentToolTurnCaller>()
+      .mockResolvedValueOnce(
+        makeToolTurnResult([{ name: 'search_topics', input: { query: 'zzzz-no-such-topic' } }]),
+      )
+      .mockResolvedValueOnce(
+        makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: [] } }]),
+      )
+
+    await expect(
+      executeAutotaggerAgentRun(
+        { adapter, lease, maxAttempts: 3, signal },
+        { selection: TEST_MODEL_SELECTION, callTurn },
+      ),
+    ).resolves.toBe('persisted')
+
+    expect(callTurn).toHaveBeenCalledTimes(2)
+    expect(callTurn.mock.calls[0]![0].maxOutputTokens).toBe(3000)
+    expect(JSON.stringify(callTurn.mock.calls[1]![0].messages.at(-1))).toContain('topics')
+    expect(await runFacts(fixture.subject)).toMatchObject({ provider_attempts_started: 1 })
+  })
 })
