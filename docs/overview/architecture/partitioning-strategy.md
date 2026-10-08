@@ -190,7 +190,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_territorial_redress_requests`,
   `dynamic_configuration_revisions`, `follower_distribution_deliveries`, `follower_distributions`,
   `identity_verification_attempts`, `media_delivery_registry_records`, `media_delivery_registry_changes`,
-  `open_graph_dependency_manifest_placements`, `open_graph_dependency_manifests`,
   `membership_administrator_refund_operation_requests`,
   `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,
