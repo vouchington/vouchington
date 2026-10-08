@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { QUEUE_NAME } from '@queues/entity-listeners/config'
+import { entitiesListeners } from '@workers/entity-listeners/workers'
 import { getOrCreateQueue } from '../../../../test-helpers/glide-mq-vitest-internals.mts'
 import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 
@@ -15,5 +16,13 @@ describe('onceEntityListenerCompleted', () => {
     await expect(
       onceEntityListenerCompleted('processPostCreated', entityId, 1, 500),
     ).resolves.toBeUndefined()
+  })
+
+  it('does not treat a drained worker as the job this call is waiting for', async () => {
+    const entityId = crypto.randomUUID()
+    expect(entitiesListeners.isDrained).toBe(true)
+    await expect(
+      onceEntityListenerCompleted('processPostCreated', entityId, 1, 200),
+    ).rejects.toThrow('timed out after 200ms')
   })
 })

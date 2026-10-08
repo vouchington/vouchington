@@ -19,7 +19,7 @@ type EntityListenerQueueSearch = {
   }): Promise<EntityListenerJob[]>
 }
 
-async function countCompletedEntityListenerJobs(
+export async function countCompletedEntityListenerJobs(
   jobName: string,
   entityId?: string,
 ): Promise<number> {
@@ -33,7 +33,6 @@ async function countCompletedEntityListenerJobs(
 }
 
 type WorkerLike = {
-  isDrained: boolean
   on(
     event: 'active' | 'completed',
     cb: (job: { name: string; data: Record<string, unknown> }) => void,
@@ -95,6 +94,9 @@ export function onceEntityListenerActive(jobName: string, entityId?: string): Pr
  * Enqueues are fire-and-forget and the Vitest GlideMQ shim may finish (and emit
  * `completed`) before this helper registers its listener; matching jobs already in
  * the `completed` state are counted up front so that race does not time out.
+ * A drained worker is not that signal: `void enqueueOnUserUpdated` can return
+ * while the worker is still idle, and treating that as completion skips the
+ * cache invalidation the caller is waiting on.
  *
  * Rejects if the job fails, so regressions surface as clear errors rather
  * than 30s test timeouts.
@@ -122,8 +124,6 @@ export async function onceEntityListenerCompleted(
 ): Promise<void> {
   if (count <= 0) return
   const worker = entitiesListenersWorker as unknown as WorkerLike
-  // If the worker is already drained, all jobs have completed — nothing to wait for.
-  if (worker.isDrained) return
   const alreadyCompleted = await countCompletedEntityListenerJobs(jobName, entityId)
   if (alreadyCompleted >= count) return
   let remaining = count - alreadyCompleted

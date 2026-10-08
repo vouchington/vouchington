@@ -46,11 +46,10 @@ type WorkerLike = {
  * Recomputes are scheduled outside request latency; tests reading the aggregate after a vote
  * must wait here. See `docs/overview/architecture/services/elections-votes/README.md`.
  *
- * Unlike `onceEntityListenerCompleted` (`backend/test-helpers/workers/entity-listeners/test-support.mts`), this
- * helper does not short-circuit on `worker.isDrained`: elections enqueues are fire-and-forget, so the
- * worker can already be drained *before* the job this call is waiting for has even been added — an
- * `isDrained` early return would resolve immediately and leave the race this helper exists to close.
- * Also unlike that helper, the already-completed/-failed search and the live `completed`/`failed`
+ * Elections enqueues are fire-and-forget, so the worker can already be drained before the job this
+ * call is waiting for has been added. This helper does not treat that as completion. Entity-listener
+ * waits share that rule (`backend/test-helpers/workers/entity-listeners/test-support.mts`).
+ * Unlike that helper, the already-completed/-failed search and the live `completed`/`failed`
  * listeners register together before either is awaited, so a job that settles in the gap between
  * them is still observed instead of being missed by both, whichever terminal state it lands in.
  *

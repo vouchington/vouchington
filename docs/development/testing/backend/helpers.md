@@ -95,6 +95,8 @@ Use this to wait for a specific entity-listener job to complete after a fire-and
 
 - Always pass `entityId` to match the specific entity's job, not just any job with the same name running concurrently in other tests.
 - Times out with a clear error after 15s by default.
+- An idle worker is not completion. A fire-and-forget enqueue can still be invisible, and returning then lets the test read a cache the listener has not invalidated.
+- A later wait for the same entity needs `count` above the number of matching jobs already completed. Those earlier jobs still satisfy the default count of 1. `countCompletedEntityListenerJobs` reports that number.
 
 **Concurrent waits — use `Promise.all`:**
 
