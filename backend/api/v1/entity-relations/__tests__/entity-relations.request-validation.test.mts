@@ -32,7 +32,7 @@ describe('entity-relations routes - request contract validation', () => {
       createdById: author.id,
     })
     relationsPath = `/api/v1/entity-relations/post/${postId}/category/topic`
-  }, 60_000)
+  }, 5_000)
 
   describe('GET', () => {
     it('returns 401 without a diagnostic for an anonymous user-subject read with a malformed query', async () => {
