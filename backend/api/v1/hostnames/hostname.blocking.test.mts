@@ -30,7 +30,7 @@ describe('hostname.blocking', () => {
       createTestUser({ administrator: true }) as Promise<PrivateUser>,
       createTestUser({ administrator: false }) as Promise<PrivateUser>,
     ])
-  }, 60_000)
+  }, 5_000)
 
   async function relatePostToUrl(creator: PrivateUser, postId: string, urlId: string) {
     const metadata = entityRelationMetadatum.find(
@@ -44,20 +44,20 @@ describe('hostname.blocking', () => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
       const request = createRequest()
       await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: true }).expect(401)
-    }, 60_000)
+    })
 
     it('returns 403 when authenticated as non-admin', async () => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
       const request = createRequest()
       await request.authenticateAs(regularUser)
       await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: true }).expect(403)
-    }, 60_000)
+    })
 
     it('returns 404 for a non-existent hostname', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request.patch(`/api/v1/hostnames/${uuidv7()}`).send({ is_blocked: true }).expect(404)
-    }, 60_000)
+    })
 
     it('returns 200 with blocked_hostname_count, soft_deleted_relation_count, penalized_user_count', async () => {
       const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
@@ -72,7 +72,7 @@ describe('hostname.blocking', () => {
       expect(typeof response.body.soft_deleted_relation_count).toBe('number')
       expect(typeof response.body.penalized_user_count).toBe('number')
       expect(response.body.blocked_hostname_count).toBeGreaterThanOrEqual(1)
-    }, 60_000)
+    })
 
     it('soft-deletes post->related->url entity relations for the blocked hostname', async () => {
       const hostname = randomHostname()
@@ -103,7 +103,7 @@ describe('hostname.blocking', () => {
 
       expect(response.body.soft_deleted_relation_count).toBeGreaterThanOrEqual(1)
       expect(await getTestRelationDeletedAt(postId, urlObj!.id)).toBeInstanceOf(Date)
-    }, 60_000)
+    })
 
     it('applies 20% vote weight penalty to users who created relations', async () => {
       const hostname = randomHostname()
@@ -136,7 +136,7 @@ describe('hostname.blocking', () => {
       expect(penalties[0]!.user_id).toBe(creator.id)
       expect(penalties[0]!.reason).toBe('blocked_hostname')
       expect(penalties[0]!.revoked_at).toBeNull()
-    }, 60_000)
+    })
 
     it('is idempotent: re-blocking does not duplicate penalties', async () => {
       const hostname = randomHostname()
@@ -168,7 +168,7 @@ describe('hostname.blocking', () => {
       const penalties = await getTestPenaltiesByHostnameId(hostnameId)
       const userPenalties = penalties.filter(p => p.user_id === creator.id)
       expect(userPenalties).toHaveLength(1)
-    }, 60_000)
+    })
 
     it('unblocking with blocked=false updates hostname without the blocking flow', async () => {
       const hostnameId = await insertTestUrlHostname({
@@ -177,7 +177,11 @@ describe('hostname.blocking', () => {
       })
       const request = createRequest()
       await request.authenticateAs(admin)
+      const before = await request.get(`/api/v1/hostnames/${hostnameId}`).expect(200)
+      expect(before.body.hostname.is_blocked).toBe(true)
       await request.patch(`/api/v1/hostnames/${hostnameId}`).send({ is_blocked: false }).expect(204)
-    }, 60_000)
+      const after = await request.get(`/api/v1/hostnames/${hostnameId}`).expect(200)
+      expect(after.body.hostname.is_blocked).toBe(false)
+    })
   })
 })
