@@ -17,30 +17,13 @@ jobs:
 
 export const malformedWorkflow = 'jobs: [unterminated\n'
 
-export const sdkImportFixture = [
-  "import { check as runCheck, type CheckOptions } from 'no-mistakes'",
-  "import type { analyzeProject } from 'no-mistakes'",
-  "import { type ciTopology, symbols } from 'no-mistakes'",
-  "import { 'resolveCheck' as resolver, '\\u0063heck' as checker } from 'no-mistakes'",
-  "import defaultApi from 'no-mistakes'",
-  "import * as namespaceApi from 'no-mistakes'",
-  "import { check } from 'other-module'",
-  "const dynamic = import('no-mistakes')",
-  "const { testsPlan } = require('no-mistakes')",
-  "export { ciTopologyImpact } from 'no-mistakes'",
-  "import requiredApi = require('no-mistakes')",
-].join('\n')
-
 export const acceptedTestSources = {
-  'ci/allowed.test.mts': "import { symbols, type CheckOptions } from 'no-mistakes'",
-  'ci/allowed.mock.test.mts': "import { check } from 'no-mistakes'",
+  'ci/allowed.test.mts': "execFileSync('pnpm', ['exec', 'oxlint'])",
   'ci/no-mistakes-ci-contention.test.mts': 'export const fixture = true',
 }
 
 export const rejectedTestSources = {
-  'ci/live-import.test.mts': "import { check as runCheck } from 'no-mistakes'",
   'ci/live-cli.test.mts': "execFileSync('pnpm', ['exec', 'no-mistakes', 'check'])",
-  'ci/live-topology.test.mts': 'await loadRepoTopology()',
 }
 
 export const cliSpawnSources = [

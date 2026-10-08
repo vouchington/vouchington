@@ -4,10 +4,6 @@ import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
 
-import { liveAnalysisImportNames } from './live-no-mistakes-imports.mts'
-
-export { liveAnalysisImportNames }
-
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const workflowPath = '.github/workflows/static-code-analysis.yml'
 const routeSelectorTestPath = 'static-code-analysis/i18n-extract/route-selector-map.test.mts'
@@ -98,11 +94,11 @@ export function spawnsNoMistakesCli(source: string): boolean {
   )
 }
 
-export async function checkNoMistakesTestPolicy({
+export function checkNoMistakesTestPolicy({
   root,
   testPaths,
   workflowPaths,
-}: NoMistakesTestPolicyInput): Promise<string[]> {
+}: NoMistakesTestPolicyInput): string[] {
   const errors: string[] = []
   const commands = relevantWorkflowCommands(root, workflowPaths)
   if (JSON.stringify(commands) !== JSON.stringify(expectedWorkflowCommands)) {
@@ -115,23 +111,10 @@ export async function checkNoMistakesTestPolicy({
     errors.push(`${routeSelectorTestPath} must not call the live route-selector graph`)
   }
 
-  const policySubjects = testPaths.toSorted()
-  const sources = new Map(policySubjects.map(path => [path, readRepoFile(root, path)]))
-  const imports = await liveAnalysisImportNames(
-    root,
-    policySubjects.filter(
-      path => !/\.mock\.test\./u.test(path) && sources.get(path)?.includes('no-mistakes'),
-    ),
-  )
-  for (const [path, source] of sources) {
-    if (spawnsNoMistakesCli(source)) errors.push(`${path}: no-mistakes CLI from Vitest`)
-    if (!/\.mock\.test\./u.test(path)) {
-      for (const name of imports.get(path) ?? []) {
-        errors.push(`${path}: live no-mistakes import ${name}`)
-      }
-    }
-    if (/await loadRepoTopology\(\)/u.test(source)) {
-      errors.push(`${path}: live loadRepoTopology() from Vitest`)
+  // Live analysis and loadRepoTopology() calls are the `forbidden-calls` rule in .no-mistakes.yml.
+  for (const path of testPaths.toSorted()) {
+    if (spawnsNoMistakesCli(readRepoFile(root, path))) {
+      errors.push(`${path}: no-mistakes CLI from Vitest`)
     }
   }
   return errors
@@ -150,13 +133,13 @@ function trackedPaths(root: string): string[] {
 
 if (import.meta.main) {
   const paths = trackedPaths(repoRoot)
-  const errors = await checkNoMistakesTestPolicy({
+  const errors = checkNoMistakesTestPolicy({
     root: repoRoot,
     testPaths: paths.filter(path => /\.(?:mock\.)?test\.[cm]?[jt]sx?$/u.test(path)),
     workflowPaths: paths.filter(path => /^\.github\/workflows\/[^/]+\.ya?ml$/u.test(path)),
   })
   for (const error of errors) console.error(error)
   if (errors.length > 0) process.exitCode = 1
-  else console.log('No Vitest live no-mistakes or topology invocations found.')
+  else console.log('No live no-mistakes workflow drift or Vitest CLI spawns found.')
 }
 /* v8 ignore stop */

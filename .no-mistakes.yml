@@ -826,6 +826,26 @@ rules:
       targets:
         - exact: performance.now
         - exact: process.memoryUsage
+  - name: Vitest tests do not run live no-mistakes analysis
+    rule: forbidden-calls
+    scope: repository
+    # Mock tests replace these modules, so their calls never take the no-mistakes machine lock.
+    exclude:
+      - '**/*.mock.test.*'
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - moduleExport: { module: no-mistakes, export: analyzeProject }
+        - moduleExport: { module: no-mistakes, export: check }
+        - moduleExport: { module: no-mistakes, export: ciTopology }
+        - moduleExport: { module: no-mistakes, export: ciTopologyImpact }
+        - moduleExport: { module: no-mistakes, export: resolveCheck }
+        - moduleExport: { module: no-mistakes, export: testsPlan }
+        - moduleExport: { module: no-mistakes, export: validateMermaidMarkdown }
+        - function: { file: ci/repo-topology.mts, symbol: loadRepoTopology }
   - name: exported error classes are constructed in production
     rule: unconstructed-error-class
     scope: repository

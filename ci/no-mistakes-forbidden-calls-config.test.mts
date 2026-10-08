@@ -61,6 +61,7 @@ describe('no-mistakes forbidden-calls config', () => {
       'Playwright tests do not poll on timers',
       'Tests do not create a database',
       'Vitest tests do not assert benchmarks',
+      'Vitest tests do not run live no-mistakes analysis',
       'integration tests do not call mock helpers',
     ])
 
@@ -71,6 +72,7 @@ describe('no-mistakes forbidden-calls config', () => {
       'Test helpers and vitest setup do not invoke real timers or polls',
       'Tests do not create a database',
       'Vitest tests do not assert benchmarks',
+      'Vitest tests do not run live no-mistakes analysis',
     ])
     for (const candidate of rules) {
       if (candidate.exclude === undefined) continue
@@ -192,6 +194,29 @@ describe('no-mistakes forbidden-calls config', () => {
         traversal: 'file',
         unknownCalls: 'ignore',
         targets: [{ exact: 'performance.now' }, { exact: 'process.memoryUsage' }],
+      },
+    })
+    expect(rule('Vitest tests do not run live no-mistakes analysis')).toEqual({
+      name: 'Vitest tests do not run live no-mistakes analysis',
+      rule: 'forbidden-calls',
+      scope: 'repository',
+      exclude: ['**/*.mock.test.*'],
+      options: {
+        roots: [{ vitest: true }],
+        traversal: 'file',
+        unknownCalls: 'ignore',
+        targets: [
+          ...[
+            'analyzeProject',
+            'check',
+            'ciTopology',
+            'ciTopologyImpact',
+            'resolveCheck',
+            'testsPlan',
+            'validateMermaidMarkdown',
+          ].map(name => ({ moduleExport: { module: 'no-mistakes', export: name } })),
+          { function: { file: 'ci/repo-topology.mts', symbol: 'loadRepoTopology' } },
+        ],
       },
     })
     expect(withoutBaseline(rule('integration tests do not call mock helpers'))).toEqual({

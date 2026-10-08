@@ -34,7 +34,7 @@ These rules apply to backend, web, and tooling tests, and to every file a test c
 
 Dirty-database proof for a changed database test: run the file twice on the same database without resetting it, then run two processes on that file at the same time.
 
-`forbidden-calls` enforces the timer, isolated-database, and benchmark bans. ast-grep enforces executed DDL, `pg_sleep`, skips, the 30-second cap, and oversized `Array.from({ length })` / `it.each` fixtures until `no-mistakes` ships statement policy (jonathanong/no-mistakes#1562, #1563, #1564), `test-no-skips` (#1565), and `vitest-timeout-cap` (#1566).
+`forbidden-calls` enforces the timer, isolated-database, benchmark, and live no-mistakes analysis bans. ast-grep enforces executed DDL, `pg_sleep`, skips, the 30-second cap, and oversized `Array.from({ length })` / `it.each` fixtures until `no-mistakes` ships statement policy (jonathanong/no-mistakes#1562, #1563, #1564), `test-no-skips` (#1565), and `vitest-timeout-cap` (#1566).
 
 ## Contents
 
