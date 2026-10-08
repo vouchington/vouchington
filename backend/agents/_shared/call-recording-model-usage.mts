@@ -37,6 +37,11 @@ export interface CallRecordingModelUsageParams {
    * can reserve a durable provider attempt that a rejected admission never consumes.
    */
   beforeDispatch?: () => Promise<void>
+  /**
+   * The caller's deadline. A request aborted after it was sent may still have been billed, so an
+   * abort latches the request day as an unknown billed attempt, like any ambiguous failure.
+   */
+  signal?: AbortSignal
 }
 
 type CallRecordingModelUsageDeps = {
@@ -126,6 +131,11 @@ export async function callRecordingModelUsage<T>(
       })
     } else if (err instanceof ModelProviderError) {
       await settleProviderFailure(err, params, record, requestStartedAt, deps)
+    } else if (params.signal?.aborted) {
+      await (deps.latchAccountingUncertainty ?? latchAccountingUncertainty)({
+        requestDay: getUtcDayFromDate(requestStartedAt),
+        source: 'unknown_billed_attempt',
+      })
     }
     throw err
   }

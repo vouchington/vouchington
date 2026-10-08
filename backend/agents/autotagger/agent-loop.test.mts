@@ -155,6 +155,29 @@ describe('runAutotaggerAgentLoop', () => {
     expect(callTurn).toHaveBeenCalledTimes(2)
   })
 
+  it('stops before a turn once the run deadline has passed', async () => {
+    const deadline = new AbortController()
+    const queue = [makeToolTurnResult([search('a')]), makeToolTurnResult([submit()])]
+    const callTurn = vi.fn<(request: ToolTurnRequest) => Promise<ToolTurnResult>>(() => {
+      deadline.abort()
+      return Promise.resolve(queue.shift()!)
+    })
+
+    await expect(
+      runAutotaggerAgentLoop({
+        input: 'content',
+        tools: buildAutotaggerAgentTools(CANDIDATES),
+        candidateIds: CANDIDATES,
+        bounds: BOUNDS,
+        search: () => Promise.resolve([]),
+        callTurn,
+        signal: deadline.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+
+    expect(callTurn).toHaveBeenCalledTimes(1)
+  })
+
   it('propagates a failed turn without swallowing it', async () => {
     await expect(
       runAutotaggerAgentLoop({

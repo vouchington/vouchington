@@ -29,5 +29,11 @@ export async function generateToolTurn(
   assertSupportedRequest(selection, {})
   if (selection.provider === 'anthropic')
     return callAnthropicToolTurn(selection.model, request, options.deps, options.signal)
-  return callOpenAIToolTurn(selection.model, options.openaiTransport, request, options.deps)
+  return callOpenAIToolTurn(
+    selection.model,
+    options.openaiTransport,
+    request,
+    options.deps,
+    options.signal,
+  )
 }

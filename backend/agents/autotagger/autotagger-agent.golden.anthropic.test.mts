@@ -19,6 +19,7 @@ import { buildPostClassifierState, buildRssFeedItemClassifierState } from './con
 const FACT_THRESHOLDS = { lower: 0.25, upper: 0.75 }
 const MINIMUM_FIXTURES_PER_CANDIDATE = 3
 const TOLERATED_UNEXPECTED_PER_CANDIDATE = 1
+const CONCURRENT_FIXTURES = 4
 
 type FixtureOutcome = {
   ended: string
@@ -82,7 +83,12 @@ async function runFixture(fixture: ClassifierGoldenFixture): Promise<FixtureOutc
 // Real Anthropic calls (credentialed project `backend-anthropic`); fails without a credential.
 describe('autotagger agent golden regression set on Anthropic Haiku 5.5', () => {
   it('reports the candidates the synthetic fixtures expect and no others', async () => {
-    const outcomes = await Promise.all(autotaggerGoldenFixtures.map(runFixture))
+    const outcomes: FixtureOutcome[] = []
+    // A few at a time: the SDK does not retry, so a burst of requests could trip a rate limit.
+    for (let start = 0; start < autotaggerGoldenFixtures.length; start += CONCURRENT_FIXTURES) {
+      const chunk = autotaggerGoldenFixtures.slice(start, start + CONCURRENT_FIXTURES)
+      outcomes.push(...(await Promise.all(chunk.map(runFixture))))
+    }
 
     expect(outcomes.map(outcome => outcome.ended)).toEqual(outcomes.map(() => 'submitted'))
     expect(outcomes.reduce((sum, outcome) => sum + outcome.costMicrounits, 0)).toBeGreaterThan(0)

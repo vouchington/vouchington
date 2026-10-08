@@ -91,12 +91,13 @@ async function runAgent(
     adapter: AutotaggerAgentRunAdapter
     lease: ClassifierRunLease<AutotaggerAgentRunConfiguration>
     maxAttempts: number
+    signal: AbortSignal
   },
   dependencies: AutotaggerAgentDependencies,
   state: ClassifierSafeText,
   phase: Phase,
 ): Promise<AutotaggerAgentLoopResult> {
-  const { adapter, lease, maxAttempts } = input
+  const { adapter, lease, maxAttempts, signal } = input
   const [candidates, appliedTopicNames] = await Promise.all([
     readAutotaggerCandidateTopics(lease.capturedTopicIds),
     readAutotaggerAppliedTopicNames(lease.subject),
@@ -113,6 +114,7 @@ async function runAgent(
     bounds: dependencies.bounds ?? configuredBounds(),
     search: dependencies.search ?? searchTopicsByText,
     safetyIdentifier: lease.resolved.actorId,
+    signal,
     callTurn: async (request, turn) => {
       const result = await callAgentToolTurn({
         request,
@@ -121,6 +123,7 @@ async function runAgent(
         selection: dependencies.selection,
         postId: lease.subject.postId,
         classifierRunId: lease.runId,
+        signal,
         // The spend cap is checked before every turn; only the first reserves the provider attempt
         // (and so counts against the run's attempt cap), after the cap admitted it.
         beforeDispatch:

@@ -44,6 +44,8 @@ export type AutotaggerAgentLoopInput = {
   /** One billed model turn; the executor wires spend cap, attempt reservation and the ledger. */
   callTurn: (request: ToolTurnRequest, turn: number) => Promise<ToolTurnResult>
   safetyIdentifier?: string
+  /** The run's deadline, checked before every turn so a slow run stops billing at its lease. */
+  signal?: AbortSignal
 }
 
 function callsSignature(calls: readonly ToolCall[]): string {
@@ -75,6 +77,7 @@ export async function runAutotaggerAgentLoop(
   })
 
   for (let turn = 1; turn <= bounds.maxTurns; turn++) {
+    params.signal?.throwIfAborted()
     const remaining = bounds.maxOutputTokens - outputTokens
     if (remaining <= 0) return result('output-budget-exhausted', turn - 1)
     const response = await params.callTurn(
@@ -85,7 +88,6 @@ export async function runAutotaggerAgentLoop(
         maxOutputTokens: remaining,
         safetyIdentifier: params.safetyIdentifier,
         promptCacheKey: 'autotagger-agent-v1',
-        flex: true,
       },
       turn,
     )

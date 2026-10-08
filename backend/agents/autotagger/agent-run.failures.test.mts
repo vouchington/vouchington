@@ -159,6 +159,43 @@ describe('executeAutotaggerAgentRun failures (real PG)', () => {
     expect(await listAiUsageRecordsForClassifierRun(lease.runId)).toHaveLength(1)
   })
 
+  it('stops billing at the run deadline and ends the run for good after a billed turn (D3)', async () => {
+    const { fixture, lease } = await leasedAgentRun()
+    const deadline = new AbortController()
+    const callTurn = vi.fn<AgentToolTurnCaller>(() => {
+      deadline.abort()
+      return Promise.resolve(search())
+    })
+
+    await expect(
+      executeAutotaggerAgentRun(
+        { adapter, lease, maxAttempts: 3, signal: deadline.signal },
+        dependencies(callTurn),
+      ),
+    ).resolves.toBe('terminal')
+
+    expect(callTurn).toHaveBeenCalledTimes(1)
+    expect(await runFacts(fixture.subject)).toMatchObject({
+      provider_attempts_started: 1,
+      terminal_failure_kind: 'provider-error',
+      outcomes_persisted_at: null,
+    })
+  })
+
+  it('passes the run deadline to every provider turn', async () => {
+    const { lease } = await leasedAgentRun()
+    const callTurn = vi.fn<AgentToolTurnCaller>(() =>
+      Promise.resolve(makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: [] } }])),
+    )
+
+    await executeAutotaggerAgentRun(
+      { adapter, lease, maxAttempts: 3, signal },
+      dependencies(callTurn),
+    )
+
+    expect(callTurn.mock.calls[0]![1].signal).toBe(signal)
+  })
+
   it('sends nothing and reserves no attempt once the daily spend cap is reached', async () => {
     const { fixture, lease } = await leasedAgentRun()
     const callTurn = vi.fn<AgentToolTurnCaller>()

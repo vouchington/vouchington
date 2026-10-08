@@ -195,6 +195,34 @@ describe('generateToolTurn', () => {
     expect(createOpenRouterResponse).toHaveBeenCalledTimes(1)
   })
 
+  it('passes the caller’s abort signal to both providers', async () => {
+    const signal = new AbortController().signal
+    const createMessage = vi.fn<CreateMessage>().mockResolvedValue(message())
+    const createOpenRouterResponse = vi.fn<CreateOpenRouter>().mockResolvedValue({
+      id: 'resp_1',
+      status: 'completed',
+      output: [{ type: 'function_call', call_id: 'c1', name: 'search_topics', arguments: '{}' }],
+      output_text: '',
+      model: 'gpt-6-luna',
+      usage: { input_tokens: 1, output_tokens: 1 },
+    } as never)
+    const deps = { createMessage, createOpenRouterResponse }
+
+    await generateToolTurn({ provider: 'anthropic', model: 'claude-haiku-5-5' }, request, {
+      openaiTransport: 'openrouter',
+      signal,
+      deps,
+    })
+    await generateToolTurn({ provider: 'openai', model: 'gpt-6-luna' }, request, {
+      openaiTransport: 'openrouter',
+      signal,
+      deps,
+    })
+
+    expect(createMessage.mock.calls[0]![1]).toEqual({ signal })
+    expect(createOpenRouterResponse.mock.calls[0]![1]).toMatchObject({ signal })
+  })
+
   it('rejects an unpriced model before any request', async () => {
     const createMessage = vi.fn<CreateMessage>()
 

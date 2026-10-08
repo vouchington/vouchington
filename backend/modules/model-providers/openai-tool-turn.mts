@@ -63,6 +63,7 @@ export async function callOpenAIToolTurn(
   transport: OpenAITransport,
   request: ToolTurnRequest,
   deps: OpenAIDeps = {},
+  signal?: AbortSignal,
 ): Promise<ToolTurnResult> {
   const params = {
     instructions: request.instructions,
@@ -80,7 +81,13 @@ export async function callOpenAIToolTurn(
     ...(request.promptCacheKey ? { prompt_cache_key: request.promptCacheKey } : {}),
     ...(request.flex ? { service_tier: 'flex' as const } : {}),
   }
-  const options = request.maxRetries === undefined ? undefined : { maxRetries: request.maxRetries }
+  const options =
+    request.maxRetries === undefined && !signal
+      ? undefined
+      : {
+          ...(request.maxRetries === undefined ? {} : { maxRetries: request.maxRetries }),
+          ...(signal ? { signal } : {}),
+        }
   const response: OpenAIResponse =
     transport === 'openrouter'
       ? await (deps.createOpenRouterResponse ?? createOpenRouterResponse)(

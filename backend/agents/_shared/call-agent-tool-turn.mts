@@ -15,7 +15,10 @@ export type AgentToolTurnCaller = (
 
 /** The real provider turn: whichever provider the caller selected, on the global transport. */
 export const callProviderToolTurn: AgentToolTurnCaller = (request, call) =>
-  generateToolTurn(call.selection, request, { openaiTransport: call.openaiTransport })
+  generateToolTurn(call.selection, request, {
+    openaiTransport: call.openaiTransport,
+    signal: call.signal,
+  })
 
 /**
  * Runs one turn of a tool-using agent and settles its ledger row like any other agent call: the
@@ -32,7 +35,8 @@ export function callAgentToolTurn(
   const { request, callTurn = callProviderToolTurn, ...recording } = params
   const openaiTransport = getOpenAITransport()
   return callRecordingModelUsage(
-    () => callTurn(request, { selection: params.selection, openaiTransport }),
+    () =>
+      callTurn(request, { selection: params.selection, openaiTransport, signal: params.signal }),
     { ...recording, openaiTransport },
   )
 }
