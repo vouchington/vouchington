@@ -51,5 +51,6 @@ repository. Keep its rules authoritative; do not copy them here.
   `_cursors` tables; [#1598](https://github.com/vouchington/vouchington/issues/1598) owns reshaping
   the existing ones. Do not restate the shape here.
 - **Repair sweeper.** Extend candidate types in [entity-listener reconciliation](../../../backend/services/entity-listener-reconciliation/) for missed post-commit side effects; its overlapping `reconciled_through_at` window re-enqueues missed listener jobs instead of adding another sweeper (see the [replay-safe job checklist](../../../docs/checklists/reference-backend-queues-define-a-replay-safe-job.md)).
+- **External listings.** SES inbound reconciliation carries S3's continuation token in a bounded continuation job; see [the queue contract](../../../docs/overview/architecture/queues/ses-inbound/README.md).
 - **Bloom-filter failure path.** Follow [API-key Bloom-filter handling](../../../backend/services/api-keys/bloom-filter.mts): a failed `ValkeyBloomFilter` add clears the ready marker so reads fall back to PostgreSQL, then calls `enqueueRebuildBloomFilter` when the marker was removed.
 - **UUIDv7 bounds.** Use `getMinUUIDv7ForDate` and `getMinUUIDv7ForParentHistory` from [ids.mts](../../../backend/modules/utils/ids.mts); an age milestone M uses the primary-key range `[min(previousRun - M), min(now - M))`.

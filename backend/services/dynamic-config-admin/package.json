@@ -96,6 +96,7 @@
     "@services/users": "workspace:^",
     "@services/vote-weight": "workspace:^",
     "@services/web-risk": "workspace:^",
+    "@workers/ses-inbound": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

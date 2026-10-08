@@ -46,7 +46,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       await failedWorker.close()
 
       await expect(
-        enqueueOrRetryBulkSesInboundProcess([data], {
+        enqueueOrRetryBulkSesInboundProcess([data], undefined, {
           enqueueBulk: async inputs =>
             queue.addBulk(
               inputs.map(input => ({

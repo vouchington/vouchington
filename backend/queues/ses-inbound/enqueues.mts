@@ -1,10 +1,13 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createHash } from 'node:crypto'
 import {
+  assertSesInboundReconcileJobData,
   SES_INBOUND_PROCESS_JOB_NAME,
   SES_INBOUND_QUEUE_NAME,
   SES_INBOUND_RECONCILE_JOB_NAME,
   getSesInboundProcessJobOptions,
   type SesInboundProcessJobData,
+  type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -35,7 +38,7 @@ export const enqueueBulkSesInboundProcess = createBulkEnqueueFunction<
   buildJob: data => ({ data, opts: getSesInboundProcessJobOptions(data) }),
 })
 
-type RetryableSesInboundJob = {
+export type RetryableSesInboundJob = {
   id: string
   name: string
   retry(): Promise<void>
@@ -51,20 +54,27 @@ const recoveryDependencies: SesInboundRecoveryDependencies = {
   getFailedJobs: () => sesInboundQueue.getJobs('failed', 0, -1, { excludeData: true }),
 }
 
+export function readRetainedFailedSesInboundProcessJobs(): Promise<RetryableSesInboundJob[]> {
+  return recoveryDependencies.getFailedJobs()
+}
+
 export async function enqueueOrRetryBulkSesInboundProcess(
   inputs: SesInboundProcessJobData[],
+  failedJobs?: RetryableSesInboundJob[],
   dependencies: SesInboundRecoveryDependencies = recoveryDependencies,
 ): Promise<number> {
   await dependencies.enqueueBulk(inputs)
-  return retryFailedSesInboundProcessJobs(inputs, dependencies)
+  return retryFailedSesInboundProcessJobs(
+    inputs,
+    failedJobs ?? (await dependencies.getFailedJobs()),
+  )
 }
 
 async function retryFailedSesInboundProcessJobs(
   inputs: SesInboundProcessJobData[],
-  dependencies: SesInboundRecoveryDependencies,
+  failedJobs: RetryableSesInboundJob[],
 ): Promise<number> {
   const processJobIds = new Set(inputs.map(input => getSesInboundProcessJobOptions(input).jobId))
-  const failedJobs = await dependencies.getFailedJobs()
   const retryableJobs = failedJobs.filter(
     job => job.name === SES_INBOUND_PROCESS_JOB_NAME && processJobIds.has(job.id),
   )
@@ -73,7 +83,7 @@ async function retryFailedSesInboundProcessJobs(
 }
 
 const enqueueReconcileJob = createEnqueueFunction<
-  Record<string, never>,
+  SesInboundReconcileJobData,
   typeof SES_INBOUND_RECONCILE_JOB_NAME
 >({
   queue: sesInboundQueue,
@@ -83,6 +93,24 @@ const enqueueReconcileJob = createEnqueueFunction<
 
 export function enqueueSesInboundProcess(data: SesInboundProcessJobData): EnqueueReturnType {
   return enqueueProcessJob(data, getSesInboundProcessJobOptions(data))
+}
+
+export function enqueueSesInboundReconcileContinuation(
+  continuationToken: string,
+): EnqueueReturnType {
+  const data = { continuationToken }
+  assertSesInboundReconcileJobData(data)
+  const digest = createHash('sha256').update(continuationToken).digest('hex')
+  return enqueueReconcileJob(data, {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    jobId: `ses_inbound_reconcile_continuation__${digest}`,
+    priority: SES_INBOUND_RECONCILE_PRIORITY,
+    ordering: SES_INBOUND_RECONCILE_ORDERING,
+    // Release a terminal token claim so a later scheduled sweep can resume after exhausted retries.
+    removeOnComplete: true,
+    removeOnFail: true,
+  } satisfies Partial<JobOptions>)
 }
 
 export function enqueueSesInboundReconcile(): EnqueueReturnType {
