@@ -43,7 +43,12 @@ function runPlaywrightPnpmArgs(env: { CI_SHARD: string }): string[] {
   chmodSync(pnpmStubPath, 0o755)
   const result = spawnSync('bash', ['-c', playwrightRunScript()], {
     encoding: 'utf8',
-    env: { ...process.env, ...env, PATH: `${directory}:${process.env['PATH'] ?? ''}` },
+    env: {
+      ...process.env,
+      ...env,
+      GITHUB_WORKSPACE: process.cwd(),
+      PATH: `${directory}:${process.env['PATH'] ?? ''}`,
+    },
   })
   const raw = existsSync(argsPath) ? readFileSync(argsPath, 'utf8') : ''
   rmSync(directory, { force: true, recursive: true })
@@ -79,6 +84,7 @@ function runPlaywrightTestsStep({
       ...process.env,
       CI_SHARD: '1/1',
       GITHUB_OUTPUT: githubOutputPath,
+      GITHUB_WORKSPACE: process.cwd(),
       PATH: `${cwd}:${process.env['PATH'] ?? ''}`,
     },
   })
@@ -109,6 +115,9 @@ describe('tests-playwright.yml retry/flake signal (issue #51)', () => {
 
 describe('tests-playwright.yml shard invocation', () => {
   it('runs the whole suite for the matrix shard', () => {
+    expect(runPlaywrightTestsScript).toContain(
+      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD"',
+    )
     const args = runPlaywrightPnpmArgs({ CI_SHARD: '2/6' })
     expect(args).toEqual([
       'exec',

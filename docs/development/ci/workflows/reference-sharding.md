@@ -53,6 +53,12 @@ leaves room for fixed per-shard build/startup overhead inside the job target (bu
 compile + test, not just the test step). The `Run Playwright tests` step's 12-minute
 `timeout-minutes` is a ceiling, not the target: it adds a slow-runner tail over the ~6-minute
 heaviest-shard test time so a shard that is still passing tests finishes instead of ejecting the merge queue (#1185).
+The step runs the suite through [`ci/run-bounded.py`](../../../../ci/run-bounded.py) one minute
+under that ceiling. `timeout-minutes` did not reap a hung Playwright process group, so merge-group
+shard 5 ran until the job cap and GitHub dropped the log (run
+[37726973537](https://github.com/vouchington/vouchington/actions/runs/37726973537)). The bounded
+runner kills the group and lets the step exit, which keeps the failure log and the existing
+failure artifacts.
 
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
