@@ -56,6 +56,7 @@
     "@services/user-consents": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@ts-shared/languages": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",

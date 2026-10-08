@@ -5046,6 +5046,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -5572,6 +5575,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6778,6 +6784,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -7750,6 +7759,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11024,6 +11036,9 @@ importers:
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../../../ts-shared/languages
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       '@ts-shared/user-profile-collections':
         specifier: workspace:^
         version: link:../../../ts-shared/user-profile-collections
@@ -11342,6 +11357,9 @@ importers:
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../ts-shared/money
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../ts-shared/url-signing
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3

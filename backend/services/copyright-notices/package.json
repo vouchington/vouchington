@@ -44,6 +44,7 @@
     "@services/urls": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",

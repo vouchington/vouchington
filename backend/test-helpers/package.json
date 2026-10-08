@@ -52,6 +52,7 @@
     "@queues/sitemaps": "workspace:^",
     "@sentry/node": "^11.4.0",
     "@ts-shared/money": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
