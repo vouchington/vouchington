@@ -4,8 +4,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { validateRequestContract } from './response-helpers.mts'
 
-function createContext() {
+function createContext(requestContractOperation: string) {
   const ctx = {
+    requestContractOperation,
     throw: vi.fn<(status: number, message?: string) => never>((status, message) => {
       const error = new Error(message) as Error & { status: number }
       error.status = status
@@ -17,7 +18,7 @@ function createContext() {
 
 describe('validateRequestContract', () => {
   it('does not throw when every declared carrier is valid', () => {
-    const ctx = createContext()
+    const ctx = createContext('POST:/api/v1/my/api-keys')
     expect(() =>
       validateRequestContract(ctx as never, 'POST:/api/v1/my/api-keys', {
         body: { label: 'My Key', permissions: ['rss:read'] },
@@ -27,7 +28,7 @@ describe('validateRequestContract', () => {
   })
 
   it('throws a 422 through ctx.throw when the body carrier fails its schema', () => {
-    const ctx = createContext()
+    const ctx = createContext('POST:/api/v1/my/api-keys')
     expect(() =>
       validateRequestContract(ctx as never, 'POST:/api/v1/my/api-keys', { body: null }),
     ).toThrow(/Invalid request body/)
@@ -35,7 +36,7 @@ describe('validateRequestContract', () => {
   })
 
   it('throws a 422 through ctx.throw when the body is an array instead of an object', () => {
-    const ctx = createContext()
+    const ctx = createContext('POST:/api/v1/conversations')
     expect(() =>
       validateRequestContract(ctx as never, 'POST:/api/v1/conversations', {
         body: ['not', 'an', 'object'],
@@ -45,7 +46,7 @@ describe('validateRequestContract', () => {
   })
 
   it('validates the path carrier independently of the body carrier', () => {
-    const ctx = createContext()
+    const ctx = createContext('DELETE:/api/v1/my/api-keys/:id')
     expect(() =>
       validateRequestContract(ctx as never, 'DELETE:/api/v1/my/api-keys/:id', {
         path: { id: 'any-non-empty-string' },
@@ -55,7 +56,7 @@ describe('validateRequestContract', () => {
   })
 
   it('fails closed with a thrown Error (not ctx.throw) for an unknown operation', () => {
-    const ctx = createContext()
+    const ctx = createContext('GET:/api/v1/does-not-exist')
     expect(() =>
       validateRequestContract(ctx as never, 'GET:/api/v1/does-not-exist', { query: {} }),
     ).toThrow(/No generated runtime request contract/)

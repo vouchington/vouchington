@@ -87,8 +87,12 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
 
 app.route('/api/v1/auth/oauth/:provider/broker-callback').get(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('GET:/api/v1/auth/oauth/:provider/broker-callback')
+  const provider = assertBrokerOAuthProvider(ctx.params.provider ?? '')
+  validateRequestContract(ctx, 'GET:/api/v1/auth/oauth/:provider/broker-callback', {
+    path: ctx.params,
+  })
   const result = await receiveOAuthAuthorizationCallback({
-    provider: assertBrokerOAuthProvider(ctx.params.provider ?? ''),
+    provider,
     state: typeof ctx.query.state === 'string' ? ctx.query.state : '',
     code: typeof ctx.query.code === 'string' ? ctx.query.code : undefined,
     error: typeof ctx.query.error === 'string' ? ctx.query.error : undefined,

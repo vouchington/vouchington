@@ -52,7 +52,7 @@ app
           { message: 'Unauthorized' },
         ),
       )
-      return
+      throw err
     }
     const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
@@ -67,7 +67,7 @@ app
           message: 'Access denied',
         }),
       )
-      return
+      ctx.throw(403, 'Access denied')
     }
 
     const body = (await ctx.request.json('1mb')) as Record<string, unknown>

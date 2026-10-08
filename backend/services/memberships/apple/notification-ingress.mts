@@ -17,10 +17,12 @@ export async function ingestAppleAppStoreNotification(options: {
   evidence: unknown
   environment: AppleMembershipProviderEnvironment
   applicationId: string
+  onVerified?: () => void
   verifier: AppleNotificationVerifier
 }): Promise<{ evidenceId: string; replayed: boolean }> {
   const notification = await verifyAppleNotification(options)
   if (!notification) throw new InvalidAppleNotificationError()
+  options.onVerified?.()
   const evidenceLookupSha256 = createHash('sha256')
     .update(`apple:notification:${options.environment}:${notification.notificationId}`)
     .digest('hex')

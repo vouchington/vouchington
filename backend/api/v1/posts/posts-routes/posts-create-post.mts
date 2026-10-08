@@ -80,6 +80,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   const body = parsedBody as CreatePostRequestBody
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
+    validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
     const now = new Date().toISOString()
     ctx.setStatus(201)
     ctx.json({
@@ -167,6 +168,9 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
       CONTRIBUTION_ADMISSION_IN_PROGRESS,
     )
   }
+  // Committed retries skip beforeCapacity and its mutable checks. Validate only
+  // the checked-in shape on this replay path, preserving exact replay semantics.
+  if (admission.kind === 'replay') validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
   ctx.setStatus(201)
   ctx.json({ post: await attachWrittenPostProvenance(admission.response, currentUser) })
 })

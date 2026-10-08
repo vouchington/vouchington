@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getMembershipProviderContext } from '@voucha/config/membership-providers'
 import { enqueueProcessGooglePlayNotification } from '@queues/memberships/enqueues'
@@ -15,8 +16,8 @@ type GooglePubSubPushEnvelope = {
 }
 
 // Specialized ingress (server-to-server webhook): a Pub/Sub push authenticated by an OIDC bearer.
-// The shared JSON contract adapter is intentionally absent; the envelope is re-serialized as the raw
-// body that `ingestGooglePlayRtdnPush` verifies (401 on failure) before anything is enqueued.
+// The envelope is re-serialized for OIDC/protocol verification (401 on failure); only then
+// does the route validate its JSON carrier, before anything is persisted or enqueued.
 app.route('/api/v1/memberships/google-play/notifications').post(async (ctx: Context) => {
   const audience = process.env.GOOGLE_PLAY_PUBSUB_AUDIENCE?.trim()
   const serviceAccountEmail = process.env.GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT_EMAIL?.trim()
@@ -47,6 +48,13 @@ app.route('/api/v1/memberships/google-play/notifications').post(async (ctx: Cont
           : undefined,
       environment: context.environment,
       applicationId: context.applicationId,
+      onVerified: () =>
+        validateRequestContract(ctx, 'POST:/api/v1/memberships/google-play/notifications', {
+          // Validate only the consumed fields; Pub/Sub also supplies transport metadata.
+          body: {
+            message: { messageId: envelope.message?.messageId, data: envelope.message?.data },
+          },
+        }),
       trust,
       enqueue: async data => {
         await enqueueProcessGooglePlayNotification(data)

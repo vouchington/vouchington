@@ -11,6 +11,7 @@ import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
 import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
+import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 import {
   getErrorResponseCode,
   getErrorResponseMessage,
@@ -67,7 +68,9 @@ const app = createVouchaApiApp()
 export default app
 
 export function createVouchaApiApp(): Application {
-  return createApp(VOUCHA_API_SERVER_OPTIONS)
+  const app = createApp(VOUCHA_API_SERVER_OPTIONS)
+  installRequestContractEnforcement(app, onError)
+  return app
 }
 
 export function createOriginGuardedListener(
