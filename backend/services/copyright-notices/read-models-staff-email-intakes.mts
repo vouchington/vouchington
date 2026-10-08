@@ -41,9 +41,7 @@ export async function searchCopyrightStaffEmailIntakes(
     return { intakes: [], hasNextPage: false }
   }
   if (options.intakeIds?.length === 0) return { intakes: [], hasNextPage: false }
-  observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbIdsScope(options.intakeIds))
   const intakeIds = options.intakeIds ? [...options.intakeIds] : null
-  await using transaction = await beginTransaction()
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
       recommendation.id AS recommendation_id, link.link_kind, link.copyright_notice_id AS linked_notice_id,
@@ -69,6 +67,7 @@ export async function searchCopyrightStaffEmailIntakes(
     WHERE (`.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
   if (intakeIds) query.append(sql` AND intake.id = ANY(${intakeIds}::uuid[])`)
+  const afterParameterOffset = query.values.length
   if (options.after) {
     query.append(sql`
       AND (intake.received_at, intake.id) > (${options.after.timestamp}::timestamptz, ${options.after.id})`)
@@ -77,6 +76,24 @@ export async function searchCopyrightStaffEmailIntakes(
     ORDER BY intake.received_at, intake.id
     LIMIT ${options.limit + 1}
   `)
+  const identity = Symbol('searchCopyrightStaffEmailIntakes')
+  const scope = sharedDbIdsScope(options.intakeIds)
+  // Diagnose the values of the actual query before allocating a transaction. The same query is
+  // executed below; completion describes its actual rows only after COMMIT succeeds.
+  observeSharedDbScope('searchCopyrightStaffEmailIntakes', scope, {
+    phase: 'start',
+    identity,
+    actorId: currentUser.id,
+    after: options.after
+      ? {
+          timestamp: query.values[afterParameterOffset],
+          id: query.values[afterParameterOffset + 1],
+        }
+      : undefined,
+    limit: options.limit,
+    sqlLimit: query.values.at(-1),
+  })
+  await using transaction = await beginTransaction()
   const { rows } = await transaction<{
     id: string
     received_at: Date
@@ -90,6 +107,12 @@ export async function searchCopyrightStaffEmailIntakes(
     has_reply_reference: boolean
   }>(query)
   await transaction.commit()
+  observeSharedDbScope('searchCopyrightStaffEmailIntakes', scope, {
+    phase: 'completed',
+    identity,
+    rowCount: rows.length,
+    first: rows[0] ? { id: rows[0].id, timestamp: rows[0].cursor_received_at } : undefined,
+  })
   return {
     intakes: rows.slice(0, options.limit).map(row => ({
       id: row.id,

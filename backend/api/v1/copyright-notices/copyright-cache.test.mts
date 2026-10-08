@@ -6,6 +6,7 @@ import { Readable } from 'node:stream'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { readOwnedCopyrightEmailQueue } from '@voucha/test-helpers/copyright-email-queue-http-contract'
 import { createCopyrightEmailIntake } from '@services/copyright-notices'
 
 describe('copyright API cache policy', () => {
@@ -23,7 +24,8 @@ describe('copyright API cache policy', () => {
     ).toBe('private, no-store')
 
     const moderator = createRequest()
-    await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const moderatorUser = await createTestUser({ extraRoles: ['moderator'] })
+    await moderator.authenticateAs(moderatorUser)
     const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId: `ses-api-raw-${crypto.randomUUID()}`,
@@ -34,6 +36,12 @@ describe('copyright API cache policy', () => {
       rawByteSize: bytes.byteLength,
       sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
+    const staff = await readOwnedCopyrightEmailQueue(moderator, moderatorUser, {
+      id: intake.id,
+      receivedAt: intake.received_at,
+    })
+    expect(staff.headers['cache-control']).toBe('private, no-store')
+
     vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
       Body: Readable.from([bytes]),
       ContentLength: bytes.byteLength,

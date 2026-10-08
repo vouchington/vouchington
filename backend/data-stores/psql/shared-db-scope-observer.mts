@@ -34,10 +34,27 @@ export type SharedDbScope =
   | { kind: 'ids'; ids: readonly string[] }
   | { kind: 'cursor'; id: string }
   | { kind: 'global' }
+export type SharedDbKeysetRead =
+  | {
+      phase: 'start'
+      identity: symbol
+      actorId: string
+      after: { timestamp: unknown; id: unknown } | undefined
+      limit: number
+      sqlLimit: unknown
+    }
+  | {
+      phase: 'completed'
+      identity: symbol
+      rowCount: number
+      first: { id: string; timestamp: string } | undefined
+    }
+
 export type SharedDbScopeEvent = {
   operation: SharedDbScopeOperation
   table: (typeof sharedDbScopeTables)[SharedDbScopeOperation]
   scope: SharedDbScope
+  keysetRead?: SharedDbKeysetRead
 }
 export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 
@@ -47,11 +64,13 @@ type ObserverHost = Record<symbol, SharedDbScopeObserver | undefined>
 export function observeSharedDbScope(
   operation: SharedDbScopeOperation,
   scope: SharedDbScope,
+  keysetRead?: SharedDbKeysetRead,
 ): void {
   ;(globalThis as unknown as ObserverHost)[observerKey]?.({
     operation,
     table: sharedDbScopeTables[operation],
     scope,
+    ...(keysetRead ? { keysetRead } : {}),
   })
 }
 
