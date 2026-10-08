@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import {
   createTestUserDirect,
@@ -7,7 +7,7 @@ import {
   getTestReportIntegrityFlagsByUserId,
   createTestUser,
   insertTestPost,
-  readAllQueueJobs,
+  readEnqueuedJob,
 } from '@voucha/test-helpers'
 import { processReportIntegrityCheck, processBackfillReportIntegrity } from './processors.mts'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
@@ -22,7 +22,7 @@ describe('processReportIntegrityCheck', () => {
 
   beforeAll(async () => {
     targetUser = await createTestUserDirect({ username: randomUsername() })
-  }, 60_000)
+  }, 5_000)
 
   it('creates a report_integrity_flags row when reporter count meets threshold', async () => {
     const freshTarget = await createTestUserDirect({ username: randomUsername() })
@@ -43,7 +43,7 @@ describe('processReportIntegrityCheck', () => {
     expect(flags.length).toBeGreaterThanOrEqual(1)
     expect(flags[0]!.flag_type).toBe('mass_report_suspected')
     expect(flags[0]!.reported_user_id).toBe(freshTarget.id)
-  }, 60_000)
+  })
 
   it('does not create a flag when reporter count is below threshold', async () => {
     const freshTarget = await createTestUserDirect({ username: randomUsername() })
@@ -62,7 +62,7 @@ describe('processReportIntegrityCheck', () => {
 
     const flags = await getTestReportIntegrityFlagsByUserId(freshTarget.id)
     expect(flags).toHaveLength(0)
-  }, 60_000)
+  })
 
   it('does not create a flag for an unknown entity type', async () => {
     // processReportIntegrityCheck should not throw but also not create a flag
@@ -71,7 +71,7 @@ describe('processReportIntegrityCheck', () => {
     await expect(
       processReportIntegrityCheck({ entityType: 'unknown_type', entityId: targetUser.id }),
     ).resolves.toBeUndefined()
-  }, 60_000)
+  })
 })
 
 describe('processBackfillReportIntegrity', () => {
@@ -92,10 +92,12 @@ describe('processBackfillReportIntegrity', () => {
       entityId: postId,
     })
 
-    const result = await processBackfillReportIntegrity()
+    const result = await processBackfillReportIntegrity({ entityType: 'post', entityId: postId })
     expect(result.enqueued).toBeGreaterThanOrEqual(1)
 
-    const waiting = await readAllQueueJobs(reportIntegrityQueue)
+    const waiting = await Promise.all(
+      (result.jobIds ?? []).map(id => readEnqueuedJob(reportIntegrityQueue, { id })),
+    )
     const found = waiting.find(
       j =>
         j.name === 'processReportIntegrityCheck' &&
@@ -103,14 +105,17 @@ describe('processBackfillReportIntegrity', () => {
     )
     expect(found).toBeDefined()
     expect((found!.data as ProcessReportIntegrityCheckData).entityType).toBe('post')
-  }, 60_000)
+  })
 })
 
 describe('workers.mts module', () => {
   it('exports a reportIntegrity Worker instance', async () => {
     const { reportIntegrity } = await import('./workers.mts')
+    let closing: Promise<void> | undefined
+    const close = () => (closing ??= reportIntegrity.close())
+    onTestFinished(close, 30_000)
     expect(reportIntegrity).toBeDefined()
-    // Close the worker connection to avoid test teardown leaks
-    await reportIntegrity.close()
-  }, 60_000)
+    // Register cleanup before assertions, and await the same actual close promise.
+    await close()
+  })
 })
