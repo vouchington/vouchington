@@ -29,6 +29,18 @@
 - `storyteller`
 - `classifier`
 
+## `ai_model_providers`
+
+- `anthropic`
+- `openai`
+- `typesafe`
+
+## `ai_provider_transports`
+
+- `direct`
+- `openrouter`
+- `typesafe`
+
 ## `ai_usage_record_pricing_statuses`
 
 - `priced`
