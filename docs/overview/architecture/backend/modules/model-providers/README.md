@@ -40,6 +40,17 @@ response id, the served service tier and provider-neutral `ModelUsage`.
   `ambiguousBilled` marks a failure after the request was sent, which callers record as an unknown
   billed attempt.
 
+## Tool-using agents
+
+`generateToolTurn(selection, request, options)` is one turn of a tool-using agent on either provider.
+The transcript is provider-neutral (`AgentTurnMessage`: user text, assistant text with tool calls,
+tool results); each provider adapter turns it into Messages or Responses items. A tool call is
+required every turn (`tool_choice: any` on Anthropic, `required` on OpenAI), so an agent's answer is
+always a tool call it can validate, never free text. A refusal, a turn cut off at `max_tokens` or a
+turn with no usable tool call is a permanent `ModelProviderError` carrying its billed response, like
+`generateJson`. The loop, its bounds and the per-turn ledger rows belong to the agent
+(`@agents/_shared`'s `callAgentToolTurn` settles each turn); the C7 autotagger is the one consumer.
+
 ## Pricing
 
 `pricing-table.mts` is the provider-neutral price table (it replaced `@modules/openai-utils/pricing`),

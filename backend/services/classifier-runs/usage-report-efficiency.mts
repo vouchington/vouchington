@@ -1,3 +1,4 @@
+import { addAgentRun, addAgentTurns, NO_AGENT_TURNS } from './usage-report-agent-turns.mts'
 import type {
   ClassifierContentVersionUsage,
   ClassifierEfficiency,
@@ -89,6 +90,7 @@ function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
     latencyMsTotal: 0,
     latencySamples: 0,
     localDetectorRuns: 0,
+    ...NO_AGENT_TURNS,
   }
 }
 
@@ -97,10 +99,10 @@ function emptyVersion(run: ClassifierRunUsage): ClassifierContentVersionUsage {
  * failed, and its outcomes are not durable: a claim then replays instead of calling. The batch is
  * fixed when the receipt is reserved, so a local-only run (no batch) never reaches the provider. A
  * superseded run counts, since the same update that leases it revives it once its content and
- * configuration are current again.
+ * configuration are current again. An agent run reserves no batch, so it counts by its primitive.
  */
 function canStillCallProvider(run: ClassifierRunUsage): boolean {
-  if (run.batchId === null) return false
+  if (run.batchId === null && run.primitive !== 'agent') return false
   return (run.outcome === 'incomplete' || run.outcome === 'superseded') && !run.outcomesPersisted
 }
 
@@ -112,8 +114,11 @@ function addRun(entry: VersionEntry, run: ClassifierRunUsage): void {
   version.retries += run.retries
   version.sweepEnqueues += run.sweepEnqueues
   version.providerCalls += run.providerCalls
-  version.maxProviderCallsPerRun = Math.max(version.maxProviderCallsPerRun, run.providerCalls)
-  if (run.providerCalls > 1) version.runsOverOneCall += 1
+  if (run.primitive === 'agent') addAgentRun(version, run)
+  else {
+    version.maxProviderCallsPerRun = Math.max(version.maxProviderCallsPerRun, run.providerCalls)
+    if (run.providerCalls > 1) version.runsOverOneCall += 1
+  }
   version.attemptsWithoutRecordedResponse += run.attemptsWithoutRecordedResponse
   version.persistedDecisionCalls += run.shardCount
   if (canStillCallProvider(run)) version.unfinishedRuns += 1
@@ -144,6 +149,7 @@ function emptyEfficiency(classifier: string): ClassifierEfficiency {
     latencyMsTotal: 0,
     latencySamples: 0,
     localDetectorRuns: 0,
+    ...NO_AGENT_TURNS,
   }
 }
 
@@ -170,6 +176,7 @@ function addVersion(
   efficiency.latencyMsTotal += version.latencyMsTotal
   efficiency.latencySamples += version.latencySamples
   efficiency.localDetectorRuns += version.localDetectorRuns
+  addAgentTurns(efficiency, version)
 }
 
 function compareVersions(

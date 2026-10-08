@@ -264,7 +264,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   unreferenced rows, and partitioning is reconsidered at the registry's growth threshold.
 - Lower-amplification entities and workflow rows: `agent_prompts`, `agents`,
   `moderator_agents`, `activitypub_actor_keys`, `post_activitypub_like_tallies`, `api_keys`, `app_attestation_keys`,
-  `apple_accounts`,
+  `apple_accounts`, `autotagger_agent_run_topics`,
   `bedrock_embedding_batch_entities`, `bedrock_embedding_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,

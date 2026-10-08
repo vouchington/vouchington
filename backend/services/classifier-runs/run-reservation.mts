@@ -141,7 +141,11 @@ async function insertClassifierRun<C>(
       ? sql`(classifier_id, post_id, input_sha256, configuration_sha256) WHERE post_id IS NOT NULL`
       : sql`(classifier_id, rss_feed_item_id, input_sha256, configuration_sha256)
         WHERE rss_feed_item_id IS NOT NULL`
-  const { rows } = await query<{ id: string; decision_batch_id: string | null }>(
+  const { rows } = await query<{
+    id: string
+    decision_batch_id: string | null
+    was_inserted: boolean
+  }>(
     sql`/* reserveClassifierRun.insert */
     INSERT INTO classifier_runs (
       classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
@@ -152,13 +156,19 @@ async function insertClassifierRun<C>(
       ${resolved.actorId}, ${proposedBatchId}
     ) ON CONFLICT `
       .append(conflict)
-      .append(' DO UPDATE SET superseded_at = NULL RETURNING id, decision_batch_id'),
+      .append(
+        ' DO UPDATE SET superseded_at = NULL RETURNING id, decision_batch_id, (xmax = 0) AS was_inserted',
+      ),
   )
   const inserted = rows[0]
   if (!inserted) throw new Error('classifier run reservation did not return a receipt')
+  // A remote run is new exactly when its proposed batch id won; a run without a batch (local-only,
+  // or an agent) has no id to compare, so the insert itself says whether this call created it.
   const isNew =
-    remote !== null && proposedBatchId !== null && inserted.decision_batch_id === proposedBatchId
-  if (remote && isNew) {
+    remote === null
+      ? inserted.was_inserted
+      : proposedBatchId !== null && inserted.decision_batch_id === proposedBatchId
+  if (remote && isNew && proposedBatchId !== null) {
     const reserved = await reserveClassifierDecisionBatch(query, {
       batchId: proposedBatchId,
       classifierId: remote.classifierId,

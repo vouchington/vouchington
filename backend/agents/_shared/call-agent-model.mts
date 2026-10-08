@@ -17,6 +17,8 @@ import {
 export type AgentModelCall = {
   selection: ModelSelection
   openaiTransport: OpenAITransport
+  /** The caller's deadline; a provider request in flight is cancelled when it aborts. */
+  signal?: AbortSignal
 }
 
 /** The seam every migrated agent exposes so tests can replace the real provider call. */

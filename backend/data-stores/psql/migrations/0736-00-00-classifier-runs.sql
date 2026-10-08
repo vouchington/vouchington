@@ -202,6 +202,19 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__story
 CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
   ON classifier_run_candidates (rss_feed_item_id, run_id) WHERE rss_feed_item_id IS NOT NULL;
 
+-- C7's answer: the captured candidate topics its tool-using agent reported as true of the subject.
+-- Facts only, so a row is the whole answer (no probability, threshold or negative result); the
+-- writer takes the topics from this run's own classifier_run_candidates, so the answer is always a
+-- subset of the captured set.
+CREATE TABLE IF NOT EXISTS autotagger_agent_run_topics (
+  run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
+  topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
+  CONSTRAINT pk_autotagger_agent_run_topics PRIMARY KEY (run_id, topic_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_autotagger_agent_run_topics__topic
+  ON autotagger_agent_run_topics (topic_id, run_id);
+
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
@@ -219,6 +232,13 @@ CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
 
 CREATE INDEX IF NOT EXISTS idx_post_classifier_local_outcomes__local_topic
   ON post_classifier_local_outcomes (local_topic_id, run_id);
+
+COMMENT ON TABLE autotagger_agent_run_topics IS
+  'C7 answer: the captured candidate topics the run''s tool-using agent reported as true of the subject; facts only, so a row is the whole answer and a topic it left out has no row.';
+COMMENT ON COLUMN autotagger_agent_run_topics.run_id IS
+  'C7 classifier run that owns the answer; deleting the run removes it.';
+COMMENT ON COLUMN autotagger_agent_run_topics.topic_id IS
+  'Topic the agent reported; always one of the run''s captured candidates, and deleting the topic removes the fact.';
 
 COMMENT ON TABLE classifier_runs IS
   'One classifier/subject/content/configuration run receipt shared by every fixed classifier; C3 and C4 retain remote results and votes.';

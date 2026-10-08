@@ -145,7 +145,7 @@
       "values": ["typesafe", "openrouter"]
     },
     "classifier_primitives": {
-      "values": ["noul", "choice", "score"]
+      "values": ["noul", "choice", "score", "agent"]
     },
     "classifier_run_terminal_failure_kinds": {
       "values": [
@@ -6709,6 +6709,120 @@
       "triggers": {
         "trigger_apple_accounts_updated_at": "CREATE TRIGGER trigger_apple_accounts_updated_at BEFORE UPDATE ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
+      "uniqueConstraints": {}
+    },
+    "autotagger_agent_run_topics": {
+      "checkConstraints": {},
+      "columns": {
+        "run_id": {
+          "collation": null,
+          "comment": "C7 classifier run that owns the answer; deleting the run removes it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic the agent reported; always one of the run's captured candidates, and deleting the topic removes the fact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "C7 answer: the captured candidate topics the run's tool-using agent reported as true of the subject; facts only, so a row is the whole answer and a topic it left out has no row.",
+      "foreignKeys": {
+        "autotagger_agent_run_topics_run_id_fkey": {
+          "columns": ["run_id"],
+          "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_runs",
+          "validated": true
+        },
+        "autotagger_agent_run_topics_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_autotagger_agent_run_topics__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_autotagger_agent_run_topics__topic ON public.autotagger_agent_run_topics USING btree (topic_id, run_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_autotagger_agent_run_topics": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_autotagger_agent_run_topics ON public.autotagger_agent_run_topics USING btree (run_id, topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["run_id", "topic_id"],
+        "definition": "PRIMARY KEY (run_id, topic_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "bedrock_embedding_batch_entities": {

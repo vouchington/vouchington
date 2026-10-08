@@ -56,6 +56,18 @@ export const tagLimitsDynamicConfigRegistryEntries = [
       rss_collaborative_pro_max_topics: tagLimitField(
         'Max additional topics followed by Pro followers of the source feed (no LLM).',
       ),
+      agent_max_turns: agentBoundField(
+        'Most model turns one reasoning autotagger run may take. The run ends with no topics added when it spends them without answering.',
+        20,
+      ),
+      agent_max_tool_calls: agentBoundField(
+        'Most tool calls (topic searches) one reasoning autotagger run may make across all turns.',
+        50,
+      ),
+      agent_max_output_tokens: agentBoundField(
+        'Most output tokens one reasoning autotagger run may spend across all turns; also caps each turn.',
+        20_000,
+      ),
     },
   }),
 ]
@@ -67,4 +79,8 @@ function tagLimitField(description: string) {
     max_value_exemption: TAG_LIMIT_MAX_EXEMPTION,
     integer: true,
   }
+}
+
+function agentBoundField(description: string, maxValue: number) {
+  return { description, min_value: 1, max_value: maxValue, integer: true }
 }

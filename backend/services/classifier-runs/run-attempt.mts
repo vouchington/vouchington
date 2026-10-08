@@ -64,7 +64,7 @@ export async function startClassifierProviderAttempt<C, L, E>(
   if (!locked) return 'stale'
   const { row } = locked
   if (row.outcomes_persisted_at) return 'replay'
-  if (row.decision_batch_id === null) return 'no_remote'
+  if (row.decision_batch_id === null && !input.lease.resolved.agent) return 'no_remote'
   if (row.provider_attempts_started >= input.maxAttempts) {
     await terminateRun(adapter, query, input, 'attempts-exhausted')
     await query.commit()

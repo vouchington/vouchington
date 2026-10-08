@@ -1,39 +1,32 @@
-import { createAutotaggerAgentClient, executeAutotaggerAgentRun } from '@agents/autotagger'
+import { executeAutotaggerAgentRun } from '@agents/autotagger'
+import { loadServiceModelSelection } from '@services/ai-usage'
 import {
   createAutotaggerAgentRunAdapter,
   type AutotaggerAgentEffects,
+  type AutotaggerAgentFacts,
   type AutotaggerAgentRunConfiguration,
 } from '@services/autotagger'
+import { AUTOTAGGER_AGENT_SLUG } from '@voucha/types/entities/autotagger-agent'
 import type { ClassifierRunRegistration } from './classifier-run-handler.mts'
 
 /**
  * C7: the only worker code the scoped reasoning autotagger owns. The shared classifier-run
- * lifecycle claims, caps, fails and completes the run; this hands the leased run to C7's input
- * building. C7 is a leaf: nothing follows it, so it has no `afterCompleted`.
+ * lifecycle claims, caps, fails and completes the run; this reads the agent's provider and model
+ * from the `ai-model-routing` setting (so a switch applies to the next run without a deploy) and
+ * hands the leased run to the agent. C7 is a leaf: nothing follows it, so it has no `afterCompleted`.
  */
 export function createAutotaggerAgentRegistration(): ClassifierRunRegistration<
   AutotaggerAgentRunConfiguration,
-  never,
+  AutotaggerAgentFacts,
   AutotaggerAgentEffects
 > {
   const adapter = createAutotaggerAgentRunAdapter()
   return {
     adapter,
-    execute: (lease, { maxAttempts, signal }) =>
+    execute: async (lease, { maxAttempts, signal }) =>
       executeAutotaggerAgentRun(
         { adapter, lease, maxAttempts, signal },
-        {
-          createClient: (hooks, current) =>
-            createAutotaggerAgentClient({
-              postId: current.subject.postId,
-              selection: {
-                provider: current.resolved.configuration.modelProvider,
-                model: current.resolved.configuration.modelName,
-              },
-              classifierRunId: hooks.classifierRunId,
-              beforeAttempt: hooks.beforeAttempt,
-            }),
-        },
+        { selection: await loadServiceModelSelection(AUTOTAGGER_AGENT_SLUG) },
       ),
   }
 }

@@ -15,30 +15,24 @@ describe('0635-00-06-seed-autotagger-agent-classifier SQL shape', () => {
     expect(generated).toContain("platform_account_kind = 'system'")
   })
 
-  it('inserts a topic-kind Noul classifier without ever updating it', () => {
+  it('inserts a topic-kind agent classifier without ever updating it', () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
-    expect(generated).toContain("'autotagger-agent', 'noul', 'topic'")
+    expect(generated).toContain("'autotagger-agent', 'agent', 'topic'")
     expect(generated).toContain('ON CONFLICT (slug) DO NOTHING')
     expect(generated).not.toContain('UPDATE classifiers')
     expect(generated).not.toContain('INSERT INTO agents')
   })
 
-  it('dollar-quotes the prompt with exactly one candidate placeholder', () => {
+  it('seeds no prompt version, model, provider or threshold', () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
-    expect(generated).toContain('$autotagger_agent_prompt$')
-    // The one-placeholder prompt is interpolated into the rotation check, the insert and the guard.
-    expect(generated.split('{{candidate}}')).toHaveLength(4)
-    expect(generated).toContain('MD5(prompt) != MD5(')
-    expect(generated).not.toContain('activated_at = NULL')
-  })
-
-  it('asks for a higher confidence than the first stage', () => {
-    expect(generateSeedAutotaggerAgentClassifierSQL()).toContain('0.2500, 0.7500')
+    expect(generated).not.toContain('classifier_prompt_versions')
+    expect(generated).not.toContain('model_name')
+    expect(generated).not.toContain('threshold')
   })
 })
 
 describe('0635-00-06-seed-autotagger-agent-classifier (real DB)', () => {
-  it('reaches a stable single active classifier and prompt version across reruns', async () => {
+  it('reaches a stable single active classifier with no prompt version across reruns', async () => {
     const generated = generateSeedAutotaggerAgentClassifierSQL()
     await runConfigDrivenStatementsInTransaction(generated, undefined)
     await runConfigDrivenStatementsInTransaction(generated, undefined)
@@ -48,9 +42,7 @@ describe('0635-00-06-seed-autotagger-agent-classifier (real DB)', () => {
     expect(classifier!.activated_at).not.toBeNull()
     expect(classifier!.deactivated_at).toBeNull()
 
-    const promptRows = await listLocalActiveClassifierPromptVersions(classifier!.id)
-    expect(promptRows).toHaveLength(1)
-    expect(promptRows[0]!.model_name).toBe('typesafe/jev-1.13')
+    expect(await listLocalActiveClassifierPromptVersions(classifier!.id)).toHaveLength(0)
 
     const user = await getLocalTestUserRawByUsername('autotagger')
     expect(user).not.toBeNull()

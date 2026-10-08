@@ -24,8 +24,9 @@ export type ClassifierRunUsage = {
   /** Null for a run that never reserved a remote batch (local-only work). */
   batchId: string | null
   promptVersionId: string | null
+  /** The prompt version's provider; for an agent run (no prompt version), the ledger's. */
   provider: string | null
-  /** The model the prompt version asks for; the ledger keeps the model the provider served. */
+  /** The prompt version's model; for an agent run, the model its turns billed (first in sort order). */
   model: string | null
   scopeCategory: string | null
   scopeCommunityId: string | null
@@ -135,6 +136,10 @@ export type ClassifierContentVersionUsage = {
   latencySamples: number
   /** Local detector runs, never billed and not counted in `providerCalls`. */
   localDetectorRuns: number
+  /** Agent runs, their billed turns and the most turns one run took. */
+  agentRuns: number
+  agentTurns: number
+  maxAgentTurnsPerRun: number
 }
 
 /**
@@ -172,6 +177,14 @@ export type ClassifierEfficiency = {
   latencyMsTotal: number
   latencySamples: number
   localDetectorRuns: number
+  /**
+   * Runs of an agent classifier (billed once per model turn) and their billed turns. Agent runs
+   * are left out of the one-billed-call KPI: `maxProviderCallsPerRun` and `runsOverOneCall` count
+   * only single-call runs.
+   */
+  agentRuns: number
+  agentTurns: number
+  maxAgentTurnsPerRun: number
 }
 
 export type ClassifierUsageReport = {

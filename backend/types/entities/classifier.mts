@@ -1,4 +1,4 @@
-export type ClassifierPrimitive = 'noul' | 'choice' | 'score'
+export type ClassifierPrimitive = 'noul' | 'choice' | 'score' | 'agent'
 export type ClassifierCandidateKind = 'topic' | 'story' | 'community_prompt'
 export type ClassifierScopeCategory = 'global' | 'community_ai'
 export type ClassifierModelProvider = 'typesafe' | 'openrouter'

@@ -173,3 +173,27 @@ describe('formatClassifierUsageReport (deterministic fixtures)', () => {
     expect(text).toContain('cost $0.000000')
   })
 })
+
+describe('formatClassifierUsageReport for an agent classifier (deterministic fixtures)', () => {
+  it('reports turns per run instead of the one-call verdict', () => {
+    const agent = (runId: string, providerCalls: number) =>
+      run({
+        runId,
+        subjectId: runId,
+        classifier: 'autotagger-agent',
+        primitive: 'agent',
+        batchId: null,
+        promptVersionId: null,
+        provider: 'anthropic',
+        model: 'claude-haiku-5-5',
+        providerCalls,
+      })
+
+    const text = formatClassifierUsageReport(reportOf([agent('a', 2), agent('b', 4)]))
+
+    expect(text).toContain('KPI (at most one billed call per receipt): not applicable')
+    expect(text).toContain('agent runs 2, billed turns 6 (3.0 per run), most turns in one run 4')
+    expect(text).not.toContain('BREACHED')
+    expect(text).not.toContain('receipts over one call')
+  })
+})

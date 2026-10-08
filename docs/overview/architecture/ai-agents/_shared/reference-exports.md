@@ -37,6 +37,16 @@ its accounting contract live in the private `vouchington/vouchington-docs` repos
 
 Keep trusted `instructions` separate from message `input`.
 
+### `callAgentToolTurn(params)`
+
+The tool-using counterpart of `callAgentModel`: one turn of a tool-using agent through
+`generateToolTurn`, with the same ledger settlement. `params` is `{ request, agentSlug, selection,
+classifierRunId?, beforeDispatch?, callTurn?, communityId?, postId? }`. The daily spend cap is
+checked before every turn; `beforeDispatch` runs after the cap admitted the turn and before it is
+sent (the C7 autotagger reserves its provider attempt there on the first turn only); a billed turn
+is recorded against `classifierRunId`, and a billed turn that is unusable (a refusal, a cut-off or
+malformed tool call) is recorded too. The agent owns the loop and its bounds.
+
 Usage-recording and token-accounting (`runWithJobTokenAccumulator`, `recordAgentResponseUsage`, and
 the `recordModelUsage` and `callRecordingModelUsage` boundaries under `callAgentModel`) are
 documented in [Usage Tracking](reference-usage-tracking.md).

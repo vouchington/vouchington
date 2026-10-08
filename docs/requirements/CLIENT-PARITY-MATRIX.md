@@ -393,6 +393,13 @@ only a static manifest entry. The repository does not yet have a web admin page 
 endpoints are reachable by API and a web admin page is future work. Staff mutation
 controls stay web-only, as in the staff action history handoff below.
 
+Issue #2370 makes the reasoning autotagger (`autotagger-agent`, C7) a tool-using agent instead of a Jev
+classifier. The classifier list now returns it with `primitive: "agent"` (a fourth
+`ClassifierPrimitive` value) and `active_prompt_version: null`, because it has no prompt version,
+model or thresholds; it exposes no candidates or threshold revisions to manage. Nothing consumes
+these endpoints outside the static web manifest, so there is no native work, and the contract stays
+one current shape with no shim.
+
 ## Queue delayed count handoff
 
 `GET /api/v1/mq/queues` rows gain `delayed` and `GET /api/v1/mq/stats` (and the `/api/v1/mq/stream`

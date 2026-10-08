@@ -14,6 +14,10 @@ export type AutotaggerPaidLimitsFields = {
   rss_discoverable_llm_max_topics: number
   rss_collaborative_plus_max_topics: number
   rss_collaborative_pro_max_topics: number
+  /** Bounds of one reasoning autotagger (C7) run's tool-using agent. */
+  agent_max_turns: number
+  agent_max_tool_calls: number
+  agent_max_output_tokens: number
 }
 
 const DEFAULTS: AutotaggerPaidLimitsFields = {
@@ -24,6 +28,9 @@ const DEFAULTS: AutotaggerPaidLimitsFields = {
   rss_discoverable_llm_max_topics: 3,
   rss_collaborative_plus_max_topics: 3,
   rss_collaborative_pro_max_topics: 4,
+  agent_max_turns: 6,
+  agent_max_tool_calls: 8,
+  agent_max_output_tokens: 3000,
 }
 
 export const AUTOTAGGER_PAID_LIMITS_CONFIG_KEY = 'autotagger-paid-limits'
@@ -38,6 +45,9 @@ export const autotaggerPaidLimitsConfig = new DynamicConfig({
     rss_discoverable_llm_max_topics: 'number',
     rss_collaborative_plus_max_topics: 'number',
     rss_collaborative_pro_max_topics: 'number',
+    agent_max_turns: 'number',
+    agent_max_tool_calls: 'number',
+    agent_max_output_tokens: 'number',
   },
   defaultFields: DEFAULTS,
 })
@@ -61,5 +71,10 @@ export function getAutotaggerPaidLimitsFields(): AutotaggerPaidLimitsFields {
     rss_collaborative_pro_max_topics:
       (fields['rss_collaborative_pro_max_topics'] as number | undefined) ??
       DEFAULTS.rss_collaborative_pro_max_topics,
+    agent_max_turns: (fields['agent_max_turns'] as number | undefined) ?? DEFAULTS.agent_max_turns,
+    agent_max_tool_calls:
+      (fields['agent_max_tool_calls'] as number | undefined) ?? DEFAULTS.agent_max_tool_calls,
+    agent_max_output_tokens:
+      (fields['agent_max_output_tokens'] as number | undefined) ?? DEFAULTS.agent_max_output_tokens,
   }
 }

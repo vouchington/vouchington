@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ModelProviderError } from '@modules/model-providers/errors'
+import { generateToolTurn } from '@modules/model-providers/tool-turn'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { spendCapConfig } from '@services/ai-usage'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
 import { findAiUsageRecordForPost } from '@voucha/test-helpers'
+import { makeToolTurnResult } from '@voucha/test-helpers/agents/model-call-result'
 import {
   classifierRunDispatcherJobFor,
   classifierRunDispatcherJobForFeedItem,
@@ -47,12 +50,23 @@ vi.mock<typeof import('@modules/structured-decisions/transport')>(
   }),
 )
 
+vi.mock<typeof import('@modules/model-providers/tool-turn')>(
+  import('@modules/model-providers/tool-turn'),
+  async original => ({ ...(await original()), generateToolTurn: vi.fn<typeof generateToolTurn>() }),
+)
+
 const tagging = getClassifierRunHandler(TAGGING_CLASSIFIER_SLUG)
 const agent = getClassifierRunHandler(AUTOTAGGER_AGENT_SLUG)
 const provider = vi.mocked(fetchStructuredDecisionProvider)
+const agentTurn = vi.mocked(generateToolTurn)
 
-/** Every question set the provider was asked, in call order: C6's first, then C7's. */
-let askedQuestionSets: string[][] = []
+/** Points C7's model at an answer: it submits exactly these candidate topic ids on its first turn. */
+function agentSubmits(...topicIds: string[]) {
+  agentTurn.mockImplementation(() => {
+    const turn = makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: topicIds } }])
+    return Promise.resolve(turn)
+  })
+}
 
 /** Points the mocked provider at an answer function: the probability it gives each question id. */
 function answerWith(probabilityFor: (questionId: string) => number) {
@@ -61,7 +75,6 @@ function answerWith(probabilityFor: (questionId: string) => number) {
       questions: Record<string, unknown>
     }
     const ids = Object.keys(body.questions)
-    askedQuestionSets.push(ids)
     return Response.json({
       id: `decision-${randomUUID()}`,
       model: 'typesafe/jev-1.13',
@@ -103,7 +116,6 @@ const agentDispatcherJob = ({ subject }: { subject: ClassifierRunSubject }) =>
     ? classifierRunDispatcherJobFor(subject.postId, AUTOTAGGER_AGENT_SLUG)
     : classifierRunDispatcherJobForFeedItem(subject.rssFeedItemId, AUTOTAGGER_AGENT_SLUG)
 
-/** The C7 dispatcher jobs queued for the subject, whatever else the shared queue holds. */
 async function agentDispatchers(fixture: Fixture) {
   return (await readClassifierRunDispatcherJobsForTest(subjectIdOf(fixture))).filter(
     job => (job.data as { classifier?: string }).classifier === AUTOTAGGER_AGENT_SLUG,
@@ -135,13 +147,14 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
     restoreSpendCap = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
   })
   beforeEach(() => {
-    askedQuestionSets = []
     vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
     answerWith(() => 0.9)
+    agentSubmits()
   })
   afterEach(() => {
     vi.unstubAllEnvs()
     provider.mockReset()
+    agentTurn.mockReset()
   })
   afterAll(() => restoreSpendCap?.())
 
@@ -172,14 +185,17 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
       ]
       await (await tagWith(fixture, [applied])).run()
       expect(await readLiveSubjectTopicIds(fixture.subject)).toEqual([applied])
-      answerWith(id => (id === second ? 0.9 : 0.1))
+      agentSubmits(second)
 
       const dispatched = await dispatchAgentRun(fixture)
       await expect(dispatched.run()).resolves.toEqual({ kind: 'completed' })
 
-      expect(provider).toHaveBeenCalledTimes(2)
-      expect(askedQuestionSets[1]).toEqual(expect.arrayContaining([second, third]))
-      expect(askedQuestionSets[1]).not.toContain(applied)
+      expect(provider).toHaveBeenCalledTimes(1)
+      expect(agentTurn).toHaveBeenCalledTimes(1)
+      const offered = JSON.stringify(agentTurn.mock.calls[0]![1].messages[0])
+      expect(offered).toContain(second)
+      expect(offered).toContain(third)
+      expect(offered).not.toContain(applied)
       expect(await readLiveSubjectTopicIds(fixture.subject)).toEqual([applied, second].toSorted())
       expect(await agentRuns(fixture)).toMatchObject([
         { provider_attempts_started: 1, completed_at: expect.any(Date) },
@@ -197,17 +213,19 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
       await expect(dispatched.run()).resolves.toEqual({ kind: 'replay' })
       await expect(dispatched.run()).resolves.toEqual({ kind: 'replay' })
 
-      expect(provider).toHaveBeenCalledTimes(2)
+      expect(agentTurn).toHaveBeenCalledTimes(1)
       expect(await readLiveSubjectTopicIds(fixture.subject)).toEqual(added)
       expect(await agentRuns(fixture)).toMatchObject([{ provider_attempts_started: 1 }])
     })
 
     it('ends at the attempt cap and never reaches the provider again, leaving C6’s tags alone', async () => {
       const fixture = await followedFixture(create)
-      const { applied } = { applied: fixture.topics[0]!.id }
+      const applied = fixture.topics[0]!.id
       await (await tagWith(fixture, [applied])).run()
       const dispatched = await dispatchAgentRun(fixture)
-      provider.mockRejectedValue(new Error('provider unreachable'))
+      agentTurn.mockRejectedValue(
+        new ModelProviderError('server-error', 'provider unreachable', { retryClass: 'transient' }),
+      )
       const attempt = () =>
         processClassifierRun(classifierRunJobFor(dispatched.data)).then(
           result => result.kind,
@@ -218,7 +236,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
       for (let tries = 0; tries <= CLASSIFIER_RUN_ATTEMPTS; tries += 1)
         outcomes.push(await attempt())
 
-      expect(provider).toHaveBeenCalledTimes(1 + CLASSIFIER_RUN_ATTEMPTS)
+      expect(agentTurn).toHaveBeenCalledTimes(CLASSIFIER_RUN_ATTEMPTS)
       expect(outcomes.at(-1)).toBe('terminal')
       expect(await agentRuns(fixture)).toMatchObject([
         {
@@ -237,7 +255,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
 
     const { id } = fixture.post
     expect(await findAiUsageRecordForPost(id, AUTOTAGGER_AGENT_SLUG)).toMatchObject({
-      input_tokens: 12,
+      input_tokens: 100,
     })
     expect(await findAiUsageRecordForPost(id, 'autotagger')).toMatchObject({ input_tokens: 12 })
   })

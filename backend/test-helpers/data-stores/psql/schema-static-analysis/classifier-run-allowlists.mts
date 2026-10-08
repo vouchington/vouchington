@@ -5,6 +5,10 @@ export const CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT = new Map<string, string>(
     'Insert-only child of classifier_runs captured with the run at reservation; its timing is the run lifecycle.',
   ],
   [
+    'autotagger_agent_run_topics',
+    'Insert-only child of classifier_runs written with the run outcome; its timing is the run lifecycle.',
+  ],
+  [
     'post_classifier_local_outcomes',
     'Insert-only 1:1 child of classifier_runs keyed by run_id; the outcome is written during the run and its timing is the run lifecycle.',
   ],

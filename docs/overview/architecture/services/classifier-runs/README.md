@@ -274,8 +274,11 @@ requests per classifier.
 - **Diagnostic counters.** The job figures are the durable ones: requests per classifier (request
   rows created in the window), attempts and retries per run, and sweep enqueues that added a job.
   They describe work, not value, and are never a KPI. Queue job counts in Valkey are not durable, so the report does not read them.
-- **Reasoning-agent residual calls.** The reasoning pass (C7) is a classifier of its own, so its
-  provider calls, tokens, cost and requests are a group beside the first stage's.
+- **Reasoning-agent turns.** The reasoning pass (C7) is an agent classifier of its own (primitive
+  `agent`, no batch or prompt version): its provider, model, tokens, cost and requests are a group
+  beside the first stage's, read from the ledger rows its turns billed. It bills once per model turn,
+  so the report counts its runs, billed turns and most turns in one run (`agentRuns`,
+  `agentTurns`, `maxAgentTurnsPerRun`) and leaves it out of the one-billed-call KPI below.
 - **No savings.** The report computes none. A before and after comparison of fan-out is the
   consumer's, from two windows of measured runs, and a figure with no measured baseline is reported
   as unmeasured.

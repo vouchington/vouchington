@@ -183,6 +183,7 @@
 - `noul`
 - `choice`
 - `score`
+- `agent`
 
 ## `classifier_run_terminal_failure_kinds`
 

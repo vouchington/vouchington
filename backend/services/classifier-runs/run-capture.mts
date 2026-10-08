@@ -1,11 +1,10 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { capturedCandidateKind } from './remote-plan.mts'
+import { runCapturedCandidateKind } from './remote-plan.mts'
 import type {
   ClassifierRunAdapter,
   ClassifierRunSubject,
   CurrentClassifierRunInput,
-  RemotePlan,
   ResolvedClassifierRun,
   StoryRunCandidate,
 } from './types.mts'
@@ -73,7 +72,7 @@ async function prepareClassifierRunCandidates<C, L, E>(
   if (!current) return null
   if (adapter.ready && !(await adapter.ready(write, subject, current))) return null
   const resolved = await adapter.resolve(subject, current, write)
-  const kind = capturedCandidateKind(resolved?.remote)
+  const kind = resolved ? runCapturedCandidateKind(resolved) : null
   if (!resolved || !kind) return null
   if (await hasClassifierRunReceipt(write, adapter.slug, subject, current, resolved)) return null
   return {
@@ -98,8 +97,9 @@ export async function captureRunCandidates<C, L, E>(
   resolved: ResolvedClassifierRun<C>,
   prepared: PreparedClassifierCandidates | null,
 ): Promise<CapturedCandidates | null | typeof PREPARE_AGAIN> {
-  if (!capturedCandidateKind(resolved.remote)) return NO_CAPTURED_CANDIDATES
-  requireCaptureHook(adapter, resolved.remote)
+  const kind = runCapturedCandidateKind(resolved)
+  if (!kind) return NO_CAPTURED_CANDIDATES
+  requireCaptureHook(adapter, kind)
   if (await hasClassifierRunReceipt(query, adapter.slug, subject, current, resolved)) {
     return NO_CAPTURED_CANDIDATES
   }
@@ -134,10 +134,9 @@ async function searchCandidates<C, L, E>(
 
 function requireCaptureHook<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
-  remote: RemotePlan | null,
+  kind: 'topic' | 'story',
 ): void {
-  const hook =
-    remote?.candidateKind === 'story' ? adapter.captureStoryCandidates : adapter.captureCandidates
+  const hook = kind === 'story' ? adapter.captureStoryCandidates : adapter.captureCandidates
   if (!hook)
     throw new Error(`Classifier ${adapter.slug} captures candidates without a capture hook`)
 }

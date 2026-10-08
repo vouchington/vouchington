@@ -119,6 +119,51 @@ describe('callRecordingModelUsage for Anthropic', () => {
     }
   })
 
+  it('latches the request day when the caller’s deadline aborts a request that was sent', async () => {
+    const { record, alarm, latch, deps } = setup()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-07T12:00:00.000Z'))
+    try {
+      const controller = new AbortController()
+      const aborted = new DOMException('The operation was aborted.', 'AbortError')
+
+      await expect(
+        callRecordingModelUsage(
+          () => {
+            controller.abort()
+            return Promise.reject(aborted)
+          },
+          { ...anthropic, signal: controller.signal },
+          deps,
+        ),
+      ).rejects.toBe(aborted)
+
+      expect(latch).toHaveBeenCalledExactlyOnceWith({
+        requestDay: '2026-10-07',
+        source: 'unknown_billed_attempt',
+      })
+      expect(record).not.toHaveBeenCalled()
+      expect(alarm).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not latch a failure that is not an abort when the deadline has not passed', async () => {
+    const { latch, deps } = setup()
+    const failure = new Error('bug')
+
+    await expect(
+      callRecordingModelUsage(
+        () => Promise.reject(failure),
+        { ...anthropic, signal: new AbortController().signal },
+        deps,
+      ),
+    ).rejects.toBe(failure)
+
+    expect(latch).not.toHaveBeenCalled()
+  })
+
   it('rethrows a transient failure that did not bill without recording, alarming or latching', async () => {
     const { record, alarm, latch, deps } = setup()
     const error = providerError('overloaded', { retryClass: 'transient', status: 529 })

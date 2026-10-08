@@ -46,11 +46,30 @@ worker as a queue job failure; a stuck or expired lease is cheap and safe to ret
 
 C7 is the second stage on the same lifecycle: a scoped reasoning pass for the topics that paying
 users follow. It runs only after C6 has completed for the subject's current content, and it is
-bounded and add-only. `agent-run.mts` (`executeAutotaggerAgentRun`) shares `topic-run.mts` (the
-revision check and shared executor call) with C6; `agent-run-input.mts` renders one question per
-topic the run captured, over the same sanitized subject state plus the topics C6 already applied.
-It is one structured provider call per subject and content version, not a tool loop.
+bounded and add-only. It is not a Jev classifier: a bounded tool-using agent runs on the
+[model provider layer](../../backend/modules/model-providers/README.md) (Haiku 5.5 by default, switchable
+per service in `ai-model-routing`), and it answers with facts only. `agent-run.mts`
+(`executeAutotaggerAgentRun`) runs the leased run; `agent-loop.mts` is the loop, `agent-tools.mts`
+its two tools and `agent-instructions.mts` the prompt.
 
+- **The agent:** each turn the model must call a tool. `search_topics` looks topics up by text
+  (marking which hits are candidates); `submit_topics` ends the run with the candidate ids that are
+  true of the content, or an empty list. Submitted ids are checked against the run's captured
+  candidates, so nothing outside the set can be tagged. There is no probability, threshold,
+  negative vote or Jev model on C7's `classifiers` row: the seed inserts the row (primitive
+  `agent`) and no prompt version, and the instructions live in code.
+- **Bounds:** `agent_max_turns`, `agent_max_tool_calls` and `agent_max_output_tokens` in
+  `autotagger-paid-limits` (defaults in `limits-config.mts`). Running out of any of them, or repeating the same calls, ends
+  the run with no topics added (a bound is a stop, never a reason to guess); the output-token
+  figure is the total across turns and caps each turn at what is left. Tool calls past the bound
+  are refused with an instruction to submit.
+- **Spend and retries (D3):** the daily spend cap is checked before every turn, and every turn is a
+  ledger row attributed to the run. The provider attempt is reserved at the first turn only, after
+  the cap admitted it. A run retries only while no turn has billed: a transient failure on the
+  first turn releases the lease for a queue retry (within the attempt cap); once any turn has
+  billed, any failure (a provider error, a refusal or truncated turn, a breach of the spend cap,
+  the deadline) ends the run for good, so a retry can never bill earlier turns again. Persisted
+  facts short-circuit replays.
 - **Universe and bound:** the candidates are the topics followed by at least one paying user
   (`view_current_paid_memberships`, Plus or Pro; staff, system and deleted accounts and removed
   follows add nothing), minus every topic the subject already has a relation for (live or deleted),
@@ -70,9 +89,10 @@ It is one structured provider call per subject and content version, not a tool l
 - **Identity and spend:** it runs under the `autotagger-agent` classifier slug, billing workload
   and its own system actor (`getAutotaggerAgentSystemUserId()`), apart from C6, and shares C6's
   spend cap and operator kill switch (`getAutotaggerPaidLimitsFields().enabled`). Spend and retry
-  guarantees are C6's: one receipt per subject and content version, persisted outcomes short-circuit
-  replays, and a crash between the provider returning and persistence can spend again within the
-  attempt cap.
+  guarantees are the lifecycle's: one receipt per subject and content version, persisted outcomes
+  short-circuit replays, and a crash between the last turn and persistence can spend again within
+  the attempt cap. Its turns are billed per turn, not once per receipt, so the call-efficiency
+  report leaves it out of the one-billed-call KPI and reports its turns per run instead.
 
 ### Triggers
 

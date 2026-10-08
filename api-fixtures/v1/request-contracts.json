@@ -12841,7 +12841,7 @@
       "type": "string"
     },
     "ClassifierPrimitive": {
-      "enum": ["choice", "noul", "score"],
+      "enum": ["agent", "choice", "noul", "score"],
       "type": "string"
     },
     "ClassifierThresholdRevision": {

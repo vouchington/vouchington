@@ -131,3 +131,10 @@ export async function supersedeClassifierRunForTest(runId: string): Promise<void
     UPDATE classifier_runs SET superseded_at = clock_timestamp() WHERE id = ${runId}
   `)
 }
+
+/** Drops a run's captured candidates, as the cascade does when every one of its topics is deleted. */
+export async function removeCapturedTopicsForTest(runId: string): Promise<void> {
+  await write(sql`/* removeCapturedTopicsForTest */
+    DELETE FROM classifier_run_candidates WHERE run_id = ${runId}
+  `)
+}
