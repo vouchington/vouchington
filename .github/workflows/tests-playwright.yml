@@ -196,6 +196,9 @@ jobs:
         # tail on top of it. Merge-queue shards still recording passes were killed at 9 minutes
         # with ~50 tests left at ~80 passes per 2.5 minutes (#1185), so 12 covers that tail.
         # Assertion failures still fail the step.
+        # run-bounded kills the process group one minute under this ceiling. timeout-minutes did
+        # not: shard 5 stayed in this step until the 23-minute job cap and the log was dropped
+        # (run 37726973537, job 113148144881).
         timeout-minutes: 12
         env:
           GIT_COMMIT: ${{ github.sha }}
@@ -209,7 +212,7 @@ jobs:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
           set -euo pipefail
-          pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
+          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
           # trace.zip only for a test's first retry attempt, so its presence under
           # test-results/ is a direct signal that something retried in this shard —
