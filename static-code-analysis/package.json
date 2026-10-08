@@ -8,7 +8,6 @@
   "type": "module",
   "scripts": {},
   "dependencies": {
-    "@libpg-query/parser": "^18.0.0",
     "@typescript-eslint/parser": "^8.71.1",
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",

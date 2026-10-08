@@ -146,6 +146,19 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([])
   })
 
+  it('ignores unrelated ALTER TABLE operations beside monetary columns', async () => {
+    const errors: string[] = []
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      [
+        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code TEXT, note TEXT);',
+        'ALTER TABLE invoices DROP COLUMN note;',
+      ].join('\n'),
+      errors,
+    )
+    expect(errors).toEqual([])
+  })
+
   it('fails closed when a migration cannot be parsed', async () => {
     const errors: string[] = []
     await checkMonetaryMigration(
