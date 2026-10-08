@@ -48,6 +48,10 @@ creation joins admission's transaction, including the stored response and attemp
 after opening the case rolls back both writes. Critical alerts, judgement refresh, and integrity
 checks run only after the owning commit.
 
+`createModerationReport` accepts only `{ query }` for a caller-owned transaction. It constructs a
+fresh database options object containing that query when joining; extra own fields such as
+`client` and `readOnly` are rejected. With no query, the service owns a write transaction.
+
 ## Usage
 
 `parseCreateModerationReportInput` adapts Vouchington's `entityType`/`entityId` request shape to the

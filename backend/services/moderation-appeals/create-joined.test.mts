@@ -143,4 +143,21 @@ describe('createModerationAppeal inside the caller transaction', () => {
 
     expect(await countAppeals(appellant.id)).toBe(before)
   })
+
+  it('rejects client and readOnly fields without creating an appeal', async () => {
+    const before = await countAppeals(appellant.id)
+    const input = await banInput()
+    await using query = await beginTransaction()
+
+    for (const options of [
+      { query, client: query.client },
+      { query, readOnly: true },
+    ]) {
+      await expect(
+        createModerationAppeal(appellant, WEB_PROVENANCE, input, options),
+      ).rejects.toThrow('Only query is supported for moderation appeal creation')
+    }
+    await query.commit()
+    expect(await countAppeals(appellant.id)).toBe(before)
+  })
 })

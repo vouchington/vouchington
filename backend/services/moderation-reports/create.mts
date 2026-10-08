@@ -3,7 +3,6 @@ import {
   beginTransaction,
   registerPostCommitAction,
   withTransactionOptions,
-  type QueryOptions,
   type TransactionQuery,
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -36,15 +35,18 @@ type ReportablePostTargetRow = ReportablePostAccessInput & {
 }
 
 /**
- * Files a report and opens its case in one transaction. Joins `queryOptions.query` when supplied;
+ * Files a report and opens its case in one transaction. Joins `options.query` when supplied;
  * otherwise owns the transaction. Alerts and checks follow the owning commit.
+ * Only the caller's transaction query crosses this service boundary; unsupported option keys fail.
  */
 export async function createModerationReport(
   currentUserId: string,
   provenance: ContentProvenance,
   input: CreateModerationReportInput,
-  queryOptions?: QueryOptions,
+  options?: { query: TransactionQuery },
 ): Promise<CreateModerationReportResult> {
+  if (options && Reflect.ownKeys(options).some(key => key !== 'query'))
+    throw new TypeError('Only query is supported for moderation report creation')
   await assertReportableEntity(currentUserId, input)
 
   const run = async (query: TransactionQuery) => {
@@ -52,7 +54,7 @@ export async function createModerationReport(
     registerPostCommitAction(query, async () => notify(result.report))
     return result
   }
-  if (queryOptions?.query) return withTransactionOptions(queryOptions, run)
+  if (options?.query) return withTransactionOptions({ query: options.query }, run)
   await using query = await beginTransaction()
   const result = await run(query)
   await query.commit()
