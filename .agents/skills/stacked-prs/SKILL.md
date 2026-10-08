@@ -102,6 +102,30 @@ the stack into its one worktree:
      layer, `git branch -f <b> origin/<b>` on any other.
    - left count above `0` (ahead or diverged) — follow [Reading the four refs](../agent-workflow/git-and-prs.md#reading-the-four-refs) before rewriting or pushing. Do not open another pull request for this layer.
 
+### Submit and verify the remote stack
+
+A PR's base branch selects its comparison target; chaining base branches alone does not register a
+native GitHub stack. `gh stack init` and `add` record a local plan. Neither local tracking nor a
+successful PR creation proves that GitHub registered the stack.
+
+Once an authorized upper layer has committed, reviewable work and its before-push checks pass,
+submit the layers as drafts with `gh stack submit --auto` while the lower PR is still open.
+Do not wait for upper-layer CI or ready status to register the dependency. Do not create empty
+placeholder layers or start work held pending approval merely to preserve a stack.
+
+After each submission or link, read every intended PR's `pulls/<N>.stack` and the single-stack
+endpoint below. Require the same stack number, the intended bottom-to-top order, and the expected
+bases. PR creation can succeed while stack registration fails; inspect both outcomes before
+reporting a native stack or starting its stack shepherd. Missing preview metadata leaves membership
+unknown; report that limitation and do not infer success from local tracking.
+
+If the lower PR merges before registration, GitHub can reject linking it as a merged layer.
+Re-read the forge, fetch current refs, and rebase the remaining work onto the updated `origin/main`
+without replaying the merged layer. Preserve any upper PR already created. Register multiple
+remaining open layers as a stack; shepherd a single remaining PR individually. Report the result as
+sequential PRs when no remote stack was registered. Do not recreate the merged bottom PR or use
+manual base chaining as a substitute for native registration.
+
 ### Lower-layer review fix
 
 Check out the layer that owns the change, commit there, then `gh stack rebase --upstack` and
@@ -160,8 +184,10 @@ The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn 
 
 ### A. Establish scope
 
-1. Resolve the stack: `gh api repos/{o}/{r}/pulls/<any-layer> --jq '.stack.number'`. Empty → not
-   stacked; this procedure does not apply.
+1. Resolve the stack from `pulls/<any-layer>.stack`, retaining whether the field is present.
+   A stack object supplies its number; explicit `null` means no registered stack. A missing preview
+   field leaves membership unknown. Follow the submission recovery above for a failed registration;
+   do not interpret an empty `.stack.number` alone as proof that a PR is unstacked.
 2. Read topology from `repos/{o}/{r}/stacks/<n>` (ordered bottom→top). A `closed && merged_at == null`
    entry below an open one means the stack is **broken** — report to the human; never merge across it.
 3. **Partition by ownership**, applied to that topology read. Shepherd only PRs this agent owns; never
