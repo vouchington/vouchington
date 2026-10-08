@@ -11,7 +11,7 @@ export function useCopyrightIntakeEnvironment({ enabled = true } = {}): void {
     vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
     vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
     vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')

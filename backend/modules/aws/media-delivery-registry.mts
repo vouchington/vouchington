@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient, PutItemCommand, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
 import { randomUUID } from 'node:crypto'
+import { parseMediaDeliveryEdgeEnforcementMode } from '@ts-shared/url-signing'
 import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
 
 export type MediaDeliveryRegistryState = 'allow' | 'withheld'
@@ -68,10 +69,14 @@ export async function invalidateMediaDeliveryPath(
   )
 }
 
-export function isMediaDeliveryEdgeEnforcementEnabled(
+export function getMediaDeliveryEdgeEnforcementMode(
   env: NodeJS.ProcessEnv = process.env,
-): boolean {
-  return env.MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED === 'true'
+): 'off' | 'report' | 'enforce' {
+  const mode = parseMediaDeliveryEdgeEnforcementMode(env)
+  if (mode !== 'off' && !isMediaDeliveryRegistryPublicationEnabled(env)) {
+    throw new Error('Media delivery report and enforcement require registry publication')
+  }
+  return mode
 }
 
 export function isMediaDeliveryRegistryPublicationEnabled(
@@ -88,7 +93,7 @@ export function assertMediaDeliveryLegalEnforcementEnabled(
   env: NodeJS.ProcessEnv = process.env,
 ): void {
   if (
-    !isMediaDeliveryEdgeEnforcementEnabled(env) ||
+    getMediaDeliveryEdgeEnforcementMode(env) !== 'enforce' ||
     !isMediaDeliveryRegistryPublicationEnabled(env)
   ) {
     throw new Error(

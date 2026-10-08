@@ -65,7 +65,6 @@ describe('environment contract', () => {
   it('assigns every media-delivery variable to both API and worker tasks as internal infra config', () => {
     const names = [
       'MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED',
-      'MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED',
       'MEDIA_DELIVERY_REGISTRY_TABLE',
       'MEDIA_DELIVERY_REGISTRY_REGION',
       'MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID',
@@ -79,6 +78,20 @@ describe('environment contract', () => {
         }),
       ])
     }
+    expect(envContractsByName().get('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceOfTruth: 'vouchington-infra',
+          sensitivity: 'internal',
+          surfaces: ['ecs-backend-environment', 'ecs-worker-environment'],
+        }),
+        expect.objectContaining({
+          sourceOfTruth: 'vouchington-infra',
+          sensitivity: 'internal',
+          surfaces: ['lambda-image-resize'],
+        }),
+      ]),
+    )
   })
 
   it('keeps public identifiers out of the secret sensitivity set', () => {

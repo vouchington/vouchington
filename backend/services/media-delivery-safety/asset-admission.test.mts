@@ -47,7 +47,7 @@ describe('asset admission root domain', () => {
 
   it('does not permit a later image root after preparing an empty-image author scope', async () => {
     const user = await createTestUserDirect()
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'false')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
     await using query = await beginTransaction()
     await lockActivePostAuthorImageAdmission(query, user.id, [])
     await expect(lockImageAssetAdmission([crypto.randomUUID()], query)).rejects.toThrow(

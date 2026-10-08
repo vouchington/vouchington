@@ -2318,6 +2318,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1

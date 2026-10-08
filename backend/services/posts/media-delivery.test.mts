@@ -12,7 +12,8 @@ describe('preparePostImageDeliveryMutation', () => {
     vi.unstubAllEnvs()
   })
 
-  it('returns without locking when edge enforcement is disabled', async () => {
+  it('returns without locking when edge enforcement is off', async () => {
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
     await expect(
       preparePostImageDeliveryMutation(
         {
@@ -25,7 +26,7 @@ describe('preparePostImageDeliveryMutation', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('locks and pre-denies attached images when edge enforcement is enabled', async () => {
+  it.each(['report', 'enforce'])('locks and pre-denies attached images in %s mode', async mode => {
     const user = await createTestUserDirect()
     const [postId, imageId] = await Promise.all([
       insertTestPost({
@@ -36,8 +37,11 @@ describe('preparePostImageDeliveryMutation', () => {
       }),
       insertTestImage(user.id),
     ])
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', mode)
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
+    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
     await using transaction = await beginTransaction()
     await expect(
       preparePostImageDeliveryMutation(transaction, {

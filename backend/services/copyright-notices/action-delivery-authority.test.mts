@@ -140,17 +140,17 @@ describe('copyright action persisted delivery authority', () => {
   })
 
   it.each([
-    'MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED',
-    'MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED',
-  ])('refuses restoration authority changes while %s is disabled', async key => {
+    ['MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false'],
+    ['MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off'],
+  ])('refuses restoration authority changes while %s is disabled', async (key, value) => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore({})
     const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     const placement = await getImagePlacementForCopyright(scene.target.placement_id)
-    vi.stubEnv(key, 'false')
+    vi.stubEnv(key, value)
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
-    ).rejects.toThrow('registry publication and edge enforcement')
+    ).rejects.toThrow('registry publication')
     const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     expect(after?.restrictions.find(row => row.id === scene.restriction.id)?.lifted_at).toEqual(
       before?.restrictions.find(row => row.id === scene.restriction.id)?.lifted_at,

@@ -4,7 +4,7 @@ import * as provider from '../modules/aws/media-delivery-registry.mts'
 /** Condition-enforcing external edge double; AWS command construction is tested by its module. */
 export function installTestMediaDeliveryEdge() {
   vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-  vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
+  vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
   vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-delivery-registry')
   vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
   vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')

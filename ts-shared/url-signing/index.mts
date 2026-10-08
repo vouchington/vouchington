@@ -11,8 +11,13 @@ export {
   isPlacementSourcePolicy,
   isRemovedSideloadRoute,
   normalizeMediaHostname,
+  parseMediaDeliveryEdgeEnforcementMode,
 } from './media-source-policy.mts'
-export type { DependencyAuthorization, PlacementSourcePolicy } from './media-source-policy.mts'
+export type {
+  DependencyAuthorization,
+  MediaDeliveryEdgeEnforcementMode,
+  PlacementSourcePolicy,
+} from './media-source-policy.mts'
 
 export const SIDELOAD_SIGNING_KEYS_ENV = 'VOUCHA_SIDELOAD_SIGNING_KEYS'
 

@@ -7,7 +7,7 @@ import { getCopyrightActionDeliveryDependencies } from './action-delivery-depend
 const completeEnvironment: NodeJS.ProcessEnv = {
   COPYRIGHT_INTAKE_ENABLED: 'true',
   MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID: 'distribution-id',
-  MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED: 'true',
+  MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce',
   MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED: 'true',
   MEDIA_DELIVERY_REGISTRY_REGION: 'us-east-1',
   MEDIA_DELIVERY_REGISTRY_TABLE: 'media-delivery-registry',
@@ -20,7 +20,7 @@ describe('copyright intake activation', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('refuses a legal edge action when publication is disabled', async () => {
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'false')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
     const publish = getCopyrightActionDeliveryDependencies({}).prepublishImagePlacementDenial
     await expect(
@@ -35,8 +35,17 @@ describe('copyright intake activation', () => {
     ).rejects.toThrow('Media delivery enforcement requires both registry publication')
   })
 
+  it('refuses copyright intake in report mode', () => {
+    expect(() =>
+      assertCopyrightIntakeEnabled({
+        ...completeEnvironment,
+        MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'report',
+      }),
+    ).toThrow('Copyright media delivery enforcement is not configured')
+  })
+
   it('keeps injected edge publishers usable in isolated action tests', async () => {
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'false')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'off')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
     const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const dependencies = getCopyrightActionDeliveryDependencies({
@@ -58,7 +67,7 @@ describe('copyright intake activation', () => {
   })
 
   it.each([
-    'MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED',
+    'MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE',
     'MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED',
     'MEDIA_DELIVERY_REGISTRY_TABLE',
     'MEDIA_DELIVERY_REGISTRY_REGION',

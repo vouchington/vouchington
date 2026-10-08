@@ -30,7 +30,7 @@ describe('delegated thread fences and ordinary foreign-key inserts', () => {
     })
     const imageId = await insertTestImage(user.id)
     await insertTestPostImage({ postId: root, imageId })
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
     const result = await withConcurrentMediaThenPublicationFenceForTest(root, imageId, () =>
       callStructuredMcpTool(

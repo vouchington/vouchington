@@ -7,6 +7,7 @@ import {
   isFirstPartyMediaUrl,
   isPlacementSourcePolicy,
   isRemovedSideloadRoute,
+  parseMediaDeliveryEdgeEnforcementMode,
 } from './media-source-policy.mts'
 
 describe('media source policy', () => {
@@ -47,6 +48,18 @@ describe('media source policy', () => {
     expect(authorizeDependencyStates(['allow'])).toBe('allow')
     expect(authorizeDependencyStates(['allow', 'withheld'])).toBe('deny')
     expect(authorizeDependencyStates(['unknown'])).toBe('deny')
+  })
+
+  it('parses the edge enforcement mode and rejects unknown values', () => {
+    expect(parseMediaDeliveryEdgeEnforcementMode({})).toBe('off')
+    for (const mode of ['off', 'report', 'enforce']) {
+      expect(
+        parseMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: mode }),
+      ).toBe(mode)
+    }
+    expect(() =>
+      parseMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'true' }),
+    ).toThrow('Invalid MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE')
   })
 
   it('blocks configured image origins and ignores an unparsable host alias', () => {

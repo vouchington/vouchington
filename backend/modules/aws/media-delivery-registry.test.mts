@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assertMediaDeliveryLegalEnforcementEnabled,
   getMediaDeliveryRegistryRegion,
-  isMediaDeliveryEdgeEnforcementEnabled,
+  getMediaDeliveryEdgeEnforcementMode,
   isMediaDeliveryRegistryPublicationEnabled,
   putMediaDeliveryRegistryRecord,
 } from './media-delivery-registry.mts'
@@ -24,11 +24,31 @@ describe('media delivery registry AWS boundary', () => {
     ).toBe('us-east-1')
   })
 
-  it('only activates when the publisher, edge, and all edge authority configuration agree', () => {
-    expect(isMediaDeliveryEdgeEnforcementEnabled({})).toBe(false)
+  it('requires publication for report and enforce modes', () => {
+    expect(getMediaDeliveryEdgeEnforcementMode({})).toBe('off')
     expect(
-      isMediaDeliveryEdgeEnforcementEnabled({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED: 'true' }),
-    ).toBe(true)
+      getMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'off' }),
+    ).toBe('off')
+    for (const mode of ['report', 'enforce']) {
+      expect(() =>
+        getMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: mode }),
+      ).toThrow('registry publication')
+      expect(
+        getMediaDeliveryEdgeEnforcementMode({
+          MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: mode,
+          MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED: 'true',
+          MEDIA_DELIVERY_REGISTRY_TABLE: 'media-registry',
+          MEDIA_DELIVERY_REGISTRY_REGION: 'us-east-1',
+          MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID: 'distribution',
+        }),
+      ).toBe(mode)
+    }
+    expect(() =>
+      getMediaDeliveryEdgeEnforcementMode({ MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'invalid' }),
+    ).toThrow('Invalid MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE')
+  })
+
+  it('only activates legal actions when the publisher, edge, and all edge authority configuration agree', () => {
     expect(() =>
       isMediaDeliveryRegistryPublicationEnabled({
         MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED: 'true',
@@ -52,7 +72,7 @@ describe('media delivery registry AWS boundary', () => {
     ).toThrow('registry publication and edge enforcement')
     expect(() =>
       assertMediaDeliveryLegalEnforcementEnabled({
-        MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED: 'true',
+        MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE: 'enforce',
         MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED: 'true',
         MEDIA_DELIVERY_REGISTRY_TABLE: 'media-registry',
         MEDIA_DELIVERY_REGISTRY_REGION: 'us-east-1',
