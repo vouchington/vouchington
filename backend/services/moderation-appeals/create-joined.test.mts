@@ -157,6 +157,7 @@ describe('createModerationAppeal inside the caller transaction', () => {
         createModerationAppeal(appellant, WEB_PROVENANCE, input, options),
       ).rejects.toThrow('Only query is supported for moderation appeal creation')
     }
+    await query.commit()
     expect(await countAppeals(appellant.id)).toBe(before)
   })
 })

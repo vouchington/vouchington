@@ -45,6 +45,7 @@ describe('createModerationReport database options', () => {
         createModerationReport(reporter.id, WEB_PROVENANCE, input, options),
       ).rejects.toThrow('Only query is supported for moderation report creation')
     }
+    await query.commit()
     expect(await countTestModerationReportsByReporter(reporter.id)).toBe(before)
   })
 })
