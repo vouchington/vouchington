@@ -1,4 +1,4 @@
-import { withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import { read, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   electedRelationMetadata,
@@ -13,6 +13,28 @@ export type RetainedRelationIdentityCleanupPage = {
 }
 
 export type RetainedRelationIdentityKey = { subjectId: string; relationId: string }
+
+export type RetainedRelationCleanupCursor = {
+  entity_relation: string
+  cursor_subject_id: string | null
+  cursor_relation_id: string | null
+}
+
+/** Reads the finite family cursor inventory without changing worker progress. */
+export async function readRetainedRelationCleanupCursors(): Promise<
+  RetainedRelationCleanupCursor[]
+> {
+  const { rows } = await read<RetainedRelationCleanupCursor>(
+    `/* readRetainedRelationCleanupCursors */
+     SELECT entity_relation, cursor_subject_id, cursor_relation_id
+     FROM retained_relation_identity_cleanup_cursors
+     ORDER BY entity_relation LIMIT $1`,
+    [electedRelationMetadata.length + 1],
+  )
+  if (rows.length > electedRelationMetadata.length)
+    throw new Error('Retained relation cleanup cursor inventory exceeds the elected family count')
+  return rows
+}
 
 /** Each elected relation has a separate bounded cursor and transaction. */
 export async function cleanupRetainedRelationIdentities(

@@ -1,21 +1,11 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
-import { read } from '@data-stores/psql'
-import { electedRelationMetadata } from '../../services/users/relation-impact-targets.mts'
-import { cleanupRetainedRelationIdentities } from '../../services/data-retention/cleanup-retained-relation-identities.mts'
-
-async function cursorRows() {
-  return (
-    await read<{
-      entity_relation: string
-      cursor_subject_id: string | null
-      cursor_relation_id: string | null
-    }>(
-      'SELECT entity_relation, cursor_subject_id, cursor_relation_id FROM retained_relation_identity_cleanup_cursors ORDER BY entity_relation',
-    )
-  ).rows
-}
+import { electedRelationMetadata } from '@services/users/relation-impact-targets'
+import {
+  cleanupRetainedRelationIdentities,
+  readRetainedRelationCleanupCursors,
+} from '@services/data-retention/cleanup-retained-relation-identities'
 
 const receipt: Record<string, unknown> = { state: 'started', stage: 'resource-boundary' }
 let failed = false
@@ -27,7 +17,7 @@ try {
     'Fresh-bootstrap acceptance requires the job-owned CI PostgreSQL service',
   )
   receipt.stage = 'before'
-  const before = await cursorRows()
+  const before = await readRetainedRelationCleanupCursors()
   receipt.before = before
   assert.deepEqual(before, [], 'Bootstrap cursors must be empty; never clear an existing database')
   const names = electedRelationMetadata.map(row => row.table_name)
@@ -48,7 +38,7 @@ try {
   const created = await cleanupRetainedRelationIdentities()
   receipt.created = created
   receipt.stage = 'after-create-read'
-  const after = await cursorRows()
+  const after = await readRetainedRelationCleanupCursors()
   receipt.after = after
   receipt.stage = 'after-create-assert'
   assert.deepEqual(created, expectedPages)
@@ -57,7 +47,7 @@ try {
   const replayed = await cleanupRetainedRelationIdentities()
   receipt.replayed = replayed
   receipt.stage = 'after-replay-read'
-  const replay = await cursorRows()
+  const replay = await readRetainedRelationCleanupCursors()
   receipt.replay = replay
   receipt.stage = 'after-replay-assert'
   assert.deepEqual(replayed, expectedPages)
