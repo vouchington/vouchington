@@ -1,7 +1,8 @@
-import { describe, it, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
+import { gatherVoteWeightFactors } from '@services/vote-weight/gather-factors'
 import type { PrivateUser } from '@services/users/types'
 
 describe('vote-weight', () => {
@@ -16,7 +17,7 @@ describe('vote-weight', () => {
       createTestUser({ administrator: false }),
       createTestUserDirect({ username }),
     ])
-  }, 60_000)
+  }, 5_000)
 
   describe('PUT /api/v1/users/:userId/vote-weight', () => {
     it('returns 401 without authentication', async () => {
@@ -43,6 +44,9 @@ describe('vote-weight', () => {
         .put(`/api/v1/users/${targetUser.id}/vote-weight`)
         .send({ weight: 2.5 })
         .expect(204)
+      const factors = await gatherVoteWeightFactors(targetUser.id, { readFromWriter: true })
+      expect(factors?.current_weight).toBe(2.5)
+      expect(factors?.vote_weight_admin_set_at).not.toBeNull()
     })
 
     it('returns 400 for negative weight', async () => {
@@ -79,7 +83,15 @@ describe('vote-weight', () => {
     it('returns 204 for admin', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
+      await request
+        .put(`/api/v1/users/${targetUser.id}/vote-weight`)
+        .send({ weight: 2.5 })
+        .expect(204)
+      const before = await gatherVoteWeightFactors(targetUser.id, { readFromWriter: true })
+      expect(before).toMatchObject({ vote_weight_admin_set_at: expect.any(Date) })
       await request.delete(`/api/v1/users/${targetUser.id}/vote-weight`).expect(204)
+      const after = await gatherVoteWeightFactors(targetUser.id, { readFromWriter: true })
+      expect(after).toMatchObject({ vote_weight_admin_set_at: null })
     })
   })
 })
