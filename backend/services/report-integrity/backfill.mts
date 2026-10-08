@@ -18,21 +18,29 @@ export type PendingReportEntity = {
  * resolved reports are excluded. For posts, JOINs to `posts` to distinguish
  * post vs comment (same FK column).
  */
-export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator<
-  PendingReportEntity[],
-  void,
-  unknown
-> {
+export async function* streamEntitiesWithPendingReportsBatches(
+  target?: PendingReportEntity,
+): AsyncGenerator<PendingReportEntity[], void, unknown> {
   const BACKFILL_BATCH_SIZE = getReportIntegrityWorkLimit('backfill_batch_size')
   let batch: PendingReportEntity[] = []
   const windowStartId = getMinUUIDv7ForDate(
     new Date(Date.now() - MASS_REPORT_WINDOW_MINUTES * 60 * 1000),
   )
-  for await (const row of createAsyncGeneratorFromCursor<{
-    entity_type: string
-    entity_id: string
-  }>(
-    sql`/* streamEntitiesWithPendingReportsBatches */
+  // A known-entity recovery narrows each branch before grouping, never after a global scan.
+  const postFilter = target
+    ? sql`AND mr.post_id = ${target.entityId}::uuid
+        AND ${target.entityType}::text = CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END`
+    : sql``
+  const userFilter = target
+    ? sql`AND mr.reported_user_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'user'`
+    : sql``
+  const hostnameFilter = target
+    ? sql`AND mr.hostname_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'url_hostname'`
+    : sql``
+  const rssFilter = target
+    ? sql`AND mr.rss_feed_item_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'rss_feed_item'`
+    : sql``
+  const query = sql`/* streamEntitiesWithPendingReportsBatches */
     SELECT entity_type, entity_id FROM (
       SELECT
         CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END AS entity_type,
@@ -42,6 +50,10 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
       WHERE mr.post_id IS NOT NULL
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}
+      `
+  query
+    .append(postFilter)
+    .append(sql`
       GROUP BY mr.post_id, p.post_type
       HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
 
@@ -53,6 +65,9 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
       WHERE mr.reported_user_id IS NOT NULL
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}
+      `)
+    .append(userFilter)
+    .append(sql`
       GROUP BY mr.reported_user_id
       HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
 
@@ -64,6 +79,9 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
       WHERE mr.hostname_id IS NOT NULL
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}
+      `)
+    .append(hostnameFilter)
+    .append(sql`
       GROUP BY mr.hostname_id
       HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
 
@@ -75,11 +93,16 @@ export async function* streamEntitiesWithPendingReportsBatches(): AsyncGenerator
       WHERE mr.rss_feed_item_id IS NOT NULL
         AND mr.reviewed_at IS NULL
         AND mr.id >= ${windowStartId}
+      `)
+    .append(rssFilter).append(sql`
       GROUP BY mr.rss_feed_item_id
       HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-    ) sub`,
-    { batchSize: BACKFILL_BATCH_SIZE },
-  )) {
+    ) sub `)
+  if (target) query.append(sql`LIMIT 1`)
+  for await (const row of createAsyncGeneratorFromCursor<{
+    entity_type: string
+    entity_id: string
+  }>(query, { batchSize: BACKFILL_BATCH_SIZE })) {
     batch.push({ entityType: row.entity_type, entityId: row.entity_id })
     if (batch.length >= BACKFILL_BATCH_SIZE) {
       /* v8 ignore start -- batch-full flush; requires seeding 500+ entities */
