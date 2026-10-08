@@ -16,7 +16,7 @@ describe('GET /api/v1/urls/:id/crawls cursor scope', () => {
   beforeAll(async () => {
     paidUser = await createTestUser()
     await createTestMembership({ user_id: paidUser.id, plan: 'pro' })
-  }, 60_000)
+  }, 5_000)
 
   it('rejects a paid crawl cursor replayed against a different URL', async () => {
     const random = Math.random().toString(36).slice(2, 8)
