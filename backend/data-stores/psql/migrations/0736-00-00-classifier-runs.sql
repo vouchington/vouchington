@@ -233,6 +233,13 @@ CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
 CREATE INDEX IF NOT EXISTS idx_post_classifier_local_outcomes__local_topic
   ON post_classifier_local_outcomes (local_topic_id, run_id);
 
+COMMENT ON TABLE autotagger_agent_run_topics IS
+  'C7 answer: the captured candidate topics the run''s tool-using agent reported as true of the subject; facts only, so a row is the whole answer and a topic it left out has no row.';
+COMMENT ON COLUMN autotagger_agent_run_topics.run_id IS
+  'C7 classifier run that owns the answer; deleting the run removes it.';
+COMMENT ON COLUMN autotagger_agent_run_topics.topic_id IS
+  'Topic the agent reported; always one of the run''s captured candidates, and deleting the topic removes the fact.';
+
 COMMENT ON TABLE classifier_runs IS
   'One classifier/subject/content/configuration run receipt shared by every fixed classifier; C3 and C4 retain remote results and votes.';
 COMMENT ON COLUMN classifier_runs.classifier_id IS
