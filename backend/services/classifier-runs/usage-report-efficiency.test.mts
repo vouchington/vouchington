@@ -170,6 +170,9 @@ describe('summarizeClassifierEfficiency (deterministic fixtures)', () => {
         latencyMsTotal: 400,
         latencySamples: 2,
         localDetectorRuns: 1,
+        agentRuns: 0,
+        agentTurns: 0,
+        maxAgentTurnsPerRun: 0,
       },
     ])
   })

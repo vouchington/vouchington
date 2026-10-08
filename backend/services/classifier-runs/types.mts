@@ -66,6 +66,13 @@ export type ResolvedClassifierRun<C> = {
   actorId: string
   /** Null for a local-only run, which never reserves a provider attempt. */
   remote: RemotePlan | null
+  /**
+   * Set for a run answered by a tool-using agent. It captures topic candidates when its receipt is
+   * reserved like a topic plan, but reserves no decision batch (so there is no jev model, threshold
+   * or probability): the agent's answer is the adapter's local outcome, and its provider attempts
+   * are reserved and capped like any other run's. Mutually exclusive with `remote`.
+   */
+  agent?: { candidateKind: 'topic' }
 }
 
 /** The subject's current content, read under the subject's own lock. */

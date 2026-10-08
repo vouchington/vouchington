@@ -7,7 +7,6 @@ import {
   type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import type { ClassifierModelProvider } from '@voucha/types'
-import { AUTOTAGGER_AGENT_SLUG } from '@voucha/types/entities/autotagger-agent'
 
 type AutotaggerProviderAttemptHook = NonNullable<StructuredDecisionAttemptHooks['beforeAttempt']>
 
@@ -26,7 +25,7 @@ type AutotaggerClientInput = {
 }
 
 /**
- * The seeded `tagging` and `autotagger-agent` classifiers are always `openrouter`. An operator
+ * The seeded `tagging` classifier is always `openrouter`. An operator
  * reconfiguring one to another provider gets no key source, so building the client throws and the
  * run ends through the shared client-unavailable path instead of spending or looping. An unset key
  * is rejected by the client.
@@ -69,16 +68,4 @@ export function createAutotaggerClient(
   options: AutotaggerClientOptions = {},
 ): StructuredDecisionClient {
   return createTopicClassifierClient('autotagger', input, options)
-}
-
-/**
- * The same client for the scoped reasoning autotagger (C7), with the same admission, reservation
- * and replay guarantees. Its usage is recorded under its own `autotagger-agent` workload, so its
- * spend is never attributed to the first stage; the global spend cap still applies to both.
- */
-export function createAutotaggerAgentClient(
-  input: AutotaggerClientInput,
-  options: AutotaggerClientOptions = {},
-): StructuredDecisionClient {
-  return createTopicClassifierClient(AUTOTAGGER_AGENT_SLUG, input, options)
 }

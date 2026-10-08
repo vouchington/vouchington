@@ -74,10 +74,14 @@ only once that subject's C6 run has completed. It differs only in these hooks:
   distance and cut to `AUTOTAGGER_AGENT_MAX_CANDIDATES` (10). Null settles the request as no work.
   It runs once at reservation, after C6 completed, and the ids are stored with the receipt; the set
   is not part of run identity, so one subject and content version costs one run.
-- **Configuration** (`agent/configuration.mts`) — the active `autotagger-agent` classifier and its
-  distinct system actor; the shared operator kill switch returns null (no work).
-- **Effects** (`agent/effects.mts`) — applies accepted topics with `applyTopicClassifierDecisionRelations`
-  in `addOnly` mode, voted by the C7 actor; relations C6 or a person wrote are never touched.
+- **Configuration** (`agent/configuration.mts`) — the active `autotagger-agent` classifier row and
+  its distinct system actor; the shared operator kill switch returns null (no work). It names no
+  prompt, model or threshold, and it sets `agent` instead of a remote plan, so the run captures
+  topic candidates like a topic plan but reserves no decision batch.
+- **Facts** (`agent/facts.mts`) — the run's local outcome: the captured candidates the agent
+  reported, kept in `autotagger_agent_run_topics` (a subset of `classifier_run_candidates`).
+- **Effects** (`agent/effects.mts`) — applies the reported topics with `applyTopicFactRelations`,
+  add-only and voted +1 by the C7 actor; relations C6 or a person wrote are never touched.
 - **Follow-on request** — C6's `applyAutotaggerEffects` calls `requestFollowOnClassifierRun` in the
   completion transaction, which writes C7's pending request for that content hash (it never re-arms
   a settled request).
@@ -89,9 +93,9 @@ only once that subject's C6 run has completed. It differs only in these hooks:
 - `candidates.mts` — `captureAutotaggerCandidateTopicIds`
 - `readiness.mts` — `hasCurrentAutotaggerEmbedding`, `autotaggerRequestEligibility`
 - `effects.mts` — `applyAutotaggerEffects`, `AutotaggerEffects`
-- `agent/adapter.mts` — `createAutotaggerAgentRunAdapter` (C7), with `agent/{candidates,readiness,configuration,effects}.mts`
+- `agent/adapter.mts` — `createAutotaggerAgentRunAdapter` (C7), with `agent/{candidates,readiness,configuration,facts,effects}.mts`
 - `limits-config.mts` — `autotaggerPaidLimitsConfig`, `getAutotaggerPaidLimitsFields`,
-  `AutotaggerPaidLimitsFields`
+  `AutotaggerPaidLimitsFields` (including C7's agent bounds)
 
 ## Architecture Notes
 

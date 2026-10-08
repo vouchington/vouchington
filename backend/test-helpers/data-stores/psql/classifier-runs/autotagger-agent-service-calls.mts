@@ -60,11 +60,12 @@ export function captureAutotaggerAgentCandidatesForTest(subject: ClassifierRunSu
   return captureAutotaggerAgentCandidateTopicIds(write, subject)
 }
 
-/** Applies a lease's effects with no remote decision persisted, in a transaction that rolls back. */
-export async function applyAutotaggerAgentEffectsWithoutDecisionForTest(
+/** Applies a lease's effects for the given reported topics, in a transaction that rolls back. */
+export async function applyAutotaggerAgentEffectsForTest(
   lease: Awaited<ReturnType<typeof claimAutotaggerAgentLease>>,
+  local: { topicIds: readonly string[] } | null,
 ) {
   const adapter = createAutotaggerAgentRunAdapter()
   await using query = await beginTransaction()
-  return await adapter.applyEffects(query, lease, { local: null, remoteDecision: null })
+  return await adapter.applyEffects(query, lease, { local, remoteDecision: null })
 }

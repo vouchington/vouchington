@@ -56,7 +56,13 @@ function listVersions(versions: readonly ClassifierContentVersionUsage[]): strin
 function verdict({
   maxProviderCallsPerRun,
   unfinishedRuns,
-}: Pick<ClassifierEfficiency, 'maxProviderCallsPerRun' | 'unfinishedRuns'>): string {
+  agentRuns,
+  runs,
+}: Pick<
+  ClassifierEfficiency,
+  'maxProviderCallsPerRun' | 'unfinishedRuns' | 'agentRuns' | 'runs'
+>): string {
+  if (agentRuns === runs && runs > 0) return 'not applicable (an agent bills once per bounded turn)'
   if (maxProviderCallsPerRun > 1) return 'BREACHED'
   if (unfinishedRuns === 0) return 'holds'
   return `INCONCLUSIVE (no breach so far, ${unfinishedRuns} unfinished runs can still call the provider)`
@@ -67,6 +73,18 @@ function cost({ costMicrounits, unpricedCalls }: ClassifierEfficiency): string {
   const total = dollars(costMicrounits)
   if (unpricedCalls === 0) return total
   return `at least ${total} (excludes ${unpricedCalls} unpriced billed calls)`
+}
+
+/** An agent classifier's runs, billed per model turn instead of once; empty for the others. */
+function describeAgent({
+  agentRuns,
+  agentTurns,
+  maxAgentTurnsPerRun,
+}: ClassifierEfficiency): string[] {
+  if (agentRuns === 0) return []
+  return [
+    `  agent runs ${agentRuns}, billed turns ${agentTurns} (${(agentTurns / agentRuns).toFixed(1)} per run), most turns in one run ${maxAgentTurnsPerRun}`,
+  ]
 }
 
 function describeClassifier(
@@ -84,6 +102,7 @@ function describeClassifier(
     `  attempts ${efficiency.attemptsStarted}, retries ${efficiency.retries}, attempts without a recorded response ${efficiency.attemptsWithoutRecordedResponse}`,
     `  cost ${cost(efficiency)}, latency ${latency(efficiency)}`,
     `  local detector runs (never billed): ${efficiency.localDetectorRuns}`,
+    ...describeAgent(efficiency),
     `  diagnostic only: ${requests} requested content versions, ${efficiency.sweepEnqueues} sweep re-enqueues of unfinished runs`,
   ]
 }

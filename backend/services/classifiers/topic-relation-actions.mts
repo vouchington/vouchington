@@ -117,7 +117,7 @@ export async function applyTopicClassifierDecisionRelations(
 }
 
 /** Casts each topic's score as the shared actor's vote on the subject's live relation, if any. */
-async function voteOnLiveRelations(
+export async function voteOnLiveRelations(
   query: OwnedTransaction,
   relation: Parameters<typeof castSubjectTopicRelationVotes>[1],
   sharedActorId: string,
@@ -138,7 +138,7 @@ async function voteOnLiveRelations(
   )
 }
 
-function resolveSubject(subject: PersistedClassifierDecision['subject']): {
+export function resolveSubject(subject: PersistedClassifierDecision['subject']): {
   type: 'post' | 'rss_feed_item'
   id: string
 } {

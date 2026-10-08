@@ -3,7 +3,7 @@
 -- configuration and result history independent of the agent tables retired by Epic A.
 
 DO $$ BEGIN
-CREATE TYPE classifier_primitives AS ENUM ('noul', 'choice', 'score');
+CREATE TYPE classifier_primitives AS ENUM ('noul', 'choice', 'score', 'agent');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

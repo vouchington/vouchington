@@ -27,15 +27,17 @@
     "@agents/classifier-runs": "workspace:^",
     "@agents/classifiers": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/model-providers": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
+    "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
-    "@services/ai-usage": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^",

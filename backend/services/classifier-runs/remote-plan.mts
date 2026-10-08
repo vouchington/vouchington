@@ -1,4 +1,4 @@
-import type { RemotePlan, TopicRemotePlan } from './types.mts'
+import type { RemotePlan, ResolvedClassifierRun, TopicRemotePlan } from './types.mts'
 
 /** True when the plan's topic candidates are captured at reservation instead of pinned. */
 export function capturesCandidates(
@@ -23,4 +23,11 @@ export function pinnedStoredCandidateIds(remote: RemotePlan): readonly string[] 
   return remote.candidateKind === 'topic'
     ? remote.candidates.map(candidate => candidate.candidateId)
     : []
+}
+
+/** The candidate kind a run captures when its receipt is reserved, counting an agent's topics. */
+export function runCapturedCandidateKind(
+  resolved: Pick<ResolvedClassifierRun<unknown>, 'remote' | 'agent'>,
+): 'topic' | 'story' | null {
+  return capturedCandidateKind(resolved.remote) ?? (resolved.agent ? 'topic' : null)
 }

@@ -30,6 +30,13 @@ export interface CallRecordingModelUsageParams {
   openaiTransport: OpenAITransport
   communityId?: string | null
   postId?: string | null
+  /** The classifier run whose agent made this call; its ledger row is attributed to the run. */
+  classifierRunId?: string
+  /**
+   * Runs after the spend-cap check and immediately before the request is dispatched, so a caller
+   * can reserve a durable provider attempt that a rejected admission never consumes.
+   */
+  beforeDispatch?: () => Promise<void>
 }
 
 type CallRecordingModelUsageDeps = {
@@ -67,10 +74,11 @@ export async function callRecordingModelUsage<T>(
   params: CallRecordingModelUsageParams,
   deps: CallRecordingModelUsageDeps = {},
 ): Promise<ModelCallResult<T>> {
-  const { agentSlug, selection, openaiTransport, communityId, postId } = params
+  const { agentSlug, selection, openaiTransport, communityId, postId, classifierRunId } = params
   const checkSpendCap = deps.assertDailySpendCapNotBreached ?? assertDailySpendCapNotBreached
   const breach = await checkSpendCap(agentSlug)
   if (breach) throw new SpendCapBreachError(breach)
+  await params.beforeDispatch?.()
   const requestStartedAt = new Date()
   const background =
     selection.provider === 'openai' && openaiTransport === 'direct'
@@ -90,6 +98,14 @@ export async function callRecordingModelUsage<T>(
       usage: billed.usage,
       registration: background?.getRegistration(),
       createdAt: requestStartedAt,
+      ...(classifierRunId
+        ? {
+            classifier: {
+              runId: classifierRunId,
+              latencyMs: Math.max(0, Date.now() - requestStartedAt.getTime()),
+            },
+          }
+        : {}),
     })
 
   let result: ModelCallResult<T>

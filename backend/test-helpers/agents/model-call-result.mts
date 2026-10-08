@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import type { AgentModelCaller } from '../../agents/_shared/call-agent-model.mts'
+import type { ToolCall, ToolTurnResult } from '../../modules/model-providers/tool-turn-types.mts'
 import type { ModelCallResult } from '../../modules/model-providers/types.mts'
 
 /**
@@ -72,3 +73,18 @@ export const ANTHROPIC_HAIKU_CALL = {
   selection: TEST_MODEL_SELECTION,
   openaiTransport: 'openrouter',
 } as const
+
+/** One billed tool-using turn: the tool calls the model made, priced like `makeModelCallResult`. */
+export function makeToolTurnResult(
+  toolCalls: readonly Omit<ToolCall, 'id'>[],
+  overrides: Partial<ToolTurnResult> = {},
+): ToolTurnResult {
+  return {
+    ...makeModelCallResult(null),
+    output: {
+      text: '',
+      toolCalls: toolCalls.map(call => ({ ...call, id: `call-${randomUUID()}` })),
+    },
+    ...overrides,
+  }
+}

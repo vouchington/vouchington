@@ -273,9 +273,15 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../../services/ai-usage
       '@services/autotagger':
         specifier: workspace:^
         version: link:../../services/autotagger
@@ -288,13 +294,13 @@ importers:
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
     devDependencies:
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
       '@services/classifiers':
         specifier: workspace:^
         version: link:../../services/classifiers

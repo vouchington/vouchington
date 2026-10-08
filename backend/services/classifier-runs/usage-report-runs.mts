@@ -45,6 +45,8 @@ type RunRow = {
   latency_milliseconds_total: number
   latency_milliseconds_max: number | null
   latency_samples: number
+  ledger_provider: string | null
+  ledger_model: string | null
   local_detector: string | null
 }
 
@@ -79,8 +81,9 @@ export async function readClassifierRunUsage(
       run.community_identity_id,
       run.decision_batch_id AS batch_id,
       batch.prompt_version_id,
-      prompt.model_provider::text AS provider,
-      prompt.model_name AS model,
+      -- An agent run has no prompt version: its provider and model are what the ledger billed.
+      COALESCE(prompt.model_provider::text, usage.ledger_provider) AS provider,
+      COALESCE(prompt.model_name, usage.ledger_model) AS model,
       batch.scope_category,
       batch.scope_community_id,
       (SELECT count(*)::int FROM classifier_decision_calls call
@@ -115,6 +118,8 @@ export async function readClassifierRunUsage(
       usage.latency_milliseconds_total,
       usage.latency_milliseconds_max,
       usage.latency_samples,
+      usage.ledger_provider,
+      usage.ledger_model,
       local_outcome.detector AS local_detector
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
@@ -131,7 +136,9 @@ export async function readClassifierRunUsage(
         COALESCE(sum(ledger.cost_microunits), 0)::text AS cost_microunits,
         COALESCE(sum(ledger.latency_milliseconds), 0)::float8 AS latency_milliseconds_total,
         max(ledger.latency_milliseconds) AS latency_milliseconds_max,
-        count(ledger.latency_milliseconds)::int AS latency_samples
+        count(ledger.latency_milliseconds)::int AS latency_samples,
+        min(ledger.model_provider::text) AS ledger_provider,
+        min(ledger.model) AS ledger_model
       FROM ai_usage_records ledger
       WHERE ledger.classifier_run_id = run.id AND ledger.id >= ${ledgerLowerBound}
     ) usage

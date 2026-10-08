@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { capturesCandidates } from './remote-plan.mts'
+import { runCapturedCandidateKind } from './remote-plan.mts'
 import {
   readClassifierRunCandidateTopicIds,
   readClassifierRunStoryCandidates,
@@ -47,9 +47,10 @@ export async function claimClassifierRun<C, L, E>(
       superseded_at = NULL
     WHERE id = ${input.runId}
   `)
-  const capturedTopicIds = capturesCandidates(resolved.remote)
-    ? await readClassifierRunCandidateTopicIds(query, input.runId)
-    : []
+  const capturedTopicIds =
+    runCapturedCandidateKind(resolved) === 'topic'
+      ? await readClassifierRunCandidateTopicIds(query, input.runId)
+      : []
   const capturedStoryCandidates =
     resolved.remote?.candidateKind === 'story'
       ? await readClassifierRunStoryCandidates(query, input.runId)
