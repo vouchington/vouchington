@@ -46,7 +46,7 @@ describe('vote route request contract validation', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-  }, 60_000)
+  }, 5_000)
 
   describe.each(voteWrites)('$name vote writes', entry => {
     it.each(methods)(
