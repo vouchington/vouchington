@@ -42170,6 +42170,32 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/oauth/authorization-requests/:id": {
+      "path": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/oauth/native-clients/:app": {
+      "path": {
+        "additionalProperties": false,
+        "properties": {
+          "app": {
+            "enum": ["ios", "macos", "windows"],
+            "type": "string"
+          }
+        },
+        "required": ["app"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/podcast-episodes/:id/chapters": {
       "path": {
         "properties": {
@@ -47270,6 +47296,30 @@
     "POST:/api/v1/my/spending-categories": {
       "body": {
         "$ref": "#/components/schemas/CreateSpendingCategoryRequest"
+      }
+    },
+    "POST:/api/v1/oauth/authorization-requests/:id/decisions": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": ["approve", "deny"],
+            "type": "string"
+          }
+        },
+        "required": ["decision"],
+        "type": "object"
+      },
+      "path": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
       }
     },
     "POST:/api/v1/posts": {
