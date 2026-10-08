@@ -13,7 +13,9 @@ import RewardsProgramsLoading from '@/app/(topics)/rewards-programs/loading'
 import SpendingCategoriesLoading from '@/app/(topics)/spending-categories/loading'
 import TopicsLoading from '@/app/(topics)/topics/loading'
 import VideosLoading from '@/app/(videos)/videos/loading'
+import ChannelsLoading from '@/app/channels/loading'
 import NewsLoading from '@/app/news/loading'
+import NewsSourcesLoading from '@/app/news-sources/loading'
 import { AsideSkeleton } from '@/components/asides/aside-skeleton'
 import { CommunitiesListSkeleton } from '@/components/communities/communities-list-skeleton'
 import { FeedSkeleton } from '@/components/feed/feed-skeleton'
@@ -22,6 +24,7 @@ import { NewsListSkeleton } from '@/components/news/news-list-skeleton'
 import { PageWithAside } from '@/components/page-with-aside'
 import { PodcastListSkeleton } from '@/components/podcasts/podcast-list-skeleton'
 import { PostListSkeleton } from '@/components/posts/post-list-skeleton'
+import { SourceListSkeleton } from '@/components/sources/source-list-skeleton'
 import { TopicListSkeleton } from '@/components/topics/topic-list-skeleton'
 import { UserProfileSkeleton } from '@/components/users/user-profile-skeleton'
 
@@ -47,6 +50,8 @@ const loadingBoundaries: Array<{
     skeleton: NewsListSkeleton,
   },
   { loading: PodcastsLoading, name: 'podcasts', showFooter: false, skeleton: PodcastListSkeleton },
+  { loading: ChannelsLoading, name: 'channels', skeleton: SourceListSkeleton },
+  { loading: NewsSourcesLoading, name: 'news sources', skeleton: SourceListSkeleton },
   { aside: AsideSkeleton, loading: PostsLoading, name: 'posts', skeleton: PostListSkeleton },
   { aside: AsideSkeleton, loading: StoriesLoading, name: 'stories', skeleton: PostListSkeleton },
   { aside: AsideSkeleton, loading: CardsLoading, name: 'cards', skeleton: TopicListSkeleton },
@@ -97,6 +102,7 @@ const skeletons: Array<{
   { component: NewsListSkeleton, count: 22, name: 'news list' },
   { component: PodcastListSkeleton, count: 9, name: 'podcast list' },
   { component: PostListSkeleton, count: 8, name: 'post list' },
+  { component: SourceListSkeleton, count: 14, name: 'source list' },
   { component: TopicListSkeleton, count: 18, name: 'topic list' },
   { component: UserProfileSkeleton, count: 8, name: 'user profile' },
 ]
