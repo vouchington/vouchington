@@ -23,8 +23,8 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       name: 'backend-openrouter',
       include: ['backend/**/*.openrouter.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 60_000,
-      hookTimeout: 60_000,
+      testTimeout: 30_000,
+      hookTimeout: 30_000,
     },
   },
   {
@@ -48,8 +48,8 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './test-helpers/vitest.setup.fork-leak-detection.mts',
       ],
-      testTimeout: 60_000,
-      hookTimeout: 60_000,
+      testTimeout: 30_000,
+      hookTimeout: 30_000,
     },
   },
   {
@@ -69,8 +69,8 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
         './test-helpers/vitest.setup.fork-leak-detection.mts',
       ],
-      testTimeout: 60_000,
-      hookTimeout: 60_000,
+      testTimeout: 30_000,
+      hookTimeout: 30_000,
     },
   },
   {
@@ -90,8 +90,8 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
         './test-helpers/vitest.setup.fork-leak-detection.mts',
       ],
-      testTimeout: 60_000,
-      hookTimeout: 60_000,
+      testTimeout: 30_000,
+      hookTimeout: 30_000,
     },
   },
   {

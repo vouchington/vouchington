@@ -73,8 +73,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       name: 'backend-contract-artifacts',
       include: ['backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 60_000,
-      hookTimeout: 60_000,
+      testTimeout: 30_000,
+      hookTimeout: 30_000,
     },
   },
   {

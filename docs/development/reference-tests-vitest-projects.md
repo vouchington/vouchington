@@ -16,6 +16,10 @@ matching) instead of a global snapshot of shared state. Measure a singleton ledg
 connection that locks that ledger row and performs the owned write. A `sequence.groupOrder` sequential barrier
 remains available for the rare case that genuinely cannot be made parallel-safe.
 
+Project test and hook budgets obey the [suite hard cap](tests.md#test-suite-rules).
+Enforcing that cap is separate from the five-second defaults rollout in #2149; it does not
+change server startup or transport deadlines.
+
 Every project must declare an explicit `testTimeout` and `hookTimeout`, enforced by
 `dev/vitest-config.test.mts`. Follow the [suite rules](tests.md#test-suite-rules) when choosing
 budgets for a new project or a per-test override. Existing project budgets are being reduced in
