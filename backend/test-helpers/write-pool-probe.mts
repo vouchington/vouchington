@@ -12,13 +12,28 @@ export async function withOnlyOneWritePoolClientAvailable<T>(
   callback: () => Promise<T>,
 ): Promise<T> {
   const clientsToHold = Math.max(0, (writePool.options.max ?? 1) - 1)
-  const heldClients = await Promise.all(
+  const acquired = await Promise.allSettled(
     Array.from({ length: clientsToHold }, () => writePool.connect()),
   )
-
+  const heldClients = acquired.flatMap(item => (item.status === 'fulfilled' ? [item.value] : []))
+  const failures: unknown[] = acquired.flatMap(item =>
+    item.status === 'rejected' ? [item.reason] : [],
+  )
+  let result: T | undefined
   try {
-    return await callback()
+    if (!failures.length) result = await callback()
+  } catch (err) {
+    failures.push(err)
   } finally {
-    for (const client of heldClients) client.release()
+    for (const client of heldClients) {
+      try {
+        client.release()
+      } catch (err) {
+        failures.push(err)
+      }
+    }
   }
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1) throw new AggregateError(failures, 'Write-pool probe and release failed')
+  return result as T
 }
