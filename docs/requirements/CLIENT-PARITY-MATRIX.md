@@ -154,8 +154,8 @@ The hosted OAuth consent screen always appears. Every mutating user-MCP tool req
 Free member's in-app agent receives read tools only; there is no native exception. Native app
 implementation is tracked by [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
-The approved MCP consolidation in [#2356](https://github.com/vouchington/vouchington/issues/2356)
-keeps the two OAuth resources. [#2431](https://github.com/vouchington/vouchington/issues/2431)
+The approved MCP consolidation in #2356
+keeps the two OAuth resources. #2431
 checks tool-local schema references and records client/model-context findings before production
 tool names or input envelopes change. [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
 tracks native adoption as a dependent of the producer: the approved mapping uses a closed
