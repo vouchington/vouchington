@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { acquireTestPostgresAdvisoryLock } from '@voucha/test-helpers/postgres-advisory-lock'
+import { withTestEntityReconciliationCheckpoint } from '@voucha/test-helpers/entities/entity-reconciliation-checkpoint'
 import {
   createTestPost,
   createTestUser,
@@ -36,22 +36,15 @@ async function* streamCompleteWindow(window: EntityReconciliationWindow) {
 
 describe('entity-listener reconciliation', () => {
   it('resumes from the durable checkpoint with overlap and replica-lag margin', async () => {
-    const lock = await acquireTestPostgresAdvisoryLock({
-      namespace: 2_135_043,
-      key: 1,
-      timeout: '20s',
-    })
-    try {
+    await withTestEntityReconciliationCheckpoint(async options => {
       const now = new Date()
-      const existing = await getEntityReconciliationWindow(3600, now)
+      const existing = await getEntityReconciliationWindow(3600, now, options)
       const completedThrough = new Date(existing.start.getTime() + 300_000 + 86_400_000)
-      await advanceEntityReconciliationCheckpoint(completedThrough)
-      const window = await getEntityReconciliationWindow(3600, now)
+      await advanceEntityReconciliationCheckpoint(completedThrough, options)
+      const window = await getEntityReconciliationWindow(3600, now, options)
       expect(window.end).toEqual(new Date(now.getTime() - 60_000))
       expect(window.start.getTime()).toBe(completedThrough.getTime() - 300_000)
-    } finally {
-      await lock.release()
-    }
+    })
   })
 
   it('streams active current-state entities in bounded batches', async () => {

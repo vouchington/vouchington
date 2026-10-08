@@ -1,4 +1,4 @@
-import { createAsyncGeneratorFromCursor, write } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor, write, type QueryOptions } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 
@@ -33,12 +33,16 @@ export type EntityReconciliationWindow = {
 export async function getEntityReconciliationWindow(
   intervalSeconds: number,
   now = new Date(),
+  options: QueryOptions = {},
 ): Promise<EntityReconciliationWindow> {
-  const { rows } = await write(sql`/* getEntityReconciliationWindow */
+  const { rows } = await write(
+    sql`/* getEntityReconciliationWindow */
     SELECT reconciled_through_at
     FROM entity_listener_reconciliation_cursors
     WHERE is_singleton
-  `)
+  `,
+    options,
+  )
   const end = new Date(now.getTime() - REPLICA_LAG_MARGIN_MS)
   const completedThrough = (rows[0] as { reconciled_through_at: Date } | undefined)
     ?.reconciled_through_at
@@ -146,8 +150,12 @@ function isPostContentChange(changes?: Record<string, unknown>): boolean {
   )
 }
 
-export async function advanceEntityReconciliationCheckpoint(completedThrough: Date): Promise<void> {
-  await write(sql`/* advanceEntityReconciliationCheckpoint */
+export async function advanceEntityReconciliationCheckpoint(
+  completedThrough: Date,
+  options: QueryOptions = {},
+): Promise<void> {
+  await write(
+    sql`/* advanceEntityReconciliationCheckpoint */
     INSERT INTO entity_listener_reconciliation_cursors (is_singleton, reconciled_through_at)
     VALUES (TRUE, ${completedThrough})
     ON CONFLICT (is_singleton) DO UPDATE
@@ -155,5 +163,7 @@ export async function advanceEntityReconciliationCheckpoint(completedThrough: Da
       entity_listener_reconciliation_cursors.reconciled_through_at,
       EXCLUDED.reconciled_through_at
     )
-  `)
+  `,
+    options,
+  )
 }

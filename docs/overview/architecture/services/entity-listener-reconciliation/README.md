@@ -17,3 +17,15 @@ tracked in [job replayability](../../../../requirements/platform/JOB-REPLAYABILI
 - `reconciliation.mts` derives overlap/lag-safe windows, streams candidate batches, and advances the
   monotonic checkpoint.
 - `reconciliation.test.mts` exercises the real PostgreSQL checkpoint and cursor boundary.
+
+## Transaction-scoped checkpoint diagnostics
+
+Window reads and checkpoint advancement accept the normal PostgreSQL `QueryOptions` so callers
+can join an existing transaction. Default worker calls keep their writer-backed, monotonic
+checkpoint behavior.
+
+The shared-database checkpoint test reserves the singleton row on one real transaction executor,
+seeding an absent row only inside that transaction. It runs both service operations, rolls back
+before releasing the reservation, and verifies that the durable checkpoint and update timestamp
+match their original state. Handler and distinct cleanup failures remain visible. The reservation
+does not reset committed recovery state or change the entity-listener worker's replay contract.
