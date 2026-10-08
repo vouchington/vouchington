@@ -16,11 +16,13 @@ spelling is preserved in JSON while job, input, secret, and output resolution fo
 case-insensitive semantics. Consumers that need graph traversal should import `ciTopology` and
 `createWorkflowTopologyIndex` from `'no-mistakes'`. Vitest tests must not call `ciTopology()` or [`loadRepoTopology()`](../../ci/repo-topology.mts).
 Live topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts)
-in static-code-analysis after `no-mistakes check`. Vitest tests must not spawn the `no-mistakes`
-CLI. [`ci/check-no-mistakes-test-policy.mts`](../../ci/check-no-mistakes-test-policy.mts) audits
-tracked tests and the ordered workflow commands in the same static-analysis job; its
-[`tiny fixture tests`](../../ci/no-mistakes-ci-contention.test.mts) exercise the policy without
-scanning the repository from Vitest. The independent live topology audit also requires that job
+in static-code-analysis after `no-mistakes check`. `forbidden-calls` rules in
+[`.no-mistakes.yml`](../../.no-mistakes.yml) reject live no-mistakes analysis calls from non-mock
+Vitest tests and `loadRepoTopology()` calls from every Vitest test. Vitest tests must not spawn the
+`no-mistakes` CLI. [`ci/check-no-mistakes-test-policy.mts`](../../ci/check-no-mistakes-test-policy.mts)
+audits tracked tests for CLI spawns and the ordered workflow commands in the same static-analysis
+job; its [`tiny fixture tests`](../../ci/no-mistakes-ci-contention.test.mts) never call no-mistakes,
+so they do not take the machine-wide no-mistakes lock. The independent live topology audit also requires that job
 to invoke the policy checker exactly once, so removing the checker step fails CI. The runtime
 index exposes path/ID lookups; sorted, de-duplicated direct and transitive upstream/downstream job
 queries; and sorted local caller/callee workflow queries. Unknown query nodes throw, while known
