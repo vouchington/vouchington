@@ -6,6 +6,12 @@ import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-jo
 type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 const NON_PRODUCTION_CLAMP_JOBS = [
+  'activitypub-inbox/activitypub-inbox-cleanup',
+  'heartbeat/publish-glidemq-stats',
+  'post-publication/reconcile-post-publication',
+  'rss-feed-item-categories/reconcileRssFeedItemCategorySnapshots',
+  'story-post-related-url-projections/reconcileStoryPostRelatedUrlProjections',
+  'topic-aliases/reconcileTopicAliasCategoryMappings',
   'account-data-requests/accountDataRequestRecovery',
   'activitypub-inbox/activitypub-inbox-recovery',
   'ai_agents/reconcileAutoDispatchJudgements',
