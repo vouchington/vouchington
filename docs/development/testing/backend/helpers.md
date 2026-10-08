@@ -759,3 +759,13 @@ from calls that create or retire provider mappings.
 ### Retained relation cleanup reservation
 
 `withTestRetainedRelationCleanupReservation` acquires every elected-family advisory transaction lock before admitting the normal global worker call. Admission matches the actual query executor, active test, and retained-relation operation; it closes before the helper awaits rollback. Worker deletes and cursor checkpoints remain in that transaction and are rolled back, including on assertion or registration failure. A handler failure retains its original identity unless rollback also fails, when both errors are reported in an `AggregateError`. A rollback failure always fails the test. Calls outside the reservation, on another executor, or from another test remain rejected by the shared-database scope guard. This is trusted test infrastructure: registration must stay after successful lock acquisition and must never be used to admit committed global writes.
+
+Embedding creation's exact global-capacity cases run in the first project group on the ordinary
+backend shard database. Later projects reuse the same database without resetting it. The fixture
+advisory lock coordinates concurrent runs of this file only; it does not serialize arbitrary
+production writers. Persist owned accounting rows, include other-work positive controls in the
+unfiltered aggregate, observe committed owned-job queue events, and drain before owned cleanup
+and configuration restoration. No test creates a database or raises capacity to hide saturation.
+Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
+admission within the test budget; this preserves priority ordering and delayed-job due times.
+The normal worker factory forwards that optional setting without changing production defaults.

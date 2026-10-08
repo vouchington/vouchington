@@ -54,51 +54,52 @@ coverage but did not write LCOV fails its parent case.
 
 <!-- BEGIN GENERATED: vitest-ownership -->
 
-| Vitest project                     | Workflow                         | Job                               | Credential requirement           |
-| ---------------------------------- | -------------------------------- | --------------------------------- | -------------------------------- |
-| `ts-shared`                        | `tests-ts-shared.yml`            | `ts-shared`                       | None                             |
-| `dev-tools`                        | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `static-analysis-tools`            | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `static-analysis-ast-grep`         | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `ci-tools`                         | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `github-actions`                   | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `git-hooks`                        | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `playwright-helpers`               | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `i18n-extract-codemod`             | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `docker-deploy`                    | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `i18n-route-bounds`                | `tests-tooling.yml`              | `i18n-route-bounds`               | None                             |
-| `lambdas-portability`              | `tests-portability.yml`          | Linux portability                 | None                             |
-| `cloudflare-worker-portability`    | `tests-portability.yml`          | Linux portability                 | None                             |
-| `backend/data-stores/analytics`    | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend/services/analytics`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-modules`                  | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-no-data-mocks`            | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-test-helpers`             | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-contract-artifacts`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-email-templates`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend/analytics-integration`    | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-data-stores`              | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-platform-stats-cache`     | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-mocks`                    | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-real-glide-mq`            | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-postgres-schema`          | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
-| `backend-activitypub-capacity`     | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
-| `backend-aws`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role                   |
-| `backend-bedrock`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role + Bedrock         |
-| `backend-openai`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`                 |
-| `backend-openrouter`               | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`             |
-| `backend-stripe`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`              |
-| `backend-anthropic`                | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | ANTHROPIC_AUTH_TOKEN (federated) |
-| `web`                              | `tests-web.yml`                  | `web-tests` (sharded)             | None                             |
-| `web-storybook`                    | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-storybook-component-coverage` | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-storybook-browser`            | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-api`                          | `tests-web-api.yml`              | `web-api-tests` (sharded)         | None                             |
-| `web-integration`                  | `tests-web-integration.yml`      | `web-integration-tests` (sharded) | None                             |
-| `lambdas`                          | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
-| `lambdas-mocks`                    | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
-| `cloudflare-worker`                | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
-| `cloudflare-worker-mocks`          | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
+| Vitest project                        | Workflow                         | Job                               | Credential requirement           |
+| ------------------------------------- | -------------------------------- | --------------------------------- | -------------------------------- |
+| `ts-shared`                           | `tests-ts-shared.yml`            | `ts-shared`                       | None                             |
+| `dev-tools`                           | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `static-analysis-tools`               | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `static-analysis-ast-grep`            | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `ci-tools`                            | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `github-actions`                      | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `git-hooks`                           | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `playwright-helpers`                  | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `i18n-extract-codemod`                | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `docker-deploy`                       | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `i18n-route-bounds`                   | `tests-tooling.yml`              | `i18n-route-bounds`               | None                             |
+| `lambdas-portability`                 | `tests-portability.yml`          | Linux portability                 | None                             |
+| `cloudflare-worker-portability`       | `tests-portability.yml`          | Linux portability                 | None                             |
+| `backend/data-stores/analytics`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend/services/analytics`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-modules`                     | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-no-data-mocks`               | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-test-helpers`                | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-contract-artifacts`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-email-templates`             | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend/analytics-integration`       | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-data-stores`                 | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-platform-stats-cache`        | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-mocks`                       | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-real-glide-mq`               | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-embedding-creation-capacity` | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-postgres-schema`             | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
+| `backend-activitypub-capacity`        | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
+| `backend-aws`                         | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role                   |
+| `backend-bedrock`                     | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role + Bedrock         |
+| `backend-openai`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`                 |
+| `backend-openrouter`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`             |
+| `backend-stripe`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`              |
+| `backend-anthropic`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | ANTHROPIC_AUTH_TOKEN (federated) |
+| `web`                                 | `tests-web.yml`                  | `web-tests` (sharded)             | None                             |
+| `web-storybook`                       | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-storybook-component-coverage`    | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-storybook-browser`               | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-api`                             | `tests-web-api.yml`              | `web-api-tests` (sharded)         | None                             |
+| `web-integration`                     | `tests-web-integration.yml`      | `web-integration-tests` (sharded) | None                             |
+| `lambdas`                             | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
+| `lambdas-mocks`                       | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
+| `cloudflare-worker`                   | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
+| `cloudflare-worker-mocks`             | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
 
 <!-- END GENERATED -->
 
@@ -109,3 +110,7 @@ Current conventions for future credentialed suites all use
 - A credentialed suite is an informational smoke check: it is not in the `backend` gate and publishes no coverage. Gate the same behavior with a recorded-response fixture test in a unit project, named so it does not match the project's `include` glob ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)).
 
 If a Playwright or web-integration test starts requiring external credentials, gate the credential setup with `if:` and make the suite skip when the env vars are absent.
+
+Embedding creation capacity runs first through the normal project group-order barrier on its
+assigned shard, using the existing PostgreSQL/Valkey services and migration. Remaining selected
+projects then use the same persistent database. JUnit and LCOV remain the ordinary shard outputs.

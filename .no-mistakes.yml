@@ -1994,6 +1994,7 @@ rules:
         backend-activitypub-capacity: [backend, postgres-schema]
         backend-mocks: [backend]
         backend-real-glide-mq: [backend]
+        backend-embedding-creation-capacity: [backend]
         backend-no-data-mocks: [backend]
         backend-modules: [backend]
         backend-test-helpers: [backend]

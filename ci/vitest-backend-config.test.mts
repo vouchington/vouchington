@@ -3,12 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import picomatch from 'picomatch'
 import config from '../vitest.config.mts'
-
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
 import { realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
 import { TEST_STATEMENT_TIMEOUT_MS } from '../backend/test-helpers/statement-timeout-constant.mts'
-
 interface BackendProject {
   extends?: boolean
   resolve?: {
@@ -23,24 +21,20 @@ interface BackendProject {
     name?: string
     pool?: string
     runner?: string
+    sequence?: { groupOrder?: number }
     setupFiles?: string[]
     testTimeout?: number
   }
 }
-
 const realGlideProjectConfig = (): BackendProject | undefined => {
   const projects = config.test?.projects as BackendProject[] | undefined
   return projects?.find(project => project.test?.name === 'backend-real-glide-mq')
 }
-
 const realGlideProject = (): BackendProject['test'] => realGlideProjectConfig()?.test
-
 const backendProjects = (): BackendProject[] =>
   (backendCoreProjects as BackendProject[]).concat(backendDataProjects as BackendProject[])
-
 const backendProjectTest = (name: string): BackendProject['test'] =>
   backendProjects().find(project => project.test?.name === name)?.test
-
 function projectOwnsPath(project: BackendProject, path: string): boolean {
   const includes = project.test?.include ?? []
   const excludes = project.test?.exclude ?? []
@@ -49,19 +43,16 @@ function projectOwnsPath(project: BackendProject, path: string): boolean {
     !excludes.some(pattern => picomatch.isMatch(path, pattern))
   )
 }
-
 describe('backend Vitest project config', () => {
   it('runs the election waiter contract with the worker and data-store lifecycle', () => {
     const path = 'backend/test-helpers/election-vote-stats.test.mts'
     const owners = backendProjects().filter(project => projectOwnsPath(project, path))
-
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(owners[0]?.test?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
     expect(owners[0]?.test?.setupFiles).toContain(
       './test-helpers/vitest.setup.glide-mq-workers.mts',
     )
   })
-
   it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
     const runner = './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts'
     const projects = config.test?.projects as BackendProject[] | undefined
@@ -72,13 +63,11 @@ describe('backend Vitest project config', () => {
     const capacity = backendProjects().find(
       project => project.test?.name === 'backend-activitypub-capacity',
     )?.test
-
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(dataStores?.runner).toBe(runner)
     expect(capacity?.runner).toBe('./test-helpers/vitest.runner.shared-db-scope-guard.mts')
     expect(realGlideProject()?.runner).toBeUndefined()
   })
-
   it('keeps the self-isolating global media replay case in backend-data-stores', () => {
     const path = 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'
     const owners = backendProjects()
@@ -160,6 +149,23 @@ describe('backend Vitest project config', () => {
     expect(project?.extends).toBe(true)
     expect(glideMqAlias).toEqual(realGlideMqAlias())
     expect(glideMqAlias?.replacement).not.toContain('glide-mq-vitest-shim')
+    const capacity = ((config.test?.projects ?? []) as BackendProject[]).find(
+      p => p.test?.name === 'backend-embedding-creation-capacity',
+    )
+    const path =
+      'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts'
+    expect(
+      ((config.test?.projects ?? []) as BackendProject[]).filter(p => projectOwnsPath(p, path)),
+    ).toEqual([capacity])
+    expect(capacity?.test).toMatchObject({
+      sequence: { groupOrder: 0 },
+      testTimeout: 5000,
+      hookTimeout: 5000,
+    })
+    expect(config.test?.sequence?.groupOrder).toBe(1)
+    expect(mergeConfig({ resolve: config.resolve }, capacity ?? {}).resolve?.alias).toEqual(
+      effectiveAliases,
+    )
   })
 
   it('keeps no-data mocks disjoint from DB-backed mocks without service setup', () => {
