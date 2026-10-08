@@ -8,7 +8,12 @@ import {
 } from './s3-upload-lifecycle.mts'
 import { withImageStorageLifecycleLock } from './storage-lifecycle-lock.mts'
 
-type ImageRecord = NonNullable<Awaited<ReturnType<typeof getImageById>>>
+type ImageRow = NonNullable<Awaited<ReturnType<typeof getImageById>>>
+type ImageUploadSourceRecord = Parameters<typeof deleteImageUploadSourceFromS3>[0]
+type ImageCompletionRecord = Pick<
+  ImageRow,
+  'id' | 's3_key' | 'sha_256' | 'upload_started_at' | 'upload_completed_at' | 'upload_failed_at'
+>
 
 export async function deletePendingImage(imageId: string): Promise<void> {
   await write(
@@ -22,8 +27,8 @@ export async function deletePendingImage(imageId: string): Promise<void> {
 export async function persistImageHashWhileProcessing(
   hash: Buffer,
   imageId: string,
-): Promise<ImageRecord> {
-  const { rows } = await write<ImageRecord>(
+): Promise<ImageCompletionRecord> {
+  const { rows } = await write<ImageCompletionRecord>(
     `/* persistHashWhileProcessing */
     UPDATE images
     SET sha_256 = $1
@@ -32,7 +37,7 @@ export async function persistImageHashWhileProcessing(
       AND upload_started_at IS NOT NULL
       AND upload_completed_at IS NULL
       AND upload_failed_at IS NULL
-    RETURNING *
+    RETURNING id, s3_key, sha_256, upload_started_at, upload_completed_at, upload_failed_at
   `,
     [hash, imageId],
   )
@@ -42,28 +47,28 @@ export async function persistImageHashWhileProcessing(
 }
 
 export async function replaceFailedImage(
-  existing: ImageRecord,
-  incoming: ImageRecord,
+  existing: ImageUploadSourceRecord,
+  incoming: ImageUploadSourceRecord,
   hash: Buffer,
-): Promise<ImageRecord> {
+): Promise<ImageCompletionRecord> {
   return withImageStorageLifecycleLock(existing.id, () =>
     replaceFailedImageWhileLocked(existing, incoming, hash),
   )
 }
 
 async function replaceFailedImageWhileLocked(
-  existing: ImageRecord,
-  incoming: ImageRecord,
+  existing: ImageUploadSourceRecord,
+  incoming: ImageUploadSourceRecord,
   hash: Buffer,
-): Promise<ImageRecord> {
+): Promise<ImageCompletionRecord> {
   // Delete the failed row's source while its storage coordinates still exist. If deletion fails,
   // retain the row so a later retry can find and clean the object instead of orphaning it.
   await deleteImageUploadSourceFromS3(existing)
   await deleteImageDeliveryAliasFromS3(existing.id)
 
-  let replacement: ImageRecord
+  let replacement: ImageCompletionRecord
   try {
-    const replaceFailedImageInTransaction = async (): Promise<ImageRecord> => {
+    const replaceFailedImageInTransaction = async (): Promise<ImageCompletionRecord> => {
       await using transaction = await beginTransaction()
       const replaceFailedImageRows = async (query: typeof transaction) => {
         await query(
@@ -75,7 +80,7 @@ async function replaceFailedImageWhileLocked(
         `,
           [existing.id],
         )
-        const { rows } = await query<ImageRecord>(
+        const { rows } = await query<ImageCompletionRecord>(
           `/* replaceFailedImage:persist */
         UPDATE images
         SET sha_256 = $1
@@ -84,7 +89,7 @@ async function replaceFailedImageWhileLocked(
           AND upload_started_at IS NOT NULL
           AND upload_completed_at IS NULL
           AND upload_failed_at IS NULL
-        RETURNING *
+        RETURNING id, s3_key, sha_256, upload_started_at, upload_completed_at, upload_failed_at
       `,
           [hash, incoming.id],
         )

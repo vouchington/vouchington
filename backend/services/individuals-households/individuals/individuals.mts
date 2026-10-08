@@ -87,7 +87,7 @@ async function createRepresentativeIndividual(userId: string) {
   } = await write<Individual>(sql`/* createRepresentativeIndividual */
     WITH new_individual AS (
       INSERT INTO individuals DEFAULT VALUES
-      RETURNING *
+      RETURNING id, updated_at
     )
     UPDATE users
     SET individual_id = new_individual.id
@@ -102,9 +102,9 @@ async function createRepresentativeIndividual(userId: string) {
 async function createAdditionalIndividual() {
   const {
     rows: [individual],
-  } = await write<Individual & { created_at: Date }>(sql`/* createAdditionalIndividual */
+  } = await write<Individual>(sql`/* createAdditionalIndividual */
     INSERT INTO individuals DEFAULT VALUES
-    RETURNING *
+    RETURNING id, updated_at
   `)
 
   return individual

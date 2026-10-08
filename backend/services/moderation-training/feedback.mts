@@ -72,7 +72,9 @@ export async function recordModerationTrainingFeedback(
         ${input.inputSha256 ?? null},
         ${JSON.stringify(input.metadata ?? {})}::jsonb
       )
-      RETURNING *
+      RETURNING id, source_type, event_type, label, human_action, reason_code, note, label_confidence,
+        actor_user_id, community_id, post_id, agent_moderation_id, moderation_report_id, moderation_appeal_id,
+        review_dispute_id, post_clearance_change_id, input_sha256, metadata, created_at, updated_at
     `,
     undefined,
     options,

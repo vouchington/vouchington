@@ -18,7 +18,7 @@ export async function getCommunityMember(
 ): Promise<CommunityMember | null> {
   const { rows } = await read(
     sql`/* getCommunityMember */
-    SELECT *
+    SELECT id, community_id, user_id, role, approved_by_id, created_at, updated_at, removed_at, removed_by_id
     FROM community_members
     WHERE community_id = ${communityId}
       AND user_id = ${userId}

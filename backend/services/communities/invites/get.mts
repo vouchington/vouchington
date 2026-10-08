@@ -15,7 +15,8 @@ export async function searchInvites(
   const { limit, cursorId } = resolveCommunityIdCursorPage(options)
 
   const query = sql`/* searchInvites */
-    SELECT *
+    SELECT id, community_id, code, invited_user_id, invited_email, invited_by_id,
+      accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
     WHERE community_id = ${communityId}
   `
@@ -43,7 +44,8 @@ export async function getMyInvites(
 ): Promise<CommunityInvite[]> {
   const { rows } = await read(
     sql`/* getMyInvites */
-    SELECT *
+    SELECT id, community_id, code, invited_user_id, invited_email, invited_by_id,
+      accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
     WHERE invited_user_id = ${currentUserId}
       AND accepted_at IS NULL

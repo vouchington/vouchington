@@ -41,7 +41,8 @@ export async function createImportBatch(
         ${totalRows},
         ${metadata ? JSON.stringify(metadata) : null}
       )
-      RETURNING *
+      RETURNING id, import_type, created_by_id, total_rows, completed_rows, failed_rows,
+        completed_at, created_at, updated_at, metadata
     `,
       { query },
     )
@@ -62,7 +63,8 @@ export async function createImportBatch(
           ${chunkIndices}::int[],
           ${chunk.map(r => JSON.stringify(r))}::jsonb[]
         ) AS t(row_index, input_data)
-        RETURNING *, NULL::UUID AS created_entity_id
+        RETURNING id, batch_id, row_index, input_data, NULL::UUID AS created_entity_id,
+          completed_at, failed_at, error_message, created_at, updated_at
       `,
         { query },
       )

@@ -68,7 +68,7 @@ async function failMediaDeliveryRegistryRecord(
         available_at = ${new Date(now.getTime() + RETRY_BASE_MS)}
       WHERE delivery_key = ${claim.delivery_key} AND generation = ${claim.generation}
         AND lease_token = ${claim.lease_token}::uuid AND lease_expires_at > clock_timestamp()
-      RETURNING *
+      RETURNING delivery_key, generation, attempt_count, available_at
     ) INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type,
       delivery_attempt_count, completed_at, next_attempt_at, failure_message)
     SELECT delivery_key, generation,

@@ -270,6 +270,9 @@ Use `observeTestPostgresQueryPools(queryMarker, operation)` when a service test 
 tagged query uses the read or write pool. The helper serializes observations and restores both pool
 query properties after success or failure. Pass the SQL comment that uniquely identifies the query;
 the result includes the operation result and the ordered set of matching pools.
+An optional third callback runs after each matching real query completes and is awaited before its
+result reaches the service. Use it to coordinate an owned concurrent mutation between reads without
+replacing query results; callback failures propagate to the operation.
 
 ```ts
 const observed = await observeTestPostgresQueryPools('/* getEntityById */', () =>

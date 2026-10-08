@@ -8,14 +8,16 @@ import type { CommunityInvite } from '../types.mts'
 export async function revokeInvite(currentUserId: string, inviteId: string): Promise<void> {
   const { rows } = await read(
     sql`/* revokeInvite */
-    SELECT *
+    SELECT community_id, accepted_at, revoked_at
     FROM community_invites
     WHERE id = ${inviteId}
     LIMIT 1
     `,
   )
 
-  const invite = rows[0] as CommunityInvite | undefined
+  const invite = rows[0] as
+    | Pick<CommunityInvite, 'community_id' | 'accepted_at' | 'revoked_at'>
+    | undefined
   assert(invite, 404, 'Invite not found')
   assert(!invite.revoked_at && !invite.accepted_at, 422, 'Invite has already been used or revoked')
 

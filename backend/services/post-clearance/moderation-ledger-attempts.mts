@@ -64,7 +64,7 @@ export async function beginPostModerationAttempt(
           ),
           claimed_work.lease_token
         FROM claimed_work
-        RETURNING *
+        RETURNING id, version_id, source, attempt_number, lease_token
       )
       SELECT attempt.id, attempt.version_id, version.post_id, attempt.source,
         attempt.attempt_number, attempt.lease_token, version.deadline_at, version.content_sha256

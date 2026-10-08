@@ -170,7 +170,7 @@ export async function deleteHouseholdSpendingCategoryById(
     `/* deleteHouseholdSpendingCategoryById */
     DELETE FROM spending_entries
     WHERE id = $1
-    RETURNING *
+    RETURNING id
     `,
     [householdSpendingCategoryId],
   )

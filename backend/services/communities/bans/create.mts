@@ -68,7 +68,8 @@ export async function banUserFromCommunity(
     sql`/* banUserFromCommunity:insert */
     INSERT INTO community_bans (community_id, user_id, banned_by_id, reason, expires_at, case_id)
     VALUES (${communityId}, ${targetUserId}, ${currentUser.id}, ${opts?.reason ?? null}, ${opts?.expiresAt ?? null}, ${caseId})
-    RETURNING *
+    RETURNING id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id
     `,
     options,
   )

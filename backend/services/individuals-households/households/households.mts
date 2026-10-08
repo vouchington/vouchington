@@ -46,7 +46,8 @@ export async function getOrCreateHousehold(currentUser: PrivateUser | null) {
   const {
     rows: [household],
   } = await write<HouseholdRow>(sql`/* getOrCreateHousehold */
-    INSERT INTO households (owner_user_id) VALUES (${currentUser.id}) RETURNING *
+    INSERT INTO households (owner_user_id) VALUES (${currentUser.id})
+    RETURNING id, owner_user_id, updated_at
   `)
   return household
 }
@@ -55,7 +56,7 @@ export async function createHousehold(currentUser: PrivateUser | null) {
   const { rows } = await write<HouseholdRow>(sql`/* createHousehold */
     INSERT INTO households (owner_user_id)
     VALUES (${currentUser.id})
-    RETURNING *
+    RETURNING id, owner_user_id, updated_at
   `)
   return rows[0]
 }

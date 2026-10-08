@@ -15,7 +15,8 @@ export async function getImportBatch(batchId: string): Promise<ImportBatch | nul
 
   const { rows } = await read(
     sql`/* getImportBatch */
-    SELECT *
+    SELECT id, import_type, created_by_id, total_rows, completed_rows, failed_rows,
+      completed_at, created_at, updated_at, metadata
     FROM admin_import_batches
     WHERE id = ${batchId}
     LIMIT 1
@@ -82,7 +83,8 @@ export async function getImportRowWithBatch(
   const { rows } = await read(
     sql`/* getImportRowWithBatch */
     SELECT
-      r.*,
+      r.id, r.batch_id, r.row_index, r.input_data, r.completed_at, r.failed_at,
+      r.error_message, r.created_at, r.updated_at,
       COALESCE(r.topic_id, r.rss_feed_id) AS created_entity_id,
       b.import_type AS batch_import_type,
       b.created_by_id AS batch_created_by_id,

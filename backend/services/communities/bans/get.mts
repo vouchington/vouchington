@@ -8,7 +8,8 @@ import type { CommunityBan } from '../types.mts'
 export async function getCommunityBanById(id: string): Promise<CommunityBan | null> {
   const { rows } = await read(
     sql`/* getCommunityBanById */
-    SELECT *
+    SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id
     FROM community_bans
     WHERE id = ${id}
     LIMIT 1
@@ -24,7 +25,8 @@ export async function getActiveCommunityBan(
 ): Promise<CommunityBan | null> {
   const { rows } = await read(
     sql`/* getActiveCommunityBan */
-    SELECT *
+    SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id
     FROM community_bans
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
@@ -45,7 +47,8 @@ export async function getActiveCommunityBans(
 ): Promise<CommunityBan[]> {
   const { rows } = await read(
     sql`/* getActiveCommunityBans */
-    SELECT *
+    SELECT id, case_id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id
     FROM community_bans
     WHERE community_id = ${communityId}
       AND user_id = ${userId}

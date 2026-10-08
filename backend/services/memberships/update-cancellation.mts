@@ -1,14 +1,18 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { MembershipPlanSlug } from './types.mts'
 import type { MembershipLifecycleFields } from './update-result.mts'
 import { recordMembershipChange } from './changes.mts'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 
+type CancelledMembership = Pick<
+  MembershipLifecycleFields,
+  'user_id' | 'sku_id' | 'cancelled_at' | 'expired_at' | 'past_due_at' | 'paused_at'
+>
+
 async function setCancelAtPeriodEnd(
   membershipId: string,
   query: QueryExecutor = write,
-): Promise<(MembershipLifecycleFields & { plan: MembershipPlanSlug }) | null> {
+): Promise<CancelledMembership | null> {
   const { rows } = await query(sql`/* setCancelAtPeriodEnd */
     WITH updated_membership AS (
       UPDATE memberships
@@ -18,7 +22,8 @@ async function setCancelAtPeriodEnd(
         AND cancelled_at IS NULL
         AND expired_at IS NULL
         AND should_cancel_at_period_end = false
-      RETURNING *
+      RETURNING user_id, membership_product_id, membership_source_id, cancelled_at, expired_at,
+        paused_at, past_due_at
     ), updated_source AS (
       UPDATE membership_source_states state
       SET should_auto_renew = false
@@ -28,28 +33,18 @@ async function setCancelAtPeriodEnd(
     )
     SELECT
       membership.user_id,
-      (SELECT plan FROM membership_products WHERE id = membership.membership_product_id) AS plan,
       membership.membership_product_id AS sku_id,
-      CASE
-        WHEN membership.cancelled_at IS NOT NULL THEN 'cancelled'
-        WHEN membership.expired_at IS NOT NULL THEN 'expired'
-        WHEN membership.paused_at IS NOT NULL THEN 'paused'
-        WHEN membership.past_due_at IS NOT NULL THEN 'past_due'
-        ELSE 'active'
-      END AS status,
-      membership.expires_at,
       membership.cancelled_at,
       membership.expired_at,
       membership.past_due_at,
-      membership.paused_at,
-      membership.should_cancel_at_period_end
+      membership.paused_at
     FROM updated_membership membership
     LEFT JOIN updated_source source
       ON source.membership_source_id = membership.membership_source_id
   `)
 
   if (rows.length === 0) return null
-  return rows[0] as MembershipLifecycleFields & { plan: MembershipPlanSlug }
+  return rows[0] as CancelledMembership
 }
 
 /**

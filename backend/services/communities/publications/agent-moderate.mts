@@ -117,10 +117,16 @@ function automodFlagAssignments(contentSha256: Buffer): SQLStatement {
           automod_dismissed_by_id = NULL`
 }
 
-async function getReview(communityId: string, postId: string): Promise<CommunityPostReview | null> {
+async function getReview(
+  communityId: string,
+  postId: string,
+): Promise<Pick<
+  CommunityPostReview,
+  'approved_at' | 'rejected_at' | 'unpublished_at' | 'platform_override_at'
+> | null> {
   const { rows } = await read(
     sql`/* unpublishPostAsAgent:getReview */
-    SELECT *
+    SELECT approved_at, rejected_at, unpublished_at, platform_override_at
     FROM community_post_reviews
     WHERE community_id = ${communityId}
       AND post_id = ${postId}

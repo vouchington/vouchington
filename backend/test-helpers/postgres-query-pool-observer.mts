@@ -10,7 +10,7 @@ interface PoolObservationContext {
   active: boolean
   pools: Set<ObservedPostgresQueryPool>
   queryMarker: string
-  onQueryComplete?: () => void
+  onQueryComplete?: () => void | Promise<void>
 }
 
 const poolObservationContext = new AsyncLocalStorage<PoolObservationContext>()
@@ -18,7 +18,7 @@ const poolObservationContext = new AsyncLocalStorage<PoolObservationContext>()
 export async function observeTestPostgresQueryPools<Result>(
   queryMarker: string,
   operation: () => Promise<Result>,
-  onQueryComplete?: () => void,
+  onQueryComplete?: () => void | Promise<void>,
 ): Promise<{ result: Result; pools: ObservedPostgresQueryPool[] }> {
   const activeObservation = poolObservationContext.getStore()
   if (activeObservation?.active) {
@@ -104,8 +104,8 @@ function wrapQuery(
     if (matchesContext) expectedContext.pools.add(label)
     const result = Reflect.apply(query, pool, args)
     if (matchesContext && expectedContext.onQueryComplete)
-      return Promise.resolve(result).then(value => {
-        expectedContext.onQueryComplete?.()
+      return Promise.resolve(result).then(async value => {
+        await expectedContext.onQueryComplete?.()
         return value
       })
     return result

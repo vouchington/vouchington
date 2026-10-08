@@ -80,7 +80,7 @@ export async function insertCommunity(
       ${provenance.createdVia},
       ${provenance.oauthClientId}
     )
-    RETURNING *
+    RETURNING id
     `,
     options,
   )

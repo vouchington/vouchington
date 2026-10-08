@@ -24,7 +24,10 @@ export { failCopyrightActionIntent } from './action-delivery-completion.mts'
 const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
-export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
+export type CopyrightClaimedActionIntent = Pick<
+  CopyrightActionIntentRecord,
+  'id' | 'action' | 'expected_placement_revision'
+> & {
   lease_token: string
   placement_id: string
   image_id: string
@@ -63,9 +66,11 @@ export async function claimCopyrightActionIntent(
     FROM candidate
     WHERE intent.id = candidate.id
       AND intent.attempt_count < ${MAX_ATTEMPTS}
-      RETURNING intent.*
+      RETURNING intent.id, intent.copyright_restriction_id, intent.lease_token, intent.action,
+        intent.expected_placement_revision
     )
-    SELECT claimed.*, target.placement_id, target_image.image_id
+    SELECT claimed.id, claimed.lease_token, claimed.action, claimed.expected_placement_revision,
+      target.placement_id, target_image.image_id
     FROM claimed
     JOIN copyright_restrictions restriction ON restriction.id = claimed.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id

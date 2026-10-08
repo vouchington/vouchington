@@ -121,7 +121,7 @@ export async function deleteIndividualRewardsProgramStatusById(
   assertNotSuspended(currentUser)
   const individual = await getOrCreateIndividual(user)
   const { rows } = await write(
-    sql`/* deleteIndividualRewardsProgramStatusById */ DELETE FROM individual_rewards_program_statuses WHERE id = ${id} AND individual_id = ${individual.id} RETURNING *`,
+    sql`/* deleteIndividualRewardsProgramStatusById */ DELETE FROM individual_rewards_program_statuses WHERE id = ${id} AND individual_id = ${individual.id} RETURNING id`,
   )
   assert(rows[0], 404, 'Not found')
   return rows[0]
