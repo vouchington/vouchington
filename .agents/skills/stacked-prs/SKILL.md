@@ -109,7 +109,11 @@ native GitHub stack. `gh stack init` and `add` record a local plan. Neither loca
 successful PR creation proves that GitHub registered the stack.
 
 Once an authorized upper layer has committed, reviewable work and its before-push checks pass,
-submit the layers as drafts with `gh stack submit --auto` while the lower PR is still open.
+submit the layers as drafts with `gh stack submit --auto` while the lower PR is still open and
+unqueued. Verify remote registration before asking to merge or enqueue the lower PR; an open PR
+already in the merge queue cannot be added to a new stack. If it was queued externally, stop
+registration attempts and report the blocker. Do not dequeue it without authorization or rewrite
+it; continue upper work that does not rewrite the queued layer, then recover after it merges.
 Do not wait for upper-layer CI or ready status to register the dependency. Do not create empty
 placeholder layers or start work held pending approval merely to preserve a stack.
 
@@ -122,7 +126,9 @@ unknown; report that limitation and do not infer success from local tracking.
 If the lower PR merges before registration, GitHub can reject linking it as a merged layer.
 Re-read the forge, fetch current refs, and rebase the remaining work onto the updated `origin/main`
 without replaying the merged layer. Preserve any upper PR already created. Register multiple
-remaining open layers as a stack; shepherd a single remaining PR individually. Report the result as
+remaining open layers as a stack and verify their bases. For a single surviving PR, read its remote
+base, retarget it to `main` if needed, and verify that target before shepherding it individually:
+a head rebase alone does not change a PR's base branch. Report the result as
 sequential PRs when no remote stack was registered. Do not recreate the merged bottom PR or use
 manual base chaining as a substitute for native registration.
 
@@ -142,7 +148,7 @@ former errors from a worktree whose current branch is not in the stack — the n
 a merge retargets the stack.
 
 ```bash
-gh api "repos/{owner}/{repo}/pulls/<N>" --jq '.stack'   # {base:{ref,sha}, id, number, position, size}
+gh api "repos/{owner}/{repo}/pulls/<N>" --jq '{stackPresent: has("stack"), stack: .stack}'
 gh api "repos/{owner}/{repo}/stacks/<n>"                # layers bottom→top, with head.sha and author
 gh api "repos/{owner}/{repo}/stacks" --jq '[.[] | select(.open)]'   # every open stack; `state`
                                                                    # is null, and ?state=open
