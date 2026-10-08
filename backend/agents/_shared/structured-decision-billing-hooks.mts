@@ -69,6 +69,9 @@ async function recordStructuredDecisionUsage(
       service_tier: undefined,
     },
     agentSlug: subject.workload,
+    // The jev classifiers run TypeSafe's model, whichever transport reaches it.
+    provider: 'typesafe',
+    transport: response.transport,
     postId: subject.postId,
     communityId: subject.communityId,
     classifier: {

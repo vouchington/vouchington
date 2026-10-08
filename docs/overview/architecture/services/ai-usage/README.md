@@ -18,8 +18,10 @@ statement of what this ledger does and doesn't cover live in the private
 `ai_usage_records` — append-only ledger, one row per Responses-API call. `community_id` and
 `post_id` are both nullable: most agents (chat, autotagger, research, ...) run
 outside any community or post. `agent_slug` identifies any agent workload, not only a moderator.
-`model` and `service_tier` record what OpenAI **actually served** (`response.model`,
-`response.service_tier`), not the requested alias/tier — see the cost-model doc's "Verified: flex
+`model_provider` (`anthropic`, `openai`, or `typesafe` for the jev classifiers) and
+`provider_transport` (`direct`, `openrouter`, `typesafe`) say who served the call and how it
+arrived. `model` and `service_tier_id` (a first-sight `ai_service_tiers` lookup) record what the
+provider **actually served** (`response.model`, the reported service tier), not the requested alias/tier — see the cost-model doc's "Verified: flex
 tier is honored" section for why that distinction matters.
 
 `ai_usage_provider_response_keys` maps each provider response or decision `response_id` to exactly one
@@ -44,11 +46,13 @@ stays on the existing `trackAIModerationCall` analytics path — by design, not 
 ## Functions
 
 - `recordAiUsage(options: RecordAiUsageOptions)` — inserts a cost record from
-  `{ responseId?, communityId?, postId?, classifierRunId?, latencyMs?, agentSlug, model, serviceTier, usage }` and returns
+  `{ responseId?, communityId?, postId?, classifierRunId?, latencyMs?, agentSlug, provider, transport, model, serviceTier, usage }`
+  (`usage` is the provider-neutral `ModelUsage` of `@modules/model-providers`) and returns
   `recorded` or `already-recorded`. Computes
-  `cost_microunits`/`pricing_status` via `calcCostMicrounits` (`@modules/openai-utils`) and
-  persists `cached_input_tokens` so historical cost figures are reproducible from their own
-  inputs. Every direct `createOpenAIResponse` caller awaits a record-or-latch
+  `cost_microunits`/`pricing_status` via `calcCostMicrounits` (`@modules/model-providers`) at list
+  price, preferring a provider-reported cost such as OpenRouter's `usage.cost`, and persists the
+  cache-read, 5-minute and 1-hour cache-write, and reasoning token counts so historical cost
+  figures are reproducible from their own inputs. Every direct `createOpenAIResponse` caller awaits a record-or-latch
   settlement barrier: a successful ledger write proceeds normally, while a failed write must
   durably set that request day's accounting-uncertainty latch before the caller can continue.
   Losing the background-response lease (`lost-race`) is also unsettled until
@@ -69,6 +73,10 @@ stays on the existing `trackAIModerationCall` analytics path — by design, not 
   while coalescing concurrent primary-Postgres refreshes for release-race decisions. Backs the
   daily spend-ceiling check in the `ai_agents` worker; see
   [Daily spend cap](../../queues/workers/ai-agents/README.md#daily-spend-cap).
+- `getServiceModelSelection(slug)` / `getOpenAITransport()` — read the `ai-model-routing`
+  `DynamicConfig` (`model-routing-config.mts`): `{ provider, model }` per model-backed service
+  (default `anthropic` / `claude-haiku-5-5`) and the global `openai_transport`. Saving is validated
+  against the price table; see [`@modules/model-providers`](../../backend/modules/model-providers/README.md).
 - `getSpendCapFields()` — reads the `ai-spend-cap` `DynamicConfig`
   (`spend-cap-config.mts`): `{ enabled, daily_cap_microunits }`, defaulting to
   `{ enabled: true, daily_cap_microunits: 10_000_000 }` ($10/day). Valkey-backed and adjustable

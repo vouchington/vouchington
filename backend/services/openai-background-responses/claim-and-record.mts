@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { OpenAIUsage } from '@modules/openai-utils/create-response'
+import type { ModelUsage } from '@modules/model-providers/types'
 import { recordAiUsage } from '@services/ai-usage'
 import { deleteBackgroundResponseRegistration } from './claim.mts'
 
@@ -18,7 +18,7 @@ export interface ClaimAndRecordUsageParams {
   agentSlug: string
   communityId?: string | null
   postId?: string | null
-  usage: OpenAIUsage
+  usage: ModelUsage
   model: string | undefined
   serviceTier: string | undefined
   /** openai_background_responses.created_at -- the response's true creation time. Forwarded to
@@ -54,6 +54,9 @@ export async function claimAndRecordBackgroundResponseUsage(
     communityId: params.communityId ?? null,
     postId: params.postId ?? null,
     agentSlug: params.agentSlug,
+    // Background mode exists only on the direct OpenAI transport.
+    provider: 'openai',
+    transport: 'direct',
     model: params.model ?? 'unknown-model',
     serviceTier: params.serviceTier ?? 'unknown-tier',
     usage: params.usage,

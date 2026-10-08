@@ -48,6 +48,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/.git/**',
         '**/*.mock.test.mts',
         ...backendNoDataUnitTestFiles,
+        '**/*.anthropic*.test.mts',
         '**/*.openai*.test.mts',
         '**/*.openrouter.test.mts',
         '**/*.bedrock.test.mts',

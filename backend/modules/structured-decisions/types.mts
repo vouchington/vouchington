@@ -128,6 +128,7 @@ export type StructuredDecisionBilledResponse = {
   id: unknown
   model: unknown
   usage: StructuredDecisionUsage
+  transport: StructuredDecisionTransport
   requestStartedAt: Date
 }
 export interface StructuredDecisionAttemptHooks {

@@ -13,6 +13,8 @@ import {
 } from './create-response.mts'
 import { createOpenAIResponseAttemptHooks } from './openai-response-attempt-hooks.mts'
 import { addAccumulatedTokens } from './token-accumulator.mts'
+import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
+import type { LedgerModelProvider, ProviderTransport } from '@modules/model-providers/types'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import {
   claimRegisteredResponseUsage,
@@ -22,11 +24,13 @@ import {
 import { isStorableResponseId } from './response-id-storage-key.mts'
 
 interface RecordAgentResponseUsageParams {
-  // Pick, not the full OpenAIResponse: this also accepts an OpenAIResponseNotCompletedError
-  // (failed/incomplete responses still bill tokens, and carry the same three fields), so callers
-  // can record from the thrown error without a completed response ever existing.
+  // Pick, not the full OpenAIResponse: also accepts an OpenAIResponseNotCompletedError (failed or
+  // incomplete responses still bill tokens), so callers record from the thrown error.
   response: Pick<OpenAIResponse, 'usage' | 'model' | 'service_tier'> & { id?: string }
   agentSlug: string
+  /** Who made the model; every OpenAI-shaped response is OpenAI's unless a caller says otherwise. */
+  provider?: LedgerModelProvider
+  transport: ProviderTransport
   communityId?: string | null
   postId?: string | null
   // Set only inside callRecordingAgentResponseUsage's background-response-hooks scope. Unset for
@@ -66,6 +70,8 @@ export async function recordAgentResponseUsage(
   {
     response,
     agentSlug,
+    provider = 'openai',
+    transport,
     communityId,
     postId,
     registration,
@@ -97,7 +103,9 @@ export async function recordAgentResponseUsage(
   try {
     await claimUsage({
       responseId,
-      usage: response.usage,
+      provider,
+      transport,
+      usage: openAIUsageToModelUsage(response.usage),
       model: response.model ?? 'unknown-model',
       serviceTier: response.service_tier ?? 'unknown-tier',
       agentSlug,
@@ -116,7 +124,7 @@ export async function recordAgentResponseUsage(
 
 type CallRecordingAgentResponseUsageParams = Omit<
   RecordAgentResponseUsageParams,
-  'response' | 'registration' | 'classifier'
+  'response' | 'registration' | 'classifier' | 'provider' | 'transport'
 > & {
   /** OpenRouter has no compatible retrieve/cancel lifecycle, so it settles foreground usage directly. */
   responseProvider?: 'openai' | 'openrouter'
@@ -160,11 +168,9 @@ export async function callRecordingAgentResponseUsage<T>(
   if (breach) throw new SpendCapBreachError(breach)
   const requestStartedAt = new Date()
   const attemptHooks = createOpenAIResponseAttemptHooks(params.agentSlug, deps)
-
-  const background =
-    params.responseProvider === 'openrouter'
-      ? undefined
-      : createBackgroundResponseRegistrationHooks(params)
+  const isOpenRouter = params.responseProvider === 'openrouter'
+  const transport = isOpenRouter ? 'openrouter' : 'direct'
+  const background = isOpenRouter ? undefined : createBackgroundResponseRegistrationHooks(params)
 
   let response: T
   try {
@@ -176,6 +182,7 @@ export async function callRecordingAgentResponseUsage<T>(
       await recordUsage({
         response: err,
         ...params,
+        transport,
         registration: background?.getRegistration(),
         createdAt: requestStartedAt,
       })
@@ -185,6 +192,7 @@ export async function callRecordingAgentResponseUsage<T>(
   await recordUsage({
     response: response as OpenAIResponse,
     ...params,
+    transport,
     registration: background?.getRegistration(),
     createdAt: requestStartedAt,
   })

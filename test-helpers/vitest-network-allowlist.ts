@@ -4,7 +4,9 @@ const STATE_KEY = Symbol.for('voucha.testNetworkAllowlist')
 // Any other host fails the test. Live-provider projects are exempt. `.ts` for Storybook SWC.
 const ALLOWED_HOSTS = new Set(['example.com', 'example.net', 'example.org'])
 const LIVE_PROVIDER_PROJECTS = new Set(
-  'backend-aws,backend-bedrock,backend-openai,backend-openrouter,backend-stripe'.split(','),
+  'backend-anthropic,backend-aws,backend-bedrock,backend-openai,backend-openrouter,backend-stripe'.split(
+    ',',
+  ),
 )
 
 type AllowlistState = { installed: boolean; violations: string[]; allowedIps: Set<string> }

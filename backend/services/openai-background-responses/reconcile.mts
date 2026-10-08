@@ -1,5 +1,3 @@
-import type { Response } from 'openai/resources/responses/responses'
-import { APIError } from 'openai'
 import onError from '@modules/on-error'
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
@@ -7,8 +5,10 @@ import {
   retrieveOpenAIResponse,
   cancelOpenAIResponse,
   validateCompletedResponse,
+  isOpenAINotFoundError,
   OpenAIResponseNotCompletedError,
 } from '@modules/openai-utils/create-response'
+import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
 import { claimExpiredBackgroundResponse, deleteBackgroundResponseRegistration } from './claim.mts'
 import { claimAndRecordBackgroundResponseUsage } from './claim-and-record.mts'
 import type { ExpiredBackgroundResponse } from './expired.mts'
@@ -56,11 +56,11 @@ export async function reconcileExpiredBackgroundResponse(
   const row = await claimExpiredBackgroundResponse(candidate)
   if (!row) return 'lost-race'
 
-  let raw: Response
+  let raw: Awaited<ReturnType<typeof retrieveOpenAIResponse>>
   try {
     raw = await retrieveOpenAIResponse(row.responseId)
   } catch (err) {
-    if (err instanceof APIError && err.status === 404) {
+    if (isOpenAINotFoundError(err)) {
       const deleted = await deleteBackgroundResponseRegistration(row.responseId, row.leaseToken)
       if (!deleted) return 'lost-race'
       onError(
@@ -88,7 +88,7 @@ export async function reconcileExpiredBackgroundResponse(
         agentSlug: row.agentSlug,
         communityId: row.communityId,
         postId: row.postId,
-        usage: completed.usage,
+        usage: openAIUsageToModelUsage(completed.usage),
         model: completed.model,
         serviceTier: completed.service_tier ?? 'unknown-tier',
         createdAt: row.createdAt,
@@ -111,7 +111,7 @@ export async function reconcileExpiredBackgroundResponse(
         agentSlug: row.agentSlug,
         communityId: row.communityId,
         postId: row.postId,
-        usage: err.usage,
+        usage: openAIUsageToModelUsage(err.usage),
         model: err.model,
         serviceTier: err.service_tier ?? 'unknown-tier',
         createdAt: row.createdAt,

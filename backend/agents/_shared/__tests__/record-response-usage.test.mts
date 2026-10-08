@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
 import {
   countAiUsageRecordsForAgent,
   findAiUsageRecordForAgent,
@@ -61,6 +62,7 @@ describe('callRecordingAgentResponseUsage', () => {
         usage: { input_tokens: 100, output_tokens: 51 },
       },
       agentSlug,
+      transport: 'direct',
     })
 
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
@@ -92,7 +94,7 @@ describe('callRecordingAgentResponseUsage', () => {
       findAiUsageRecordForAgent(agentSlug, { inputTokens: 101, outputTokens: 52 }),
     ).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      openai_service_tier_id: 'flex',
+      service_tier_id: 'flex',
     })
 
     // The registration row must already be gone -- this path's own compare-and-set claimed it, so
@@ -144,7 +146,7 @@ describe('callRecordingAgentResponseUsage', () => {
       agentSlug,
       model: 'gpt-5.4-nano-2026-03-17',
       serviceTier: 'flex',
-      usage,
+      usage: openAIUsageToModelUsage(usage),
       createdAt: sweeperLease.createdAt,
     })
 

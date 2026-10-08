@@ -283,7 +283,7 @@ describe('runDisputeResolutionAgent', () => {
 
     await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
       model: 'gpt-5.4-nano-2026-03-17',
-      openai_service_tier_id: 'flex',
+      service_tier_id: 'flex',
       input_tokens: 150,
       output_tokens: 25,
       pricing_status: 'priced',

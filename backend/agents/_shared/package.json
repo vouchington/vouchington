@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",

@@ -36,7 +36,10 @@ unusable ID is reported without echoing its value, as is a response with both ID
 neither is storable, known billed usage is recorded without an idempotency key. A successful keyless
 write does not set the request-day accounting-uncertainty latch. A real ledger failure must durably
 set that latch before control can advance; if both writes fail, the caller fails closed. A live
-background lease still settles under its registration ID and fencing token.
+background lease still settles under its registration ID and fencing token. The ledger row names
+the provider and `transport` (`direct`, `openrouter`, or the jev `typesafe`) and stores the
+provider-neutral `ModelUsage`; a `provider` other than the default `openai` is for the jev
+classifiers, whose rows name `typesafe`.
 
 ### `callRecordingAgentResponseUsage(fn, params)`
 

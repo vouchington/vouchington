@@ -64,6 +64,8 @@ function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemp
           service_tier: undefined,
         },
         agentSlug: DRY_RUN_WORKLOAD,
+        provider: 'typesafe',
+        transport: response.transport,
         communityId,
         postId: null,
         createdAt: response.requestStartedAt,

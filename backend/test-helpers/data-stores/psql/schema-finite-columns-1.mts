@@ -7,6 +7,8 @@ export const FINITE_COLUMN_CONTRACTS_1 = [
     'moderation_transparency_categories',
     false,
   ],
+  ['ai_usage_records', 'model_provider', 'ai_model_providers', false],
+  ['ai_usage_records', 'provider_transport', 'ai_provider_transports', false],
   ['ai_usage_records', 'pricing_status', 'ai_usage_record_pricing_statuses', false],
   ['activitypub_inbox_delivery_work_items', 'request_method', 'http_request_methods', false],
   ['api_keys', 'scopes', 'api_scopes', true],

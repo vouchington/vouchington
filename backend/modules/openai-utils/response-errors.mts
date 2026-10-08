@@ -4,7 +4,10 @@ import { findInErrorChain, walkErrorChain } from './error-chain.mts'
 
 type ResponseUsage = NonNullable<Response['usage']>
 export type OpenAIUsage = Pick<ResponseUsage, 'input_tokens' | 'output_tokens'> & {
-  input_tokens_details?: Pick<ResponseUsage['input_tokens_details'], 'cached_tokens'>
+  input_tokens_details?: Partial<
+    Pick<ResponseUsage['input_tokens_details'], 'cached_tokens' | 'cache_write_tokens'>
+  >
+  output_tokens_details?: Partial<Pick<ResponseUsage['output_tokens_details'], 'reasoning_tokens'>>
   cost?: number
 }
 
@@ -186,4 +189,9 @@ export function isOpenAIMissingPreviousResponseError(error: unknown): boolean {
       current.param === 'previous_response_id'
     )
   })
+}
+
+/** A 404 from OpenAI: a response id past its retrieval retention window, or one that never existed. */
+export function isOpenAINotFoundError(error: unknown): boolean {
+  return error instanceof APIError && error.status === 404
 }

@@ -97,6 +97,7 @@ const REGISTRY_ORDER = [
   'moderation-ai-config',
   'moderation-ai-dispatch-config',
   'ai-spend-cap',
+  'ai-model-routing',
   'manual-tag-limits',
   'autotagger-paid-limits',
   'kagi-smallweb-config',
