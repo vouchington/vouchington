@@ -1,6 +1,6 @@
 // Nested Vite specifiers resolve transitive browser imports through the workspace package that
-// declares them. Keep this catalog synchronized with the completeness contract in
-// ci/vitest-storybook-browser-config.test.mts.
+// declares them. ci/check-storybook-browser-optimize-deps.mts audits this catalog's completeness
+// in the static-analysis no-mistakes job.
 export const storybookBrowserOptimizeDeps = [
   '@ts-shared/feature-flags > @vouchington/utils/feature-flags',
   '@ts-shared/languages > @vouchington/utils/language-tags',
