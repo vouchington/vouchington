@@ -4,6 +4,7 @@ import {
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
+  type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import type { ClassifierModelProvider } from '@voucha/types'
 import { AUTOTAGGER_AGENT_SLUG } from '@voucha/types/entities/autotagger-agent'
@@ -20,7 +21,7 @@ type AutotaggerClientOptions = {
 type AutotaggerClientInput = {
   classifierRunId: string
   postId: string | null
-  modelProvider: ClassifierModelProvider
+  selection: StructuredDecisionModelSelection
   beforeAttempt: AutotaggerProviderAttemptHook
 }
 
@@ -43,8 +44,9 @@ function createTopicClassifierClient(
   options: AutotaggerClientOptions,
 ): StructuredDecisionClient {
   return createStructuredDecisionClient({
-    transport: input.modelProvider,
-    apiKey: resolveApiKey(input.modelProvider, options),
+    transport: input.selection.provider,
+    model: input.selection.model,
+    apiKey: resolveApiKey(input.selection.provider, options),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload,

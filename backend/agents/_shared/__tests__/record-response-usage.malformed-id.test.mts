@@ -17,15 +17,14 @@ import {
 import { deleteBackgroundResponseRegistration } from '@services/openai-background-responses'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
-import {
-  callRecordingAgentResponseUsage,
-  recordAgentResponseUsage,
-} from '../record-response-usage.mts'
+import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
+import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
+import { recordAgentResponseUsage } from '../record-response-usage.mts'
 import { createBackgroundResponseRegistrationHooks } from '../record-response-background-hooks.mts'
 
 const usage = { input_tokens: 100, output_tokens: 50 }
 const tokens = { inputTokens: 100, outputTokens: 50 }
-const model = 'gpt-5.4-nano-2026-03-17'
+const model = 'gpt-6-luna-2026-10-01'
 
 function agentSlug(): string {
   return `malformed-response-id-${Math.random().toString(36).slice(2, 12)}`
@@ -169,15 +168,20 @@ describe('recordAgentResponseUsage response ID storage', () => {
       const slug = agentSlug()
       sentryCaptureExceptionMock.mockClear()
 
-      await callRecordingAgentResponseUsage(
+      await callRecordingModelUsage(
         async () => {
           await expect(getBackgroundResponseHooks()?.onResponseCreated('invalid ')).resolves.toBe(
             undefined,
           )
           expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
-          return response()
+          // A response id the ledger cannot store: the usage is still recorded, without a key.
+          return makeDirectOpenAIResult('', usage)
         },
-        { agentSlug: slug },
+        {
+          agentSlug: slug,
+          selection: { provider: 'openai', model: 'gpt-6-luna' },
+          openaiTransport: 'direct',
+        },
       )
 
       await expect(countAiUsageRecordsForAgent(slug, tokens)).resolves.toBe(1)

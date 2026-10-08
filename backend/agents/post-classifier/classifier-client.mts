@@ -4,6 +4,7 @@ import {
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
+  type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 
@@ -29,12 +30,15 @@ export function createPostClassifierOpenRouterClient(
     classifierRunId: string
     postId: string
     communityId: string | null
+    /** The classifier row's jev model on OpenRouter, the only transport this route uses. */
+    selection: StructuredDecisionModelSelection & { provider: 'openrouter' }
     beforeAttempt: PostClassifierProviderAttemptHook
   },
   options: PostClassifierClientOptions = {},
 ): StructuredDecisionClient {
   return createStructuredDecisionClient({
-    transport: 'openrouter',
+    transport: input.selection.provider,
+    model: input.selection.model,
     apiKey: options.apiKey ?? process.env.OPENROUTER_API_KEY ?? '',
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({

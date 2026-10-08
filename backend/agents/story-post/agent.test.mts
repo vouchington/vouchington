@@ -1,7 +1,14 @@
-import { it, expect, vi, beforeEach, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { it, expect, describe } from 'vitest'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
-import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
-import { callStoryPostAgent } from './agent.mts'
+import { findAiUsageRecordForResponseId, findAiUsageRecordForAgent } from '@voucha/test-helpers'
+import {
+  makeAgentModelCaller,
+  makeModelCallResult,
+  TEST_MODEL_SELECTION,
+  TEST_OPENAI_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
+import { callStoryPostAgent, parseStoryPostOutput, type StoryPostModelCaller } from './agent.mts'
 import type { Story } from '@services/stories/types'
 import type { Response } from 'openai/resources/responses/responses'
 
@@ -13,178 +20,133 @@ const makeStory = (overrides: Partial<Story> = {}): Story =>
     ...overrides,
   }) as Story
 
-type CreateOpenAIResponse =
-  typeof import('@modules/openai-utils/create-response').createOpenAIResponse
-
-const makeTextResponse = (text: string) => ({
-  id: 'resp-1',
-  output: [{ type: 'message', status: 'completed', content: [{ type: 'output_text', text }] }],
-})
-
 const itemSummaries = [
   { title: 'Article One', summary: 'Summary of article one.' },
   { title: 'Article Two', summary: 'Summary of article two.' },
 ]
 
-describe('agent', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
+describe('callStoryPostAgent', () => {
+  it('returns the title and summary the model wrote', async () => {
+    const result = await callStoryPostAgent(
+      makeStory(),
+      itemSummaries,
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({
+        title: 'Concise Headline Here',
+        ai_summary_markdown: 'A two sentence summary of the event.',
+      }),
+    )
 
-  it('returns title and summary from valid JSON response', async () => {
-    const jsonResponse = JSON.stringify({
+    expect(result).toEqual({
       title: 'Concise Headline Here',
       ai_summary_markdown: 'A two sentence summary of the event.',
     })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
-
-    const result = await callStoryPostAgent(makeStory(), itemSummaries, {
-      createOpenAIResponse,
-    })
-
-    expect(result.title).toBe('Concise Headline Here')
-    expect(result.ai_summary_markdown).toBe('A two sentence summary of the event.')
   })
 
-  it('throws when response is unparseable JSON', async () => {
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse('not valid json at all') as never)
+  it('truncates the title to 100 characters', async () => {
+    const result = await callStoryPostAgent(
+      makeStory(),
+      itemSummaries,
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({ title: 'A'.repeat(150), ai_summary_markdown: 'Summary.' }),
+    )
 
-    await expect(
-      callStoryPostAgent(makeStory({ title: 'My Story' }), itemSummaries, {
-        createOpenAIResponse,
-      }),
-    ).rejects.toThrow('Failed to parse LLM response as JSON')
-  })
-
-  it('truncates title to 100 characters', async () => {
-    const longTitle = 'A'.repeat(150)
-    const jsonResponse = JSON.stringify({
-      title: longTitle,
-      ai_summary_markdown: 'Summary.',
-    })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
-
-    const result = await callStoryPostAgent(makeStory(), itemSummaries, {
-      createOpenAIResponse,
-    })
-
-    expect(result.title.length).toBe(100)
     expect(result.title).toBe('A'.repeat(100))
   })
 
-  it('falls back to story title when parsed title is empty string', async () => {
-    const jsonResponse = JSON.stringify({
-      title: '',
-      ai_summary_markdown: 'Some summary.',
-    })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
+  it.each([
+    [
+      'the story title when the model title is empty',
+      { title: 'Fallback Title' },
+      'Fallback Title',
+    ],
+    ['"Story" when the story has no title either', { title: null }, 'Story'],
+  ])('falls back to %s', async (_name, story, expected) => {
+    const result = await callStoryPostAgent(
+      makeStory(story),
+      itemSummaries,
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({ title: '', ai_summary_markdown: 'Summary.' }),
+    )
 
-    const result = await callStoryPostAgent(makeStory({ title: 'Fallback Title' }), itemSummaries, {
-      createOpenAIResponse,
-    })
-
-    expect(result.title).toBe('Fallback Title')
+    expect(result.title).toBe(expected)
   })
 
-  it('uses Story as fallback title when story title is null and summary is valid', async () => {
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(
-        makeTextResponse(JSON.stringify({ title: '', ai_summary_markdown: 'Summary.' })) as never,
+  it('passes the story id as the safety identifier and the selection to the model caller', async () => {
+    const callModel = makeAgentModelCaller({ title: 'Test', ai_summary_markdown: 'Summary.' })
+
+    await callStoryPostAgent(
+      makeStory({ id: 'story-abc' }),
+      itemSummaries,
+      TEST_OPENAI_SELECTION,
+      callModel,
+    )
+
+    expect(callModel).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('Article One'),
+      'story-abc',
+      { selection: TEST_OPENAI_SELECTION, openaiTransport: 'openrouter' },
+    )
+  })
+
+  it('records the call under the story-post agent with the served model', async () => {
+    const responseId = `resp-story-${randomUUID()}`
+    const callModel: StoryPostModelCaller = () =>
+      Promise.resolve(
+        makeModelCallResult(
+          { title: 'T', ai_summary_markdown: 'S' },
+          { responseId, model: 'claude-haiku-5-5' },
+        ),
       )
 
-    const result = await callStoryPostAgent(makeStory({ title: null }), itemSummaries, {
-      createOpenAIResponse,
+    await callStoryPostAgent(makeStory(), itemSummaries, TEST_MODEL_SELECTION, callModel)
+
+    await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
+      agent_slug: 'story-post',
+      model_provider: 'anthropic',
+      model: 'claude-haiku-5-5',
+      pricing_status: 'priced',
     })
-
-    expect(result.title).toBe('Story')
-    expect(result.ai_summary_markdown).toBe('Summary.')
-  })
-
-  it('handles JSON wrapped in markdown code fences', async () => {
-    const fencedJson =
-      '```json\n{"title": "Fenced Title", "ai_summary_markdown": "Fenced summary."}\n```'
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(fencedJson) as never)
-
-    const result = await callStoryPostAgent(makeStory(), itemSummaries, {
-      createOpenAIResponse,
-    })
-
-    expect(result.title).toBe('Fenced Title')
-    expect(result.ai_summary_markdown).toBe('Fenced summary.')
-  })
-
-  it('throws when ai_summary_markdown is missing from response', async () => {
-    const jsonResponse = JSON.stringify({ title: 'Only Title' })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
-
-    await expect(
-      callStoryPostAgent(makeStory(), itemSummaries, { createOpenAIResponse }),
-    ).rejects.toThrow('Invalid story post agent result')
-  })
-
-  it('throws when ai_summary_markdown is blank', async () => {
-    const jsonResponse = JSON.stringify({ title: 'Only Title', ai_summary_markdown: '   ' })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
-
-    await expect(
-      callStoryPostAgent(makeStory(), itemSummaries, { createOpenAIResponse }),
-    ).rejects.toThrow('Invalid story post agent result')
-  })
-
-  it('uses the OpenRouter model namespace and preserves safety_identifier', async () => {
-    const jsonResponse = JSON.stringify({ title: 'Test', ai_summary_markdown: 'Summary.' })
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAIResponse>()
-      .mockResolvedValueOnce(makeTextResponse(jsonResponse) as never)
-
-    const story = makeStory({ id: 'story-abc' })
-    await callStoryPostAgent(story, itemSummaries, { createOpenAIResponse })
-
-    expect(createOpenAIResponse).toHaveBeenCalledOnce()
-    const callArgs = createOpenAIResponse.mock.calls[0][0] as Record<string, unknown>
-    expect(callArgs.model).toBe('openai/gpt-5.4-nano')
-    expect(callArgs.safety_identifier).toBe('story-abc')
   })
 
   it('records usage from a failed/incomplete response before rethrowing', async () => {
     // story-post has no post/community scope, so a queued retry after this failure is the only
-    // chance to attribute the charge -- the call-site catch block must record from the thrown
-    // OpenAIResponseNotCompletedError, not just from a successful response.
-    const createOpenAIResponse = vi.fn<CreateOpenAIResponse>().mockRejectedValueOnce(
-      new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
-        status: 'incomplete',
-        model: 'gpt-5.4-nano-2026-03-17',
-        service_tier: 'flex',
-        usage: { input_tokens: 411, output_tokens: 61 },
-        incomplete_details: { reason: 'max_output_tokens' },
-      } as Response),
-    )
+    // chance to attribute the charge: the call site must record from the thrown error.
+    const callModel: StoryPostModelCaller = () =>
+      Promise.reject(
+        new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
+          status: 'incomplete',
+          model: 'gpt-6-luna-2026-10-01',
+          service_tier: 'flex',
+          usage: { input_tokens: 411, output_tokens: 61 },
+          incomplete_details: { reason: 'max_output_tokens' },
+        } as Response),
+      )
 
     await expect(
-      callStoryPostAgent(makeStory(), itemSummaries, { createOpenAIResponse }),
+      callStoryPostAgent(makeStory(), itemSummaries, TEST_OPENAI_SELECTION, callModel),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(
       findAiUsageRecordForAgent('story-post', { inputTokens: 411, outputTokens: 61 }),
     ).resolves.toMatchObject({
-      model: 'gpt-5.4-nano-2026-03-17',
+      model_provider: 'openai',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier_id: 'flex',
       pricing_status: 'priced',
     })
+  })
+})
+
+describe('parseStoryPostOutput', () => {
+  it('rejects a blank summary', () => {
+    expect(() => parseStoryPostOutput({ title: 'Only Title', ai_summary_markdown: '   ' })).toThrow(
+      'Invalid story post agent result',
+    )
+  })
+
+  it('accepts a non-blank summary', () => {
+    const output = { title: 'T', ai_summary_markdown: 'S' }
+    expect(parseStoryPostOutput(output)).toBe(output)
   })
 })

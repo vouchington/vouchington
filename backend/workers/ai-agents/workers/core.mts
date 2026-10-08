@@ -1,6 +1,7 @@
 import { Worker, type Job } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
+import { ModelProviderError } from '@modules/model-providers/errors'
 import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
@@ -21,6 +22,7 @@ import {
   SpendCapBreachError,
 } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
+import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
@@ -115,6 +117,7 @@ export async function processAIAgentWorkerJob(
         dependencies.reportSpendCapRegistrationFailure,
       )
     }
+    if (err instanceof ModelProviderError) return handleModelProviderError(err, worker)
     return dependencies.handleOpenAIRateLimit(err, worker)
   }
 }

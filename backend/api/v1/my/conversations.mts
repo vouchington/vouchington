@@ -19,7 +19,7 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { assertNotSuspended } from '@services/users'
-import { assertDailySpendCapNotBreached } from '@services/ai-usage'
+import { assertDailySpendCapNotBreached, loadServiceModelSelection } from '@services/ai-usage'
 import {
   getConversationTitleGenerationInput,
   generateChatTitleFromInput,
@@ -173,7 +173,11 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   } else {
     const spendCapBreach = await assertDailySpendCapNotBreached('chat-generate-title')
     ctx.assert(!spendCapBreach, 429, 'Daily AI spend cap reached, try again after UTC midnight')
-    title = await generateChatTitleFromInput(titleInput, currentUser.id)
+    title = await generateChatTitleFromInput(
+      titleInput,
+      currentUser.id,
+      await loadServiceModelSelection('chat-generate-title'),
+    )
   }
 
   const updated = await updateConversationTitle(conversationId, title, currentUser.id).then(() =>

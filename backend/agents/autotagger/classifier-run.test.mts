@@ -30,6 +30,7 @@ import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/
 import { hardDeleteTestTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { createAutotaggerClient } from './classifier-run-client.mts'
 import { executeAutotaggerRun } from './classifier-run.mts'
+import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 const adapter = createAutotaggerRunAdapter()
 const signal = new AbortController().signal
@@ -142,7 +143,7 @@ describe('executeAutotaggerRun (real PG)', () => {
           createAutotaggerClient(
             {
               postId: fixture.post.id,
-              modelProvider: 'openrouter',
+              selection: JEV_OPENROUTER_SELECTION,
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             },

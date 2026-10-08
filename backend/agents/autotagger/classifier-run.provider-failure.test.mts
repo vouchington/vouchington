@@ -10,6 +10,7 @@ import {
 import { getSubjectClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { createAutotaggerClient } from './classifier-run-client.mts'
 import { executeAutotaggerRun } from './classifier-run.mts'
+import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 const adapter = createAutotaggerRunAdapter()
 
@@ -30,7 +31,7 @@ describe('autotagger provider failures (real receipts, real client)', () => {
                 createAutotaggerClient(
                   {
                     postId: fixture.post.id,
-                    modelProvider: 'openrouter',
+                    selection: JEV_OPENROUTER_SELECTION,
                     classifierRunId: hooks.classifierRunId,
                     beforeAttempt: hooks.beforeAttempt,
                   },

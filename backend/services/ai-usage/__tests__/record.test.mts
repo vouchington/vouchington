@@ -52,7 +52,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-moderator',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(200, 100),
     })
@@ -72,8 +72,8 @@ describe('recordAiUsage', () => {
     expect(entry?.request_count).toBe(1)
     expect(entry?.total_input_tokens).toBe(200)
     expect(entry?.total_output_tokens).toBe(100)
-    // gpt-5.4-nano flex: 200 in * 100_000/1M + 100 out * 625_000/1M = 82.5, rounds half-up to 83.
-    expect(entry?.total_cost).toEqual({ amount: '83', currency: 'usd', scale: 6 })
+    // gpt-6-luna flex: 200 in * 50_000/1M + 100 out * 250_000/1M = 35.
+    expect(entry?.total_cost).toEqual({ amount: '35', currency: 'usd', scale: 6 })
     expect(entry?.unpriced_request_count).toBe(0)
   })
 
@@ -86,7 +86,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-cached-clamp',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: openAIUsageToModelUsage({
         input_tokens: 100,
@@ -112,7 +112,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-openrouter-billed-cost',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'openai/gpt-5.4-nano',
+      model: 'openai/gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(100, 50, { reportedCostUsd: 0.001_234_5 }),
     })
@@ -166,7 +166,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-response-id-replay',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(11, 7),
     }
@@ -184,7 +184,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-response-id-concurrent',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: `future-Tier-${randomUUID()}`,
       usage: usage(12, 8, { reportedCostUsd: 0.001 }),
     }
@@ -205,7 +205,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-classifier-attribution',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(11, 7, { reportedCostUsd: 0.002 }),
     }
@@ -234,7 +234,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-classifier-attribution',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(5, 2),
       classifierRunId: runId,
@@ -253,7 +253,7 @@ describe('recordAiUsage', () => {
       agentSlug: 'test-response-id-atomicity',
       provider: 'openai' as const,
       transport: 'direct' as const,
-      model: 'gpt-5.4-nano',
+      model: 'gpt-6-luna',
       serviceTier: 'flex',
       usage: usage(-1, 9),
     }
@@ -275,7 +275,7 @@ describe('recordAiUsage', () => {
         agentSlug: 'test-response-id-fence',
         provider: 'openai' as const,
         transport: 'direct' as const,
-        model: 'gpt-5.4-nano',
+        model: 'gpt-6-luna',
         serviceTier: 'flex',
         usage: usage(13, 4),
       }),

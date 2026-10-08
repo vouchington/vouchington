@@ -18,6 +18,7 @@ import {
 import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
 import { executePostClassifierRun } from './classifier-execute.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 type Dependencies = Parameters<typeof executePostClassifierRun>[1]
 
@@ -44,6 +45,7 @@ function createBillingDependencies(
         {
           postId: input.post.id,
           communityId: input.community.id,
+          selection: JEV_OPENROUTER_SELECTION,
           classifierRunId: hooks.classifierRunId,
           beforeAttempt: hooks.beforeAttempt,
         },

@@ -1,21 +1,30 @@
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
+import type { ModelCallResult } from '@modules/model-providers/types'
 import {
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-} from '@agents/_shared'
+  parseCopyrightSubmissionGuidanceOutput,
+  type CopyrightSubmissionGuidanceKind,
+} from './output.mts'
 import {
   COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS,
   COPYRIGHT_COUNTER_NOTICE_RISK_KINDS,
   COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA,
   COPYRIGHT_LEGAL_HOLD_RISK_KINDS,
+  type CopyrightCounterNoticeGuidance,
+  type CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
 
-export type CopyrightSubmissionGuidanceKind = 'counter_notice' | 'court_or_ccb_hold'
+export type { CopyrightSubmissionGuidanceKind }
+export type CopyrightSubmissionGuidanceOutput =
+  | CopyrightCounterNoticeGuidance
+  | CopyrightLegalHoldGuidance
+/** The kind-aware model-calling seam; the run wraps it into the shared `AgentModelCaller` shape. */
 export type CopyrightSubmissionGuidanceModelCaller = (
   kind: CopyrightSubmissionGuidanceKind,
   input: string,
   safetyIdentifier: string,
-) => Promise<unknown>
+  call: Parameters<AgentModelCaller<never>>[2],
+) => Promise<ModelCallResult<CopyrightSubmissionGuidanceOutput>>
 
 const TEXT = { type: 'string' } as const
 const GAP = { type: ['string', 'null'] } as const
@@ -89,32 +98,29 @@ concise gap. These are review prompts, not a determination. Risk kinds are ${COP
 apply. A human makes every decision.`
 
 /* v8 ignore start -- thin provider wrapper, exercised through the injected model caller. */
-export function callCopyrightSubmissionGuidanceModel(
-  kind: CopyrightSubmissionGuidanceKind,
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+export const callCopyrightSubmissionGuidanceModel: CopyrightSubmissionGuidanceModelCaller = (
+  kind,
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: DEFAULT_AGENT_MODEL,
       instructions: kind === 'counter_notice' ? COUNTER_PROMPT : HOLD_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'copyright-submission-guidance', kind },
-      service_tier: 'flex',
-      prompt_cache_key: 'copyright-submission-guidance-v1',
-      text: {
-        format: {
-          type: 'json_schema',
-          name:
-            kind === 'counter_notice'
-              ? 'copyright_counter_notice_guidance'
-              : 'copyright_legal_hold_guidance',
-          schema: kind === 'counter_notice' ? COUNTER_SCHEMA : HOLD_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName:
+        kind === 'counter_notice'
+          ? 'copyright_counter_notice_guidance'
+          : 'copyright_legal_hold_guidance',
+      schema: kind === 'counter_notice' ? COUNTER_SCHEMA : HOLD_SCHEMA,
+      parse: value => parseCopyrightSubmissionGuidanceOutput(value, kind),
+      maxOutputTokens: 2_000,
+      safetyIdentifier,
+      promptCacheKey: 'copyright-submission-guidance-v1',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

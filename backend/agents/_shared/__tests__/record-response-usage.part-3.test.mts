@@ -1,58 +1,70 @@
 import { describe, expect, it, vi } from 'vitest'
+import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import type { latchAccountingUncertainty as latchAccountingUncertaintyFn } from '@services/ai-usage'
-import {
-  callRecordingAgentResponseUsage,
-  recordAgentResponseUsage,
-} from '../record-response-usage.mts'
 import {
   getBackgroundResponseHooks,
   getOpenAIResponseAttemptHooks,
 } from '@modules/openai-utils/create-response'
+import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
+import type { recordModelUsage } from '../record-model-usage.mts'
 
-function response() {
+function result() {
+  return makeDirectOpenAIResult('resp-attempt-hooks', { input_tokens: 10, output_tokens: 5 })
+}
+
+function params(agentSlug: string, provider: 'openai' | 'anthropic' = 'openai') {
   return {
-    id: 'resp-attempt-hooks',
-    output: [],
-    model: 'gpt-5.4-nano',
-    service_tier: 'flex' as const,
+    agentSlug,
+    selection: { provider, model: provider === 'openai' ? 'gpt-6-luna' : 'claude-haiku-5-5' },
+    openaiTransport: 'direct' as const,
   }
 }
 
-describe('callRecordingAgentResponseUsage attempt hooks', () => {
-  it('does not install the direct OpenAI background registry for OpenRouter', async () => {
-    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockResolvedValue(undefined)
+describe('callRecordingModelUsage attempt hooks', () => {
+  it('does not install the direct OpenAI background registry for OpenRouter or Anthropic', async () => {
+    const recorder = vi.fn<typeof recordModelUsage>().mockResolvedValue(undefined)
+    const deps = { assertDailySpendCapNotBreached: async () => null, recordModelUsage: recorder }
 
-    await callRecordingAgentResponseUsage(
+    await callRecordingModelUsage(
       async () => {
         expect(getBackgroundResponseHooks()).toBeUndefined()
-        return response()
+        return result()
       },
-      { agentSlug: 'openrouter-foreground-test', responseProvider: 'openrouter' },
-      { assertDailySpendCapNotBreached: async () => null, recordAgentResponseUsage: recorder },
+      { ...params('openrouter-foreground-test'), openaiTransport: 'openrouter' },
+      deps,
+    )
+    await callRecordingModelUsage(
+      async () => {
+        expect(getBackgroundResponseHooks()).toBeUndefined()
+        return result()
+      },
+      params('anthropic-foreground-test', 'anthropic'),
+      deps,
     )
 
-    expect(recorder).toHaveBeenCalledOnce()
+    expect(recorder).toHaveBeenCalledTimes(2)
   })
 
   it('installs hooks while keeping attempt one on the initial spend-cap guard only', async () => {
     const assertDailySpendCapNotBreached = vi.fn<(agentSlug: string) => Promise<null>>()
     assertDailySpendCapNotBreached.mockResolvedValue(null)
-    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockResolvedValue(undefined)
+    const recorder = vi.fn<typeof recordModelUsage>().mockResolvedValue(undefined)
+    const expected = result()
     let hooksInstalled = false
 
     await expect(
-      callRecordingAgentResponseUsage(
+      callRecordingModelUsage(
         async () => {
           const hooks = getOpenAIResponseAttemptHooks()
           if (!hooks) throw new Error('Expected response attempt hooks')
           hooksInstalled = true
           await hooks.beforeAttempt({ attempt: 1, requestStartedAt: new Date('2026-08-16') })
-          return response()
+          return expected
         },
-        { agentSlug: 'attempt-hooks-test' },
-        { assertDailySpendCapNotBreached, recordAgentResponseUsage: recorder },
+        params('attempt-hooks-test'),
+        { assertDailySpendCapNotBreached, recordModelUsage: recorder },
       ),
-    ).resolves.toEqual(response())
+    ).resolves.toBe(expected)
 
     expect(hooksInstalled).toBe(true)
     expect(assertDailySpendCapNotBreached).toHaveBeenCalledExactlyOnceWith('attempt-hooks-test')
@@ -70,25 +82,26 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         await retryGuardSettled.promise
         return null
       })
-    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockResolvedValue(undefined)
+    const recorder = vi.fn<typeof recordModelUsage>().mockResolvedValue(undefined)
+    const expected = result()
     let retryContinued = false
-    const call = callRecordingAgentResponseUsage(
+    const call = callRecordingModelUsage(
       async () => {
         const hooks = getOpenAIResponseAttemptHooks()
         if (!hooks) throw new Error('Expected response attempt hooks')
         await hooks.beforeAttempt({ attempt: 2, requestStartedAt: new Date('2026-08-16') })
         retryContinued = true
-        return response()
+        return expected
       },
-      { agentSlug: 'attempt-hooks-test' },
-      { assertDailySpendCapNotBreached, recordAgentResponseUsage: recorder },
+      params('attempt-hooks-test'),
+      { assertDailySpendCapNotBreached, recordModelUsage: recorder },
     )
 
     await retryGuardEntered.promise
     expect(assertDailySpendCapNotBreached).toHaveBeenCalledTimes(2)
     expect(retryContinued).toBe(false)
     retryGuardSettled.resolve()
-    await expect(call).resolves.toEqual(response())
+    await expect(call).resolves.toBe(expected)
     expect(retryContinued).toBe(true)
   })
 
@@ -102,7 +115,7 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         await latchSettled.promise
       })
     const providerError = new Error('connection reset after provider accepted the request')
-    const call = callRecordingAgentResponseUsage(
+    const call = callRecordingModelUsage(
       async () => {
         const hooks = getOpenAIResponseAttemptHooks()
         if (!hooks) throw new Error('Expected response attempt hooks')
@@ -112,11 +125,11 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         })
         throw providerError
       },
-      { agentSlug: 'attempt-hooks-test' },
+      params('attempt-hooks-test'),
       {
         assertDailySpendCapNotBreached: async () => null,
         latchAccountingUncertainty,
-        recordAgentResponseUsage: vi.fn<typeof recordAgentResponseUsage>(),
+        recordModelUsage: vi.fn<typeof recordModelUsage>(),
       },
     )
     const callRejection = call.catch((err: unknown) => err)
@@ -131,14 +144,14 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
 
     const latchError = new Error('latch unavailable')
     await expect(
-      callRecordingAgentResponseUsage(
+      callRecordingModelUsage(
         async () => {
           const hooks = getOpenAIResponseAttemptHooks()
           if (!hooks) throw new Error('Expected response attempt hooks')
           await hooks.onUnknownBilledAttempt({ requestStartedAt: new Date(), error: providerError })
           throw providerError
         },
-        { agentSlug: 'attempt-hooks-test' },
+        params('attempt-hooks-test'),
         {
           assertDailySpendCapNotBreached: async () => null,
           latchAccountingUncertainty: async () => {

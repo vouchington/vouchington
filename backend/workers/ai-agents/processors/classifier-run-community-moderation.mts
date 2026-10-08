@@ -31,7 +31,10 @@ export function createCommunityModerationRegistration(): ClassifierRunRegistrati
             createCommunityModerationClient({
               postId: current.subject.postId,
               communityId: current.resolved.configuration.communityId,
-              modelProvider: current.resolved.configuration.modelProvider,
+              selection: {
+                provider: current.resolved.configuration.modelProvider,
+                model: current.resolved.configuration.modelName,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

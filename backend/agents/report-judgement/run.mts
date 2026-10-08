@@ -1,16 +1,11 @@
-import {
-  parseLLMJsonResponse,
-  DEFAULT_AGENT_MODEL,
-  callRecordingAgentResponseUsage,
-} from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
   getAllReportsForEntity,
   getReportJudgementContextForEntity,
   insertReportJudgement,
   shouldRefreshReportJudgementForEntity,
-  type ModerationJudgementAction,
   type ModerationReportEntityType,
   type ModerationReportJudgement,
   type ReportJudgementContext,
@@ -36,6 +31,7 @@ export interface JudgementAgentResult {
 
 export async function runReportJudgementAgent(
   input: JudgementInput,
+  selection: ModelSelection,
   callModel: JudgementModelCaller = callJudgementModel,
 ): Promise<JudgementAgentResult | null> {
   const { entityType, entityId, triggeringReportId, rerunById } = input
@@ -111,50 +107,30 @@ export async function runReportJudgementAgent(
     .join('\n')
 
   const safetyIdentifier = entityContent.authorId ?? entityId
-  // Record from what was actually spent (both on success and on a failed/incomplete response,
-  // which still billed tokens), independent of whether the response below parses — a malformed
-  // response still billed real tokens, and extractTextFromOpenAIResponse throws on a
-  // completed-but-unextractable response (e.g. a refusal item), which must not skip recording.
-  // postId is set for 'post' and 'comment' — both are rows in `posts` (see fetch-entity.mts's
-  // combined post-or-comment query) — but not for 'user', 'url_hostname', or 'rss_feed_item',
-  // which don't reference a row in `posts`, and ai_usage_records.post_id has a real FK to it.
-  const response = await callRecordingAgentResponseUsage(
-    () => callModel(userInput, safetyIdentifier),
-    {
-      agentSlug: 'report-judgement',
-      communityId: entityContent.communityId,
-      postId: entityType === 'post' || entityType === 'comment' ? entityId : undefined,
-      responseProvider: 'openrouter',
-    },
-  )
-
-  const text = extractTextFromOpenAIResponse(response)
-
-  const parsed = parseLLMJsonResponse<{
-    recommended_action: string
-    public_response: string
-    internal_response: string
-  }>(text)
-
-  const validActions = new Set<string>(['no_action', 'warn', 'remove', 'escalate'])
-  if (
-    !parsed ||
-    !validActions.has(parsed.recommended_action) ||
-    typeof parsed.public_response !== 'string' ||
-    typeof parsed.internal_response !== 'string'
-  ) {
-    throw new TypeError(`runReportJudgementAgent: invalid response shape: ${text}`)
-  }
+  // Usage is recorded from what was actually spent: on success, and for a billed answer that
+  // failed validation or did not complete, which still billed tokens. postId is set for 'post' and
+  // 'comment' -- both are rows in `posts` (see fetch-entity.mts's combined post-or-comment query)
+  // -- but not for 'user', 'url_hostname', or 'rss_feed_item', which don't reference a row in
+  // `posts`, and ai_usage_records.post_id has a real FK to it.
+  const result = await callAgentModel({
+    agentSlug: 'report-judgement',
+    selection,
+    input: userInput,
+    safetyIdentifier,
+    callModel,
+    communityId: entityContent.communityId,
+    postId: entityType === 'post' || entityType === 'comment' ? entityId : undefined,
+  })
 
   const judgement = await insertReportJudgement({
     entityType,
     entityId,
     triggeringReportId,
     rerunById: rerunById ?? null,
-    recommendedAction: parsed.recommended_action as ModerationJudgementAction,
-    publicResponse: parsed.public_response,
-    internalResponse: parsed.internal_response,
-    model: DEFAULT_AGENT_MODEL,
+    recommendedAction: result.output.recommended_action,
+    publicResponse: result.output.public_response,
+    internalResponse: result.output.internal_response,
+    model: result.model,
     context,
   })
 

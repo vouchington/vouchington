@@ -34,7 +34,7 @@ const { captureMessage, addBreadcrumb } = sentryMocks
 
 const streamContext = {
   provider: 'openrouter' as const,
-  model: 'openai/gpt-5.4-nano',
+  model: 'openai/gpt-6-luna',
   trigger: 'stream_failed' as const,
 }
 
@@ -70,7 +70,7 @@ describe('recordOpenAiFlexFallback', () => {
           provider: 'openrouter',
           trigger: 'stream_failed',
         },
-        extra: { model: 'openai/gpt-5.4-nano' },
+        extra: { model: 'openai/gpt-6-luna' },
       })
     } finally {
       consoleWarn.mockRestore()

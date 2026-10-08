@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
-import { callRecordingAgentResponseUsage, DEFAULT_AGENT_MODEL } from '@agents/_shared'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
 import {
   appendCopyrightSubmissionGuidance,
   getCopyrightSubmissionGuidanceSource,
@@ -11,7 +11,6 @@ import {
   type CopyrightSubmissionGuidanceKind,
   type CopyrightSubmissionGuidanceModelCaller,
 } from './model.mts'
-import { parseCopyrightSubmissionGuidanceOutput } from './output.mts'
 
 const PROMPT_VERSION = 'copyright-submission-guidance-v1'
 
@@ -20,6 +19,7 @@ export type { CopyrightSubmissionGuidanceModelCaller } from './model.mts'
 /** One advisory model call, with digest of exactly the contact-redacted text shown to it. */
 export async function runCopyrightSubmissionGuidanceAgent(
   submissionId: string,
+  selection: ModelSelection,
   callModel: CopyrightSubmissionGuidanceModelCaller = callCopyrightSubmissionGuidanceModel,
 ): Promise<CopyrightSubmissionGuidanceKind | null> {
   const filing = await getCopyrightSubmissionGuidanceSource(submissionId)
@@ -28,20 +28,19 @@ export async function runCopyrightSubmissionGuidanceAgent(
     await sanitizePromptInjection(JSON.stringify(filing.input)),
     { source: 'copyright_submission', contentType: filing.kind },
   )
-  const response = await callRecordingAgentResponseUsage(
-    () =>
-      callModel(filing.kind, modelInput, createHash('sha256').update(submissionId).digest('hex')),
-    { agentSlug: 'copyright-submission-guidance' },
-  )
-  const guidance = parseCopyrightSubmissionGuidanceOutput(
-    extractTextFromOpenAIResponse(response),
-    filing.kind,
-  )
+  const { output: guidance, model } = await callAgentModel({
+    agentSlug: 'copyright-submission-guidance',
+    selection,
+    input: modelInput,
+    safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),
+    callModel: (input, safetyIdentifier, call) =>
+      callModel(filing.kind, input, safetyIdentifier, call),
+  })
   await appendCopyrightSubmissionGuidance({
     submissionId,
     inputSha256: createHash('sha256').update(modelInput).digest(),
     promptVersion: PROMPT_VERSION,
-    model: DEFAULT_AGENT_MODEL,
+    model,
     guidance,
   })
   return filing.kind

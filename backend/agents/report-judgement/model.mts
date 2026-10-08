@@ -1,15 +1,17 @@
-import {
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-  createOpenRouterResponse,
-  toOpenRouterModel,
-} from '@agents/_shared'
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 import {
   renderContentPolicyForPrompt,
   renderReportReasonPolicyCoverageForPrompt,
 } from '@services/moderation/content-policy'
 
-export type JudgementModelCaller = (input: string, safetyIdentifier: string) => Promise<unknown>
+export type JudgementOutput = {
+  recommended_action: 'no_action' | 'warn' | 'remove' | 'escalate'
+  public_response: string
+  internal_response: string
+}
+
+export type JudgementModelCaller = AgentModelCaller<JudgementOutput>
 
 const JUDGEMENT_JSON_SCHEMA = {
   type: 'object',
@@ -51,32 +53,30 @@ Respond with a JSON object containing:
 - Always be conservative — if unsure, escalate.
 - Do not assume guilt; consider context and community rules.`
 
-/* v8 ignore start -- thin OpenRouter integration wrapper; exercised by credentialed *.openrouter.test.mts */
-export function callJudgementModel(
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenRouterResponse>>> {
-  return createOpenRouterResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callJudgementModel: JudgementModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
       instructions: SYSTEM_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'report-judgement' },
-      service_tier: 'flex',
-      // SYSTEM_PROMPT embeds the full content policy + report-reason coverage — the largest
+      schemaName: 'report_judgement',
+      schema: JUDGEMENT_JSON_SCHEMA,
+      // The schema (enum included) already validated the answer.
+      parse: value => value as JudgementOutput,
+      maxOutputTokens: 2_000,
+      safetyIdentifier,
+      // SYSTEM_PROMPT embeds the full content policy + report-reason coverage -- the largest
       // static prefix of any agent in the repo, and cached input is 10x cheaper. Versioned so a
       // prompt edit here can be paired with a key bump if the cache should be invalidated.
-      prompt_cache_key: 'report-judgement-v1',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'report_judgement',
-          schema: JUDGEMENT_JSON_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenRouterResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      promptCacheKey: 'report-judgement-v1',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

@@ -13,44 +13,17 @@ import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import { createReviewDispute } from '@services/review-disputes/create'
 import { getReviewDisputeById } from '@services/review-disputes/get'
 import { runDisputeResolutionAgent } from './run.mts'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+  TEST_OPENAI_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
+import type { AgentModelCaller } from '@agents/_shared'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { PrivateUser } from '@services/users/types'
 import type { Response } from 'openai/resources/responses/responses'
 
-function makeModelCaller(json: object) {
-  return vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
-    Promise.resolve({
-      id: `resp-${randomUUID()}`,
-      output: [
-        {
-          type: 'message',
-          status: 'completed',
-          content: [{ type: 'output_text', text: JSON.stringify(json) }],
-        },
-      ],
-    }),
-  )
-}
-
-// Unlike makeModelCaller, includes usage/model/service_tier -- recordAgentResponseUsage no-ops
-// without response.usage, so ledger-attribution tests need those fields on the resolved value.
-function makeModelCallerWithUsage(json: object) {
-  return vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
-    Promise.resolve({
-      id: `resp-${randomUUID()}`,
-      model: 'gpt-5.4-nano-2026-03-17',
-      service_tier: 'flex',
-      usage: { input_tokens: 100, output_tokens: 20 },
-      output: [
-        {
-          type: 'message',
-          status: 'completed',
-          content: [{ type: 'output_text', text: JSON.stringify(json) }],
-        },
-      ],
-    }),
-  )
-}
+const makeModelCaller = makeAgentModelCaller
 
 describe('runDisputeResolutionAgent', () => {
   let staff: PrivateUser
@@ -105,7 +78,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'No policy violation found.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, callModel)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getReviewDisputeById(dispute.id)
@@ -129,7 +102,7 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'Claim flagged for injection attempt.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, callModel)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledOnce()
     const callArg = callModel.mock.calls[0][0]
@@ -150,14 +123,14 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'First run.',
       internal_response: 'Internal.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, firstCaller)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, firstCaller)
 
     const secondCaller = makeModelCaller({
       recommended_action: 'remove',
       public_response: 'Second run.',
       internal_response: 'Internal.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, secondCaller)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, secondCaller)
 
     expect(secondCaller).not.toHaveBeenCalled()
   })
@@ -176,14 +149,18 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'First.',
       internal_response: 'First.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, firstCaller)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, firstCaller)
 
     const secondCaller = makeModelCaller({
       recommended_action: 'remove',
       public_response: 'Rerun response.',
       internal_response: 'Rerun internal.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id, rerunById: staff.id }, secondCaller)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, rerunById: staff.id },
+      TEST_MODEL_SELECTION,
+      secondCaller,
+    )
 
     expect(secondCaller).toHaveBeenCalledOnce()
     const updated = await getReviewDisputeById(dispute.id)
@@ -196,29 +173,8 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'x',
       internal_response: 'x',
     })
-    await runDisputeResolutionAgent({ disputeId: randomUUID() }, callModel)
+    await runDisputeResolutionAgent({ disputeId: randomUUID() }, TEST_MODEL_SELECTION, callModel)
     expect(callModel).not.toHaveBeenCalled()
-  })
-
-  it('throws TypeError for invalid model response shape', async () => {
-    const postId = await makeReviewPost()
-    const input = parseCreateReviewDisputeInput({
-      post_id: postId,
-      reason: 'privacy_violation',
-      claim_text: `Bad shape test ${randomUUID()}`,
-    })
-    const { dispute } = await createReviewDispute(claimant, input)
-
-    await expect(
-      runDisputeResolutionAgent(
-        { disputeId: dispute.id },
-        makeModelCaller({
-          recommended_action: 'INVALID_ACTION',
-          public_response: 'x',
-          internal_response: 'x',
-        }),
-      ),
-    ).rejects.toThrow(TypeError)
   })
 
   it('attributes ledger costs to the disputed review post community, not null', async () => {
@@ -239,13 +195,13 @@ describe('runDisputeResolutionAgent', () => {
     })
     const { dispute } = await createReviewDispute(claimant, input)
 
-    const callModel = makeModelCallerWithUsage({
+    const callModel = makeModelCaller({
       recommended_action: 'no_action',
       public_response: 'Reviewed and found accurate.',
       internal_response: 'No policy violation found.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, callModel)
+    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
 
     await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
       community_id: community.id,
@@ -265,11 +221,11 @@ describe('runDisputeResolutionAgent', () => {
     // call-site catch block records from the thrown OpenAIResponseNotCompletedError -- not just
     // from a successful response -- so a queued retry after this failure doesn't compound an
     // unrecorded charge with another one.
-    const callModel = vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
+    const callModel = vi.fn<AgentModelCaller<never>>(() =>
       Promise.reject(
         new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
           status: 'incomplete',
-          model: 'gpt-5.4-nano-2026-03-17',
+          model: 'gpt-6-luna-2026-10-01',
           service_tier: 'flex',
           usage: { input_tokens: 150, output_tokens: 25 },
           incomplete_details: { reason: 'max_output_tokens' },
@@ -277,12 +233,12 @@ describe('runDisputeResolutionAgent', () => {
       ),
     )
 
-    await expect(runDisputeResolutionAgent({ disputeId: dispute.id }, callModel)).rejects.toThrow(
-      'OpenAI response incomplete: max_output_tokens',
-    )
+    await expect(
+      runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_OPENAI_SELECTION, callModel),
+    ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
-      model: 'gpt-5.4-nano-2026-03-17',
+      model: 'gpt-6-luna-2026-10-01',
       service_tier_id: 'flex',
       input_tokens: 150,
       output_tokens: 25,

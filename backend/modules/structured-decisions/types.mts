@@ -145,8 +145,18 @@ export interface StructuredDecisionAttemptHooks {
    *  ordinary non-ambiguous 4xx. */
   onUnknownBilledAttempt?: (attempt: StructuredDecisionUnknownBilledAttempt) => Promise<void>
 }
+/**
+ * The `{ provider, model }` a jev classifier entry point takes: the classifier row's transport and
+ * jev model, which stay its single source because its thresholds are calibrated per model.
+ */
+export type StructuredDecisionModelSelection = {
+  provider: StructuredDecisionTransport
+  model: string
+}
 export type CreateStructuredDecisionClientOptions = {
   transport: StructuredDecisionTransport
+  /** The jev model to ask; each transport's own jev model when omitted. */
+  model?: string
   apiKey: string
   fetch?: StructuredDecisionFetch
   hooks?: StructuredDecisionAttemptHooks

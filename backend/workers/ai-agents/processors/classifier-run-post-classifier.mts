@@ -1,5 +1,9 @@
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
 import {
+  POST_CLASSIFIER_MODEL_NAME,
+  POST_CLASSIFIER_MODEL_PROVIDER,
+} from '@voucha/types/entities/post-classifier'
+import {
   createPostClassifierOpenRouterClient,
   executePostClassifierRun,
 } from '@agents/post-classifier'
@@ -41,6 +45,11 @@ export function createPostClassifierRegistration(
             createPostClassifierOpenRouterClient({
               postId: post.id,
               communityId: post.community_id,
+              // The fixed catalog: resolving the configuration already proved the row is exactly this.
+              selection: {
+                provider: POST_CLASSIFIER_MODEL_PROVIDER,
+                model: POST_CLASSIFIER_MODEL_NAME,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

@@ -11,6 +11,10 @@ import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-us
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { createAutotaggerAgentClient, createAutotaggerClient } from './classifier-run-client.mts'
+import {
+  JEV_OPENROUTER_SELECTION,
+  JEV_TYPESAFE_SELECTION,
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 const request = {
   state: 'a post',
@@ -47,7 +51,7 @@ describe('createAutotaggerClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createAutotaggerClient(
-      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -65,7 +69,7 @@ describe('createAutotaggerClient', () => {
       {
         classifierRunId: runId,
         postId: post.id,
-        modelProvider: 'openrouter',
+        selection: JEV_OPENROUTER_SELECTION,
         beforeAttempt: async () => {},
       },
       { fetch: provider([]), apiKey: 'test-provider-key' },
@@ -87,7 +91,7 @@ describe('createAutotaggerClient', () => {
     const fetch = provider(calls)
     const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createAutotaggerAgentClient(
-      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -101,7 +105,7 @@ describe('createAutotaggerClient', () => {
       const fetch = provider([])
       const beforeAttempt = vi.fn<() => Promise<void>>(async () => {})
       const client = createAutotaggerAgentClient(
-        { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
+        { classifierRunId, postId: null, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
         { fetch, apiKey: 'test-provider-key' },
       )
 
@@ -118,7 +122,7 @@ describe('createAutotaggerClient', () => {
       throw new Error('attempt cap reached')
     })
     const client = createAutotaggerClient(
-      { classifierRunId, postId: null, modelProvider: 'openrouter', beforeAttempt },
+      { classifierRunId, postId: null, selection: JEV_OPENROUTER_SELECTION, beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
     )
 
@@ -130,7 +134,12 @@ describe('createAutotaggerClient', () => {
   it('cannot be built for a provider it has no key source for', () => {
     expect(() =>
       createAutotaggerClient(
-        { classifierRunId, postId: null, modelProvider: 'typesafe', beforeAttempt: async () => {} },
+        {
+          classifierRunId,
+          postId: null,
+          selection: JEV_TYPESAFE_SELECTION,
+          beforeAttempt: async () => {},
+        },
         { apiKey: 'test-provider-key' },
       ),
     ).toThrow("no API key source for provider 'typesafe'")
@@ -143,7 +152,7 @@ describe('createAutotaggerClient', () => {
       createAutotaggerClient({
         classifierRunId,
         postId: null,
-        modelProvider: 'openrouter',
+        selection: JEV_OPENROUTER_SELECTION,
         beforeAttempt: async () => {},
       }),
     ).toThrow('API key is required')

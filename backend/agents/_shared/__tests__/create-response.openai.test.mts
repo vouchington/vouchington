@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createOpenAIResponse } from '../create-response.mts'
-import { DEFAULT_AGENT_MODEL } from '../models.mts'
+import { createOpenAIResponse } from '@modules/openai-utils/create-response'
 
 describe('agents._shared.create-response', () => {
   /**
@@ -16,7 +15,7 @@ describe('agents._shared.create-response', () => {
         throw new Error('OPENAI_API_KEY is required for this credentialed test.')
       }
       const response = await createOpenAIResponse({
-        model: DEFAULT_AGENT_MODEL,
+        model: 'gpt-6-luna',
         input: 'Reply with the single word OK and nothing else.',
       })
       expect(response).toBeDefined()

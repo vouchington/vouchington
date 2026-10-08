@@ -1,16 +1,8 @@
-import {
-  parseLLMJsonResponse,
-  DEFAULT_AGENT_MODEL,
-  callRecordingAgentResponseUsage,
-} from '@agents/_shared'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { moderationAiConfig } from '@services/moderation'
-import {
-  getReviewDisputeById,
-  createReviewDisputeDraft,
-  type ReviewDisputeRecommendedAction,
-} from '@services/review-disputes'
+import { getReviewDisputeById, createReviewDisputeDraft } from '@services/review-disputes'
 import onError from '@modules/on-error'
 import { callDisputeModel, type DisputeModelCaller } from './model.mts'
 
@@ -24,10 +16,12 @@ export interface DisputeModelInput {
 /**
  * Runs the AI dispute-resolution agent for a single review dispute.
  * Updates the dispute with ai_public_response, ai_internal_response, recommended_action.
- * `callModel` defaults to the real OpenAI call and is injected in tests.
+ * The caller passes the `{ provider, model }` its service setting holds; `callModel` defaults to
+ * the real provider call and is injected in tests.
  */
 export async function runDisputeResolutionAgent(
   input: DisputeModelInput,
+  selection: ModelSelection,
   callModel: DisputeModelCaller = callDisputeModel,
 ): Promise<void> {
   const { disputeId, rerunById } = input
@@ -81,43 +75,23 @@ export async function runDisputeResolutionAgent(
   ].join('\n')
 
   const safetyIdentifier = entityContent.authorId ?? dispute.post_id
-  // Record from what was actually spent (both on success and on a failed/incomplete response,
-  // which still billed tokens), independent of whether the response below parses — a malformed
-  // response still billed real tokens, and extractTextFromOpenAIResponse throws on a
-  // completed-but-unextractable response (e.g. a refusal item), which must not skip recording.
-  const response = await callRecordingAgentResponseUsage(
-    () => callModel(userInput, safetyIdentifier),
-    {
-      agentSlug: 'dispute-resolution',
-      communityId: entityContent.communityId,
-      postId: dispute.post_id,
-      responseProvider: 'openrouter',
-    },
-  )
-
-  const text = extractTextFromOpenAIResponse(response)
-
-  const parsed = parseLLMJsonResponse<{
-    recommended_action: string
-    public_response: string
-    internal_response: string
-  }>(text)
-
-  const validActions = new Set<string>(['no_action', 'remove', 'annotate', 'dismiss'])
-  if (
-    !parsed ||
-    !validActions.has(parsed.recommended_action) ||
-    typeof parsed.public_response !== 'string' ||
-    typeof parsed.internal_response !== 'string'
-  ) {
-    throw new TypeError(`runDisputeResolutionAgent: invalid response shape: ${text}`)
-  }
+  // Usage is recorded from what was actually spent: on success, and for a billed answer that
+  // failed validation or did not complete, which still billed tokens.
+  const result = await callAgentModel({
+    agentSlug: 'dispute-resolution',
+    selection,
+    input: userInput,
+    safetyIdentifier,
+    callModel,
+    communityId: entityContent.communityId,
+    postId: dispute.post_id,
+  })
 
   await createReviewDisputeDraft({
     disputeId,
-    recommendedAction: parsed.recommended_action as ReviewDisputeRecommendedAction,
-    aiPublicResponse: parsed.public_response,
-    aiInternalResponse: parsed.internal_response,
-    model: DEFAULT_AGENT_MODEL,
+    recommendedAction: result.output.recommended_action,
+    aiPublicResponse: result.output.public_response,
+    aiInternalResponse: result.output.internal_response,
+    model: result.model,
   })
 }

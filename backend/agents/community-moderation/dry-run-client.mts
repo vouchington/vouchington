@@ -4,6 +4,7 @@ import {
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
+  type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import {
   assertDailySpendCapNotBreached,
@@ -82,12 +83,13 @@ function createDryRunBillingHooks(communityId: string): StructuredDecisionAttemp
 
 /** The provider client for a moderator's rule preview; it persists nothing but billing. */
 export function createCommunityPromptDryRunClient(
-  input: { communityId: string; modelProvider: ClassifierModelProvider },
+  input: { communityId: string; selection: StructuredDecisionModelSelection },
   options: CommunityPromptDryRunClientOptions = {},
 ): StructuredDecisionClient {
   return createStructuredDecisionClient({
-    transport: input.modelProvider,
-    apiKey: resolveApiKey(input.modelProvider, options),
+    transport: input.selection.provider,
+    model: input.selection.model,
+    apiKey: resolveApiKey(input.selection.provider, options),
     fetch: options.fetch,
     hooks: createDryRunBillingHooks(input.communityId),
   })

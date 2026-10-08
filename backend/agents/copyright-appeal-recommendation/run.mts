@@ -1,11 +1,7 @@
 import { createHash } from 'node:crypto'
-import {
-  callRecordingAgentResponseUsage,
-  DEFAULT_AGENT_MODEL,
-  parseLLMJsonResponse,
-} from '@agents/_shared'
+import { callAgentModel } from '@agents/_shared'
+import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
 import { copyrightAppealRecommendations } from '@services/copyright-notices'
 import {
   callCopyrightAppealRecommendationModel,
@@ -18,6 +14,7 @@ export type { CopyrightAppealRecommendationModelCaller } from './model.mts'
 
 export async function runCopyrightAppealRecommendationAgent(
   submissionId: string,
+  selection: ModelSelection,
   callModel: CopyrightAppealRecommendationModelCaller = callCopyrightAppealRecommendationModel,
 ): Promise<'confirm' | 'modify' | 'reverse' | 'uncertain' | null> {
   const appeal = await copyrightAppealRecommendations.get(submissionId)
@@ -26,44 +23,21 @@ export async function runCopyrightAppealRecommendationAgent(
     source: 'copyright_appeal',
     contentType: 'copyright-appeal',
   })
-  const response = await callRecordingAgentResponseUsage(
-    () => callModel(input, createHash('sha256').update(submissionId).digest('hex')),
-    { agentSlug: 'copyright-appeal-recommendation' },
-  )
-  const { recommendation, rationale } = parseCopyrightAppealRecommendationOutput(
-    extractTextFromOpenAIResponse(response),
-  )
+  const { output, model } = await callAgentModel({
+    agentSlug: 'copyright-appeal-recommendation',
+    selection,
+    input,
+    safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),
+    callModel,
+  })
+  const { recommendation, rationale } = output
   await copyrightAppealRecommendations.append({
     submissionId,
     inputSha256: createHash('sha256').update(input).digest(),
     promptVersion: PROMPT_VERSION,
-    model: DEFAULT_AGENT_MODEL,
+    model,
     recommendation,
     rationale,
   })
   return recommendation
-}
-
-export function parseCopyrightAppealRecommendationOutput(text: string): {
-  recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
-  rationale: string
-} {
-  let output: { recommendation?: unknown; rationale?: unknown } | null
-  try {
-    output = parseLLMJsonResponse<{ recommendation?: unknown; rationale?: unknown }>(text)
-  } catch {
-    throw new TypeError('Invalid copyright appeal recommendation JSON')
-  }
-  const recommendation = output?.recommendation
-  const rationale = output?.rationale
-  if (
-    (recommendation !== 'confirm' &&
-      recommendation !== 'modify' &&
-      recommendation !== 'reverse' &&
-      recommendation !== 'uncertain') ||
-    typeof rationale !== 'string' ||
-    rationale.length > 10_000
-  )
-    throw new TypeError('Invalid copyright appeal recommendation output')
-  return { recommendation, rationale }
 }

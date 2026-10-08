@@ -7,6 +7,7 @@ import {
 export { recordClassifierRunAlarm } from './classifier-run-alarm.mts'
 export { recordCopyrightRetentionErasureFailure } from './copyright-retention-erasure-failure.mts'
 export { recordCopyrightReviewTargetBreach } from './copyright-review-target-breach.mts'
+export { recordModelProviderAlarm } from './model-provider-alarm.mts'
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
 export { recordOpenAiFlexFallback } from './openai-flex-fallback.mts'
 export type { OpenAiFlexFallbackContext } from './openai-flex-fallback.mts'

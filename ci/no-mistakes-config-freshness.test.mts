@@ -90,8 +90,8 @@ describe('no-mistakes config freshness', () => {
   })
 
   it('keeps integration markers on analyzer-limited LLM seams', () => {
-    expect(readRepoFile('backend/agents/story-post/agent.mts')).toContain(
-      '/* no-mistakes: integration=openrouter */\nexport async function callStoryPostAgent',
+    expect(readRepoFile('backend/modules/model-providers/generate.mts')).toContain(
+      '/* no-mistakes: integration=anthropic */\n/* no-mistakes: integration=openai */\nexport async function generateJson',
     )
   })
 

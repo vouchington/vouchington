@@ -10,7 +10,11 @@ import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-co
 import { moderationAiConfig } from '@services/moderation'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelResponse } from '@voucha/test-helpers/agents/report-judgement/fixtures'
+import {
+  makeModelCallResult,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
+import type { AgentModelCaller } from '@agents/_shared'
 
 describe('runReportJudgementAgent manual reruns', () => {
   afterAll(async () => {
@@ -34,14 +38,14 @@ describe('runReportJudgementAgent manual reruns', () => {
       entityId: postId,
       reason: 'spam',
     })
-    const callModel = vi.fn<(input: string, entityId: string) => Promise<unknown>>(async () => {
+    const callModel = vi.fn<AgentModelCaller<never>>(async () => {
       await insertTestModerationReport({
         reporterUserId: laterReporter.id,
         entityType: 'post',
         entityId: postId,
         reason: 'illegal_content',
       })
-      return makeReportJudgementModelResponse({
+      return makeModelCallResult({
         recommended_action: 'warn',
         public_response: 'Warning issued.',
         internal_response: 'Manual rerun.',
@@ -55,6 +59,7 @@ describe('runReportJudgementAgent manual reruns', () => {
         triggeringReportId: reportId,
         rerunById: rerunUser.id,
       },
+      TEST_MODEL_SELECTION,
       callModel,
     )
 
@@ -85,9 +90,9 @@ describe('runReportJudgementAgent manual reruns', () => {
       entityId: postId,
       reason: 'spam',
     })
-    const callModel = vi.fn<(input: string, entityId: string) => Promise<unknown>>(() =>
+    const callModel = vi.fn<AgentModelCaller<never>>(() =>
       Promise.resolve(
-        makeReportJudgementModelResponse({
+        makeModelCallResult({
           recommended_action: 'warn',
           public_response: 'Warning issued.',
           internal_response: 'Manual rerun.',
@@ -102,6 +107,7 @@ describe('runReportJudgementAgent manual reruns', () => {
         triggeringReportId: reportId,
         rerunById: rerunUser.id,
       },
+      TEST_MODEL_SELECTION,
       callModel,
     )
 

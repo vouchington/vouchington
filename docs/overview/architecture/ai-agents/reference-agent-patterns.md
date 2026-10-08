@@ -4,24 +4,38 @@
 
 ### 1. Single call
 
-One provider call. Use `createOpenAIResponse` for direct OpenAI workloads or
-`createOpenRouterResponse` for retained OpenRouter workloads, optionally with
-`parseLLMJsonResponse` for structured JSON.
+One schema-constrained provider call through
+[`@modules/model-providers`](../backend/modules/model-providers/README.md). The agent entry point
+takes the `{ provider, model }` its service setting holds, builds a `generateJson` request
+(instructions, input, JSON schema, a `parse`), and settles the usage ledger with `callAgentModel`.
+A provider SDK never appears in an agent, and an agent has no hidden default model.
 
-**Used by:** `story-post`
+**Used by:** `report-judgement`, `appeal-resolution`, `dispute-resolution`, `story-post`,
+`conversation-title`, `copyright-email-intake`, `copyright-form-screening`,
+`copyright-submission-guidance`, `copyright-appeal-recommendation`
 
 ```typescript
-import {
-  callRecordingAgentResponseUsage,
-  createOpenRouterResponse,
-  parseLLMJsonResponse,
-  toOpenRouterModel,
-} from '@agents/_shared'
+import { callAgentModel, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 
-const response = await callRecordingAgentResponseUsage(
-  () => createOpenRouterResponse({ model: toOpenRouterModel(model), instructions, input }),
-  { agentSlug: 'story-post', responseProvider: 'openrouter' },
-)
-const text = extractTextFromOpenAIResponse(response)
-const parsed = parseLLMJsonResponse<MyType>(text)
+// model.mts: the seam tests replace.
+export const callMyModel: AgentModelCaller<MyOutput> = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
+    { instructions, input, schemaName: 'my_output', schema, parse, maxOutputTokens: 1_000 },
+    { openaiTransport },
+  )
+
+// run.mts: the entry point is (input, selection, callModel = callMyModel).
+const { output, model } = await callAgentModel({
+  agentSlug: 'my-agent',
+  selection,
+  input,
+  safetyIdentifier,
+  callModel,
+})
 ```

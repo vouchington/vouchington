@@ -8,12 +8,14 @@ ignores:
   - 'backend/agents/**'
   - 'backend/modules/openai-utils/**'
   - 'backend/modules/openrouter-utils/**'
+  - 'backend/modules/model-providers/**'
   - '**/*.test.mts'
   - '**/*.spec.mts'
 rule:
   any:
     - pattern: 'createOpenAIResponse($$$)'
     - pattern: '$OBJ.responses.create($$$)'
+    - pattern: 'generateJson($$$)'
 examples:
   - code: "createOpenAIResponse({ model: 'gpt-4o' })"
     isValid: false
@@ -24,9 +26,15 @@ examples:
   - code: "createOpenAIResponse({ model: 'gpt-4o' })"
     isValid: true
     file: 'backend/agents/my-agent/run.mts'
-  - code: "client.responses.create({ model: 'openai/gpt-5.4-nano' })"
+  - code: "client.responses.create({ model: 'openai/gpt-6-luna' })"
     isValid: true
     file: 'backend/modules/openrouter-utils/create-response.mts'
+  - code: 'generateJson(selection, request, { openaiTransport })'
+    isValid: false
+    file: 'backend/services/other/handler.mts'
+  - code: 'generateJson(selection, request, { openaiTransport })'
+    isValid: true
+    file: 'backend/agents/my-agent/model.mts'
   - code: 'callSomeOtherFunction()'
     isValid: true
     file: 'backend/modules/other/handler.mts'

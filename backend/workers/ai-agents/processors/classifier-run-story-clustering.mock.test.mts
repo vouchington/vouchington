@@ -183,7 +183,10 @@ describe('C9 story clustering through the shared lifecycle (real PG, mocked prov
         {
           createClient: hooks =>
             createStoryClusteringClient({
-              modelProvider: claim.lease.resolved.configuration.modelProvider,
+              selection: {
+                provider: claim.lease.resolved.configuration.modelProvider,
+                model: claim.lease.resolved.configuration.modelName,
+              },
               classifierRunId: hooks.classifierRunId,
               beforeAttempt: hooks.beforeAttempt,
             }),

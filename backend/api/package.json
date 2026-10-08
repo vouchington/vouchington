@@ -58,6 +58,7 @@
     "@modules/csv": "workspace:^",
     "@modules/http-signatures": "workspace:^",
     "@modules/membership-helpers": "workspace:^",
+    "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",

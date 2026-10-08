@@ -1,12 +1,20 @@
+import { randomUUID } from 'node:crypto'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
-import { parseCopyrightEmailIntakeOutput, runCopyrightEmailIntakeAgent } from './run.mts'
+import { parseCopyrightEmailIntakeOutput } from './output.mts'
+import { runCopyrightEmailIntakeAgent } from './run.mts'
+
+const parseText = (text: string) => parseCopyrightEmailIntakeOutput(JSON.parse(text))
 
 describe('copyright email intake output', () => {
   it('accepts a bounded advisory extraction', () => {
     expect(
-      parseCopyrightEmailIntakeOutput(
+      parseText(
         JSON.stringify({
           recommendation: 'potentially_valid',
           submission_kind: 'notice',
@@ -36,9 +44,8 @@ describe('copyright email intake output', () => {
   })
 
   it('rejects oversized or unbounded model output', () => {
-    expect(() => parseCopyrightEmailIntakeOutput('{')).toThrow('invalid response JSON')
     expect(() =>
-      parseCopyrightEmailIntakeOutput(
+      parseText(
         JSON.stringify({
           recommendation: 'potentially_valid',
           submission_kind: 'notice',
@@ -68,7 +75,7 @@ describe('copyright email intake output', () => {
   })
 
   it('stores the model extraction for a persisted inbound email', async () => {
-    const sesMessageId = `ses-agent-${crypto.randomUUID()}`
+    const sesMessageId = `ses-agent-${randomUUID()}`
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId,
       receivedAt: new Date(),
@@ -80,27 +87,18 @@ describe('copyright email intake output', () => {
     })
     await recordCopyrightEmailParse(intake, {
       status: 'succeeded',
-      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      fromEmail: `claimant-${randomUUID()}@example.test`,
       subject: 'Copyright complaint',
       bodyText: 'A copyright complaint.',
-      messageId: `<${crypto.randomUUID()}@example.test>`,
+      messageId: `<${randomUUID()}@example.test>`,
       replyReferences: [],
       attachments: [],
     })
-    const callModel = vi.fn<(input: string, safetyId: string) => Promise<unknown>>(() =>
-      Promise.resolve({
-        id: `resp-${crypto.randomUUID()}`,
-        output: [
-          {
-            type: 'message',
-            status: 'completed',
-            content: [{ type: 'output_text', text: validOutput() }],
-          },
-        ],
-      }),
-    )
+    const callModel = makeAgentModelCaller(JSON.parse(validOutput()))
 
-    await expect(runCopyrightEmailIntakeAgent(intake.id, callModel)).resolves.toBeUndefined()
+    await expect(
+      runCopyrightEmailIntakeAgent(intake.id, TEST_MODEL_SELECTION, callModel),
+    ).resolves.toBeUndefined()
     expect(callModel).toHaveBeenCalledOnce()
   })
 })

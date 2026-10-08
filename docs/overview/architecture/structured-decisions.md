@@ -14,7 +14,11 @@ flowchart LR
   Decode --> Result[Typed results, native answers, and raw envelope]
 ```
 
-Callers explicitly select one transport. The client makes exactly one attempt per call and never
+Callers explicitly select one transport, and each jev classifier entry point takes the same
+`{ provider, model }` shape as the model-backed agents: `provider` is the transport (`openrouter` or
+`typesafe`) and `model` is the jev model, both read from the classifier row, which stays their single
+source because its thresholds are calibrated per model (`StructuredDecisionModelSelection`). The
+client makes exactly one attempt per call and never
 retries; optional `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks let a caller
 record billed usage and enforce a spend cap without this module ever importing a billing service
 itself. `@agents/_shared/structured-decision-billing-hooks.mts` owns that reusable composition for

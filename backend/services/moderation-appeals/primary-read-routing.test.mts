@@ -33,7 +33,7 @@ describe('moderation appeal primary-read routing', () => {
     const primaryPreflightIndex = agentSource.indexOf(
       'await getModerationAppealByIdFromPrimary(appealId)',
     )
-    const billedModelCallIndex = agentSource.indexOf('callRecordingAgentResponseUsage(')
+    const billedModelCallIndex = agentSource.indexOf('callAgentModel({')
 
     expect(primaryPreflightIndex).toBeGreaterThan(-1)
     expect(billedModelCallIndex).toBeGreaterThan(primaryPreflightIndex)

@@ -6,6 +6,7 @@ import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getStoryItemSummaries } from '@services/stories/get'
 import { getPostStoryByPostId } from '@services/stories/get-post-stories'
 import { callStoryPostAgent } from '@agents/story-post'
+import { loadServiceModelSelection } from '@services/ai-usage'
 import { updateStoryPostAgentResult } from '@services/posts/update-story-post-agent-result'
 import { unrecoverable } from '@modules/queue-errors'
 
@@ -57,7 +58,11 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
   // ast-grep-ignore: no-three-sequential-awaits -- inherently sequential: fetch items → run agent → write result
   const itemSummaries = await getStoryItemSummaries(story!.id)
 
-  const agentResult = await callStoryPostAgent(story!, itemSummaries)
+  const agentResult = await callStoryPostAgent(
+    story!,
+    itemSummaries,
+    await loadServiceModelSelection('story-post'),
+  )
   await updateStoryPostAgentResult(post.id, post.title ?? '', agentResult.ai_summary_markdown)
   return agentResult
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -5,17 +6,15 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import * as openaiProvider from '@modules/openai-utils/create-response'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 import * as promptSanitizer from '@jongleberry/vurst-prompt'
 import { readTestCopyrightStaffScreening } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
 import { runCopyrightFormScreeningAgent } from './run.mts'
-
-vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
-  ...(await importOriginal()),
-  createOpenAIResponse: vi.fn<typeof openaiProvider.createOpenAIResponse>(),
-}))
 
 vi.mock(import('@jongleberry/vurst-prompt'), async importOriginal => {
   const actual = await importOriginal()
@@ -33,31 +32,32 @@ const screeningOutput = {
   guidance: testCopyrightFormGuidance,
 }
 
-function mockProviderText(text: string) {
-  return vi.spyOn(openaiProvider, 'createOpenAIResponse').mockResolvedValue({
-    id: `resp-${crypto.randomUUID()}`,
-    output: [{ type: 'message', status: 'completed', content: [{ type: 'output_text', text }] }],
-  } as never)
-}
-
 describe('copyright form screening agent', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('persists the recommendation and staff-visible guidance once per structured form', async () => {
     const intake = await createScreeningForm()
-    const createResponse = mockProviderText(JSON.stringify(screeningOutput))
+    const callModel = makeAgentModelCaller(screeningOutput)
 
     await expect(
-      runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
+      runCopyrightFormScreeningAgent(
+        intake.intake.copyright_notice_submission_id,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('not_obviously_invalid')
-    expect(createResponse).toHaveBeenCalledOnce()
+    expect(callModel).toHaveBeenCalledOnce()
     await expect(
       readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
     ).resolves.toEqual({ state: 'completed', ...screeningOutput })
     await expect(
-      runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
+      runCopyrightFormScreeningAgent(
+        intake.intake.copyright_notice_submission_id,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBeNull()
-    expect(createResponse).toHaveBeenCalledOnce()
+    expect(callModel).toHaveBeenCalledOnce()
   })
 
   it('sends structured form fields without claimant contact, email, or signature values', async () => {
@@ -66,11 +66,15 @@ describe('copyright form screening agent', () => {
       claimantEmail: 'sentinel-claimant@example.test',
       electronicSignature: '/s/ Sentinel Signer',
     })
-    mockProviderText(JSON.stringify(screeningOutput))
+    const callModel = makeAgentModelCaller(screeningOutput)
     const sanitize = vi.mocked(promptSanitizer.sanitizePromptInjection)
     sanitize.mockClear()
 
-    await runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id)
+    await runCopyrightFormScreeningAgent(
+      intake.intake.copyright_notice_submission_id,
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(sanitize).toHaveBeenCalledOnce()
     const serialized = sanitize.mock.calls[0]![0]
@@ -93,20 +97,23 @@ describe('copyright form screening agent', () => {
       expect(serialized).not.toContain(secret)
   })
 
-  it.each(['provider', 'sanitizer', 'parse'] as const)(
+  it.each(['provider', 'sanitizer'] as const)(
     'persists guarded failure after %s rejection',
     async kind => {
       const intake = await createScreeningForm()
-      const provider = vi.spyOn(openaiProvider, 'createOpenAIResponse')
-      if (kind === 'provider') provider.mockRejectedValue(new Error('Private provider error'))
+      const callModel = makeAgentModelCaller(screeningOutput)
+      if (kind === 'provider') callModel.mockRejectedValue(new Error('Private provider error'))
       if (kind === 'sanitizer')
         vi.spyOn(promptSanitizer, 'sanitizePromptInjection').mockRejectedValue(
           new Error('Private sanitizer error'),
         )
-      if (kind === 'parse') mockProviderText('{')
       await expect(
-        runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
-      ).rejects.toThrow(/Private|Invalid copyright form screening/)
+        runCopyrightFormScreeningAgent(
+          intake.intake.copyright_notice_submission_id,
+          TEST_MODEL_SELECTION,
+          callModel,
+        ),
+      ).rejects.toThrow(/Private/)
       await expect(
         readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
       ).resolves.toEqual({ state: 'failed', recommendation: null, rationale: null, guidance: null })
@@ -119,8 +126,8 @@ async function createScreeningForm(
 ) {
   const user = await createTestUser()
   const postId = await insertTestPost({
-    title: `form agent ${crypto.randomUUID()}`,
-    slug: `form-agent-${crypto.randomUUID()}`,
+    title: `form agent ${randomUUID()}`,
+    slug: `form-agent-${randomUUID()}`,
     createdById: user.id,
     markdown: 'image',
   })
@@ -129,7 +136,7 @@ async function createScreeningForm(
   return createCopyrightFormIntake({
     currentUser: user,
     requesterIdentity: `user:${user.id}`,
-    idempotencyKey: crypto.randomUUID(),
+    idempotencyKey: randomUUID(),
     request: {
       jurisdiction: 'us_dmca',
       claimantDisplayName: 'Claimant',

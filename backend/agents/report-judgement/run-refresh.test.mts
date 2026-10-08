@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelCaller } from '@voucha/test-helpers/agents/report-judgement/fixtures'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 
 describe('runReportJudgementAgent refresh', () => {
   it('runs again when the latest automatic judgement is stale for the current context', async () => {
@@ -25,7 +28,8 @@ describe('runReportJudgementAgent refresh', () => {
 
     await runReportJudgementAgent(
       { entityType: 'post', entityId: postId, triggeringReportId: reportId, rerunById: null },
-      makeReportJudgementModelCaller({
+      TEST_MODEL_SELECTION,
+      makeAgentModelCaller({
         recommended_action: 'no_action',
         public_response: 'ok',
         internal_response: 'ok',
@@ -41,7 +45,7 @@ describe('runReportJudgementAgent refresh', () => {
       reason: 'illegal_content',
       note: 'new context',
     })
-    const secondCall = makeReportJudgementModelCaller({
+    const secondCall = makeAgentModelCaller({
       recommended_action: 'escalate',
       public_response: 'second',
       internal_response: 'second',
@@ -53,6 +57,7 @@ describe('runReportJudgementAgent refresh', () => {
         triggeringReportId: secondReportId,
         rerunById: null,
       },
+      TEST_MODEL_SELECTION,
       secondCall,
     )
 

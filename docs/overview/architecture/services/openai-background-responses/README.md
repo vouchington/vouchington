@@ -86,8 +86,8 @@ flowchart TD
 
 Per the [durable transition matrix](../../../../checklists/backend-queues.md#durable-transition-matrix)
 requirement for effectful worker operations. "This path" below means the original caller
-(`callRecordingAgentResponseUsage` → `recordAgentResponseUsage` →
-`claimRegisteredResponseUsage`, in `backend/agents/_shared/record-response-usage.mts`); "the
+(`callRecordingModelUsage` → `recordModelUsage` →
+`claimRegisteredResponseUsage`, in `backend/agents/_shared/record-model-usage.mts`); "the
 sweeper" means `reconcileExpiredBackgroundResponse` above.
 
 | Failure mode              | Detectable state                                                                                               | Recovery/reconciliation path                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Idempotency guarantee                                                                                                                                                                                  | Evidence (test)                                                                                                                                                   |

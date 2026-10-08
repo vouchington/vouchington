@@ -61,7 +61,10 @@ export async function prepareCommunityPromptDryRun(
   ])
   const questions = toClassifierQuestions(bindings)
   const client = createCommunityPromptDryRunClient(
-    { communityId: input.communityId, modelProvider: configuration.modelProvider },
+    {
+      communityId: input.communityId,
+      selection: { provider: configuration.modelProvider, model: configuration.modelName },
+    },
     { fetch: dependencies.fetch, apiKey: dependencies.apiKey },
   )
   const callTimeoutMs = dependencies.callTimeoutMs ?? DEFAULT_CALL_TIMEOUT_MS

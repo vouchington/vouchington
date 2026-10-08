@@ -26,9 +26,8 @@ The price table moved to the provider-neutral [`@modules/model-providers`](../mo
 alike. `OpenAIUsage` also carries `cache_write_tokens` and `reasoning_tokens` so the ledger can
 record them; `openAIUsageToModelUsage` converts it to the neutral usage shape.
 
-### Response text
+### Response handling
 
-- `extractTextFromOpenAIResponse(response): string` — extracts the text content from a Responses API output, handling both array and simple output formats
 - `createOpenAIResponse` accepts either string input or the SDK's native `ResponseInput` array,
   including typed conversation messages and function-call outputs
 - `runWithOpenAIResponseAttemptHooks(hooks, callback)` / `OpenAIResponseAttemptHooks` — scopes

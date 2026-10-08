@@ -10,16 +10,7 @@ const output = {
 
 describe('copyright form screening output', () => {
   it('accepts the anti-spam recommendation with moderator guidance', () => {
-    expect(parseCopyrightFormScreeningOutput(JSON.stringify(output))).toEqual(output)
-  })
-
-  it.each([
-    ['malformed JSON', '{'],
-    ['oversized output', JSON.stringify({ ...output, rationale: 'x'.repeat(64 * 1024) })],
-  ])('rejects %s before validation', (_label, text) => {
-    expect(() => parseCopyrightFormScreeningOutput(text)).toThrow(
-      'Invalid copyright form screening JSON',
-    )
+    expect(parseCopyrightFormScreeningOutput(output)).toEqual(output)
   })
 
   it.each([
@@ -34,7 +25,7 @@ describe('copyright form screening output', () => {
     ['missing guidance', { recommendation: output.recommendation, rationale: output.rationale }],
     ['malformed guidance', { ...output, guidance: { ...output.guidance, summary: '' } }],
   ])('rejects %s', (_label, value) => {
-    expect(() => parseCopyrightFormScreeningOutput(JSON.stringify(value))).toThrow(
+    expect(() => parseCopyrightFormScreeningOutput(value)).toThrow(
       'Invalid copyright form screening output',
     )
   })

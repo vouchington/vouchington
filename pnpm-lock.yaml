@@ -199,9 +199,6 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@modules/openrouter-utils':
-        specifier: workspace:^
-        version: link:../../modules/openrouter-utils
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
@@ -230,6 +227,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -393,6 +393,9 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
@@ -418,9 +421,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/openai-utils':
+      '@modules/model-providers':
         specifier: workspace:^
-        version: link:../../modules/openai-utils
+        version: link:../../modules/model-providers
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
@@ -437,12 +440,12 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
@@ -455,9 +458,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/openai-utils':
+      '@modules/model-providers':
         specifier: workspace:^
-        version: link:../../modules/openai-utils
+        version: link:../../modules/model-providers
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
@@ -474,9 +477,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/openai-utils':
+      '@modules/model-providers':
         specifier: workspace:^
-        version: link:../../modules/openai-utils
+        version: link:../../modules/model-providers
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
@@ -496,6 +499,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -573,6 +579,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -644,6 +653,9 @@ importers:
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
@@ -705,6 +717,9 @@ importers:
       '@modules/membership-helpers':
         specifier: workspace:^
         version: link:../modules/membership-helpers
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
@@ -11733,6 +11748,9 @@ importers:
       '@jongleberry/vurst-ai':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modules/model-providers':
+        specifier: workspace:^
+        version: link:../../modules/model-providers
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error

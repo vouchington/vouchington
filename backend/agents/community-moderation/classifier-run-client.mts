@@ -4,6 +4,7 @@ import {
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
+  type StructuredDecisionModelSelection,
 } from '@modules/structured-decisions'
 import type { ClassifierModelProvider } from '@voucha/types'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
@@ -45,14 +46,15 @@ export function createCommunityModerationClient(
     classifierRunId: string
     postId: string | null
     communityId: string
-    modelProvider: ClassifierModelProvider
+    selection: StructuredDecisionModelSelection
     beforeAttempt: CommunityModerationAttemptHook
   },
   options: CommunityModerationClientOptions = {},
 ): StructuredDecisionClient {
   return createStructuredDecisionClient({
-    transport: input.modelProvider,
-    apiKey: resolveApiKey(input.modelProvider, options),
+    transport: input.selection.provider,
+    model: input.selection.model,
+    apiKey: resolveApiKey(input.selection.provider, options),
     fetch: options.fetch,
     hooks: createStructuredDecisionBillingHooks({
       workload: COMMUNITY_MODERATION_CLASSIFIER_SLUG,

@@ -17,7 +17,7 @@ type CreateResponse = NonNullable<
 type Params = Parameters<typeof createOpenRouterResponse>[0]
 
 const flexParams = {
-  model: 'openai/gpt-5.4-nano',
+  model: 'openai/gpt-6-luna',
   input: 'hello',
   service_tier: 'flex',
 } as Params
@@ -63,14 +63,14 @@ describe('OpenRouter flex capacity fallback', () => {
     expect(createResponse.mock.calls[1]?.[0]).toMatchObject({
       service_tier: 'default',
       input: 'hello',
-      model: 'openai/gpt-5.4-nano',
+      model: 'openai/gpt-6-luna',
       stream: true,
       background: false,
     })
     expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith('openai_flex_fallback', {
       level: 'warning',
       tags: { reason: 'openai_flex_fallback', provider: 'openrouter', trigger: 'stream_failed' },
-      extra: { model: 'openai/gpt-5.4-nano' },
+      extra: { model: 'openai/gpt-6-luna' },
     })
     // The failed flex attempt is known to be unbilled, so it must not fail-close the spend cap.
     expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()

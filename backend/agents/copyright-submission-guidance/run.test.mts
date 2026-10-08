@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  makeModelCallResult,
+  TEST_MODEL_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
+import {
   createTestUser,
   insertTestImage,
   insertTestPost,
@@ -42,19 +46,6 @@ const holdGuidance = {
     gap: 'The filing does not establish this fact.',
   })),
   risk_notes: [],
-}
-
-function modelResponse(guidance: unknown) {
-  return {
-    id: `resp-${crypto.randomUUID()}`,
-    output: [
-      {
-        type: 'message',
-        status: 'completed',
-        content: [{ type: 'output_text', text: JSON.stringify(guidance) }],
-      },
-    ],
-  }
 }
 
 describe('copyright submission guidance agent', () => {
@@ -106,10 +97,14 @@ describe('copyright submission guidance agent', () => {
     })
     const before = await getCopyrightNoticePrivateAggregate(noticeId)
     const callModel = vi.fn<CopyrightSubmissionGuidanceModelCaller>(async () =>
-      modelResponse(counterGuidance),
+      makeModelCallResult(counterGuidance),
     )
     await expect(
-      runCopyrightSubmissionGuidanceAgent(submission.submission.id, callModel),
+      runCopyrightSubmissionGuidanceAgent(
+        submission.submission.id,
+        TEST_MODEL_SELECTION,
+        callModel,
+      ),
     ).resolves.toBe('counter_notice')
     expect(callModel).toHaveBeenCalledOnce()
     const [kind, input] = callModel.mock.calls[0]!
@@ -173,14 +168,14 @@ describe('copyright submission guidance agent', () => {
     ])
     const before = await getCopyrightNoticePrivateAggregate(noticeId)
     const callModel = vi.fn<CopyrightSubmissionGuidanceModelCaller>(async () =>
-      modelResponse(holdGuidance),
+      makeModelCallResult(holdGuidance),
     )
-    await expect(runCopyrightSubmissionGuidanceAgent(first.id, callModel)).resolves.toBe(
-      'court_or_ccb_hold',
-    )
-    await expect(runCopyrightSubmissionGuidanceAgent(second.id, callModel)).resolves.toBe(
-      'court_or_ccb_hold',
-    )
+    await expect(
+      runCopyrightSubmissionGuidanceAgent(first.id, TEST_MODEL_SELECTION, callModel),
+    ).resolves.toBe('court_or_ccb_hold')
+    await expect(
+      runCopyrightSubmissionGuidanceAgent(second.id, TEST_MODEL_SELECTION, callModel),
+    ).resolves.toBe('court_or_ccb_hold')
     expect(callModel).toHaveBeenCalledTimes(2)
     for (const [kind, input] of callModel.mock.calls) {
       expect(kind).toBe('court_or_ccb_hold')

@@ -1,12 +1,15 @@
-import {
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-  createOpenRouterResponse,
-  toOpenRouterModel,
-} from '@agents/_shared'
+import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
+import { generateJson } from '@modules/model-providers/generate'
 import { renderContentPolicyForPrompt } from '@services/moderation/content-policy'
 
-export type AppealModelCaller = (input: string, safetyIdentifier: string) => Promise<unknown>
+export type AppealOutput = {
+  recommended_action: 'accept' | 'deny' | 'reduce'
+  public_response: string
+  internal_response: string
+}
+
+/** The model-calling seam. Injectable so tests can exercise the agent without a provider. */
+export type AppealModelCaller = AgentModelCaller<AppealOutput>
 
 const APPEAL_JSON_SCHEMA = {
   type: 'object',
@@ -47,31 +50,29 @@ Respond with a JSON object containing:
 - Default to "deny" when uncertain — be conservative about reversing moderation decisions.
 - Your response will be reviewed and edited by a human moderator before anything is communicated.`
 
-/* v8 ignore start -- thin OpenRouter integration wrapper; exercised by credentialed *.openrouter.test.mts */
-export function callAppealModel(
-  input: string,
-  safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenRouterResponse>>> {
-  return createOpenRouterResponse(
+/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
+export const callAppealModel: AppealModelCaller = (
+  input,
+  safetyIdentifier,
+  { selection, openaiTransport },
+) =>
+  generateJson(
+    selection,
     {
-      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
       instructions: SYSTEM_PROMPT,
       input,
-      safety_identifier: safetyIdentifier,
-      metadata: { type: 'appeal-resolution' },
-      service_tier: 'flex',
-      // SYSTEM_PROMPT embeds the full content policy — a stable, large static prefix across
-      // every appeal. Versioned so a prompt edit can be paired with a key bump to invalidate.
-      prompt_cache_key: 'appeal-resolution-v1',
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'appeal_resolution',
-          schema: APPEAL_JSON_SCHEMA,
-        },
-      },
-    } as unknown as Parameters<typeof createOpenRouterResponse>[0],
-    { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+      schemaName: 'appeal_resolution',
+      schema: APPEAL_JSON_SCHEMA,
+      // The schema (enum included) already validated the answer.
+      parse: value => value as AppealOutput,
+      maxOutputTokens: 1500,
+      safetyIdentifier,
+      // SYSTEM_PROMPT embeds the full content policy, a stable large static prefix. Versioned so a
+      // prompt edit can be paired with a key bump to invalidate.
+      promptCacheKey: 'appeal-resolution-v1',
+      flex: true,
+      maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
+    },
+    { openaiTransport },
   )
-}
 /* v8 ignore stop */

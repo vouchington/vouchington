@@ -13,6 +13,7 @@ import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { Response } from 'undici'
 import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
 import { executePostClassifierRun } from './classifier-execute.mts'
+import { JEV_OPENROUTER_SELECTION } from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 type Fixture = Awaited<ReturnType<typeof createPostClassifierExecutionFixture>>
 
@@ -35,6 +36,7 @@ function dependencies(input: Fixture, fetch: StructuredDecisionFetch, apiKey = '
         {
           postId: input.post.id,
           communityId: input.community.id,
+          selection: JEV_OPENROUTER_SELECTION,
           classifierRunId: hooks.classifierRunId,
           beforeAttempt: hooks.beforeAttempt,
         },
