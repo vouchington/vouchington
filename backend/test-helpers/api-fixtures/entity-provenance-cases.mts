@@ -39,10 +39,10 @@ const variants = <T extends { id: string }>(entity: T, staff = false) => [
 const byId = <T extends { id: string }>(rows: T[]) =>
   Object.fromEntries(rows.map(row => [row.id, row]))
 
-const entityPage = (type: string, rows: Array<{ id: string }>) => ({
+const entityPage = (type: 'community' | 'topic' | 'list', rows: Array<{ id: string }>) => ({
   results: rows.map(row => ({ __entity_type: type, id: row.id })),
   page_info: pageInfo,
-  [`${type}s`]: byId(rows),
+  [type === 'community' ? 'communities' : `${type}s`]: byId(rows),
 })
 
 const communitySearch = (staff: boolean) => ({
@@ -100,12 +100,18 @@ const entityCase = (
   auth: staff ? 'fixture-admin' : 'fixture-user',
   status: 200,
   body,
-  consumers: [],
+  consumers: staff ? [] : ['swift-ui'],
   migratedFrom: [],
 })
 
 export const entityProvenanceApiFixtureCases: ApiFixtureCase[] = [false, true].flatMap(staff => [
-  entityCase('communities', '/api/v1/communities', { q: 'test' }, communitySearch(staff), staff),
+  entityCase(
+    'communities',
+    '/api/v1/communities',
+    { q: 'test', limit: '20' },
+    communitySearch(staff),
+    staff,
+  ),
   entityCase('topics', '/api/v1/topics', { q: 'test' }, topicSearch(staff), staff),
   entityCase('lists', '/api/v1/lists', { limit: '25' }, entityPage('list', listRows(staff)), staff),
   entityCase('rss-feeds', '/api/v1/rss-feeds', { limit: '25' }, rssFeedSearch(staff), staff),
