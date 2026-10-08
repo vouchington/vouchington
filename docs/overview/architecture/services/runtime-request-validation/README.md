@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/runtime-request-validation/README.md](../../../../../backend/services/runtime-request-validation/README.md)
 
-Compiles the checked-in v1 request-contract bundle into runtime validators for third-party API
+Compiles the checked-in v1 request-contract bundle into runtime validators for first-party REST
 routes. The shared registry validates request bodies, headers, path parameters, and query
 parameters against the explicit contracts used by the published API fixtures.
 
@@ -35,6 +35,21 @@ commands are removed. Follow the [fixture update flow](../../../../development/t
 
 The same file carries a `responses` map, which this registry ignores: only `operations` define
 request coverage. `@voucha/mcp` reads `responses` to derive MCP output schemas.
+
+## Route inventory coverage
+
+The [route inventory test](../../../../../backend/api/route-request-contracts.test.mts) wraps the
+shared app's route builder before importing the API entrypoint. It records every registered
+method/path pair, including chained methods. Every route must have one request contract or an
+explicit exemption for no input, its own protocol parser, or a fixed status. The test also rejects
+stale keys in the request, response, and admin-response maps, and stale exemptions.
+
+The explicit exemption list is capped at 56 API v1 routes, following the audited scope decision
+in [#298](https://github.com/vouchington/vouchington/issues/298#issuecomment-6050864125).
+
+The inventory proves that the declared contracts cover registered routes. It does not prove that
+the validator runs on every request; route integration tests own that execution and ordering
+behavior.
 
 ## Adoption
 
