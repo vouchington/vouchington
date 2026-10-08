@@ -5,6 +5,7 @@ import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { listCopyrightStaffEmailIntakePage } from '@services/copyright-notices/copyright-email-intake-page'
 import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices/read-models-staff-email-intakes'
+import { readOwnedCopyrightEmailQueue } from '@voucha/test-helpers/copyright-email-queue-http-contract'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 
 const otherCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
@@ -38,7 +39,7 @@ describe('copyright email intake queue pagination', () => {
   })
 
   it('ends on a partial final page', async () => {
-    const { ids, after, moderator } = await createOwnedIntakes(4)
+    const { ids, after, moderator, firstReceivedAt } = await createOwnedIntakes(4)
     const first = await listCopyrightStaffEmailIntakePage(moderator, {
       limit: 3,
       after,
@@ -46,6 +47,12 @@ describe('copyright email intake queue pagination', () => {
     })
     expect(first.copyright_email_intakes.map(intake => intake.id)).toEqual(ids.slice(0, 3))
     expect(first.copyright_email_intakes[0]).toMatchObject({ review_path: 'initial' })
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+    const fixture = { id: ids[0]!, receivedAt: firstReceivedAt }
+    const normal = await readOwnedCopyrightEmailQueue(request, moderator, fixture)
+    const unknownKey = await readOwnedCopyrightEmailQueue(request, moderator, fixture, true)
+    expect(unknownKey.body).toEqual(normal.body)
     const second = await listCopyrightStaffEmailIntakePage(moderator, {
       limit: 3,
       after: first.page_info.end_cursor!,
@@ -119,6 +126,7 @@ async function createOwnedIntakes(count: number): Promise<{
   after: string
   foreignId: string
   moderator: PrivateUser
+  firstReceivedAt: Date
 }> {
   const baseMs = Date.now()
   const ids: string[] = []
@@ -131,7 +139,13 @@ async function createOwnedIntakes(count: number): Promise<{
     crypto.randomUUID(),
     copyrightStaffEmailIntakeQueueCursorScope,
   )
-  return { ids, after, foreignId, moderator: await createModerator() }
+  return {
+    ids,
+    after,
+    foreignId,
+    moderator: await createModerator(),
+    firstReceivedAt: new Date(baseMs),
+  }
 }
 
 async function createParsedIntake(receivedAt: Date): Promise<string> {

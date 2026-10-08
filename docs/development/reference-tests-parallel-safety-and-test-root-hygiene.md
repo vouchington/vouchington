@@ -76,9 +76,14 @@ as its subject id then relation id). Their no-argument production default scans 
 test must pass exact ids or tuples.
 
 These service calls must bind owned IDs/keys before their `ORDER BY`/`LIMIT` or use a complete
-bound keyset cursor where the catalog policy allows one. The staff email intake queue and
-notification push intent recovery require explicit owned IDs in shared-DB tests: a cursor advances
-ordering but does not establish ownership. The staff queue intentionally has no production ID
+bound keyset cursor where the catalog policy allows one. Notification push intent recovery
+requires explicit owned IDs. Staff email intake HTTP probes may instead register an owned eligible
+fixture and actor, then seek from that fixture's exact received timestamp and immediate UUID
+predecessor with a page limit of one. The observer validates the actual SQL bound of two before
+transaction allocation and correlates completion after the real query and COMMIT: the first row
+must have that owned ID and timestamp. An unasserted lookahead row supplies pagination only;
+default global reads, other actors or tuples, missing completion, and foreign first rows remain
+violations. See the [owned-keyset policy proof](../../test-helpers/vitest-owned-keyset-read-policy.test.mts). The staff queue intentionally has no production ID
 filter, so its exact global-pagination cases use the disposable database runner in
 `test-helpers/vitest-isolated-database-case.mts`; the push recovery test retains its owned
 notification IDs on every page. Timestamps, scan snapshots, and page sizes alone are not ownership scopes.

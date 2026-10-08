@@ -1,5 +1,6 @@
 import type { SharedDbScopeEvent } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 import { expect } from 'vitest'
+import { ownedKeysetReadPolicy } from './vitest-owned-keyset-read-policy.mts'
 
 const violationsKey = Symbol.for('voucha.vitest-shared-db-scope-violations')
 const reportedKey = Symbol.for('voucha.vitest-shared-db-scope-reported')
@@ -36,6 +37,17 @@ export function markSharedDbScopeViolationsReported(filepath: string): void {
   reportedCounts().set(filepath, count)
 }
 
+export function sharedDbScopeTestIdentity(): string {
+  const { testPath, currentTestName } = expect.getState()
+  return testPath && currentTestName ? `${testPath}:${currentTestName}` : ''
+}
+
+export function recordSharedDbScopeViolation(event: SharedDbScopeEvent, message: string): void {
+  const filepath = expect.getState().testPath
+  if (!filepath) throw new Error(`Shared DB scope violation has no active test file: ${message}`)
+  ;(sharedDbScopeViolations() as SharedDbScopeViolation[]).push({ event, message, filepath })
+}
+
 export function rejectUnscopedSharedDbCall(event: SharedDbScopeEvent): void {
   const scope = event.scope
   const requiresIds =
@@ -47,10 +59,21 @@ export function rejectUnscopedSharedDbCall(event: SharedDbScopeEvent): void {
   )
     return
 
-  const requiredScope = requiresIds ? 'fixture IDs' : 'fixture IDs or a real keyset cursor'
+  try {
+    if (ownedKeysetReadPolicy.observe(event, sharedDbScopeTestIdentity())) return
+  } catch (err) {
+    const message = `[vitest-shared-db-scope] ${err instanceof Error ? err.message : String(err)}`
+    recordSharedDbScopeViolation(event, message)
+    throw err
+  }
+
+  const requiredScope =
+    event.operation === 'searchCopyrightStaffEmailIntakes'
+      ? 'fixture IDs or a proven owned keyset'
+      : requiresIds
+        ? 'fixture IDs'
+        : 'fixture IDs or a real keyset cursor'
   const message = `[vitest-shared-db-scope] ${event.operation} on ${event.table} requires ${requiredScope}`
-  const filepath = expect.getState().testPath
-  if (!filepath) throw new Error(`Shared DB scope violation has no active test file: ${message}`)
-  ;(sharedDbScopeViolations() as SharedDbScopeViolation[]).push({ event, message, filepath })
+  recordSharedDbScopeViolation(event, message)
   throw new Error(message)
 }
