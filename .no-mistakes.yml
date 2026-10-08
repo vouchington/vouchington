@@ -2747,6 +2747,27 @@ rules:
         - web/**/*.{ts,mts,tsx,js,sql}
       triggerMaintainedColumns: [updated_at]
 
+  - name: tables are read and returned with explicit columns
+    rule: postgres-explicit-columns
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+      sqlInclude:
+        - backend/data-stores/psql/views/**/*.sql
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      maxColumns: 0
+      checkReturning: true
+      # Interpolated templates can't be parsed. This matches the other embedded-SQL rules.
+      unanalyzableSql: ignore
+
   - name: topics queries keep the active-topic filter
     rule: postgres-required-predicates
     scope: repository
