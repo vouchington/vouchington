@@ -45,3 +45,12 @@ export function captureQueryOutsideOperation(): void {
 export function captureQueryFromPriorCapture(): void {
   maybeCaptureQuery('/* priorCapture */ SELECT 1')
 }
+
+export function createCaptureInputWithTextError(reason: Error) {
+  return new Proxy(sql`SELECT ${1}`, {
+    get(target, property, receiver) {
+      if (property === 'text') throw reason
+      return Reflect.get(target, property, receiver)
+    },
+  })
+}

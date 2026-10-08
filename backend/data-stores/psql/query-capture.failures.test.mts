@@ -1,4 +1,4 @@
-import sql from 'sql-template-strings'
+import { createCaptureInputWithTextError } from '../../test-helpers/data-stores/psql/query-capture.mts'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { QueryExecutor } from './types.mts'
 import {
@@ -26,12 +26,7 @@ describe('query capture failure isolation', () => {
           },
         })
       }
-      const input = new Proxy(sql`SELECT ${1}`, {
-        get(target, property, receiver) {
-          if (property === 'text') throw reason
-          return Reflect.get(target, property, receiver)
-        },
-      })
+      const input = createCaptureInputWithTextError(reason)
       const queryResult = { command: 'SELECT', rowCount: 1, oid: 0, fields: [], rows: [] }
       const original = Promise.resolve(queryResult)
       const handlerResult = { operation: 'captured' }
@@ -65,12 +60,7 @@ describe('query capture failure isolation', () => {
 
   it('retains legacy capture errors before invoking the executor outside scoped diagnostics', () => {
     const reason = new Error('legacy input metadata failed')
-    const input = new Proxy(sql`SELECT ${1}`, {
-      get(target, property, receiver) {
-        if (property === 'text') throw reason
-        return Reflect.get(target, property, receiver)
-      },
-    })
+    const input = createCaptureInputWithTextError(reason)
     let calls = 0
     const execute: QueryExecutor = () => {
       calls++
