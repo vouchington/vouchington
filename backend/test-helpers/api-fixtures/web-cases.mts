@@ -121,7 +121,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
         },
       },
     },
-    consumers: ['web', 'dotnet-core'],
+    consumers: ['web', 'dotnet-core', 'swift-ui'],
     migratedFrom: ['web/test-helpers/api-responses/topics.ts'],
   },
   {
