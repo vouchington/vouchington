@@ -185,8 +185,13 @@
       "hash": "c8cce74cefbec230f97eb746c8490a0724d241dfffe31adfac1fd3cb8d710f3b"
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
-      "fixtureIds": ["web.communities.moderation-queue.default"],
-      "hash": "a922d0a8874a43315a62537852c189c888281ec30eae18448b4a218e4ee0b45f"
+      "fixtureIds": [
+        "native.communities.moderation-queue.automod-flag.member",
+        "native.communities.moderation-queue.automod-flag.page-1",
+        "native.communities.moderation-queue.automod-flag.page-2",
+        "web.communities.moderation-queue.default"
+      ],
+      "hash": "833801fbd34613f9c0fcec08fe716fc4d2e669499de260bb2fa1b4f380a97ab6"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "fixtureIds": ["web.communities.moderator-stats.default"],
@@ -1107,6 +1112,10 @@
       "fixtureIds": ["native.moderation.ban-evasion.confirm"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": {
+      "fixtureIds": ["native.communities.automod-flag.dismissal.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
       "fixtureIds": ["native.chat.completed", "native.chat.duplicate", "native.chat.retry"],
       "hash": "57d9f965f6a9933c3f8d61183e4858488eb7ce9540106987345c28b1da2b2af1"
@@ -1661,6 +1670,22 @@
     "native.comments.post-detail.default": {
       "fixtureIds": ["native.comments.post-detail.default"],
       "hash": "69f0aa9f8b1a5361f67f1bc44d6084790e80b6800c33a71b5326a2c91423866e"
+    },
+    "native.communities.automod-flag.dismissal.default": {
+      "fixtureIds": ["native.communities.automod-flag.dismissal.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.communities.moderation-queue.automod-flag.member": {
+      "fixtureIds": ["native.communities.moderation-queue.automod-flag.member"],
+      "hash": "f2448a31c50b741db72f61744ebbd061e45b29e050834881248db965109bf313"
+    },
+    "native.communities.moderation-queue.automod-flag.page-1": {
+      "fixtureIds": ["native.communities.moderation-queue.automod-flag.page-1"],
+      "hash": "40c09eb57e920c376676a3d2625570310828a5213a9b0114e41bea48126fca64"
+    },
+    "native.communities.moderation-queue.automod-flag.page-2": {
+      "fixtureIds": ["native.communities.moderation-queue.automod-flag.page-2"],
+      "hash": "99f12219b2793fe99622f5759073073a9d74ae5e01067ee9f9636144ca4ab2b1"
     },
     "native.community.moderation-transparency.default": {
       "fixtureIds": ["native.community.moderation-transparency.default"],

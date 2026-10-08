@@ -9,6 +9,23 @@ import type { ApiFixtureCase } from './types.mts'
 
 export const webCommunityAutomodApiFixtureCases: ApiFixtureCase[] = [
   {
+    id: 'native.communities.automod-flag.dismissal.default',
+    method: 'POST',
+    path: `/api/v1/communities/${community.slug}/posts/00000000-0000-7000-8000-000000000902/automod-flag/dismissal`,
+    route: {
+      routeTemplate: '/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal',
+      pathParams: {
+        idOrSlug: community.slug,
+        postId: '00000000-0000-7000-8000-000000000902',
+      },
+    },
+    auth: 'fixture-user',
+    status: 204,
+    body: null,
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/posts-automod-flag.mts'],
+  },
+  {
     id: 'web.communities.automod-simulate.default',
     method: 'POST',
     path: `/api/v1/communities/${community.slug}/automod/simulate`,
