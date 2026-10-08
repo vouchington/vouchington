@@ -24,7 +24,7 @@ export type SpendCapBreach =
     })
 
 /**
- * Thrown by a provider-call boundary (`callRecordingAgentResponseUsage`, the free-retry attempt
+ * Thrown by a provider-call boundary (`callRecordingModelUsage`, the free-retry attempt
  * hooks, the structured-decision billing hooks, the community-moderation dry run) when its
  * immediate pre-call recheck finds a breach, after the job-level pre-dispatch check
  * (processAIAgentWorkerJob, backend/workers/ai-agents/workers/core.mts) already passed. Caught
