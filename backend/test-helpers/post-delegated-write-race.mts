@@ -118,18 +118,51 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
   queryMarker: string,
   stageChange: (query: QueryExecutor) => Promise<void>,
 ): Promise<T> {
-  await using query = await beginTransaction()
-  const processId = await getTestPostgresBackendProcessId(query)
-  await stageChange(query)
-  const pending = operation()
-  void pending.catch(() => undefined)
+  const query = await beginTransaction()
+  let pending: Promise<T> | undefined
+  let result: T | undefined
+  let failure: { reason: unknown } | undefined
+  const cleanupErrors: unknown[] = []
+  let settlementAttempted = false
   try {
-    await waitForTestPostgresLockWaiter(processId, queryMarker)
+    const processId = await getTestPostgresBackendProcessId(query)
+    await stageChange(query)
+    pending = operation()
+    void pending.catch(() => undefined)
+    await waitForTestPostgresLockWaiter(processId, queryMarker, 'advisoryLock')
+    settlementAttempted = true
     await query.commit()
+    result = await pending
   } catch (err) {
-    await query.rollback()
-    await pending.catch(() => undefined)
-    throw err
+    failure = { reason: err }
+  } finally {
+    if (!settlementAttempted) {
+      try {
+        await query.rollback()
+      } catch (err) {
+        cleanupErrors.push(err)
+      }
+    }
+    try {
+      await query[Symbol.asyncDispose]()
+    } catch (err) {
+      cleanupErrors.push(err)
+    }
+    if (pending) {
+      try {
+        await pending
+      } catch (err) {
+        if (!failure) failure = { reason: err }
+        else if (!Object.is(err, failure.reason)) cleanupErrors.push(err)
+      }
+    }
   }
-  return await pending
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(
+      [...(failure ? [failure.reason] : []), ...cleanupErrors],
+      'Delegated write race cleanup failed',
+    )
+  }
+  if (failure) throw failure.reason
+  return result as T
 }
