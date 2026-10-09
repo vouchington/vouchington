@@ -20,7 +20,7 @@ describe('suspension policy in route helpers', () => {
     {
       name: 'requireAuth',
       routeId: 'POST:/api/v1/posts',
-      preambleEvents: ['currentUser', 'signature'],
+      preambleEvents: ['rate-limit-charge:POST:/api/v1/posts', 'currentUser', 'signature'],
       run: (ctx: Context) => requireAuth(ctx, 'POST:/api/v1/posts'),
     },
     {
@@ -32,7 +32,7 @@ describe('suspension policy in route helpers', () => {
     {
       name: 'getOptionalAuthAndRateLimit',
       routeId: 'PATCH:/api/v1/my/profile',
-      preambleEvents: ['signature', 'currentUser'],
+      preambleEvents: ['signature', 'rate-limit-charge:PATCH:/api/v1/my/profile', 'currentUser'],
       run: (ctx: Context) => getOptionalAuthAndRateLimit(ctx, 'PATCH:/api/v1/my/profile'),
     },
   ])(
@@ -94,7 +94,12 @@ describe('suspension policy in route helpers', () => {
     const ctx = makeContext({ ...user, suspended_at: new Date() }, signatureError)
 
     await expect(requireAuth(ctx, 'POST:/api/v1/posts')).rejects.toBe(signatureError)
-    expect(ctx.events).toEqual(['currentUser', 'signature', 'rate-limit:POST:/api/v1/posts'])
+    expect(ctx.events).toEqual([
+      'rate-limit-charge:POST:/api/v1/posts',
+      'currentUser',
+      'signature',
+      'rate-limit:POST:/api/v1/posts',
+    ])
   })
 
   it('permits only a registered route through the exception helper', async () => {
@@ -128,6 +133,17 @@ function makeContext(
       if (signatureError) throw signatureError
     }),
     applyRouteRateLimit: vi
+      .fn<(routeId: string) => Promise<void>>()
+      .mockImplementation(async routeId => {
+        events.push(`rate-limit:${routeId}`)
+      }),
+    prepareRouteRateLimit: vi
+      .fn<(routeId: string) => Promise<null>>()
+      .mockImplementation(async routeId => {
+        events.push(`rate-limit-charge:${routeId}`)
+        return null
+      }),
+    settleRouteRateLimit: vi
       .fn<(routeId: string) => Promise<void>>()
       .mockImplementation(async routeId => {
         events.push(`rate-limit:${routeId}`)
