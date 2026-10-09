@@ -25,9 +25,9 @@ const productionState = createWebRiskState()
 export const assertUrlAllowedByWebRisk = createWebRiskChecker(productionState)
 
 /** Hostname policies already read for a batch of URLs, keyed by `normalizeHostnameForPolicy`. */
-export type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
+type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
 
-export type WebRiskCheckOptions = { policies?: PrecomputedHostnamePolicies }
+type WebRiskCheckOptions = { policies?: PrecomputedHostnamePolicies }
 
 const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false }
 

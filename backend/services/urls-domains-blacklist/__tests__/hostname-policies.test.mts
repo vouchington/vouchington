@@ -12,9 +12,20 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import * as bloomFilter from '../bloom-filter.mts'
-import { getHostnamePolicies, getHostnamePolicy, isUrlBlocked } from '../domains.mts'
+import { getHostnamePolicies, getHostnamePolicy } from '../domains.mts'
 
 type BloomRead = Awaited<ReturnType<typeof bloomFilter.checkBloomFilters>>
+
+async function isBlocked(hostname: string): Promise<boolean> {
+  return (await getHostnamePolicy(hostname)).is_blocked
+}
+
+// domain_blocklist_sources.name only allows lowercase letters and hyphens.
+function sourceNameSuffix(): string {
+  return Array.from(randomUUID().replaceAll('-', ''), digit =>
+    String.fromCodePoint(97 + Number.parseInt(digit, 16)),
+  ).join('')
+}
 
 describe('hostname policy reads', () => {
   const restores: Array<() => void> = []
@@ -42,7 +53,7 @@ describe('hostname policy reads', () => {
   }
 
   async function ownBlocklistedDomain(domain: string): Promise<void> {
-    const name = `hostname-policy-${randomUUID()}`
+    const name = `hostname-policy-${sourceNameSuffix()}`
     sourceIds.push(
       await createTestBlacklistSource({ type: 'url', name, url: 'https://example.com' }),
     )
@@ -95,7 +106,7 @@ describe('hostname policy reads', () => {
     await ownBlocklistedDomain(domain)
     bloomAnswers(candidates => candidates.map(() => true))
 
-    await expect(isUrlBlocked(`sub.${domain}`)).resolves.toBe(true)
+    await expect(isBlocked(`sub.${domain}`)).resolves.toBe(true)
     expect(domainSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -103,7 +114,7 @@ describe('hostname policy reads', () => {
     const host = `false-positive-${randomUUID()}.test`
     bloomAnswers(candidates => candidates.map(() => true))
 
-    await expect(isUrlBlocked(host)).resolves.toBe(false)
+    await expect(isBlocked(host)).resolves.toBe(false)
     expect(domainSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -112,7 +123,7 @@ describe('hostname policy reads', () => {
     await ownBlocklistedDomain(domain)
     bloomAnswers(candidates => candidates.map(() => null))
 
-    await expect(isUrlBlocked(domain)).resolves.toBe(true)
+    await expect(isBlocked(domain)).resolves.toBe(true)
     expect(domainSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -122,7 +133,7 @@ describe('hostname policy reads', () => {
     await updateUrlHostnameBlocked(hostnameMap.get(domain)!, true)
     bloomAnswers(candidates => candidates.map(() => true))
 
-    await expect(isUrlBlocked(`www.${domain}`)).resolves.toBe(true)
+    await expect(isBlocked(`www.${domain}`)).resolves.toBe(true)
     expect(domainSpy).not.toHaveBeenCalled()
   })
 
@@ -164,7 +175,7 @@ describe('hostname policy reads', () => {
     await ownBlocklistedDomain(domain)
     disableBloom()
 
-    await expect(isUrlBlocked(domain)).resolves.toBe(true)
+    await expect(isBlocked(domain)).resolves.toBe(true)
 
     expect(bloomSpy).not.toHaveBeenCalled()
     expect(fullSpy).toHaveBeenCalledTimes(1)
@@ -172,12 +183,11 @@ describe('hostname policy reads', () => {
     expect(domainSpy).not.toHaveBeenCalled()
   })
 
-  it('returns unknown from the Bloom read helpers when the feature flag is disabled', async () => {
+  it('returns unknown from the Bloom read helper when the feature flag is disabled', async () => {
     bloomSpy.mockRestore()
     disableBloom()
 
     await expect(bloomFilter.checkBloomFilters(['a.test', 'b.test'])).resolves.toEqual([null, null])
-    await expect(bloomFilter.checkBloomFilter('a.test')).resolves.toBeNull()
   })
 
   it('uses the full query for read-after-write callers even when the filter is enabled', async () => {
@@ -185,7 +195,9 @@ describe('hostname policy reads', () => {
     await ownBlocklistedDomain(domain)
     bloomAnswers(candidates => candidates.map(() => false))
 
-    await expect(isUrlBlocked(domain, { readOnly: false })).resolves.toBe(true)
+    await expect(getHostnamePolicy(domain, { readOnly: false })).resolves.toMatchObject({
+      is_blocked: true,
+    })
 
     expect(bloomSpy).not.toHaveBeenCalled()
     expect(fullSpy).toHaveBeenCalledTimes(1)

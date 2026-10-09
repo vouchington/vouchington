@@ -9,6 +9,13 @@ import {
 } from '@voucha/test-helpers'
 import { checkDomainBlacklisted } from '../check-domain-blacklisted.mts'
 
+// domain_blocklist_sources.name only allows lowercase letters and hyphens.
+function sourceNameSuffix(): string {
+  return Array.from(randomUUID().replaceAll('-', ''), digit =>
+    String.fromCodePoint(97 + Number.parseInt(digit, 16)),
+  ).join('')
+}
+
 describe('checkDomainBlacklisted', () => {
   const sourceIds: Array<Parameters<typeof deleteTestBlacklistSource>[0]> = []
   let bloomSpy: MockInstance<typeof bloomFilter.checkBloomFilters>
@@ -26,7 +33,7 @@ describe('checkDomainBlacklisted', () => {
   })
 
   async function ownBlocklistedDomain(domain: string): Promise<void> {
-    const name = `robots-blocklist-${randomUUID()}`
+    const name = `robots-blocklist-${sourceNameSuffix()}`
     sourceIds.push(
       await createTestBlacklistSource({ type: 'url', name, url: 'https://example.com' }),
     )

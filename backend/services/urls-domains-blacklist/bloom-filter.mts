@@ -8,15 +8,10 @@ import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
   type BlocklistBloomAddTarget,
-  type BlocklistBloomFilterReadTarget,
   repairStaleBlocklistReadyMarker,
 } from './blocklist-bloom-add.mts'
 import { urlBlocklistBatchesFromDb } from './bloom-filter-batches.mts'
-import {
-  checkBloomFilterRead,
-  checkBloomFiltersRead,
-  repairBloomFilterUnavailableRead,
-} from './read-repair.mts'
+import { checkBloomFiltersRead, repairBloomFilterUnavailableRead } from './read-repair.mts'
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
@@ -63,24 +58,7 @@ export function isUrlBlocklistBloomFilterEnabled(): boolean {
   return bloomFilterConfig.fields.get('urlBlocklistBloomFilterEnabled') !== false
 }
 
-/** `null` means unknown, so callers must use the database. A disabled filter is always unknown. */
-export async function checkBloomFilter(
-  hostname: string,
-  target?: BlocklistBloomFilterReadTarget,
-): Promise<boolean | null> {
-  if (!isUrlBlocklistBloomFilterEnabled()) return null
-  const bloomFilter = getBloomFilter()
-  return checkBloomFilterRead({
-    readyKey: target?.readyKey ?? BLOOM_READY_KEY,
-    value: hostname,
-    liveKey: target?.liveKey ?? bloomFilter.getConfig().liveKey,
-    existsIfReady:
-      target?.existsIfReady ?? ((readyKey, value) => bloomFilter.existsIfReady(readyKey, value)),
-    repairUnavailableRead: target?.repairUnavailableRead ?? repairUrlBlocklistUnavailableRead,
-  })
-}
-
-/** Same contract as `checkBloomFilter`: `null` entries mean unknown, so use the database. */
+/** `null` entries mean unknown, so callers must use the database. A disabled filter is always unknown. */
 export async function checkBloomFilters(hostnames: string[]): Promise<Array<boolean | null>> {
   if (!isUrlBlocklistBloomFilterEnabled()) return hostnames.map(() => null)
   return checkBloomFiltersRead({

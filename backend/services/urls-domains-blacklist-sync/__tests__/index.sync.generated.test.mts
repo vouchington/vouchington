@@ -1,11 +1,15 @@
 import { it, expect, afterAll, beforeAll, describe } from 'vitest'
-import { isUrlBlocked } from '@services/urls-domains-blacklist'
+import { getHostnamePolicy } from '@services/urls-domains-blacklist'
 import { syncBlacklistSource } from '../sync.mts'
 import { createTestBlacklistSource, countBlacklistEntriesBySource } from '@voucha/test-helpers'
 import {
   createFetchSafeTestServer,
   type FetchSafeTestServer,
 } from '@voucha/test-helpers/fetch-safe-test-server'
+
+async function isBlocked(hostname: string): Promise<boolean> {
+  return (await getHostnamePolicy(hostname)).is_blocked
+}
 
 describe('index.generated (syncBlacklistSource)', () => {
   const suffix = Array.from({ length: 8 }, () =>
@@ -91,10 +95,10 @@ describe('index.generated (syncBlacklistSource)', () => {
     expect(await countBlacklistEntriesBySource(sourceId)).toBe(3)
 
     // Verify specific domains
-    expect(await isUrlBlocked(domainA)).toBe(true)
-    expect(await isUrlBlocked(domainB)).toBe(true)
-    expect(await isUrlBlocked(domainD)).toBe(true)
-    expect(await isUrlBlocked(domainC)).toBe(false)
+    expect(await isBlocked(domainA)).toBe(true)
+    expect(await isBlocked(domainB)).toBe(true)
+    expect(await isBlocked(domainD)).toBe(true)
+    expect(await isBlocked(domainC)).toBe(false)
   })
 
   it('syncBlacklistSource handles complete list replacement', async () => {

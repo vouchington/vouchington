@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { valkeyEvents } from 'valkyries'
-import { getHostnamePolicyCandidates } from '@services/urls-hostnames/policies'
 import { describe, expect, it } from 'vitest'
 import { checkBloomFilters } from '../bloom-filter.mts'
-import { isUrlBlocked } from '../domains.mts'
+import { getHostnamePolicy } from '../domains.mts'
 import { checkBloomFiltersRead } from '../read-repair.mts'
 
 describe('isUrlBlocked bloom reads', () => {
@@ -25,14 +24,14 @@ describe('isUrlBlocked bloom reads', () => {
     valkeyEvents.on('bloom-filter:exists', onExists)
     valkeyEvents.on('bloom-filter:mexists', onMexists)
     try {
-      await isUrlBlocked(hostname)
+      await getHostnamePolicy(hostname)
     } finally {
       valkeyEvents.off('bloom-filter:exists', onExists)
       valkeyEvents.off('bloom-filter:mexists', onMexists)
     }
 
     expect(existsHits).toEqual([])
-    expect(mexistsHits).toEqual([getHostnamePolicyCandidates(hostname)])
+    expect(mexistsHits).toEqual([[hostname, `${token}.invalid`, 'invalid']])
   })
 })
 

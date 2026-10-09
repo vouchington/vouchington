@@ -85,7 +85,7 @@ function parseWebRiskThreat(data: unknown): WebRiskThreat | null {
   }
 }
 
-export function getWebRiskApiKey(): string | undefined {
+function getWebRiskApiKey(): string | undefined {
   return process.env.GOOGLE_WEB_RISK_API_KEY?.trim() || undefined
 }
 

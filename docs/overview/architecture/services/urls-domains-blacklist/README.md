@@ -11,7 +11,7 @@ Source entrypoint: [backend/services/urls-domains-blacklist/README.md](../../../
 This holds the blacklist source registry, domain lookup checks, and the Bloom filter
 warmup/mutation helpers. We keep track of hostnames.
 
-- One shared helper (`resolveBlocklist`) owns the hostname-policy decision for `isUrlBlocked()`,
+- One shared helper (`resolveBlocklist`) owns the hostname-policy decision for
   the batched `getHostnamePolicies()` / `getHostnamePolicy()` (blocking plus `should_skip_web_risk`),
   and the robots check `checkDomainBlacklisted()`. The robots check keeps its own local predicate
   (`is_crawlable = FALSE OR is_blocked = TRUE`, exact hostname).
@@ -23,7 +23,7 @@ warmup/mutation helpers. We keep track of hostnames.
     or unknown (filter missing, not ready, partial, or errored).
   - **Flag off**, or a caller that needs read-after-write (`client`, `query` or `readOnly: false`
     options): one full policy query, no Bloom command.
-  - The flag check lives inside the Bloom read helpers (`checkBloomFilter`, `checkBloomFilters`):
+  - The flag check lives inside the Bloom read helpers (`checkBloomFilters`):
     a disabled filter answers "unknown, use the database", so no consumer can forget it.
 - Serial depth per URL through `assertUrlAllowedByWebRisk`: 1 concurrent step (Bloom, local policy
   and the Web Risk clean-verdict/cooldown `Batch`), 1 more only for a Bloom "maybe", then the

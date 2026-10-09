@@ -19,7 +19,7 @@ export function normalizeHostnameForPolicy(hostname: string): string {
   return hostname.toLowerCase().trim()
 }
 
-export function getHostnamePolicyCandidates(hostname: string): string[] {
+function getHostnamePolicyCandidates(hostname: string): string[] {
   const labels = normalizeHostnameForPolicy(hostname).split('.').filter(Boolean)
   const candidates: string[] = []
   for (let index = 0; index < labels.length; index++) {
@@ -37,7 +37,7 @@ export function getHostnamePolicyGroups(hostnames: string[]): CandidateGroup[] {
 }
 
 /** Parallel arrays for `unnest($1::text[], $2::text[])`: one row per (group, candidate). */
-export function flattenCandidateGroups(groups: CandidateGroup[]): {
+function flattenCandidateGroups(groups: CandidateGroup[]): {
   keys: string[]
   candidates: string[]
 } {

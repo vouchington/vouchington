@@ -11,7 +11,6 @@ import { resolveBlocklist } from './blocklist-lookup.mts'
 
 export { normalizeDomain } from './normalize-domain.mts'
 export { normalizeHostnameForPolicy }
-export type { HostnamePolicy }
 
 /**
  * Blocking and Web Risk policy for many hostnames in one shared lookup, keyed by
@@ -37,8 +36,4 @@ export async function getHostnamePolicy(
 ): Promise<HostnamePolicy> {
   const policies = await getHostnamePolicies([hostname], options)
   return policies.get(normalizeHostnameForPolicy(hostname)) ?? EMPTY_HOSTNAME_POLICY
-}
-
-export async function isUrlBlocked(hostname: string, options: QueryOptions = {}): Promise<boolean> {
-  return (await getHostnamePolicy(hostname, options)).is_blocked
 }

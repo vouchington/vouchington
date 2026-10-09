@@ -4,7 +4,7 @@ import { vi, type MockInstance } from 'vitest'
 import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { createWebRiskState } from '../services/web-risk/state.mts'
-import { createWebRiskChecker, type WebRiskCheckOptions } from '../services/web-risk/check.mts'
+import { createWebRiskChecker } from '../services/web-risk/check.mts'
 import { webRiskConfig } from '../services/web-risk/config.mts'
 import { overrideDynamicConfigFieldsForTest } from './dynamic-config.mts'
 
@@ -59,7 +59,7 @@ export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
     return key
   }
 
-  function check(url: string, options?: WebRiskCheckOptions): Promise<void> {
+  function check(url: string, options?: Parameters<typeof actualCheck>[1]): Promise<void> {
     windowKeys()
     cooldownKey()
     try {
