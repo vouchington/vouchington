@@ -25,7 +25,7 @@ async function withQueue(
 ): Promise<void> {
   const name = `queue_errors_rate_limit_${randomUUID()}`
   const queue = new Queue(name, connection)
-  const events = new QueueEvents(name, { ...connection, blockTimeout: 1_000 })
+  const events = new QueueEvents(name, { ...connection, lastEventId: '0', blockTimeout: 1_000 })
   const worker = new Worker(name, processor, {
     ...connection,
     blockTimeout: 1_000,

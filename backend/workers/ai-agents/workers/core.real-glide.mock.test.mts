@@ -45,10 +45,14 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
     async (_name, createFailure, waitMs) => {
       const queueName = `ai_agents_rate_limit_${randomUUID()}`
       const queue = new Queue<AIAgentJobData>(queueName, connection)
-      const events = new QueueEvents(queueName, { ...connection, blockTimeout: 1_000 })
+      const events = new QueueEvents(queueName, {
+        ...connection,
+        lastEventId: '0',
+        blockTimeout: 1_000,
+      })
       const reconciled = Promise.withResolvers<void>()
-      // The same limiter the production queue runs with; it is what lets a worker-level pause
-      // hold back every other job on the process.
+      // A limiter, as on the production queue (OPENAI_RPM per minute; wider here so the test does
+      // not rate-limit itself): it is what lets a worker-level pause hold back every other job.
       const worker = new Worker<AIAgentJobData>(
         queueName,
         (job: Job<AIAgentJobData>) =>
