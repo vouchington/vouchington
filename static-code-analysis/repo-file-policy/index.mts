@@ -70,7 +70,7 @@ export async function checkRepoFilePolicy(
     ),
   )
 
-  checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
+  await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
