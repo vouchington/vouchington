@@ -4,6 +4,7 @@ import { sweepCopyrightEvidenceRetention } from '@services/copyright-notices'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from '@services/copyright-notices/erased-ciphertext'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readAccountExport } from '@voucha/test-helpers/services/copyright-notices/read-account-export'
 import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
@@ -44,8 +45,15 @@ describe('account data export after the copyright retention sweep', () => {
       }),
     ])
 
+    const aggregate = await getCopyrightNoticePrivateAggregate(erasedCase.noticeId)
+    if (!aggregate || aggregate.lifecycleEvents.length === 0) {
+      throw new Error('retention fixture lifecycle is missing')
+    }
+    const lastLifecycleAt = Math.max(
+      ...aggregate.lifecycleEvents.map(event => event.created_at.getTime()),
+    )
     const result = await sweepCopyrightEvidenceRetention({
-      now: new Date(Date.now() + 400 * DAY_MS),
+      now: new Date(lastLifecycleAt + 400 * DAY_MS),
       noticeIds: [erasedCase.noticeId],
     })
 
@@ -69,7 +77,7 @@ describe('account data export after the copyright retention sweep', () => {
     expect(poster.rows('copyright-repeat-infringer-incidents.csv')).toEqual(
       posterBefore.rows('copyright-repeat-infringer-incidents.csv'),
     )
-  }, 90_000)
+  })
 
   it('keeps the export package reading the same erased marker the sweep writes', () => {
     expect(EXPORT_COPYRIGHT_ERASED_CIPHERTEXT).toBe(COPYRIGHT_ERASED_CIPHERTEXT)
