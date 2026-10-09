@@ -36,8 +36,10 @@ describe('referral dispatcher hostname flags', () => {
       const enqueue = vi
         .fn<
           NonNullable<
-            Parameters<typeof dispatchReferralLinkCrawls>[0]
-          >['enqueueBulkCrawlReferralLinks']
+            NonNullable<
+              Parameters<typeof dispatchReferralLinkCrawls>[0]
+            >['enqueueBulkCrawlReferralLinks']
+          >
         >()
         .mockResolvedValue(undefined)
       const result = await dispatchReferralLinkCrawls({
