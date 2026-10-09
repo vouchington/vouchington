@@ -7,7 +7,6 @@ import {
 import { assertCanCreateCommunity } from '@services/communities/authorization'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
-import { getUserActivePlan } from '@services/memberships'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
@@ -126,7 +125,7 @@ const tool: Tool<Args, Result> = {
         post_approval_required_at: fields.post_approval_required_at === true,
       },
       beforeCreate: async () =>
-        assertWithinContributionActionLimit(user, await getUserActivePlan(user.id), 'community'),
+        assertWithinContributionActionLimit(user, user.membership_plan ?? null, 'community'),
       execute: async query => {
         const community = await createCommunity(user.id, getRequestContentProvenance(), input, {
           query,

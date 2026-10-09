@@ -1,7 +1,6 @@
 import assert from 'http-assert'
 import { normalizeHashtag } from '@ts-shared/utils'
 import type { PrivateUser } from '@services/users/types'
-import { getUserActivePlan } from '@services/memberships'
 import type { PostMutationAuthority } from '@services/entity-relations/post-access'
 import { resolveHashtagMutation } from './hashtag-mutation-access.mts'
 import { getRetainedPostCategories } from './hashtags.mts'
@@ -30,7 +29,7 @@ export async function removePostHashtag(
   const result = { post_id: post.id, tag: normalized.key }
   if (!(await hasExplicitHashtag(post.id, normalized.key))) return { ...result, removed: false }
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
+  const membershipPlan = currentUser.membership_plan ?? null
   await updatePost(currentUser, post, {}, membershipPlan, {
     change: { op: 'remove', hashtag: normalized },
     authority,

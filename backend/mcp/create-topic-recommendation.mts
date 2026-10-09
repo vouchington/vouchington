@@ -6,7 +6,6 @@ import {
   executePreparedContribution,
 } from '@services/contribution-gating'
 import { prepareDelegatedTopicRecommendation } from '@services/topic-recommendations/prepare-delegated-topic-recommendation'
-import { getUserActivePlan } from '@services/memberships'
 import { currentUserCanCreatePost } from '@services/posts/authorization'
 import {
   assertValidCreateTopicRecommendationInput,
@@ -62,7 +61,7 @@ const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
     if (!currentUserCanCreatePost(user))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const { idempotency_key, ...body } = args
-    const membershipPlan = await getUserActivePlan(user.id)
+    const membershipPlan = user.membership_plan ?? null
     assertValidCreateTopicRecommendationInput(body)
     const post = await admitDelegatedContribution({
       authority,

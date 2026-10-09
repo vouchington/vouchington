@@ -13,7 +13,6 @@ import { refreshEntityRelationVoteStatsFromPrimaryWithFallback } from '@services
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
 import { getContributionStatus } from '@services/contribution-gating/assert'
-import { getUserActivePlan } from '@services/memberships'
 import { assertWithinTagAddLimit } from '@services/tag-limits'
 import { assertNotSuspended, entityRelationViewerFor, isAdminUser } from '@services/users'
 import { assertUserTagAllowed } from './user-tag-authorization.mts'
@@ -139,7 +138,7 @@ async function resolveUserTagTarget(
     parsed.objectIds[0]!.id,
   )
   if (!isAdminUser(currentUser)) {
-    const membershipPlan = await getUserActivePlan(currentUser.id)
+    const membershipPlan = currentUser.membership_plan ?? null
     const contributionStatus = await getContributionStatus(currentUser, {
       membershipPlan,
       skipAccountAgeGate: true,
@@ -180,7 +179,7 @@ async function assertRelationLimit(
   ) {
     return
   }
-  const membershipPlan = isAdminUser(currentUser) ? null : await getUserActivePlan(currentUser.id)
+  const membershipPlan = isAdminUser(currentUser) ? null : (currentUser.membership_plan ?? null)
   await assertWithinTagAddLimit(
     currentUser,
     membershipPlan,
