@@ -37,6 +37,7 @@ export default defineConfig({
       './backend/test-helpers/vitest.setup.s3-offline.mts',
       './backend/test-helpers/vitest.setup.captcha-skip.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
+      './backend/test-helpers/vitest.setup.request-query-profile.mts',
     ],
   },
 })
