@@ -96,6 +96,21 @@ export async function getTestModerationReportEscalatedAt(
   return rows[0]?.escalated_at
 }
 
+/** Pending user-report community stamps for one reported user, including a null global stamp. */
+export async function listTestPendingUserReportCommunityIds(
+  reportedUserId: string,
+): Promise<Array<string | null>> {
+  const { rows } = await read<{ moderation_transparency_community_id: string | null }>(sql`
+    /* listTestPendingUserReportCommunityIds */
+    SELECT moderation_transparency_community_id
+    FROM moderation_reports
+    WHERE reported_user_id = ${reportedUserId}::uuid
+      AND reviewed_at IS NULL
+    ORDER BY moderation_transparency_community_id ASC NULLS FIRST, id ASC
+  `)
+  return rows.map(row => row.moderation_transparency_community_id)
+}
+
 export async function getTestModerationReportStatus(reportId: string): Promise<string> {
   const { rows } = await read<{ status: string }>(
     sql`/* getTestModerationReportStatus */

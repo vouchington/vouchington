@@ -5,13 +5,7 @@ import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-poli
 import type { ModerationReportReason } from '@ts-shared/utils/moderation-reports'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
 import { getTestReportJudgementContext } from './_moderation-report-judgement-context.mts'
-import {
-  ENTITY_TYPE_TO_REPORT_FK,
-  insertTestSystemModerationReport,
-  getTestSystemModerationReportStatus,
-  getTestModerationReportEscalatedAt,
-  getTestModerationReportStatus,
-} from './moderation-report-status.mts'
+import { ENTITY_TYPE_TO_REPORT_FK } from './moderation-report-status.mts'
 // Re-export status helpers so existing test-helper import paths remain stable.
 export {
   ENTITY_TYPE_TO_REPORT_FK,
@@ -19,7 +13,8 @@ export {
   getTestSystemModerationReportStatus,
   getTestModerationReportEscalatedAt,
   getTestModerationReportStatus,
-}
+  listTestPendingUserReportCommunityIds,
+} from './moderation-report-status.mts'
 export async function insertTestModerationReport(options: {
   reporterUserId: string
   entityType: 'post' | 'comment' | 'user' | 'rss_feed_item' | 'url_hostname'

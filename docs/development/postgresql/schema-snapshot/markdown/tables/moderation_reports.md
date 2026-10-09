@@ -55,10 +55,11 @@ _none_
 
 **Indexes:**
 
+- `idx_moderation_reports__active_community_user_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_community_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id, moderation_transparency_community_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NOT NULL))`
 - `idx_moderation_reports__active_hostname_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_hostname_unique ON public.moderation_reports USING btree (reporter_user_id, hostname_id) WHERE ((reviewed_at IS NULL) AND (hostname_id IS NOT NULL))`
 - `idx_moderation_reports__active_post_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_post_unique ON public.moderation_reports USING btree (reporter_user_id, post_id) WHERE ((reviewed_at IS NULL) AND (post_id IS NOT NULL))`
 - `idx_moderation_reports__active_rss_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_rss_unique ON public.moderation_reports USING btree (reporter_user_id, rss_feed_item_id) WHERE ((reviewed_at IS NULL) AND (rss_feed_item_id IS NOT NULL))`
-- `idx_moderation_reports__active_user_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL))`
+- `idx_moderation_reports__active_user_unique`: `CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NULL))`
 - `idx_moderation_reports__case_id`: `CREATE INDEX idx_moderation_reports__case_id ON public.moderation_reports USING btree (case_id)`
 - `idx_moderation_reports__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_reports__created_via_oauth_client_id ON public.moderation_reports USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_moderation_reports__hostname_id`: `CREATE INDEX idx_moderation_reports__hostname_id ON public.moderation_reports USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`

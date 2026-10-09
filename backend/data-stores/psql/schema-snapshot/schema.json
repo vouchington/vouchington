@@ -62402,6 +62402,40 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_moderation_reports__active_community_user_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_community_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id, moderation_transparency_community_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reporter_user_id",
+              "descending": false,
+              "expression": "reporter_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "moderation_transparency_community_id",
+              "descending": false,
+              "expression": "moderation_transparency_community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_moderation_reports__active_hostname_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -62486,7 +62520,7 @@
         "idx_moderation_reports__active_user_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -62504,7 +62538,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL))",
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,

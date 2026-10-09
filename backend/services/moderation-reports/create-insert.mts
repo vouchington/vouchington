@@ -31,7 +31,12 @@ export async function insertModerationReport(
   query.append(sql`) WHERE reviewed_at IS NULL AND `)
   query.append(fkColumn)
   query.append(
-    sql` IS NOT NULL DO UPDATE SET reason = EXCLUDED.reason, note = EXCLUDED.note RETURNING (xmax = 0) AS inserted, id, case_id, created_at, reviewed_at, reporter_user_id, reason, note, 'pending'::text AS status, resolved_by_id`,
+    input.entityType === 'user'
+      ? sql` IS NOT NULL AND moderation_transparency_community_id IS NULL`
+      : sql` IS NOT NULL`,
+  )
+  query.append(
+    sql` DO UPDATE SET reason = EXCLUDED.reason, note = EXCLUDED.note RETURNING (xmax = 0) AS inserted, id, case_id, created_at, reviewed_at, reporter_user_id, reason, note, 'pending'::text AS status, resolved_by_id`,
   )
 
   const { rows } = await write(query, { query: transaction })
