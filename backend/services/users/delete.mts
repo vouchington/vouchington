@@ -119,6 +119,12 @@ function getUserDeletionCacheTags(target: UserDeletionTarget): string[] {
   ]
 }
 
+function throwDeletionFailures(results: PromiseSettledResult<unknown>[], message: string) {
+  const errors = results.flatMap(r => (r.status === 'rejected' ? [r.reason] : []))
+  if (!errors.length) return
+  throw errors.length === 1 ? errors[0] : new AggregateError(errors, message)
+}
+
 async function attemptImmediateUserDeletionCacheEviction(
   requestId: string,
   target: UserDeletionTarget,
@@ -127,9 +133,10 @@ async function attemptImmediateUserDeletionCacheEviction(
   const tags = getUserDeletionCacheTags(target)
   try {
     await purge(tags)
-    await Promise.all(
+    const receipts = await Promise.allSettled(
       tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
     )
+    throwDeletionFailures(receipts, 'User deletion cache receipts failed')
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
@@ -169,15 +176,13 @@ export async function deleteUser(
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()
 
-  await Promise.all([
+  const purge = dependencies.purgeCacheTags ?? purgeCacheTags
+  const followUps = await Promise.allSettled([
     invalidate.users(deletion.target.id, deletion.target.username),
-    attemptImmediateUserDeletionCacheEviction(
-      deletion.request.id,
-      deletion.target,
-      dependencies.purgeCacheTags ?? purgeCacheTags,
-    ),
+    attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
   ])
-  enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
+  throwDeletionFailures(followUps, 'User deletion follow-ups failed')
+  await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,

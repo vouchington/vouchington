@@ -33,6 +33,24 @@ the publication and user-row locks. An observer error aborts the transaction. Th
 uses one lock query; contention uses two, and the gap before the blocking query does not establish
 a PostgreSQL wait-queue position. The active-user check still rejects writes after deletion commits.
 
+## Deletion completion
+
+`deleteUser` commits the account privacy fence and durable deletion request before starting
+cache invalidation and immediate cache eviction. It waits for both follow-ups to settle before
+propagating a failure. A single rejected follow-up retains its original rejection reason; multiple
+rejections are preserved in an `AggregateError` in follow-up order. Immediate cache eviction also
+waits for every started cache receipt write before reporting failures through its existing
+best-effort error boundary, preserving multiple receipt failures together.
+
+On the successful follow-up path, it waits for the best-effort bookmark-filter enqueue to settle,
+then attempts the initial user-deletion enqueue. The queue factory reports asynchronous
+bookmark enqueue failures; the best-effort wrapper reports synchronous failures. An enqueue
+failure does not undo the committed privacy fence or durable request. PostgreSQL recovery
+continues to own deletion correctness.
+
+Returning the deletion attempt establishes completion of these enqueue attempts, while
+[durable deletion processing](../user-deletions/README.md) owns subsequent erasure and finalization.
+
 ## User view row shapes
 
 The [public and private user views](../../../../../backend/data-stores/psql/views/2025-01-01-view-users.sql)
