@@ -17,3 +17,11 @@ export const Default: Story = {
     </EntityStoryFrame>
   ),
 }
+
+export const WithFilters: Story = {
+  render: () => (
+    <EntityStoryFrame title='Source List Skeleton With Filters'>
+      <SourceListSkeleton showFilters />
+    </EntityStoryFrame>
+  ),
+}

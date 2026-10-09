@@ -10,6 +10,7 @@ import InstancesLoading from '@/app/(topics)/instances/loading'
 import ReferralProgramsLoading from '@/app/(topics)/referral-programs/loading'
 import RewardsProgramStatusesLoading from '@/app/(topics)/rewards-program-statuses/loading'
 import RewardsProgramsLoading from '@/app/(topics)/rewards-programs/loading'
+import SourcesLoading from '@/app/(topics)/sources/loading'
 import SpendingCategoriesLoading from '@/app/(topics)/spending-categories/loading'
 import TopicsLoading from '@/app/(topics)/topics/loading'
 import VideosLoading from '@/app/(videos)/videos/loading'
@@ -42,6 +43,7 @@ const loadingBoundaries: Array<{
   name: string
   showFooter?: boolean
   skeleton: ComponentType
+  skeletonProps?: { showFilters?: boolean }
 }> = [
   {
     aside: AsideSkeleton,
@@ -85,6 +87,13 @@ const loadingBoundaries: Array<{
     name: 'spending categories',
     skeleton: TopicListSkeleton,
   },
+  {
+    loading: SourcesLoading,
+    name: 'sources',
+    showFooter: false,
+    skeleton: SourceListSkeleton,
+    skeletonProps: { showFilters: true },
+  },
   { aside: AsideSkeleton, loading: TopicsLoading, name: 'topics', skeleton: TopicListSkeleton },
   { aside: AsideSkeleton, loading: VideosLoading, name: 'videos', skeleton: NewsListSkeleton },
   { aside: AsideSkeleton, loading: NewsLoading, name: 'news', skeleton: NewsListSkeleton },
@@ -110,11 +119,12 @@ const skeletons: Array<{
 describe('list-route loading boundaries', () => {
   it.each(loadingBoundaries)(
     'keeps the $name loader on its intended shell',
-    ({ aside, loading, showFooter, skeleton }) => {
+    ({ aside, loading, showFooter, skeleton, skeletonProps }) => {
       const element = loading()
 
       expect(element.type).toBe(PageWithAside)
       expect(element.props.children.type).toBe(skeleton)
+      expect(element.props.children.props).toEqual(skeletonProps ?? {})
       expect(element.props.aside).toBe(aside)
       expect(element.props.showFooter).toBe(showFooter)
     },

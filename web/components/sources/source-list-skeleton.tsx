@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-export function SourceListSkeleton() {
+export function SourceListSkeleton({ showFilters = false }: { showFilters?: boolean }) {
   return (
     <div className='space-y-4'>
       <Skeleton className='h-5 w-48' />
@@ -11,6 +11,12 @@ export function SourceListSkeleton() {
         </div>
         <Skeleton className='h-9 w-36' />
       </div>
+      {showFilters && (
+        <div className='flex flex-col gap-3 sm:flex-row'>
+          <Skeleton className='h-9 min-w-0 flex-1' />
+          <Skeleton className='h-9 w-40' />
+        </div>
+      )}
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
