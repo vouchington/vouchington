@@ -20,16 +20,26 @@ export async function readCopyrightAcceptedNoticeCursorBefore(noticeId: string):
   const { rows } = await read<{ id: string; cursor_accepted_at: string }>(
     sql`/* readCopyrightAcceptedNoticeCursorBefore */
       SELECT notice.id, to_char(
-        (notice.accepted_at + interval '1 microsecond') AT TIME ZONE 'UTC',
+        notice.accepted_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
       ) AS cursor_accepted_at
       FROM copyright_notices notice
       WHERE notice.id = ${noticeId} AND notice.accepted_at IS NOT NULL`,
   )
   if (!rows[0]) throw new Error(`Accepted copyright notice not found: ${noticeId}`)
+  // The list uses a strict descending (accepted_at, id) cursor. Increment the UUID
+  // tie-breaker, not the timestamp: another notice may share this acceptance time.
+  const nextId = (BigInt(`0x${rows[0].id.replaceAll('-', '')}`) + 1n).toString(16).padStart(32, '0')
+  const cursorId = [
+    nextId.slice(0, 8),
+    nextId.slice(8, 12),
+    nextId.slice(12, 16),
+    nextId.slice(16, 20),
+    nextId.slice(20),
+  ].join('-')
   return encodeScopedPreciseTimestampCursor(
     rows[0].cursor_accepted_at,
-    rows[0].id,
+    cursorId,
     copyrightAcceptedNoticeCursorScope,
   )
 }
