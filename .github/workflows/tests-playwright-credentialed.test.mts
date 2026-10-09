@@ -101,6 +101,8 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
         join(directory, 'pnpm'),
         ['#!/usr/bin/env bash', 'printf \'%s\\n\' "$@" > "$PLAYWRIGHT_ARGS"', 'exit 7'].join('\n'),
       )
+      writeFileSync(join(directory, 'date'), '#!/usr/bin/env bash\nprintf "1000000\\n"\n')
+      chmodSync(join(directory, 'date'), 0o755)
       chmodSync(join(directory, 'python3'), 0o755)
       chmodSync(join(directory, 'pnpm'), 0o755)
       const result = spawnSync('bash', ['-c', step.run!], {
@@ -112,7 +114,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
           PATH: `${directory}:${process.env.PATH ?? ''}`,
           GITHUB_WORKSPACE: directory,
           GITHUB_OUTPUT: join(directory, 'outputs'),
-          CREDENTIALED_JOB_DEADLINE_EPOCH: String(Math.floor(Date.now() / 1000) + 780),
+          CREDENTIALED_JOB_DEADLINE_EPOCH: String(1_000_000 + 780),
           REAL_PYTHON: python.stdout.trim(),
           BOUND_ARGS: join(directory, 'bounded-args'),
           PLAYWRIGHT_ARGS: join(directory, 'playwright-args'),

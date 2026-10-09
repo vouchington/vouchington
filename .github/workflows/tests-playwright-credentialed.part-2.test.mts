@@ -149,6 +149,8 @@ describe('tests-playwright-credentialed.yml diagnostic upload condition (issue #
   })
 })
 
+const fixtureNow = 1_000_000
+
 function captureJobDeadline(payload: unknown): {
   status: number | null
   output: string
@@ -161,6 +163,8 @@ function captureJobDeadline(payload: unknown): {
       '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$API_CALLS"\nprintf "%s" "$API_RESPONSE"\n',
     )
     chmodSync(join(directory, 'gh'), 0o755)
+    writeFileSync(join(directory, 'date'), '#!/usr/bin/env bash\nprintf "1000000\\n"\n')
+    chmodSync(join(directory, 'date'), 0o755)
     writeFileSync(join(directory, 'env'), '')
     const capture = jobName
       ? parsedWorkflow.jobs?.[jobName]?.steps?.find(
@@ -212,7 +216,7 @@ function ownedJob(startedAt: string) {
 
 describe('credentialed job deadline uses a single current-attempt timing read', () => {
   it('includes provisioning elapsed time and reads the exact attempt once', () => {
-    const startEpoch = Math.floor(Date.now() / 1000) - 480
+    const startEpoch = fixtureNow - 480
     const result = captureJobDeadline({
       total_count: 1,
       jobs: [ownedJob(new Date(startEpoch * 1000).toISOString())],
@@ -225,20 +229,20 @@ describe('credentialed job deadline uses a single current-attempt timing read', 
   })
 
   it('rejects ambiguous matching job identities without exporting a deadline', () => {
-    const job = ownedJob(new Date().toISOString())
+    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
     const result = captureJobDeadline({ total_count: 2, jobs: [job, job] })
     expect(result.status).not.toBe(0)
     expect(result.output).toBe('')
   })
 
   it('rejects a wrong attempt and incomplete timing response without a deadline', () => {
-    const job = { ...ownedJob(new Date().toISOString()), run_attempt: 1 }
+    const job = { ...ownedJob(new Date(fixtureNow * 1000).toISOString()), run_attempt: 1 }
     expect(captureJobDeadline({ total_count: 1, jobs: [job] }).status).not.toBe(0)
     expect(captureJobDeadline({ total_count: 101, jobs: [] }).status).not.toBe(0)
   })
 
   it('fails before exporting a deadline when cleanup margin is already exhausted', () => {
-    const job = ownedJob(new Date(Date.now() - 780000).toISOString())
+    const job = ownedJob(new Date((fixtureNow - 780) * 1000).toISOString())
     const result = captureJobDeadline({ total_count: 1, jobs: [job] })
     expect(result.status).not.toBe(0)
     expect(result.output).toBe('')
