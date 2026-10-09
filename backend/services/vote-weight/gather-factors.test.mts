@@ -14,10 +14,10 @@ const randomUsername = () => `test-vote-weight-gather-${randomBytes(4).toString(
 
 describe('gatherVoteWeightFactors', () => {
   it('returns null for a non-existent user', async () => {
-    const fakeId = '00000000-0000-7000-8000-000000000001'
+    const fakeId = randomUUID()
     const result = await gatherVoteWeightFactors(fakeId)
     expect(result).toBeNull()
-  }, 60_000)
+  })
 
   it('returns factors for a basic user with correct defaults', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -35,7 +35,7 @@ describe('gatherVoteWeightFactors', () => {
     expect(typeof factors!.distinctAuthMethodCount).toBe('number')
     expect(typeof factors!.current_weight).toBe('number')
     expect(factors!.penaltyMultiplier).toBe(1.0)
-  }, 60_000)
+  })
 
   it('returns a valid Date for accountCreatedAt when user has a non-UUIDv7 id (COALESCE regression)', async () => {
     // UUIDv4 ids have no embedded timestamp; uuid_extract_timestamp() returns null for them.
@@ -49,7 +49,7 @@ describe('gatherVoteWeightFactors', () => {
     expect(factors).not.toBeNull()
     expect(factors!.accountCreatedAt).toBeInstanceOf(Date)
     expect(isNaN(factors!.accountCreatedAt.getTime())).toBe(false)
-  }, 60_000)
+  })
 
   it('returns isAdmin=true for a user with the administrator role', async () => {
     const user = await createTestUserDirect({
@@ -62,7 +62,7 @@ describe('gatherVoteWeightFactors', () => {
 
     expect(factors).not.toBeNull()
     expect(factors!.isAdmin).toBe(true)
-  }, 60_000)
+  })
 
   it('excludes an elapsed finite grant from membership factors', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -71,7 +71,7 @@ describe('gatherVoteWeightFactors', () => {
     await expect(gatherVoteWeightFactors(user!.id)).resolves.toMatchObject({
       membershipPlan: null,
     })
-  }, 60_000)
+  })
 
   it('retains an elapsed Stripe subscription in membership factors', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -84,7 +84,7 @@ describe('gatherVoteWeightFactors', () => {
     await expect(gatherVoteWeightFactors(user!.id)).resolves.toMatchObject({
       membershipPlan: 'plus',
     })
-  }, 60_000)
+  })
 
   it('excludes an invalid family source from membership factors', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -94,15 +94,28 @@ describe('gatherVoteWeightFactors', () => {
     })
     await createTestFamilyMembership({
       applicationId: sku.provider_application_id,
-      expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+      expiresAt: null,
       membershipProductId: sku.id,
       membershipProviderProductId: sku.membership_provider_product_id,
       sourceStatus: 'paused',
       userId: user!.id,
     })
 
+    const eligibleUser = await createTestUserDirect({ username: randomUsername() })
+    await createTestFamilyMembership({
+      applicationId: sku.provider_application_id,
+      expiresAt: null,
+      membershipProductId: sku.id,
+      membershipProviderProductId: sku.membership_provider_product_id,
+      sourceStatus: 'active',
+      userId: eligibleUser!.id,
+    })
+    await expect(gatherVoteWeightFactors(eligibleUser!.id)).resolves.toMatchObject({
+      membershipPlan: 'plus',
+    })
+
     await expect(gatherVoteWeightFactors(user!.id)).resolves.toMatchObject({
       membershipPlan: null,
     })
-  }, 60_000)
+  })
 })

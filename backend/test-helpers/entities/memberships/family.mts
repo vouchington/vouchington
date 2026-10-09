@@ -2,17 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { MembershipStatus } from '@voucha/types/entities/membership'
-import { getLifecycleFields } from '../memberships-lifecycle.mts'
 
 type CreateTestFamilyMembershipOptions = {
   applicationId: string
   effectiveAt?: Date
-  expiresAt: Date
+  expiresAt: Date | null
   membershipProductId: string
   membershipProviderProductId: string
   providerAccountId?: string
   sourceEffectiveAt?: Date
-  sourceExpiresAt?: Date
+  sourceExpiresAt?: Date | null
   sourceUpdatedAt?: Date
   sourceStatus?: MembershipStatus
   userId: string
@@ -20,22 +19,27 @@ type CreateTestFamilyMembershipOptions = {
 
 export async function createTestFamilyMembership({
   applicationId,
-  effectiveAt = new Date(),
+  effectiveAt,
   expiresAt,
   membershipProductId,
   membershipProviderProductId,
   providerAccountId,
   sourceEffectiveAt = effectiveAt,
-  sourceExpiresAt = expiresAt,
+  sourceExpiresAt,
   sourceStatus = 'active',
-  sourceUpdatedAt = new Date(),
+  sourceUpdatedAt,
   userId,
 }: CreateTestFamilyMembershipOptions): Promise<{ id: string }> {
+  const resolvedSourceExpiresAt = sourceExpiresAt !== undefined ? sourceExpiresAt : expiresAt
   const fixtureId = randomUUID()
   const evidenceLookupSha256 = fixtureId.replaceAll('-', '').padEnd(64, 'd')
-  const sourceLifecycle = getLifecycleFields(sourceStatus, sourceEffectiveAt)
   const { rows } = await write(sql`/* createTestFamilyMembership */
-    WITH lineage AS (
+    WITH timing AS (
+      SELECT COALESCE(${effectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP) AS effective_at,
+        COALESCE(${sourceEffectiveAt ?? null}::timestamptz,
+          ${effectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP) AS source_effective_at,
+        COALESCE(${sourceUpdatedAt ?? null}::timestamptz, CURRENT_TIMESTAMP) AS source_updated_at
+    ), lineage AS (
       INSERT INTO membership_provider_lineages (
         provider, environment, application_id, provider_lineage_id, provider_account_id
       ) VALUES (
@@ -60,8 +64,8 @@ export async function createTestFamilyMembership({
         evidence.membership_provider_lineage_id, provider_product.id,
         provider_product.membership_product_id, provider_product.price_minor_units,
         provider_product.currency_code, ${fixtureId}, 1, 'family',
-        ${effectiveAt}, ${expiresAt}, true
-      FROM evidence
+        timing.effective_at, ${expiresAt}, true
+      FROM evidence CROSS JOIN timing
       INNER JOIN membership_provider_products provider_product
         ON provider_product.id = ${membershipProviderProductId}
         AND provider_product.membership_product_id = ${membershipProductId}
@@ -79,16 +83,19 @@ export async function createTestFamilyMembership({
         membership_provider_observation_id, membership_product_id,
         effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew, updated_at
       ) SELECT source.id, 'family', source.membership_provider_lineage_id,
-        observation.id, ${membershipProductId}, ${sourceEffectiveAt}, ${sourceExpiresAt},
-        ${sourceLifecycle.cancelledAt}, ${sourceLifecycle.expiredAt},
-        ${sourceLifecycle.pastDueAt}, ${sourceLifecycle.pausedAt}, true, ${sourceUpdatedAt}
-      FROM source CROSS JOIN observation
+        observation.id, ${membershipProductId}, timing.source_effective_at, ${resolvedSourceExpiresAt},
+        CASE WHEN ${sourceStatus} = 'cancelled' THEN timing.source_effective_at END,
+        CASE WHEN ${sourceStatus} = 'expired' THEN timing.source_effective_at END,
+        CASE WHEN ${sourceStatus} = 'past_due' THEN timing.source_effective_at END,
+        CASE WHEN ${sourceStatus} = 'paused' THEN timing.source_effective_at END,
+        true, timing.source_updated_at
+      FROM source CROSS JOIN observation CROSS JOIN timing
       RETURNING membership_source_id
     )
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at
-    ) SELECT ${userId}, membership_source_id, ${membershipProductId}, ${effectiveAt},
-      ${expiresAt} FROM state
+    ) SELECT ${userId}, membership_source_id, ${membershipProductId}, timing.effective_at,
+      ${expiresAt} FROM state CROSS JOIN timing
     RETURNING id`)
   return rows[0] as { id: string }
 }
