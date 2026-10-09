@@ -64,12 +64,31 @@ repeated annotation writes one stderr line:
   `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
   `docs/requirements/api/**` mean serial depth.
 - `BACKEND_TEST_REQUEST_QUERY_REPORT=all` prints a line for every request, not only those with repeats.
-- Report-only: it never fails a test. Queries finishing after the response flushes, and Valkey
-  commands (no command hook exists yet), are not covered.
+- Queries finishing after the response flushes, and Valkey commands (no command hook exists yet),
+  are not covered.
 
-Follow-up (second PR of the guard rollout): generate a baseline from CI output, then enforce that
-no request repeats an annotation or exceeds its baseline serial depth, except for entries in an
-allowlist shaped `{ annotation, reason, issue }` (a justified repeat with a tracking issue link).
+### Enforcement and the baseline
+
+The profile is enforced. A repeated annotation within one API request that is not in
+[`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
+fails the test that made the request, with a message naming the route and the annotation. The
+response `finish` handler records the violation and
+[`vitest.setup.request-query-profile.mts`](../../../backend/test-helpers/vitest.setup.request-query-profile.mts)
+throws it from `afterEach` (and `afterAll`). Serial depth is reported, not enforced.
+
+Each baseline entry is `{ annotation, reason, issue }`: the annotation, why the repeat is tolerated,
+and the number of the open issue that removes it. The baseline is per annotation, not per route.
+
+- **Add an entry** only for a repeat that cannot be fixed in the same PR. Prefer fixing the repeat.
+  Link an existing issue that owns the area, or file one in the "Query round-trip reductions"
+  milestone, and write a one-line `reason`.
+- **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
+  PR never depends on landing order; the entry is still deleted so the repeat cannot return.
+- **Find stale entries.** A single process sees only a slice of the routes, so staleness is
+  computed over the logs of a whole run, not in the test run. Save every `test-backend-unit` shard
+  and credentialed job log of one completed main run (`gh run view <id> --log --job <job-id>`),
+  then run `node backend/test-helpers/api/request-query-profile-stale.mts <log>...`. It lists
+  entries that no longer repeat and always exits successfully.
 
 ## Query access references
 
