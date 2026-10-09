@@ -13,7 +13,7 @@ export const findYourFriends = createWorker(
   QUEUE_NAME,
   async (job: Job) => {
     if (job.name === 'enqueueDispatchFindYourFriends') {
-      // Awaited here: the lint rule does not treat a promise returned to a call argument as handled.
+      // Settle the enqueue inside the processor so a rejection fails this job.
       const enqueued = await enqueueDispatchFindYourFriends()
       return enqueued
     }
