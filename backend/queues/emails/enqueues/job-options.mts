@@ -10,7 +10,8 @@ import type { EmailJobs, EmailSendJobs } from '../types.mts'
  * in Valkey, readable by anything with queue access, until 100 newer jobs finished.
  *
  * Failure reporting is unchanged: the worker reports a terminal failure from its in-process
- * `failed` event, which fires with the job in hand, and `scrubJobData` redacts the credential.
+ * `failed` event, which fires with the job in hand, and `scrubJobData` redacts the credential from
+ * that report (the dev-only verbose worker logger prints raw job data on a developer machine).
  * Retries still need the payload, so the credential stays in Valkey while a job is waiting,
  * active, or backing off. A job that stalls past its limit is also not removed by
  * `removeOnFail: true`.
