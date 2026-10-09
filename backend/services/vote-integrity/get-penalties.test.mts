@@ -18,7 +18,7 @@ describe('getVoteWeightPenalties', () => {
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true, username: randomUsername() })
-  }, 60_000)
+  }, 5_000)
 
   it('gets one penalty by ID and returns null for an unknown ID', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -32,7 +32,7 @@ describe('getVoteWeightPenalties', () => {
       reason: 'voting_ring',
     })
     await expect(getVoteWeightPenaltyByIdFromPrimary(uuidv7())).resolves.toBeNull()
-  }, 60_000)
+  })
 
   it('preserves all-source behavior when source is omitted', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -50,7 +50,7 @@ describe('getVoteWeightPenalties', () => {
     expect(result.results.map(penalty => penalty.id)).toEqual(
       expect.arrayContaining([ringId, referralId]),
     )
-  }, 60_000)
+  })
 
   it('defines source=flag by voting_ring reason and supports source flag filtering', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -88,7 +88,7 @@ describe('getVoteWeightPenalties', () => {
       sourceFlagId: flagId,
     })
     expect(oneFlag.results).toEqual([expect.objectContaining({ id: expectedId })])
-  }, 60_000)
+  })
 
   it('uses scoped opaque cursors with exact limit-plus-one pagination', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -115,7 +115,7 @@ describe('getVoteWeightPenalties', () => {
     await expect(
       getVoteWeightPenalties({ userId: user.id, limit: 2, after: first.page_info.end_cursor! }),
     ).rejects.toMatchObject({ status: 400 })
-  }, 60_000)
+  })
 
   it('rejects an unscoped or wrong-scope cursor', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -138,7 +138,7 @@ describe('getVoteWeightPenalties', () => {
         after: encodeScopedUuidCursor(sortedIds[0]!, 'wrong-scope'),
       }),
     ).rejects.toMatchObject({ status: 400 })
-  }, 60_000)
+  })
 
   it('returns terminal page info for empty, partial, and exact-limit pages', async () => {
     const [emptyUser, partialUser, exactUser] = await Promise.all([
@@ -181,7 +181,7 @@ describe('getVoteWeightPenalties', () => {
     expect(exact.results.map(penalty => penalty.id)).toEqual(exactIds.toSorted().toReversed())
     expect(exact.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
     expect(exact.page_info.start_cursor).not.toBeNull()
-  }, 60_000)
+  })
 
   it('adds exact flag filter scope only for source=flag responses', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -190,5 +190,5 @@ describe('getVoteWeightPenalties', () => {
     expect(filtered.filter_scope).toEqual({ source: 'flag', source_flag_id: null })
     const allSources = await getVoteWeightPenalties({ userId: user.id })
     expect(allSources).not.toHaveProperty('filter_scope')
-  }, 60_000)
+  })
 })

@@ -13,7 +13,7 @@ describe('detect-ip-correlation', () => {
 
   beforeAll(async () => {
     creatorUser = await createTestUserDirect({ username: randomUsername() })
-  }, 60_000)
+  }, 5000)
 
   function makePost(slug: string): Promise<string> {
     return insertTestPost({
@@ -37,7 +37,7 @@ describe('detect-ip-correlation', () => {
 
       const result = await detectIpCorrelation('post', postId)
       expect(result.flagged).toBe(false)
-    }, 60_000)
+    })
 
     it('returns flagged=true when threshold or more users share an IP', async () => {
       const postId = await makePost(randomSlug())
@@ -55,7 +55,7 @@ describe('detect-ip-correlation', () => {
       expect(result.details.correlated_ips[0]?.distinct_user_count).toBeGreaterThanOrEqual(
         IP_CORRELATION_THRESHOLD,
       )
-    }, 60_000)
+    })
 
     it('returns correct details shape', async () => {
       const postId = await makePost(randomSlug())
@@ -66,6 +66,6 @@ describe('detect-ip-correlation', () => {
       expect(result.details).toHaveProperty('threshold')
       expect(result.details).toHaveProperty('window_minutes')
       expect(Array.isArray(result.details.correlated_ips)).toBe(true)
-    }, 60_000)
+    })
   })
 })
