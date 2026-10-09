@@ -17,6 +17,7 @@ import type { CrawlHostnameDispatchCursor } from '@queues/crawl-hostnames/types'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlHostnames } from './dispatch-crawl-hostnames.mts'
 import { getCrawlHostnameCandidates } from './hostname-dispatch-candidates.mts'
+import { insertTestDomainBlacklist } from '@voucha/test-helpers/entities/domain-blacklists'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { dispatchCrawlUrlsPerHostname } from './dispatch-per-hostname.mts'
 
@@ -47,7 +48,9 @@ describe('hostname sweep selection and completion', () => {
     const hosts: string[] = []
     const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
     for (const sweptAt of [null, null, '2098-01-01T00:00:00Z', '2099-01-14T12:00:00Z']) {
-      const host = await insertTestUrlHostname({ hostname: `sweep-${randomUUID()}.example.com` })
+      const hostname = `sweep-${randomUUID()}.example.com`
+      const host = await insertTestUrlHostname({ hostname })
+      if (!hosts.length) await insertTestDomainBlacklist(hostname)
       await setTestHostnameCrawlSweep(host, bucketDays, sweptAt)
       hosts.push(host)
     }
@@ -77,13 +80,26 @@ describe('hostname sweep selection and completion', () => {
     const tail = await dispatchCrawlHostnames(saved.at(-1), async cursor => {
       saved.push(cursor)
     })
-    expect(tail.count).toBe(0)
+    expect(tail.count).toBe(1)
+    expect(
+      (
+        await dispatchCrawlHostnames(saved.at(-1), async cursor => {
+          saved.push(cursor)
+        })
+      ).count,
+    ).toBe(0)
     expect(saved.at(-1)?.afterBucketDays).toBe(bucketDays)
     const queued = await crawlHostnamesQueue.searchJobs({
       name: 'crawl_urls_per_hostname_dispatcher',
       data: { hostname_id: hosts[2]! },
     })
     expect(queued).toHaveLength(1)
+    expect(
+      await crawlHostnamesQueue.searchJobs({
+        name: 'crawl_urls_per_hostname_dispatcher',
+        data: { hostname_id: hosts[0]! },
+      }),
+    ).toHaveLength(0)
     const candidates = await getCrawlHostnameCandidates(
       { ...start, bucketDays, rangeLimit: 10 },
       20,

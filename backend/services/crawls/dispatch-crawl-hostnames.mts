@@ -63,10 +63,11 @@ async function dispatchHostnamePage(
       afterBucketDays: cursor.bucketDays!,
     }
   } else {
-    await enqueueBulkCrawlHostname(rows.map(row => row.id))
+    const hostnameIds: string[] = []
+    for (const row of rows) if (!row.is_domain_blocklisted) hostnameIds.push(row.id)
+    if (hostnameIds.length) await enqueueBulkCrawlHostname(hostnameIds)
     const next = { ...cursor }
     for (const row of rows) {
-      next.rangeRows = next.range === row.range ? (next.rangeRows ?? 0) + 1 : 1
       next.range = row.range
       next.afterId = row.id
       if (row.crawl_swept_at) next.afterSweptAt = row.crawl_swept_at.toISOString()

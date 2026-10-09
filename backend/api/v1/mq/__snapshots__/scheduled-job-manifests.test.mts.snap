@@ -965,7 +965,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl_hostnames_dispatcher",
     "template": {
       "data": {},
-      "name": "crawl_hostnames_dispatcher",
+      "name": "enqueueCrawlHostnamesDispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -3351,7 +3351,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch due hostname crawl jobs (hourly)",
     "id": "crawl_hostnames_dispatcher",
-    "job_name": "crawl_hostnames_dispatcher",
+    "job_name": "enqueueCrawlHostnamesDispatcher",
     "queue_name": "crawl_hostnames",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",

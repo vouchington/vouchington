@@ -80,11 +80,13 @@ function crawlJob(
     repeat: { pattern },
     template: {
       name:
-        id === 'crawl_tier1_dispatcher'
-          ? 'enqueueCrawlTier1Dispatcher'
-          : id === 'crawl_tier2_dispatcher'
-            ? 'enqueueCrawlTier2Dispatcher'
-            : id,
+        id === 'crawl_hostnames_dispatcher'
+          ? 'enqueueCrawlHostnamesDispatcher'
+          : id === 'crawl_tier1_dispatcher'
+            ? 'enqueueCrawlTier1Dispatcher'
+            : id === 'crawl_tier2_dispatcher'
+              ? 'enqueueCrawlTier2Dispatcher'
+              : id,
       data: {},
       opts: { ...DEFAULT_OPTIONS, priority } satisfies JobOptions,
     },

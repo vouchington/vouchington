@@ -24,7 +24,7 @@ export const dispatchCrawlUrlsPerHostname = async (
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
-  const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
+  const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId, { readOnly: false })
   if (!hostname || !hostname.is_crawlable || hostname.is_blocked)
     return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
@@ -77,7 +77,7 @@ export const dispatchCrawlUrlsPerHostname = async (
     {
       batchSize: limits.batchSize,
       maxRows: limits.maxRows,
-      readOnly: true,
+      readOnly: false,
       handler: async rows => {
         total += rows.length
         await enqueueBulkCrawlUrls(
