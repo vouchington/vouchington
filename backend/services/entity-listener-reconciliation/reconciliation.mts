@@ -8,11 +8,7 @@ import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 const OVERLAP_MS = 5 * 60_000
 const REPLICA_LAG_MARGIN_MS = 60_000
 
-export type {
-  ReconciledEntityType,
-  EntityReconciliationCandidate,
-  EntityReconciliationWindow,
-} from './types.mts'
+export type { EntityReconciliationCandidate, EntityReconciliationWindow } from './types.mts'
 
 export async function getEntityReconciliationWindow(
   intervalSeconds: number,
