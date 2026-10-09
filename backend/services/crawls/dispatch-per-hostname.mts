@@ -94,6 +94,8 @@ export const dispatchCrawlUrlsPerHostname = async (
       UPDATE url_hostnames
       SET crawl_swept_at = GREATEST(crawl_swept_at, ${sweepStartedAt}::timestamptz)
       WHERE id = ${hostnameId}::uuid
+        AND is_crawlable AND NOT is_blocked
+        AND updated_at <= ${sweepStartedAt}::timestamptz
     `)
   }
   return { count: total, hasMore: result.hasMore }

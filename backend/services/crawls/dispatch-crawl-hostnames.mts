@@ -24,7 +24,7 @@ export const dispatchCrawlHostnames = async (
     // oxlint-disable-next-line no-await-in-loop -- each page advances the retained index position after its enqueue succeeds
     const page = await dispatchHostnamePage(
       cursor,
-      Math.min(limits.batchSize, limits.maxRows - count - probes),
+      Math.min(cursor.rangeLimit, limits.batchSize, limits.maxRows - count - probes),
       saveProgress,
     )
     cursor = page.cursor

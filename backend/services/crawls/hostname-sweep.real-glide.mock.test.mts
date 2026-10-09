@@ -47,7 +47,7 @@ describe('hostname sweep selection and completion', () => {
   it('caps both due ranges, excludes recent completion, and resumes beyond queued hosts', async () => {
     const hosts: string[] = []
     const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
-    for (const sweptAt of [null, null, '2098-01-01T00:00:00Z', '2099-01-14T12:00:00Z']) {
+    for (const sweptAt of [null, null, null, '2098-01-01T00:00:00Z', '2099-01-14T12:00:00Z']) {
       const hostname = `sweep-${randomUUID()}.example.com`
       const host = await insertTestUrlHostname({ hostname })
       if (!hosts.length) await insertTestDomainBlacklist(hostname)
@@ -65,18 +65,28 @@ describe('hostname sweep selection and completion', () => {
       bucketDays,
     }
     // Use a cutoff within the bucket's full 32700-day interval.
-    await setTestHostnameCrawlSweep(hosts[2]!, bucketDays, '2000-01-01T00:00:00Z')
+    await setTestHostnameCrawlSweep(hosts[3]!, bucketDays, '2000-01-01T00:00:00Z')
     const saved: CrawlHostnameDispatchCursor[] = []
     expect(
       await dispatchCrawlHostnames(start, async cursor => {
         saved.push(cursor)
       }),
     ).toEqual({ count: 1, hasMore: true })
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      hostname_batch_size: 2,
+      hostname_max_rows_per_run: 2,
+    })
     expect(
       await dispatchCrawlHostnames(saved.at(-1), async cursor => {
         saved.push(cursor)
       }),
-    ).toEqual({ count: 1, hasMore: true })
+    ).toEqual({ count: 2, hasMore: true })
+    expect(saved.at(-1)?.afterId).toBe(hosts[2])
+    expect(saved.at(-1)?.range).toBe(0)
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      hostname_batch_size: 1,
+      hostname_max_rows_per_run: 1,
+    })
     const tail = await dispatchCrawlHostnames(saved.at(-1), async cursor => {
       saved.push(cursor)
     })
@@ -91,7 +101,7 @@ describe('hostname sweep selection and completion', () => {
     expect(saved.at(-1)?.afterBucketDays).toBe(bucketDays)
     const queued = await crawlHostnamesQueue.searchJobs({
       name: 'crawl_urls_per_hostname_dispatcher',
-      data: { hostname_id: hosts[2]! },
+      data: { hostname_id: hosts[3]! },
     })
     expect(queued).toHaveLength(1)
     expect(
@@ -104,11 +114,11 @@ describe('hostname sweep selection and completion', () => {
       { ...start, bucketDays, rangeLimit: 10 },
       20,
     )
-    expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(3)
+    expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(4)
     expect(
       await crawlHostnamesQueue.searchJobs({
         name: 'crawl_urls_per_hostname_dispatcher',
-        data: { hostname_id: hosts[3]! },
+        data: { hostname_id: hosts[4]! },
       }),
     ).toHaveLength(0)
   })
@@ -144,5 +154,23 @@ describe('hostname sweep selection and completion', () => {
       sweepStartedAt: '2098-01-01T00:00:00.000Z',
     })
     expect(await getTestHostnameCrawlSweep(first.hostname.id)).toBe(sweepStartedAt)
+  })
+  it('does not publish completion after hostname eligibility changes during dispatch', async () => {
+    const owner = await createTestUser()
+    const hostname = `inactive-sweep-${randomUUID()}.localhost`
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    const url = (await insertTestUrlDirect(owner.id, `https://${hostname}/only`))!
+    await updateUrlHostname(url.hostname.id, { is_crawlable: true })
+    await setTestHostnameCrawlSweep(url.hostname.id, 1, null)
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      batch_size: 10,
+      max_rows_per_run: 10,
+    })
+    expect(
+      await dispatchCrawlUrlsPerHostname(url.hostname.id, { sweepStartedAt }, async progress => {
+        if (progress.afterId) await updateUrlHostname(url.hostname.id, { is_crawlable: false })
+      }),
+    ).toEqual({ count: 1, hasMore: false })
+    expect(await getTestHostnameCrawlSweep(url.hostname.id)).toBeNull()
   })
 })
