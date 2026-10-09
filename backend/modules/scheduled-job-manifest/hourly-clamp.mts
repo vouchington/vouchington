@@ -77,5 +77,26 @@ function alignedCronPattern(pattern: string): string {
   if (minuteField === undefined || minuteField === '' || rest.length !== 4) {
     throw new Error(`Expected a 5-field cron pattern, got: ${JSON.stringify(pattern)}`)
   }
-  return minuteField === WAKE_MINUTE_FIELD ? pattern : [WAKE_MINUTE_FIELD, ...rest].join(' ')
+  if (minuteField === WAKE_MINUTE_FIELD) return pattern
+  // Validate before replacing: rewriting must not turn a malformed minute field into a valid one,
+  // or staging would register a manifest that production (and GlideMQ) rejects.
+  assertValidCronMinuteField(minuteField, pattern)
+  return [WAKE_MINUTE_FIELD, ...rest].join(' ')
+}
+
+// Mirrors the minute grammar GlideMQ accepts: comma-separated `*`, `N` or `N-M`, each with an
+// optional `/step`, where `N/step` runs from N to 59.
+function assertValidCronMinuteField(minuteField: string, pattern: string): void {
+  for (const item of minuteField.split(',')) {
+    const match = /^(?:\*|(\d+)(?:-(\d+))?)(?:\/(\d+))?$/.exec(item)
+    const [from, to, step] = [match?.[1], match?.[2], match?.[3]].map(value =>
+      value === undefined ? undefined : Number(value),
+    )
+    const outOfRange = (from ?? 0) > 59 || (to ?? 0) > 59 || (from ?? 0) > (to ?? 59)
+    if (match === null || step === 0 || outOfRange) {
+      throw new Error(
+        `Invalid cron minute field ${JSON.stringify(minuteField)} in pattern ${JSON.stringify(pattern)}`,
+      )
+    }
+  }
 }

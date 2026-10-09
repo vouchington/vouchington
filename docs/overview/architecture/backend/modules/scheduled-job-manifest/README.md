@@ -79,14 +79,15 @@ declared cadence.
 | `{ pattern }` with minute field `0`          | Unchanged (same object)                                                        |
 | Any other `{ pattern }`                      | Same pattern with the minute field replaced by `0`                             |
 
-A cron keeps its hour, day-of-month, month and day-of-week fields, so `30 2 * * *` becomes `0 2 * *
-*`, `17 * * * *` and `*/5 * * * *` both become `0 * * * *`, and `*/10 9-17 * * 1-5` becomes `0 9-17
-
-- - 1-5`. An interval that does not divide 24 hours rounds up rather than down, and an interval over
-    a month is capped at monthly, so no job runs more often than it declares except in that last case
-    (no manifest job has one). `every` loses its phase on purpose: a fixed phase is what spread the
-    wakes across minutes. Production minute offsets that staggered daily and weekly jobs (for example
-    the 02:30 tier-1 crawl dispatcher) collapse onto :00 on staging.
+A cron keeps its hour, day-of-month, month and day-of-week fields, so `30 2 * * *` becomes
+`0 2 * * *`, `17 * * * *` and `*/5 * * * *` both become `0 * * * *`, and `*/10 9-17 * * 1-5`
+becomes `0 9-17 * * 1-5`. An interval that does not divide 24 hours rounds up rather than down, and
+an interval over a month is capped at monthly, so no job runs more often than it declares except in
+that last case (no manifest job has one). `every` loses its phase on purpose: a fixed phase is what
+spread the wakes across minutes. Production minute offsets that staggered daily and weekly jobs (for
+example the 02:30 tier-1 crawl dispatcher) collapse onto :00 on staging. A malformed minute field
+such as `61 * * * *` or `*/0 * * * *` is rejected before it is rewritten, so staging fails the same
+manifests production does.
 
 `runtime.mts` aligns the **resolved** value of a thunk repeat on every call, matching the same seam
 the 1-minute floor's justification check uses above. `projection.mts` deliberately does not resolve

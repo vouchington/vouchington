@@ -109,6 +109,33 @@ describe('clampScheduledJobRepeatToHourlyFloor', () => {
       },
     )
 
+    it.each(['5/10 * * * *', '0-30/10 * * * *', '59 * * * *', '1,2,3 * * * *', '*/59 * * * *'])(
+      'accepts the valid minute field of %s',
+      pattern => {
+        expect(clampScheduledJobRepeatToHourlyFloor({ pattern }).repeat).toEqual({
+          pattern: HOURLY_FLOOR_PATTERN,
+        })
+      },
+    )
+
+    it.each([
+      'a * * * *',
+      '60 * * * *',
+      '61 * * * *',
+      '*/0 * * * *',
+      '*/ * * * *',
+      '30-10 * * * *',
+      '5-70 * * * *',
+      '1/2/3 * * * *',
+      '5-10-15 * * * *',
+      '1,,2 * * * *',
+      '-5 * * * *',
+    ])('rejects the invalid minute field of %s instead of rewriting it', pattern => {
+      expect(() => clampScheduledJobRepeatToHourlyFloor({ pattern })).toThrow(
+        'Invalid cron minute field',
+      )
+    })
+
     it.each(['', '* * * *', '* * * * * *'])('rejects the non-5-field pattern %j', pattern => {
       expect(() => clampScheduledJobRepeatToHourlyFloor({ pattern })).toThrow(
         'Expected a 5-field cron pattern',
