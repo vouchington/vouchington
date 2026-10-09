@@ -142,15 +142,6 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  IMMUTABLE
 ```
 
-## `fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)
- RETURNS boolean
- LANGUAGE sql
- STABLE
-```
-
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
 
 ```sql
