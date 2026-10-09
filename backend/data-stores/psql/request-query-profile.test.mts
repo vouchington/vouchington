@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
 import type http from 'node:http'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   buildStaleReport,
   findStaleBaselineEntries,
@@ -140,6 +140,22 @@ describe('request query profile baseline', () => {
     expect(report.stale).toEqual(entries)
     expect(report.logCount).toBe(1)
     expect(report.sufficient).toBe(false)
+  })
+
+  it('attributes queries recorded by a module instance loaded after vi.resetModules()', async () => {
+    const profile = createRequestQueryProfile()
+    vi.resetModules()
+    const fresh = await import('./query-telemetry.mts')
+    profile.run(() => {
+      fresh.recordQueryTiming({
+        pool: 'read',
+        durationMs: 0,
+        rowCount: 0,
+        error: false,
+        annotation: 'afterReset',
+      })
+    })
+    expect(profile.summarize().totalQueries).toBe(1)
   })
 
   it('records a violation for a new repeat only, through the response finish handler', async () => {

@@ -7,7 +7,15 @@ import {
 
 // Audience of one request. Only a harness that calls `createRequestQueryProfile().run` activates
 // it, so production never has a store and `recordRequestQueryTiming` returns on its first line.
-const requestProfiles = new AsyncLocalStorage<RequestQuery[]>()
+// Held on globalThis because `vi.resetModules()` re-evaluates this module: the persistent API test
+// server keeps the pre-reset `run` while later-imported telemetry records through a new instance,
+// and both must see the same store.
+const PROFILES_KEY = Symbol.for('voucha.requestQueryProfiles')
+const profilesGlobal = globalThis as typeof globalThis & {
+  [PROFILES_KEY]?: AsyncLocalStorage<RequestQuery[]>
+}
+profilesGlobal[PROFILES_KEY] ??= new AsyncLocalStorage<RequestQuery[]>()
+const requestProfiles = profilesGlobal[PROFILES_KEY]
 
 export interface RequestQueryProfile {
   /** Run `handler` so every query it (and its async descendants) issues is attributed here. */
