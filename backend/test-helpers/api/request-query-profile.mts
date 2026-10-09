@@ -13,7 +13,7 @@ export function requestProfileRoute(req: http.IncomingMessage): string {
 /**
  * Report-only. Runs `handle` inside a per-request PostgreSQL profile scope and writes one
  * `[pg-request-profile]` stderr line when the response finishes and a query annotation repeated
- * (or always, with `PG_REQUEST_REPORT=all`). Never throws into, or fails, the request. Queries
+ * (or always, with `BACKEND_TEST_REQUEST_QUERY_REPORT=all`). Never throws into, or fails, the request. Queries
  * that complete after the response is flushed are not attributed.
  */
 export function profileRequestQueries(
@@ -25,7 +25,7 @@ export function profileRequestQueries(
   res.once('finish', () => {
     try {
       const line = formatRequestProfileLine(requestProfileRoute(req), profile.summarize(), {
-        all: process.env.PG_REQUEST_REPORT === 'all',
+        all: process.env.BACKEND_TEST_REQUEST_QUERY_REPORT === 'all',
       })
       if (line) process.stderr.write(line)
     } catch {
