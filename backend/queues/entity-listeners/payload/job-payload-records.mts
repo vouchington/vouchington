@@ -53,6 +53,7 @@ const reconcileKeys = {
   changeId: true,
   contentChanged: true,
   referrerId: true,
+  createdInWindow: true,
 } as const satisfies Record<keyof ReconcileEntityData, true>
 const entityTypes = {
   user: true,
@@ -149,5 +150,6 @@ export function parseReconcileEntity(data: unknown): Record<string, unknown> {
   optionalString(record, 'changeId')
   optionalBoolean(record, 'contentChanged')
   optionalString(record, 'referrerId')
+  optionalBoolean(record, 'createdInWindow')
   return record
 }
