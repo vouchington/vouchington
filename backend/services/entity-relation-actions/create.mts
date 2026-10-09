@@ -184,7 +184,7 @@ async function assertRelationLimit(
   ) {
     return
   }
-  const membershipPlan = isAdminUser(currentUser) ? null : getLoadedMembershipPlan(currentUser)
+  const membershipPlan = getLoadedMembershipPlan(currentUser)
   await assertWithinTagAddLimit(
     currentUser,
     membershipPlan,
