@@ -30,7 +30,7 @@ flowchart TD
 
 1. Join/post activity enqueues detection. Post-triggered jobs retain the triggering post ID so content and embedding comparisons do not rescan the candidate's full post history.
 2. A suspected match sets `community_members.suspected_ban_evader_at`.
-3. The `ban-evasion` system user creates a system-generated user report.
+3. The `ban-evasion` system user creates one pending system-generated user report for that community. An open report in another community does not satisfy or replace it.
 4. Community moderators confirm or dismiss.
 5. Confirming creates a community ban and resolves only the system report stamped for that community. Dismissing clears that community's flag and dismisses only that same report. A decision in one community leaves every other community's ban-evasion report pending.
 

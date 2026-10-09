@@ -61,7 +61,9 @@ sequenceDiagram
 
 One active pending report per reporter and target FK is enforced by partial unique indexes. A
 duplicate submission updates the existing pending report's reason/note, returns HTTP 200 with the
-existing report's ID, and does not create a duplicate row.
+existing report's ID, and does not create a duplicate row. A user report stamped with a community
+is pending once per community. A user report without that stamp stays one pending row per reporter
+and user.
 
 The web UI persists a `report:<entityType>:<entityId>=submitted` flag in `sessionStorage`. Native
 clients render "Reported" for the current mounted detail session and reset that state when the

@@ -46,7 +46,9 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
   CHECK (escalated_at IS NOT NULL OR escalated_by_id IS NULL)
 );
 
--- Per-entity dedup: one pending report per reporter per target
+-- Per-entity dedup: one pending report per reporter per target.
+-- User reports without a community stamp stay global. Community-stamped user reports,
+-- including ban-evasion system reports, are one pending row per community.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_post_unique
   ON moderation_reports (reporter_user_id, post_id)
@@ -55,7 +57,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_post_unique
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_user_unique
   ON moderation_reports (reporter_user_id, reported_user_id)
-  WHERE reviewed_at IS NULL AND reported_user_id IS NOT NULL;
+  WHERE reviewed_at IS NULL
+    AND reported_user_id IS NOT NULL
+    AND moderation_transparency_community_id IS NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_community_user_unique
+  ON moderation_reports (
+    reporter_user_id, reported_user_id, moderation_transparency_community_id
+  )
+  WHERE reviewed_at IS NULL
+    AND reported_user_id IS NOT NULL
+    AND moderation_transparency_community_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_hostname_unique

@@ -24,7 +24,9 @@ items, posts, comments, users, and URL hostnames). Canonical entity types are `r
 | `escalated_by_id`   | uuid                                   | FK -> `users(id)`, set when a moderator escalates                                              |
 
 A `num_nonnulls(...) = 1` check enforces one target FK per row. Per-target partial unique indexes
-with `reviewed_at IS NULL` prevent duplicate pending reports from the same user for the same target.
+with `reviewed_at IS NULL` prevent duplicate pending reports from the same reporter for the same
+target. A user report stamped with a community is pending once per community; a user report without
+that stamp stays one pending row per reporter and user.
 Another check keeps `reviewed_at` and `resolution_action` paired so pending rows have no final action
 and reviewed rows always have one.
 `vote_manipulation` is valid only for `post` reports.
