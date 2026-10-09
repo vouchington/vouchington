@@ -61,24 +61,25 @@ describe('membership automatic refund receipts', () => {
   })
 
   it('records collision time only for collision-handling operations', async () => {
+    const collisionAt = new Date('2020-01-01T00:00:00.000Z')
     await expect(
       createMembershipRefundOperation(
         `invalid-automatic-${randomUUID()}`,
         randomUUID(),
-        new Date(),
+        collisionAt,
       ),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(
-      createCollisionHandlingMembershipOperation('collision_resolution', false),
+      createCollisionHandlingMembershipOperation('collision_resolution', null),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(
-      createCollisionHandlingMembershipOperation('collision_resolution', true),
+      createCollisionHandlingMembershipOperation('collision_resolution', collisionAt),
     ).resolves.toEqual(expect.any(String))
     await expect(
-      createCollisionHandlingMembershipOperation('ineligible_purchase_reversal', false),
+      createCollisionHandlingMembershipOperation('ineligible_purchase_reversal', null),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(
-      createCollisionHandlingMembershipOperation('ineligible_purchase_reversal', true),
+      createCollisionHandlingMembershipOperation('ineligible_purchase_reversal', collisionAt),
     ).resolves.toEqual(expect.any(String))
   })
 })

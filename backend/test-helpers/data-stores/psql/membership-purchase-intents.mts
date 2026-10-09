@@ -38,8 +38,12 @@ export async function createMembershipPurchaseIntentFixture(
 ): Promise<MembershipPurchaseIntentFixture> {
   const suffix = randomUUID()
   const applicationId = `schema-${prefix}-${suffix}`
-  const { rows: userRows } = await read<{ id: string }>(sql`/* getMembershipSchemaFixtureUser */
-    SELECT id FROM users ORDER BY id LIMIT 1`)
+  let userId = fixtureUserId
+  if (userId === undefined) {
+    const { rows } = await write<{ id: string }>(sql`/* createMembershipSchemaFixtureUser */
+      INSERT INTO users DEFAULT VALUES RETURNING id`)
+    userId = rows[0]!.id
+  }
   const productId = await getPlusMonthlyProductId()
   const { rows: mappingRows } = await write<{
     id: string
@@ -52,7 +56,7 @@ export async function createMembershipPurchaseIntentFixture(
     mappingId: mappingRows[0]!.id,
     productId,
     requestFingerprint: suffix.replaceAll('-', '').padEnd(64, 'a'),
-    userId: fixtureUserId ?? userRows[0]!.id,
+    userId,
   }
 }
 

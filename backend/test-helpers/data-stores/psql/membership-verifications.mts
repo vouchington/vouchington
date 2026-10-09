@@ -79,11 +79,12 @@ export function createCrossOwnerMembershipVerification(
   evidenceId: string,
 ): Promise<WriteResult> {
   return write(sql`/* rejectMembershipVerificationCrossOwnerIntent */
+    WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id)
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
       membership_provider_evidence_record_id, provider, environment, application_id
     ) VALUES (
-      (SELECT id FROM users WHERE id <> ${fixture.userId} ORDER BY id LIMIT 1), ${randomUUID()},
+      (SELECT id FROM actor), ${randomUUID()},
       ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, 'stripe', 'test', ${fixture.applicationId})`)
 }
 

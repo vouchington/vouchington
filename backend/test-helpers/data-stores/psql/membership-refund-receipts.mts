@@ -10,12 +10,14 @@ export async function createMembershipRefundOperation(
   collisionAt: Date | null = null,
 ): Promise<MembershipRefundOperation> {
   const { rows } = await write<{ operation_id: string }>(sql`/* createRefundReceiptOperation */
-    WITH lineage AS (
+    WITH actor AS (
+      INSERT INTO users DEFAULT VALUES RETURNING id
+    ), lineage AS (
       INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
       VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
-      SELECT id, (SELECT id FROM users ORDER BY id LIMIT 1) FROM lineage RETURNING id, membership_provider_lineage_id
+      SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor RETURNING id, membership_provider_lineage_id
     ), source AS (
       INSERT INTO membership_sources (source_kind, membership_provider_lineage_id)
       SELECT 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id
@@ -36,16 +38,18 @@ export async function createMembershipRefundOperation(
 
 export async function createCollisionHandlingMembershipOperation(
   operationKind: 'collision_resolution' | 'ineligible_purchase_reversal',
-  includeCollisionAt: boolean,
+  collisionAt: Date | null,
 ): Promise<string> {
   const applicationId = `collision-${randomUUID()}`
   const { rows } = await write<{ operation_id: string }>(sql`/* createCollisionHandlingOperation */
-    WITH lineage AS (
+    WITH actor AS (
+      INSERT INTO users DEFAULT VALUES RETURNING id
+    ), lineage AS (
       INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
       VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
-      SELECT id, (SELECT id FROM users ORDER BY id LIMIT 1) FROM lineage RETURNING id, membership_provider_lineage_id
+      SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor RETURNING id, membership_provider_lineage_id
     ), source AS (
       INSERT INTO membership_sources (source_kind, membership_provider_lineage_id)
       SELECT 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id
@@ -58,7 +62,7 @@ export async function createCollisionHandlingMembershipOperation(
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
       'stripe', 'test', ${applicationId}, ${operationKind}, ${randomUUID()},
-      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${includeCollisionAt ? new Date() : null}
+      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${collisionAt}
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id AS operation_id`)
   return rows[0]!.operation_id
