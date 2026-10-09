@@ -20,6 +20,8 @@ DB table: `url_hostnames`
 | `votes_count_up`   | Total positive semantic choices                                   |
 | `votes_count_down` | Total negative semantic choices                                   |
 
+Hostname policy flags are non-null booleans: `is_crawlable` defaults to `true` and `is_blocked` defaults to `false`. False crawlability disables outbound crawling; a blocked hostname is excluded from site surfaces. [Hostname policy](../../overview/architecture/services/urls-hostnames/README.md) owns reader and admin-filter semantics.
+
 ## States
 
 Trust badge is determined by vote counts — not a stored status column.

@@ -61,7 +61,7 @@ export const upsertUrlHostnames = async (
         is_blocked,
         REPLACE(REPLACE(REPLACE(hostname, chr(92), chr(92) || chr(92)), '%', chr(92) || '%'), '_', chr(92) || '_') AS hostname_like
       FROM url_hostnames
-      WHERE is_blocked = TRUE
+      WHERE is_blocked
     ),
     inherited AS (
       SELECT
@@ -69,7 +69,7 @@ export const upsertUrlHostnames = async (
         EXISTS (
           SELECT 1
           FROM parent_policy parent
-          WHERE parent.is_blocked = TRUE
+          WHERE parent.is_blocked
             AND (
               input.hostname = parent.hostname
               OR input.hostname LIKE '%.' || parent.hostname_like ESCAPE '\\'

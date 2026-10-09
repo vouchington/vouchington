@@ -5,7 +5,7 @@ export type TestHostnameDnsStats = {
   consecutive_dns_failures: number
   last_dns_failure_at: Date | null
   dns_disabled_at: Date | null
-  is_crawlable: boolean | null
+  is_crawlable: boolean
 }
 
 export async function getTestHostnameDnsStats(

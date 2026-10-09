@@ -52,8 +52,8 @@ export const dispatchCrawlUrlsPerHostname = async (
     WHERE u.hostname_id = ${hostnameId}
       AND u.id < ${upperId}::uuid
       AND (${cursor?.afterId ?? null}::uuid IS NULL OR u.id > ${cursor?.afterId ?? null}::uuid)
-      AND h.is_crawlable = true
-      AND h.is_blocked = false
+      AND h.is_crawlable
+      AND NOT h.is_blocked
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id

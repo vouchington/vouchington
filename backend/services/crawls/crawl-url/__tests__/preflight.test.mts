@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { insertTestUrlDirect } from '@voucha/test-helpers'
+import {
+  insertTestUrlDirect,
+  updateUrlHostnameBlocked,
+  updateUrlHostnameCrawlable,
+} from '@voucha/test-helpers'
 import {
   createTestBlacklistSource,
   deleteTestBlacklistSource,
@@ -42,4 +46,23 @@ describe('crawl preflight blacklist database failure', () => {
       await deleteTestBlacklistSource(sourceId)
     }
   })
+})
+
+describe('crawl preflight hostname flags', () => {
+  it.each(['uncrawlable', 'blocked'] as const)(
+    'rejects a %s hostname before crawl creation',
+    async flag => {
+      const url = await insertTestUrlDirect(
+        null,
+        `https://preflight-${randomUUID()}.example.com/article`,
+      )
+      if (!url) throw new Error('Expected owned URL')
+      if (flag === 'blocked') await updateUrlHostnameBlocked(url.hostname.id, true)
+      else await updateUrlHostnameCrawlable(url.hostname.id, false)
+      await expect(
+        loadCrawlPreflight(url.id, 0, new Set(), { ignoreRobotsTxt: true }),
+      ).resolves.toBeNull()
+      expect(await getLatestHtmlSnapshotCrawl(url.id, { readOnly: false })).toBeNull()
+    },
+  )
 })

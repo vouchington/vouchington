@@ -72,6 +72,7 @@
     "@services/trending-rss-feeds": "workspace:^",
     "@services/trending-topics": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@services/vote-weight": "workspace:^",

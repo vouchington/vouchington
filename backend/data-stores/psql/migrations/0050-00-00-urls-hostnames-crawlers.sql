@@ -1,4 +1,5 @@
 -- Coalesced pre-launch domain baseline.
+-- edited-in-place: hostname crawlability and moderation flags are non-null booleans
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added language detection columns to crawls
 -- edited-in-place: removed blocked_at/blocked_by_id/blocked_source (moved to url_hostname_blocks)
@@ -37,8 +38,8 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   CHECK (hostname = LOWER(hostname)),
   CHECK (hostname = TRIM(hostname)),
 
-  is_blocked BOOLEAN DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
-  is_crawlable BOOLEAN, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
+  is_blocked BOOLEAN NOT NULL DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
+  is_crawlable BOOLEAN NOT NULL DEFAULT TRUE, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
   is_emailable BOOLEAN, -- whether we can send emails to this hostname.
   should_follow_link_rel BOOLEAN, -- whether this hostname is a link rel=nofollow on the site. Only set this to true for trusted sites.
   should_ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for feed fetches on this hostname
@@ -103,12 +104,18 @@ ON url_hostnames (reversed_hostname text_pattern_ops);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
   ON url_hostnames (hostname text_pattern_ops)
-  WHERE is_blocked = TRUE;
+  WHERE is_blocked;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__skip_web_risk
   ON url_hostnames (hostname text_pattern_ops)
   WHERE should_skip_web_risk = TRUE;
+
+-- Partial index for URL-blocklist rebuilds; is_blocked covers the disjoint second branch.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__not_crawlable
+  ON url_hostnames (hostname) INCLUDE (is_blocked)
+  WHERE NOT is_crawlable;
 
 -- Partial index for finding auto-disabled hostnames (admin observability, cleanup queries).
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -124,8 +131,8 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE url_hostnames IS 'Registered hostnames with crawl and moderation policies.';
 COMMENT ON COLUMN url_hostnames.hostname IS 'Lowercase, unique hostname (e.g. example.com).';
-COMMENT ON COLUMN url_hostnames.is_blocked IS 'Whether this hostname is blocked from being used on the site (e.g. spam). Trigger-maintained from url_hostname_blocks — do not write directly in app code.';
-COMMENT ON COLUMN url_hostnames.is_crawlable IS 'Whether pages on this hostname can be crawled.';
+COMMENT ON COLUMN url_hostnames.is_blocked IS 'NOT NULL, default FALSE. TRUE blocks this hostname from being used on the site (e.g. spam); FALSE permits it. Trigger-maintained from url_hostname_blocks — do not write directly in app code.';
+COMMENT ON COLUMN url_hostnames.is_crawlable IS 'NOT NULL, default TRUE. TRUE permits crawling pages on this hostname; FALSE disables crawling.';
 COMMENT ON COLUMN url_hostnames.is_emailable IS 'Whether email addresses at this hostname are accepted.';
 COMMENT ON COLUMN url_hostnames.should_follow_link_rel IS 'If TRUE, links to this hostname use rel=follow. Only for trusted sites.';
 COMMENT ON COLUMN url_hostnames.requests_per_second_limit IS 'Max crawl requests per second for this hostname.';

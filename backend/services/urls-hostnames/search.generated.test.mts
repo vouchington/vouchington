@@ -6,6 +6,7 @@ import {
   createTestUser,
   insertTestTopicParentRelation,
   updateUrlHostnameBlocked,
+  updateUrlHostnameCrawlable,
 } from '@voucha/test-helpers'
 
 describe('search.generated', () => {
@@ -39,6 +40,23 @@ describe('search.generated', () => {
       query: `search-is_blocked-${suffix}`,
     })
     expect(blockedResults.some(h => h.hostname === blockedHost)).toBe(true)
+  })
+
+  it('keeps explicit true, false and omitted admin filters distinct', async () => {
+    const query = `search-flags-${suffix}`
+    const map = await upsertUrlHostnames(null, [
+      `${query}-allowed.com`,
+      `${query}-disabled.com`,
+      `${query}-blocked.com`,
+    ])
+    await updateUrlHostnameCrawlable(map.get(`${query}-disabled.com`)!, false)
+    await updateUrlHostnameBlocked(map.get(`${query}-blocked.com`)!, true)
+    const names = async (filters: { is_crawlable?: boolean; is_blocked?: boolean }) =>
+      (await searchUrlHostnames({ query, ...filters })).results.map(row => row.hostname)
+    expect(await names({})).toHaveLength(3)
+    expect(await names({ is_crawlable: false })).toEqual([`${query}-disabled.com`])
+    expect(await names({ is_blocked: true })).toEqual([`${query}-blocked.com`])
+    expect(await names({ is_crawlable: true, is_blocked: false })).toEqual([`${query}-allowed.com`])
   })
 
   it('searchUrlHostnames respects limit', async () => {

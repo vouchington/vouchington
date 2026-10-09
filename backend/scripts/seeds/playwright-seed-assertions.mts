@@ -178,8 +178,8 @@ function playwrightWebSearchSeedAssertion(markdownToken: string, now: Date): See
         AND crawls.embeddings_generated_at IS NOT NULL
         AND crawls.network_error IS NULL
         AND crawls.id >= $2
-        AND url_hostnames.is_blocked = false
-        AND url_hostnames.is_crawlable = true
+        AND NOT url_hostnames.is_blocked
+        AND url_hostnames.is_crawlable
       LIMIT 1
     `,
     values: [

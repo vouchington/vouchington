@@ -59,8 +59,8 @@ export async function insertUrlHostname(
   hostname: string,
   options: {
     is_emailable?: boolean | null
-    is_blocked?: boolean | null
-    is_crawlable?: boolean | null
+    is_blocked?: boolean
+    is_crawlable?: boolean
   } = {},
 ): Promise<void> {
   await write(buildInsertUrlHostnameQuery(hostname, options, false))
@@ -69,8 +69,8 @@ export async function insertUrlHostname(
 export async function insertTestUrlHostname(options: {
   hostname: string
   is_emailable?: boolean | null
-  is_blocked?: boolean | null
-  is_crawlable?: boolean | null
+  is_blocked?: boolean
+  is_crawlable?: boolean
 }): Promise<string> {
   const result = await write(buildInsertUrlHostnameQuery(options.hostname, options, true))
   const hostnameId = result.rows[0].id as string
@@ -88,8 +88,8 @@ function buildInsertUrlHostnameQuery(
   hostname: string,
   options: {
     is_emailable?: boolean | null
-    is_blocked?: boolean | null
-    is_crawlable?: boolean | null
+    is_blocked?: boolean
+    is_crawlable?: boolean
   },
   returningId: boolean,
 ) {

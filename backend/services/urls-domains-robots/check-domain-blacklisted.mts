@@ -13,7 +13,7 @@ export async function checkDomainBlacklisted(domain: string): Promise<boolean> {
         SELECT EXISTS (
           SELECT 1 FROM url_hostnames
           WHERE hostname = ${key}
-            AND (is_crawlable = FALSE OR is_blocked = TRUE)
+            AND (NOT is_crawlable OR is_blocked)
         ) AS is_blocked
       `)
       return new Map([[key, { is_blocked: rows[0].is_blocked === true }]])
@@ -23,7 +23,7 @@ export async function checkDomainBlacklisted(domain: string): Promise<boolean> {
         SELECT EXISTS (
           SELECT 1 FROM url_hostnames
           WHERE hostname = ${key}
-            AND (is_crawlable = FALSE OR is_blocked = TRUE)
+            AND (NOT is_crawlable OR is_blocked)
         ) OR EXISTS (
           SELECT 1 FROM blocklisted_domains db
           INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id

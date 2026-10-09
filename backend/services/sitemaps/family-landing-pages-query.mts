@@ -94,7 +94,7 @@ export function buildLandingPagesQuery() {
             OR EXISTS (
               SELECT 1 FROM urls link_url
               JOIN url_hostnames link_hostname ON link_hostname.id = link_url.hostname_id
-              WHERE link_url.id = ulpi.url_id AND link_hostname.is_blocked = FALSE
+              WHERE link_url.id = ulpi.url_id AND NOT link_hostname.is_blocked
                 AND ulpi.item_type = 'link' AND ulpi.link_label IS NOT NULL
             )
             OR EXISTS (

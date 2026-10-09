@@ -11,12 +11,14 @@ ingests take matching unique-index locks.
 
 | Field                      | Meaning                                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------------------- |
-| `crawlable`                | When explicitly `false`, crawling is disabled for the hostname                               |
-| `blocked`                  | When `true`, the domain is disallowed from site surfaces                                     |
+| `is_crawlable`             | Non-null, default `true`; `false` disables crawling                                          |
+| `is_blocked`               | Non-null, default `false`; `true` disallows the domain from site surfaces                    |
 | `should_follow_link_rel`   | When `true`, outbound links do not get `rel="nofollow"`                                      |
 | `consecutive_dns_failures` | Running count of consecutive DNS lookup failures (reset to 0 on any successful crawl)        |
 | `last_dns_failure_at`      | Timestamp of the most recent DNS failure (used for the 7-day stale-counter reset)            |
 | `dns_disabled_at`          | Set when the hostname is auto-disabled due to repeated DNS failures; cleared by admin action |
+
+Both flags use plain boolean predicates in every reader. Admin search keeps explicit true/false filters and omitting a filter includes either value. URL-blocklist rebuilds read the blocked and uncrawlable partial indexes in disjoint branches, emitting overlapping hostnames once.
 
 ## DNS Auto-Disable
 
@@ -32,11 +34,11 @@ that hostname after **3 consecutive failures**:
    called and skips the DNS canary because the failure is independent of resolver health.
 4. If `last_dns_failure_at` is older than 7 days, the counter resets to 1 instead of
    incrementing (stale failures do not compound with new ones).
-5. At 3 consecutive failures: `crawlable` is set to `FALSE` and `dns_disabled_at` is stamped.
+5. At 3 consecutive failures: `is_crawlable` is set to `FALSE` and `dns_disabled_at` is stamped.
 6. All three crawl paths (RSS, HTML, referral-link) gate on `crawlable = false`, so the hostname
    is effectively suspended across all outbound crawl types.
 
-Re-enabling requires an admin to clear `crawlable` and `dns_disabled_at`. The counter resets to 0
+Re-enabling requires an admin to set `is_crawlable` to `TRUE` and clear `dns_disabled_at`. The counter resets to 0
 automatically on any successful crawl via `resetHostnameDnsFailures(hostnameId)`.
 
 Key modules:
