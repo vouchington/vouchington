@@ -137,15 +137,8 @@ describe('provider replay transport', () => {
     const replay = createProviderReplay()
     replay.respondWith(ok)
     const controller = new AbortController()
-    let finishUpload!: () => void
-    const upload = new ReadableStream<Uint8Array>({
-      start(stream) {
-        finishUpload = () => {
-          stream.enqueue(new TextEncoder().encode('{}'))
-          stream.close()
-        }
-      },
-    })
+    // The upload never finishes: the abort alone must end the call.
+    const upload = new ReadableStream<Uint8Array>({ start: () => undefined })
 
     const pending = replay.fetch('https://provider.example.com/a', {
       method: 'POST',
@@ -154,7 +147,6 @@ describe('provider replay transport', () => {
       signal: controller.signal,
     } as RequestInit)
     controller.abort()
-    finishUpload()
 
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })

@@ -1,12 +1,9 @@
 import { readFileSync } from 'node:fs'
+import { onAbort, readUntilAborted } from './abort-listeners.mts'
 import type { getExternalFetch } from '@modules/utils'
 
-/**
- * Replays a recorded provider HTTP response through the provider SDK's own transport hook, so the
- * SDK parses real wire bytes (status line, headers, SSE or JSON body) and no network is touched.
- * Fixtures are `curl -si`-style files under `provider-fixtures/<provider>/`; see
- * docs/development/testing/backend/helpers.md#recorded-provider-responses.
- */
+// Replays a recorded provider response through the SDK's own `fetch` hook, so the SDK parses real
+// wire bytes and no network is touched. See docs/development/testing/backend/helpers.md.
 
 /** A provider response as it arrived on the wire: status, headers and the raw body bytes. */
 export type RecordedResponse = {
@@ -96,18 +93,13 @@ export function toReplayResponse(
 ): Response {
   const size = chunkBytes ?? Math.max(recorded.body.length, 1)
   let offset = 0
-  let onAbort: (() => void) | undefined
-  const detach = () => {
-    if (signal && onAbort) signal.removeEventListener('abort', onAbort)
-  }
+  let detach = () => {}
   const body =
     recorded.body.length === 0
       ? null
       : new ReadableStream<Uint8Array>({
           start(controller) {
-            if (!signal) return
-            onAbort = () => controller.error(signal.reason)
-            signal.addEventListener('abort', onAbort, { once: true })
+            detach = onAbort(signal, () => controller.error(signal?.reason))
           },
           pull(controller) {
             if (signal?.aborted) return controller.error(signal.reason)
@@ -154,8 +146,7 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
         `Provider replay has no recorded response for request ${requests.length}: ${sent.method} ${sent.url}`,
       )
     }
-    const bytes = Buffer.from(await request.arrayBuffer())
-    signal.throwIfAborted()
+    const bytes = await readUntilAborted(request, signal)
     sent.body = bytes.length === 0 ? undefined : bytes
     return toReplayResponse(next, options.chunkBytes, signal)
   }
