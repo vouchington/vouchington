@@ -30,6 +30,8 @@ non-`main` PR-branch helper documented below remains available.
   needs a tracked-file existence check beside its rule's test. A pinned title or timeout digit count
   has no automated guard at all, which is exactly why pinning either is disallowed outright rather
   than merely discouraged.
-- Live-provider jobs have no rule. They are informational smoke checks that never gate CI, and an
-  automatic rerun of a non-gating job gains nothing
-  ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)).
+- No rule reruns a live-provider failure. Those jobs are informational smoke checks that never gate
+  CI, and an automatic rerun of a non-gating job gains nothing
+  ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)). The shared
+  `runner-shutdown-leaf-rerun` and Playwright-setup apt-lock rules can still rerun these jobs after
+  an infrastructure failure, because they also guard gating jobs.
