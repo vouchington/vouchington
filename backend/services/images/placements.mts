@@ -78,7 +78,14 @@ export async function getImagePlacementsForCopyright(
   const { rows } = await query<CopyrightImagePlacementRow>(
     buildCopyrightPlacementReadSql([...placementIds]),
   )
-  return new Map(rows.map(row => [row.placement_id, toCopyrightImagePlacement(row)]))
+  // PostgreSQL returns canonical lowercase UUIDs, but a caller may spell the id in uppercase.
+  const found = new Map(rows.map(row => [row.placement_id, toCopyrightImagePlacement(row)]))
+  return new Map(
+    placementIds.flatMap(id => {
+      const placement = found.get(id.toLowerCase())
+      return placement ? [[id, placement] as const] : []
+    }),
+  )
 }
 
 function buildCopyrightPlacementReadSql(placementIds: string[]): ReturnType<typeof sql> {
