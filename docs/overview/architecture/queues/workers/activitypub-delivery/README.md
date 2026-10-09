@@ -17,6 +17,14 @@ Busy leases defer the current GlideMQ job without exhausting queue attempts. A w
 loses its lease retries from the persisted cursor; completion and failure-release require its
 current token. Completed rows keep replay protection until source-user deletion.
 
+A remote inbox that answers a `deliverActivity` POST with HTTP 429 and a `Retry-After` is not retried
+on the job's 2-second exponential backoff, which exhausted all five attempts within about half a minute and lost
+the delivery. `deliverActivityToInbox` raises `HttpRateLimitError` with the parsed wait, and the
+processor's `wrapHttpForRetry` requeues the job after that wait (clamped to 1 second through 15
+minutes) without consuming an attempt. A 429 with no `Retry-After`, and every 5xx even one that sends
+`Retry-After`, keep the bounded attempts: a requeue has no attempt limit, so an unreachable
+or maintenance-mode host that keeps naming a wait would otherwise never fail.
+
 ## Durable fan-out transition matrix
 
 `distributeActivity` claims a 500-candidate keyset page from the work item, asks Valkey to

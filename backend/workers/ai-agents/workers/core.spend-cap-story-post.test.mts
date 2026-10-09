@@ -73,7 +73,7 @@ function mockJob(postId: string, force = false): Job<AIAgentJobData> {
 }
 
 function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
+  return {} as Worker
 }
 
 function createDailyTotalLoader(totalMicrounits: number): () => Promise<DailyAiCostTotal> {

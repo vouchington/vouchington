@@ -104,6 +104,21 @@ API — that endpoint returns no token usage at all
 (`backend/services/openai-moderation/request.mts` hardcodes `tokens: 0`), so there is nothing for
 that worker to accumulate or report.
 
+## Provider rate limits
+
+A provider 429 or overload parks only the job that hit it. `handleModelProviderError` (model-provider
+failures) and `deferJobForOpenAIRateLimit` (raw OpenAI 429s) call `job.moveToDelayed()` for the
+provider's `Retry-After`, a minute when it sent none, clamped to 1 second through 15 minutes by
+`@modules/queue-errors`. `moveToDelayed` does not consume an attempt, and the wait lives on the job
+in Valkey, so every replica honors it; `worker.rateLimit()` only set a timestamp in one process.
+
+The queue deliberately never throws GlideMQ's `RateLimitError`. GlideMQ makes the worker that handles
+that signal idle itself for its delay whenever the worker has a `limiter` (this queue has one), which
+would also hold back the `reconcile-*` jobs. They never call a provider, and
+`reconcile-background-responses` cancels orphaned leases that are still billing OpenAI. A transient
+`StructuredDecisionError` is not handled here; it keeps the [classifier-run backoff](#classifier-run-backoff).
+A permanent provider failure still ends the job as unrecoverable.
+
 ## Daily spend cap
 
 `evaluateSpendCapBreach()` (`@services/ai-usage/spend-cap-guard.mts`) is the single decision
@@ -140,8 +155,8 @@ whether any row in the window has `pricing_status = 'unpriced'`; the check fails
 summed total is a known undercount) even if the priced total alone is under the cap. On breach —
 the cap, an unpriced row, or uncertain accounting after a ledger/latch-read failure — the job calls
 `job.moveToDelayed()`, glide-mq's per-job pause
-(re-parks only that job into the delayed set, distinct from `handleOpenAIRateLimit`'s worker-wide
-`worker.rateLimit()` used for provider 429s) until the queried day's UTC midnight
+(re-parks only that job into the delayed set, the same primitive provider 429s use through
+`deferJobForRateLimit`) until the queried day's UTC midnight
 (`getDayBounds(day).endMs`, `@ts-shared/utils/dates`, using the `day` string
 `getDailyAiCostTotalMicrounits()` already queried, not a fresh `new Date()` read — the wall clock
 can advance past midnight during the async DB round-trip, in which case the target lands in the

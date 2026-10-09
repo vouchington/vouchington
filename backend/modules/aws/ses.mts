@@ -114,7 +114,9 @@ function getSESClient(): CreateSESClient {
     client = new CreateSESClient({
       credentials: getSesClientCredentials(),
       // SES sends have no idempotency token. Retrying after an ambiguous response timeout can
-      // deliver the same email twice, so callers own any deliberate retry as a new attempt.
+      // deliver the same email twice, so callers own any deliberate retry as a new attempt. A
+      // `Throttling` rejection (HTTP 400, "Maximum sending rate exceeded") is the exception: SES
+      // refused it before sending, so the email queue's `wrapHttpForRetry` retries it.
       maxAttempts: 1,
       region: AWS_REGION,
       requestHandler: createAwsRequestHandler(),

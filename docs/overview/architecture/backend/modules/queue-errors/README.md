@@ -32,7 +32,7 @@ if (!entity) unrecoverable(new Error(`entity ${id} not found`))
 
 ### `wrapHttpForRetry(err: unknown): never`
 
-Converts 4xx HTTP errors (except 408 timeout and 429 rate-limit) to `UnrecoverableError`; rethrows everything else so glide-mq retries normally.
+Classifies an HTTP failure for glide-mq; it rethrows everything it does not recognize.
 
 ```ts
 import { wrapHttpForRetry } from '@modules/queue-errors'
@@ -40,26 +40,60 @@ import { wrapHttpForRetry } from '@modules/queue-errors'
 // In a processor:
 await callExternalApi(id).catch(wrapHttpForRetry)
 // 4xx (bad input, permission, not found) → UnrecoverableError → no retry
-// 408 (timeout), 429 (rate-limit), 5xx, network errors → rethrow → glide-mq retries with backoff
+// 429 that states its wait (Retry-After) → rate-limit signal → requeued after that wait, no attempt used
+// AWS throttling (SES `Throttling`, HTTP 400) → rethrow → glide-mq retries with backoff
+// 408, other 429s, 5xx, network errors → rethrow → glide-mq retries with backoff
 ```
 
 The adapter extracts HTTP status in this order: `status`, `statusCode`, then AWS SDK v3
-`$metadata.httpStatusCode`.
+`$metadata.httpStatusCode`. A 429's wait comes from a parsed `retryAfterMs` field (the shape of
+`HttpRateLimitError`) or a `Retry-After` header on the error's `headers`. A `Retry-After` on a 5xx is
+not honored: a requeue never consumes an attempt, so an unreachable host that keeps naming a wait
+would never fail.
+
+SES reports `Throttling` ("Maximum sending rate exceeded", and its daily quota) as HTTP 400, which
+the status alone would drop as a permanent client error. SES rejects it before sending, so
+`isAwsThrottlingError` lets the email queue retry it without risking a duplicate email. Any other
+SES 400 (`MessageRejected`, `AccountSendingPausedException`) stays unrecoverable.
+
+### Rate-limit signal
+
+GlideMQ's `Worker.RateLimitError` requeues the job after `error.delayMs` without consuming an attempt.
+Its constructor takes no argument, and GlideMQ replaces a falsy `delayMs` with the worker limiter's
+duration (about one second), so a bare `new Worker.RateLimitError()` drops the provider's wait. Build
+it through these helpers instead; the `backend-no-worker-ratelimit` ast-grep rule rejects a bare
+construction and any `worker.rateLimit(ms)` call.
+
+| Export                                                  | Behavior                                                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none |
+| `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                 |
+| `throwIfRateLimitedResponse(response, endpoint)`        | Throws the signal for a 429 `fetch` response; `cause` is an `HttpRateLimitError` with the status and `retryAfterMs`                   |
+| `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                           |
+| `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                        |
+
+The wait travels with the job, so every replica that receives a 429 honors it. `worker.rateLimit(ms)`
+only set a timestamp in that one process, so other replicas kept calling the provider. GlideMQ also
+makes a worker with a `limiter` idle itself for the signal's `delayMs`. That suits a queue whose jobs
+all call the same provider, but it holds back provider-free jobs that share the worker (reconcilers),
+so `ai_agents` uses `deferJobForRateLimit` instead.
 
 ### `handleBedrockRateLimit(error, worker): Promise<never>`
 
-Recognizes Bedrock `ThrottlingException` and AWS SDK v3 429 metadata, pauses the worker for the
-fixed 60-second Bedrock cooldown, then signals GlideMQ to retry the current job. Other errors flow
-through `wrapHttpForRetry`.
+Recognizes Bedrock `ThrottlingException` and AWS SDK v3 429 metadata, then signals GlideMQ to requeue
+the current job after the fixed 60-second Bedrock cooldown. Other errors flow through
+`wrapHttpForRetry`. The upstream `handleRateLimitedError` still calls `worker.rateLimit(cooldownMs)`
+first; that call is redundant because GlideMQ applies the signal's `delayMs` itself.
 
 ## Error Classification
 
-| Error type                                              | Action                                   |
-| ------------------------------------------------------- | ---------------------------------------- |
-| Non-retryable 4xx HTTP (except 408 and 429)             | `wrapHttpForRetry(err)`                  |
-| Validation error / missing entity                       | `unrecoverable(err)`                     |
-| Soft-deleted entity (processor early-exits after fetch) | `return` early — already idempotent      |
-| 429 rate-limit, 5xx HTTP, network error, DB connection  | re-throw — glide-mq retries with backoff |
+| Error type                                                                      | Action                                                                        |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Non-retryable 4xx HTTP (except 408 and 429)                                     | `wrapHttpForRetry(err)`                                                       |
+| 429 with a stated `Retry-After`                                                 | `wrapHttpForRetry(err)` or `throwRateLimited(ms)` (requeued, no attempt used) |
+| Validation error / missing entity                                               | `unrecoverable(err)`                                                          |
+| Soft-deleted entity (processor early-exits after fetch)                         | `return` early — already idempotent                                           |
+| 429 with no stated wait, 5xx HTTP, network error, DB connection, AWS throttling | re-throw — glide-mq retries with backoff                                      |
 
 ## Related
 

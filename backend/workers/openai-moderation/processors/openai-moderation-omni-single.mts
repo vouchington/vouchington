@@ -8,13 +8,18 @@ import {
   reconcilePendingImageQuarantines,
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
-import { Worker, type Job } from 'glide-mq'
-import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
+import type { Job, Worker } from 'glide-mq'
+import {
+  getOpenAIRateLimitDelayMs,
+  handleOpenAIRateLimit,
+  isOpenAIRateLimitError,
+} from '@modules/openai-utils/rate-limit'
 import {
   beginPostModerationAttempt,
   checkPostClearance,
   failPostModerationAttempt,
   reconcilePostModerationWork,
+  releasePostModerationAttemptForRateLimit,
 } from '@services/post-clearance'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import {
@@ -26,9 +31,12 @@ import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
 
 type OpenAIModerationJobData = { id?: string }
 
+// A provider 429 requeues the job after the provider's `Retry-After` carried on the signal itself,
+// so the worker is not needed. The parameter stays until the worker construction call site stops
+// passing it.
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
-  worker: Worker,
+  _worker: Worker,
   scope?: { postIds?: readonly string[]; imageIds?: readonly string[] },
 ): Promise<unknown> {
   try {
@@ -58,6 +66,12 @@ export async function handleOpenAIModerationOmniSingleJob(
 
           return { success: true }
         } catch (err) {
+          if (isOpenAIRateLimitError(err)) {
+            // The provider never evaluated the post: give the attempt back instead of spending
+            // one of the three that end in staff review.
+            await releasePostModerationAttemptForRateLimit(attempt, getOpenAIRateLimitDelayMs(err))
+            throw err
+          }
           const failure = await failPostModerationAttempt(attempt, classifyModerationError(err))
           if (failure.exhausted) await checkPostClearance(post.id)
           throw err
@@ -106,7 +120,7 @@ export async function handleOpenAIModerationOmniSingleJob(
         throw new Error(`Unknown job type: ${job.name}`)
     }
   } catch (err: unknown) {
-    return handleOpenAIRateLimit(err, worker)
+    return handleOpenAIRateLimit(err)
   }
 }
 

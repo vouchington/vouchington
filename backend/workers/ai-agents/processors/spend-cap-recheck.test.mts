@@ -25,7 +25,7 @@ function delayedJob(): Job<AIAgentJobData> {
 }
 
 function worker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
+  return {} as Worker
 }
 
 describe('AI spend-cap registration freshness', () => {

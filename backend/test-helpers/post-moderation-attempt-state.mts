@@ -48,3 +48,17 @@ export async function getTestPostModerationAttemptStateForPost(
   `)
   return rows[0] ?? null
 }
+
+/** Milliseconds until the source work becomes claimable; zero or negative once it is due. */
+export async function getTestPostModerationWorkHoldMs(
+  postId: string,
+  source: 'openai_omni' | 'spam_detection',
+): Promise<number | null> {
+  const { rows } = await read<{ hold_ms: string }>(sql`/* getTestPostModerationWorkHoldMs */
+    SELECT EXTRACT(EPOCH FROM (work.available_at - CURRENT_TIMESTAMP)) * 1000 AS hold_ms
+    FROM post_moderation_work_items work
+    JOIN post_moderation_versions version ON version.id = work.version_id
+    WHERE version.post_id = ${postId} AND work.source = ${source}::post_moderation_sources
+  `)
+  return rows[0] ? Number(rows[0].hold_ms) : null
+}
