@@ -12,7 +12,7 @@ import {
 import { getPrivateUserByAny } from '@services/users/get'
 import { settleUsageOnClose } from './usage-meter-helpers.mts'
 
-// A route may call applyRouteRateLimit more than once; the request is metered and checked once.
+// A route may settle its route rate limit more than once; the request is metered and checked once.
 const meteredRequests = new WeakSet<Context>()
 
 // Meters one REST request against the outcome-based usage quota, after the attempt-based limit
