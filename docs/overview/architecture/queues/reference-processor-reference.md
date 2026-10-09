@@ -27,7 +27,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | ai_agents                                    | classifier-run                                 | `classifier_run_<runId>`                 | 3                |
 | ai_agents                                    | reconcile-classifier-runs                      | —                                        | 100              |
 | ai_agents                                    | autotagger-rss-feed-item                       | —                                        | 20               |
-| bloom-filters                                | processPopulateBloomFilter                     | —                                        | 5 (baseline)     |
 | bloom-filters                                | processRebuildBloomFilter                      | —                                        | 5 (baseline)     |
 | bloom-filters                                | processBackfillBloomFilter                     | —                                        | 5 (baseline)     |
 | bloom-filters                                | processBackfillUserBookmarkBloomFilter         | —                                        | 5 (baseline)     |

@@ -2,26 +2,38 @@
 
 Source entrypoint: [backend/queues/bloom-filters/README.md](../../../../../backend/queues/bloom-filters/README.md)
 
-Manages bloom filter lifecycle: creation, population, backfilling, and scheduled rebuilds across multiple filter families.
+Manages bloom filter lifecycle: failure recovery and admin rebuilds across multiple filter families.
 
 ## Processors
 
-| Queue           | Processor                                | Purpose                                                                                                    | Schedule                                                      |
-| --------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `bloom-filters` | `processRebuildBloomFilter`              | Rebuilds URL blocklist, email blocklist, or API key bloom filter                                           | Weekly Sun 3AM UTC (URL), 6AM UTC (email), 8AM UTC (api-keys) |
-| `bloom-filters` | `processPopulateBloomFilter`             | Populates embedding bloom filter from DB (addStream)                                                       | On worker startup                                             |
-| `bloom-filters` | `processRebuildEmbeddingBloomFilter`     | Rebuilds embedding bloom filter (zero-downtime)                                                            | Weekly Sun 7AM UTC                                            |
-| `bloom-filters` | `processBackfillBloomFilter`             | Backfills entity cache bloom filters (posts, topics, users, rss_feed_items)                                | Weekly Sun 4–5:30AM UTC (staggered 30min)                     |
-| `bloom-filters` | `processBackfillUserBookmarkBloomFilter` | Backfills per-user bookmark bloom filter; no-ops and cleans up instead if the user is soft-deleted (#8775) | On-demand                                                     |
-| `bloom-filters` | `processDeleteUserBookmarkBloomFilter`   | Deletes a deleted user's bookmark bloom filter + all per-relation ready keys (idempotent `UNLINK`)         | On-demand, enqueued fire-and-forget from `deleteUser`         |
+| Queue           | Processor                                | Purpose                                                | Trigger                                |
+| --------------- | ---------------------------------------- | ------------------------------------------------------ | -------------------------------------- |
+| `bloom-filters` | `processRebuildBloomFilter`              | Rebuild URL/email blocklists, API keys or embeddings   | Admin request or missing/failed filter |
+| `bloom-filters` | `processRebuildEmbeddingBloomFilter`     | Admin embedding rebuild                                | Admin request                          |
+| `bloom-filters` | `processBackfillBloomFilter`             | Rebuild posts, topics, users, communities or RSS items | Admin request or missing/failed filter |
+| `bloom-filters` | `processBackfillUserBookmarkBloomFilter` | Rebuild a live user's bookmark filter                  | On demand                              |
+| `bloom-filters` | `processDeleteUserBookmarkBloomFilter`   | Remove a deleted user's bookmark filter and markers    | User deletion                          |
+
+There are no scheduled full rebuilds. The empty manifest is still registered at startup to remove
+obsolete scheduler entries. Post-commit adds remain immediate; the existing
+[entity-listener reconciliation window](../../services/entity-listener-reconciliation/README.md)
+repairs missed adds, including renames and post slugs. Deleted keys and capacity growth are handled
+by an admin rebuild.
 
 ## Worker Configuration
 
 The `bloom-filters` worker uses batch mode (`batch: { size: 10, timeout: 1000 }`) with a default concurrency of 5 (baseline; adjustable via `WORKER_CONCURRENCY_BLOOM_FILTERS`). Batch mode amortizes the poll-loop overhead across up to 10 jobs per tick. Large streaming rebuilds use a 10 minute lock duration so long backfills are not marked stalled while they scan PostgreSQL and write Valkey batches.
 
-Each physical bloom filter lane is serialized with `ordering.concurrency: 1` and `deduplication.mode: simple`, so startup/manual/scheduled rebuilds for the same filter cannot overlap. Different filters can still run concurrently up to the worker's local concurrency limit.
+Each physical bloom filter lane is serialized with `ordering.concurrency: 1` and a stable `bloomFilterRebuild__<filter>` job ID, so rebuilds for the same filter cannot overlap. Different filters can still run concurrently up to the worker's local concurrency limit.
 
-Entity-cache startup warmup only enqueues backfills for missing live filter keys. Existing live filters are kept in service and refreshed by weekly schedules plus write-time dual writes.
+Rebuild jobs remove completed and failed terminal records immediately, releasing the stable ID for
+later failures or admin requests. While a job is active, its ordering lane and job ID prevent an
+identical concurrent rebuild. Immediate adds write both live and building filters.
+
+Entity-cache warmup and reads check both the ready marker and live filter. A failed add removes
+readiness and requests a rebuild only when it removed a marker. Reads fall back to PostgreSQL until
+the rebuild atomically replaces the live filter and publishes readiness. Missing reads/warmup can
+request recovery again after a failed rebuild.
 
 **Future work:** Add batch-aware `backfillUserBookmarkBloomFilterBatch(userIds[])` to group multiple users' filter rebuilds into a single BF.MADD round-trip per relation. Track progress via analytics metrics (issue `predecessor-issue#2263`).
 

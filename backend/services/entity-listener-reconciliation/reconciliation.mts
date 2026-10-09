@@ -1,5 +1,5 @@
-import { createAsyncGeneratorFromCursor, write, type QueryOptions } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { write, type QueryOptions } from '@data-stores/psql'
+import { streamEntityReconciliationRows } from './candidates-query.mts'
 import sql from 'sql-template-strings'
 
 import { getEntityReconciliationLimits } from './work-limits.mts'
@@ -15,6 +15,14 @@ export type ReconciledEntityType =
   | 'post_deleted'
   | 'image'
   | 'url'
+  | 'community'
+  | 'rss_feed_item'
+  | 'api_key'
+  | 'blocklisted_domain'
+  | 'embedding'
+  | 'post_slug'
+  | 'url_hostname'
+  | 'topic_alias'
 
 export type EntityReconciliationCandidate = {
   entityType: ReconciledEntityType
@@ -66,69 +74,12 @@ export async function* streamEntityReconciliationCandidateBatches(
 ): AsyncGenerator<EntityReconciliationCandidate[]> {
   const limits = options.limits ?? getEntityReconciliationLimits()
   const after = options.after
-  const firstIdInWindow = getMinUUIDv7ForDate(window.start)
-  const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
   let batch: EntityReconciliationCandidate[] = []
-  for await (const row of createAsyncGeneratorFromCursor<{
-    entity_type: ReconciledEntityType
-    entity_id: string
-    changed_at_epoch_us: string
-    change_id: string | null
-    details: Record<string, unknown> | null
-  }>(
-    sql`/* streamEntityReconciliationCandidateBatches */
-      SELECT entity_type, entity_id, changed_at_epoch_us, change_id, details
-      FROM (
-        SELECT 'user'::text AS entity_type, id AS entity_id,
-          floor(extract(epoch FROM updated_at) * 1000000)::text AS changed_at_epoch_us,
-          NULL::uuid AS change_id,
-          jsonb_build_object(
-            'referrerId', referrer_user_id,
-            'createdInWindow', uuid_extract_version(id) = 7 AND id >= ${firstIdInWindow}
-          ) AS details,
-          updated_at AS changed_at
-        FROM users
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end} AND deleted_at IS NULL
-        UNION ALL
-        SELECT 'topic', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM topics
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-          AND deleted_at IS NULL AND merged_into_topic_id IS NULL
-        UNION ALL
-        SELECT CASE revision_type
-            WHEN 'create' THEN 'post_created'
-            WHEN 'update' THEN 'post_updated'
-            WHEN 'delete' THEN 'post_deleted'
-          END,
-          post_id,
-          floor(extract(epoch FROM created_at) * 1000000)::text,
-          id, jsonb_build_object('changes', changes), created_at
-        FROM post_revisions
-        WHERE id >= ${firstIdInWindow} AND id < ${afterLastRevisionId}
-        UNION ALL
-        SELECT 'image', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM images
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-          AND deleted_at IS NULL AND upload_completed_at IS NOT NULL
-        UNION ALL
-        SELECT 'url', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM urls
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-      ) candidates
-      WHERE (${after?.entityId ?? null}::uuid IS NULL
-        OR (changed_at_epoch_us::numeric, entity_id, entity_type) >
-          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
-        OR ((changed_at_epoch_us::numeric, entity_id, entity_type) =
-          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
-          AND ${after?.changeId ?? null}::uuid IS NOT NULL
-          AND (change_id > ${after?.changeId ?? null}::uuid OR change_id IS NULL)))
-      ORDER BY changed_at, entity_id, entity_type, change_id
-    `,
-    { batchSize: limits.batchSize, maxRows: limits.maxRows, onComplete: options.onComplete },
-  )) {
+  for await (const row of streamEntityReconciliationRows(window, {
+    after,
+    limits,
+    onComplete: options.onComplete,
+  })) {
     const changes = row.details?.changes as Record<string, { before?: unknown }> | undefined
     batch.push({
       entityType: row.entity_type,

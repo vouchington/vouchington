@@ -15,7 +15,7 @@ import {
 import { enqueueReferralSignupNotification } from '@queues/notifications/enqueues'
 import { enqueueSendWelcomeEmail } from '@queues/emails/enqueues'
 import { getReferrerIdForSession, updateAttributionSignup } from '@services/attribution'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, UpsertUserOptions, UserLoginContext } from './types.mts'
@@ -126,7 +126,7 @@ export const upsertUser = async ({
     }
     throw err
   }
-  void entityCacheBloomFilters.users.add([
+  void addEntityBloomKeys('users', [
     normalizeKey(newUser.id),
     ...(newUser.username ? [normalizeKey(newUser.username)] : []),
   ])

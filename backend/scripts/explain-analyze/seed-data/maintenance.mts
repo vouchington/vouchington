@@ -70,6 +70,9 @@ export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
     'rss_feed_items',
+    'api_keys',
+    'blocklisted_domains',
+    'bedrock_nova_multimodal_v1_embeddings',
     'post_topic_alias_sources',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',

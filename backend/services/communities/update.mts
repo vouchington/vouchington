@@ -9,7 +9,7 @@ import onError from '@modules/on-error'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanUpdateCommunity } from './authorization.mts'
 import type { CommunityMember } from './types.mts'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
@@ -65,10 +65,7 @@ export async function updateCommunity(
 
   const updated = await getCommunity(communityId, options)
   assert(updated, 404, 'Community not found after update')
-  void entityCacheBloomFilters.communities.add([
-    normalizeKey(updated.id),
-    normalizeKey(updated.slug),
-  ])
+  void addEntityBloomKeys('communities', [normalizeKey(updated.id), normalizeKey(updated.slug)])
   if (!options?.query) {
     await Promise.all([
       invalidate.communities(community, updated),

@@ -1,9 +1,6 @@
 import { rebuildBloomFilter, rebuildEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { rebuildApiKeyBloomFilter } from '@services/api-keys/bloom-filter'
-import {
-  populateEmbeddingBloomFilterFromDatabase,
-  rebuildEmbeddingBloomFilter,
-} from '@services/bedrock-embeddings/bloom-filter/population'
+import { rebuildEmbeddingBloomFilter } from '@services/bedrock-embeddings/bloom-filter/population'
 import { backfillBloomFilter } from '@services/entity-cache/backfill-bloom-filter'
 import {
   backfillUserBookmarkBloomFilter,
@@ -11,7 +8,6 @@ import {
 } from '@services/bookmarks/bloom-filter'
 import type {
   RebuildBloomFilterData,
-  PopulateBloomFilterData,
   BackfillBloomFilterData,
   BackfillUserBookmarkBloomFilterData,
   DeleteUserBookmarkBloomFilterData,
@@ -28,10 +24,6 @@ export async function processRebuildBloomFilter(data: RebuildBloomFilterData): P
   } else if (data.filter === 'api-keys') {
     await rebuildApiKeyBloomFilter()
   }
-}
-
-export async function processPopulateBloomFilter(_data: PopulateBloomFilterData): Promise<void> {
-  await populateEmbeddingBloomFilterFromDatabase()
 }
 
 export async function processBackfillBloomFilter(data: BackfillBloomFilterData): Promise<void> {

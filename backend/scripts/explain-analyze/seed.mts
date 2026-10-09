@@ -1,3 +1,4 @@
+import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
@@ -148,6 +149,7 @@ async function main() {
   await seedAnchorPostReviewTopicRating()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
+  await seedBloomReconciliation()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
   await seedClassifierHumanVoteComparison()

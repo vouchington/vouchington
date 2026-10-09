@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import { EMBEDDINGS_TABLE } from '../config.mts'
 import { EMBEDDING_BLOOM_READY_KEY, embeddingBloomFilter } from './bloom-filter.mts'
-import { enqueuePopulateBloomFilter } from '@queues/bloom-filters/enqueues'
+import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 
 /**
  * Check if bloom filter is already populated; if not, enqueue population job
@@ -15,12 +15,10 @@ import { enqueuePopulateBloomFilter } from '@queues/bloom-filters/enqueues'
 export async function warmUpEmbeddingBloomFilter(): Promise<void> {
   // Quick check: does the DB have any embeddings?
   const { rows: countRows } = await read(
-    `/* warmUpEmbeddingBloomFilter */ SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`,
+    `/* warmUpEmbeddingBloomFilter */ SELECT 1 AS present FROM ${EMBEDDINGS_TABLE} LIMIT 1`,
     [],
   )
-  const totalEmbeddings: number = countRows[0]?.count ?? 0
-
-  if (totalEmbeddings === 0) {
+  if (countRows.length === 0) {
     // No embeddings in DB, nothing to populate
     return
   }
@@ -28,5 +26,5 @@ export async function warmUpEmbeddingBloomFilter(): Promise<void> {
   if (await embeddingBloomFilter.isReady(EMBEDDING_BLOOM_READY_KEY)) return
 
   // Bloom filter is empty, enqueue background population job
-  await enqueuePopulateBloomFilter()
+  await enqueueRebuildBloomFilter({ filter: 'embedding' })
 }

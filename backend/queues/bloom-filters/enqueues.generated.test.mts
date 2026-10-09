@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   backfillBloomFilterJobOptions,
   backfillUserBookmarkBloomFilterJobOptions,
-  populateBloomFilterJobOptions,
   rebuildBloomFilterJobOptions,
   rebuildEmbeddingBloomFilterJobOptions,
 } from './config.mts'
@@ -15,40 +14,40 @@ describe('enqueues.generated', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses simple deduplication and ordering for physical bloom filter rebuild jobs', () => {
+  it('releases stable rebuild identities on terminal outcomes and preserves ordering', () => {
     expect(rebuildBloomFilterJobOptions({ filter: 'url-blocklist' })).toMatchObject({
       ordering: { key: 'url-blocklist', concurrency: 1 },
-      deduplication: { id: 'processRebuildBloomFilter__url-blocklist', mode: 'simple' },
+      jobId: 'bloomFilterRebuild__url-blocklist',
+      removeOnComplete: true,
+      removeOnFail: true,
     })
     expect(rebuildBloomFilterJobOptions({ filter: 'email-blocklist' })).toMatchObject({
       ordering: { key: 'email-blocklist', concurrency: 1 },
-      deduplication: { id: 'processRebuildBloomFilter__email-blocklist', mode: 'simple' },
+      jobId: 'bloomFilterRebuild__email-blocklist',
+      removeOnComplete: true,
+      removeOnFail: true,
     })
     expect(rebuildBloomFilterJobOptions({ filter: 'embedding' })).toMatchObject({
       ordering: { key: 'openai-text-embedding-3-small', concurrency: 1 },
-      deduplication: { id: 'bloom-filter__openai-text-embedding-3-small', mode: 'simple' },
+      jobId: 'bloomFilterRebuild__embedding',
+      removeOnComplete: true,
+      removeOnFail: true,
     })
     expect(rebuildBloomFilterJobOptions({ filter: 'api-keys' })).toMatchObject({
       ordering: { key: 'api-keys', concurrency: 1 },
-      deduplication: { id: 'processRebuildBloomFilter__api-keys', mode: 'simple' },
+      jobId: 'bloomFilterRebuild__api-keys',
+      removeOnComplete: true,
+      removeOnFail: true,
     })
   })
 
-  it('uses the same simple deduplication id for embedding populate and rebuild', () => {
-    const populate = populateBloomFilterJobOptions()
-    const rebuild = rebuildEmbeddingBloomFilterJobOptions()
-
-    expect(populate).toMatchObject({
-      ordering: { key: 'openai-text-embedding-3-small', concurrency: 1 },
-      deduplication: { id: 'bloom-filter__openai-text-embedding-3-small', mode: 'simple' },
-    })
-    expect(rebuild).toMatchObject({
-      ordering: { key: 'openai-text-embedding-3-small', concurrency: 1 },
-      deduplication: { id: 'bloom-filter__openai-text-embedding-3-small', mode: 'simple' },
-    })
+  it('shares one rebuild identity across embedding entry points', () => {
+    expect(rebuildEmbeddingBloomFilterJobOptions()).toEqual(
+      rebuildBloomFilterJobOptions({ filter: 'embedding' }),
+    )
   })
 
-  it('enqueues the same embedding rebuild job used by the scheduler', async () => {
+  it('enqueues the same embedding rebuild job used by admin and failure recovery', async () => {
     const add = vi.spyOn(bloomFilters, 'add').mockResolvedValue(undefined as never)
 
     await enqueueRebuildEmbeddingBloomFilter()
@@ -63,7 +62,9 @@ describe('enqueues.generated', () => {
   it('uses simple deduplication and ordering for entity-cache and bookmark backfills', () => {
     expect(backfillBloomFilterJobOptions({ entityType: 'rss_feed_items' })).toMatchObject({
       ordering: { key: 'entity-cache:rss_feed_items', concurrency: 1 },
-      deduplication: { id: 'processBackfillBloomFilter__rss_feed_items', mode: 'simple' },
+      jobId: 'bloomFilterRebuild__rss_feed_items',
+      removeOnComplete: true,
+      removeOnFail: true,
     })
     expect(
       backfillUserBookmarkBloomFilterJobOptions({
@@ -78,24 +79,7 @@ describe('enqueues.generated', () => {
     })
   })
 
-  it('keeps the grouped entity-cache admin rebuild on supported entity schedules only', () => {
-    const entityJobs = scheduledJobManifest.jobs.filter(job =>
-      job.schedulerId.startsWith('backfillEntityCacheBloomFilter_'),
-    )
-
-    expect(
-      entityJobs.map(job => ({
-        entityType: (job.template.data as { entityType: string }).entityType,
-        valkeyRebuild: job.operatorSurfaces.some(surface =>
-          surface.kind === 'valkey-bloom-filter' ? surface.rebuildInput === 'entity-cache' : false,
-        ),
-      })),
-    ).toEqual([
-      { entityType: 'posts', valkeyRebuild: true },
-      { entityType: 'topics', valkeyRebuild: true },
-      { entityType: 'users', valkeyRebuild: true },
-      { entityType: 'communities', valkeyRebuild: false },
-      { entityType: 'rss_feed_items', valkeyRebuild: true },
-    ])
+  it('has no scheduled Bloom rebuilds', () => {
+    expect(scheduledJobManifest.jobs).toEqual([])
   })
 })

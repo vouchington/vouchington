@@ -6,7 +6,7 @@ import { normalizeKey } from '@ts-shared/utils/strings'
 import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import {
   lockImageAssetAdmission,
@@ -123,7 +123,7 @@ export async function insertCommunity(
   assert(community, 500, 'Failed to create community')
   registerPostCommitAction(query, async () => {
     void enqueueReconcileMediaDeliveryRegistry()
-    void entityCacheBloomFilters.communities.add([
+    void addEntityBloomKeys('communities', [
       normalizeKey(community.id),
       normalizeKey(community.slug),
     ])
