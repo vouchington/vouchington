@@ -26,7 +26,7 @@ parent_policy AS (
     hostname,
     REPLACE(REPLACE(REPLACE(hostname, chr(92), chr(92) || chr(92)), '%', chr(92) || '%'), '_', chr(92) || '_') AS hostname_like
   FROM url_hostnames
-  WHERE is_blocked = TRUE
+  WHERE is_blocked
 ),
 inherited AS (
   SELECT
@@ -59,7 +59,7 @@ inherited_blocks AS (
   INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
   SELECT id, 'parent_hostname'
   FROM inserted
-  WHERE is_blocked = TRUE
+  WHERE is_blocked
     AND NOT EXISTS (
       SELECT 1
       FROM url_hostname_blocks

@@ -5,7 +5,7 @@ export type RssFeedToFetch = {
   id: string
   url: string
   url_hostname_id: string
-  crawlable: boolean | null
+  crawlable: boolean
   title: string | null
   declared_language: string | null
   last_modified_at: Date | null

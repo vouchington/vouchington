@@ -11,6 +11,9 @@ See also:
 - [Actions](./navigation/ACTIONS.md) — action button placement principles and tooltip rules
 - [Signed-out Actions](./navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
 
+Hostname policy controls follow the [hostname flag contract](anatomy/domain.md): crawlable and
+blocked are non-null booleans. Admin creation and moderation keep the existing routes and actions.
+
 ---
 
 ## Contents

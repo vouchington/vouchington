@@ -168,7 +168,7 @@ async function processUrlCreatedInline(ids: string[], options: QueryOptions): Pr
 
     const url = await getUrlById(id, options)
     if (!url) return
-    if (url.hostname.is_blocked || url.hostname.is_crawlable === false) return
+    if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
     await getOrCreateCrawlerForHostname(null, url.hostname.id, options)
   }, Promise.resolve())
 }

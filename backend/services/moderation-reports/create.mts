@@ -97,7 +97,7 @@ async function assertReportableEntity(
           SELECT id FROM users WHERE id = ${input.entityId} AND deleted_at IS NULL LIMIT 1
         )
         WHEN ${input.entityType} = 'url_hostname' THEN (
-          SELECT id FROM url_hostnames WHERE id = ${input.entityId} AND is_blocked IS NOT TRUE LIMIT 1
+          SELECT id FROM url_hostnames WHERE id = ${input.entityId} AND NOT is_blocked LIMIT 1
         )
       END AS owner_id
   `)

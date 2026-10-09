@@ -60,9 +60,9 @@ function appendBooleanFilter(
   value: SearchUrlHostnamesOptions['is_blocked'],
 ): void {
   if (value === true || value === 1 || value === '1') {
-    filters.push(field === 'is_blocked' ? sql`is_blocked = TRUE` : sql`is_crawlable = TRUE`)
+    filters.push(field === 'is_blocked' ? sql`is_blocked` : sql`is_crawlable`)
   } else if (value === false || value === 0 || value === '0') {
-    filters.push(field === 'is_blocked' ? sql`(is_blocked IS NOT TRUE)` : sql`is_crawlable = FALSE`)
+    filters.push(field === 'is_blocked' ? sql`(NOT is_blocked)` : sql`NOT is_crawlable`)
   }
 }
 

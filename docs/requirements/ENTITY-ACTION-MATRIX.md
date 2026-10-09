@@ -12,6 +12,9 @@ See also:
 - [Routes](./navigation/ROUTES.md) — route inventory
 - [Entity Relations](../overview/architecture/entity-relations.md) — canonical predicate vocabulary and relation-table structure
 
+Hostname policy controls follow the [hostname flag contract](anatomy/domain.md): crawlable and
+blocked are non-null booleans. Admin creation and moderation keep the existing routes and actions.
+
 ---
 
 ## Contents

@@ -16,7 +16,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       post_counts.post_count,
       post_counts.review_count,
       post_counts.data_point_count,
-      (SELECT COUNT(*)::INTEGER FROM url_hostnames WHERE votes_count_up > 0 AND is_blocked IS NOT TRUE) AS hostname_count
+      (SELECT COUNT(*)::INTEGER FROM url_hostnames WHERE votes_count_up > 0 AND NOT is_blocked) AS hostname_count
     FROM (
       SELECT
         COUNT(*)::INTEGER AS post_count,

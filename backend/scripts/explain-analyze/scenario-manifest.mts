@@ -1,4 +1,5 @@
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  'url-blocklist-hostnames',
   'mv-top-hashtags-refresh',
   'mv-rss-feed-crawl-tiers-refresh',
   'rss-feeds-to-fetch-tiered',
