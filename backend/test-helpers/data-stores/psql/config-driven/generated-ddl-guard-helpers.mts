@@ -13,7 +13,7 @@ import {
   isUnclassifiedCreateDdl,
 } from './ddl-statement-classifiers.mts'
 import { extractDoBlocks, stripDoBlocks } from './do-block-readers.mts'
-import { executableSqlStrings } from './generated-ddl-execute-helpers.mts'
+import { loadExecutableSqlStrings } from './generated-ddl-execute-helpers.mts'
 import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mts'
 
 export async function loadGeneratedConfigDrivenSql(
@@ -22,43 +22,44 @@ export async function loadGeneratedConfigDrivenSql(
   const generatorFiles = getFilesFromFolder(configDrivenDir)
     .filter(file => file.endsWith('.mts'))
     .toSorted()
-
   return Promise.all(
     generatorFiles.map(async file => {
       const mod = (await import(pathToFileURL(join(configDrivenDir, file)).href)) as {
         default?: unknown
       }
-      if (typeof mod.default !== 'function') {
+      if (typeof mod.default !== 'function')
         throw new TypeError(`${file} must export a default SQL generator`)
-      }
       const sql = await (mod.default as () => unknown)()
-      if (typeof sql !== 'string') {
-        throw new TypeError(`${file} must generate SQL text`)
-      }
+      if (typeof sql !== 'string') throw new TypeError(`${file} must generate SQL text`)
       return { file, sql: sql as string }
     }),
   )
 }
 
-export function findFirstGeneratedDdlViolation(sql: string): string | null {
+export async function findFirstGeneratedDdlViolation(sql: string): Promise<string | null> {
   const executableSql = stripSqlComments(sql)
+  const selectExecutableSql = await loadExecutableSqlStrings(executableSql)
   const blocklessSql = stripDoBlocks(executableSql)
-  const topLevelViolation = findFirstStatementViolation(blocklessSql, false)
+  const topLevelViolation = await findFirstStatementViolation(
+    blocklessSql,
+    false,
+    selectExecutableSql,
+  )
   if (topLevelViolation) return topLevelViolation
-
   for (const { body: block } of extractDoBlocks(executableSql)) {
-    const bodyViolation = findFirstStatementViolation(stripSqlComments(block), true)
+    const bodySql = stripSqlComments(block)
+    const bodyViolation = await findFirstStatementViolation(bodySql, true, selectExecutableSql)
     if (bodyViolation) return bodyViolation
   }
-
   return null
 }
 
-function findFirstStatementViolation(
+async function findFirstStatementViolation(
   sql: string,
   insideDoBlock: boolean,
+  selectExecutableSql: (fragment: string) => string[] | null,
   initialPrecheckStack: PrecheckFrame[] = [],
-): string | null {
+): Promise<string | null> {
   const precheckStack: PrecheckFrame[] = [...initialPrecheckStack]
   for (const statement of splitSqlStatements(sql)) {
     const ddlStatement = maskSqlLiterals(statement)
@@ -71,7 +72,6 @@ function findFirstStatementViolation(
     const hasAnyPrecheck = insideDoBlock && activePrecheckStack.some(Boolean)
     const hasAbsencePrecheck = insideDoBlock && activePrecheckStack.includes('notExists')
     const hasExistencePrecheck = insideDoBlock && activePrecheckStack.includes('exists')
-
     if (/\bTRUNCATE\b/is.test(ddlStatement)) return 'destructive DDL is not allowed'
     if (isAlwaysForbiddenDrop(ddlStatement)) return 'destructive DDL is not allowed'
     if (/\bDROP\s+INDEX\s+CONCURRENTLY\b/is.test(ddlStatement))
@@ -132,7 +132,11 @@ function findFirstStatementViolation(
       return 'config-driven generators must not emit ALTER TABLE ADD COLUMN'
     }
     if (insideDoBlock) {
-      const executableViolation = findExecutableStatementViolation(statement, activePrecheckStack)
+      const executableViolation = await findExecutableStatementViolation(
+        statement,
+        activePrecheckStack,
+        selectExecutableSql,
+      )
       if (executableViolation) return executableViolation
       if (
         hasStructuralDdl(ddlStatement) &&
@@ -142,14 +146,14 @@ function findFirstStatementViolation(
       }
       precheckStack.push(...startedIfBlocks)
       if (/\bEND\s+IF\b/is.test(statement)) precheckStack.pop()
-    } else {
-      const alterViolation = findTopLevelAlterViolation(ddlStatement)
-      if (alterViolation) return alterViolation
+    } else if (/\bALTER\b/is.test(ddlStatement)) {
+      return /\bALTER\s+TABLE\b/is.test(ddlStatement)
+        ? 'ALTER TABLE outside a DO block must be guarded'
+        : 'config-driven generators must not emit non-table ALTER DDL'
     }
   }
   return null
 }
-
 // PostgreSQL accepts both ADD COLUMN and ADD for a new column. Constraint forms stay distinct.
 const ALTER_TABLE_ADD_COLUMN =
   /\bALTER\s+TABLE\b[\s\S]*?\bADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?(?!CONSTRAINT\b|CHECK\b|UNIQUE\b|PRIMARY\b|FOREIGN\b|EXCLUDE\b)(?:"[^"]+"|[A-Za-z_][\w$]*)\s+(?:"[^"]+"|[A-Za-z_][\w$]*)/isu
@@ -157,18 +161,20 @@ const ALTER_TABLE_ADD_COLUMN =
 function isAlterTableAddColumn(statement: string): boolean {
   return ALTER_TABLE_ADD_COLUMN.test(statement)
 }
-
-function findExecutableStatementViolation(
+async function findExecutableStatementViolation(
   statement: string,
   activePrecheckStack: PrecheckFrame[],
-): string | null {
-  const executableStrings = executableSqlStrings(statement)
+  selectExecutableSql: (fragment: string) => string[] | null,
+): Promise<string | null> {
+  const executableStrings = selectExecutableSql(statement)
   if (!executableStrings) return 'EXECUTE statements must use literal SQL payloads'
-
   for (const executableString of executableStrings) {
-    const stringViolation = findFirstStatementViolation(
-      stripSqlComments(executableString),
+    const nestedSql = stripSqlComments(executableString)
+    const nestedSelector = await loadExecutableSqlStrings(nestedSql)
+    const stringViolation = await findFirstStatementViolation(
+      nestedSql,
       true,
+      nestedSelector,
       activePrecheckStack,
     )
     if (stringViolation) return stringViolation
@@ -188,12 +194,4 @@ function hasDoBlockPrecheck(
   if (isRepairAlterTable(statement) || /\bDROP\b/is.test(statement)) return hasAnyPrecheck
   if (/\bIF\s+NOT\s+EXISTS\b/is.test(statement)) return true
   return hasAbsencePrecheck
-}
-
-function findTopLevelAlterViolation(statement: string): string | null {
-  if (!/\bALTER\b/is.test(statement)) return null
-  if (!/\bALTER\s+TABLE\b/is.test(statement)) {
-    return 'config-driven generators must not emit non-table ALTER DDL'
-  }
-  return 'ALTER TABLE outside a DO block must be guarded'
 }

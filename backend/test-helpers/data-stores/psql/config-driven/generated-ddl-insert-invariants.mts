@@ -3,7 +3,7 @@ import { parseSync } from '@libpg-query/parser'
 import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
 import { type TextRange, splitCteSegmentRanges } from './cte-segment-ranges.mts'
 import { extractDoBlocks, stripDoBlocks } from './do-block-readers.mts'
-import { executableSqlStrings } from './generated-ddl-execute-helpers.mts'
+import { loadExecutableSqlStrings } from './generated-ddl-execute-helpers.mts'
 import { hasTopLevelConjunctiveNotExists } from './not-exists-guard-depth.mts'
 import { isConvergentOnConflict, isGuardedSelect } from './on-conflict-convergence.mts'
 import { nonExecutingWrapperChildren } from './query-wrapper-executability.mts'
@@ -21,23 +21,30 @@ import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mt
  * `postgres-idempotent-insert`. This helper covers TypeScript-generated SQL that
  * those `.sql` files never contain.
  */
-export function findFirstUnguardedInsertViolation(sql: string): string | null {
+export async function findFirstUnguardedInsertViolation(sql: string): Promise<string | null> {
   const executableSql = stripSqlComments(sql)
+  const selectExecutableSql = await loadExecutableSqlStrings(executableSql)
   const blocklessSql = stripDoBlocks(executableSql)
 
-  const topLevelViolation = findFirstUnguardedInsertStatement(blocklessSql)
+  const topLevelViolation = await findFirstUnguardedInsertStatement(
+    blocklessSql,
+    selectExecutableSql,
+  )
   if (topLevelViolation) return topLevelViolation
 
   for (const { body } of extractDoBlocks(executableSql)) {
     const strippedBody = stripSqlComments(body)
-    const bodyViolation = findFirstUnguardedInsertStatement(strippedBody)
+    const bodyViolation = await findFirstUnguardedInsertStatement(strippedBody, selectExecutableSql)
     if (bodyViolation) return bodyViolation
   }
 
   return null
 }
 
-function findFirstUnguardedInsertStatement(sql: string): string | null {
+async function findFirstUnguardedInsertStatement(
+  sql: string,
+  selectExecutableSql: (fragment: string) => string[] | null,
+): Promise<string | null> {
   for (const statement of splitSqlStatements(sql)) {
     const maskedStatement = maskDoubleQuotedIdentifiers(maskSqlLiterals(statement))
     const offendingRange = findUnguardedInsertSegmentRange(statement, maskedStatement)
@@ -56,8 +63,12 @@ function findFirstUnguardedInsertStatement(sql: string): string | null {
 
     // A dynamically executed literal is opaque to the split above one level deeper —
     // mirrors findFirstGeneratedDdlViolation's own EXECUTE-payload recursion.
-    for (const executableString of executableSqlStrings(statement) ?? []) {
-      const violation = findFirstUnguardedInsertStatement(stripSqlComments(executableString))
+    const executableStrings = selectExecutableSql(statement)
+    if (executableStrings === null) return statement.trim()
+    for (const executableString of executableStrings) {
+      const nestedSql = stripSqlComments(executableString)
+      const nestedSelector = await loadExecutableSqlStrings(nestedSql)
+      const violation = await findFirstUnguardedInsertStatement(nestedSql, nestedSelector)
       if (violation) return violation
     }
   }

@@ -2,7 +2,7 @@ import { extractCreateTableMetadata } from 'vouchington-tooling/sql-ast'
 
 import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
 import { extractDoBlocks } from './do-block-readers.mts'
-import { executableSqlStrings } from './generated-ddl-execute-helpers.mts'
+import { loadExecutableSqlStrings } from './generated-ddl-execute-helpers.mts'
 import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mts'
 
 /**
@@ -26,19 +26,27 @@ import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mt
  * Requires `initSqlAst()` (from `vouchington-tooling/sql-ast`) to have resolved before
  * the first call.
  */
-export function findFirstUuidv7CreatedAtViolation(sql: string): string | null {
+export async function findFirstUuidv7CreatedAtViolation(sql: string): Promise<string | null> {
+  const executableSql = stripSqlComments(sql)
+  const selectExecutableSql = await loadExecutableSqlStrings(executableSql)
   const topLevelViolation = findFirstUuidv7CreatedAtViolationIn(sql)
   if (topLevelViolation) return topLevelViolation
 
-  for (const { body } of extractDoBlocks(stripSqlComments(sql))) {
-    const violation = findFirstUuidv7CreatedAtViolationInDoBlockBody(stripSqlComments(body))
+  for (const { body } of extractDoBlocks(executableSql)) {
+    const violation = await findFirstUuidv7CreatedAtViolationInDoBlockBody(
+      stripSqlComments(body),
+      selectExecutableSql,
+    )
     if (violation) return violation
   }
 
   return null
 }
 
-function findFirstUuidv7CreatedAtViolationInDoBlockBody(body: string): string | null {
+async function findFirstUuidv7CreatedAtViolationInDoBlockBody(
+  body: string,
+  selectExecutableSql: (fragment: string) => string[] | null,
+): Promise<string | null> {
   for (const statement of splitSqlStatements(body)) {
     // Masked so that "CREATE TABLE" text inside an EXECUTE literal's own string
     // argument (or any other quoted content) cannot be mistaken for a real statement.
@@ -55,8 +63,15 @@ function findFirstUuidv7CreatedAtViolationInDoBlockBody(body: string): string | 
       continue
     }
 
-    for (const executableString of executableSqlStrings(statement) ?? []) {
-      const violation = findFirstUuidv7CreatedAtViolationIn(stripSqlComments(executableString))
+    const executableStrings = selectExecutableSql(statement)
+    if (executableStrings === null) return 'EXECUTE statements must use literal SQL payloads'
+    for (const executableString of executableStrings) {
+      const nestedSql = stripSqlComments(executableString)
+      const nestedSelector = await loadExecutableSqlStrings(nestedSql)
+      const violation = await findFirstUuidv7CreatedAtViolationInDoBlockBody(
+        nestedSql,
+        nestedSelector,
+      )
       if (violation) return violation
     }
   }
