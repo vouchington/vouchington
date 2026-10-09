@@ -5,7 +5,8 @@
 - On trusted pull requests, `build-backend-infra` and `build-web-infra` are positive-only primary
   filters. They cover Docker configuration, `pnpm-workspace.yaml`, and only the
   per-workspace manifests copied by the corresponding Dockerfile that scope _that_ image. Backend
-  also covers both deployed dependency packaging helpers.
+  also covers both deployed dependency packaging helpers. They also list the CI scripts the image
+  jobs execute; see [Executed Script Path Filters](reference-executed-script-path-filters.md).
 - The root `package.json` and monorepo-wide `pnpm-lock.yaml` deliberately fail open to both PR image
   builds. They are coarse signals, but a transitive-only dependency update can change either image
   without touching an in-subgraph manifest. Both images therefore receive pre-merge build, smoke,

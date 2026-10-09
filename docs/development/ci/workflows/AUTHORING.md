@@ -14,4 +14,5 @@
 - <a id="non-critical-steps"></a>[Non-Critical Steps](reference-non-critical-steps.md)
 - <a id="sharding"></a>[Sharding](reference-sharding.md)
 - <a id="playwright-path-filters"></a>[Playwright Path Filters](reference-playwright-path-filters.md)
+- <a id="executed-script-path-filters"></a>[Executed Script Path Filters](reference-executed-script-path-filters.md)
 - <a id="docker-image-path-filters"></a>[Docker Image Path Filters](reference-docker-image-path-filters.md)
