@@ -104,7 +104,7 @@ describe('copyright records in the account data export', () => {
     expect(posterExport.rows('copyright-notices-filed.csv')).toEqual([])
     for (const secret of scene.claimantSecrets)
       expect(posterExport.serialized).not.toContain(secret)
-  }, 60_000)
+  })
 
   it('exports the same case view the participant read model shows, and no staff-only events', async () => {
     const scene = await createBothRolesScene()
@@ -137,7 +137,7 @@ describe('copyright records in the account data export', () => {
         })),
       )
     }
-  }, 60_000)
+  })
 
   it('keeps the exported member event allowlist equal to the participant read model', () => {
     expect(COPYRIGHT_CASE_TIMELINE_EVENT_TYPES.toSorted()).toEqual(
@@ -164,7 +164,7 @@ describe('copyright records in the account data export', () => {
     ])
     expect(JSON.stringify(incidents)).not.toContain(scene.claimant.id)
     expect((await readAccountExport(scene.claimant.id)).rows(COPYRIGHT_FILES[4]!)).toEqual([])
-  }, 60_000)
+  })
 
   it('has no copyright records for an erased account, and the other side loses the attribution', async () => {
     const scene = await createBothRolesScene()
@@ -180,7 +180,7 @@ describe('copyright records in the account data export', () => {
       expect.objectContaining({ viewer_role: 'poster', claimant_user_id: '' }),
     ])
     expect(posterExport.serialized).not.toContain(scene.claimant.id)
-  }, 60_000)
+  })
 })
 
 async function createBothRolesScene() {
