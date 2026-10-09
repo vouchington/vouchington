@@ -19,6 +19,15 @@ Move fetch-only or SSR-HTML assertions to [`integration-tests/web/`](../../../..
 status codes, redirects, route existence, headers/cache behavior, `robots.txt`/`llms.txt`, metadata,
 canonical links, JSON-LD, static copy, and external-link attributes.
 
+## Hook deadline protection
+
+The shared test helper registers an independent public guard hook before each `beforeAll`
+and `afterAll` callback. It passes the original callback unchanged to Playwright, so fixture
+requests and named-hook context remain intact. The guard protects the current public `TestInfo`
+without extending the hook's own timeout slot. Hook budgets are separate from the test body;
+server readiness, navigation and external protocol durations are not test deadlines.
+Browser-free public CLI regressions cover both all-hook phases and worker-fixture preservation.
+
 ## Seed Setup
 
 Global setup calls `seedPlaywrightTestData()`. That seed runs under the

@@ -15,7 +15,12 @@ const capError =
 
 async function runFixture(
   body: string,
-  options: { collection?: string; cliTimeout?: string; extended?: boolean } = {},
+  options: {
+    collection?: string
+    cliTimeout?: string
+    extended?: boolean
+    workerFixture?: boolean
+  } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), 'playwright-public-cap-'))
   try {
@@ -35,7 +40,7 @@ async function runFixture(
       import { writeFileSync } from 'node:fs'
       import { guardPlaywrightTestTimeouts } from ${JSON.stringify(guardPath)}
       const guarded = guardPlaywrightTestTimeouts(raw)
-      const test = ${options.extended ? `guarded.extend({ sample: async ({}, use) => await use('fixture') })` : 'guarded'}
+      const test = ${options.extended ? `guarded.extend({ sample: ${options.workerFixture ? "[async ({}, use) => await use('fixture'), { scope: 'worker' }]" : "async ({}, use) => await use('fixture')"} })` : 'guarded'}
       ${options.collection ?? ''}
       test('tiny public boundary', async (${options.extended ? '{ sample }' : '{}'}, info) => {
         ${body}
@@ -65,7 +70,8 @@ async function runFixture(
       capture(result.stdout, result.stderr)
     }
     const marker = await readFile(join(dir, 'body.marker'), 'utf8').catch(() => undefined)
-    return { code, output, marker, stats }
+    const hookMarker = await readFile(join(dir, 'hook.marker'), 'utf8').catch(() => undefined)
+    return { code, output, marker, hookMarker, stats }
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
@@ -147,6 +153,46 @@ describe('Playwright public timeout runtime', () => {
     expect(result.stats?.unexpected).toBe(1)
     expect(result.output).toMatch(capError)
     expect(result.marker).toBeUndefined()
+  })
+
+  it.each([
+    ['beforeAll', 'info.setTimeout(30001)'],
+    ['afterAll', 'info.setTimeout(30001)'],
+    ['beforeAll', 'info.slow()'],
+    ['afterAll', 'info.slow()'],
+  ] as const)('rejects %s %s before continuing the hook', async (hook, action) => {
+    const result = await runFixture('', {
+      collection: `test[${JSON.stringify(hook)}]('owned cap hook', async ({}, info) => {
+          ${action}
+          writeFileSync('hook.marker', 'continued')
+        })`,
+    })
+    expect(result.code).toBe(1)
+    expect(result.stats?.unexpected).toBe(1)
+    expect(result.output).toMatch(capError)
+    expect(result.hookMarker).toBeUndefined()
+  })
+
+  it('preserves named all-hook fixtures, ordering and legal hook deadlines', async () => {
+    const result = await runFixture('', {
+      extended: true,
+      workerFixture: true,
+      collection: `
+        const seen = []
+        test.beforeAll('owned setup', async ({ sample }, info) => {
+          if (sample !== 'fixture') throw new Error('worker fixture lost')
+          info.setTimeout(25000)
+          seen.push('before')
+        })
+        test.afterAll('owned teardown', async ({ sample }, info) => {
+          if (sample !== 'fixture' || seen.join() !== 'before') throw new Error('hook context lost')
+          info.setTimeout(30000)
+          writeFileSync('hook.marker', 'completed')
+        })`,
+    })
+    expect(result.code).toBe(0)
+    expect(result.stats).toMatchObject({ expected: 1, unexpected: 0 })
+    expect(result.hookMarker).toBe('completed')
   })
 
   it('runs legal public setters and extended fixtures at the CLI ceiling', async () => {
