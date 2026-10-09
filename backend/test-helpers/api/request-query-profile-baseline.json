@@ -465,6 +465,11 @@
     "issue": 2613
   },
   {
+    "annotation": "getPostCacheKeys",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
     "annotation": "getPostProvenanceFacts",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 2613
