@@ -41,7 +41,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     const found = result.results.find(r => r.entity_id === item.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('includes items from re-enabled feed after re-enable', async () => {
     const user = await createTestUser()
@@ -70,7 +70,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     const found = result.results.find(r => r.entity_id === item.id)
     expect(found).toBeDefined()
-  }, 60_000)
+  })
 
   it('excludes items from disabled feed even when they match a followed topic', async () => {
     const user = await createTestUser()
@@ -96,7 +96,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     const found = result.results.find(r => r.entity_id === item.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes items from direct feed when votes_score_net is below min_score_follow_rss_feeds', async () => {
     const user = await createTestUser()
@@ -116,7 +116,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     const found = result.results.find(r => r.entity_id === item.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('includes items from followed topics when votes_score_net meets min_score_follow_topics', async () => {
     const user = await createTestUser()
@@ -137,7 +137,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     const found = result.results.find(r => r.entity_id === item.id)
     expect(found).toBeDefined()
-  }, 60_000)
+  })
 
   it('excludes disabled matching sources from direct and shared topic-filtered feeds', async () => {
     const recipient = await createTestUser()
@@ -193,7 +193,7 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     expect(enabledDirect.results.map(result => result.entity_id)).toContain(item.id)
     expect(enabledShared.results.map(result => result.entity_id)).toContain(item.id)
-  }, 60_000)
+  })
 
   it('excludes deleted matching sources from direct and shared topic-filtered feeds', async () => {
     const recipient = await createTestUser()
@@ -225,5 +225,5 @@ describe('getRssFeedItemFeedIds enabled-feed filtering', () => {
 
     expect(direct.results.map(result => result.entity_id)).not.toContain(item.id)
     expect(shared.results.map(result => result.entity_id)).not.toContain(item.id)
-  }, 60_000)
+  })
 })

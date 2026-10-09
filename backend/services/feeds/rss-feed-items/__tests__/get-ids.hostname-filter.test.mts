@@ -25,7 +25,7 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     const topic = await createTestTopic()
     feedId = await createTestRssFeedWithTiming(topic.id)
     await followRssFeed(viewer, feedId)
-  }, 60_000)
+  }, 5_000)
 
   async function insertItemWithHostname(hostname: string, is_blocked?: boolean) {
     const random = Math.random().toString(36).slice(2, 10)
@@ -57,7 +57,7 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     })
     const found = result.results.find(r => r.id === itemId)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes items from muted hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -71,7 +71,7 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     })
     const found = result.results.find(r => r.id === itemId)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes items from site-wide blocked hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -83,7 +83,7 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     })
     const found = result.results.find(r => r.id === itemId)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes site-wide blocked hostnames from anonymous community feeds', async () => {
     const owner = await createTestUser()
@@ -103,7 +103,7 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     })
     const found = result.results.find(r => r.id === itemId)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('subdomain matching: blocking parent domain also blocks subdomain items', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -136,5 +136,5 @@ describe('getRssFeedItemFeedIds hostname filtering', () => {
     })
     const found = result.results.find(r => r.id === itemId)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 })
