@@ -12,13 +12,14 @@ Worker package for transactional email delivery jobs and email dispatcher jobs.
   SES configuration set, then records SES MessageId and correspondence acceptance.
   A mismatched job name or payload fails before the template, copyright, or dispatcher function runs.
 
-SES reports `Throttling` ("Maximum sending rate exceeded", or the daily quota) as HTTP 400. The
-transactional processors send through `.catch(wrapHttpForRetry)`, which used to drop every 4xx as
-permanent and so lost the email. It now recognizes AWS throttling and rethrows it, so GlideMQ retries
-the job under its three attempts and exponential backoff. SES rejects a throttled request before
-sending, and the SES client keeps `maxAttempts: 1` (a send has no idempotency token), so the retry
-cannot duplicate an email. Any other SES 400 (`MessageRejected`, an unverified address) still ends the
-job as unrecoverable.
+SES reports `Throttling` ("Maximum sending rate exceeded", or the daily quota) as HTTP 400. The five
+community and welcome processors send through `.catch(wrapHttpForRetry)`, which used to drop every 4xx as
+permanent and so lost the email. It now recognizes AWS throttling and rethrows it, so GlideMQ retries the
+job under its three attempts and exponential backoff. The other processors let the raw SES error
+propagate, which GlideMQ already retried. SES rejects a throttled request before sending, and the SES
+client keeps `maxAttempts: 1` (a send has no idempotency token), so the retry cannot duplicate an
+email. Any other SES 400 (`MessageRejected`, an unverified address) still ends the wrapped job as
+unrecoverable.
 
 ## Related
 

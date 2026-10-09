@@ -57,8 +57,22 @@ describe('Bluesky follow calls under PDS failures', () => {
     expect(failure).toMatchObject({ name: 'RateLimitError', delayMs: 30_000 })
   })
 
-  it('leaves a 429 that names no wait to the queue attempts', async () => {
-    const failure = await failureOf(createFollowOnBluesky(sessionAnswering(429), FOLLOWEE_DID))
+  it('reads a small ratelimit-reset as delta-seconds', async () => {
+    const failure = await failureOf(
+      createFollowOnBluesky(sessionAnswering(429, { 'ratelimit-reset': '45' }), FOLLOWEE_DID),
+    )
+
+    expect(failure).toMatchObject({ name: 'RateLimitError', delayMs: 45_000 })
+  })
+
+  it.each([
+    ['a reset that already passed', { 'ratelimit-reset': '1700000000' }],
+    ['a malformed reset', { 'ratelimit-reset': 'soon' }],
+    ['no hint', {}],
+  ])('leaves a 429 with %s to the queue attempts', async (_name, headers) => {
+    const failure = await failureOf(
+      createFollowOnBluesky(sessionAnswering(429, headers), FOLLOWEE_DID),
+    )
 
     expect(failure).toBeInstanceOf(XRPCError)
     expect(failure).toMatchObject({ status: 429 })

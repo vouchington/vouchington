@@ -63,7 +63,14 @@ function isTooManyRequests(status: number): boolean {
   return status === 429
 }
 
+// An epoch timestamp, per the PDS rate-limit headers. A small value is the IETF draft's
+// delta-seconds form instead. A reset that has already passed names no wait, so it keeps the
+// bounded attempt path rather than requeueing at the floor without limit.
+const EPOCH_SECONDS_FLOOR = 1_000_000_000
+
 function getRateLimitResetMs(headers: XRPCError['headers']): number | null {
   const reset = Number(headers?.['ratelimit-reset'])
-  return Number.isFinite(reset) && reset > 0 ? Math.max(0, reset * 1000 - Date.now()) : null
+  if (!Number.isFinite(reset) || reset <= 0) return null
+  const waitMs = reset >= EPOCH_SECONDS_FLOOR ? reset * 1000 - Date.now() : reset * 1000
+  return waitMs > 0 ? waitMs : null
 }
