@@ -1,4 +1,5 @@
 import { expect, it, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { encodeCursor } from '@modules/pagination'
 import { getPostIds } from '../get-ids.mts'
 import {
@@ -155,19 +156,24 @@ describe('get-ids.pagination-and-following.generated', () => {
 
     // Create 101 posts in parallel batches of 20 to keep DB pool pressure low.
     // Uses insertTestPost (direct insert) to avoid entity-listener cascade slowdowns.
+    const insertedIds: string[] = []
     const batchSize = 20
     for (let start = 0; start < 101; start += batchSize) {
       const count = Math.min(batchSize, 101 - start)
-      await Promise.all(
+      const settled = await Promise.allSettled(
         Array.from({ length: count }, (_, i) =>
           insertTestPost({
             title: `Overfetch Post ${start + i}`,
-            slug: `overfetch-post-${crypto.randomUUID()}`,
+            slug: `overfetch-post-${randomUUID()}`,
             createdById: user!.id,
             markdown: 'test',
           }),
         ),
       )
+      for (const result of settled) {
+        if (result.status === 'rejected') throw result.reason
+        insertedIds.push(result.value)
+      }
     }
 
     const result = await getPostIds(undefined, {
@@ -178,7 +184,18 @@ describe('get-ids.pagination-and-following.generated', () => {
     expect(result.page_info.has_next_page).toBe(true)
     expect(result.results.length).toBe(100)
     expect(result.page_info.end_cursor).not.toBeNull()
-  }, 120_000)
+    const lastPage = await getPostIds(undefined, {
+      user_id: user!.id,
+      limit: 100,
+      after: result.page_info.end_cursor!,
+    })
+    expect(lastPage.results).toHaveLength(1)
+    expect(lastPage.page_info.has_next_page).toBe(false)
+    expect(lastPage.page_info.end_cursor).toBeNull()
+    const returnedIds = [...result.results, ...lastPage.results].map(post => post.id)
+    expect(returnedIds).toEqual(insertedIds.toSorted().toReversed())
+    expect(new Set(returnedIds).size).toBe(101)
+  }, 30_000)
 
   it('getPostIds sort=following_new places followed reviewers before newer unfollowed reviewers', async () => {
     const viewer = await createTestUser()
@@ -191,14 +208,14 @@ describe('get-ids.pagination-and-following.generated', () => {
     const followedReviewId = await insertTestReview({
       userId: followedReviewer!.id,
       topicRatings: [{ topicId: topic.id, rating: 5 }],
-      title: `Followed Review ${Date.now()}`,
+      title: `Followed Review ${randomUUID()}`,
       markdown: 'followed reviewer content',
     })
 
     const unfollowedReviewId = await insertTestReview({
       userId: unfollowedReviewer!.id,
       topicRatings: [{ topicId: topic.id, rating: 4 }],
-      title: `Unfollowed Review ${Date.now()}`,
+      title: `Unfollowed Review ${randomUUID()}`,
       markdown: 'unfollowed reviewer content',
     })
 
@@ -227,7 +244,7 @@ describe('get-ids.pagination-and-following.generated', () => {
     const olderReviewId = await insertTestReview({
       userId: olderReviewer!.id,
       topicRatings: [{ topicId: topic.id, rating: 5 }],
-      title: `Older Review ${Date.now()}`,
+      title: `Older Review ${randomUUID()}`,
       markdown: 'older review content',
       createdAt: olderCreatedAt,
     })
@@ -235,7 +252,7 @@ describe('get-ids.pagination-and-following.generated', () => {
     const newerReviewId = await insertTestReview({
       userId: newerReviewer!.id,
       topicRatings: [{ topicId: topic.id, rating: 4 }],
-      title: `Newer Review ${Date.now()}`,
+      title: `Newer Review ${randomUUID()}`,
       markdown: 'newer review content',
       createdAt: newerCreatedAt,
     })
