@@ -1,5 +1,5 @@
-import { beginTransaction, read } from '@data-stores/psql'
-import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
+import { beginTransaction, read, withTransactionOptions } from '@data-stores/psql'
+import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -122,35 +122,42 @@ export async function recordCopyrightJurisdictionPolicyApproval(
 export async function withdrawCopyrightJurisdictionPolicyApproval(
   currentUser: PrivateUser,
   approvalId: string,
+  options: QueryOptions = {},
 ): Promise<{ id: string }> {
   assert(currentUserCanApproveCopyrightJurisdictionPolicy(currentUser), 403, 'Forbidden')
+  if (options.query || options.client) return withTransactionOptions(options, execute)
   await using transaction = await beginTransaction()
-  const { rows: approvals } = await transaction<{ id: string }>(
-    sql`/* withdrawCopyrightJurisdictionPolicyApproval:lock */
+  const result = await execute(transaction)
+  await transaction.commit()
+  return result
+
+  async function execute(transaction: TransactionQuery) {
+    const { rows: approvals } = await transaction<{ id: string }>(
+      sql`/* withdrawCopyrightJurisdictionPolicyApproval:lock */
     SELECT approval.id
     FROM copyright_jurisdiction_policy_approvals approval
     WHERE approval.id = ${approvalId}
     FOR UPDATE
   `,
-  )
-  assert(approvals[0], 404, 'Copyright policy approval not found')
-  const { rows: withdrawals } = await transaction<{ id: string }>(
-    sql`/* withdrawCopyrightJurisdictionPolicyApproval:existing */
+    )
+    assert(approvals[0], 404, 'Copyright policy approval not found')
+    const { rows: withdrawals } = await transaction<{ id: string }>(
+      sql`/* withdrawCopyrightJurisdictionPolicyApproval:existing */
     SELECT id FROM copyright_jurisdiction_policy_withdrawals
     WHERE copyright_jurisdiction_policy_approval_id = ${approvalId}
   `,
-  )
-  assert(!withdrawals[0], 409, 'Copyright policy approval is already withdrawn')
-  const { rows } = await transaction<{ id: string }>(
-    sql`/* withdrawCopyrightJurisdictionPolicyApproval */
+    )
+    assert(!withdrawals[0], 409, 'Copyright policy approval is already withdrawn')
+    const { rows } = await transaction<{ id: string }>(
+      sql`/* withdrawCopyrightJurisdictionPolicyApproval */
     INSERT INTO copyright_jurisdiction_policy_withdrawals (
       copyright_jurisdiction_policy_approval_id, withdrawn_by_id
     ) VALUES (${approvalId}, ${currentUser.id})
     RETURNING id
   `,
-  )
-  const withdrawal = rows[0]
-  assert(withdrawal, 500, 'Failed to withdraw copyright policy approval')
-  await transaction.commit()
-  return withdrawal
+    )
+    const withdrawal = rows[0]
+    assert(withdrawal, 500, 'Failed to withdraw copyright policy approval')
+    return withdrawal
+  }
 }
