@@ -26,8 +26,9 @@ it sets the secrets the development seed needs. Then, in order:
 
 If PostgreSQL cannot run in this session, download the `explain-analyze-results` artifact from the
 newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
-that run's conclusion, and review its `results-*.json` and `pruning-proof-*.json`. The artifact is
-uploaded even when a gate fails, and it is kept for 1 day. If neither works, report `Outcome: incomplete`.
+that run's conclusion, and review its `results-*.json`. The artifact is uploaded even when a gate
+fails, and it is kept for 1 day. The pruning proof runs only after the plan gates pass, so
+`pruning-proof-*.json` is missing from a failed run; review it when it is present. If neither works, report `Outcome: incomplete`.
 
 If a run fails a plan-shape gate, check the `results-*.json` artifact in
 `backend/scripts/explain-analyze/output/` before the thrown error message. `collectAndGate()` in
