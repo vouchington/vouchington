@@ -8,7 +8,7 @@ import {
   assertRequestContractOperation,
   markRequestContractValidated,
 } from './request-contract-enforcement-helpers.mts'
-import { getCurrentUserWithRateLimit } from './overlapped-rate-limit.mts'
+import { getCurrentUserWithRateLimit } from './overlapped-rate-limit-helpers.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
