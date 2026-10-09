@@ -14,7 +14,7 @@ import {
 import { decryptSecret } from '@modules/token-secrets'
 import { getCopyrightEmailCorrespondence } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { getPendingCopyrightStaffCase } from './read-models-staff-case.mts'
+import { getPendingCopyrightStaffCases } from './read-models-staff-case.mts'
 
 describe('copyright staff information request delivery', () => {
   afterEach(() => {
@@ -109,7 +109,7 @@ describe('copyright staff information request delivery', () => {
     await failTestCopyrightDeliveryIntent(intent?.id ?? '')
 
     await using transaction = await beginTransaction()
-    const staffCase = await getPendingCopyrightStaffCase(noticeId, transaction)
+    const staffCase = (await getPendingCopyrightStaffCases([noticeId], transaction)).get(noticeId)
 
     expect(staffCase?.delivery_intents).toContainEqual({
       id: intent?.id,

@@ -48,7 +48,8 @@ export async function selectEuParticipantSettlements(
 ): Promise<{ results: EuParticipantSettlement[]; page_info: PageInfo }> {
   const audience = staff ? 'staff-participant' : 'participant'
   const scope = euSettlementCursorScope(noticeId, audience, userId)
-  const page = await selectSettlementRows(noticeId, staff ? null : userId, options, transaction)
+  const pages = await selectSettlementRows([noticeId], staff ? null : userId, options, transaction)
+  const page = pages.get(noticeId)!
   const results = page.rows.map(toParticipantSettlement)
   return {
     results,
@@ -65,41 +66,73 @@ export async function selectEuStaffSettlements(
   transaction: TransactionQuery,
   options: { limit: number; afterId?: string } = { limit: 25 },
 ): Promise<{ results: EuStaffSettlement[]; page_info: PageInfo }> {
-  const scope = euSettlementCursorScope(noticeId, 'staff-audit')
-  const page = await selectSettlementRows(noticeId, null, options, transaction)
-  const results = page.rows.map(row => ({
-    ...toParticipantSettlement(row),
-    referred_by_party: row.referred_by_party,
-    referred_by_id: row.referred_by_id,
-  }))
-  return {
-    results,
-    page_info: buildPageInfo(results, {
-      hasNextPage: page.hasNextPage,
-      getCursor: item => ({ id: item.id, scope }),
+  return (await selectEuStaffSettlementPages([noticeId], transaction, options)).get(noticeId)!
+}
+
+/** One statement for the staff audit page of every listed notice; each gets an entry. */
+export async function selectEuStaffSettlementPages(
+  noticeIds: readonly string[],
+  transaction: TransactionQuery,
+  options: { limit: number; afterId?: string } = { limit: 25 },
+): Promise<Map<string, { results: EuStaffSettlement[]; page_info: PageInfo }>> {
+  const pages = await selectSettlementRows(noticeIds, null, options, transaction)
+  return new Map(
+    noticeIds.map(noticeId => {
+      const scope = euSettlementCursorScope(noticeId, 'staff-audit')
+      const page = pages.get(noticeId)!
+      const results = page.rows.map(row => ({
+        ...toParticipantSettlement(row),
+        referred_by_party: row.referred_by_party,
+        referred_by_id: row.referred_by_id,
+      }))
+      return [
+        noticeId,
+        {
+          results,
+          page_info: buildPageInfo(results, {
+            hasNextPage: page.hasNextPage,
+            getCursor: item => ({ id: item.id, scope }),
+          }),
+        },
+      ]
     }),
-  }
+  )
 }
 
 async function selectSettlementRows(
-  noticeId: string,
+  noticeIds: readonly string[],
   referredByUserId: string | null,
   options: { limit: number; afterId?: string },
   transaction: TransactionQuery,
-): Promise<{ rows: SettlementRow[]; hasNextPage: boolean }> {
+): Promise<Map<string, { rows: SettlementRow[]; hasNextPage: boolean }>> {
   const query = sql`/* selectSettlementRows */
-    SELECT referral.id, referral.body_name, referral.referred_at,
-      referral.referred_by_party, referral.referred_by_id,
-      outcome.result, outcome.decided_at, outcome.implemented_at
-    FROM copyright_eu_dispute_settlement_referrals referral
-    LEFT JOIN copyright_eu_dispute_settlement_outcomes outcome
-      ON outcome.copyright_eu_dispute_settlement_referral_id = referral.id
-    WHERE referral.copyright_notice_id = ${noticeId}`
+    SELECT referral.*
+    FROM unnest(${[...noticeIds]}::uuid[]) AS listed(notice_id)
+    CROSS JOIN LATERAL (
+      SELECT referral.copyright_notice_id, referral.id, referral.body_name, referral.referred_at,
+        referral.referred_by_party, referral.referred_by_id,
+        outcome.result, outcome.decided_at, outcome.implemented_at
+      FROM copyright_eu_dispute_settlement_referrals referral
+      LEFT JOIN copyright_eu_dispute_settlement_outcomes outcome
+        ON outcome.copyright_eu_dispute_settlement_referral_id = referral.id
+      WHERE referral.copyright_notice_id = listed.notice_id`
   if (referredByUserId) query.append(sql` AND referral.referred_by_id = ${referredByUserId}`)
   if (options.afterId) query.append(sql` AND referral.id > ${options.afterId}`)
-  query.append(sql` ORDER BY referral.id ASC LIMIT ${options.limit + 1}`)
-  const { rows } = await transaction<SettlementRow>(query)
-  return { rows: rows.slice(0, options.limit), hasNextPage: rows.length > options.limit }
+  query.append(sql`
+      ORDER BY referral.id ASC LIMIT ${options.limit + 1}
+    ) referral
+    ORDER BY referral.id ASC
+  `)
+  const { rows } = await transaction<SettlementRow & { copyright_notice_id: string }>(query)
+  const pages = new Map(
+    noticeIds.map(noticeId => [noticeId, { rows: [] as SettlementRow[], hasNextPage: false }]),
+  )
+  for (const { copyright_notice_id: noticeId, ...row } of rows) {
+    const page = pages.get(noticeId)!
+    if (page.rows.length === options.limit) page.hasNextPage = true
+    else page.rows.push(row)
+  }
+  return pages
 }
 
 function toParticipantSettlement(row: SettlementRow): EuParticipantSettlement {

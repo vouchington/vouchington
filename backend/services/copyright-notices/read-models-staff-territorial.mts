@@ -6,16 +6,21 @@ import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 import { selectTerritorialStaffRecipients } from './read-models-staff-territorial-recipients.mts'
-import { selectTerritorialStaffComplaints } from './read-models-staff-territorial-complaints.mts'
-import { selectEuStaffSettlements } from './read-models-eu-settlements.mts'
+import { selectTerritorialStaffComplaintPages } from './read-models-staff-territorial-complaints.mts'
+import { selectEuStaffSettlementPages } from './read-models-eu-settlements.mts'
 
-/** Reads the live territorial decision and the receipt that gives staff this case. */
-export async function selectStaffTerritorialCase(
-  noticeId: string,
-  jurisdiction: TerritorialCopyrightJurisdiction,
+/**
+ * Reads the live territorial decision and the receipt that gives staff each case. Cases without a
+ * receipt in their own jurisdiction are absent from the map.
+ */
+export async function selectStaffTerritorialCases(
+  noticeIds: readonly string[],
   query: Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<CopyrightStaffTerritorialCase | null> {
+): Promise<Map<string, CopyrightStaffTerritorialCase>> {
+  if (noticeIds.length === 0) return new Map()
   const { rows } = await query<{
+    notice_id: string
+    jurisdiction: TerritorialCopyrightJurisdiction
     idempotency_key: string
     hosted_use_url: string
     grounds_ciphertext: string
@@ -34,7 +39,8 @@ export async function selectStaffTerritorialCase(
     reopened_at: Date | null
   }>(
     sql`/* selectStaffTerritorialCase */
-      SELECT receipt.idempotency_key, receipt.hosted_use_url, receipt.grounds_ciphertext,
+      SELECT receipt.copyright_notice_id AS notice_id, receipt.jurisdiction,
+        receipt.idempotency_key, receipt.hosted_use_url, receipt.grounds_ciphertext,
         receipt.notifier_email_ciphertext, notice.claimant_display_name AS notifier_name,
         acknowledgment.attempt_count, acknowledgment.last_attempt_at,
         acknowledgment.acknowledged_at, acknowledgment.exhausted_at,
@@ -65,69 +71,91 @@ export async function selectStaffTerritorialCase(
         WHERE request.copyright_territorial_decision_id = decision.id
           AND redress.staff_disposition = 'revoke'
       ) reopened ON true
-      WHERE receipt.copyright_notice_id = ${noticeId} AND receipt.jurisdiction = ${jurisdiction}`),
+      WHERE receipt.copyright_notice_id = ANY(${noticeIds}::uuid[])
+        AND receipt.jurisdiction = notice.jurisdiction
+      ORDER BY receipt.copyright_notice_id`),
   )
-  const row = rows[0]
-  if (!row) return null
-  const labels = territorialLabels(jurisdiction)
+  const receipts = new Map<string, (typeof rows)[number]>()
+  for (const row of rows) if (!receipts.has(row.notice_id)) receipts.set(row.notice_id, row)
+  const cases = [...receipts.values()].map(row => ({
+    noticeId: row.notice_id,
+    decisionId: row.decision_id,
+    decidedAt: row.decided_at,
+    jurisdiction: row.jurisdiction,
+  }))
   const [recipients, complaints, settlements] = await Promise.all([
-    selectTerritorialStaffRecipients(noticeId, row.decision_id, row.decided_at, query),
-    selectTerritorialStaffComplaints(
-      noticeId,
-      row.decision_id,
-      row.decided_at,
-      jurisdiction,
+    selectTerritorialStaffRecipients(
+      cases.flatMap(item =>
+        item.decisionId && item.decidedAt
+          ? [{ noticeId: item.noticeId, decisionId: item.decisionId, decidedAt: item.decidedAt }]
+          : [],
+      ),
       query,
     ),
-    selectEuStaffSettlements(noticeId, query),
-  ])
-  return {
-    hosted_use_url: row.hosted_use_url,
-    grounds: decryptCopyrightText(
-      row.grounds_ciphertext,
-      `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
+    selectTerritorialStaffComplaintPages(cases, query),
+    selectEuStaffSettlementPages(
+      cases.map(item => item.noticeId),
+      query,
     ),
-    notifier: {
-      name: row.notifier_name,
-      email: row.notifier_email_ciphertext
-        ? decryptCopyrightText(
-            row.notifier_email_ciphertext,
-            `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
-          )
-        : null,
-    },
-    recipients,
-    complaints: complaints.results,
-    complaints_page_info: complaints.page_info,
-    dispute_settlements: settlements.results,
-    dispute_settlements_page_info: settlements.page_info,
-    acknowledgment: {
-      attempt_count: row.attempt_count ?? 0,
-      last_attempt_at: row.last_attempt_at,
-      acknowledged_at: row.acknowledged_at,
-      exhausted_at: row.exhausted_at,
-      escalated: row.escalated,
-    },
-    reopened_at: row.reopened_at,
-    decision:
-      row.decision_id &&
-      row.outcome &&
-      row.decided_at &&
-      row.rationale_ciphertext &&
-      row.public_explanation_ciphertext
-        ? {
-            id: row.decision_id,
-            outcome: row.outcome,
-            decided_at: row.decided_at,
-            rationale: decryptCopyrightText(
-              row.rationale_ciphertext,
-              `${labels.decisionPurpose}:${noticeId}`,
-            ),
-            public_explanation: decryptCopyrightText(
-              row.public_explanation_ciphertext,
-              `${labels.publicExplanationPurpose}:${noticeId}`,
-            ),
-          }
-        : null,
-  }
+  ])
+  return new Map(
+    [...receipts.values()].map((row): [string, CopyrightStaffTerritorialCase] => {
+      const noticeId = row.notice_id
+      const labels = territorialLabels(row.jurisdiction)
+      const complaintPage = complaints.get(noticeId)!
+      const settlementPage = settlements.get(noticeId)!
+      return [
+        noticeId,
+        {
+          hosted_use_url: row.hosted_use_url,
+          grounds: decryptCopyrightText(
+            row.grounds_ciphertext,
+            `${labels.noticePurpose}:${row.idempotency_key}:grounds`,
+          ),
+          notifier: {
+            name: row.notifier_name,
+            email: row.notifier_email_ciphertext
+              ? decryptCopyrightText(
+                  row.notifier_email_ciphertext,
+                  `${labels.noticePurpose}:${row.idempotency_key}:notifier_email`,
+                )
+              : null,
+          },
+          recipients: recipients.get(noticeId) ?? [],
+          complaints: complaintPage.results,
+          complaints_page_info: complaintPage.page_info,
+          dispute_settlements: settlementPage.results,
+          dispute_settlements_page_info: settlementPage.page_info,
+          acknowledgment: {
+            attempt_count: row.attempt_count ?? 0,
+            last_attempt_at: row.last_attempt_at,
+            acknowledged_at: row.acknowledged_at,
+            exhausted_at: row.exhausted_at,
+            escalated: row.escalated,
+          },
+          reopened_at: row.reopened_at,
+          decision:
+            row.decision_id &&
+            row.outcome &&
+            row.decided_at &&
+            row.rationale_ciphertext &&
+            row.public_explanation_ciphertext
+              ? {
+                  id: row.decision_id,
+                  outcome: row.outcome,
+                  decided_at: row.decided_at,
+                  rationale: decryptCopyrightText(
+                    row.rationale_ciphertext,
+                    `${labels.decisionPurpose}:${noticeId}`,
+                  ),
+                  public_explanation: decryptCopyrightText(
+                    row.public_explanation_ciphertext,
+                    `${labels.publicExplanationPurpose}:${noticeId}`,
+                  ),
+                }
+              : null,
+        },
+      ]
+    }),
+  )
 }

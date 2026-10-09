@@ -8,7 +8,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { getPendingCopyrightStaffCase } from './read-models-staff-case.mts'
+import { getPendingCopyrightStaffCases } from './read-models-staff-case.mts'
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
 import { isCopyrightTrustedFlaggerPriorityEnabled } from './config.mts'
 import { findCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
@@ -84,12 +84,15 @@ export async function listCopyrightStaffQueue(
     LIMIT ${options.limit + 1}
   `)
   const { rows } = await transaction<QueueKeyRow>(query)
-  const cases = await Promise.all(
-    rows.slice(0, options.limit).map(async row => {
-      const staffCase = await getPendingCopyrightStaffCase(row.id, transaction)
-      return staffCase ? { ...staffCase, ...queueFields(row), cursor: cursorFor(row) } : null
-    }),
+  const pageRows = rows.slice(0, options.limit)
+  const staffCases = await getPendingCopyrightStaffCases(
+    pageRows.map(row => row.id),
+    transaction,
   )
+  const cases = pageRows.map(row => {
+    const staffCase = staffCases.get(row.id)
+    return staffCase ? { ...staffCase, ...queueFields(row), cursor: cursorFor(row) } : null
+  })
   await transaction.commit()
   const last = rows.length > options.limit ? rows[options.limit - 1] : undefined
   return {

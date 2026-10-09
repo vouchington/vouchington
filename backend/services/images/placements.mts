@@ -65,17 +65,24 @@ export async function getImagePlacementForCopyright(
   placementId: string,
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacement | null> {
-  const query = options.query ?? read
-  const { rows } = await query<CopyrightImagePlacementRow>(
-    buildCopyrightPlacementReadSql(placementId),
-  )
-  const placement = rows[0]
-  if (!placement) return null
-  return toCopyrightImagePlacement(placement)
+  return (await getImagePlacementsForCopyright([placementId], options)).get(placementId) ?? null
 }
 
-function buildCopyrightPlacementReadSql(placementId: string): ReturnType<typeof sql> {
-  const statement = sql`/* getImagePlacementForCopyright */
+/** Reads many placements in one statement. Placements that do not exist are absent from the map. */
+export async function getImagePlacementsForCopyright(
+  placementIds: readonly string[],
+  options: QueryOptions = {},
+): Promise<Map<string, CopyrightImagePlacement>> {
+  if (placementIds.length === 0) return new Map()
+  const query = options.query ?? read
+  const { rows } = await query<CopyrightImagePlacementRow>(
+    buildCopyrightPlacementReadSql([...placementIds]),
+  )
+  return new Map(rows.map(row => [row.placement_id, toCopyrightImagePlacement(row)]))
+}
+
+function buildCopyrightPlacementReadSql(placementIds: string[]): ReturnType<typeof sql> {
+  const statement = sql`/* getImagePlacementsForCopyright */
     SELECT placement.id AS placement_id, placement.revision, binding.image_id,
       placement.retired_at, placement.copyright_withheld_at,
       image.deleted_at AS image_deleted_at,
@@ -89,7 +96,7 @@ function buildCopyrightPlacementReadSql(placementId: string): ReturnType<typeof 
     LEFT JOIN image_placements post_binding ON post_binding.placement_id = placement.id
     LEFT JOIN posts post ON post.id = post_binding.post_id
     LEFT JOIN image_surface_placements surface ON surface.placement_id = placement.id
-    WHERE placement.id = ${placementId}
+    WHERE placement.id = ANY(${placementIds}::uuid[])
   `)
   return statement
 }
