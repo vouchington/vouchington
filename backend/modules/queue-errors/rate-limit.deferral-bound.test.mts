@@ -31,6 +31,12 @@ describe('boundRateLimitDeferral', () => {
     await expect(boundRateLimitDeferral(job, failsWith(signal))).rejects.toBe(signal)
   })
 
+  it('keeps the requeue for a job whose creation time is unknown', async () => {
+    const signal = createRateLimitError(120_000)
+
+    await expect(boundRateLimitDeferral({ timestamp: 0 }, failsWith(signal))).rejects.toBe(signal)
+  })
+
   it('hands an expired job the plain failure so it spends attempts and ends', async () => {
     const cause = new HttpRateLimitError(ENDPOINT, 429, 120_000)
     const signal = createRateLimitError(120_000, cause)
