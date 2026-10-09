@@ -11,7 +11,7 @@
  * Service layer (participants.mts → this file):
  *   - POST add:    currentUserCanManageParticipants → 403; inline cap (26) → 400;
  *                  inline already-participant → 409; inline user-existence → 404;
- *                  currentUserCanMessageUser → 403; block-mute pair check → 403
+ *                  currentUserCanMessageUsers (message-eligibility.mts) → 403; block-mute pair check → 403
  *   - DELETE:      inline owner-vs-self semantics; inline ownership for remove-other → 403
  *   - PATCH policy: currentUserCanChangeParticipantPolicy → 403
  *
@@ -22,18 +22,9 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  isUserBlockedOrMuted,
   isAnyUserBlockedOrMuted,
   anyPairAmongUsersBlockedOrMuted,
 } from '@services/entity-relations/check-block-mute'
-import { getEntityRelationTableNameOrThrow } from '@services/entity-relations/metadata'
-
-const followTable = getEntityRelationTableNameOrThrow({
-  subjectType: 'user',
-  predicate: 'follow',
-  objectType: 'user',
-})
-
 export async function currentUserCanViewConversation(
   currentUserId: string,
   conversationId: string,
@@ -79,63 +70,6 @@ export async function currentUserCanSendMessage(
   // keeping the same invariant enforced at group creation time.
   if (otherIds.length > 1 && (await anyPairAmongUsersBlockedOrMuted(otherIds))) return false
   return true
-}
-
-type RecipientUser = {
-  id: string
-  direct_messages_audience: string
-}
-
-export async function currentUserCanMessageUser(
-  currentUserId: string,
-  recipientId: string,
-  recipientUser: RecipientUser,
-): Promise<boolean> {
-  if (await isUserBlockedOrMuted(currentUserId, recipientId)) return false
-  if (await isUserBlockedOrMuted(recipientId, currentUserId)) return false
-
-  switch (recipientUser.direct_messages_audience) {
-    case 'everyone':
-      return true
-    case 'users':
-      return true
-    case 'followers':
-      return senderFollowsRecipient(currentUserId, recipientId)
-    case 'mutual_followers':
-      return isMutualFollow(currentUserId, recipientId)
-    case 'nobody':
-      return false
-    default:
-      return false
-  }
-}
-
-async function senderFollowsRecipient(senderId: string, recipientId: string): Promise<boolean> {
-  const query = sql`/* senderFollowsRecipient */ SELECT 1 FROM `
-  query.append(followTable)
-  query.append(
-    sql` WHERE subject_id = ${senderId} AND object_id = ${recipientId} AND deleted_at IS NULL LIMIT 1`,
-  )
-  const { rows } = await read(query)
-  return rows.length > 0
-}
-
-async function isMutualFollow(userId1: string, userId2: string): Promise<boolean> {
-  const query = sql`/* isMutualFollow */
-    SELECT (
-      EXISTS (SELECT 1 FROM `
-  query.append(followTable)
-  query.append(
-    sql` WHERE subject_id = ${userId1} AND object_id = ${userId2} AND deleted_at IS NULL)
-      AND EXISTS (SELECT 1 FROM `,
-  )
-  query.append(followTable)
-  query.append(
-    sql` WHERE subject_id = ${userId2} AND object_id = ${userId1} AND deleted_at IS NULL)
-    ) AS is_mutual`,
-  )
-  const { rows } = await read(query)
-  return rows[0]?.is_mutual === true
 }
 
 export async function currentUserCanManageParticipants(

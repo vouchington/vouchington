@@ -5,8 +5,8 @@ import { anyPairAmongUsersBlockedOrMuted } from '@services/entity-relations/chec
 import {
   currentUserCanManageParticipants,
   currentUserCanChangeParticipantPolicy,
-  currentUserCanMessageUser,
 } from './authorization.mts'
+import { currentUserCanMessageUsers } from './message-eligibility.mts'
 import type { ConversationParticipant } from './types.mts'
 
 export async function addConversationParticipant(
@@ -42,7 +42,7 @@ export async function addConversationParticipant(
   const newUser = (newUserRows as Array<{ id: string; direct_messages_audience: string }>)[0]
   if (!newUser) throw createHttpError(404, 'User not found')
 
-  const canMessage = await currentUserCanMessageUser(currentUserId, newUserId, newUser)
+  const canMessage = await currentUserCanMessageUsers(currentUserId, [newUser])
   if (!canMessage) throw createHttpError(403, 'This user does not accept messages from you')
 
   if (await anyPairAmongUsersBlockedOrMuted([...currentParticipantIds, newUserId])) {

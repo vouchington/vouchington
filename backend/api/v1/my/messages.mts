@@ -5,10 +5,10 @@ import {
   findOrCreateDirectConversation,
   createGroupConversation,
   getMyDirectConversations,
-  currentUserCanMessageUser,
+  currentUserCanMessageUsers,
 } from '@services/messaging'
 import { anyPairAmongUsersBlockedOrMuted } from '@services/entity-relations/check-block-mute'
-import { getPrivateUserByAny } from '@services/users/get'
+import { getPrivateUsersByAnyBatch } from '@services/users/get-private-batch'
 import { assertNotSuspended } from '@services/users'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
@@ -72,16 +72,14 @@ app.route('/api/v1/my/messages').post(async (ctx: Context) => {
   const userIds = Array.from(new Set(rawUserIds.map(id => id.toLowerCase())))
   ctx.assert(!userIds.includes(currentUser.id), 400, 'Cannot message yourself')
 
-  const recipients = await Promise.all(userIds.map(id => getPrivateUserByAny(id)))
-  const canMessageChecks = await Promise.all(
-    recipients.map((recipient, i) => {
-      ctx.assert(recipient, 404, 'Recipient not found')
-      return currentUserCanMessageUser(currentUser.id, userIds[i]!, recipient)
-    }),
+  const loaded = await getPrivateUsersByAnyBatch(userIds)
+  const recipients = loaded.filter(recipient => recipient != null)
+  ctx.assert(recipients.length === userIds.length, 404, 'Recipient not found')
+  ctx.assert(
+    await currentUserCanMessageUsers(currentUser.id, recipients),
+    403,
+    'You cannot send messages to this user',
   )
-  for (const canMessage of canMessageChecks) {
-    ctx.assert(canMessage, 403, 'You cannot send messages to this user')
-  }
 
   if (userIds.length > 1) {
     const pairBlocked = await anyPairAmongUsersBlockedOrMuted(userIds)
