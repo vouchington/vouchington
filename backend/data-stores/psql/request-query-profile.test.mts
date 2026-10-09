@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs'
 import type http from 'node:http'
 import { describe, expect, it } from 'vitest'
 import {
+  buildStaleReport,
   findStaleBaselineEntries,
+  MIN_STALE_EVIDENCE_LOGS,
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
   observedRepeatAnnotations,
@@ -113,6 +115,31 @@ describe('request query profile baseline', () => {
     expect([...observed].toSorted()).toEqual(['other', 'third variant'])
     expect(findStaleBaselineEntries(baseline, observed)).toEqual(baseline)
     expect(findStaleBaselineEntries(baseline, new Set(['knownRepeat']))).toEqual([])
+  })
+
+  it('calls an entry stale only when every run log lacks it', () => {
+    const entries = [
+      { annotation: 'a', reason: 'r', issue: 1 },
+      { annotation: 'b', reason: 'r', issue: 2 },
+      { annotation: 'c', reason: 'r', issue: 3 },
+    ]
+    const line = (repeats: string) =>
+      `[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=${repeats}`
+    const runs = Array.from({ length: MIN_STALE_EVIDENCE_LOGS }, () => line('none'))
+    runs[0] = line('a(x2)')
+    runs[2] = line('b(x3)')
+    const report = buildStaleReport(entries, runs)
+    expect(report.stale).toEqual([entries[2]])
+    expect(report.logCount).toBe(MIN_STALE_EVIDENCE_LOGS)
+    expect(report.sufficient).toBe(true)
+  })
+
+  it('flags a stale report built from too few logs as insufficient', () => {
+    const entries = [{ annotation: 'a', reason: 'r', issue: 1 }]
+    const report = buildStaleReport(entries, ['[pg-request-profile] route=GET /x repeats=none'])
+    expect(report.stale).toEqual(entries)
+    expect(report.logCount).toBe(1)
+    expect(report.sufficient).toBe(false)
   })
 
   it('records a violation for a new repeat only, through the response finish handler', async () => {

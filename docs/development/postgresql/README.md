@@ -84,11 +84,15 @@ and the number of the open issue that removes it. The baseline is per annotation
   milestone, and write a one-line `reason`.
 - **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
   PR never depends on landing order; the entry is still deleted so the repeat cannot return.
-- **Find stale entries.** A single process sees only a slice of the routes, so staleness is
-  computed over the logs of a whole run, not in the test run. Save every `test-backend-unit` shard
-  and credentialed job log of one completed main run (`gh run view <id> --log --job <job-id>`),
-  then run `node backend/test-helpers/api/request-query-profile-stale.mts <log>...`. It lists
-  entries that no longer repeat and always exits successfully.
+- **Find stale entries.** A data-dependent repeat can be missing from any single run, and one
+  process sees only a slice of the routes, so staleness is computed over several complete runs, not
+  in the test run. Save the logs of the 5 most recent completed main merge-group Backend runs
+  (every `test-backend-unit` shard and credentialed job of each, via
+  `gh run view <id> --log --job <job-id>`), concatenate each run's shard logs into one file, and run
+  `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. An entry is listed
+  only when it is absent from every log; delete it only then. The report prints how many logs it
+  used and warns that the result is not safe to act on when given fewer than 5. It always exits
+  successfully.
 
 ## Query access references
 
