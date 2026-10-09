@@ -44,7 +44,7 @@ async function createTrendingPostDataWithOwnedId(options: OwnedTrendingPostDataO
     title: `Trending Post ${random}`,
     slug: `trending-post-${random}`,
     createdById: user.id,
-    markdown: `Trending post content ${random}`,
+    markdown: postType === 'story' ? '' : `Trending post content ${random}`,
     postType,
   })
 

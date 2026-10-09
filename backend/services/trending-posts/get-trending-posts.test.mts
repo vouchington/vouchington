@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto'
+import { encodeCursor } from '@modules/pagination'
+import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
+import { insertScoredPostTopicCategoryRelation } from '@voucha/test-helpers/entities/entity-relations-posts'
 import { describe, it, expect } from 'vitest'
 import { getTrendingPosts } from './get-trending-posts.mts'
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
@@ -191,45 +195,55 @@ describe('getTrendingPosts - limit clamping', () => {
 
 describe('getTrendingPosts - pagination', () => {
   it('should paginate results correctly', async () => {
-    // Create posts with high vote scores to ensure they appear in top results
-    // even with accumulated data from previous test runs
     const posts = await Promise.all(
-      [10000, 5000, 2500].map(votesScoreUp => createTrendingPostData({ votesScoreUp })),
+      [3, 2, 1].map(votesScoreUp => createTrendingPostData({ votesScoreUp })),
     )
     const postIds = posts.map(p => p.postId)
 
-    // Use high minScore to filter out noise from other tests
-    const minScore = 1000
+    const namespace = randomUUID()
+    const topicId = await insertTestTopic({
+      name: `Trending ${namespace}`,
+      slug: `trending-${namespace}`,
+      createdById: posts[0]!.userId,
+    })
+    for (const { postId, userId } of posts) {
+      await insertScoredPostTopicCategoryRelation(postId, topicId, userId)
+    }
+    const minScore = 0.5
 
     const page1 = await getTrendingPosts({
       timeRange: 'day',
       limit: 2,
       minScore,
+      topicId,
     })
 
     expect(page1.results.length).toBe(2)
+    expect(page1.results.map(row => row.id)).toEqual(postIds.slice(0, 2))
     expect(page1.page_info.has_next_page).toBe(true)
     expect(page1.page_info.end_cursor).toBeTruthy()
 
-    // Note: time-decayed scores shift between queries, so a boundary item can legitimately
-    // drop out of page 2 (or the DB may hold noise from other concurrent tests near minScore),
-    // so we can't assert an exact or minimum count here -- only that pagination respects the
-    // requested limit, matching the toBeLessThanOrEqual pattern used for limit clamping above.
     const page2 = await getTrendingPosts({
       timeRange: 'day',
       limit: 2,
       after: page1.page_info.end_cursor!,
       minScore,
+      topicId,
     })
 
     expect(page2.results.length).toBeLessThanOrEqual(2)
     expect(page2.page_info).toBeDefined()
+    expect(page2.results.map(row => row.id)).toEqual([postIds[2]])
+    expect(
+      page2.results.filter(row => page1.results.some(previous => previous.id === row.id)),
+    ).toEqual([])
 
     // All 3 posts should appear in the full result set
     const fullResult = await getTrendingPosts({
       timeRange: 'day',
       limit: 100,
       minScore,
+      topicId,
     })
     const allIds = fullResult.results.map(r => r.id)
     for (const id of postIds) {
@@ -240,5 +254,26 @@ describe('getTrendingPosts - pagination', () => {
     const positions = postIds.map(id => allIds.indexOf(id))
     expect(positions[0]).toBeLessThan(positions[1])
     expect(positions[1]).toBeLessThan(positions[2])
-  }, 60_000)
+
+    // A topic UUID is valid but is not a post: the supplied score remains the boundary.
+    const absentBoundary = await getTrendingPosts({
+      timeRange: 'day',
+      limit: 2,
+      minScore,
+      topicId,
+      after: encodeCursor({ score: 1.5, id: topicId }),
+    })
+    expect(absentBoundary.results.map(row => row.id)).toEqual([postIds[2]])
+
+    // Soft deletion excludes the post without removing its usable cursor boundary.
+    await deleteTestPost(postIds[1]!)
+    const deletedBoundary = await getTrendingPosts({
+      timeRange: 'day',
+      limit: 2,
+      minScore,
+      topicId,
+      after: page1.page_info.end_cursor!,
+    })
+    expect(deletedBoundary.results.map(row => row.id)).toEqual([postIds[2]])
+  })
 })
