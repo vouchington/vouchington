@@ -191,6 +191,13 @@
       "owner_classification": "direct-boundary"
     },
     {
+      "path": "backend/services/comments/ancestors-batch.mts",
+      "classification": "raw-hydrator",
+      "reason": "The batch ancestry reader returns chains to MCP resolveReadableThreads, which validates every chain node with canViewPostsBatch before returning a thread.",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_classification": "direct-boundary"
+    },
+    {
       "path": "backend/services/comments/ancestor-page.mts",
       "classification": "raw-hydrator",
       "reason": "The bounded ancestor reader returns candidates to the public ancestors route, which re-fetches and validates every page member with canViewPostsBatch before serialization.",
