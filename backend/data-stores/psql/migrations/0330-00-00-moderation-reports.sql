@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
   case_id          uuid NOT NULL REFERENCES moderation_cases (id) ON DELETE CASCADE,
   reason           moderation_report_reasons NOT NULL,
   original_reason  moderation_report_reasons NOT NULL,
+  -- Nullable operational owner. Reports that are not community-scoped stay valid, and
+  -- ON DELETE SET NULL clears ownership when a community is removed without deleting the
+  -- transparency snapshot, which is deliberately not a foreign key.
+  community_id uuid REFERENCES communities (id) ON DELETE SET NULL,
   moderation_transparency_community_id uuid,
   note             text CHECK (note IS NULL OR char_length(note) <= 1000),
   resolution_action moderation_report_resolution_actions,
@@ -47,8 +51,9 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
 );
 
 -- Per-entity dedup: one pending report per reporter per target.
--- User reports without a community stamp stay global. Community-stamped user reports,
--- including ban-evasion system reports, are one pending row per community.
+-- User reports without an operational community stay global. User reports owned by a
+-- community, including ban-evasion system reports, are one pending row per community.
+-- A cleared community_id keeps its transparency snapshot and leaves both unique indexes.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_post_unique
   ON moderation_reports (reporter_user_id, post_id)
@@ -59,16 +64,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_user_unique
   ON moderation_reports (reporter_user_id, reported_user_id)
   WHERE reviewed_at IS NULL
     AND reported_user_id IS NOT NULL
+    AND community_id IS NULL
     AND moderation_transparency_community_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_community_user_unique
   ON moderation_reports (
-    reporter_user_id, reported_user_id, moderation_transparency_community_id
+    reporter_user_id, reported_user_id, community_id
   )
   WHERE reviewed_at IS NULL
     AND reported_user_id IS NOT NULL
-    AND moderation_transparency_community_id IS NOT NULL;
+    AND community_id IS NOT NULL;
+
+-- Leading index for the community_id foreign key. The partial predicate is referential-integrity
+-- usable because the probed parent id is never null.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__community_id
+  ON moderation_reports (community_id)
+  WHERE community_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_reports__active_hostname_unique
@@ -125,7 +138,8 @@ COMMENT ON COLUMN moderation_reports.hostname_id IS 'Reported URL hostname; set 
 COMMENT ON COLUMN moderation_reports.rss_feed_item_id IS 'Reported RSS feed item; set when entity is rss_feed_item.';
 COMMENT ON COLUMN moderation_reports.reason IS 'Reporter-selected reason for the report.';
 COMMENT ON COLUMN moderation_reports.original_reason IS 'Immutable reporter-selected reason when this report row was created.';
-COMMENT ON COLUMN moderation_reports.moderation_transparency_community_id IS 'Immutable community scope stamped from the reported post for global-transparency exclusion.';
+COMMENT ON COLUMN moderation_reports.community_id IS 'Community that owns this report. NULL when the report is not community-scoped. Deleting the community clears this reference and leaves the transparency snapshot intact.';
+COMMENT ON COLUMN moderation_reports.moderation_transparency_community_id IS 'Immutable community scope stamped for global-transparency exclusion. Not a foreign key, so the snapshot survives community deletion.';
 COMMENT ON COLUMN moderation_reports.note IS 'Optional free-text note from the reporter.';
 COMMENT ON COLUMN moderation_reports.resolution_action IS 'Final moderation report outcome. NULL means pending; application queries derive status from reviewed_at plus this action.';
 COMMENT ON COLUMN moderation_reports.resolved_by_id IS 'Moderator who resolved the report.';

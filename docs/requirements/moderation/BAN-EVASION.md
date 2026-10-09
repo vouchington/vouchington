@@ -30,9 +30,9 @@ flowchart TD
 
 1. Join/post activity enqueues detection. Post-triggered jobs retain the triggering post ID so content and embedding comparisons do not rescan the candidate's full post history.
 2. A suspected match sets `community_members.suspected_ban_evader_at`.
-3. The `ban-evasion` system user creates one pending system-generated user report for that community. An open report in another community does not satisfy or replace it.
+3. The `ban-evasion` system user creates one pending system-generated user report owned by that community (`moderation_reports.community_id`). The insert trigger copies that owner into `moderation_transparency_community_id`, which stays an audit snapshot and is not a foreign key. An open report in another community does not satisfy or replace it.
 4. Community moderators confirm or dismiss.
-5. Confirming creates a community ban and resolves only the system report stamped for that community. Dismissing clears that community's flag and dismisses only that same report. A decision in one community leaves every other community's ban-evasion report pending.
+5. Confirming creates a community ban and resolves only the system report whose `community_id` is that community. Dismissing clears that community's flag and dismisses only that same report. Queue and analytics filters use `community_id`, so a membership flag in another community does not count the report there. A decision in one community leaves every other community's ban-evasion report pending.
 
 The `ban-evasion` username is load-bearing: report redaction treats reports from that system user as system-generated.
 
