@@ -53,7 +53,7 @@ cannot be told apart. `loadReadableList` (`backend/mcp/list-read-access.mts`) de
 read never reveals which condition failed.
 
 `get_list_items` returns post and RSS feed items with the `item_type` and `entity_id` to read them
-with. Each post goes through `resolveReadableThread`, the policy `get_post` uses, so a private,
+with. The page's posts go through `resolveReadableThreads` in one batch (one ancestors query, one cached post read, one private-user load and one `canViewPostsBatch` pair, however many items), which gives each post the same answer as `resolveReadableThread`, the policy `get_post` uses, so a private,
 deleted or hidden post is left out and a public list is never a way around a private post. A page
 can therefore hold fewer items than `limit` while `page_info.has_next_page` is still true; keep
 paging until it is false. List descriptions are wrapped with `wrapExternalContent` and names are

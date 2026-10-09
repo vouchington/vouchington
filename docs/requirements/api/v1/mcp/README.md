@@ -134,7 +134,7 @@ credential holds the exact `post-relations.owned-private:write` grant, which `mc
 not imply; every other case, including another user's private list, a removed list and a malformed
 id, is the same `{ success: false, error: "List not found" }`. `get_my_lists` leaves private lists
 out without the grant, and `get_list_items` leaves out any post `get_post` would refuse, so a page
-can hold fewer than `limit` items while `has_next_page` is true. The paged tools take `limit` (1 to 25) and `after`; a malformed cursor returns `{ success: false, error: "Invalid cursor" }`.
+can hold fewer than `limit` items while `has_next_page` is true. `get_list_items` resolves post readability for the whole page in one batch, so its query count does not grow with the number of items. The paged tools take `limit` (1 to 25) and `after`; a malformed cursor returns `{ success: false, error: "Invalid cursor" }`.
 
 The [trending, referral, search and reference read tools](../../../../overview/architecture/mcp/search-reference-read-tools.md)
 (`get_trending_communities`, `get_trending_referral_programs`, `get_topic_referral_program`,
