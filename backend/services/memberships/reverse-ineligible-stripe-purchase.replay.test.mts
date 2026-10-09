@@ -21,9 +21,10 @@ import { reverseIneligibleStripePurchase } from './reverse-ineligible-stripe-pur
 // The recorded Stripe responses (invoices, lines, refunds, disputes, cancellation, refund create)
 // feed the real `getStripeOperations()` through the real Stripe SDK, so the target amounts and the
 // refund request come from actual wire JSON. `reverse-ineligible-stripe-purchase.test.mts` keeps
-// the branch logic against injected operations. Stripe itself enforcing an idempotency key stays
-// with the live smoke checks: here we pin the key we send and what we do with a replayed response.
-// Routes answer by method and path, so how many times the refund scan re-reads is not pinned.
+// the branch logic against injected operations. Nothing here (or in any other test) shows that
+// Stripe itself dedupes a repeated idempotency key: we pin the key we send on every attempt and
+// what we do with a response Stripe replays. Routes answer by method and path, so how many times
+// the refund scan re-reads is not pinned.
 const replay = createProviderReplay()
 const routes = routeStripeReplay(replay)
 const stripe = createReplayStripeClient(routes.fetch)

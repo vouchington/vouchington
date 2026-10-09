@@ -11,8 +11,9 @@ import { resolveRecurringCatalogPrice } from './catalog.mts'
 
 // The recorded Stripe responses are served through the real Stripe SDK, so it serializes our
 // requests and parses actual wire bytes, including Stripe's error body. ./catalog.test.mts keeps
-// the validation matrix against hand-built prices. Stripe enforcing its own idempotency key and
-// lookup-key uniqueness stays with the live smoke checks.
+// the validation matrix against hand-built prices. Nothing here (or in any other test) shows that
+// Stripe itself dedupes the idempotency key or enforces lookup-key uniqueness: we pin the key we
+// send and how we react to the error Stripe documents.
 const replay = createProviderReplay()
 const stripe = createReplayStripeClient(replay.fetch)
 
