@@ -1,14 +1,11 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { checkUuidv7CreatedAtDdl } from './uuidv7-created-at-ddl-guard.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 describe('uuidv7-created-at-ddl-guard', () => {
-  beforeAll(() => initSqlAst())
-
   const testDirs: string[] = []
 
   afterEach(async () => {
@@ -26,9 +23,9 @@ describe('uuidv7-created-at-ddl-guard', () => {
     await writeFile(join(repoRoot, path), content)
   }
 
-  function runGuard(repoRoot: string, trackedFiles: string[]): string[] {
+  async function runGuard(repoRoot: string, trackedFiles: string[]): Promise<string[]> {
     const errors: string[] = []
-    checkUuidv7CreatedAtDdl(repoRoot, trackedFiles, errors)
+    await checkUuidv7CreatedAtDdl(repoRoot, trackedFiles, errors)
     return errors
   }
 
@@ -44,7 +41,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz NOT NULL DEFAULT now()
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain(`::error file=${MIGRATION_PATH},line=3`)
     expect(errors[0]).toContain('widgets.created_at must be')
@@ -62,7 +59,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('gadgets.created_at must be')
     expect(errors[0]).toContain('found DEFAULT current_timestamp()')
@@ -78,7 +75,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('allows a STORED created_at generated from uuid_extract_timestamp(id)', async () => {
@@ -91,7 +88,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('allows a non-uuidv7 table whose created_at defaults to now()', async () => {
@@ -104,7 +101,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz NOT NULL DEFAULT now()
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('ignores a table that has no id column', async () => {
@@ -117,7 +114,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   created_at timestamptz NOT NULL DEFAULT now()
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('allows a uuidv7-keyed table with no created_at column', async () => {
@@ -131,7 +128,7 @@ describe('uuidv7-created-at-ddl-guard', () => {
   object_id uuid NOT NULL
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('does not flag a non-migration .sql file', async () => {
@@ -143,13 +140,13 @@ describe('uuidv7-created-at-ddl-guard', () => {
       `CREATE OR REPLACE VIEW widgets_view AS
 SELECT id, created_at FROM widgets WHERE created_at IS NOT NULL;\n`,
     )
-    expect(runGuard(dir, [viewFile])).toHaveLength(0)
+    expect(await runGuard(dir, [viewFile])).toHaveLength(0)
   })
 
   it('does not throw when the migration fails to parse', async () => {
     const dir = await makeRepo()
     await track(dir, MIGRATION_PATH, 'CREATE TABLE broken (\n')
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(0)
   })
 
   it('flags a table whose created_at has no DEFAULT at all', async () => {
@@ -162,7 +159,7 @@ SELECT id, created_at FROM widgets WHERE created_at IS NOT NULL;\n`,
   created_at timestamptz NOT NULL
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('found a non-generated default')
   })
@@ -178,7 +175,7 @@ SELECT id, created_at FROM widgets WHERE created_at IS NOT NULL;\n`,
   PRIMARY KEY (id)
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('table_level_pk.created_at must be')
     expect(errors[0]).toContain('found DEFAULT now()')
@@ -194,7 +191,7 @@ SELECT id, created_at FROM widgets WHERE created_at IS NOT NULL;\n`,
   created_at timestamptz GENERATED ALWAYS AS (now()) VIRTUAL
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('mis_generated.created_at must be')
     expect(errors[0]).toContain('found GENERATED ... AS (now(...))')
@@ -210,7 +207,7 @@ SELECT id, created_at FROM widgets WHERE created_at IS NOT NULL;\n`,
   created_at timestamptz NOT NULL DEFAULT now()::timestamptz
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('cast_default.created_at must be')
     expect(errors[0]).toContain('found DEFAULT now()')
@@ -231,6 +228,40 @@ CREATE TABLE IF NOT EXISTS second_table (
   created_at timestamptz NOT NULL DEFAULT now()
 );\n`,
     )
-    expect(runGuard(dir, [MIGRATION_PATH])).toHaveLength(2)
+    expect(await runGuard(dir, [MIGRATION_PATH])).toHaveLength(2)
+  })
+  it('rejects a nested timestamp call under an unrelated expression', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE widgets (
+      id uuid PRIMARY KEY DEFAULT uuidv7(),
+      created_at timestamptz GENERATED ALWAYS AS
+        (uuid_extract_timestamp(id) + INTERVAL '1 day') STORED
+    );`,
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('widgets.created_at must be')
+  })
+  it.each([
+    'CURRENT_DATE',
+    'CURRENT_TIMESTAMP(3)',
+    'COALESCE(now(), now())',
+    'LEAST(now(), now())',
+  ])('preserves non-function diagnostic wording for %s', async expression => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE widgets (
+        id uuid PRIMARY KEY DEFAULT uuidv7(),
+        created_at timestamptz DEFAULT ${expression}
+      );`,
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('found a non-generated default')
   })
 })

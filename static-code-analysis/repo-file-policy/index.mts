@@ -76,8 +76,8 @@ export async function checkRepoFilePolicy(
   const injectedSnapshot = options.schemaSnapshot !== undefined
   errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
-  checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
-  checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
+  await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
+  await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   // One streaming pass over the union of files these guards inspect: each matched file is
   // parsed once and the AST is discarded before the next file. See ast-pass.mts.
   const [postgresRuntimeErrors] = runAstFilePass(
