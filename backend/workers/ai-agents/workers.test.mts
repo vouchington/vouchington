@@ -81,7 +81,7 @@ describe('ai-agents workers', () => {
     mockProcessAIAgent.mockRejectedValue(rateLimitError)
 
     await expect(
-      processAIAgentWorkerJob(job, {} as Worker, {
+      processAIAgentWorkerJob(job, {
         ...spendCapDisabled,
         processAIAgent: mockProcessAIAgent as typeof processAIAgent,
         handleOpenAIRateLimit: mockHandleOpenAIRateLimit,
@@ -97,7 +97,7 @@ describe('ai-agents workers', () => {
     })
     mockProcessAIAgent.mockRejectedValue(outage)
 
-    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), {} as Worker, {
+    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), {
       ...spendCapDisabled,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
     }).catch((err: unknown) => err)

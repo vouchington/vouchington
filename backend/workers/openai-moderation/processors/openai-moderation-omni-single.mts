@@ -8,7 +8,7 @@ import {
   reconcilePendingImageQuarantines,
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import {
   getOpenAIRateLimitDelayMs,
   handleOpenAIRateLimit,
@@ -31,12 +31,8 @@ import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
 
 type OpenAIModerationJobData = { id?: string }
 
-// A provider 429 requeues the job after the provider's `Retry-After` carried on the signal itself,
-// so the worker is not needed. The parameter stays until the worker construction call site stops
-// passing it.
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
-  _worker: Worker,
   scope?: { postIds?: readonly string[]; imageIds?: readonly string[] },
 ): Promise<unknown> {
   try {

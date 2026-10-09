@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { recordAgentResponseUsage } from '@agents/_shared'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { UnrecoverableError } from '@modules/queue-errors'
@@ -37,15 +37,13 @@ describe('processAIAgentWorkerJob', () => {
     } as unknown as Job<AIAgentJobData>
   }
 
-  const worker = {} as Worker
-
   it('reports the summed token count from every recordAgentResponseUsage call the job makes', async () => {
     const job = mockJob()
     const agentSlug = `token-accumulator-test-${randomUUID()}`
     const handleOpenAIRateLimit =
       vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
 
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -73,7 +71,7 @@ describe('processAIAgentWorkerJob', () => {
   it('does not call reportTokens when the job consumes no tokens', async () => {
     const job = mockJob()
 
-    await processAIAgentWorkerJob(job, worker, {
+    await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit:
         vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
@@ -91,7 +89,7 @@ describe('processAIAgentWorkerJob', () => {
       .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('handled')
 
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -123,7 +121,7 @@ describe('processAIAgentWorkerJob', () => {
     // Without the accumulator catching reportTokens' rejection, that rejection would replace
     // thrownByProcessAIAgent, so handleOpenAIRateLimit would never see the real OpenAI error and
     // the job would never be deferred on an actual 429.
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -148,7 +146,7 @@ describe('processAIAgentWorkerJob', () => {
     const releaseFirstJob = Promise.withResolvers<void>()
 
     await Promise.all([
-      processAIAgentWorkerJob(jobA, worker, {
+      processAIAgentWorkerJob(jobA, {
         ...spendCapDisabled,
         handleOpenAIRateLimit:
           vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
@@ -168,7 +166,7 @@ describe('processAIAgentWorkerJob', () => {
           return 'a'
         },
       }),
-      processAIAgentWorkerJob(jobB, worker, {
+      processAIAgentWorkerJob(jobB, {
         ...spendCapDisabled,
         handleOpenAIRateLimit:
           vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
@@ -205,7 +203,7 @@ describe('processAIAgentWorkerJob model provider failures', () => {
     })
 
     await expect(
-      processAIAgentWorkerJob(jobFor(), {} as Worker, {
+      processAIAgentWorkerJob(jobFor(), {
         ...spendCapDisabled,
         handleOpenAIRateLimit,
         processAIAgent: () => Promise.reject(failure),
