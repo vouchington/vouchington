@@ -186,7 +186,7 @@ function captureJobDeadline(payload: unknown): {
         RUNNER_NAME: 'owned-runner',
         RUNNER_TEMP: directory,
         GITHUB_ENV: join(directory, 'env'),
-        API_RESPONSE: JSON.stringify(payload),
+        API_RESPONSE: JSON.stringify(Array.isArray(payload) ? payload : [payload]),
         API_CALLS: join(directory, 'calls'),
       },
     })
@@ -224,7 +224,7 @@ describe('credentialed job deadline uses a single current-attempt timing read', 
     expect(result.status).toBe(0)
     expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${startEpoch + 780}\n`)
     expect(result.calls.trim().split('\n')).toEqual([
-      'api --method GET /repos/fixture/fixture/actions/runs/42/attempts/2/jobs?per_page=100',
+      'api --method GET --paginate --slurp /repos/fixture/fixture/actions/runs/42/attempts/2/jobs?per_page=100',
     ])
   })
 
@@ -239,6 +239,31 @@ describe('credentialed job deadline uses a single current-attempt timing read', 
     const job = { ...ownedJob(new Date(fixtureNow * 1000).toISOString()), run_attempt: 1 }
     expect(captureJobDeadline({ total_count: 1, jobs: [job] }).status).not.toBe(0)
     expect(captureJobDeadline({ total_count: 101, jobs: [] }).status).not.toBe(0)
+  })
+
+  it('finds the current runner on page two after 100 unrelated jobs', () => {
+    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
+    const jobs = Array.from({ length: 100 }, (_, id) => ({
+      ...job,
+      id: id + 100,
+      runner_name: 'other',
+    }))
+    const result = captureJobDeadline([
+      { total_count: 101, jobs },
+      { total_count: 101, jobs: [job] },
+    ])
+    expect(result.status).toBe(0)
+    expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + 780}\n`)
+  })
+
+  it.each(['incomplete', 'ambiguous'])('rejects %s cross-page timing without a deadline', kind => {
+    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
+    const result = captureJobDeadline([
+      { total_count: kind === 'incomplete' ? 3 : 2, jobs: [job] },
+      { total_count: kind === 'incomplete' ? 3 : 2, jobs: [job] },
+    ])
+    expect(result.status).not.toBe(0)
+    expect(result.output).toBe('')
   })
 
   it('fails before exporting a deadline when cleanup margin is already exhausted', () => {

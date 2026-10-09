@@ -62,7 +62,8 @@ failure artifacts.
 
 Credentialed Playwright uses the same bounded runner with a maximum 420-second
 command deadline inside its unchanged eight-minute test step and thirteen-minute job cap.
-A single current-attempt Jobs API read matches the running job and runner and captures
+A single paginated current-attempt Jobs API traversal validates complete pages, matches the
+running job and runner, and captures
 its absolute deadline from `started_at`, including provisioning before authored steps.
 The command uses the smaller of 420 seconds and the remaining job budget, reserving
 ten seconds for termination grace and two minutes for upload and post-step work.
