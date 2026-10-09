@@ -17,6 +17,7 @@ describe('query annotation no-mistakes configuration', () => {
     const root = await mkdtemp(join(tmpdir(), 'query-annotation-scope-'))
     const covered = [
       'backend/services/query.mts',
+      'backend/services/conditional-var.mts',
       'backend/scripts/runtime.mts',
       'backend/test-helpers/entities/create-test-entities.mts',
       'backend/test-helpers/entities/rss-feeds.mts',
@@ -62,10 +63,11 @@ describe('query annotation no-mistakes configuration', () => {
 
 async function fixture(root: string, file: string, annotated: boolean): Promise<void> {
   await mkdir(dirname(join(root, file)), { recursive: true })
-  await writeFile(
-    join(root, file),
-    `import { read } from '@data-stores/psql'\nawait read('${annotated ? '/* runtime-query */ ' : ''}SELECT 1')\n`,
-  )
+  const sql = `${annotated ? '/* runtime-query */ ' : ''}SELECT 1`
+  const query = file.endsWith('/conditional-var.mts')
+    ? `export function run(enabled: boolean) {\n  if (enabled) { var sql = '${sql}' }\n  return read(sql)\n}\n`
+    : `await read('${sql}')\n`
+  await writeFile(join(root, file), `import { read } from '@data-stores/psql'\n${query}`)
 }
 
 function check(root: string) {
