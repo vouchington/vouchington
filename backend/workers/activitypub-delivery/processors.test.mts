@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@modules/queue-errors'
-import type { buildActivityJson, deliverActivityToInbox } from '@services/activitypub-delivery'
+import { generateRsaSha256KeyPair } from '@modules/http-signatures'
+import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
 import type { DeliverActivityData } from '@queues/activitypub-delivery/enqueues'
@@ -152,5 +153,38 @@ describe('deliverActivity', () => {
     deliverActivityToInboxMock.mockRejectedValueOnce(serverError)
 
     await expect(deliverActivity(FOLLOW_DATA, deliverDeps())).rejects.toBe(serverError)
+  })
+
+  it('requeues a 429 for the remote Retry-After through the real delivery request', async () => {
+    const { privateKeyPem } = generateRsaSha256KeyPair()
+    const fetch = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValue(
+        new Response('slow down', { status: 429, headers: { 'Retry-After': '120' } }),
+      )
+    getActorPrivateKeyPemMock.mockResolvedValueOnce(privateKeyPem)
+    deliverActivityToInboxMock.mockImplementationOnce(input =>
+      deliverActivityToInbox(input, {
+        validateUrl: vi.fn<VitestLooseMock>().mockResolvedValue([]),
+        fetch,
+      }),
+    )
+
+    const thrown: unknown = await deliverActivity(FOLLOW_DATA, deliverDeps()).catch(
+      (err: unknown) => err,
+    )
+
+    expect(thrown).toMatchObject({
+      name: 'RateLimitError',
+      delayMs: 120_000,
+      cause: { status: 429, retryAfterMs: 120_000 },
+    })
+  })
+
+  it('keeps a 429 that names no wait on the bounded attempt path', async () => {
+    const limited = Object.assign(createHttpError(429, 'Too Many Requests'), { retryAfterMs: null })
+    deliverActivityToInboxMock.mockRejectedValueOnce(limited)
+
+    await expect(deliverActivity(FOLLOW_DATA, deliverDeps())).rejects.toBe(limited)
   })
 })

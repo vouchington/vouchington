@@ -21,7 +21,7 @@ const tokenAccumulatorStorage = new AsyncLocalStorage<TokenAccumulatorStore>()
  * rejection (e.g. a Valkey blip inside job.reportTokens()) is caught and sent to onError rather
  * than left to propagate from the finally block -- a bare throw there would replace whatever fn
  * threw, which would hide a real OpenAI rate-limit error from processAIAgentWorkerJob's
- * handleOpenAIRateLimit and leave the queue unpaused.
+ * handleOpenAIRateLimit and leave the job undeferred.
  */
 export async function runWithJobTokenAccumulator<T>(
   fn: () => Promise<T>,

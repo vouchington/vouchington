@@ -1,4 +1,3 @@
-import { Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { UnrecoverableError } from '@modules/queue-errors'
@@ -11,41 +10,60 @@ function error(
   return new ModelProviderError(code, `failure ${code}`, { retryClass: 'transient', ...options })
 }
 
+// Stands in for GlideMQ's DelayedError, which the worker turns into a delayed requeue of one job.
+class StubDelayedError extends Error {}
+
+// Mirrors the real job.moveToDelayed(): it always rejects.
+function mockJob() {
+  return {
+    moveToDelayed: vi
+      .fn<(timestamp: number) => Promise<never>>()
+      .mockImplementation(async timestamp => {
+        throw new StubDelayedError(String(timestamp))
+      }),
+  }
+}
+
 describe('handleModelProviderError', () => {
   it.each([
     ['rate-limited', 7_000, 7_000],
     ['overloaded', undefined, 60_000],
+    ['rate-limited', 3_600_000, 900_000],
   ] as const)(
-    'defers the queue and the job for a %s failure',
+    'parks only the job for a %s failure for the provider wait, clamped',
     async (code, retryAfterMs, expectedMs) => {
-      const rateLimit = vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined)
+      const job = mockJob()
+      const before = Date.now()
 
       await expect(
-        handleModelProviderError(error(code, { retryAfterMs, status: 429 }), { rateLimit }),
-      ).rejects.toBeInstanceOf(Worker.RateLimitError)
+        handleModelProviderError(error(code, { retryAfterMs, status: 429 }), job),
+      ).rejects.toBeInstanceOf(StubDelayedError)
 
-      expect(rateLimit).toHaveBeenCalledExactlyOnceWith(expectedMs)
+      const [delayedUntil] = job.moveToDelayed.mock.calls[0]
+      expect(delayedUntil).toBeGreaterThanOrEqual(before + expectedMs)
+      expect(delayedUntil).toBeLessThanOrEqual(Date.now() + expectedMs)
     },
   )
 
   it.each(['client-unavailable', 'credit-balance-too-low', 'invalid-response', 'refusal'] as const)(
     'ends the job for a permanent %s failure',
     async code => {
-      const rateLimit = vi.fn<(ms: number) => Promise<void>>()
+      const job = mockJob()
 
       await expect(
-        handleModelProviderError(error(code, { retryClass: 'permanent' }), { rateLimit }),
+        handleModelProviderError(error(code, { retryClass: 'permanent' }), job),
       ).rejects.toBeInstanceOf(UnrecoverableError)
 
-      expect(rateLimit).not.toHaveBeenCalled()
+      expect(job.moveToDelayed).not.toHaveBeenCalled()
     },
   )
 
   it('lets the queue retry any other transient failure', async () => {
     const failure = error('server-error', { status: 503 })
+    const job = mockJob()
 
-    await expect(
-      handleModelProviderError(failure, { rateLimit: vi.fn<(ms: number) => Promise<void>>() }),
-    ).rejects.toBe(failure)
+    await expect(handleModelProviderError(failure, job)).rejects.toBe(failure)
+
+    expect(job.moveToDelayed).not.toHaveBeenCalled()
   })
 })

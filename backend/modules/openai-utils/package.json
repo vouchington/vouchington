@@ -26,6 +26,7 @@
   "dependencies": {
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "glide-mq": "^0.17.0",
     "openai": "^7.30.0"

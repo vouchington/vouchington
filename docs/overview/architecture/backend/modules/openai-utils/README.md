@@ -17,7 +17,15 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
 - `isOpenAIServerError(error): boolean` — detects 5xx OpenAI API errors. Responses creation
   disables SDK retries; only the response boundary's explicitly unbilled flex retry is automatic.
 - `getRetryAfterDuration(error): number` — extracts the `Retry-After` delay in ms (defaults to 60000 ms)
-- `handleOpenAIRateLimit(error, worker): Promise<never>` — rate-limits a glide-mq `Worker` and rethrows as `RateLimitError`
+- `getOpenAIRateLimitDelayMs(error): number` — that delay clamped into the
+  [`@modules/queue-errors`](../queue-errors/README.md#rate-limit-signal) window
+- `handleOpenAIRateLimit(error): Promise<never>` — throws glide-mq's `RateLimitError` carrying that
+  delay, so the job is requeued after the provider's `Retry-After` without consuming an attempt.
+  The wait travels with the job, so every replica that receives a 429 honors it; the module never
+  calls `worker.rateLimit()`, which only paused one process. A worker with a `limiter` also idles
+  itself for the delay, so use it on a queue whose jobs all need OpenAI. Non-429 errors are rethrown.
+- `deferJobForOpenAIRateLimit(error, job): Promise<never>` — the same for a queue that mixes
+  OpenAI-bound jobs with provider-free ones: it parks only `job` with `job.moveToDelayed()`
 
 ### Pricing
 

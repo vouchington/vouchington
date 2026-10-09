@@ -64,7 +64,8 @@ inside the background-response scope. An Anthropic failure after the request was
 (`ambiguousBilled`) latches the same way. A failure that needs an operator (a missing credential,
 exhausted credits, a rejected key) raises a `model_provider_alarm` (`recordModelProviderAlarm`),
 throttled to once an hour per kind and provider. The worker then ends such a job as unrecoverable
-and defers the queue for a provider rate limit or overload (`handleModelProviderError`).
+and parks only the job for a provider rate limit or overload, for the provider's `Retry-After`
+(`handleModelProviderError`; see the [ai_agents rate-limit handling](../../queues/workers/ai-agents/README.md#provider-rate-limits)).
 
 ### `createStructuredDecisionBillingHooks(subject)`
 

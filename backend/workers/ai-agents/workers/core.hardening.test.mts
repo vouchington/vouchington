@@ -23,7 +23,7 @@ function delayedJob<T>(data: T): Job<T> {
 }
 
 function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
+  return {} as Worker
 }
 
 describe('AI spend-cap registration timing', () => {

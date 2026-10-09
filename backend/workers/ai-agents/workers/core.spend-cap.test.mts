@@ -26,7 +26,7 @@ function mockJob(
 }
 
 function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
+  return {} as Worker
 }
 
 function createDailyTotalLoader(
@@ -65,7 +65,6 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
     ).rejects.toThrow(DelayedError)
 
     expect(processAIAgent).not.toHaveBeenCalled()
-    expect(worker.rateLimit).not.toHaveBeenCalled()
     expect(registerSpendCapRecheck).toHaveBeenCalledExactlyOnceWith(
       job,
       new Date().toISOString().slice(0, 10),
@@ -92,13 +91,13 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
       getDailyAiCostTotalMicrounits: createDailyTotalLoader(100),
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+      handleOpenAIRateLimit:
+        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
       processAIAgent,
     })
 
     expect(result).toBe('ok')
     expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(worker.rateLimit).not.toHaveBeenCalled()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
   })
 
@@ -114,13 +113,13 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields: () => ({ enabled: false, daily_cap_microunits: 1_000_000 }),
       getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+      handleOpenAIRateLimit:
+        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
       processAIAgent,
     })
 
     expect(result).toBe('ok')
     expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(worker.rateLimit).not.toHaveBeenCalled()
     expect(job.moveToDelayed).not.toHaveBeenCalled()
     expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
   })
@@ -138,7 +137,8 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields,
       getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+      handleOpenAIRateLimit:
+        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
       processAIAgent,
     })
 
@@ -190,7 +190,8 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields,
       getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+      handleOpenAIRateLimit:
+        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
       processAIAgent,
     })
 

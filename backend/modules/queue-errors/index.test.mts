@@ -5,6 +5,7 @@ import {
   type Worker as GlideWorker,
 } from 'glide-mq'
 import {
+  createRateLimitError,
   handleBedrockRateLimit,
   isBedrockRateLimitError,
   UnrecoverableError,
@@ -122,7 +123,7 @@ describe('queue error adapter', () => {
 
     expect(await catchRejected(handleBedrockRateLimit(throttling, worker))).toBe(failure)
 
-    const localControlError = new Worker.RateLimitError()
+    const localControlError = createRateLimitError()
     const controlErrorWorker: Pick<GlideWorker, 'rateLimit'> = {
       rateLimit: async () => {
         // oxlint-disable-next-line typescript/only-throw-error -- GlideMQ's RateLimitError is a required worker control-flow signal.

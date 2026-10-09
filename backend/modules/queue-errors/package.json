@@ -21,7 +21,12 @@
   },
   "scripts": {},
   "dependencies": {
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@vouchington/queue-errors": "^0.1.2",
     "glide-mq": "^0.17.0"
+  },
+  "devDependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^"
   }
 }

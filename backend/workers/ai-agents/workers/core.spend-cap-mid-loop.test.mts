@@ -28,7 +28,7 @@ function mockJob(): Job<AIAgentJobData> {
 }
 
 function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
+  return {} as Worker
 }
 
 describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
@@ -46,7 +46,8 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
     const job = mockJob()
     const worker = mockWorker()
     const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
-    const handleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+    const handleOpenAIRateLimit =
+      vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockRejectedValue(new SpendCapBreachError(breach))
@@ -79,7 +80,7 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
     const worker = mockWorker()
     const rateLimitError = new Error('rate limited')
     const handleOpenAIRateLimit = vi
-      .fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+      .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('handled')
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
@@ -96,6 +97,6 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
 
     expect(result).toBe('handled')
     expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(rateLimitError, worker)
+    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(rateLimitError, job)
   })
 })

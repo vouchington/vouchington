@@ -2486,6 +2486,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../on-error
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../queue-errors
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
@@ -2527,12 +2530,22 @@ importers:
 
   backend/modules/queue-errors:
     dependencies:
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../on-error
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../utils
       '@vouchington/queue-errors':
         specifier: ^0.1.2
         version: 0.1.2(glide-mq@0.17.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.17.0
         version: 0.17.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
 
   backend/modules/request-client-info:
     dependencies:
@@ -4470,6 +4483,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../../queues/bluesky-follow-propagation
@@ -8090,6 +8106,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -8127,6 +8146,9 @@ importers:
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -8239,6 +8261,9 @@ importers:
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../../modules/api-egress-proxy
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -12897,6 +12922,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      openai:
+        specifier: ^7.30.0
+        version: 7.30.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
 
   backend/workers/post-mentions:
     dependencies:

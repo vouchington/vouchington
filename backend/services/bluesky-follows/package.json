@@ -28,6 +28,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",

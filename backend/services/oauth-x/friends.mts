@@ -3,6 +3,7 @@ import { X_CLIENT_ID, X_CLIENT_SECRET } from '@voucha/config'
 import { decryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 import { fetch } from 'undici'
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import {
   getXFriendSyncStartTime,
@@ -41,6 +42,7 @@ async function refreshXAccessToken(refreshToken: string): Promise<XTokenRefreshR
       refresh_token: refreshToken,
     }).toString(),
   })
+  throwIfRateLimitedResponse(response, 'https://api.x.com/2/oauth2/token')
   if (!response.ok) throw createHttpError(502, `X token refresh failed: ${response.status}`)
   return response.json() as Promise<XTokenRefreshResponse>
 }
@@ -60,6 +62,7 @@ async function fetchXFollowing(
       headers: { Authorization: `Bearer ${accessToken}` },
     },
   )
+  throwIfRateLimitedResponse(response, 'https://api.x.com/2/users/:id/following')
   if (!response.ok) throw createHttpError(502, `X /following request failed: ${response.status}`)
   return response.json() as Promise<XFollowingResponse>
 }

@@ -102,7 +102,8 @@ export async function deliverActivityToInbox(
   }
 
   // Throws typed, retry-classified errors for 429/5xx (matches @modules/queue-errors's
-  // wrapHttpForRetry semantics, which the worker processor wraps this call with).
+  // wrapHttpForRetry semantics, which the worker processor wraps this call with). A 429 carries the
+  // remote's `Retry-After` as `retryAfterMs`, which wrapHttpForRetry turns into a delayed requeue.
   handleHttpErrors({ response, url: input.inboxUrl })
   if (!response.ok) {
     cancelResponseBody(response)
