@@ -5,7 +5,7 @@ import {
 } from '@services/follower-distributions'
 import {
   enqueueBulkProcessFollowerDistributions,
-  enqueueProcessFollowerDistribution,
+  enqueueContinueFollowerDistribution,
 } from '@queues/follower-distributions/enqueues'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 
@@ -13,7 +13,6 @@ type FollowerDistributionDependencies = {
   advanceFollowerDistributionChunkCursor: typeof advanceFollowerDistributionChunkCursor
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueBulkProcessFollowerDistributions: typeof enqueueBulkProcessFollowerDistributions
-  enqueueProcessFollowerDistribution: typeof enqueueProcessFollowerDistribution
   processFollowerDistributionChunk: typeof processFollowerDistributionChunk
   streamIncompleteFollowerDistributionIdBatches: typeof streamIncompleteFollowerDistributionIdBatches
 }
@@ -22,7 +21,6 @@ type ProcessFollowerDistributionDependencies = Pick<
   FollowerDistributionDependencies,
   | 'advanceFollowerDistributionChunkCursor'
   | 'enqueueBulkDeliverNotificationPushIntents'
-  | 'enqueueProcessFollowerDistribution'
   | 'processFollowerDistributionChunk'
 >
 
@@ -38,7 +36,6 @@ export async function processFollowerDistribution(
   const deps = {
     advanceFollowerDistributionChunkCursor,
     enqueueBulkDeliverNotificationPushIntents,
-    enqueueProcessFollowerDistribution,
     processFollowerDistributionChunk,
     ...dependencies,
   }
@@ -54,9 +51,11 @@ export async function processFollowerDistribution(
       result.cursorRecipientId,
       result.completed,
     )
-  }
-  if (!result.completed) {
-    await deps.enqueueProcessFollowerDistribution(data.distributionId)
+    // This job is still active and holds its own dedup id, so the next chunk is keyed by the
+    // cursor just advanced to. A null add means that exact continuation is already queued or running.
+    if (!result.completed) {
+      await enqueueContinueFollowerDistribution(data.distributionId, result.cursorRecipientId)
+    }
   }
   return result
 }
