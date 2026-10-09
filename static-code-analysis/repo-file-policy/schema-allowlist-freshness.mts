@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-import { isNode, parseSource, walk } from '../targeted-guardrails/ast-utils.mts'
+import { extractStaticStringPairs } from 'vouchington-tooling/pg-schema-snapshot'
 
 // Allowlists of table.column pairs, checked once each against the current schema snapshot.
 const SCHEMA_ALLOWLIST_FILES = [
@@ -15,21 +15,9 @@ export function findStaleSchemaAllowlistEntries(
   schema: Pick<SchemaSnapshot, 'tables'>,
 ): string[] {
   const entries = new Set<string>()
-  const { ast } = parseSource(allowlistCode)
-  walk(ast, node => {
-    if (node.type !== 'ArrayExpression' || !Array.isArray(node.elements)) return
-    const [first, second] = node.elements
-    if (
-      !isNode(first) ||
-      !isNode(second) ||
-      first.type !== 'Literal' ||
-      second.type !== 'Literal'
-    ) {
-      return
-    }
-    if (typeof first.value !== 'string' || typeof second.value !== 'string') return
-    if (/^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(first.value)) entries.add(first.value)
-  })
+  for (const [entry] of extractStaticStringPairs(allowlistCode)) {
+    if (/^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(entry)) entries.add(entry)
+  }
 
   return [...entries].filter(entry => {
     const [table, column] = entry.split('.')

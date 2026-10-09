@@ -554,7 +554,9 @@ development-runtime helpers and the same schema SQL sources. Both entries list t
 generated `created_at` columns because election DDL is TypeScript rather than migration SQL.
 The package-owned annotation rule handles function-scoped `var` SQL initialized inside
 conditional blocks. The duplicate repository walker and its query-binding helpers have been
-removed; schema-allowlist freshness remains a separate local check.
+removed. Schema-allowlist freshness remains a separate local check, using
+`vouchington-tooling/pg-schema-snapshot` to extract static string pairs; its local AST walker
+and parser dependency have been removed.
 
 Every `postgres-*` rule that scans executor calls, in `.no-mistakes.yml` and in the nested
 `.oxlintrc.json` files, sets `importSpecifier: '@data-stores/psql'` explicitly. `no-mistakes` does

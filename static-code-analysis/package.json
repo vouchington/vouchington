@@ -8,7 +8,6 @@
   "type": "module",
   "scripts": {},
   "dependencies": {
-    "@typescript-eslint/parser": "^8.71.1",
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.13",
@@ -16,7 +15,7 @@
     "no-mistakes": "^0.83.0",
     "oxfmt": "^0.72.0",
     "smol-toml": "^1.9.0",
-    "vouchington-tooling": "^0.39.0",
+    "vouchington-tooling": "^0.40.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
