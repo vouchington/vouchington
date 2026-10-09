@@ -119,7 +119,10 @@ export async function boundRateLimitDeferral<T>(
   try {
     return await run()
   } catch (err) {
-    const expired = Date.now() - job.timestamp >= MAX_RATE_LIMIT_DEFERRAL_AGE_MS
+    // GlideMQ writes `timestamp` once, when the job is added, and a requeue never rewrites it. A
+    // missing one reads as 0, which is an unknown age and not an old job.
+    const expired =
+      job.timestamp > 0 && Date.now() - job.timestamp >= MAX_RATE_LIMIT_DEFERRAL_AGE_MS
     if (!(err instanceof Worker.RateLimitError) || !expired) throw err
     throw err.cause instanceof Error
       ? err.cause
