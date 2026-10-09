@@ -24,10 +24,13 @@ const detectChanges = './.github/workflows/ci-detect-changes.yml'
 const resultGateAction = 'vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@'
 // Jobs that consume suite results rather than run a suite.
 const fanIns = new Set(['coverage', 'codecov'])
-// Report-only suites the required gate does not wait on, by area. The backend live-provider smoke
-// checks fail a run without failing the gate; recorded fixtures in the unit suites gate the same
-// behavior (docs/development/tests.md#live-provider-smoke-checks).
-const reportOnly: Record<string, string[]> = { backend: ['test-backend-credentialed'] }
+// Report-only suites the required gate does not wait on, by area. The live-provider smoke checks
+// (backend) and the credentialed browser checks against real cloud resources (web) fail a run
+// without failing the gate (docs/development/tests.md#live-provider-smoke-checks).
+const reportOnly: Record<string, string[]> = {
+  backend: ['test-backend-credentialed'],
+  web: ['test-playwright-credentialed'],
+}
 
 const readWorkflow = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
