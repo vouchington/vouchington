@@ -12,7 +12,7 @@ export async function refreshRssFeedAsCurrentUser(
   await enqueueBulkFetchRssFeeds([rssFeedId], {
     ttl: force ? 0 : 60_000,
     skipDeduplication: force,
-    deduplicationScope: 'refresh',
+    deduplicationScope: 'request',
   })
   return { rss_feed_id: rssFeedId, force }
 }

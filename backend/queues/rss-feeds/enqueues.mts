@@ -11,8 +11,12 @@ import {
 import { rss_feeds } from './queues.mts'
 import type { RssFeedDispatcherJobs, RssFeedsJobs } from './types.mts'
 
-/** `dispatch` shares one key per feed with the dispatcher's backlog; `refresh` is a user request. */
-type FetchRssFeedDeduplicationScope = 'dispatch' | 'refresh'
+/**
+ * `dispatch` (the default) is the dispatcher's backlog key. `request` is for a fetch someone asked
+ * for now (user refresh, redirect target, new feed): it must not be swallowed by a queued
+ * low-priority backlog job, and repeats of it still collapse while one is queued.
+ */
+type FetchRssFeedDeduplicationScope = 'dispatch' | 'request'
 
 type FetchRssFeedInput = {
   rssFeedId: string
@@ -36,7 +40,7 @@ const defaults = {
 const buildRssFeedJobId = (
   rssFeedId: string,
   scope: FetchRssFeedDeduplicationScope = 'dispatch',
-) => (scope === 'refresh' ? `rss-feed-refresh__${rssFeedId}` : `rss-feed__${rssFeedId}`)
+) => (scope === 'request' ? `rss-feed-request__${rssFeedId}` : `rss-feed__${rssFeedId}`)
 
 const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
   FetchRssFeedInput,
@@ -55,8 +59,8 @@ const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
       // per dispatch tick. The SLA flows to the worker as job.data.ttl and is enforced separately
       // by the worker's last_fetched_at staleness check (getRssFeedByIdToFetch with job.data.ttl).
       // A failed due crawl never updates last_fetched_at, so the next dispatch tick re-adds it
-      // once its job has failed. A user refresh keeps its own key so a low-priority backlog job
-      // never swallows it; repeated refreshes still collapse while one is queued.
+      // once its job has failed. A requested fetch keeps its own key so a low-priority backlog job
+      // never swallows it; repeated requests still collapse while one is queued.
       ...(data.skipDeduplication
         ? {}
         : {

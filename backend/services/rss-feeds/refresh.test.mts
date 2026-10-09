@@ -29,7 +29,7 @@ describe('refreshRssFeedAsCurrentUser', () => {
           data: { rssFeedId, ttl: 60_000 },
           opts: expect.objectContaining({
             priority: 10,
-            deduplication: { id: `rss-feed-refresh__${rssFeedId}`, mode: 'simple' },
+            deduplication: { id: `rss-feed-request__${rssFeedId}`, mode: 'simple' },
           }),
         }),
       ]),

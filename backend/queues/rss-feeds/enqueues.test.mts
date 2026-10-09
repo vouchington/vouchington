@@ -72,16 +72,16 @@ describe('rss-feeds enqueues', () => {
     )
   })
 
-  it('keeps a user refresh scope separate from the dispatcher key', async () => {
+  it('keeps a requested fetch separate from the dispatcher key', async () => {
     const rssFeedId = randomUUID()
 
     await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 86_400_000, priority: 20 })
-    await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000, deduplicationScope: 'refresh' })
-    await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000, deduplicationScope: 'refresh' })
+    await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000, deduplicationScope: 'request' })
+    await enqueueBulkFetchRssFeeds([rssFeedId], { ttl: 60_000, deduplicationScope: 'request' })
 
     const jobs = await readFeedJobs(rssFeedId)
     expect(jobs.map(job => job.opts.deduplication?.id).toSorted()).toEqual([
-      `rss-feed-refresh__${rssFeedId}`,
+      `rss-feed-request__${rssFeedId}`,
       `rss-feed__${rssFeedId}`,
     ])
   })
