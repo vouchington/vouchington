@@ -2,7 +2,6 @@ import { throwVoteRouteFailures } from './settle-vote-route-operations.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job, Queue, Worker } from 'glide-mq'
 import { vi } from 'vitest'
-
 export async function observeOwnedVoteRouteAdmissions(
   owns: (data: unknown) => boolean,
   observeWorkers = true,
@@ -27,6 +26,7 @@ export async function observeOwnedVoteRouteAdmissions(
   const ends = new Map<string, { failed: boolean; reason?: unknown }>()
   const waiters = new Map<string, (end: { failed: boolean; reason?: unknown }) => void>()
   const reads: Promise<unknown>[] = []
+  const workerDiagnostics: unknown[] = []
   const observedKinds = new Set<string>()
   const record = (kind: string, job: Job | undefined, failed: boolean, reason?: unknown) => {
     if (!job?.id || !owns(job.data)) return
@@ -50,10 +50,7 @@ export async function observeOwnedVoteRouteAdmissions(
       reads.push(reading)
     }
     const error = (reason: unknown) => {
-      if (
-        attempts.some(attempt => attempt.calls.some(call => call.kind === kind && ownedCall(call)))
-      )
-        failures.push(reason)
+      if (!workerDiagnostics.some(other => Object.is(other, reason))) workerDiagnostics.push(reason)
     }
     for (const [event, handler] of [
       ['completed', completed],
@@ -119,7 +116,12 @@ export async function observeOwnedVoteRouteAdmissions(
         const end = await new Promise<{ failed: boolean; reason?: unknown }>((resolve, reject) => {
           const expired = () => {
             waiters.delete(key)
-            reject(new Error(`Active job observation expired: ${key}; native work not cancelled`))
+            const err = new Error(`Owned wait expired; not cancelled: ${key}`)
+            reject(
+              workerDiagnostics.length
+                ? new AggregateError([err, ...workerDiagnostics], 'Unattributed worker errors')
+                : err,
+            )
           }
           waiters.set(key, value => {
             deadline.removeEventListener('abort', expired)
@@ -186,7 +188,6 @@ export async function observeOwnedVoteRouteAdmissions(
   }
   return Object.assign(finish, { requireAdmission: (kind: string) => requiredKinds.add(kind) })
 }
-
 export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
   return observeOwnedVoteRouteAdmissions(
     data =>
