@@ -96,7 +96,11 @@ The `build-web-targets` composite runs its build under
 not reap a hung child process group. Merge-group run
 [37572766026](https://github.com/vouchington/vouchington/actions/runs/37572766026) stayed in
 `build-web-targets` until the job cap, and GitHub did not retain the job log. The bounded runner
-kills the process group and exits so the composite's timing upload still runs. The build ignores
+kills the process group and exits so the composite's timing upload still runs. It also owns the
+command's stdout and stderr pipes, relaying each to its own, so a descendant that escaped the group
+(for example with `setsid`) and still holds those pipes cannot keep the step open after the command
+ends; the runner exits within a few seconds. This guards a failure that has not been observed under
+the wrapper. The build ignores
 stdin and disables Next and Storybook telemetry, both of which can wait on an open pipe or a stalled
 network call.
 
