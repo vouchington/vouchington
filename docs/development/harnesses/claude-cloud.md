@@ -48,6 +48,10 @@ cached, so run `./dev/claude-cloud backend` or `web` in the session when service
 
 - The VM kernel boots with IPv6 disabled. The shared API test server prefers `::1` and falls back
   to `127.0.0.1` there; other code that binds `::1` explicitly fails with `EAFNOSUPPORT`.
+- An environment whose agent proxy signs AWS requests exposes placeholder `AWS_ACCESS_KEY_ID` and
+  `AWS_SECRET_ACCESS_KEY` values, which `./dev/initialize` copies into `.env`. With them set,
+  backend tests that CI runs without AWS credentials take live-provider paths and trip the test
+  network allowlist; unset both before running those suites.
 - The session's GitHub proxy only serves `api.github.com` for repositories attached to the session.
   mise resolves some `.mise.toml` tools through that API, so `mise install` can fail on restricted
   networks; `./dev/initialize` reports it as a warning.
