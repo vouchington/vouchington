@@ -3,7 +3,10 @@ import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-res
 import { calcCostMicrounits } from '@modules/model-providers/pricing'
 import { callStoryPostModel } from './agent.mts'
 
-// Real Anthropic call (credentialed project `backend-anthropic`); fails without a credential.
+// Non-gating smoke check of the live Anthropic Messages API (credentialed project
+// `backend-anthropic`); fails without a credential. The request this agent builds and its schema
+// and parsing are gated by recorded responses in agent.replay.no-data.mock.test.mts.
+// See docs/development/tests.md#live-provider-smoke-checks.
 describe('story post on Anthropic Haiku 5.5', () => {
   it('returns a title and a non-blank markdown summary', async () => {
     const result = await callStoryPostModel(
