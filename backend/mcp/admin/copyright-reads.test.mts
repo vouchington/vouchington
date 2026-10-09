@@ -2,6 +2,11 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { addTestUserRole, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { createTestCopyrightMcpQueueCase } from '@voucha/test-helpers/copyright-mcp-read-fixtures'
+import {
+  createTestEuParticipantCase,
+  createTestEuParticipantComplaint,
+} from '@voucha/test-helpers/copyright-eu-participant-cases'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { readCopyrightStaffQueueCursorRows } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   encodeScopedTierPreciseUuidCursor,
@@ -237,6 +242,43 @@ describe('copyright admin MCP reads against live services', () => {
       if (!caseTool.meta?.outputSchema) throw new Error('Case tool output schema missing')
       expect(findSchemaViolation(caseTool.meta.outputSchema, detail)).toBeNull()
     }
+  })
+})
+
+describe('get_copyright_case EU complaint text', () => {
+  useCopyrightIntakeEnvironment()
+
+  it('strips contacts from explanation and rationale before wrapping them as untrusted', async () => {
+    const scene = await createTestEuParticipantCase('no_action')
+    const email = `complaint-${scene.suffix}@example.test`
+    const phone = '415-555-0181'
+    await createTestEuParticipantComplaint({
+      noticeId: scene.receipt.notice_id,
+      actor: scene.administrator,
+      staff: scene.staff,
+      explanation: `Contact ${email} about this notice.`,
+      rationale: `Staff quoted ${phone}.`,
+    })
+    const tool = readTool<{ id: string }>('get_copyright_case')
+    const result = (await tool.function(scene.administrator)({ id: scene.receipt.notice_id })) as {
+      copyright_notice: {
+        eu: {
+          complaint: {
+            request: { explanation: string }
+            decision: { rationale: string }
+          }
+        }
+      }
+    }
+    const { request, decision } = result.copyright_notice.eu.complaint
+    expect(request.explanation).toContain('<external-content')
+    expect(request.explanation).toContain('[email removed]')
+    expect(request.explanation).not.toContain(email)
+    expect(decision.rationale).toContain('<external-content')
+    expect(decision.rationale).toContain('[phone removed]')
+    expect(decision.rationale).not.toContain(phone)
+    if (!tool.meta?.outputSchema) throw new Error('Case tool output schema missing')
+    expect(findSchemaViolation(tool.meta.outputSchema, result)).toBeNull()
   })
 })
 
