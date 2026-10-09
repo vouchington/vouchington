@@ -26,17 +26,17 @@ const RSS_FEED_ITEM_TOPIC_CATEGORY_RELATION_TABLE = getEntityRelationTableNameOr
 export async function getTrendingTopics(
   options: TrendingTopicsOptions,
 ): Promise<TrendingTopicsResult> {
-  const { timeRange, minScore, limit, after, topicIds, referenceTime } = options
+  const { timeRange, minScore, limit, after, referenceTime } = options
 
   const rangeMs = TIME_RANGE_MS[timeRange]
   if (rangeMs === undefined) {
     throw createHttpError(400, 'Invalid time_range')
   }
 
-  // Use UUIDv7 lower bound for time filtering (avoids unindexed created_at scan)
-  const lowerBoundUuid = timestampToUuidv7LowerBound(
-    (referenceTime?.getTime() ?? Date.now()) - rangeMs,
-  )
+  // Resolve one instant for both UUIDv7 bounds, including normal wall-clock reads.
+  const referenceMs = referenceTime?.getTime() ?? Date.now()
+  const lowerBoundUuid = timestampToUuidv7LowerBound(referenceMs - rangeMs)
+  const upperBoundUuid = timestampToUuidv7LowerBound(referenceMs)
 
   const safeLimit = Math.floor(clampLimit(limit, TRENDING_TOPICS_DEFAULT_LIMIT))
 
@@ -64,8 +64,8 @@ export async function getTrendingTopics(
     .append(sql` r
       WHERE r.deleted_at IS NULL
         AND r.votes_score_net > 0
-        AND r.id >= ${lowerBoundUuid}`)
-    .append(topicIds === undefined ? sql`` : sql` AND r.object_id = ANY(${topicIds}::uuid[])`)
+        AND r.id >= ${lowerBoundUuid}
+        AND r.id < ${upperBoundUuid}`)
     .append(sql`
       GROUP BY r.object_id
     ),
@@ -75,13 +75,11 @@ export async function getTrendingTopics(
         COUNT(*)::DOUBLE PRECISION AS score,
         COUNT(*)::INTEGER AS count
       FROM `)
-    .append(RSS_FEED_ITEM_TOPIC_CATEGORY_RELATION_TABLE)
-    .append(sql` r
+    .append(RSS_FEED_ITEM_TOPIC_CATEGORY_RELATION_TABLE).append(sql` r
       WHERE r.deleted_at IS NULL
         AND r.votes_score_net > 0
-        AND r.id >= ${lowerBoundUuid}`)
-    .append(topicIds === undefined ? sql`` : sql` AND r.object_id = ANY(${topicIds}::uuid[])`)
-    .append(sql`
+        AND r.id >= ${lowerBoundUuid}
+        AND r.id < ${upperBoundUuid}`).append(sql`
       GROUP BY r.object_id
     ),
     combined AS (
@@ -96,10 +94,6 @@ export async function getTrendingTopics(
       WHERE t.deleted_at IS NULL
         AND t.merged_into_topic_id IS NULL
         AND (pt.score > 0 OR rt.score > 0)`)
-
-  if (topicIds !== undefined) {
-    query.append(sql` AND t.id = ANY(${topicIds}::uuid[])`)
-  }
 
   if (minScore !== undefined) {
     query.append(sql`

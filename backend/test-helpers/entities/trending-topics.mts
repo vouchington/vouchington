@@ -13,6 +13,7 @@ import { insertBatchPostRelations } from './trending-topics/post-relations.mts'
 import { insertBatchRssRelations } from './trending-topics/rss-relations.mts'
 import { insertTopicWithTimestamp } from './trending-topics/topic.mts'
 import { encodeCursor } from '@modules/pagination'
+import { registerTestTrendingTopicWindowFixture } from '../trending-topics-window.mts'
 
 type CreateTrendingTopicDataOptions = {
   postTagCount: number
@@ -79,6 +80,7 @@ async function insertTrendingTopicPosts(options: CreateTrendingTopicDataOptions,
   // This avoids DB/Node clock skew that could violate CHECK (id > object_id).
   const baseMs = createdAt ? createdAt.getTime() : Date.now()
   const topicId = await insertTopicWithTimestamp(userId, random, baseMs - 2)
+  registerTestTrendingTopicWindowFixture(topicId, userId, baseMs)
 
   const postTopicMetadata = entityRelationMetadatum.find(
     m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',

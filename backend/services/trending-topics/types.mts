@@ -7,8 +7,6 @@ export type TrendingTopicsOptions = {
   minScore?: number
   limit: number
   after?: string
-  /** Restrict the current ranking to selected topics; an empty selection returns no rows. */
-  topicIds?: readonly string[]
   /** Reference instant for the lookback window; omitted uses the current wall clock. */
   referenceTime?: Date
 }
