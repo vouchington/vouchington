@@ -7,6 +7,8 @@ import {
 } from '@voucha/test-helpers'
 
 import { archiveCommunity } from '../../archive.mts'
+import { getCommunityOrThrow } from '../../get.mts'
+import { loadCommunityWithViewer } from '../../load-with-viewer.mts'
 import { joinCommunity } from '../join.mts'
 
 import { leaveCommunity } from '../leave.mts'
@@ -54,7 +56,7 @@ describe('index', () => {
   describe('joinCommunity', () => {
     it('user can join a public community', async () => {
       const user = await createTestUser()
-      const member = await joinCommunity(user.id, publicCommunity.id)
+      const member = await joinCommunity(user.id, publicCommunity)
       expect(member.user_id).toBe(user.id)
       expect(member.community_id).toBe(publicCommunity.id)
       expect(member.role).toBe('member')
@@ -62,7 +64,7 @@ describe('index', () => {
 
     it('rejects joining a private community directly', async () => {
       const user = await createTestUser()
-      await expect(joinCommunity(user.id, privateCommunity.id)).rejects.toMatchObject({
+      await expect(joinCommunity(user.id, privateCommunity)).rejects.toMatchObject({
         status: 403,
       })
     })
@@ -76,13 +78,15 @@ describe('index', () => {
       })
       await archiveCommunity(archivedComm.id, null)
       const user = await createTestUser()
-      await expect(joinCommunity(user.id, archivedComm.id)).rejects.toMatchObject({ status: 403 })
+      await expect(
+        joinCommunity(user.id, await getCommunityOrThrow(archivedComm.id)),
+      ).rejects.toMatchObject({ status: 403 })
     })
 
     it('rejects joining if already a member', async () => {
       const user = await createTestUser()
-      await joinCommunity(user.id, publicCommunity.id)
-      await expect(joinCommunity(user.id, publicCommunity.id)).rejects.toMatchObject({
+      await joinCommunity(user.id, publicCommunity)
+      await expect(joinCommunity(user.id, publicCommunity)).rejects.toMatchObject({
         status: 409,
       })
     })
@@ -92,20 +96,24 @@ describe('index', () => {
     it('member can leave a community', async () => {
       const user = await createTestUser()
       await insertTestCommunityMember({ communityId: publicCommunity.id, userId: user.id })
-      await leaveCommunity(user.id, publicCommunity.id)
+      await leaveCommunity(user.id, await loadCommunityWithViewer(publicCommunity.id, user.id))
       const membership = await getCommunityMember(publicCommunity.id, user.id)
       expect(membership).toBeNull()
     })
 
     it('owner cannot leave the community', async () => {
-      await expect(leaveCommunity(owner.id, publicCommunity.id)).rejects.toMatchObject({
+      await expect(
+        leaveCommunity(owner.id, await loadCommunityWithViewer(publicCommunity.id, owner.id)),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('rejects leaving a community the user is not in', async () => {
       const user = await createTestUser()
-      await expect(leaveCommunity(user.id, publicCommunity.id)).rejects.toMatchObject({
+      await expect(
+        leaveCommunity(user.id, await loadCommunityWithViewer(publicCommunity.id, user.id)),
+      ).rejects.toMatchObject({
         status: 404,
       })
     })
@@ -130,7 +138,9 @@ describe('index', () => {
       ])
       await archiveCommunity(archivedCommunity.id, owner.id)
 
-      await expect(leaveCommunity(user.id, archivedCommunity.id)).rejects.toMatchObject({
+      await expect(
+        leaveCommunity(user.id, await loadCommunityWithViewer(archivedCommunity.id, user.id)),
+      ).rejects.toMatchObject({
         status: 403,
         message: 'Community is archived',
       })

@@ -36,6 +36,34 @@ describe('Community Invites Routes', () => {
         .expect(401)
     })
 
+    it('returns 403 for a non-member', async () => {
+      const [owner, stranger] = await Promise.all([createTestUser(), createTestUser()])
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `invites-create-403-${createRandomString(8)}`,
+      })
+
+      const request = createRequest()
+      await request.authenticateAs(stranger)
+      await request
+        .post(`/api/v1/communities/${community.slug}/invites`)
+        .set('Content-Type', 'application/json')
+        .send({ email: 'tests+test@voucha.ai' })
+        .expect(403)
+    })
+
+    it('returns 404 for a missing community', async () => {
+      const user = await createTestUser()
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .post(`/api/v1/communities/invites-create-missing-${createRandomString(8)}/invites`)
+        .set('Content-Type', 'application/json')
+        .send({ email: 'tests+test@voucha.ai' })
+        .expect(404)
+    })
+
     it('creates invite with email and returns 201 as mod', async () => {
       const user = await createTestUser()
       const random = createRandomString(8)

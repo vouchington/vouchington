@@ -22,6 +22,8 @@ import {
 import { describe, expect, it } from 'vitest'
 import { trackUserMetricsFills } from '../../test-helpers/user-metrics-cache-fills.mts'
 import { getUserMetricsByAnyCached } from './metrics.mts'
+import { getCommunityOrThrow } from '@services/communities/get'
+import { loadCommunityWithViewer } from '@services/communities/load-with-viewer'
 
 describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when creating a community owner membership', async () => {
@@ -41,7 +43,7 @@ describe('community membership user metrics invalidation', () => {
     const user = await createTestUser()
     await warmUserMetricsCache(user, 0)
 
-    await joinCommunity(user.id, communityId)
+    await joinCommunity(user.id, await getCommunityOrThrow(communityId))
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 1)
@@ -51,7 +53,11 @@ describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when redeeming a community invite', async () => {
     const { communityId, owner } = await createOwnedCommunity()
     const user = await createTestUser()
-    const invite = await createInvite(owner.id, communityId, { username: user.username! })
+    const invite = await createInvite(
+      owner.id,
+      await loadCommunityWithViewer(communityId, owner.id),
+      { username: user.username! },
+    )
     await warmUserMetricsCache(user, 0)
 
     await redeemInviteCode(user.id, invite.code)
@@ -78,7 +84,7 @@ describe('community membership user metrics invalidation', () => {
     await insertTestCommunityMember({ communityId, userId: user.id })
     await warmUserMetricsCache(user, 1)
 
-    await leaveCommunity(user.id, communityId)
+    await leaveCommunity(user.id, await loadCommunityWithViewer(communityId, user.id))
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 0)
@@ -90,7 +96,7 @@ describe('community membership user metrics invalidation', () => {
     await insertTestCommunityMember({ communityId, userId: user.id })
     await warmUserMetricsCache(user, 1)
 
-    await removeMember(owner.id, communityId, user.id)
+    await removeMember(owner.id, await getCommunityOrThrow(communityId), user.id)
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 0)
@@ -114,7 +120,7 @@ describe('community membership user metrics invalidation', () => {
     await insertTestCommunityMember({ communityId, userId: user.id })
     await warmUserMetricsCache(user, 0)
 
-    await updateMemberRole(owner.id, communityId, user.id, 'moderator')
+    await updateMemberRole(owner.id, await getCommunityOrThrow(communityId), user.id, 'moderator')
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 1)

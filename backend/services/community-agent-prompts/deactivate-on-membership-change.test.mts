@@ -66,7 +66,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
       })
 
       await withPromptDeactivation(() =>
-        updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member'),
+        updateMemberRole(owner.id, publicCommunity, mod.id, 'member'),
       )
 
       const p = await getCommunityAgentPrompt(prompt.id)
@@ -109,7 +109,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
       ])
 
       await withPromptDeactivation(() =>
-        updateMemberRole(owner.id, publicCommunity.id, mod.id, 'member'),
+        updateMemberRole(owner.id, publicCommunity, mod.id, 'member'),
       )
 
       const pA = await getCommunityAgentPrompt(promptA.id)
@@ -147,7 +147,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
       ])
 
       await withPromptDeactivation(() =>
-        updateMemberRole(owner.id, publicCommunity.id, mod1.id, 'member'),
+        updateMemberRole(owner.id, publicCommunity, mod1.id, 'member'),
       )
 
       const deactivated = await getCommunityAgentPrompt(prompt1.id)
@@ -169,7 +169,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         slotAllocated: true,
       })
 
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
+      await updateMemberRole(owner.id, publicCommunity, user.id, 'moderator')
 
       const p = await getCommunityAgentPrompt(prompt.id)
       expect(p!.is_slot_allocated).toBe(true)
@@ -191,7 +191,7 @@ describe('deactivateCommunityPromptsForUser via membership changes', () => {
         slotAllocated: true,
       })
 
-      await withPromptDeactivation(() => removeMember(owner.id, publicCommunity.id, mod.id))
+      await withPromptDeactivation(() => removeMember(owner.id, publicCommunity, mod.id))
 
       const p = await getCommunityAgentPrompt(prompt.id)
       expect(p!.is_slot_allocated).toBe(false)
