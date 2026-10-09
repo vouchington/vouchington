@@ -411,6 +411,13 @@ The registry validates scenario identities and expectation kinds, then verifies 
 registered scenario produced a captured result. The evaluator in `plan-gates.mts` implements
 `maxProcessedRows`, `usesIndexes`, `queryBinds`, `forbidCorrelatedAggregates`, and `singleLeaf`.
 Structural checks that do not fit these kinds have names in the same registry.
+`feed-posts-batch` hydrates fifty populated posts; `post-by-slug` reads the recommendation
+fixture. Their shared hydration contracts cap each subquery relation at the maximum measured
+work across forced custom and generic plans plus 20%, and require the post-ID indexes.
+The seed includes authored hashtags, explicit topics, two delivered images per measured post,
+and separate recommendation and category-rated review branches. Fixed background cohorts
+make those index probes representative; child index names resolve from the fixture's partition
+instead of pinning a calendar month.
 All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
 filter removals, and index rechecks, multiplied by actual loops.
 

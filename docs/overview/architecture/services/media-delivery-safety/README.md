@@ -82,6 +82,10 @@ the epoch without an application activation row, so the binder remains unknown.
 The [target-party policy](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#surface-targets-and-parties)
 defines notices, counter-notice rights and incidents.
 There is no generic public-image route, media discriminator, or image-wide allow fallback.
+Public projections join `view_publicly_projected_image_placements` by placement, revision, and
+image ids. The plain view exposes usable images only after the current registry generation's
+latest transition completes an allow; post, user, topic, community, and profile-link projections
+share that rule. `getPostImages` retains the existing off/report enforcement-mode behavior.
 The fresh-bootstrap schema is defined by the placement, delivery registry, surface binding, and
 repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their
 bindings; there is no historical population or upgrade path.

@@ -1,4 +1,5 @@
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
+import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
@@ -147,6 +148,7 @@ async function main() {
   await seedPostDataPointTopics(1000)
   await seedPostReviewTopicRatings(1000)
   await seedAnchorPostReviewTopicRating()
+  await seedViewPostsHydration()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
   await seedBloomReconciliation()

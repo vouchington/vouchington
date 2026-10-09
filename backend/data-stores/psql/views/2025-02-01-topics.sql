@@ -18,15 +18,21 @@ CREATE OR REPLACE VIEW view_embedded_topics AS
     (
       SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'topic-logo-image' AND surface.topic_id = topics.id AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS logo_image_placement,
     (
       SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'topic-hero-image' AND surface.topic_id = topics.id AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS hero_image_placement,
     topics.rewards_program_topic_id AS rewards_program_id,
@@ -64,15 +70,21 @@ CREATE OR REPLACE VIEW view_topics AS
     (
       SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'topic-logo-image' AND surface.topic_id = topics.id AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS logo_image_placement,
     (
       SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'topic-hero-image' AND surface.topic_id = topics.id AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC LIMIT 1
     ) AS hero_image_placement,
     topics.rewards_program_topic_id AS rewards_program_id,
