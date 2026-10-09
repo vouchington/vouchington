@@ -50,7 +50,6 @@ describe('durable Vitest workflow commands', () => {
   it('only enables coverage instrumentation for publishing workflows', () => {
     const conditionalCoverageWorkflows = [
       'tests-backend-modules.yml',
-      'tests-backend-credentialed.yml',
       'tests-tooling.yml',
       'tests-ts-shared.yml',
       'tests-portability.yml',

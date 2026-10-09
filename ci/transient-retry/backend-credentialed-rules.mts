@@ -39,7 +39,7 @@ export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRu
   // in `backend-credentialed-log-fingerprints.mts`, which the list does not model.
   description: `Backend credentialed job fails only in a probe owned by a credentialed Vitest project (${backendCredentialedProjectNames.toSorted().join(', ')}) and the failure carries a known provider-transport marker (timeout, an AWS-SDK request abort/timeout, a Bedrock 500, an OpenAI 429/500, an OpenRouter 429/5xx, or an OpenRouter flex-tier unavailability reported as \`server_error\`).`,
   rationale:
-    "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; the Backend area gate fails because the credentialed producer exits early, while independent coverage failures remain blocking. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
+    "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; the credentialed job is informational and fails the run without failing the Backend area gate, while independent coverage failures remain blocking. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
   exampleRunIds: [
     '29965903981',
     '29354792259',

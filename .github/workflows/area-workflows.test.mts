@@ -24,6 +24,10 @@ const detectChanges = './.github/workflows/ci-detect-changes.yml'
 const resultGateAction = 'vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@'
 // Jobs that consume suite results rather than run a suite.
 const fanIns = new Set(['coverage', 'codecov'])
+// Report-only suites the required gate does not wait on, by area. The backend live-provider smoke
+// checks fail a run without failing the gate; recorded fixtures in the unit suites gate the same
+// behavior (docs/development/tests.md#live-provider-smoke-checks).
+const reportOnly: Record<string, string[]> = { backend: ['test-backend-credentialed'] }
 
 const readWorkflow = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
@@ -141,13 +145,15 @@ describe('area workflows', () => {
   })
 
   // The gate is the required check: named after the area, always running, and fed every job
-  // except the informational Codecov upload.
+  // except the informational Codecov upload and the report-only suites.
   it.each(areas)('gates $area on every blocking job', ({ area, workflow }) => {
     const jobs = workflow.jobs ?? {}
     const gate = jobs[area]!
     const gateStep = gate.steps?.find(step => step.uses?.startsWith(resultGateAction))
     const results = JSON.parse(String(gateStep?.with?.results)) as Record<string, unknown>
-    const expected = Object.keys(jobs).filter(id => id !== area && id !== 'codecov')
+    const expected = Object.keys(jobs).filter(
+      id => id !== area && id !== 'codecov' && !(reportOnly[area] ?? []).includes(id),
+    )
     expect(gate.name).toBe(area)
     expect(gate.if).toBe('${{ !cancelled() }}')
     expect(needsOf(gate).toSorted()).toEqual(expected.toSorted())
