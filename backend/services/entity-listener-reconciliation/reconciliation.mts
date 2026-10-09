@@ -1,3 +1,4 @@
+import type { EntityReconciliationCandidate, EntityReconciliationWindow } from './types.mts'
 import { write, type QueryOptions } from '@data-stores/psql'
 import { streamEntityReconciliationRows } from './candidates-query.mts'
 import sql from 'sql-template-strings'
@@ -7,40 +8,11 @@ import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 const OVERLAP_MS = 5 * 60_000
 const REPLICA_LAG_MARGIN_MS = 60_000
 
-export type ReconciledEntityType =
-  | 'user'
-  | 'topic'
-  | 'post_created'
-  | 'post_updated'
-  | 'post_deleted'
-  | 'image'
-  | 'url'
-  | 'community'
-  | 'rss_feed_item'
-  | 'api_key'
-  | 'blocklisted_domain'
-  | 'embedding'
-  | 'post_slug'
-  | 'url_hostname'
-  | 'topic_alias'
-
-export type EntityReconciliationCandidate = {
-  entityType: ReconciledEntityType
-  entityId: string
-  changedAtEpochUs: string
-  changeId?: string
-  contentChanged?: boolean
-  referrerId?: string
-  // Users only: true when the account's UUIDv7 id falls at or after the window start, so its
-  // one-time creation effects (vote weight, referrer follow) still need recovery. A non-UUIDv7 id
-  // has no creation time, and absent means "only updated".
-  createdInWindow?: boolean
-}
-
-export type EntityReconciliationWindow = {
-  start: Date
-  end: Date
-}
+export type {
+  ReconciledEntityType,
+  EntityReconciliationCandidate,
+  EntityReconciliationWindow,
+} from './types.mts'
 
 export async function getEntityReconciliationWindow(
   intervalSeconds: number,

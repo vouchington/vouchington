@@ -3,10 +3,7 @@ import type { getEntityReconciliationLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 import sql from 'sql-template-strings'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import type {
-  EntityReconciliationWindow,
-  EntityReconciliationCandidate,
-} from './reconciliation.mts'
+import type { EntityReconciliationWindow, EntityReconciliationCandidate } from './types.mts'
 
 export function streamEntityReconciliationRows(
   window: EntityReconciliationWindow,

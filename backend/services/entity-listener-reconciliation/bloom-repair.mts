@@ -11,7 +11,7 @@ import { addKeyHashToBloomFilter } from '@services/api-keys/bloom-filter'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 import { addDomainsToEmailBloomFilter } from '@services/urls-domains-blacklist/email-bloom-filter'
 import { addEmbeddingHashesToBloomFilter } from '@services/bedrock-embeddings/bloom-filter/bloom-filter'
-import type { EntityReconciliationCandidate } from './reconciliation.mts'
+import type { EntityReconciliationCandidate } from './types.mts'
 
 export async function repairReconciledBloomKeys(
   candidate: EntityReconciliationCandidate,
