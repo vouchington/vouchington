@@ -45,6 +45,14 @@ registry so graceful shutdown closes it, then applies:
 - **Connection and prefix.** `connection` and the queue `prefix` come from the worker-queue settings.
   A test may pass `prefix` to isolate its queue.
 
+The `backend-no-direct-glide-worker` AST-grep rule flags `new Worker(...)` whenever the constructor
+resolves to GlideMQ's `Worker` through a named, aliased, namespace, or `await import()` binding, so
+`node:worker_threads` workers and `new Worker.RateLimitError()` stay legal. Only the factory file and
+test files (`*.test.mts`, `__tests__/**`, `backend/test-helpers/**`) are exempt: real-glide tests
+build raw workers on isolated queue prefixes to exercise transport behavior. The rule cannot follow a
+constructor passed through a parameter, so production code injects the factory instead of a
+constructor.
+
 Queue-wide limits are queue state, not worker options: a worker that must run one job at a time
 across replicas (for example `bedrock-embeddings-batch-creation` and `bluesky-follow-propagation`)
 calls `queue.setGlobalConcurrency(1)` before creating its worker, because `concurrency` bounds one
