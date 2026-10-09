@@ -116,7 +116,12 @@ describe('createMergedTool', () => {
       if (field === 'plan') different.meta.plan = 'plus'
       if (field === 'scopes') different.meta.requiredScopes = { mcp: ['posts:read'] }
       if (field === 'roles') different.roles = { administrator: true }
-      if (field === 'annotations') different.meta.annotations = { readOnlyHint: false }
+      if (field === 'annotations')
+        different.meta.annotations = {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+        }
       expect(() =>
         createMergedTool('read_example', 'Read Example', [
           { option: 'get', source: source('get') },
