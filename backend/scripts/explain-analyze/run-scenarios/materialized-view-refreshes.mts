@@ -47,9 +47,10 @@ registerScenarioContract('mv-top-hashtags-refresh', {
 })
 registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
   expectations: Object.entries({
-    rss_feeds: 3000,
+    // CI also seeds development feeds/topics before the EXPLAIN cohort.
+    rss_feeds: 3089,
     relation__user__follow__rss_feed: 3239,
-    topics: 4372,
+    topics: 5259,
     memberships: 360,
     membership_products: 5,
     membership_sources: 360,
@@ -60,7 +61,7 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
 })
 registerScenarioContract('rss-feeds-to-fetch-tiered', {
   expectations: [
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 3000 },
-    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 3000 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 3089 },
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 3089 },
   ],
 })
