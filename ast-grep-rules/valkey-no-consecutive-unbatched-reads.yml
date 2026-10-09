@@ -1,0 +1,119 @@
+id: valkey-no-consecutive-unbatched-reads
+language: Tsx
+severity: error
+message: >-
+  Consecutive independent Valkey reads on the same client cost one round trip each. Batch the
+  complete key set with MGET, Batch, or Lua. SCAN loops and reads that depend on the previous
+  result are exempt.
+note: >-
+  backend/data-stores/valkey/AGENTS.md: "Batch complete key sets with MGET, Batch, or Lua instead
+  of per-key sequential calls." The rule fires on the second of two adjacent awaited read
+  statements on the same named Valkey client when the second does not mention the first result.
+files:
+  - 'backend/**/*.ts'
+  - 'backend/**/*.mts'
+  - 'backend/**/*.cts'
+ignores:
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/test-helpers/**'
+constraints:
+  C:
+    regex: '^(cacheValkeyClient|sessionValkeyClient|dynamicConfigValkeyClient|dynamicConfigPrimaryValkeyClient|rateLimiterValkeyClient|bloomValkeyClient)$'
+  CMD:
+    regex: '^(get|mget|hget|hgetall|hmget|exists|ttl|pttl|smembers|sismember|zscore|zrange|zcard|scard|llen|type|strlen)$'
+  PREVCMD:
+    regex: '^(get|mget|hget|hgetall|hmget|exists|ttl|pttl|smembers|sismember|zscore|zrange|zcard|scard|llen|type|strlen)$'
+rule:
+  any:
+    - all:
+        - any:
+            - kind: expression_statement
+            - kind: lexical_declaration
+        - has:
+            stopBy: end
+            pattern: await $C.$CMD($$$ARGS)
+        - follows:
+            stopBy: neighbor
+            kind: expression_statement
+            has:
+              stopBy: end
+              pattern: await $C.$PREVCMD($$$PREVARGS)
+    - all:
+        - any:
+            - kind: expression_statement
+            - kind: lexical_declaration
+        - has:
+            stopBy: end
+            pattern: await $C.$CMD($$$ARGS)
+        - follows:
+            stopBy: neighbor
+            kind: lexical_declaration
+            all:
+              - has:
+                  stopBy: end
+                  pattern: await $C.$PREVCMD($$$PREVARGS)
+              - has:
+                  kind: variable_declarator
+                  has:
+                    field: name
+                    kind: identifier
+                    pattern: $RESULT
+        - not:
+            has:
+              stopBy: end
+              pattern: $RESULT
+examples:
+  - code: |-
+      const cached = await rateLimiterValkeyClient.get(valueKey)
+      const ttl = await rateLimiterValkeyClient.pttl(ttlKey)
+    isValid: false
+    file: 'backend/services/crawls/domain-rate-limit.mts'
+  - code: |-
+      await sessionValkeyClient.exists(getJwtStaleKey(userId))
+      await sessionValkeyClient.ttl(getJwtUserRevokedBeforeKey(userId))
+    isValid: false
+    file: 'backend/services/jwt-session/session-revocation-keys.mts'
+  - code: |-
+      const stale = await sessionValkeyClient.get(getJwtStaleKey(userId))
+      const result = await sessionValkeyClient.get(`${KEY_PREFIX}:${attemptId}`)
+    isValid: false
+    file: 'backend/services/mfa/login-attempt.mts'
+  - code: |-
+      const first = await cacheValkeyClient.get(firstKey)
+      const second = await cacheValkeyClient.get(`${PREFIX}:${first}`)
+    isValid: true
+    file: 'backend/data-stores/valkey/jwt-stale.mts'
+  - code: |-
+      const value = await sessionValkeyClient.get(key)
+      if (value === null) {
+        return null
+      }
+      const ttl = await sessionValkeyClient.pttl(key)
+    isValid: true
+    file: 'backend/services/jwt-session/session-revocation-keys.mts'
+  - code: |-
+      const cached = await cacheValkeyClient.get(cacheKey)
+      const ttl = await rateLimiterValkeyClient.pttl(ttlKey)
+    isValid: true
+    file: 'backend/services/crawls/domain-rate-limit.mts'
+  - code: |-
+      const [value, ttl] = await Promise.all([
+        rateLimiterValkeyClient.get(valueKey),
+        rateLimiterValkeyClient.pttl(ttlKey),
+      ])
+    isValid: true
+    file: 'backend/services/crawls/domain-rate-limit.mts'
+  - code: |-
+      let cursor = '0'
+      do {
+        const page = await cacheValkeyClient.scan(cursor, { match })
+        cursor = String(page[0])
+      } while (cursor !== '0')
+    isValid: true
+    file: 'backend/data-stores/valkey/jwt-stale.mts'
+  - code: |-
+      const first = await rateLimiterValkeyClient.get(firstKey)
+      const second = await rateLimiterValkeyClient.get(secondKey)
+    isValid: true
+    file: 'backend/services/crawls/domain-rate-limit.test.mts'
