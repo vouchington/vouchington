@@ -4559,9 +4559,6 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../memberships
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6315,9 +6312,6 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../memberships
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
@@ -8707,9 +8701,6 @@ importers:
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../memberships
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports

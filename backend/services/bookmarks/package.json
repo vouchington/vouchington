@@ -33,7 +33,6 @@
     "@services/contribution-gating": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
-    "@services/memberships": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
