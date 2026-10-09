@@ -55,25 +55,6 @@ export function enqueueProcessFollowerDistribution(distributionId: string): Enqu
   )
 }
 
-/**
- * Enqueues the chunk that follows `cursorRecipientId`. Called from inside the active chunk job,
- * which holds the base `process_follower_distribution__<id>` dedup id, so the continuation is
- * keyed by the cursor the job just advanced to; a base-id add would be skipped as a duplicate of
- * the job that is enqueueing it. Two jobs that advance to the same cursor collapse onto one id.
- */
-export function enqueueContinueFollowerDistribution(
-  distributionId: string,
-  cursorRecipientId: string,
-): EnqueueReturnType {
-  return enqueueProcessFollowerDistributionJob({ distributionId }, {
-    priority: PRIORITY_DEFAULT,
-    deduplication: {
-      id: `process_follower_distribution__${distributionId}__after__${cursorRecipientId}`,
-      mode: 'simple',
-    },
-  } satisfies Partial<JobOptions>)
-}
-
 export function enqueueBulkProcessFollowerDistributions(
   distributionIds: string[],
 ): EnqueueReturnType {

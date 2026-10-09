@@ -13,14 +13,16 @@ Processes manual follower share/send distribution intents in bounded chunks.
 - `processFollowerDistribution`
   - Processes one recipient chunk for a persisted `follower_distributions` row.
   - Inserts idempotent notification or feed-share rows using stable delivery ids.
-  - Enqueues a continuation job when more recipients may remain. The active chunk job still holds
-    its own dedup id (`process_follower_distribution__<id>`, or the continuation id below), and
-    GlideMQ skips an add under an id whose job is waiting or active. The continuation is
-    therefore keyed by the cursor the chunk just advanced to,
-    `process_follower_distribution__<id>__after__<cursorRecipientId>`, with `simple` dedup. Jobs
-    that advance to the same cursor collapse onto one continuation, and a `null` add means that
-    continuation is already queued or running. Each continuation id is one more entry in the
-    queue's dedup hash, which GlideMQ never trims.
+  - Continues inside the same job while more recipients may remain: after a chunk that is not
+    complete, the processor calls `moveToDelayed(Date.now())` through `processRetainedSweep`, and
+    the job runs the next chunk once the worker promotes it. The recipient cursor lives in
+    PostgreSQL, the job keeps its single `process_follower_distribution__<id>` debounce id, and the
+    move does not spend a retry attempt. A continuation enqueue would be skipped, because GlideMQ
+    skips an add under an id whose job is waiting or active and the running chunk job holds it.
+    `moveToDelayed` throws a delay error that the processor must let propagate.
+  - A chunk is complete when it returns fewer recipients than `recipient_chunk_size`, so a
+    distribution whose recipient count is a multiple of the chunk size runs one extra empty chunk
+    that marks it completed.
 - `backfillFollowerDistributions`
   - Streams incomplete distribution ids from PostgreSQL and bulk-enqueues processing jobs.
 

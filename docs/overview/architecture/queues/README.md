@@ -50,8 +50,8 @@ one bounded page, and the five-minute scheduler recovers missed or terminal enqu
 
 GlideMQ skips a `simple` or `debounce` add while the job holding that dedup id is waiting or
 active, so a processor must not enqueue its own continuation under the id its active job holds.
-[`follower-distributions`](follower-distributions/README.md) keys each chunk continuation by the
-cursor the chunk advanced to (`process_follower_distribution__<id>__after__<cursorRecipientId>`).
+[`follower-distributions`](follower-distributions/README.md) continues inside the same job
+(`moveToDelayed`), keeping its single dedup id.
 [`crawl_urls`](crawler/README.md) keys each 429 rate-limit replacement by its retry count
 (`crawl_url_ratelimit__<urlId>__<n>`) and fails the job, so GlideMQ retries it, when the
 replacement add returns no job.

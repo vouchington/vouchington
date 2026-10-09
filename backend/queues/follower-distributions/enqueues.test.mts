@@ -4,7 +4,6 @@ import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
   enqueueBackfillFollowerDistributions,
   enqueueBulkProcessFollowerDistributions,
-  enqueueContinueFollowerDistribution,
   enqueueProcessFollowerDistribution,
 } from './enqueues.mts'
 import { followerDistributions } from './queues.mts'
@@ -31,29 +30,6 @@ describe('follower distribution enqueue helpers', () => {
       deduplication: {
         id: `process_follower_distribution__${distributionId}`,
         mode: 'debounce',
-      },
-    })
-  })
-
-  it('keys a continuation by the advanced cursor, not by the active job dedup id', async () => {
-    const distributionId = `distribution-${randomUUID()}`
-    const cursorRecipientId = randomUUID()
-
-    await enqueueContinueFollowerDistribution(distributionId, cursorRecipientId)
-
-    const allJobs = await readAllQueueJobs(followerDistributions)
-    const jobs = allJobs.filter(
-      j => (j.data as { distributionId?: string }).distributionId === distributionId,
-    )
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0].opts).toMatchObject({
-      attempts: 3,
-      priority: 10,
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      deduplication: {
-        id: `process_follower_distribution__${distributionId}__after__${cursorRecipientId}`,
-        mode: 'simple',
       },
     })
   })

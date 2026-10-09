@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Job } from 'glide-mq'
 import type {
   advanceFollowerDistributionChunkCursor,
   processFollowerDistributionChunk,
@@ -61,7 +62,12 @@ describe('follower distribution worker processors with queue side effects', () =
 })
 
 function runProcessFollowerDistribution(data: { distributionId: string }) {
-  return processFollowerDistribution(data, {
+  const job = {
+    data,
+    updateData: vi.fn<Job['updateData']>(),
+    moveToDelayed: vi.fn<Job['moveToDelayed']>(),
+  }
+  return processFollowerDistribution(job, {
     advanceFollowerDistributionChunkCursor: mockAdvanceFollowerDistributionChunkCursor,
     enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     processFollowerDistributionChunk: mockProcessFollowerDistributionChunk,

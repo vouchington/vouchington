@@ -1,13 +1,12 @@
+import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   advanceFollowerDistributionChunkCursor,
   processFollowerDistributionChunk,
   streamIncompleteFollowerDistributionIdBatches,
 } from '@services/follower-distributions'
-import {
-  enqueueBulkProcessFollowerDistributions,
-  enqueueContinueFollowerDistribution,
-} from '@queues/follower-distributions/enqueues'
+import { enqueueBulkProcessFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
+import type { Job } from 'glide-mq'
 
 type FollowerDistributionDependencies = {
   advanceFollowerDistributionChunkCursor: typeof advanceFollowerDistributionChunkCursor
@@ -29,8 +28,14 @@ type BackfillFollowerDistributionDependencies = Pick<
   'enqueueBulkProcessFollowerDistributions' | 'streamIncompleteFollowerDistributionIdBatches'
 >
 
+/**
+ * Processes one recipient chunk and, while recipients may remain, moves the same job to delayed
+ * so it runs the next chunk. The active job holds the distribution's dedup id, so enqueueing a
+ * continuation under that id would be skipped. The delay error `moveToDelayed` throws must reach
+ * GlideMQ, so nothing here catches it; the PostgreSQL cursor carries the progress.
+ */
 export async function processFollowerDistribution(
-  data: { distributionId: string },
+  job: Pick<Job<{ distributionId: string }>, 'data' | 'updateData' | 'moveToDelayed'>,
   dependencies?: Partial<ProcessFollowerDistributionDependencies>,
 ) {
   const deps = {
@@ -39,25 +44,22 @@ export async function processFollowerDistribution(
     processFollowerDistributionChunk,
     ...dependencies,
   }
-  const result = await deps.processFollowerDistributionChunk(data.distributionId, {
-    deferCursorUpdate: true,
-  })
-  if (result.notificationsToDeliver.length > 0) {
-    await deps.enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
-  }
-  if (result.cursorRecipientId) {
-    await deps.advanceFollowerDistributionChunkCursor(
-      result.distributionId,
-      result.cursorRecipientId,
-      result.completed,
-    )
-    // This job is still active and holds its own dedup id, so the next chunk is keyed by the
-    // cursor just advanced to. A null add means that exact continuation is already queued or running.
-    if (!result.completed) {
-      await enqueueContinueFollowerDistribution(data.distributionId, result.cursorRecipientId)
+  return processRetainedSweep(job, async () => {
+    const result = await deps.processFollowerDistributionChunk(job.data.distributionId, {
+      deferCursorUpdate: true,
+    })
+    if (result.notificationsToDeliver.length > 0) {
+      await deps.enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
     }
-  }
-  return result
+    if (result.cursorRecipientId) {
+      await deps.advanceFollowerDistributionChunkCursor(
+        result.distributionId,
+        result.cursorRecipientId,
+        result.completed,
+      )
+    }
+    return { ...result, hasMore: !result.completed }
+  })
 }
 
 export async function backfillFollowerDistributions(
