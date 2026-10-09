@@ -29,6 +29,15 @@ This service calculates trending topics by counting recent post and RSS feed ite
 | `limit`     | `number`                   | Results per page (1-100)           |
 | `after`     | `string?`                  | Score-based cursor for pagination  |
 
+## Internal scoped reads
+
+Direct service callers may provide `topicIds` to rank a selected topic set and
+`referenceTime` to evaluate the lookback window against one explicit instant.
+Selection applies to both relation aggregates and the active-topic result set; an
+empty selection returns no topics. Without these options, the service keeps its
+global ranking and current wall-clock window. These options are not REST or MCP
+parameters; their existing pagination and score contracts remain unchanged.
+
 ## Response
 
 Each result includes:
