@@ -197,6 +197,15 @@ start_postgres() {
   image="$(pinned_image 'pgvector/pgvector:pg18@sha256:[0-9a-f]+' .github/workflows/initialize-smoke-test.yml)"
   ensure_image "$image"
 
+  # A cached VM keeps the container from an earlier pin; retagging does not change it.
+  local container_image
+  container_image="$(docker inspect -f '{{.Image}}' "$POSTGRES_CONTAINER" 2>/dev/null || true)"
+  if [ -n "$container_image" ] &&
+    [ "$container_image" != "$(docker image inspect -f '{{.Id}}' "${image%@*}")" ]; then
+    echo -e "${YELLOW}Recreating $POSTGRES_CONTAINER for the updated PostgreSQL image pin.${NC}"
+    docker rm -f -v "$POSTGRES_CONTAINER" >/dev/null
+  fi
+
   if [ "$(docker inspect -f '{{.State.Running}}' "$POSTGRES_CONTAINER" 2>/dev/null || true)" != true ]; then
     echo -e "${BLUE}Starting PostgreSQL 18 on 127.0.0.1:5432...${NC}"
     if docker inspect "$POSTGRES_CONTAINER" >/dev/null 2>&1; then
