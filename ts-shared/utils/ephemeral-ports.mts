@@ -44,6 +44,25 @@ export async function listenOnEphemeralPort(
   throw new EphemeralListenerAttemptsExhaustedError(maxBindAttempts)
 }
 
+export type LoopbackHost = '::1' | '127.0.0.1'
+
+/**
+ * Binds `server` to an ephemeral port on IPv6 loopback, falling back to IPv4
+ * loopback only when the host has no IPv6 support (EAFNOSUPPORT, e.g. a
+ * kernel booted with `ipv6.disable=1`, as Claude Code cloud containers are).
+ */
+export async function listenOnLoopbackEphemeralPort(
+  server: Server,
+  options: EphemeralListenerOptions = {},
+): Promise<{ host: LoopbackHost; port: number }> {
+  try {
+    return { host: '::1', port: await listenOnEphemeralPort(server, '::1', options) }
+  } catch (err) {
+    if (!(err instanceof Error && 'code' in err && err.code === 'EAFNOSUPPORT')) throw err
+    return { host: '127.0.0.1', port: await listenOnEphemeralPort(server, '127.0.0.1', options) }
+  }
+}
+
 function listenOnHost(server: Server, host: string): Promise<void> {
   return new Promise((resolve, reject) => {
     server.once('error', reject)
