@@ -45,3 +45,13 @@ durable checkpoint, while dry runs pass their read-only UUID cursor in the conti
 queue that converges a story post to the complete active set of eligible story-member URLs. Story
 mutations persist generation-fenced work in PostgreSQL before enqueueing; each job scans or prunes
 one bounded page, and the five-minute scheduler recovers missed or terminal enqueues.
+
+## Self-continuations under GlideMQ deduplication
+
+GlideMQ skips a `simple` or `debounce` add while the job holding that dedup id is waiting or
+active, so a processor must not enqueue its own continuation under the id its active job holds.
+[`follower-distributions`](follower-distributions/README.md) keys each chunk continuation by the
+cursor the chunk advanced to (`process_follower_distribution__<id>__after__<cursorRecipientId>`).
+[`crawl_urls`](crawler/README.md) keys each 429 rate-limit replacement by its retry count
+(`crawl_url_ratelimit__<urlId>__<n>`) and fails the job, so GlideMQ retries it, when the
+replacement add returns no job.
