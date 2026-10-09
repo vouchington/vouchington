@@ -53,22 +53,3 @@ export function walk(node: UnknownNode | undefined, visit: (node: UnknownNode) =
     }
   }
 }
-
-export function nodeLine(node: UnknownNode): number {
-  return node.loc?.start.line ?? 1
-}
-
-export function propertyName(node: UnknownNode | undefined): string | null {
-  if (!node) return null
-  if (node.type === 'Identifier') return typeof node.name === 'string' ? node.name : null
-  if (node.type === 'Literal') return typeof node.value === 'string' ? node.value : null
-  return null
-}
-
-export function isFunctionLike(node: UnknownNode): boolean {
-  return (
-    node.type === 'FunctionDeclaration' ||
-    node.type === 'FunctionExpression' ||
-    node.type === 'ArrowFunctionExpression'
-  )
-}
