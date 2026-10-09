@@ -697,8 +697,8 @@ importers:
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
       '@modules/activitypub-inbox-storage-policy':
         specifier: workspace:^
         version: link:../modules/activitypub-inbox-storage-policy
@@ -2206,8 +2206,8 @@ importers:
   backend/md:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
@@ -2289,8 +2289,8 @@ importers:
         version: link:../../../ts-shared/session-jwt
     devDependencies:
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
 
   backend/modules/aws:
     dependencies:
@@ -2641,8 +2641,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
       '@modules/on-error':
         specifier: workspace:^
         version: link:../on-error
@@ -3450,8 +3450,8 @@ importers:
   backend/rss:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
       '@services/api-keys':
         specifier: workspace:^
         version: link:../services/api-keys
@@ -4610,8 +4610,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@jongleberry/api-server':
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^3.0.1
+        version: 3.0.1
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -13665,7 +13665,7 @@ importers:
         version: 3.1146.0
       '@sentry/aws-serverless':
         specifier: ^11.4.0
-        version: 11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
+        version: 11.4.0
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -15530,8 +15530,8 @@ packages:
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
 
-  '@jongleberry/api-server@2.1.0':
-    resolution: {integrity: sha512-L3lddxsqp6doNDowrsEweK1hJBQhfzhXxNmE4V1ofMCxCEwOVC+MSC+xRfKvsdhhW6+XpsgQVxufoEW9WB32ZA==}
+  '@jongleberry/api-server@3.0.1':
+    resolution: {integrity: sha512-0LRSCERVQ03Uy/LVlc1tuFYNLwc1vIPaMNUcACIxi3fVUQnxDKzu1gpnszXnxNHtQFcsi/xSmjt5edXUsafWsg==}
     engines: {node: '>=24.0.0'}
 
   '@jongleberry/vurst-ai-darwin-arm64@0.4.3':
@@ -19455,6 +19455,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -19786,6 +19791,10 @@ packages:
   content-type@2.1.0:
     resolution: {integrity: sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag==}
     engines: {node: '>=18'}
+
+  content-type@3.1.1:
+    resolution: {integrity: sha512-GW4qUsfFo59d0HbUibDlWv5wPz+vAAcaTWbKIuKCf0JkC7wWkSyf8f13IpXn5JkeMlB2P8iTSSIjwXljorg2vA==}
+    engines: {node: '>=22'}
 
   conventional-changelog-angular@9.4.0:
     resolution: {integrity: sha512-HdxRxuS8bBXVIuo4V82gvSwAXT0vYQUizrjs/izmPg5JdDstr8v8I5hduGL3iQbG+o310dUDxC4+LetuS5hu9w==}
@@ -22859,6 +22868,10 @@ packages:
     resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
     engines: {node: '>= 18'}
 
+  type-is@3.0.0:
+    resolution: {integrity: sha512-txjx+lbH40MgknWZzdizD8FjUukflN5xG/i8t6tggtJuHkEjHD1t6eYE4LwJRDImCbzU6FCg/IAsoyy/BoFIfw==}
+    engines: {node: '>= 22'}
+
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
@@ -24835,7 +24848,7 @@ snapshots:
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
 
-  '@jongleberry/api-server@2.1.0':
+  '@jongleberry/api-server@3.0.1':
     dependencies:
       bytes: 3.1.2
       compressible: 2.0.18
@@ -24845,7 +24858,7 @@ snapshots:
       http-errors: 2.0.1
       json-stream-stringify: 3.1.7
       negotiator: 1.1.0
-      type-is: 2.1.0
+      type-is: 3.0.0
 
   '@jongleberry/vurst-ai-darwin-arm64@0.4.3':
     optional: true
@@ -27200,7 +27213,7 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.4.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))':
+  '@sentry/aws-serverless@11.4.0':
     dependencies:
       '@sentry/conventions': 0.25.0
       '@sentry/core': 11.4.0
@@ -28495,8 +28508,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
     optional: true
 
@@ -28807,6 +28820,8 @@ snapshots:
   content-type@1.0.5: {}
 
   content-type@2.1.0: {}
+
+  content-type@3.1.1: {}
 
   conventional-changelog-angular@9.4.0:
     dependencies:
@@ -31692,7 +31707,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -32266,6 +32281,10 @@ snapshots:
       content-type: 2.1.0
       media-typer: 1.1.0
       mime-types: 3.0.2
+
+  type-is@3.0.0:
+    dependencies:
+      content-type: 3.1.1
 
   typescript@6.0.3: {}
 

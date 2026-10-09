@@ -25,7 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
-    "@jongleberry/api-server": "^2.1.0",
+    "@jongleberry/api-server": "^3.0.1",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/app-attestation": "workspace:^",
