@@ -1,5 +1,6 @@
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
+import { boundRateLimitDeferral } from '@modules/queue-errors'
 import type { Job, Queue, Worker } from 'glide-mq'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { BlueskyFollowPropagationJobs } from '@queues/bluesky-follow-propagation/types'
@@ -10,7 +11,9 @@ export async function processBlueskyFollowPropagationJob(job: Job): Promise<unkn
   if (!fn || typeof fn !== 'function') {
     throw new Error(`Bluesky follow propagation job ${job.name} not found`)
   }
-  return fn(job.data as never)
+  // The follower's own PDS can name a wait on every answer, so a 429 stops requeuing for free once
+  // the job is a day old.
+  return boundRateLimitDeferral(job, async () => fn(job.data as never))
 }
 
 export async function createBlueskyFollowPropagationWorker(

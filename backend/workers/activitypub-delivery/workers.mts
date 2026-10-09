@@ -1,5 +1,6 @@
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
+import { boundRateLimitDeferral } from '@modules/queue-errors'
 import type { Job } from 'glide-mq'
 import { QUEUE_NAME } from '@queues/activitypub-delivery/config'
 import type { ActivityPubDeliveryJobs } from '@queues/activitypub-delivery/types'
@@ -20,7 +21,9 @@ export const activitypubDeliveryWorker = createWorker(
     if (!fn || typeof fn !== 'function') {
       throw new Error(`ActivityPub delivery job ${job.name} not found`)
     }
-    return fn(job.data as never)
+    // A remote inbox can name a Retry-After on every answer, so a 429 stops requeuing for free
+    // once the delivery is a day old.
+    return boundRateLimitDeferral(job, async () => fn(job.data as never))
   },
   {
     concurrency: getWorkerConcurrency('activitypubDelivery', { baseline: 5 }),

@@ -16,6 +16,12 @@ export const DEFAULT_RATE_LIMIT_DELAY_MS = 60_000
  */
 export const MAX_RATE_LIMIT_DELAY_MS = 15 * 60_000
 
+/**
+ * Longest a job on an untrusted host may keep being requeued without spending an attempt, counted
+ * from the job's creation. See `boundRateLimitDeferral`.
+ */
+export const MAX_RATE_LIMIT_DEFERRAL_AGE_MS = 24 * 60 * 60_000
+
 type DeferrableJob = Pick<Job, 'moveToDelayed'>
 type HeaderSource = Parameters<typeof getHeaderValue>[0]
 
@@ -96,4 +102,27 @@ export function throwIfRateLimitedResponse(
   cancelResponseBody(response)
   const retryAfterMs = getRetryAfterMs(response)
   throwRateLimited(retryAfterMs, new HttpRateLimitError(endpoint, response.status, retryAfterMs))
+}
+
+/**
+ * Runs a processor and, once the job is older than `MAX_RATE_LIMIT_DEFERRAL_AGE_MS`, turns a
+ * no-attempt requeue signal into its plain `cause` so GlideMQ retries it under the job's attempts
+ * and the job reaches its terminal path. Wrap the processor of a queue whose jobs call hosts the
+ * operator does not control (fediverse inboxes, a user's own PDS): such a host can name a wait on
+ * every answer, and a requeue otherwise has no limit. First-party provider queues do not need it
+ * because the provider's throttle ends.
+ */
+export async function boundRateLimitDeferral<T>(
+  job: Pick<Job, 'timestamp'>,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run()
+  } catch (err) {
+    const expired = Date.now() - job.timestamp >= MAX_RATE_LIMIT_DEFERRAL_AGE_MS
+    if (!(err instanceof Worker.RateLimitError) || !expired) throw err
+    throw err.cause instanceof Error
+      ? err.cause
+      : new Error('Rate limit deferral age exceeded', { cause: err })
+  }
 }
