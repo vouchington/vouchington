@@ -78,7 +78,7 @@ export function extractReportEntityList(docPath: string, content: string): strin
         candidate.type === 'paragraph' &&
         normalizeMarkdownText(candidate).includes('The Report action is available on'),
     )
-    return node ? extractInlineCodeTokens(node) : []
+    return node ? extractInlineCodeTokens(content, node) : []
   }
   return []
 }

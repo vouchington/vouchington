@@ -12,6 +12,22 @@ import {
 } from './moderation-policy-doc-sync-markdown.mts'
 
 describe('moderation reporting Markdown extraction', () => {
+  it('keeps navigation entity tokens inside the selected Report paragraph', () => {
+    const markdown = [
+      'Unrelated `spam` paragraph.',
+      '',
+      'The Report action is available on **`post`**, [`` comment ``](https://example.test), and `post`.',
+      '',
+      'Another `user` paragraph.',
+    ].join('\r\n')
+
+    expect(extractReportEntityList('docs/requirements/navigation/ACTIONS.md', markdown)).toEqual([
+      'post',
+      'comment',
+      'post',
+    ])
+  })
+
   it('normalizes first-column tokens from loose rows without a GFM table', () => {
     expect(extractFirstColumnTokens('| `alpha` | one |\n| beta | two |')).toEqual(['alpha', 'beta'])
   })
