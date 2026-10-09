@@ -60,6 +60,58 @@ describe('reactivating finished job records through real GlideMQ', () => {
     }
   })
 
+  it('adds fresh ids in one pass and adds nothing for a job that is still queued', async () => {
+    const harness = openHarness(async () => undefined)
+    const fresh = { id: randomUUID() }
+    const queued = { id: randomUUID(), delayMs: 60_000 }
+    const dispatch = (inputs: Payload[]) =>
+      enqueueBulkReactivatingFinished({
+        queue: harness.queue,
+        inputs,
+        jobIdOf: input => input.id,
+        enqueueBulk: harness.addBulk,
+      })
+
+    try {
+      const freshRun = harness.settled(fresh.id)
+      await expect(dispatch([fresh])).resolves.toMatchObject([{ id: fresh.id }])
+      await freshRun
+
+      await harness.add(queued)
+      await expect(dispatch([queued])).resolves.toEqual([])
+      await expect((await harness.queue.getJob(queued.id))?.getState()).resolves.toBe('delayed')
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('adds an id whose skipped record was trimmed before the lookup', async () => {
+    const harness = openHarness(async () => undefined)
+    const trimmed = { id: randomUUID() }
+    let skipFirstAdd = true
+
+    try {
+      const run = harness.settled(trimmed.id)
+      const added = await enqueueBulkReactivatingFinished({
+        queue: harness.queue,
+        inputs: [trimmed],
+        jobIdOf: input => input.id,
+        // The first add is skipped as GlideMQ does while a record holds the id; the record is gone
+        // by the time the lookup runs, as when retention trims it in between.
+        enqueueBulk: async inputs => {
+          if (!skipFirstAdd) return harness.addBulk(inputs)
+          skipFirstAdd = false
+          return []
+        },
+      })
+      await run
+
+      expect(added.map(job => job.id)).toEqual([trimmed.id])
+    } finally {
+      await harness.close()
+    }
+  })
+
   it('keeps an ordering group serialized when it reactivates a finished ordered job', async () => {
     const held = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
