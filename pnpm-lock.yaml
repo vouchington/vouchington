@@ -4447,8 +4447,8 @@ importers:
   backend/services/bluesky-follows:
     dependencies:
       '@atproto/api':
-        specifier: ^0.23.1
-        version: 0.23.1
+        specifier: ^0.24.0
+        version: 0.24.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -14196,8 +14196,8 @@ packages:
     resolution: {integrity: sha512-vfvoDhu6ds6BT3Pqe+d2/LBU1WpDRtt69y6zltlfMCoucPm82m1j50/Wb6xTvv+oZ+2j0JyZVXsmXQ12SWYQJg==}
     engines: {node: '>=22'}
 
-  '@atproto/api@0.23.1':
-    resolution: {integrity: sha512-Km18bVQ5KC/On8xMoQHnns9pVZ6cXHtLQc9LLuMDFeblvveFySGMW8BeIkCFN6G0Z/uvu7KL+iyr8yJ0zZdm/A==}
+  '@atproto/api@0.24.0':
+    resolution: {integrity: sha512-K2x5CCiS+ZLxcdrrBXov53Ib+Lql4MnjEFmJbXaXT494t4tUN++7j+mC3ZfVZFyX1i7RAb9i53dE4auX9bwBKA==}
     engines: {node: '>=22'}
 
   '@atproto/common-web@0.5.14':
@@ -23476,7 +23476,7 @@ snapshots:
 
   '@atproto-labs/simple-store@0.5.1': {}
 
-  '@atproto/api@0.23.1':
+  '@atproto/api@0.24.0':
     dependencies:
       '@atproto/common-web': 0.5.14
       '@atproto/lexicon': 0.7.16
