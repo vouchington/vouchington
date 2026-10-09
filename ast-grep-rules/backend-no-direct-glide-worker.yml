@@ -1,0 +1,257 @@
+id: backend-no-direct-glide-worker
+language: Tsx
+severity: error
+message: 'Create GlideMQ workers with createWorker or createBatchWorker from @data-stores/valkey-glide-mq. A direct `new Worker(...)` skips the factory: request timeout, saturation retry, stall budget, command-client isolation, and the shutdown registry.'
+# Test files are excluded on purpose: real-glide tests build raw workers on isolated queue prefixes
+# to exercise transport behavior, and they close those workers themselves.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/data-stores/valkey-glide-mq/glide-mq-factory.mts'
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**'
+  - 'backend/test-helpers/**'
+rule:
+  kind: new_expression
+  any:
+    # import { Worker, type Job } from 'glide-mq'
+    - all:
+        - has:
+            field: constructor
+            kind: identifier
+            regex: ^Worker$
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              stopBy: end
+              kind: import_specifier
+              all:
+                - has:
+                    field: name
+                    regex: ^Worker$
+                - not:
+                    has:
+                      field: alias
+                      kind: identifier
+                - inside:
+                    kind: import_statement
+                    stopBy: end
+                    has:
+                      field: source
+                      regex: glide-mq
+    # import { Worker as GlideWorker } from 'glide-mq'
+    - all:
+        - has:
+            field: constructor
+            kind: identifier
+            pattern: $WORKER
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              stopBy: end
+              kind: import_specifier
+              all:
+                - has:
+                    field: name
+                    regex: ^Worker$
+                - has:
+                    field: alias
+                    pattern: $WORKER
+                - inside:
+                    kind: import_statement
+                    stopBy: end
+                    has:
+                      field: source
+                      regex: glide-mq
+    # import * as glide from 'glide-mq'; new glide.Worker(...)
+    - all:
+        - has:
+            field: constructor
+            kind: member_expression
+            all:
+              - has:
+                  field: object
+                  kind: identifier
+                  pattern: $NAMESPACE
+              - has:
+                  field: property
+                  regex: ^Worker$
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              stopBy: end
+              kind: namespace_import
+              all:
+                - has:
+                    kind: identifier
+                    pattern: $NAMESPACE
+                - inside:
+                    kind: import_statement
+                    stopBy: end
+                    has:
+                      field: source
+                      regex: glide-mq
+    # const { Worker } = await import('glide-mq')
+    - all:
+        - has:
+            field: constructor
+            kind: identifier
+            regex: ^Worker$
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              stopBy: end
+              kind: variable_declarator
+              regex: ^\{[^}]*\bWorker\b[^}]*\}\s*=\s*await\s+import\(\s*['"]glide-mq['"]\s*\)
+examples:
+  - file: backend/workers/vote-weight/workers.mts
+    code: |
+      import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+      import { Worker, type Job } from 'glide-mq'
+
+      export const voteWeight = new Worker('vote-weight', processJob, {
+        connection: workerQueueConnection,
+        prefix: workerQueuePrefix,
+        concurrency: 5,
+      })
+    isValid: false
+  - file: backend/workers/bloom-filters/workers.mts
+    code: |
+      import {
+        workerQueueConnection,
+        workerQueuePrefix,
+      } from '@data-stores/valkey-glide-mq'
+      import type { BloomFilterProcessorJobs } from '@queues/bloom-filters/types'
+      import { type Job, Worker } from 'glide-mq'
+
+      export const bloomFilters = new Worker('bloom-filters', (jobs: Job[]) => runAll(jobs), {
+        connection: workerQueueConnection,
+        prefix: workerQueuePrefix,
+        batch: { size: 10, timeout: 1000 },
+      })
+    isValid: false
+  - file: backend/workers/images/processors/create-images-worker.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      export function createImagesWorker() {
+        return new Worker<ImagesJobData>('images', handleImagesJob, { connection, prefix })
+      }
+    isValid: false
+  - file: backend/workers/ai-agents/workers/core.mts
+    code: |
+      import { Worker as GlideWorker, type Job } from 'glide-mq'
+
+      export const worker = new GlideWorker('ai_agents', (job: Job) => run(job), { connection })
+    isValid: false
+  - file: backend/workers/ai-agents/workers/core.mts
+    code: |
+      import { Queue, Worker as GlideWorker } from 'glide-mq'
+
+      export const worker = new GlideWorker('ai_agents', run, { connection })
+    isValid: false
+  - file: backend/workers/ai-agents/workers/core.mts
+    code: |
+      import * as glide from 'glide-mq'
+
+      export const worker = new glide.Worker('ai_agents', run, { connection })
+    isValid: false
+  - file: backend/workers/ai-agents/workers/core.mts
+    code: |
+      const { Worker } = await import('glide-mq')
+
+      export const worker = new Worker('ai_agents', run, { connection })
+    isValid: false
+  - file: backend/workers/bluesky-follow-propagation/workers.mts
+    code: |
+      import { createWorker } from '@data-stores/valkey-glide-mq'
+      import type { Job } from 'glide-mq'
+
+      export const worker = createWorker('bluesky-follow-propagation', (job: Job) => run(job), {
+        concurrency: 1,
+      })
+    isValid: true
+  - file: backend/workers/bloom-filters/workers.mts
+    code: |
+      import { createBatchWorker } from '@data-stores/valkey-glide-mq'
+      import type { Job } from 'glide-mq'
+
+      export const bloomFilters = createBatchWorker('bloom-filters', (jobs: Job[]) => runAll(jobs), {
+        dedicatedCommandClient: true,
+        batch: { size: 10, timeout: 1000 },
+      })
+    isValid: true
+  - file: backend/data-stores/valkey-glide-mq/glide-mq-factory.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      export function buildWorker(name, processor, options) {
+        return new Worker(name, processor, options)
+      }
+    isValid: true
+  - file: backend/workers/vote-weight/workers.test.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      const worker = new Worker('vote-weight-test', processJob, { connection, prefix })
+    isValid: true
+  - file: backend/workers/ai-agents/workers/core.spend-cap.real-glide.mock.test.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      const worker = new Worker('ai-spend-cap-test', processJob, { connection, prefix })
+    isValid: true
+  - file: backend/workers/crawl-hostnames/__tests__/processors.sweep-coalescing.real-glide.mock.test.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      const worker = new Worker('crawl-hostnames-test', processJob, { connection, prefix })
+    isValid: true
+  - file: backend/modules/openai-utils/rate-limit.mts
+    code: |
+      import { Worker } from 'glide-mq'
+
+      export function throwRateLimit(): never {
+        throw new Worker.RateLimitError()
+      }
+    isValid: true
+  - file: backend/modules/openai-utils/rate-limit.mts
+    code: |
+      import { Worker } from 'node:worker_threads'
+
+      export const worker = new Worker(new URL('repo-file-policy-worker.mts', import.meta.url), {
+        workerData: { root },
+      })
+    isValid: true
+  - file: backend/workers/example/workers.mts
+    code: |
+      import { Worker as ThreadWorker } from 'node:worker_threads'
+      import { Worker } from 'glide-mq'
+
+      export const thread = new ThreadWorker(new URL('thread.mts', import.meta.url))
+    isValid: true
+  - file: backend/workers/example/workers.mts
+    code: |
+      import { Worker as GlideWorker } from 'glide-mq'
+
+      export const thread = new Worker(new URL('thread.mts', import.meta.url))
+    isValid: true
+  - file: backend/workers/example/workers.mts
+    code: |
+      import * as glide from 'glide-mq'
+      import * as threads from 'node:worker_threads'
+
+      export const thread = new threads.Worker(new URL('thread.mts', import.meta.url))
+    isValid: true
+  - file: backend/workers/example/workers.mts
+    code: |
+      import type { Worker } from 'glide-mq'
+
+      export function describeWorker(worker: Worker): string {
+        return worker.name
+      }
+    isValid: true

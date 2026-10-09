@@ -9,7 +9,7 @@ Voucha's Valkey layer is a thin facade over [`valkyries`](https://github.com/jon
 | `@data-stores/valkey-core`         | `../valkey-core`         | Shared leaf: `config`, `app-integration` (error handler + analytics bridge), `glide-mq-client` (connection primitive), `glide-mq-registry`, `shutdown`                  |
 | `@data-stores/valkey-pubsub`       | `../valkey-pubsub`       | `createChannelPubSub` plus the image-state / data-request / article-sync / import-progress facades                                                                      |
 | `@data-stores/valkey-rate-limiter` | `../valkey-rate-limiter` | `RateLimiter` facade                                                                                                                                                    |
-| `@data-stores/valkey-glide-mq`     | `../valkey-glide-mq`     | `glide-mq-factory` (createQueue/createWorker/createFlowProducer/enqueue helpers), shared command client, enqueue retry                                                  |
+| `@data-stores/valkey-glide-mq`     | `../valkey-glide-mq`     | `glide-mq-factory` (createQueue/createWorker/createBatchWorker/createFlowProducer/enqueue helpers), shared and dedicated command clients, enqueue retry                 |
 | `@data-stores/valkey` (this)       | here                     | Service-only concerns: cache, cache metrics, Bloom filters, conditional operations, dynamic config, idempotency keys, JWT staleness, clients, scripts, utils, and types |
 
 Every package depends only on `valkey-core` (star layering, cycle-free). The `@data-stores/valkey` barrel has no path to the three extracted concerns: consumers of pubsub, rate limiting, or queues must declare the matching per-concern package in their `package.json`.

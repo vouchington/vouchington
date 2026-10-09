@@ -1,9 +1,5 @@
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
-import {
-  processRetainedSweep,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
 import { processFindYourFriendsDispatcher } from './processors.mts'
@@ -11,12 +7,16 @@ import { syncFacebookFriends } from '@services/oauth-facebook/friends'
 import { syncXFriends } from '@services/oauth-x/friends'
 import { syncGithubFriends } from '@services/oauth-github/friends'
 import type { FindYourFriendsSyncJobs } from '@queues/find-your-friends/types'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 
-export const findYourFriends = new Worker(
+export const findYourFriends = createWorker(
   QUEUE_NAME,
-  (job: Job) => {
-    if (job.name === 'enqueueDispatchFindYourFriends') return enqueueDispatchFindYourFriends()
+  async (job: Job) => {
+    if (job.name === 'enqueueDispatchFindYourFriends') {
+      // Awaited here: the lint rule does not treat a promise returned to a call argument as handled.
+      const enqueued = await enqueueDispatchFindYourFriends()
+      return enqueued
+    }
     if (job.name === 'dispatchFindYourFriends')
       return processRetainedSweep(job, save =>
         processFindYourFriendsDispatcher(undefined, job.data, save),
@@ -62,8 +62,7 @@ export const findYourFriends = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('findYourFriends', { baseline: 5 }),
   },
 )

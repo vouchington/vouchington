@@ -32,10 +32,10 @@ export interface BlueskyOAuthStores {
 // freshly rotated session in SessionStore — and an AS that additionally does refresh-token-reuse
 // detection can then revoke both tokens, permanently invalidating that DID's link and forcing the
 // user to re-link. A real distributed lock would close this, but every Bluesky-token-touching
-// queue job this codebase adds is required to run at worker concurrency 1, which already removes
-// the only multi-process writer this app controls; the remaining exposure is a concurrent
-// interactive request racing a queue job, judged rare enough that the lock is a follow-up rather
-// than a Phase D blocker.
+// queue job this codebase adds is required to run at queue-wide concurrency 1 (worker concurrency 1
+// plus setGlobalConcurrency(1) on its queue), which already removes the only multi-process writer
+// this app controls; the remaining exposure is a concurrent interactive request racing a queue
+// job, judged rare enough that the lock is a follow-up rather than a Phase D blocker.
 //
 // fetch is bound to the API's guarded external dispatcher (getExternalFetch()) so the SDK's token
 // and PAR requests flow through the same egress guardrail as first-party fetches — see

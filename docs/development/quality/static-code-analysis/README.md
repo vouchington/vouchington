@@ -255,6 +255,15 @@ converted or documented; a loop that must stay sequential (for example a reactiv
 reads the retained job first) takes an `ast-grep-ignore` comment with the reason. Function names
 that already add one batch per iteration (`enqueue*Batch`) also match the name pattern.
 
+The `backend-no-direct-glide-worker` AST-grep rule requires every backend GlideMQ worker to come from
+`createWorker` or `createBatchWorker` in `@data-stores/valkey-glide-mq`. It flags `new Worker(...)`
+when the constructor resolves to GlideMQ's `Worker` through a named, aliased, namespace, or
+`await import()` binding, so `node:worker_threads` workers and `new Worker.RateLimitError()` stay
+legal. Only the factory file and test files (`*.test.mts`, `__tests__/**`, `backend/test-helpers/**`)
+are exempt: real-glide tests build raw workers on isolated queue prefixes to exercise transport
+behavior. The rule cannot follow a constructor passed through a parameter or dependency container,
+so production code does not inject one; it injects the factory instead.
+
 Four narrow `required-entrypoint-reachability` instances independently require Valkey pub/sub,
 rate-limiter, GlideMQ root, and direct GlideMQ factory consumers to load the actual
 `valkey-core/shutdown.mts` owner. The local `valkey-shutdown-owner-registration` AST-grep rule

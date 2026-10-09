@@ -84,7 +84,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       [
         'bluesky-follow-propagation',
         'bluesky-follow-propagation',
-        'blueskyFollowPropagationWorker',
+        'createBlueskyFollowPropagationWorker',
       ],
     ] as const
     const byQueue = (name: string) =>

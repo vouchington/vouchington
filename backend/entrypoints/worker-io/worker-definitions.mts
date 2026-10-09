@@ -183,8 +183,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'bluesky-follow-propagation',
     load: () =>
-      import('@workers/bluesky-follow-propagation/workers').then(
-        module => module.blueskyFollowPropagationWorker,
+      import('@workers/bluesky-follow-propagation/workers').then(module =>
+        module.createBlueskyFollowPropagationWorker(),
       ),
   },
 ]

@@ -1,15 +1,13 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker } from 'glide-mq'
 import { QUEUE_NAME } from '@queues/story-post-related-url-projections/config'
 import { processStoryPostRelatedUrlProjectionJob } from './processors.mts'
 
-export const storyPostRelatedUrlProjections = new Worker(
+export const storyPostRelatedUrlProjections = createWorker(
   QUEUE_NAME,
   processStoryPostRelatedUrlProjectionJob,
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('storyPostRelatedUrlProjections', { baseline: 2 }),
   },
 )
