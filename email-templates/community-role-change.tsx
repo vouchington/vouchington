@@ -32,10 +32,13 @@ const CommunityRoleChangeEmail: PreviewableEmailComponent<CommunityRoleChangeEma
     const vars = { communityName, role: t(`role.${newRole}`) }
 
     return (
-      <Html>
+      <Html lang={locale}>
         <Head />
         <Preview>{t(`direction.${direction}.preview`, vars)}</Preview>
-        <Body style={styles.main}>
+        <Body
+          lang={locale}
+          style={styles.main}
+        >
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>

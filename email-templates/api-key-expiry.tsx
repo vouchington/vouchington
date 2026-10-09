@@ -16,12 +16,16 @@ import { emailCopy } from './catalog-copy.mts'
 import { resolveUiLocale } from './locale.mts'
 
 function ApiKeyExpiryEmail(props: ApiKeyExpiryEmailProps) {
-  const t = emailCopy(resolveUiLocale(props.uiLocale), 'api-key-expiry')
+  const locale = resolveUiLocale(props.uiLocale)
+  const t = emailCopy(locale, 'api-key-expiry')
   return (
-    <Html>
+    <Html lang={locale}>
       <Head />
       <Preview>{t('subject')}</Preview>
-      <Body style={styles.main}>
+      <Body
+        lang={locale}
+        style={styles.main}
+      >
         <Container style={styles.container}>
           <VouchaHeader />
           <Section style={styles.section}>

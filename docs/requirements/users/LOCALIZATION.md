@@ -293,6 +293,9 @@ key) across every consumer at once, not just the catalogs.
 
 - Voucha-authored transactional email templates accept an optional `uiLocale` and
   fall back to English through `resolveUiLocale()` when it is absent or invalid.
+- Rendered HTML sets `lang` on the document, the body, and the body's inner cell
+  to that resolved locale. React Email defaults the document and body languages
+  independently and copies the body language onto the inner cell.
 - Template copy is selected by email alias rows from the normalized catalog via `emailCopy()`.
   Workers resolve it from local SQLite (`LOCALIZATION_SQLITE_PATH`); tests and `react-email`
   preview may read the committed tables. Email copy is never fetched over HTTP.

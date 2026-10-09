@@ -27,10 +27,13 @@ const CommunityApplicationDecisionEmail: PreviewableEmailComponent<
   const vars = { communityName }
 
   return (
-    <Html>
+    <Html lang={locale}>
       <Head />
       <Preview>{t(`${status}.preview`, vars)}</Preview>
-      <Body style={styles.main}>
+      <Body
+        lang={locale}
+        style={styles.main}
+      >
         <Container style={styles.container}>
           <VouchaHeader />
           <Section style={styles.section}>
