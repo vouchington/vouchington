@@ -106,11 +106,11 @@ describe('request query profile baseline', () => {
 
   it('reports a stale entry without failing', () => {
     const logs = [
-      '[pg-request-profile] route=GET /a queries=3 serialDepth=3 repeats=other(x2),third(x2)',
+      '[pg-request-profile] route=GET /a queries=3 serialDepth=3 repeats=other(x2),third variant(x2)',
       'ts [pg-request-profile] route=GET /b queries=1 serialDepth=1 repeats=none',
     ].join('\n')
     const observed = observedRepeatAnnotations(logs)
-    expect([...observed].toSorted()).toEqual(['other', 'third'])
+    expect([...observed].toSorted()).toEqual(['other', 'third variant'])
     expect(findStaleBaselineEntries(baseline, observed)).toEqual(baseline)
     expect(findStaleBaselineEntries(baseline, new Set(['knownRepeat']))).toEqual([])
   })

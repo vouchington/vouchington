@@ -505,6 +505,16 @@
     "issue": 2609
   },
   {
+    "annotation": "getRetainedPostCategories hashtags",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getRetainedPostCategories topics",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
     "annotation": "getReviewDisputeById",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609

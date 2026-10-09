@@ -48,16 +48,21 @@ export function observedRepeatAnnotations(logText: string): Set<string> {
   for (const line of logText.split('\n')) {
     const start = line.indexOf(REQUEST_PROFILE_PREFIX)
     if (start === -1) continue
-    const repeats = / repeats=(\S+)/.exec(line.slice(start))?.[1]
+    // Annotations may contain spaces ("fn variant"), so the list runs to the end of the line.
+    const repeats = / repeats=(.*)$/.exec(line.slice(start).trimEnd())?.[1]
     if (!repeats || repeats === 'none') continue
-    for (const match of repeats.matchAll(/([^,()]+)\(x\d+\)/g)) {
+    for (const match of repeats.matchAll(/([^,]+?)\(x\d+\)(?:,|$)/g)) {
       if (match[1]) observed.add(match[1])
     }
   }
   return observed
 }
 
-/** Failure text for one request: names the route and every unbaselined annotation. */
+/**
+ * Failure text for one request: names the route and every unbaselined annotation.
+ *
+ * @public used by the API test server in backend/test-helpers, which production analysis ignores
+ */
 export function formatUnbaselinedRepeats(
   route: string,
   repeats: readonly RepeatedAnnotation[],
