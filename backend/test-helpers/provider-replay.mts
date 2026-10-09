@@ -112,8 +112,8 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
   const queue: RecordedResponse[] = []
 
   const replayFetch: ProviderReplay['fetch'] = async (input, init) => {
-    init?.signal?.throwIfAborted()
     const request = input instanceof Request ? input : undefined
+    ;(init?.signal ?? request?.signal)?.throwIfAborted()
     const body = await readBody(
       init?.body ?? (request ? await request.clone().arrayBuffer() : null),
     )

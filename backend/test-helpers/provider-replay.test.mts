@@ -129,6 +129,16 @@ describe('provider replay transport', () => {
     expect(replay.requests).toEqual([])
   })
 
+  it('rejects a request whose own signal is already aborted', async () => {
+    const replay = createProviderReplay()
+    replay.respondWith(ok)
+    const aborted = new Request('https://provider.example.com/a', { signal: AbortSignal.abort() })
+
+    await expect(replay.fetch(aborted)).rejects.toMatchObject({ name: 'AbortError' })
+    expect(replay.requests).toEqual([])
+    expect(() => replay.assertDrained()).toThrow(/unrequested/)
+  })
+
   it('forces every client instance through the replay', async () => {
     const replay = createProviderReplay()
     replay.respondWith(ok)

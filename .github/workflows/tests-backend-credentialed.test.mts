@@ -72,6 +72,9 @@ describe('backend credentialed test workflow', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     const report = stepSection(credentialedJob, 'Report non-gating smoke check failure')
 
+    // `failure()` is required: without a status function the condition adds an implicit `success()`
+    // and the step would be skipped on exactly the failure it reports.
+    expect(report).toContain('if: ${{ failure() && (')
     expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
     expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
     expect(report).toContain('::warning title=Live provider smoke check failed::')
