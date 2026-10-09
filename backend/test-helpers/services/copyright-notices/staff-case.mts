@@ -3,6 +3,13 @@ import { getPendingCopyrightStaffCases } from '../../../services/copyright-notic
 
 /** Reads a full staff case using the production projection in its own transaction. */
 export async function readTestCopyrightStaffCase(noticeId: string) {
+  return (await readTestCopyrightStaffCases([noticeId])).get(noticeId) ?? null
+}
+
+/** Reads the staff cases of every listed notice with the production batch projection. */
+export async function readTestCopyrightStaffCases(noticeIds: readonly string[]) {
   await using transaction = await beginTransaction()
-  return (await getPendingCopyrightStaffCases([noticeId], transaction)).get(noticeId) ?? null
+  const cases = await getPendingCopyrightStaffCases(noticeIds, transaction)
+  await transaction.commit()
+  return cases
 }

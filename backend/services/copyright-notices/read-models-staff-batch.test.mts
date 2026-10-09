@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
-import { readTestCopyrightStaffCase } from '@voucha/test-helpers/services/copyright-notices/staff-case'
+import {
+  readTestCopyrightStaffCase,
+  readTestCopyrightStaffCases,
+} from '@voucha/test-helpers/services/copyright-notices/staff-case'
 import { appendCopyrightGuestFiling, issueCopyrightGuestCapability } from './index.mts'
-import { getPendingCopyrightStaffCases } from './read-models-staff-case.mts'
 import { listCopyrightStaffQueue } from './read-models-staff.mts'
 
 async function createCasesWithDistinctChildren() {
@@ -41,12 +42,7 @@ describe('batched copyright staff case reads', () => {
     const { ids, filing } = await createCasesWithDistinctChildren()
     const unknownId = randomUUID()
 
-    await using transaction = await beginTransaction()
-    const cases = await getPendingCopyrightStaffCases(
-      [ids[2]!, unknownId, ids[0]!, ids[1]!],
-      transaction,
-    )
-    await transaction.commit()
+    const cases = await readTestCopyrightStaffCases([ids[2]!, unknownId, ids[0]!, ids[1]!])
 
     expect([...cases.keys()].toSorted()).toEqual([...ids].toSorted())
     expect(cases.has(unknownId)).toBe(false)
@@ -67,9 +63,7 @@ describe('batched copyright staff case reads', () => {
   })
 
   it('returns no cases without querying when the list is empty', async () => {
-    await using transaction = await beginTransaction()
-    await expect(getPendingCopyrightStaffCases([], transaction)).resolves.toEqual(new Map())
-    await transaction.commit()
+    await expect(readTestCopyrightStaffCases([])).resolves.toEqual(new Map())
   })
 
   it('pages the queue with each item carrying its own case and queue fields', async () => {
