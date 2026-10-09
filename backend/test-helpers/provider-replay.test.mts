@@ -97,6 +97,66 @@ describe('provider replay transport', () => {
     })
 
     expect(replay.requests[0]?.body?.toString('utf8')).toBe('amount=100')
+    // Headers fetch derives from the body are part of what is sent.
+    expect(replay.requests[0]?.headers['content-type']).toMatch(
+      /^application\/x-www-form-urlencoded/,
+    )
+  })
+
+  it('keeps responses in call order when an earlier request body arrives later', async () => {
+    const replay = createProviderReplay()
+    replay.respondWith(ok, wire('HTTP/1.1 404 Not Found\n\n{}'))
+    let finishUpload!: () => void
+    const slowUpload = new ReadableStream<Uint8Array>({
+      start(controller) {
+        finishUpload = () => {
+          controller.enqueue(new TextEncoder().encode('{"slow":true}'))
+          controller.close()
+        }
+      },
+    })
+
+    const first = replay.fetch('https://provider.example.com/slow', {
+      method: 'POST',
+      body: slowUpload,
+      duplex: 'half',
+    } as RequestInit)
+    const second = replay.fetch('https://provider.example.com/fast')
+    finishUpload()
+
+    expect((await first).status).toBe(200)
+    expect((await second).status).toBe(404)
+    expect(replay.requests.map(request => request.url)).toEqual([
+      'https://provider.example.com/slow',
+      'https://provider.example.com/fast',
+    ])
+    expect(replay.requests[0]?.json()).toEqual({ slow: true })
+  })
+
+  it('rejects a request aborted while its body is still being read', async () => {
+    const replay = createProviderReplay()
+    replay.respondWith(ok)
+    const controller = new AbortController()
+    let finishUpload!: () => void
+    const upload = new ReadableStream<Uint8Array>({
+      start(stream) {
+        finishUpload = () => {
+          stream.enqueue(new TextEncoder().encode('{}'))
+          stream.close()
+        }
+      },
+    })
+
+    const pending = replay.fetch('https://provider.example.com/a', {
+      method: 'POST',
+      body: upload,
+      duplex: 'half',
+      signal: controller.signal,
+    } as RequestInit)
+    controller.abort()
+    finishUpload()
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   it('fails loudly when a request has no recorded response', async () => {

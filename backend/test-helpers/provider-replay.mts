@@ -121,19 +121,21 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
   const requests: ReplayedRequest[] = []
   const queue: RecordedResponse[] = []
 
+  // `new Request(...)` applies fetch semantics to the SDK's arguments: the effective URL, method,
+  // and headers (a form body brings its own `content-type`), the body bytes, and an abort signal
+  // that follows `init.signal`.
   const replayFetch: ProviderReplay['fetch'] = async (input, init) => {
-    const request = input instanceof Request ? input : undefined
-    const signal = init?.signal ?? request?.signal
-    signal?.throwIfAborted()
-    const body = await readBody(
-      init?.body ?? (request ? await request.clone().arrayBuffer() : null),
-    )
+    const request = new Request(input, init)
+    const { signal } = request
+    signal.throwIfAborted()
+    // Reserve the request's position and its response before awaiting the body, so concurrent
+    // calls keep the order in which they started.
     const sent: ReplayedRequest = {
-      method: init?.method ?? request?.method ?? 'GET',
-      url: input instanceof Request ? input.url : String(input),
-      headers: Object.fromEntries(new Headers(init?.headers ?? request?.headers).entries()),
-      body,
-      json: <T,>() => JSON.parse(body?.toString('utf8') ?? 'null') as T,
+      method: request.method,
+      url: request.url,
+      headers: Object.fromEntries(request.headers.entries()),
+      body: undefined,
+      json: <T,>() => JSON.parse(sent.body?.toString('utf8') ?? 'null') as T,
     }
     requests.push(sent)
     const next = queue.shift()
@@ -142,6 +144,9 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
         `Provider replay has no recorded response for request ${requests.length}: ${sent.method} ${sent.url}`,
       )
     }
+    const bytes = Buffer.from(await request.arrayBuffer())
+    signal.throwIfAborted()
+    sent.body = bytes.length === 0 ? undefined : bytes
     return toReplayResponse(next, options.chunkBytes, signal)
   }
 
@@ -177,12 +182,4 @@ export function replayClient<Client extends abstract new (...args: never[]) => o
     }
   }
   return ReplayClient as unknown as Client
-}
-
-async function readBody(body: unknown): Promise<Buffer | undefined> {
-  if (body == null) return undefined
-  const bytes = Buffer.from(
-    await new Response(body as ConstructorParameters<typeof Response>[0]).arrayBuffer(),
-  )
-  return bytes.length === 0 ? undefined : bytes
 }
