@@ -106,6 +106,8 @@ def send(owned: dict[int, str], sig: int) -> None:
                 signal.pidfd_send_signal(descriptor, sig)
         except ProcessLookupError:
             pass
+        except PermissionError as error:
+            print(f'Cannot signal owned PID {pid}: {error}', file=sys.stderr)
         finally:
             os.close(descriptor)
 
@@ -179,6 +181,11 @@ def main() -> int:
         raise RuntimeError('Linux CI requires identity-safe pidfd signaling')
     # The current task cannot disappear: a missing interface here is unsupported, not a race.
     Path(f'/proc/{os.getpid()}/task/{os.getpid()}/children').read_text()
+    descriptor = os.pidfd_open(os.getpid())
+    try:
+        signal.pidfd_send_signal(descriptor, 0)
+    finally:
+        os.close(descriptor)
     enable_subreaper()
     interrupted: list[int] = []
     for sig in (signal.SIGINT, signal.SIGTERM):
