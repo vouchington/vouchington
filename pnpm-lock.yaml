@@ -1501,6 +1501,9 @@ importers:
       glide-mq:
         specifier: ^0.17.0
         version: 0.17.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
+      p-map:
+        specifier: ^7.0.8
+        version: 7.0.8
       valkyries:
         specifier: ^0.8.1
         version: 0.8.1
