@@ -38,6 +38,37 @@ export function findStaleBaselineEntries(
   return baseline.filter(({ annotation }) => !observedAnnotations.has(annotation))
 }
 
+/** Completed main merge-group Backend runs a stale report needs before it is safe to act on. */
+export const MIN_STALE_EVIDENCE_LOGS = 5
+
+export interface StaleReport {
+  logCount: number
+  /** False when fewer than {@link MIN_STALE_EVIDENCE_LOGS} logs were given. */
+  sufficient: boolean
+  stale: RepeatBaselineEntry[]
+}
+
+/**
+ * Stale entries across independent run logs (one log text per run): an entry is stale only when it
+ * is absent from every log, because a data-dependent repeat can miss any single run.
+ *
+ * @public used by the stale-entry report in backend/test-helpers
+ */
+export function buildStaleReport(
+  baseline: readonly RepeatBaselineEntry[],
+  logTexts: readonly string[],
+): StaleReport {
+  const observed = new Set<string>()
+  for (const text of logTexts) {
+    for (const annotation of observedRepeatAnnotations(text)) observed.add(annotation)
+  }
+  return {
+    logCount: logTexts.length,
+    sufficient: logTexts.length >= MIN_STALE_EVIDENCE_LOGS,
+    stale: findStaleBaselineEntries(baseline, observed),
+  }
+}
+
 /**
  * Annotations that repeated in `[pg-request-profile]` lines of CI log text (one run, any shard).
  *
