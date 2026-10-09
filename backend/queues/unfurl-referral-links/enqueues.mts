@@ -1,4 +1,4 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -55,10 +55,8 @@ const enqueueRemoveUnfurledChildrenForUserJob = createEnqueueFunction<
   defaults,
 })
 
-/** Logical dedup id `unfurl_referral_link__<parentLinkId>` (debounce) -- a burst of re-requests
- * or dispatcher self-heal retries for the same parent collapse to one job. */
-export function enqueueUnfurlReferralLink(data: UnfurlReferralLinkEntry): EnqueueReturnType {
-  return enqueueUnfurlReferralLinkJob(data, {
+function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
+  return {
     priority: PRIORITY_DEFAULT,
     ordering: UNFURL_REFERRAL_LINKS_ORDERING.unfurl,
     deduplication: {
@@ -66,7 +64,26 @@ export function enqueueUnfurlReferralLink(data: UnfurlReferralLinkEntry): Enqueu
       mode: 'debounce' as const,
       ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
     },
-  } satisfies Partial<JobOptions>)
+  } satisfies Partial<JobOptions>
+}
+
+/** One batched add of `enqueueUnfurlReferralLink` jobs, each with its own dedup id and options. */
+export const enqueueBulkUnfurlReferralLinks = createBulkEnqueueFunction<
+  UnfurlReferralLinkEntry,
+  UnfurlReferralLinkEntry,
+  UnfurlReferralLinksJobs
+>({
+  queue: unfurlReferralLinksQueue,
+  queueName: UNFURL_REFERRAL_LINKS_QUEUE_NAME,
+  jobName: UNFURL_JOB_NAME,
+  defaults,
+  buildJob: data => ({ data, opts: unfurlReferralLinkJobOptions(data) }),
+})
+
+/** Logical dedup id `unfurl_referral_link__<parentLinkId>` (debounce) -- a burst of re-requests
+ * or dispatcher self-heal retries for the same parent collapse to one job. */
+export function enqueueUnfurlReferralLink(data: UnfurlReferralLinkEntry): EnqueueReturnType {
+  return enqueueUnfurlReferralLinkJob(data, unfurlReferralLinkJobOptions(data))
 }
 
 export function enqueueUnfurlReferralLinksDispatcher(

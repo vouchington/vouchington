@@ -27,17 +27,17 @@ function reconcileDeps(sweeps: { inApp?: CopyrightSweepIdPage[]; email?: Copyrig
     searchDeliveryIntents: vi.fn<Deps['searchDeliveryIntents']>(async options =>
       options.channel === 'in_app' ? inApp() : email(),
     ),
-    enqueueDeliverCopyrightNotice: vi
-      .fn<Deps['enqueueDeliverCopyrightNotice']>()
+    enqueueBulkDeliverCopyrightNotices: vi
+      .fn<Deps['enqueueBulkDeliverCopyrightNotices']>()
       .mockResolvedValue(undefined),
-    enqueueSendCopyrightNoticeEmail: vi
-      .fn<Deps['enqueueSendCopyrightNoticeEmail']>()
+    enqueueBulkSendCopyrightNoticeEmails: vi
+      .fn<Deps['enqueueBulkSendCopyrightNoticeEmails']>()
       .mockResolvedValue(undefined),
   }
 }
 
 describe('processReconcileCopyrightDeliveryIntents', () => {
-  it('walks every page of each sweep and routes each row to its delivery job', async () => {
+  it('walks every page of each sweep and bulk-enqueues each page on its channel delivery job', async () => {
     const deps = reconcileDeps({
       inApp: [page(['in-app-1', 'in-app-2'], 'in-app-cursor'), page(['in-app-3'], null)],
       email: [page(['email-1'], 'email-cursor'), page(['email-2'], null)],
@@ -57,12 +57,14 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ]),
     )
     expect(deps.searchDeliveryIntents).toHaveBeenCalledTimes(4)
-    expect(deps.enqueueDeliverCopyrightNotice.mock.calls).toEqual([
-      ['in-app-1'],
-      ['in-app-2'],
-      ['in-app-3'],
+    expect(deps.enqueueBulkDeliverCopyrightNotices.mock.calls).toEqual([
+      [['in-app-1', 'in-app-2']],
+      [['in-app-3']],
     ])
-    expect(deps.enqueueSendCopyrightNoticeEmail.mock.calls).toEqual([['email-1'], ['email-2']])
+    expect(deps.enqueueBulkSendCopyrightNoticeEmails.mock.calls).toEqual([
+      [['email-1']],
+      [['email-2']],
+    ])
   })
 
   it('keeps enqueueing past a failed page read and enqueue, then fails with both errors', async () => {
@@ -77,7 +79,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       if (options.channel === 'email') throw searchFailure
       return inApp()
     })
-    deps.enqueueDeliverCopyrightNotice.mockRejectedValueOnce(enqueueFailure)
+    deps.enqueueBulkDeliverCopyrightNotices.mockRejectedValueOnce(enqueueFailure)
 
     const failure = await processReconcileCopyrightDeliveryIntents(deps).then(
       () => null,
@@ -89,10 +91,9 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     expect((failure as AggregateError).errors).toEqual(
       expect.arrayContaining([searchFailure, enqueueFailure]),
     )
-    expect(deps.enqueueDeliverCopyrightNotice.mock.calls).toEqual([
-      ['failing-in-app'],
-      ['same-page-in-app'],
-      ['next'],
+    expect(deps.enqueueBulkDeliverCopyrightNotices.mock.calls).toEqual([
+      [['failing-in-app', 'same-page-in-app']],
+      [['next']],
     ])
   })
   it('reports its cap and resumes only the unfinished channel', async () => {
@@ -117,8 +118,8 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       }),
     ).resolves.toEqual({ enqueued: 1, hasMore: true })
     expect(email.searchDeliveryIntents).toHaveBeenCalledTimes(1)
-    expect(email.enqueueSendCopyrightNoticeEmail).toHaveBeenCalledWith('email-tail')
-    expect(email.enqueueDeliverCopyrightNotice).not.toHaveBeenCalled()
+    expect(email.enqueueBulkSendCopyrightNoticeEmails).toHaveBeenCalledWith(['email-tail'])
+    expect(email.enqueueBulkDeliverCopyrightNotices).not.toHaveBeenCalled()
     const next = reconcileDeps({ inApp: [page(['tail'], null)] })
     await expect(
       processReconcileCopyrightDeliveryIntents(next, {
@@ -131,7 +132,7 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       after: 'head-cursor',
       limit: 1,
     })
-    expect(next.enqueueSendCopyrightNoticeEmail).not.toHaveBeenCalled()
+    expect(next.enqueueBulkSendCopyrightNoticeEmails).not.toHaveBeenCalled()
   })
 })
 

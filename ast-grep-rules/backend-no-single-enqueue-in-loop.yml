@@ -1,0 +1,128 @@
+id: backend-no-single-enqueue-in-loop
+language: Tsx
+severity: warning
+message: Enqueue a loop's jobs with the owning queue package's bulk enqueue function (enqueueBulk...) instead of one single-job enqueue per iteration.
+note: >-
+  Each single enqueue is its own Valkey round trip and its own analytics event. Add the whole
+  batch with the queue package's bulk enqueue function (created with createBulkEnqueueFunction,
+  named enqueueBulk followed by the job), keeping each job's dedup id, jobId, priority, and delay
+  in its buildJob. Awaited fan-out stays awaited. A deliberately sequential enqueue, such as a
+  reactivation helper that reads the retained job first, needs an ast-grep-ignore comment with
+  the reason.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**'
+  - 'backend/test-helpers/**'
+rule:
+  kind: call_expression
+  all:
+    - any:
+        - has:
+            field: function
+            kind: identifier
+            regex: ^enqueue[A-Z]
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              kind: property_identifier
+              regex: ^enqueue[A-Z]
+    - not:
+        any:
+          - has:
+              field: function
+              kind: identifier
+              regex: ^enqueueBulk
+          - has:
+              field: function
+              kind: member_expression
+              has:
+                field: property
+                kind: property_identifier
+                regex: ^enqueueBulk
+    - inside:
+        stopBy: end
+        any:
+          - kind: for_statement
+          - kind: for_in_statement
+          - kind: while_statement
+          - kind: do_statement
+examples:
+  - file: backend/services/copyright-notices/hold-resolution.mts
+    code: |
+      for (const intentId of result.intentIds) void enqueueApplyCopyrightAction(intentId)
+    isValid: false
+  - file: backend/services/referral-link-unfurl/dispatch.mts
+    code: |
+      for (const row of rows) {
+        await enqueueUnfurlReferralLink({ parentLinkId: row.id })
+        await saveProgress?.({ sweepStartedAt, after: { requestedAt: row.requested_at, id: row.id } })
+      }
+    isValid: false
+  - file: backend/services/rss-feed-items/upsert-enqueues.mts
+    code: |
+      for (const row of rows) {
+        try {
+          await enqueueLanguageDetection('rss_feed_item', row.id)
+        } catch (err) {
+          onError(toError(err))
+        }
+      }
+    isValid: false
+  - file: backend/services/copyright-notices/staydown-registration.mts
+    code: |
+      for (const imageId of new Set(imageIds)) void enqueueStaydownHash(imageId, 'registration')
+    isValid: false
+  - file: backend/workers/notifications/processors/copyright-action-reconcile.mts
+    code: |
+      for (const id of ids) {
+        await deps.enqueueApplyCopyrightAction(id)
+      }
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      while (cursor) {
+        await enqueueContinueRecovery({ after: cursor })
+        cursor = await advanceCursor(cursor)
+      }
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      for (let index = 0; index < ids.length; index++) {
+        void enqueueOnPostCreated(ids[index])
+      }
+    isValid: false
+  - file: backend/services/copyright-notices/hold-resolution.mts
+    code: |
+      void enqueueBulkApplyCopyrightActions(result.intentIds)
+    isValid: true
+  - file: backend/workers/memberships/processors/google-play.mts
+    code: |
+      const batch = await findRecoverableGooglePlayNotificationJobs()
+      await enqueueBulkProcessGooglePlayNotifications(batch.notifications)
+      await advanceGooglePlayNotificationRecoveryCursor(batch)
+    isValid: true
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      for (const chunk of chunkArray(ids, size)) {
+        await enqueueBulkLanguageDetection('rss_feed_item', chunk)
+      }
+    isValid: true
+  - file: backend/services/copyright-notices/restoration.mts
+    code: |
+      await enqueueApplyCopyrightAction(intent.id)
+    isValid: true
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      for (const row of rows) {
+        await markDispatched(row.id)
+      }
+      await enqueueContinuation({ after: cursor })
+    isValid: true
+  - file: backend/services/copyright-notices/hold-resolution.test.mts
+    code: |
+      for (const intentId of intentIds) await enqueueApplyCopyrightAction(intentId)
+    isValid: true

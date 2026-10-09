@@ -31,7 +31,9 @@ passive link health check.
    creates/upserts children, and reconciles away any card no longer resolvable. Idempotent —
    re-running is the primary freshness mechanism for Amex's rotating tokens.
 3. `unfurl_referral_links_dispatcher` re-enqueues parents stuck requested-but-not-completed
-   (backed by a partial index), recovering from a lost/crashed job.
+   (backed by a partial index), recovering from a lost/crashed job. It adds each batch with
+   `enqueueBulkUnfurlReferralLinks`, which keeps the per-parent debounce id of
+   `enqueueUnfurlReferralLink`.
 4. `remove_unfurled_children_for_user` soft-deletes a user's unfurled children after a membership
    downgrade/expiry event. This is cleanup only — the query-time membership filter on the public
    referral surfaces is the authoritative visibility backstop (it also catches time-based granted

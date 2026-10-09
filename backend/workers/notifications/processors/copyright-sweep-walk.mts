@@ -78,22 +78,28 @@ export async function settleCopyrightSweepSequentially(
 }
 
 /**
- * Walks one sweep as a stage, enqueueing each page of at most 100 IDs together. Accepted jobs add to
- * `tally.enqueued`; a failed enqueue or page read is recorded without skipping the rest.
+ * Walks one sweep as a stage, enqueueing each page of at most 100 IDs in one bulk add. Accepted
+ * pages add to `tally.enqueued`; a failed bulk add or page read is recorded without skipping the
+ * rest.
  */
-export async function enqueueEveryCopyrightSweepPage(
+export async function enqueueBulkCopyrightSweepPages(
   tally: CopyrightSweepTally,
   searchPage: (page: CopyrightSweepPageRequest) => Promise<CopyrightSweepIdPage>,
-  enqueue: (id: string) => unknown,
+  enqueueBulk: (ids: string[]) => unknown,
   options: CopyrightSweepWalkOptions = {},
 ): Promise<void> {
   await runCopyrightSweepStage(tally, () =>
     walkCopyrightSweep(
       searchPage,
       async ids => {
-        const outcomes = await Promise.allSettled(ids.map(id => enqueue(id)))
-        tally.enqueued += outcomes.filter(outcome => outcome.status === 'fulfilled').length
-        return outcomes.flatMap(outcome => (outcome.status === 'rejected' ? [outcome.reason] : []))
+        if (ids.length === 0) return []
+        try {
+          await enqueueBulk([...ids])
+        } catch (err) {
+          return [err]
+        }
+        tally.enqueued += ids.length
+        return []
       },
       options,
     ),

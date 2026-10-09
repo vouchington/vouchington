@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
-import type { enqueueApplyMediaDeliveryRegistryRecord } from '@queues/notifications/enqueues'
+import type { enqueueBulkApplyMediaDeliveryRegistryRecords } from '@queues/notifications/enqueues'
 import type {
   listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
@@ -59,8 +59,8 @@ describe('media delivery registry processors', () => {
           page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
         })
         const enqueue = vi
-          .fn<typeof enqueueApplyMediaDeliveryRegistryRecord>()
-          .mockResolvedValue(undefined)
+          .fn<typeof enqueueBulkApplyMediaDeliveryRegistryRecords>()
+          .mockResolvedValue([])
         const stage = vi
           .fn<typeof stageAllCurrentImagePlacementDeliveryRecords>()
           .mockResolvedValue(2)
@@ -72,7 +72,7 @@ describe('media delivery registry processors', () => {
             {},
             {
               listRecoverableMediaDeliveryRegistryKeys: list,
-              enqueueApplyMediaDeliveryRegistryRecord: enqueue,
+              enqueueBulkApplyMediaDeliveryRegistryRecords: enqueue,
               stageAllCurrentImagePlacementDeliveryRecords: stage,
               reconcileMediaDeliveryRepairMarkers: repair,
               now: () => now,
@@ -88,7 +88,10 @@ describe('media delivery registry processors', () => {
           scanBefore: now.toISOString(),
           after: undefined,
         })
-        expect(enqueue).toHaveBeenCalledTimes(2)
+        expect(enqueue).toHaveBeenCalledExactlyOnceWith([
+          'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
+          'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
+        ])
       } finally {
         restore()
       }

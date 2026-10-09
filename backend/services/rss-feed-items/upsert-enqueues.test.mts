@@ -3,9 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { ai_agents } from '@queues/ai-agents/queues'
 import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
+import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/language-detection/config'
 import { language_detection } from '@queues/language-detection/queues'
 import { notifications } from '@queues/notifications/queues'
 import { enqueueRssFeedItemPostUpsertJobsWithCompletion } from './upsert-enqueues.mts'
+import { rssFeedItemsWorkConfig } from './work-limits.mts'
 import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import {
   BEDROCK_BATCH_MAX_VALUES,
@@ -38,7 +40,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   })
 
   afterAll(async () => {
-    await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
+    await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig, rssFeedItemsWorkConfig])
   })
 
   it('enqueues embedding, autotagger, notification, and language detection jobs', async () => {
@@ -119,6 +121,44 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       languageDetection: languageDetectionJobs.length > 0,
       notification: notificationJobs.length > 0,
     }).toEqual({ languageDetection: true, notification: true })
+  })
+
+  it('bulk-enqueues language detection for every row with the per-item options, across chunks', async () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      enqueue_batch_size: 2,
+    })
+    try {
+      const rows = Array.from({ length: 3 }, () => ({
+        guid: `guid-${randomUUID()}`,
+        has_embedding: true,
+        id: randomUUID(),
+      }))
+      const { languageDetectionEnqueue } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+        [],
+        rows,
+        [],
+        { languageDetectionRows: rows },
+      )
+      await languageDetectionEnqueue
+
+      for (const row of rows) {
+        const jobs = await language_detection.searchJobs({
+          name: 'rss_feed_item',
+          data: { id: row.id },
+        })
+        expect(jobs).toHaveLength(1)
+        expect(jobs[0]?.opts).toMatchObject({
+          priority: PRIORITY_DEFAULT,
+          deduplication: {
+            id: `language_detection_rss_feed_item_${row.id}`,
+            mode: 'debounce',
+            ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
+          },
+        })
+      }
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('narrows fanout to source-linked existing rows while returning all rows', async () => {

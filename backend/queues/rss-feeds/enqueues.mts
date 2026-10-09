@@ -43,20 +43,18 @@ const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
   buildJob: data => ({
     data: { rssFeedId: data.rssFeedId, ttl: data.ttl },
     opts: {
-      // The dedup throttle window only prevents duplicate enqueues of the same feed
-      // within a dispatch cycle; it is intentionally the SHORT default, decoupled from
-      // the per-tier SLA. The SLA flows to the worker as job.data.ttl and is enforced
-      // separately by the worker's last_fetched_at staleness check
-      // (getRssFeedByIdToFetch with job.data.ttl). A failed due crawl never updates
-      // last_fetched_at, so it is retried on the next dispatch tick once this short
-      // throttle expires, instead of being blocked for the full (up to 24h) SLA.
+      // `simple` dedup skips a feed while its fetch job is waiting, active, or retrying and admits
+      // it again once that job completes or fails, so a backlogged feed is queued once, not once
+      // per dispatch tick. The SLA flows to the worker as job.data.ttl and is enforced separately
+      // by the worker's last_fetched_at staleness check (getRssFeedByIdToFetch with job.data.ttl).
+      // A failed due crawl never updates last_fetched_at, so the next dispatch tick re-adds it
+      // once its job has failed.
       ...(data.skipDeduplication
         ? {}
         : {
             deduplication: {
               id: buildRssFeedJobId(data.rssFeedId),
-              mode: 'throttle' as const,
-              ttl: RSS_FEEDS_DEFAULTS.deduplicationTtlMs,
+              mode: 'simple' as const,
             },
           }),
       ordering: RSS_FEEDS_ORDERING.fetch,

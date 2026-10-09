@@ -15,7 +15,7 @@ type ReconcileRssFeedItemNotificationData = { rssFeedItemId: string }
 type CopyrightDeliveryIntentData = { intentId: string }
 type CopyrightActionIntentData = { intentId: string }
 export {
-  enqueueApplyMediaDeliveryRegistryRecord,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueContinueMediaDeliveryRegistryReconciliation,
 } from './enqueues/media-delivery-registry.mts'
@@ -118,6 +118,18 @@ const enqueueDeliverCopyrightNoticeJob = createEnqueueFunction<
   'processDeliverCopyrightNotice'
 >({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processDeliverCopyrightNotice' })
 
+/** One batched add of `enqueueDeliverCopyrightNotice` jobs, each with its own dedup id. */
+export const enqueueBulkDeliverCopyrightNotices = createBulkEnqueueFunction<
+  string,
+  CopyrightDeliveryIntentData,
+  'processDeliverCopyrightNotice'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processDeliverCopyrightNotice',
+  buildJob: intentId => ({ data: { intentId }, opts: copyrightDeliveryJobOptions(intentId) }),
+})
+
 const enqueueReconcileCopyrightDeliveryIntentsJob = createEnqueueFunction<
   CopyrightSweepContinuation,
   'processReconcileCopyrightDeliveryIntents'
@@ -131,6 +143,18 @@ const enqueueApplyCopyrightActionJob = createEnqueueFunction<
   CopyrightActionIntentData,
   'processApplyCopyrightAction'
 >({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processApplyCopyrightAction' })
+
+/** One batched add of `enqueueApplyCopyrightAction` jobs, each with its own dedup id. */
+export const enqueueBulkApplyCopyrightActions = createBulkEnqueueFunction<
+  string,
+  CopyrightActionIntentData,
+  'processApplyCopyrightAction'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processApplyCopyrightAction',
+  buildJob: intentId => ({ data: { intentId }, opts: copyrightActionJobOptions(intentId) }),
+})
 
 const enqueueReconcileCopyrightActionIntentsJob = createEnqueueFunction<
   CopyrightSweepContinuation,
@@ -191,22 +215,23 @@ export function enqueueDeleteNotification(
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueDeliverCopyrightNotice(intentId: string): EnqueueReturnType {
-  return enqueueDeliverCopyrightNoticeJob(
-    { intentId },
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-      deduplication: {
-        id: `copyright-delivery:${intentId}:in-app`,
-        mode: 'throttle',
-        ttl: FIVE_MINUTES_MS,
-      },
+function copyrightDeliveryJobOptions(intentId: string): Partial<JobOptions> {
+  return {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_DEFAULT,
+    deduplication: {
+      id: `copyright-delivery:${intentId}:in-app`,
+      mode: 'throttle',
+      ttl: FIVE_MINUTES_MS,
     },
-  )
+  }
+}
+
+export function enqueueDeliverCopyrightNotice(intentId: string): EnqueueReturnType {
+  return enqueueDeliverCopyrightNoticeJob({ intentId }, copyrightDeliveryJobOptions(intentId))
 }
 
 export function enqueueReconcileCopyrightDeliveryIntents(
@@ -226,22 +251,23 @@ export function enqueueReconcileCopyrightDeliveryIntents(
   })
 }
 
-export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType {
-  return enqueueApplyCopyrightActionJob(
-    { intentId },
-    {
-      attempts: 5,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-      deduplication: {
-        id: `copyright-action:${intentId}`,
-        mode: 'throttle',
-        ttl: FIVE_MINUTES_MS,
-      },
+function copyrightActionJobOptions(intentId: string): Partial<JobOptions> {
+  return {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_DEFAULT,
+    deduplication: {
+      id: `copyright-action:${intentId}`,
+      mode: 'throttle',
+      ttl: FIVE_MINUTES_MS,
     },
-  )
+  }
+}
+
+export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType {
+  return enqueueApplyCopyrightActionJob({ intentId }, copyrightActionJobOptions(intentId))
 }
 
 export function enqueueReconcileCopyrightActionIntents(

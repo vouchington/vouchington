@@ -6,12 +6,12 @@ import {
 } from '@voucha/test-helpers/media-delivery-recovery'
 import { listRecoverableMediaDeliveryRegistryKeys } from '@services/media-delivery-safety'
 import {
-  enqueueApplyMediaDeliveryRegistryRecord,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueContinueMediaDeliveryRegistryReconciliation,
   type ReconcileMediaDeliveryRegistryData,
 } from '@queues/notifications/enqueues'
 import { notifications } from '@queues/notifications/queues'
-type EnqueueResult = Awaited<ReturnType<typeof enqueueApplyMediaDeliveryRegistryRecord>>
+type EnqueueResult = Awaited<ReturnType<typeof enqueueContinueMediaDeliveryRegistryReconciliation>>
 import { processReconcileMediaDeliveryRegistry } from './media-delivery-registry.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
@@ -34,8 +34,8 @@ describe('durable media registry recovery hardening', () => {
         },
         stageAllCurrentImagePlacementDeliveryRecords: async () => 0,
         getMediaDeliveryRegistryScanBefore: async () => scanBefore,
-        enqueueApplyMediaDeliveryRegistryRecord: async (key: string) => {
-          accepted.push(key)
+        enqueueBulkApplyMediaDeliveryRegistryRecords: async (keys: string[]) => {
+          accepted.push(...keys)
           return undefined
         },
         enqueueContinueMediaDeliveryRegistryReconciliation: async (
@@ -75,9 +75,9 @@ describe('durable media registry recovery hardening', () => {
         reconcileMediaDeliveryRepairMarkers: async () => {
           throw new Error('Continuation must not repair markers')
         },
-        enqueueApplyMediaDeliveryRegistryRecord: async (key: string) => {
-          const result = await enqueueApplyMediaDeliveryRegistryRecord(key)
-          children.push(result)
+        enqueueBulkApplyMediaDeliveryRegistryRecords: async (keys: string[]) => {
+          const result = await enqueueBulkApplyMediaDeliveryRegistryRecords(keys)
+          children.push(...(result as EnqueueResult[]))
           return result
         },
         enqueueContinueMediaDeliveryRegistryReconciliation: async (
@@ -111,6 +111,14 @@ describe('durable media registry recovery hardening', () => {
       expect(
         jobs.map(child => (child.data as { deliveryKey: string }).deliveryKey).toSorted(),
       ).toEqual(deliveryKeys.slice(1))
+      // The bulk add keeps each registry record's own dedup id and retry budget.
+      for (const child of jobs) {
+        const { deliveryKey } = child.data as { deliveryKey: string }
+        expect(child.opts).toMatchObject({
+          attempts: 5,
+          deduplication: { id: `media-delivery-registry:${deliveryKey}`, mode: 'throttle' },
+        })
+      }
       expect(
         isDeduplicatedEnqueue(
           await enqueueContinueMediaDeliveryRegistryReconciliation(
@@ -134,12 +142,12 @@ describe('durable media registry recovery hardening', () => {
       const continuationJobs: EnqueueResult[] = []
       const dependencies = {
         ...scopedTestMediaRecoveryDependencies(deliveryKeys),
-        enqueueApplyMediaDeliveryRegistryRecord: async (key: string) => {
-          if (failOnce && key === deliveryKeys[1]) {
+        enqueueBulkApplyMediaDeliveryRegistryRecords: async (keys: string[]) => {
+          if (failOnce && keys.includes(deliveryKeys[1]!)) {
             failOnce = false
             throw new Error('Owned enqueue failure')
           }
-          return enqueueApplyMediaDeliveryRegistryRecord(key)
+          return enqueueBulkApplyMediaDeliveryRegistryRecords(keys)
         },
         enqueueContinueMediaDeliveryRegistryReconciliation: async (
           next: Extract<ReconcileMediaDeliveryRegistryData, { scanBefore: string }>,

@@ -1,5 +1,5 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
 import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
@@ -19,7 +19,7 @@ export async function reverseAutomatedCopyrightRestrictions(
     reviewedAt,
   })
   await transaction.commit()
-  for (const intentId of intentIds) void enqueueApplyCopyrightAction(intentId)
+  void enqueueBulkApplyCopyrightActions(intentIds)
 }
 
 /**

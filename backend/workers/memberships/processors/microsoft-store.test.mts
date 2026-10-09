@@ -6,8 +6,8 @@ import type {
   MicrosoftStoreSourceRecoveryBatch,
 } from '@services/memberships/microsoft'
 import type {
+  enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueReconcileMicrosoftStoreSource,
 } from '@queues/memberships/enqueues'
 import { recoverMicrosoftStoreSources } from './microsoft-store.mts'
 
@@ -15,7 +15,7 @@ describe('recoverMicrosoftStoreSources', () => {
   it('chains a continuation only after the CAS-owning full page advances', async () => {
     const batch = makeBatch({ completesSweep: false })
     const enqueueContinuation = vi.fn<typeof enqueueContinueRecoverMicrosoftStoreSources>()
-    const enqueueSource = vi.fn<typeof enqueueReconcileMicrosoftStoreSource>()
+    const enqueueSource = vi.fn<typeof enqueueBulkReconcileMicrosoftStoreSources>()
     const advance = vi
       .fn<typeof advanceMicrosoftStoreSourceRecoveryCursor>()
       .mockResolvedValue(true)
@@ -24,18 +24,41 @@ describe('recoverMicrosoftStoreSources', () => {
     await recoverMicrosoftStoreSources({
       advanceMicrosoftStoreSourceRecoveryCursor: advance,
       enqueueContinueRecoverMicrosoftStoreSources: enqueueContinuation,
-      enqueueReconcileMicrosoftStoreSource: enqueueSource,
+      enqueueBulkReconcileMicrosoftStoreSources: enqueueSource,
       findRecoverableMicrosoftStoreSourceJobs: find,
     })
 
-    expect(enqueueSource).toHaveBeenCalledWith({ sourceId: batch.sourceIds[0] })
+    expect(enqueueSource).toHaveBeenCalledWith([{ sourceId: batch.sourceIds[0] }])
     expect(advance).toHaveBeenCalledWith(batch)
     expect(enqueueContinuation).toHaveBeenCalledOnce()
   })
 
+  it('propagates a rejected bulk enqueue without advancing the recovery cursor', async () => {
+    const failure = new Error('bulk enqueue failed')
+    const enqueueSource = vi
+      .fn<typeof enqueueBulkReconcileMicrosoftStoreSources>()
+      .mockRejectedValue(failure)
+    const advance = vi.fn<typeof advanceMicrosoftStoreSourceRecoveryCursor>()
+    const enqueueContinuation = vi.fn<typeof enqueueContinueRecoverMicrosoftStoreSources>()
+
+    await expect(
+      recoverMicrosoftStoreSources({
+        advanceMicrosoftStoreSourceRecoveryCursor: advance,
+        enqueueContinueRecoverMicrosoftStoreSources: enqueueContinuation,
+        enqueueBulkReconcileMicrosoftStoreSources: enqueueSource,
+        findRecoverableMicrosoftStoreSourceJobs: vi
+          .fn<typeof findRecoverableMicrosoftStoreSourceJobs>()
+          .mockResolvedValue(makeBatch()),
+      }),
+    ).rejects.toBe(failure)
+
+    expect(advance).not.toHaveBeenCalled()
+    expect(enqueueContinuation).not.toHaveBeenCalled()
+  })
+
   it('does not chain a completed or stale page', async () => {
     const enqueueContinuation = vi.fn<typeof enqueueContinueRecoverMicrosoftStoreSources>()
-    const enqueueSource = vi.fn<typeof enqueueReconcileMicrosoftStoreSource>()
+    const enqueueSource = vi.fn<typeof enqueueBulkReconcileMicrosoftStoreSources>()
     const advance = vi
       .fn<typeof advanceMicrosoftStoreSourceRecoveryCursor>()
       .mockResolvedValueOnce(true)
@@ -47,7 +70,7 @@ describe('recoverMicrosoftStoreSources', () => {
     const dependencies = {
       advanceMicrosoftStoreSourceRecoveryCursor: advance,
       enqueueContinueRecoverMicrosoftStoreSources: enqueueContinuation,
-      enqueueReconcileMicrosoftStoreSource: enqueueSource,
+      enqueueBulkReconcileMicrosoftStoreSources: enqueueSource,
       findRecoverableMicrosoftStoreSourceJobs: find,
     }
 

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueReconcileMicrosoftStoreSource,
   enqueueRecoverMicrosoftStoreSources,
 } from '@queues/memberships/enqueues'
 import { memberships } from '@queues/memberships/queues'
@@ -93,9 +93,10 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
     let sourceJobId: string | undefined
 
     try {
-      sourceJobId = getEnqueuedJobId(
-        await enqueueReconcileMicrosoftStoreSource({ sourceId: fixture.sourceId }),
-      )
+      const [enqueued] = await enqueueBulkReconcileMicrosoftStoreSources([
+        { sourceId: fixture.sourceId },
+      ])
+      sourceJobId = getEnqueuedJobId(enqueued)
       const initialJob = await memberships.getJob(sourceJobId)
       if (!initialJob) throw new Error('Expected the known-source enqueue to create its stable job')
 

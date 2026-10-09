@@ -9,7 +9,7 @@ import {
   selectBlockedCopyrightRestoreIntentIds,
 } from './court-hold-restore-replay.mts'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import { encryptSecret } from '@modules/token-secrets'
@@ -128,7 +128,6 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     query: transaction,
   })
   await transaction.commit()
-  for (const intentId of new Set([...lateHoldIntentIds, ...replayedIds]))
-    void enqueueApplyCopyrightAction(intentId)
+  void enqueueBulkApplyCopyrightActions([...new Set([...lateHoldIntentIds, ...replayedIds])])
   return { ...assessment, target_ids: input.targetIds }
 }

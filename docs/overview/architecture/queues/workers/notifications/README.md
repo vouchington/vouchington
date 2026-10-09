@@ -22,9 +22,12 @@ the service renews that exact pending claim and persists each endpoint result be
 releasing the intent. A lost claim stops the private provider agent and leaves recovery to reclaim
 the durable intent.
 
-Recovery scans use a fixed cursor snapshot. The worker enqueues each delivery before its next-page
-continuation; the integration regression covers a 101-intent backlog and manually drains that
-equal-priority FIFO order because the test queue shim does not schedule by priority.
+Recovery scans use a fixed cursor snapshot. The worker adds each page's deliveries in one bulk call
+(`enqueueBulkDeliverCopyrightNotices`, `enqueueBulkSendCopyrightNoticeEmails`,
+`enqueueBulkApplyCopyrightActions`, `enqueueBulkApplyMediaDeliveryRegistryRecords`), each job keeping
+its own dedup id, before its next-page continuation; the integration regression covers a 101-intent
+backlog and manually drains that equal-priority FIFO order because the test queue shim does not
+schedule by priority.
 
 Media-registry root reconciliation repairs markers and stages current authority before capturing a
 primary-database cutoff. Root and continuation jobs terminalize a bounded set of abandoned final
@@ -37,7 +40,7 @@ retry from the same cursor; the next scheduled root covers later eligibility cha
 flowchart LR
   root[Root: repair and stage] --> cutoff[Primary cutoff]
   cutoff --> page[Terminal repair and recovery page]
-  page --> children[Await delivery enqueues]
+  page --> children[Await one bulk delivery enqueue]
   children --> next[Cursor continuation]
   next --> page
 ```

@@ -1,6 +1,6 @@
 import {
+  enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueReconcileMicrosoftStoreSource,
 } from '@queues/memberships/enqueues'
 import {
   advanceMicrosoftStoreSourceRecoveryCursor,
@@ -11,14 +11,14 @@ import {
 type RecoverMicrosoftStoreSourcesDependencies = {
   advanceMicrosoftStoreSourceRecoveryCursor: typeof advanceMicrosoftStoreSourceRecoveryCursor
   enqueueContinueRecoverMicrosoftStoreSources: typeof enqueueContinueRecoverMicrosoftStoreSources
-  enqueueReconcileMicrosoftStoreSource: typeof enqueueReconcileMicrosoftStoreSource
+  enqueueBulkReconcileMicrosoftStoreSources: typeof enqueueBulkReconcileMicrosoftStoreSources
   findRecoverableMicrosoftStoreSourceJobs: typeof findRecoverableMicrosoftStoreSourceJobs
 }
 
 const recoveryDependencies: RecoverMicrosoftStoreSourcesDependencies = {
   advanceMicrosoftStoreSourceRecoveryCursor,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueReconcileMicrosoftStoreSource,
+  enqueueBulkReconcileMicrosoftStoreSources,
   findRecoverableMicrosoftStoreSourceJobs,
 }
 
@@ -26,11 +26,10 @@ export async function recoverMicrosoftStoreSources(
   overrides: Partial<RecoverMicrosoftStoreSourcesDependencies> = {},
 ): Promise<void> {
   const dependencies = { ...recoveryDependencies, ...overrides }
+  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await dependencies.findRecoverableMicrosoftStoreSourceJobs()
-  await Promise.all(
-    batch.sourceIds.map(sourceId =>
-      dependencies.enqueueReconcileMicrosoftStoreSource({ sourceId }),
-    ),
+  await dependencies.enqueueBulkReconcileMicrosoftStoreSources(
+    batch.sourceIds.map(sourceId => ({ sourceId })),
   )
   const advanced = await dependencies.advanceMicrosoftStoreSourceRecoveryCursor(batch)
   if (advanced && !batch.completesSweep)
