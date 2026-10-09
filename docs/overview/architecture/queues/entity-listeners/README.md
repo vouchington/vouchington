@@ -48,7 +48,10 @@ auto-follow upserts with `skipIfDeleted`, so neither a replay nor a retried sign
 follow the user removed. A user that was only updated replays `processUserUpdated` (cache
 invalidation and language detection, which skips unchanged input), so the recalculation write no
 longer re-selects the user for another recalculation in the next window. A user created inside the
-five-minute overlap replays its creation effects in two consecutive windows, then converges.
+five-minute overlap replays its creation effects in two consecutive windows, then converges. A user
+created before the window start (outside the overlap) and written after the window end but before
+the sweep reads the row, including on a resumed capped pass, replays as updated, so its lost
+creation effects are not recovered by this sweep.
 
 Post category relations, votes, and primary vote stats are written in the post transaction. They
 need no category recovery job; the post service publishes cache invalidation and notification
