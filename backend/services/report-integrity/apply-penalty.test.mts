@@ -25,15 +25,33 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 
   beforeAll(async () => {
     adminUser = await createTestUserDirect({ username: randomUsername() })
-  }, 60_000)
+  }, 5_000)
 
   beforeEach(() => {
     vi.spyOn(jwtInvalidation, 'markJwtStaleBatch')
+    vi.spyOn(jwtInvalidation, 'markJwtStale')
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+  afterEach(async () => {
+    let settled: PromiseSettledResult<unknown>[]
+    try {
+      settled = await Promise.allSettled(
+        [
+          ...vi.mocked(jwtInvalidation.markJwtStaleBatch).mock.results,
+          ...vi.mocked(jwtInvalidation.markJwtStale).mock.results,
+        ].map(result => result.value),
+      )
+    } finally {
+      vi.restoreAllMocks()
+    }
+    const failures = settled.filter(result => result.status === 'rejected')
+    if (failures.length > 0) {
+      throw new AggregateError(
+        failures.map(result => result.reason),
+        'JWT invalidation failed',
+      )
+    }
+  }, 5_000)
 
   it('penalizes the persisted reporter set and sets bad_faith_reporter_at', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -66,7 +84,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     expect(await getTestUserBadFaithReporterAt(reporter2.id)).not.toBeNull()
     expect(await getTestUserBadFaithReporterAt(reporter3.id)).not.toBeNull()
     await Promise.all([reporter1.id, reporter2.id, reporter3.id].map(expectJwtStale))
-  }, 60_000)
+  })
 
   it('skips reporters whose accounts no longer exist', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -88,7 +106,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     expect(result.penalties.map(p => p.user_id)).toEqual([reporter.id])
     expect(result.penalties[0]!.id).toBeTruthy()
     expect(await getTestUserBadFaithReporterAt(reporter.id)).not.toBeNull()
-  }, 60_000)
+  })
 
   it('throws 409 when the flag is already resolved (one-shot)', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -109,7 +127,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 
     const penalties = await getTestReportAbusePenaltiesByFlagId(flagId)
     expect(penalties).toHaveLength(1)
-  }, 60_000)
+  })
 
   it('claims a flag inserted in the supplied transaction without requiring another client', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -122,13 +140,13 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
       expect(result.flag).toMatchObject({ id: flagId, resolution: 'penalized' })
     })
     expect(await getTestReportIntegrityFlagsByUserId(targetUser.id)).toEqual([])
-  }, 30_000)
+  })
 
   it('distinguishes a missing flag from an already resolved flag', async () => {
     await expect(applyReportAbusePenalty(adminUser.id, crypto.randomUUID())).rejects.toMatchObject({
       status: 404,
     })
-  }, 30_000)
+  })
 
   it('commits exactly one terminal outcome when dismissal races reporter penalties', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -173,7 +191,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
         reporterWasPenalized: true,
       },
     ]).toContainEqual(outcome)
-  }, 60_000)
+  })
 
   it('revoke clears bad_faith_reporter_at when last active penalty removed', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -198,7 +216,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     const updatedPenalties = await getTestReportAbusePenaltiesByUserId(reporter.id)
     const updatedPenalty = updatedPenalties.find(p => p.id === penalty!.id)
     expect(updatedPenalty?.revoked_at).not.toBeNull()
-  }, 60_000)
+  })
 
   it('revoke throws 404 on an already-revoked penalty', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -219,7 +237,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     await expect(revokeReportAbusePenalty(adminUser.id, penalty!.id)).rejects.toThrow(
       'Report abuse penalty not found or already revoked',
     )
-  }, 60_000)
+  })
 })
 
 async function expectJwtStale(userId: string): Promise<void> {
