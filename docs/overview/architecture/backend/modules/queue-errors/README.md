@@ -64,13 +64,14 @@ duration (about one second), so a bare `new Worker.RateLimitError()` drops the p
 it through these helpers instead; the `backend-no-worker-ratelimit` ast-grep rule rejects a bare
 construction and any `worker.rateLimit(ms)` call.
 
-| Export                                                  | Behavior                                                                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none |
-| `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                 |
-| `throwIfRateLimitedResponse(response, endpoint)`        | Cancels the unread body of a 429 `fetch` response, then throws the signal; `cause` is an `HttpRateLimitError` with status and wait    |
-| `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                           |
-| `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                        |
+| Export                                                  | Behavior                                                                                                                                                                                                    |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none                                                                       |
+| `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                                                                                       |
+| `throwIfRateLimitedResponse(response, endpoint)`        | Cancels the unread body of a 429 `fetch` response, then throws the signal; `cause` is an `HttpRateLimitError` with status and wait                                                                          |
+| `boundRateLimitDeferral(job, run)`                      | Runs a processor; once `job` is older than `MAX_RATE_LIMIT_DEFERRAL_AGE_MS` (24 h) a requeue signal becomes its plain `cause`, so the job spends attempts and ends. For hosts the operator does not control |
+| `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                                                                                                 |
+| `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                                                                                              |
 
 The wait travels with the job, so every replica that receives a 429 honors it. `worker.rateLimit(ms)`
 only set a timestamp in that one process, so other replicas kept calling the provider. GlideMQ also

@@ -23,7 +23,10 @@ the delivery. `deliverActivityToInbox` raises `HttpRateLimitError` with the pars
 processor's `wrapHttpForRetry` requeues the job after that wait (clamped to 1 second through 15
 minutes) without consuming an attempt. A 429 with no `Retry-After`, and every 5xx even one that sends
 `Retry-After`, keep the bounded attempts: a requeue has no attempt limit, so an unreachable
-or maintenance-mode host that keeps naming a wait would otherwise never fail.
+or maintenance-mode host that keeps naming a wait would otherwise never fail. A remote inbox can
+name a wait on every answer too, so the worker runs each job through `boundRateLimitDeferral`: once a
+delivery is 24 hours old, the next 429 spends the job's attempts like any other failure and the job
+ends.
 
 ## Durable fan-out transition matrix
 
