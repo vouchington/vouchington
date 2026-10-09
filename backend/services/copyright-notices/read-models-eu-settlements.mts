@@ -124,15 +124,19 @@ async function selectSettlementRows(
     ORDER BY referral.id ASC
   `)
   const { rows } = await transaction<SettlementRow & { copyright_notice_id: string }>(query)
-  const pages = new Map(
-    noticeIds.map(noticeId => [noticeId, { rows: [] as SettlementRow[], hasNextPage: false }]),
+  // PostgreSQL returns canonical lowercase UUIDs, but a caller may spell the id in uppercase.
+  const canonical = new Map(
+    noticeIds.map(noticeId => [
+      noticeId.toLowerCase(),
+      { rows: [] as SettlementRow[], hasNextPage: false },
+    ]),
   )
   for (const { copyright_notice_id: noticeId, ...row } of rows) {
-    const page = pages.get(noticeId)!
+    const page = canonical.get(noticeId.toLowerCase())!
     if (page.rows.length === options.limit) page.hasNextPage = true
     else page.rows.push(row)
   }
-  return pages
+  return new Map(noticeIds.map(noticeId => [noticeId, canonical.get(noticeId.toLowerCase())!]))
 }
 
 function toParticipantSettlement(row: SettlementRow): EuParticipantSettlement {
