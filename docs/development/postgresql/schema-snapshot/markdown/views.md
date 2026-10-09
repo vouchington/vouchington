@@ -626,7 +626,8 @@ UNION ALL
 Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.
 
 ```sql
- SELECT record.delivery_key,
+ SELECT record.id AS media_delivery_registry_record_id,
+    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,
     record.placement_id,
     record.placement_revision,
     record.image_id,
@@ -645,7 +646,7 @@ Current authority record joined to its latest immutable delivery transition; no 
     change.next_attempt_at
    FROM (media_delivery_registry_records record
      JOIN LATERAL ( SELECT history.id,
-            history.delivery_key,
+            history.media_delivery_registry_record_id,
             history.generation,
             history.change_type,
             history.desired_state,
@@ -659,7 +660,7 @@ Current authority record joined to its latest immutable delivery transition; no 
             history.next_attempt_at,
             history.created_at
            FROM media_delivery_registry_changes history
-          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))
+          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.generation = record.generation))
           ORDER BY history.id DESC
          LIMIT 1) change ON (true));
 ```
