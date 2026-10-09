@@ -45,11 +45,9 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 
 ## MCP Operations
 
-| Operation    | Description                                             |
-| ------------ | ------------------------------------------------------- |
-| `initialize` | Returns capabilities and server `instructions`          |
-| `tools/list` | Lists tools filtered by role, plan, and key permissions |
-| `tools/call` | Executes a tool; enforces same checks as list           |
+- `initialize` returns capabilities and server `instructions`.
+- `tools/list` lists tools filtered by role, plan, and key permissions.
+- `tools/call` executes a tool and enforces the same checks as `tools/list`.
 
 ## Audit
 
@@ -158,9 +156,8 @@ pages only its children, with `children_after`, `children_limit` and `children_p
 
 ## Performance
 
-| Endpoint         | Round Trips | Caching | Notes                                                                                                 |
-| ---------------- | ----------- | ------- | ----------------------------------------------------------------------------------------------------- |
-| POST /api/v1/mcp | 3-5         | None    | Credential validate + user fetch + rate limit + tool execute; response body streams with backpressure |
+`POST /api/v1/mcp` takes 3–5 round trips with no caching: credential validation, user fetch, rate
+limit, and tool execution. The response body streams with backpressure.
 
 ## Related
 
