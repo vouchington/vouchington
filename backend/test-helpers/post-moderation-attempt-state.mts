@@ -1,5 +1,17 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+
+/** Lets the next `beginPostModerationAttempt` reclaim the work as if its worker had gone silent. */
+export async function expireTestPostModerationWorkLease(
+  versionId: string,
+  source: 'openai_omni' | 'spam_detection',
+): Promise<void> {
+  await write(sql`/* expireTestPostModerationWorkLease */
+    UPDATE post_moderation_work_items
+    SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'
+    WHERE version_id = ${versionId} AND source = ${source}::post_moderation_sources
+  `)
+}
 
 export async function getTestPostModerationWorkAttemptCount(
   postId: string,

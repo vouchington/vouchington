@@ -7,6 +7,7 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import {
+  expireTestPostModerationWorkLease,
   getTestPostModerationAttemptStateForPost,
   getTestPostModerationWorkAttemptCount,
   getTestPostModerationWorkHoldMs,
@@ -55,6 +56,23 @@ describe('post moderation ledger provider rate limits', () => {
     await makeTestPostModerationWorkAvailable(first!.version_id, 'openai_omni')
     const retry = await beginPostModerationAttempt(postId, 'openai_omni')
     expect(retry?.attempt_number).toBe(1)
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
+  })
+
+  it('leaves a lease another worker has taken over untouched', async () => {
+    const postId = await insertPendingPost('reclaimed')
+    const stale = await beginPostModerationAttempt(postId, 'openai_omni')
+    await expireTestPostModerationWorkLease(stale!.version_id, 'openai_omni')
+    const current = await beginPostModerationAttempt(postId, 'openai_omni')
+    expect(current?.attempt_number).toBe(2)
+
+    await expect(releasePostModerationAttemptForRateLimit(stale!, 30_000)).resolves.toBe(false)
+
+    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(2)
+    const state = await getTestPostModerationAttemptStateForPost(postId, 'openai_omni')
+    expect(state?.work_lease_token).toBe(current!.lease_token)
+    // The worker that holds the lease can still give its attempt back.
+    await expect(releasePostModerationAttemptForRateLimit(current!, 30_000)).resolves.toBe(true)
     expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
   })
 
