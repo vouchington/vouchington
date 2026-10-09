@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'glide-mq'
 import { HttpRateLimitError } from '@modules/on-error/errors'
-import { getHeaderValue, getRetryAfterDurationMs } from '@modules/utils/http'
+import { cancelResponseBody, getHeaderValue, getRetryAfterDurationMs } from '@modules/utils/http'
 
 /**
  * Floor for a deferral. GlideMQ replaces a falsy `delayMs` with the worker limiter's duration (or
@@ -84,13 +84,16 @@ export function getRetryAfterMs(error: unknown): number | null {
 /**
  * Requeues the job when an upstream response is a 429, keeping the status and the `Retry-After`
  * wait on the signal's `cause` (an `HttpRateLimitError`). `endpoint` names the request without
- * its query string, which can carry credentials. Any other response returns normally.
+ * its query string, which can carry credentials. The unread body is cancelled first so sustained
+ * throttling cannot hold dispatcher connections while jobs wait. Any other response returns
+ * normally and keeps its body for the caller.
  */
 export function throwIfRateLimitedResponse(
-  response: { status: number; headers: HeaderSource },
+  response: { status: number; headers: HeaderSource; body?: Response['body'] },
   endpoint: string,
 ): void {
   if (response.status !== 429) return
+  cancelResponseBody(response)
   const retryAfterMs = getRetryAfterMs(response)
   throwRateLimited(retryAfterMs, new HttpRateLimitError(endpoint, response.status, retryAfterMs))
 }

@@ -114,6 +114,22 @@ describe('throwIfRateLimitedResponse', () => {
     expect(thrown).toHaveProperty('cause', expect.any(HttpRateLimitError))
   })
 
+  it('cancels the unread body of a 429 and leaves other responses readable', async () => {
+    const cancelled = Promise.withResolvers<void>()
+    const throttled = new Response(
+      new ReadableStream<Uint8Array>({ cancel: () => cancelled.resolve() }),
+      { status: 429 },
+    )
+    const ok = new Response('page', { status: 200 })
+
+    expect(
+      thrownBy(() => throwIfRateLimitedResponse(throttled, 'https://api.example.test')),
+    ).toBeInstanceOf(Worker.RateLimitError)
+    await cancelled.promise
+    throwIfRateLimitedResponse(ok, 'https://api.example.test')
+    await expect(ok.text()).resolves.toBe('page')
+  })
+
   it('requeues a 429 with no stated wait for the default wait', () => {
     const thrown = thrownBy(() =>
       throwIfRateLimitedResponse(

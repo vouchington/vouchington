@@ -68,7 +68,7 @@ construction and any `worker.rateLimit(ms)` call.
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none |
 | `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                 |
-| `throwIfRateLimitedResponse(response, endpoint)`        | Throws the signal for a 429 `fetch` response; `cause` is an `HttpRateLimitError` with the status and `retryAfterMs`                   |
+| `throwIfRateLimitedResponse(response, endpoint)`        | Cancels the unread body of a 429 `fetch` response, then throws the signal; `cause` is an `HttpRateLimitError` with status and wait    |
 | `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                           |
 | `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                        |
 
