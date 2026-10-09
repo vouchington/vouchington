@@ -45,7 +45,7 @@ describe('0080-00-01a-staging-rss-feeds environment gate', () => {
     },
   )
 
-  it('reads ENVIRONMENT from the process when called without an argument', () => {
+  it('reads ENVIRONMENT from the process when called without an argument', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     expect(generateStagingRssFeedsSQL()).toBe('')
     vi.stubEnv('ENVIRONMENT', 'staging')
@@ -53,7 +53,7 @@ describe('0080-00-01a-staging-rss-feeds environment gate', () => {
     expect(generateStagingRssFeedsSQL()).not.toBe('')
   })
 
-  it('emits only insert-only statements on staging', () => {
+  it('emits only insert-only statements on staging', async () => {
     const statements = splitSqlStatements(stripSqlComments(generateStagingRssFeedsSQL('staging')))
     expect(statements.length).toBeGreaterThan(0)
     for (const statement of statements) expect(statement).toMatch(/^\s*INSERT INTO /i)
@@ -62,11 +62,11 @@ describe('0080-00-01a-staging-rss-feeds environment gate', () => {
 })
 
 describe('0080-00-01a-staging-rss-feeds feed list', () => {
-  it('seeds exactly the three feeds the staging decision names', () => {
+  it('seeds exactly the three feeds the staging decision names', async () => {
     expect(urls).toEqual(SPEC_FEED_URLS)
   })
 
-  it('stores each feed the way the product normalises and slugs it', () => {
+  it('stores each feed the way the product normalises and slugs it', async () => {
     for (const feed of STAGING_RSS_FEEDS) {
       const normalized = normalizeUrlForUrlTable(feed.url)
       expect(normalized.href).toBe(feed.url)
@@ -81,7 +81,7 @@ describe('0080-00-01a-staging-rss-feeds feed list', () => {
     }
   })
 
-  it('gives every row a distinct UUIDv7 id from before any real change row', () => {
+  it('gives every row a distinct UUIDv7 id from before any real change row', async () => {
     const ids = STAGING_RSS_FEEDS.flatMap(feed => Object.values(feed.ids))
     expect(new Set(ids).size).toBe(ids.length)
     for (const id of ids) expect(id).toMatch(/^01a0f4c2-c400-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-/)
@@ -92,16 +92,16 @@ describe('0080-00-01a-staging-rss-feeds generated SQL guards', () => {
   beforeAll(loadSqlTooling)
   const stagingSql = generateStagingRssFeedsSQL('staging')
 
-  it('passes the generated-DDL guard', () => {
-    expect(findFirstGeneratedDdlViolation(stagingSql)).toBeNull()
+  it('passes the generated-DDL guard', async () => {
+    expect(await findFirstGeneratedDdlViolation(stagingSql)).toBeNull()
   })
 
-  it('passes the UUIDv7 created_at guard', () => {
-    expect(findFirstUuidv7CreatedAtViolation(stagingSql)).toBeNull()
+  it('passes the UUIDv7 created_at guard', async () => {
+    expect(await findFirstUuidv7CreatedAtViolation(stagingSql)).toBeNull()
   })
 
-  it('passes the re-runnable INSERT guard', () => {
-    expect(findFirstUnguardedInsertViolation(stagingSql)).toBeNull()
+  it('passes the re-runnable INSERT guard', async () => {
+    expect(await findFirstUnguardedInsertViolation(stagingSql)).toBeNull()
   })
 })
 

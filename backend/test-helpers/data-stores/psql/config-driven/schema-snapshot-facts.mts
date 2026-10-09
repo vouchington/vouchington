@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { parsePostgresSql, type PostgresSqlTrigger } from 'no-mistakes'
 import {
   createPostgresReplayContextFromSchema,
   type SchemaSnapshot,
@@ -24,18 +25,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-/**
- * `undefined` (fail-closed) when the table itself is unknown to the schema snapshot — the
- * caller should then treat the insert as trigger-unsafe rather than silently skip the check.
- */
-export function triggerTextsForTable(table: string): readonly string[] | undefined {
-  return replayContext.triggerTextsForTable(table)
+// The snapshot is immutable for this process. Parse its trigger DDL in one native batch so the
+// synchronous INSERT guard consumes only normalized facts. A malformed trigger stays undefined and
+// fails closed; an existing table with no triggers retains its safe empty list.
+const triggerEntries = Object.keys(schema.tables).flatMap(table =>
+  (replayContext.triggerTextsForTable(table) ?? []).map(sql => ({ table, sql })),
+)
+const parsedTriggerEntries = await parsePostgresSql(triggerEntries.map(({ sql }) => ({ sql })))
+const triggerFactsByTable = new Map<string, (PostgresSqlTrigger | undefined)[]>(
+  Object.keys(schema.tables).map(table => [table, []]),
+)
+for (const [index, { table }] of triggerEntries.entries()) {
+  const parsed = parsedTriggerEntries[index]
+  const statement = parsed?.statements[0]
+  const trigger =
+    parsed?.diagnostics.length === 0 &&
+    parsed.statements.length === 1 &&
+    statement?.kind === 'createTrigger'
+      ? statement.trigger
+      : undefined
+  triggerFactsByTable.get(table)?.push(trigger)
+}
+
+/** `undefined` means the table is absent from the snapshot; malformed DDL is an unsafe entry. */
+export function triggerFactsForTable(
+  table: string,
+): readonly (PostgresSqlTrigger | undefined)[] | undefined {
+  return triggerFactsByTable.get(table)
 }
 
 export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): boolean {
   const table = insertTableName(insert)
   if (table === undefined) return true
-  const triggers = triggerTextsForTable(table)
+  const triggers = triggerFactsForTable(table)
   if (triggers === undefined) return true
   const assignedColumns = assignedColumnsFromOnConflict(onConflict)
   const excludedAssignedColumns = excludedAssignedColumnsFromOnConflict(onConflict)

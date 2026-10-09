@@ -5,9 +5,9 @@ import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-st
 
 describe('config-driven generated DDL guard review regressions', () => {
   beforeAll(() => loadSqlParserModule())
-  it('does not treat trigger EXECUTE FUNCTION syntax as dynamic SQL', () => {
+  it('does not treat trigger EXECUTE FUNCTION syntax as dynamic SQL', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_posts') THEN
     CREATE TRIGGER trg_posts AFTER INSERT ON posts EXECUTE FUNCTION fn_posts();
   END IF;
@@ -15,24 +15,24 @@ END $$;`),
     ).toBeNull()
   })
 
-  it('rejects unclassified CREATE DDL in generated DO blocks', () => {
+  it('rejects unclassified CREATE DDL in generated DO blocks', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'archive') THEN
     CREATE SCHEMA archive;
   END IF;
 END $$;`),
     ).toBe('config-driven generators must not emit unclassified CREATE DDL')
     expect(
-      findFirstGeneratedDdlViolation(
+      await findFirstGeneratedDdlViolation(
         'CREATE OR REPLACE FUNCTION fn_posts() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;',
       ),
     ).toBeNull()
   })
 
-  it('uses all prechecks opened by the current statement', () => {
+  it('uses all prechecks opened by the current statement', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'posts') THEN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_posts') THEN
       ALTER TABLE posts ADD CONSTRAINT chk_posts CHECK (id IS NOT NULL);
@@ -42,38 +42,38 @@ END $$;`),
     ).toBeNull()
   })
 
-  it('extracts DO blocks that use quoted language identifiers', () => {
+  it('extracts DO blocks that use quoted language identifiers', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO LANGUAGE "plpgsql" $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO LANGUAGE "plpgsql" $$ BEGIN
   ALTER TABLE posts ADD CONSTRAINT chk_posts CHECK (id IS NOT NULL);
 END $$;`),
     ).toBe('DO blocks with structural DDL must guard each action with a pre-check')
   })
 
-  it('forbids extension and function drops even when they use IF EXISTS', () => {
-    expect(findFirstGeneratedDdlViolation('DROP EXTENSION IF EXISTS vector CASCADE;')).toBe(
+  it('forbids extension and function drops even when they use IF EXISTS', async () => {
+    expect(await findFirstGeneratedDdlViolation('DROP EXTENSION IF EXISTS vector CASCADE;')).toBe(
       'destructive DDL is not allowed',
     )
-    expect(findFirstGeneratedDdlViolation('DROP FUNCTION IF EXISTS fn_posts();')).toBe(
+    expect(await findFirstGeneratedDdlViolation('DROP FUNCTION IF EXISTS fn_posts();')).toBe(
       'destructive DDL is not allowed',
     )
   })
 
-  it('rejects top-level SELECT INTO table creation', () => {
-    expect(findFirstGeneratedDdlViolation('SELECT * INTO hidden_posts FROM posts;')).toBe(
+  it('rejects top-level SELECT INTO table creation', async () => {
+    expect(await findFirstGeneratedDdlViolation('SELECT * INTO hidden_posts FROM posts;')).toBe(
       'SELECT INTO table creation is not allowed',
     )
   })
 
-  it('rejects transaction-unsafe concurrent index drops', () => {
-    expect(findFirstGeneratedDdlViolation('DROP INDEX CONCURRENTLY IF EXISTS old_idx;')).toBe(
+  it('rejects transaction-unsafe concurrent index drops', async () => {
+    expect(await findFirstGeneratedDdlViolation('DROP INDEX CONCURRENTLY IF EXISTS old_idx;')).toBe(
       'DROP INDEX CONCURRENTLY is not allowed',
     )
   })
 
-  it('rejects compound absence prechecks for constructive DDL', () => {
+  it('rejects compound absence prechecks for constructive DDL', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'new_posts')
     OR EXISTS (SELECT 1 FROM posts) THEN
     CREATE TABLE new_posts (id uuid);
@@ -82,9 +82,9 @@ END $$;`),
     ).toBe('CREATE TABLE must use IF NOT EXISTS')
   })
 
-  it('rejects malformed absence prechecks for constructive DDL', () => {
+  it('rejects malformed absence prechecks for constructive DDL', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 THEN
     CREATE TABLE malformed_posts (id uuid);
   END IF;
@@ -92,9 +92,9 @@ END $$;`),
     ).toBe('CREATE TABLE must use IF NOT EXISTS')
   })
 
-  it('preserves outer prechecks across nested ELSE arms', () => {
+  it('preserves outer prechecks across nested ELSE arms', async () => {
     expect(
-      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+      await findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_posts') THEN
     IF EXISTS (SELECT 1 FROM posts) THEN
       PERFORM 1;
