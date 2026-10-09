@@ -66,7 +66,7 @@ function extractFilterOutputs(ifCondition: string): string[] {
 }
 
 describe('trusted/credentialed CI job path-filter wiring', () => {
-  it('bounds the credentialed command inside its unchanged ceiling and preserves a failing status', () => {
+  it('bounds the credentialed command with setup and cleanup headroom and preserves a failing status', () => {
     const workflow = load(credentialedWorkflowText) as {
       jobs: Record<
         string,
@@ -78,7 +78,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     }
     const job = workflow.jobs['playwright-credentialed-tests']!
     const step = job.steps.find(candidate => candidate.id === 'run-playwright-credentialed')!
-    expect(420).toBeLessThan(step['timeout-minutes']! * 60)
+    expect(420 + 10).toBeLessThan(step['timeout-minutes']! * 60)
     expect(step['timeout-minutes']).toBeLessThanOrEqual(job['timeout-minutes'])
     const directory = mkdtempSync(join(tmpdir(), 'credentialed-bounded-step-'))
     try {
@@ -112,6 +112,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
           PATH: `${directory}:${process.env.PATH ?? ''}`,
           GITHUB_WORKSPACE: directory,
           GITHUB_OUTPUT: join(directory, 'outputs'),
+          CREDENTIALED_JOB_DEADLINE_EPOCH: String(Math.floor(Date.now() / 1000) + 780),
           REAL_PYTHON: python.stdout.trim(),
           BOUND_ARGS: join(directory, 'bounded-args'),
           PLAYWRIGHT_ARGS: join(directory, 'playwright-args'),
