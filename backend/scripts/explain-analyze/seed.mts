@@ -67,6 +67,7 @@ import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
+import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
 import { seedHostnameFlags } from './seed-data/hostname-flags.mts'
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
@@ -87,6 +88,7 @@ async function main() {
   await checkpointSeed('memberships')
   await seedHostnames()
   await seedHostnameFlags()
+  await seedHostnameCrawlSweeps()
   await seedRemoteFollowers()
   await seedUrls()
   await seedTopics(2500)

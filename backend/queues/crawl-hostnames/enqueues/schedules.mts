@@ -24,9 +24,9 @@ const DEFAULT_OPTIONS = {
 export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_HOSTNAMES_QUEUE_NAME, [
   crawlJob(
     'crawl_hostnames_dispatcher',
-    '0 2 * * *',
+    '0 * * * *',
     PRIORITY_DISPATCHER,
-    'Dispatch hostname crawl jobs (daily)',
+    'Dispatch due hostname crawl jobs (hourly)',
     enqueueCrawlHostnamesDispatcher,
     'crawl-hostnames-dispatch',
   ),

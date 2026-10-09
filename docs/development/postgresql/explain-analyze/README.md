@@ -443,3 +443,5 @@ artifact (`explain-analyze-results`) rather than guessing it from local output.
 RSS feed search includes both direct topic filtering and
 `rss-feed-search-by-topic-descendants`, which exercises `include_descendants=true` against seeded
 `relation__topic__parent__topic` rows.
+
+Hostname scheduling has indexed threshold-seek and due-range scenarios. The seven-day fixture contains three never-swept hosts, three overdue hosts and 2000 recent completions. Both plan modes must use `idx_url_hostnames__crawl_due` without sorting or reading the recent cohort. The dispatcher preserves domain-blocklist exclusions and URL attempt retry rules.

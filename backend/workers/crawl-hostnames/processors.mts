@@ -97,7 +97,9 @@ export async function processCrawlHostnamesJob(
     case 'enqueueCrawlTier2Dispatcher':
       return enqueueCrawlTier2Dispatcher()
     case 'crawl_hostnames_dispatcher':
-      return deps.dispatchCrawlHostnames()
+      return processRetainedSweep(job, save =>
+        deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),
+      )
     case 'crawl_urls_per_hostname_dispatcher': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)

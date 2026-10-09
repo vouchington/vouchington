@@ -1,4 +1,4 @@
-import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
+import { executeHandlerWithCursorInBatches, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
@@ -58,7 +58,7 @@ export const dispatchCrawlUrlsPerHostname = async (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
           AND c.embeddings_generated_at IS NOT NULL
-          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * COALESCE(h.age_threshold_days, 1)
+          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * h.age_threshold_days
       )
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
@@ -89,5 +89,12 @@ export const dispatchCrawlUrlsPerHostname = async (
     },
   )
 
+  if (!result.hasMore) {
+    await write(sql`/* completeHostnameCrawlSweep */
+      UPDATE url_hostnames
+      SET crawl_swept_at = GREATEST(crawl_swept_at, ${sweepStartedAt}::timestamptz)
+      WHERE id = ${hostnameId}::uuid
+    `)
+  }
   return { count: total, hasMore: result.hasMore }
 }

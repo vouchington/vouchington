@@ -49,7 +49,7 @@ describe('crawl-hostnames processors', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     deleteOldInvalidCrawlsMock.mockResolvedValue(3)
-    dispatchCrawlHostnamesMock.mockResolvedValue(4)
+    dispatchCrawlHostnamesMock.mockResolvedValue({ count: 4, hasMore: false })
     dispatchCrawlUrlsPerHostnameMock.mockResolvedValue({ count: 5, hasMore: false })
     dispatchTier1CrawlUrlsMock.mockResolvedValue({ count: 6, hasMore: false })
     dispatchTier2CrawlUrlsMock.mockResolvedValue({ count: 7, hasMore: false })
@@ -69,7 +69,9 @@ describe('crawl-hostnames processors', () => {
   it('dispatches crawl-hostnames jobs to the matching processor', async () => {
     const deps = dependencies()
 
-    await expect(processCrawlHostnamesJob(job('crawl_hostnames_dispatcher'), deps)).resolves.toBe(4)
+    await expect(
+      processCrawlHostnamesJob(job('crawl_hostnames_dispatcher'), deps),
+    ).resolves.toEqual({ count: 4, hasMore: false })
     await expect(
       processCrawlHostnamesJob(
         job('crawl_urls_per_hostname_dispatcher', { hostname_id: 'h1' }),

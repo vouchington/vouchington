@@ -27,7 +27,7 @@ older crawl rows. It runs daily at 03:30 UTC.
 - For end users, we only ever look up the latest successful crawl for a URL.
 - We rate limit requests per domain using `url_hostnames.requests_per_second_limit` and `Crawl-delay` from robots.txt (whichever is larger), capped at 60s maximum
 - 429 domain locks in Valkey keep the longest remaining TTL when overlapping Retry-After values are recorded
-- We do not crawl hostnames where `blocked = true` or `crawlable = false`
+- We do not crawl hostnames where `is_blocked` or `NOT is_crawlable`
 - Before crawling, we respect the domain's `robots.txt` with `@services/urls-domains-robots`
 - Pages with `noindex` in `<meta name="robots">` or `X-Robots-Tag` header are stored but have empty markdown and no embeddings created
 - The crawler uses `voucha-bot https://voucha.ai/article/voucha-bot` as User-Agent (`CRAWLER_USER_AGENT` from `@voucha/config`)
@@ -45,8 +45,8 @@ Triggered Crawls:
 
 Scheduled Crawls:
 
-- Daily crawl dispatcher - a daily job that dispatches a hostname crawl dispatcher per hostname
-- Daily hostname crawl dispatcher - a dispatcher that schedules crawls for all URLs whose last crawl is `> url_hostnames.age_threshold_days` while respecting the rate limit (e.g. if the hostname's rate limit is 1 per second, schedule each crawl with a 1 second delay in between)
+- Hourly crawl dispatcher - an indexed, capped sweep of never-swept and overdue hostnames
+- Per-hostname crawl dispatcher - a dispatcher that schedules crawls for all URLs whose last crawl is `> url_hostnames.age_threshold_days` while respecting the rate limit (e.g. if the hostname's rate limit is 1 per second, schedule each crawl with a 1 second delay in between)
 
 Crawling:
 
@@ -123,7 +123,7 @@ Per-hostname and tier URL dispatch capture a fixed sweep time and UUID upper bou
 the registered `crawl-dispatch-work-config` row budget, and report `hasMore`. Continuations retain
 the last dispatched URL ID, so still-eligible queued rows cannot occupy every run's first page.
 Tier selection starts from active relation/profile-link work and joins URLs by ID; it does not
-choose work by scanning unrelated URL entities. Hostname-wide scheduling remains a separate owner.
+choose work by scanning unrelated URL entities. Hostname scheduling seeks distinct `age_threshold_days` values through the due index, then reads separate capped `UNION ALL` ranges for NULL and overdue `crawl_swept_at` values. Each branch uses index order, retaining the existing URL-domain blocklist exclusion. The retained job saves its cutoff, threshold, range and keyset position after successful enqueues; capped continuations do not restart at queued hostnames. Each range receives at most one configured hostname batch per sweep, so never-swept hosts cannot crowd out overdue hosts. Later hourly sweeps retry remaining work. `crawl_swept_at` advances monotonically to the per-host sweep start only when its final URL page completes; partial or failed dispatch does not advance it. URL attempt retry intervals remain unchanged. `hostname_max_rows_per_run` in the existing namespace bounds candidates plus threshold probes; `hostname_batch_size` bounds enqueue batches and each range’s share.
 
 Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
 to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.

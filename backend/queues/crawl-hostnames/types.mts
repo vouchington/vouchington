@@ -11,3 +11,15 @@ export type CrawlHostnamesJobs =
 
 /** Fixed sweep bounds prevent retries or newly inserted URLs from starving the tail. */
 export type CrawlDispatchCursor = { sweepStartedAt: string; afterId?: string }
+
+/** Each threshold and its two index ranges receive a bounded share of a fixed sweep. */
+export type CrawlHostnameDispatchCursor = {
+  sweepStartedAt: string
+  rangeLimit: number
+  afterBucketDays: number
+  bucketDays?: number
+  range?: 0 | 1
+  rangeRows?: number
+  afterId?: string
+  afterSweptAt?: string
+}
