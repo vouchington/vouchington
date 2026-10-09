@@ -108,5 +108,33 @@ describe('Community AI Agents Routes', () => {
       await request.authenticateAs(owner)
       await request.put(`/api/v1/communities/${community.slug}/ai-agents/not-real`).expect(404)
     })
+
+    it('returns 403 for regular members', async () => {
+      const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `ai-agents-toggle-403-${createRandomString(8)}`,
+      })
+      await insertTestCommunityMember({ communityId: community.id, userId: member.id })
+
+      const request = createRequest()
+      await request.authenticateAs(member)
+      await request
+        .put(`/api/v1/communities/${community.slug}/ai-agents/self-promotion`)
+        .expect(403)
+      await request
+        .delete(`/api/v1/communities/${community.slug}/ai-agents/self-promotion`)
+        .expect(403)
+    })
+
+    it('returns 404 for a missing community', async () => {
+      const owner = await createTestUser()
+      const slug = `ai-agents-missing-${createRandomString(8)}`
+
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      await request.put(`/api/v1/communities/${slug}/ai-agents/self-promotion`).expect(404)
+      await request.delete(`/api/v1/communities/${slug}/ai-agents/self-promotion`).expect(404)
+    })
   })
 })
