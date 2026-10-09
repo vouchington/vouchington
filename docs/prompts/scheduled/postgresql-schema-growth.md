@@ -2,10 +2,9 @@ Audit one table's growth class and partition classification. Make at most one ev
 change.
 
 If the database is not initialized, run `./dev/initialize web`, then `source .env`. Capture plans
-with `pnpm run explain:seed` and `EXPLAIN_PLAN_CACHE_MODE=compare pnpm run explain:run`. If
-PostgreSQL cannot run in this session, use the `explain-analyze-results` artifact from the newest
-successful `main` run of the backend workflow (it is kept for 1 day). If neither works, report
-`Outcome: incomplete`.
+with `pnpm run explain:seed` and `EXPLAIN_PLAN_CACHE_MODE=compare pnpm run explain:run`. This audit
+needs a live database: row counts and `pg_stat_*` write and autovacuum data are not in the CI
+EXPLAIN artifact. If PostgreSQL cannot run in this session, report `Outcome: incomplete`.
 
 - Read the full growth and identity projection in [schema-growth-test-policies.mts](../../../backend/test-helpers/schema-growth-test-policies.mts), its canonical [bounded and static identity policies](../../../backend/test-helpers/schema-growth-bounded-policies.mts), and the [partitioning strategy](../../overview/architecture/partitioning-strategy.md). Runtime partition and unbounded-table policies remain in [schema-growth-registry.mts](../../../backend/data-stores/psql/schema-growth-registry.mts). Pick the one projected registry entry whose `growth` class or partition eligibility is most likely to be stale.
 - Compare that entry's `growth` class, `partition` policy, `noPartitionRationale`, and `reconsiderPartitioningWhen` against measured evidence: current row count, the plan shapes captured by `explain:run`, write and autovacuum pressure, and whether retention actually deletes rows.

@@ -4,7 +4,8 @@ Load `$postgres-node-performance-tuning`. Read [R3](../../development/postgres-s
 and [R6](../../development/postgres-schema-rules.md#r6--query-shape) of the schema rules. Three of them
 decide most plan fixes:
 
-- Join on ids, never on text. Hashtags are the only exception.
+- Join on ids, never on text. Hashtag and category text matching is the only exception. Looking up
+  one row by its unique text (a slug, a hostname, a login token) is fine.
 - Read a `view_*` view only by its key, after choosing the ids from base tables.
 - Never bound ids with `uuidv7(...)`; use `fn_min_uuidv7(...)`.
 
@@ -19,8 +20,9 @@ and generic prepared plans, as CI does:
 - `pnpm run explain:dump`
 
 If PostgreSQL cannot run in this session, download the `explain-analyze-results` artifact from the
-newest successful `main` run of the backend workflow (it is kept for 1 day) and review its
-`results-*.json`. If neither works, report `Outcome: incomplete`.
+newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
+that run's conclusion, and review its `results-*.json`. The artifact is uploaded even when a gate
+fails, and it is kept for 1 day. If neither works, report `Outcome: incomplete`.
 
 If a run fails a plan-shape gate, check the `results-*.json` artifact in
 `backend/scripts/explain-analyze/output/` before the thrown error message. `collectAndGate()` in
@@ -39,17 +41,23 @@ Take the first of these that applies:
 
 ## Plan red flags
 
-- A node reads far more rows than the query returns. Count actual rows times loops, plus
-  `Rows Removed by Filter` and `Rows Removed by Join Filter`, against the final row count. A view
-  filtered, sorted or paged on its own columns usually shows up this way.
+- A node reads far more rows than the query returns. For each scan, count (actual rows +
+  `Rows Removed by Filter` + `Rows Removed by Index Recheck`) × loops, as `processedRows()` in
+  `backend/scripts/explain-analyze/plan-nodes.mts` does. Add `Rows Removed by Join Filter` on joins,
+  and compare the total with the final row count. A view filtered, sorted or paged on its own columns
+  usually shows up this way.
 - A SubPlan or correlated subquery whose loops equal the outer row count.
 - A predicate under `Filter` where an `Index Cond` was expected, or a partitioned parent whose
-  children all execute (no `Subplans Removed`). A volatile function in the predicate causes both.
+  children all execute. Count the children with `Actual Loops` above 0, as
+  `backend/scripts/explain-analyze/pruning/plan-gate.mts` does. `Subplans Removed` shows only
+  plan-time pruning, and a generic plan pruned at run time keeps its pruned children with
+  `Actual Loops: 0`. A volatile function in the predicate causes both problems.
 - A function call such as `fn_x(id)` in a `Filter` or an output list. The planner did not inline it,
   so the plan does not show its per-row work. To count its calls, run the query in a transaction
   after `SET LOCAL track_functions = 'all'`, then read `pg_stat_xact_user_functions` before
   rolling back.
-- A join or index condition that compares text columns.
+- A join condition (`Hash Cond`, `Merge Cond`, or the `Index Cond` of a join's inner side) that
+  compares text columns of two tables. A lookup of one row by a unique string is fine.
 - A generic plan much worse than the custom plan for the same query.
 - A sequential scan on a large table, or an estimate off by 10x or more on a node that decides a
   join.
