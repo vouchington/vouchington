@@ -9,15 +9,17 @@ import type { PrivateUser } from '../../services/users/types.mts'
 import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
 import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/feature-flags/index.mts'
 import { v7 } from 'uuid'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnLoopbackEphemeralPort, type LoopbackHost } from '@ts-shared/utils/ephemeral-ports'
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 
+type ApiTestServerAddress = { host: LoopbackHost; port: number }
+
 type ApiTestServerState = {
   server: http.Server
-  portPromise: Promise<number>
+  addressPromise: Promise<ApiTestServerAddress>
 }
 
 const API_TEST_SERVER_STATE_KEY = '__vouchaApiTestServerState'
@@ -31,8 +33,9 @@ type ApiTestServerGlobal = typeof globalThis & {
 // Exercise api-server's media-type enforcement and the client-information listener guard without
 // adding the origin guard: route tests intentionally construct cookie-authenticated requests
 // directly, while the dedicated origin-guard suites own browser-origin coverage.
-const serverPort = await sharedApiTestServerPort()
+const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort
+const serverUrlHost = serverHost === '::1' ? '[::1]' : serverHost
 const testRequestIpState = globalThis as typeof globalThis & {
   vouchaTestRequestIpCounter?: number
 }
@@ -52,9 +55,9 @@ interface AuthenticatedAgent extends supertest.Agent {
 }
 
 export const createRequest = (): AuthenticatedAgent => {
-  // Use the IPv6 URL string directly so supertest never falls back to its
+  // Use the bound loopback URL directly so supertest never falls back to its
   // hardcoded 127.0.0.1 URL (in supertest/lib/test.js Test.serverAddress()).
-  const agent = supertest.agent(`http://[::1]:${serverPort}`) as AuthenticatedAgent
+  const agent = supertest.agent(`http://${serverUrlHost}:${serverPort}`) as AuthenticatedAgent
   agent.authCookie = ''
   agent.featureFlagCookie = ''
   agent.set('x-forwarded-for', nextTestRequestIp())
@@ -95,14 +98,14 @@ export const createRequest = (): AuthenticatedAgent => {
     this.sid = sessionToken.payload.sid
     // Set cookies for all subsequent requests
     this.authCookie = cookies.join('; ')
-    this.jar.setCookies(cookies, '::1', '/')
+    this.jar.setCookies(cookies, serverHost, '/')
     syncCookieHeader(this)
   }
 
   agent.setFeatureFlags = function (overrides: FeatureFlags) {
     const encoded = encodeFeatureFlagCookie(overrides)
     this.featureFlagCookie = `ff=${encoded}`
-    this.jar.setCookies([this.featureFlagCookie], '::1', '/')
+    this.jar.setCookies([this.featureFlagCookie], serverHost, '/')
     syncCookieHeader(this)
   }
 
@@ -121,7 +124,7 @@ export function formatTestRequestIp(processId: number, counter: number): string 
   return `2001:db8:${formatIpv6Segment(processId >>> 16)}:${formatIpv6Segment(processId)}::${formatIpv6Segment(counter >>> 16)}:${formatIpv6Segment(counter)}`
 }
 
-function sharedApiTestServerPort(): Promise<number> {
+function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
   const state = globalThis as ApiTestServerGlobal
   // `vi.resetModules()` re-evaluates this module and `@voucha/api/app`, producing a
   // new `app` singleton (with its own routes, e.g. test-local routes registered by
@@ -130,10 +133,10 @@ function sharedApiTestServerPort(): Promise<number> {
   // stale pre-reset app.
   state[API_TEST_SERVER_LISTENER_KEY] = createApiRequestGuardedListener(fn.callback())
   state[API_TEST_SERVER_STATE_KEY] ??= createSharedApiTestServer(state)
-  // A rejected portPromise (e.g. transient bind failure) would otherwise stay cached forever,
+  // A rejected addressPromise (e.g. transient bind failure) would otherwise stay cached forever,
   // permanently failing every subsequent test in this fork. Clear the cached state on rejection
   // so the next call retries with a fresh listen attempt.
-  return state[API_TEST_SERVER_STATE_KEY].portPromise.catch(err => {
+  return state[API_TEST_SERVER_STATE_KEY].addressPromise.catch(err => {
     state[API_TEST_SERVER_STATE_KEY] = undefined
     throw err
   })
@@ -147,16 +150,17 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
   // Listen on IPv6 loopback (::1) — macOS has a kernel-level limit on concurrent
   // TCP connections to 127.0.0.1 that causes EADDRNOTAVAIL under parallel test load
   // (e.g. 8 fork workers × multiple test files running simultaneously). ::1 does not
-  // have this restriction. We await the 'listening' event so the port is known before
-  // the module's exports are used by any test.
-  const portPromise = listenOnEphemeralPort(testServer, '::1').then(port => {
+  // have this restriction. Hosts without IPv6 (Claude Code cloud containers) fall back
+  // to 127.0.0.1. We await the 'listening' event so the address is known before the
+  // module's exports are used by any test.
+  const addressPromise = listenOnLoopbackEphemeralPort(testServer).then(address => {
     // Surface post-bind server errors immediately instead of emitting an unhandled event.
     testServer.on('error', err => {
       throw err
     })
-    return port
+    return address
   })
-  return { server: testServer, portPromise }
+  return { server: testServer, addressPromise }
 }
 
 function formatIpv6Segment(value: number): string {

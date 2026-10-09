@@ -3,6 +3,7 @@
 Setup and parity guides for the checked-in local agent harnesses. The shared workflow and privacy
 contract lives in [agent-harness parity](../agent-harness-parity.md).
 
+- [Claude Code cloud sessions](claude-cloud.md)
 - [Cursor Configuration](cursor.md)
 - [Grok configuration](grok.md)
 - [OpenCode configuration](opencode.md)

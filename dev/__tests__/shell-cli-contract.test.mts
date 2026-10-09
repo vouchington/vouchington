@@ -10,6 +10,7 @@ const repoRoot = resolve(import.meta.dirname, '../..')
 const tempDirs: string[] = []
 const surplusArguments: Record<string, string[]> = {
   'benchmark-topic-metrics': ['--label', 'candidate', 'extra'],
+  'claude-cloud': ['backend', 'web'],
   cleanup: ['--yes', '--yes'],
   'db-clean': ['--db-only', '--db-only'],
   initialize: ['web', 'extra'],
@@ -45,6 +46,7 @@ describe('dev shell CLI contracts', () => {
 
   it.each([
     'benchmark-topic-metrics',
+    'claude-cloud',
     'initialize',
     'tmux',
     'tmux-name',
