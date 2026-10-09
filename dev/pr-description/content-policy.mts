@@ -1,9 +1,8 @@
 import {
   type MarkdownSectionsDocument,
-  parseGfmMarkdown,
+  markdownLiteralSpans,
   parseMarkdownSections,
   validateMarkdownSections,
-  walkMarkdown,
 } from 'vouchington-tooling/markdown'
 
 export function extractRelatedIssuesSection(body: string): string | undefined {
@@ -13,16 +12,14 @@ export function extractRelatedIssuesSection(body: string): string | undefined {
 export function extractRelatedIssuesReferenceText(body: string): string {
   const section = extractRelatedIssuesSection(body) ?? ''
   const characters = section.split('')
-  walkMarkdown(parseGfmMarkdown(section), node => {
-    if (node.type !== 'code' && node.type !== 'inlineCode' && node.type !== 'html') return
-    const start = node.position?.start.offset
-    const end = node.position?.end.offset
-    if (start === undefined || end === undefined) return
+  for (const span of markdownLiteralSpans(section)) {
+    const start = span.position.start.offset
+    const end = span.position.end.offset
     for (let offset = start; offset < end; offset++) {
       // Keep visible text on mixed lines, without joining reference syntax across excluded nodes.
       if (characters[offset] !== '\n' && characters[offset] !== '\r') characters[offset] = '\0'
     }
-  })
+  }
   return characters.join('')
 }
 
