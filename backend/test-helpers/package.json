@@ -61,7 +61,7 @@
     "glide-mq": "^0.17.0",
     "jose": "^6.2.12",
     "no-mistakes": "^0.83.0",
-    "openai": "^7.28.0",
+    "openai": "^7.30.0",
     "otpauth": "^9.5.2",
     "pgvector": "^0.3.0",
     "sharp": "^0.35.5",
