@@ -68,7 +68,7 @@ re-tier job on the `rss-feeds` queue.
   still dispatched, so a freshly created feed is never missed before the next nightly refresh.
 
 Feeds are grouped by `crawl_tier` and enqueued with matching glide-mq priority constants
-(`TIER_PRIORITY` in `backend/queues/rss-feeds/config.mts`): tier 1 -> priority 1, tier 5 -> priority 20. Backfill feeds omit the per-tier SLA TTL (so they are not throttled for the full SLA window) but still use the per-feed `simple` dedup via `enqueueBulkFetchRssFeeds`, which skips a feed while its fetch job is waiting, active, or retrying and admits it again once that job completes or fails. Forced/manual refreshes set `skipDeduplication` so an explicit refresh is not dropped behind a queued normal fetch.
+(`TIER_PRIORITY` in `backend/queues/rss-feeds/config.mts`): tier 1 -> priority 1, tier 5 -> priority 20. Backfill feeds omit the per-tier SLA TTL (so they are not throttled for the full SLA window) but still use the per-feed `simple` dedup via `enqueueBulkFetchRssFeeds`, which skips a feed while its fetch job is waiting, active, or retrying and admits it again once that job completes or fails. A non-forced user refresh keeps its own `rss-feed-refresh__<id>` dedup key, and forced/manual refreshes set `skipDeduplication`, so an explicit refresh is not dropped behind a queued normal fetch.
 
 ## DynamicConfig Key
 
