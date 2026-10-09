@@ -110,19 +110,23 @@ def send(owned: dict[int, str], sig: int) -> None:
             os.close(descriptor)
 
 
-def settle(proc: subprocess.Popen, owned: dict[int, str], sig: int, statuses: list[int]) -> bool:
+def settle(proc: subprocess.Popen, owned: dict[int, str], sig: int, statuses: list[int]) -> tuple[bool, bool]:
     deadline = time.monotonic() + 1
     signaled: dict[int, str] = {}
+    found_residual = False
     while True:
         scan_complete = capture(owned)
-        fresh = {pid: start for pid, start in owned.items() if signaled.get(pid) != start}
+        reap(proc, owned, statuses)
+        live = alive(owned)
+        found_residual = found_residual or any(pid != proc.pid for pid in live)
+        fresh = {pid: owned[pid] for pid in live if signaled.get(pid) != owned[pid]}
         send(fresh, sig)
         signaled.update(fresh)
         reap(proc, owned, statuses)
         if scan_complete and not alive(owned) and not children(os.getpid()):
-            return True
+            return True, found_residual
         if time.monotonic() >= deadline:
-            return False
+            return False, found_residual
         time.sleep(0.01)
 
 
@@ -186,18 +190,21 @@ def main() -> int:
     try:
         while code is None and not interrupted:
             capture(owned)
+            reap(proc, owned, adopted_statuses)
             code = proc.poll()
             timed_out = code is None and time.monotonic() >= deadline
             if code is not None or timed_out:
                 break
-            time.sleep(0.01)
+            time.sleep(min(0.1, max(0, deadline - time.monotonic())))
     finally:
         capture(owned)
         reap(proc, owned, adopted_statuses)
         residual = bool(alive(owned))
-        drained = settle(proc, owned, signal.SIGTERM, adopted_statuses)
+        drained, discovered = settle(proc, owned, signal.SIGTERM, adopted_statuses)
+        residual = residual or discovered
         if not drained:
-            drained = settle(proc, owned, signal.SIGKILL, adopted_statuses)
+            drained, discovered = settle(proc, owned, signal.SIGKILL, adopted_statuses)
+            residual = residual or discovered
         if not drained:
             print('Owned descendants remain after bounded cleanup', file=sys.stderr)
         elif residual:
@@ -210,7 +217,7 @@ def main() -> int:
         return 1
     if code != 0:
         return code
-    return 1 if residual or not drained or any(adopted_statuses) else 0
+    return 1 if residual or not drained else 0
 
 
 if __name__ == '__main__':
