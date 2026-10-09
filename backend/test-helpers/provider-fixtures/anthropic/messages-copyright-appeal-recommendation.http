@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_01ReplayFixtureCopyrightAppeal
+
+{"id":"msg_01ReplayFixtureCopyrightAppeal","type":"message","role":"assistant","model":"claude-haiku-5-5-20261001","content":[{"type":"text","text":"{\"recommendation\":\"uncertain\",\"rationale\":\"The appeal asserts authorship but supplies no evidence that distinguishes the appellant from the claimant.\"}"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":21,"cache_creation_input_tokens":150,"cache_read_input_tokens":340,"cache_creation":{"ephemeral_5m_input_tokens":100,"ephemeral_1h_input_tokens":50},"output_tokens":17,"service_tier":"standard"}}
