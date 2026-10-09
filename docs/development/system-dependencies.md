@@ -27,6 +27,9 @@ tools such as shellcheck, actionlint, selene, zizmor, ripgrep, scc, lychee, and 
 `./dev/initialize` runs `mise install`, but installing or maintaining `mise` itself is a host
 responsibility.
 
+Claude Code cloud sessions have no host provisioning; [`./dev/claude-cloud`](../../dev/claude-cloud)
+prepares their containers ([Claude Code cloud sessions](harnesses/claude-cloud.md)).
+
 When a host tool is added, removed, or its operating-system installation changes, update the host
 repository. Update this page only when Voucha's required capability or repository-owned version
 contract changes.
