@@ -11,6 +11,7 @@ import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/featu
 import { v7 } from 'uuid'
 import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import { recordServerErrorResponse } from './server-error-responses.mts'
+import { profileRequestQueries } from './request-query-profile.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 
@@ -140,7 +141,7 @@ function sharedApiTestServerPort(): Promise<number> {
 
 function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerState {
   const testServer = http.createServer((req, res) =>
-    state[API_TEST_SERVER_LISTENER_KEY]?.(req, res),
+    profileRequestQueries(req, res, () => state[API_TEST_SERVER_LISTENER_KEY]?.(req, res)),
   )
   testServer.keepAliveTimeout = 30_000
   // Listen on IPv6 loopback (::1) — macOS has a kernel-level limit on concurrent
