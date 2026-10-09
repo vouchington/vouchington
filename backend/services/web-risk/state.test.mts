@@ -22,6 +22,8 @@ async function withStateFixtures(
   }
 }
 
+const PROBE_URL = new URL('https://web-risk-gate.test/')
+
 describe('web-risk state', () => {
   it('records the real default minute and month policies in one check', () =>
     withStateFixtures(async ownFixture => {
@@ -141,12 +143,18 @@ describe('web-risk state', () => {
       fixture.cleanKey(different)
       await fixture.own(fixture.state.cacheCleanVerdict(url))
 
-      await expect(fixture.own(fixture.state.hasCleanCachedVerdict(url))).resolves.toBe(true)
-      await expect(fixture.own(fixture.state.hasCleanCachedVerdict(different))).resolves.toBe(false)
+      await expect(fixture.own(fixture.state.readProviderGate(url))).resolves.toMatchObject({
+        cleanCached: true,
+      })
+      await expect(fixture.own(fixture.state.readProviderGate(different))).resolves.toMatchObject({
+        cleanCached: false,
+      })
       expect(await fixture.ttl(key)).toBeGreaterThan(7 * 24 * 60 * 60 * 1000 - 5000)
       expect(await fixture.ttl(key)).toBeLessThanOrEqual(7 * 24 * 60 * 60 * 1000)
       await fixture.invalidateCleanVerdict(url)
-      await expect(fixture.own(fixture.state.hasCleanCachedVerdict(url))).resolves.toBe(false)
+      await expect(fixture.own(fixture.state.readProviderGate(url))).resolves.toMatchObject({
+        cleanCached: false,
+      })
     }))
 
   it.each([
@@ -167,7 +175,9 @@ describe('web-risk state', () => {
 
       expect(await fixture.ttl(fixture.cooldownKey())).toBeGreaterThan(milliseconds - 500)
       expect(await fixture.ttl(fixture.cooldownKey())).toBeLessThanOrEqual(milliseconds)
-      await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(true)
+      await expect(fixture.own(fixture.state.readProviderGate(PROBE_URL))).resolves.toMatchObject({
+        coolingDown: true,
+      })
     } finally {
       await fixture.cleanup()
     }
@@ -177,9 +187,13 @@ describe('web-risk state', () => {
     withStateFixtures(async ownFixture => {
       const fixture = ownFixture()
       await fixture.own(fixture.state.setProviderCooldown(60))
-      await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(true)
+      await expect(fixture.own(fixture.state.readProviderGate(PROBE_URL))).resolves.toMatchObject({
+        coolingDown: true,
+      })
 
       await fixture.invalidateProviderCooldown()
-      await expect(fixture.own(fixture.state.isProviderCoolingDown())).resolves.toBe(false)
+      await expect(fixture.own(fixture.state.readProviderGate(PROBE_URL))).resolves.toMatchObject({
+        coolingDown: false,
+      })
     }))
 })

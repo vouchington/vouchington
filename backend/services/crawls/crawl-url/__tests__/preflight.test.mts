@@ -31,7 +31,7 @@ describe('crawl preflight blacklist database failure', () => {
       const options = { ignoreRobotsTxt: true }
 
       const { result, error } = await withPostgresPoolQueryFailureForTest(
-        '/* isUrlBlocked */',
+        '/* getBlocklistedDomainKeys */',
         () => loadCrawlPreflight(url.id, 0, new Set(), options).catch((err: unknown) => err),
       )
 

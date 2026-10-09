@@ -20,6 +20,7 @@ import {
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
+import { bloomFilterConfig } from '@services/bloom-filter-config'
 
 function getBloomFilter() {
   return new ValkeyBloomFilter({
@@ -57,10 +58,17 @@ export async function enqueueUrlBlocklistRebuild(): Promise<void> {
   }
 }
 
+/** Dynamic-config switch for the URL blocklist Bloom filter; the read helpers below honor it. */
+export function isUrlBlocklistBloomFilterEnabled(): boolean {
+  return bloomFilterConfig.fields.get('urlBlocklistBloomFilterEnabled') !== false
+}
+
+/** `null` means unknown, so callers must use the database. A disabled filter is always unknown. */
 export async function checkBloomFilter(
   hostname: string,
   target?: BlocklistBloomFilterReadTarget,
 ): Promise<boolean | null> {
+  if (!isUrlBlocklistBloomFilterEnabled()) return null
   const bloomFilter = getBloomFilter()
   return checkBloomFilterRead({
     readyKey: target?.readyKey ?? BLOOM_READY_KEY,
@@ -72,7 +80,9 @@ export async function checkBloomFilter(
   })
 }
 
+/** Same contract as `checkBloomFilter`: `null` entries mean unknown, so use the database. */
 export async function checkBloomFilters(hostnames: string[]): Promise<Array<boolean | null>> {
+  if (!isUrlBlocklistBloomFilterEnabled()) return hostnames.map(() => null)
   return checkBloomFiltersRead({
     readyKey: BLOOM_READY_KEY,
     liveKey: getBloomFilter().getConfig().liveKey,
