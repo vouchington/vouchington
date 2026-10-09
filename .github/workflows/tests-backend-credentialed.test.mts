@@ -72,7 +72,8 @@ describe('backend credentialed test workflow', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     const report = stepSection(credentialedJob, 'Report non-gating smoke check failure')
 
-    expect(report).toContain('if: ${{ failure() }}')
+    expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
+    expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
     expect(report).toContain('::warning title=Live provider smoke check failed::')
     expect(report).toContain('>> "$GITHUB_STEP_SUMMARY"')
     // The test steps stay hard failures: a red job keeps the Nightly alert and the check visible.
@@ -116,5 +117,13 @@ describe('backend area wiring for the live-provider smoke checks', () => {
     expect(needsOf('coverage')).not.toContain('test-backend-credentialed')
     expect(needsOf('codecov')).not.toContain('test-backend-credentialed')
     expect(uploads.map(upload => upload.flag)).not.toContain('backend-credentialed')
+  })
+
+  it('is ignored by pr-shepherd, which blocks on every failing pull-request check', () => {
+    const { ignoreChecks } = load(readFileSync('.pr-shepherdrc.yml', 'utf8')) as {
+      ignoreChecks: string[]
+    }
+
+    expect(ignoreChecks).toContain('test-backend-credentialed / backend-credentialed-tests')
   })
 })
