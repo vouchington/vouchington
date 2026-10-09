@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { parseEntityJob } from './job-payload.mts'
 import { parseReconciliationDispatch } from './job-payload-reconciliation.mts'
 
 describe('reconciliation continuation contract', () => {
@@ -13,6 +14,23 @@ describe('reconciliation continuation contract', () => {
       changedAtEpochUs: '1782864000000001',
     }
     expect(parseReconciliationDispatch({ window, after })).toEqual({ window, after })
+  })
+  it('carries the created-in-window flag on candidates and the resume cursor', () => {
+    const candidate = {
+      entityType: 'user',
+      entityId: 'synthetic-user',
+      changedAtEpochUs: '1782864000000001',
+      referrerId: 'synthetic-referrer',
+      createdInWindow: true,
+    }
+    expect(parseEntityJob('reconcileEntity', candidate).data).toEqual(candidate)
+    expect(parseReconciliationDispatch({ window, after: candidate })).toEqual({
+      window,
+      after: candidate,
+    })
+    expect(() =>
+      parseEntityJob('reconcileEntity', { ...candidate, createdInWindow: 'yes' }),
+    ).toThrow(/createdInWindow must be a boolean/)
   })
   it.each([
     [],

@@ -117,6 +117,7 @@ export type ReconcileEntityData = {
   changeId?: string
   contentChanged?: boolean
   referrerId?: string
+  createdInWindow?: boolean
 }
 
 export type EntityReconciliationDispatchData = {

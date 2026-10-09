@@ -5,8 +5,11 @@ Source entrypoint: [backend/services/entity-listener-reconciliation/README.md](.
 Owns the PostgreSQL checkpoint window and bounded cursor scan used to recover entity-listener work
 after queue loss. The service scans current active users, topics, completed images, and URLs,
 then merges the append-only, UUIDv7-indexed post revision stream so create/update/delete payload
-semantics survive queue loss. The entity-listener worker runs each candidate's idempotent processor
-and advances the checkpoint only after all of them succeed.
+semantics survive queue loss. User candidates also carry `createdInWindow`, true when the UUIDv7 id
+is at or after the window start, so the worker replays creation effects only for new accounts (see
+[durable recovery](../../queues/entity-listeners/README.md#durable-recovery)). The entity-listener
+worker runs each candidate's idempotent processor and advances the checkpoint only after all of
+them succeed.
 
 The default hourly cadence, logical job IDs, scheduler, and admin trigger are documented in the
 [entity-listener queue](../../queues/entity-listeners/README.md). The durable recovery contract is

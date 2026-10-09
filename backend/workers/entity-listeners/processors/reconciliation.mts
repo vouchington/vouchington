@@ -13,7 +13,7 @@ import { processImageCreated } from './images.mts'
 import { processPostCreated, processPostDeleted, processPostUpdated } from './posts.mts'
 import { processTopicCreated } from './topics.mts'
 import { processUrlCreated } from './urls.mts'
-import { processAutoFollowReferrer, processUserCreated } from './users.mts'
+import { processAutoFollowReferrer, processUserCreated, processUserUpdated } from './users.mts'
 
 type ReconcileEntityDependencies = {
   processImageCreated: typeof processImageCreated
@@ -24,6 +24,7 @@ type ReconcileEntityDependencies = {
   processTopicCurrentState: typeof processTopicCreated
   processUrlCreated: typeof processUrlCreated
   processUserCreated: typeof processUserCreated
+  processUserUpdated: typeof processUserUpdated
 }
 
 const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
@@ -35,6 +36,7 @@ const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
   processTopicCurrentState: processTopicCreated,
   processUrlCreated,
   processUserCreated,
+  processUserUpdated,
 }
 
 export { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues/reconciliation'
@@ -119,6 +121,13 @@ export async function reconcileEntity(
 ): Promise<void> {
   switch (data.entityType) {
     case 'user':
+      // Candidates are selected by updated_at, and the vote-weight recalculation rewrites it, so
+      // only an account created in the window replays creation effects; a replay of every update
+      // would re-enqueue the recalculation forever and re-follow referrers users unfollowed.
+      if (!data.createdInWindow) {
+        await dependencies.processUserUpdated({ id: data.entityId })
+        return
+      }
       await dependencies.processUserCreated({ id: data.entityId })
       if (data.referrerId) {
         await dependencies.processAutoFollowReferrer({

@@ -23,6 +23,10 @@ export type EntityReconciliationCandidate = {
   changeId?: string
   contentChanged?: boolean
   referrerId?: string
+  // Users only: true when the account's UUIDv7 id falls at or after the window start, so its
+  // one-time creation effects (vote weight, referrer follow) still need recovery. A non-UUIDv7 id
+  // has no creation time, and absent means "only updated".
+  createdInWindow?: boolean
 }
 
 export type EntityReconciliationWindow = {
@@ -62,7 +66,7 @@ export async function* streamEntityReconciliationCandidateBatches(
 ): AsyncGenerator<EntityReconciliationCandidate[]> {
   const limits = options.limits ?? getEntityReconciliationLimits()
   const after = options.after
-  const firstRevisionId = getMinUUIDv7ForDate(window.start)
+  const firstIdInWindow = getMinUUIDv7ForDate(window.start)
   const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
   let batch: EntityReconciliationCandidate[] = []
   for await (const row of createAsyncGeneratorFromCursor<{
@@ -78,7 +82,10 @@ export async function* streamEntityReconciliationCandidateBatches(
         SELECT 'user'::text AS entity_type, id AS entity_id,
           floor(extract(epoch FROM updated_at) * 1000000)::text AS changed_at_epoch_us,
           NULL::uuid AS change_id,
-          jsonb_build_object('referrerId', referrer_user_id) AS details,
+          jsonb_build_object(
+            'referrerId', referrer_user_id,
+            'createdInWindow', uuid_extract_version(id) = 7 AND id >= ${firstIdInWindow}
+          ) AS details,
           updated_at AS changed_at
         FROM users
         WHERE updated_at >= ${window.start} AND updated_at <= ${window.end} AND deleted_at IS NULL
@@ -98,7 +105,7 @@ export async function* streamEntityReconciliationCandidateBatches(
           floor(extract(epoch FROM created_at) * 1000000)::text,
           id, jsonb_build_object('changes', changes), created_at
         FROM post_revisions
-        WHERE id >= ${firstRevisionId} AND id < ${afterLastRevisionId}
+        WHERE id >= ${firstIdInWindow} AND id < ${afterLastRevisionId}
         UNION ALL
         SELECT 'image', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
           NULL::uuid, NULL::jsonb, updated_at
@@ -133,6 +140,9 @@ export async function* streamEntityReconciliationCandidateBatches(
         : {}),
       ...(row.entity_type === 'user' && typeof row.details?.referrerId === 'string'
         ? { referrerId: row.details.referrerId }
+        : {}),
+      ...(row.entity_type === 'user'
+        ? { createdInWindow: row.details?.createdInWindow === true }
         : {}),
     })
     if (batch.length >= limits.batchSize) {

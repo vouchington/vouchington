@@ -32,13 +32,26 @@ Every processor uses the `entity-listeners` queue. The worker rejects a payload 
 registry. It resumes a PostgreSQL checkpoint with a five-minute overlap, leaves a one-minute
 replica-lag margin, streams active users/topics/images/URLs, and replays the append-only post
 revision stream for exact create/update/delete semantics. Revision payloads preserve content-change
-semantics without repeatedly resetting unchanged posts. Referred users
-also replay their idempotent auto-follow relation. The dispatcher reconciles each candidate inline
-and advances the checkpoint only after every entity processor finishes, so a Valkey wipe cannot
-strand already-checkpointed child work. The scheduled `enqueueReconcileEntities` job enqueues the same simple-deduplicated sweep as
+semantics without repeatedly resetting unchanged posts. The dispatcher reconciles each candidate
+inline and advances the checkpoint only after every entity processor finishes, so a Valkey wipe
+cannot strand already-checkpointed child work. The scheduled `enqueueReconcileEntities` job enqueues the same simple-deduplicated sweep as
 the manual backfill. A live sweep retains its job and payload between bounded passes;
 the separately exposed per-entity enqueue uses
 `entity-reconcile__<type>__<id>__<changed-at-us>` as both `jobId` and simple deduplication ID.
+
+User candidates are selected by `updated_at`, which any later write to the row advances, including
+the vote-weight recalculation's own `vote_weight_recalculated_at` write. The candidate query
+therefore marks a user `createdInWindow` only when its UUIDv7 id is at or after the window start (an id of any other version counts as updated),
+and only those users replay one-time creation effects: `processUserCreated` (vote-weight
+recalculation, language detection, cache invalidation) and the referrer auto-follow. The
+auto-follow upserts with `skipIfDeleted`, so neither a replay nor a retried signup job resurrects a
+follow the user removed. A user that was only updated replays `processUserUpdated` (cache
+invalidation and language detection, which skips unchanged input), so the recalculation write no
+longer re-selects the user for another recalculation in the next window. A user created inside the
+five-minute overlap replays its creation effects in two consecutive windows, then converges. A user
+created before the window start (outside the overlap) and written after the window end but before
+the sweep reads the row, including on a resumed capped pass, replays as updated, so its lost
+creation effects are not recovered by this sweep.
 
 Post category relations, votes, and primary vote stats are written in the post transaction. They
 need no category recovery job; the post service publishes cache invalidation and notification

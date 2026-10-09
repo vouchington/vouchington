@@ -37,5 +37,8 @@ export const processAutoFollowReferrer = async ({
     objectType: 'user',
   })
   const creator = { __entity_type: 'user' as const, account_type: null, id: newUserId, roles: [] }
-  await upsertEntityRelation(creator, followRelation, { id: newUserId }, [{ id: referrerId }])
+  // A signup retry or reconciliation replay must not resurrect a follow the user already removed.
+  await upsertEntityRelation(creator, followRelation, { id: newUserId }, [{ id: referrerId }], {
+    skipIfDeleted: true,
+  })
 }

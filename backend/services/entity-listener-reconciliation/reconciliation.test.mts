@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { withTestEntityReconciliationCheckpoint } from '@voucha/test-helpers/entities/entity-reconciliation-checkpoint'
 import {
   createTestPost,
   createTestUser,
+  createTestUserDirect,
+  createTestUserWithAge,
+  createTestUserWithId,
   deleteTestPost,
   setUserReferrerId,
 } from '@voucha/test-helpers'
@@ -64,6 +68,43 @@ describe('entity-listener reconciliation', () => {
       )
     }
     expect(found).toBe(true)
+  })
+
+  it('marks only users created inside the window as needing creation recovery', async () => {
+    const created = await createTestUserDirect()
+    // Created ten minutes ago, then written to inside the window like a vote-weight recalculation.
+    const updated = await createTestUserWithAge(600_000)
+    await setUserReferrerId(updated.id, created.id)
+    const now = new Date()
+    const batches = streamCompleteWindow({
+      start: new Date(now.getTime() - 60_000),
+      end: new Date(now.getTime() + 60_000),
+    })
+    const flags = new Map<string, boolean | undefined>()
+    for await (const batch of batches) {
+      for (const candidate of batch) {
+        if (candidate.entityType === 'user')
+          flags.set(candidate.entityId, candidate.createdInWindow)
+      }
+    }
+    expect(flags.get(created.id)).toBe(true)
+    expect(flags.get(updated.id)).toBe(false)
+  })
+
+  it('never infers creation from an id that is not a UUIDv7', async () => {
+    // A UUIDv4 whose leading bytes sort after every UUIDv7 window start, whatever the account's age.
+    const legacyId = `ffffffff${randomUUID().slice(8)}`
+    await createTestUserWithId(legacyId, `legacy-${legacyId.slice(-12)}`)
+    const now = new Date()
+    const batches = streamCompleteWindow({
+      start: new Date(now.getTime() - 60_000),
+      end: new Date(now.getTime() + 60_000),
+    })
+    let candidate: EntityReconciliationCandidate | undefined
+    for await (const batch of batches) {
+      candidate ??= batch.find(item => item.entityId === legacyId)
+    }
+    expect(candidate).toMatchObject({ entityType: 'user', createdInWindow: false })
   })
 
   it('streams soft-deleted posts through the deletion reconciliation path', async () => {
