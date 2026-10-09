@@ -7,11 +7,18 @@
 Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.
 
 ```sql
- WITH canonical_follows AS (
+ WITH feed_inputs AS MATERIALIZED (
+         SELECT rss_feeds.id,
+            rss_feeds.canonical_rss_feed_id,
+            rss_feeds.topic_id,
+            rss_feeds.deleted_at,
+            rss_feeds.is_enabled
+           FROM rss_feeds
+        ), canonical_follows AS (
          SELECT COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,
             f.subject_id AS user_id
            FROM (relation__user__follow__rss_feed f
-             JOIN rss_feeds rf ON ((rf.id = f.object_id)))
+             JOIN feed_inputs rf ON ((rf.id = f.object_id)))
           WHERE (f.deleted_at IS NULL)
           GROUP BY COALESCE(rf.canonical_rss_feed_id, rf.id), f.subject_id
         ), active_paid_memberships AS (
@@ -32,7 +39,7 @@ Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly b
         ), scored AS (
          SELECT rf.id AS rss_feed_id,
             (ln(((1)::double precision + (COALESCE(fc.weighted_follower_count, 0))::double precision)) + COALESCE(t.votes_score_net, (0)::double precision)) AS crawl_score
-           FROM ((rss_feeds rf
+           FROM ((feed_inputs rf
              JOIN topics t ON ((t.id = rf.topic_id)))
              LEFT JOIN follow_counts fc ON ((fc.rss_feed_id = rf.id)))
           WHERE ((rf.deleted_at IS NULL) AND (rf.is_enabled = true))
@@ -77,7 +84,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
                    FROM users post_creator
                   WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1
                    FROM user_suspensions suspension
-                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= uuidv7('-30 days'::interval)))
+                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (source.post_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
         ), eligible_rss_hashtags AS (
          SELECT category.topic_alias_id,
             category.category_text AS authored_token,
@@ -88,13 +95,13 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
            FROM ((rss_feed_item_categories category
              JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))
              JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))
-          WHERE ((category.topic_alias_id IS NOT NULL) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1
+          WHERE ((category.topic_alias_id IS NOT NULL) AND (category.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (identity.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1
                    FROM ((rss_feed_item_sources source
                      JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))
                      JOIN topics feed_topic ON ((feed_topic.id = feed.topic_id)))
-                  WHERE ((source.rss_feed_item_id = item.id) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1
+                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1
                    FROM relation__rss_feed_item__category__topic_alias relation
-                  WHERE ((relation.subject_id = item.id) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))
+                  WHERE ((relation.subject_id = item.id) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))
         ), occurrences AS (
          SELECT eligible_post_hashtags.topic_alias_id,
             eligible_post_hashtags.authored_token,

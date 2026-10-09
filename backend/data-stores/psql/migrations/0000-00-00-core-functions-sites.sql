@@ -179,6 +179,14 @@ ON CONFLICT (code) DO NOTHING;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- The unused sites table, trigger and seed are removed.
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_min_uuidv7(p_at TIMESTAMPTZ) RETURNS UUID
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
+  SELECT (lpad(to_hex(floor(extract(epoch FROM p_at) * 1000)::bigint), 12, '0') || '70008000000000000000')::uuid
+$$;
+
+COMMENT ON FUNCTION fn_min_uuidv7(TIMESTAMPTZ) IS 'Smallest UUIDv7 at the timestamp millisecond, for indexed content-id bounds and partition pruning. STABLE permits inlining of timestamptz epoch extraction.';
+
 -- Immutable function to convert text to timestamptz
 -- Used for generated columns that extract timestamps from JSONB
 -- RSS feeds typically include timezone info (RFC 822 or ISO 8601)

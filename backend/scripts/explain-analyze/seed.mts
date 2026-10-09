@@ -67,6 +67,8 @@ import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
+import { seedTopHashtags } from './seed-data/top-hashtags.mts'
+import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
@@ -104,7 +106,6 @@ async function main() {
   await seedFollowRelations(10_000)
   await seedMuteBlockRelations(5000)
   await seedRssFeeds(RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT)
-  await seedFollowerDistributions()
   await seedSemanticRssFeedItems()
   await seedStoryPostRelatedUrlProjection()
   await seedDisabledRssFeed(2500)
@@ -129,6 +130,8 @@ async function main() {
   await checkpointSeed('crawls')
   await seedPostSlugs(1000)
   await seedTopicAliases(2500)
+  await seedTopHashtags()
+  await seedFollowerDistributions()
   await seedProfileLinks(1000)
   await seedCommunities(5, 200)
   await seedCommunityListItemTopic()
@@ -145,6 +148,7 @@ async function main() {
   await seedOAuthClientVerification()
   await seedClassifierHumanVoteComparison()
   await runAnalyze()
+  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   await printRowCounts()
   console.log('\nSeed complete.')
   process.exit(0)

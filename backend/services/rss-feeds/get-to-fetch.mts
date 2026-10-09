@@ -71,28 +71,18 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       AND rss_feeds.is_enabled = TRUE`
 
   const query = `/* getRssFeedsTiered */
-    WITH due AS (
+    WITH candidates AS (
       SELECT${FEED_COLUMNS},
         ${scoreExpr} AS crawl_score,
         ${tierExpr} AS crawl_tier,
-        1 AS priority_group,
-        NULL::TIMESTAMPTZ AS deadline_at
+        CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END AS priority_group,
+        CASE WHEN ${isDueExpr} THEN NULL::TIMESTAMPTZ
+          ELSE rss_feeds.last_fetched_at + (${slaCaseExpr}) END AS deadline_at
       FROM rss_feeds${FEED_JOINS}
       LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
       WHERE ${enabledWhere}
-        AND ${isDueExpr}
-    ),
-    backfill AS (
-      SELECT${FEED_COLUMNS},
-        ${scoreExpr} AS crawl_score,
-        ${tierExpr} AS crawl_tier,
-        2 AS priority_group,
-        (rss_feeds.last_fetched_at + (${slaCaseExpr})) AS deadline_at
-      FROM rss_feeds${FEED_JOINS}
-      LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
-      WHERE ${enabledWhere}
-        AND NOT ${isDueExpr}
-        AND rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond')
+        AND (${isDueExpr}
+          OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond'))
     )
     SELECT
       id, url, url_hostname_id, crawlable, title,
@@ -100,11 +90,7 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       feed_ignore_robots_txt, hostname_ignore_robots_txt,
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
       crawl_score, crawl_tier, priority_group
-    FROM (
-      SELECT * FROM due
-      UNION ALL
-      SELECT * FROM backfill
-    ) combined
+    FROM candidates
     ORDER BY
       priority_group ASC,
       deadline_at ASC NULLS FIRST,

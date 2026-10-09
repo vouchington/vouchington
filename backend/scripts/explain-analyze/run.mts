@@ -25,11 +25,13 @@ import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-clien
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
+import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 
 async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
+    await runMaterializedViewRefreshScenarios()
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runPostFeedShareScenarios()

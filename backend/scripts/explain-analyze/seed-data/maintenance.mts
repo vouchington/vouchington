@@ -67,7 +67,13 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
 ]
 
 export const ANALYZE_TARGETS = [
-  ...new Set([...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table), 'rss_feed_items']),
+  ...new Set([
+    ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
+    'rss_feed_items',
+    'post_topic_alias_sources',
+    'relation__post__category__topic_alias',
+    'relation__rss_feed_item__category__topic_alias',
+  ]),
 ]
 
 export function buildSeededRowCountQuery({ table, column, prefix, pattern }: TableInfo): {

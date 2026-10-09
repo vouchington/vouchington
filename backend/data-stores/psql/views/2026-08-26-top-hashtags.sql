@@ -40,7 +40,11 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
         WHERE suspension.user_id = source.contributor_user_id
           AND suspension.lifted_at IS NULL
       )
-      AND p.id >= uuidv7(INTERVAL '-30 days')
+      -- One refresh-wide cutoff. Repeat id bounds at each relation: join equality does not
+      -- propagate ranges. RSS published_at is clamped to its id time, so its bounds are safe.
+      AND p.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
+      AND source.post_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
+      AND relation.subject_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
   ),
   eligible_rss_hashtags AS (
     SELECT
@@ -54,6 +58,9 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
     JOIN rss_feed_items item ON item.id = category.rss_feed_item_id
     JOIN rss_feed_item_guids identity ON identity.id = item.id
     WHERE category.topic_alias_id IS NOT NULL
+      AND category.rss_feed_item_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
+      AND item.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
+      AND identity.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
       AND item.deleted_at IS NULL
       AND item.published_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
       AND EXISTS (
@@ -62,6 +69,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
         JOIN rss_feeds feed ON feed.id = source.rss_feed_id
         JOIN topics feed_topic ON feed_topic.id = feed.topic_id
         WHERE source.rss_feed_item_id = item.id
+          AND source.rss_feed_item_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
           AND feed.deleted_at IS NULL
           AND feed.is_enabled = TRUE
           AND feed.is_discoverable = TRUE
@@ -71,6 +79,7 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
       AND EXISTS (
         SELECT 1 FROM relation__rss_feed_item__category__topic_alias relation
         WHERE relation.subject_id = item.id
+          AND relation.subject_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '30 days')
           AND relation.object_id = category.topic_alias_id
           AND relation.deleted_at IS NULL
           AND relation.votes_score_net > 0

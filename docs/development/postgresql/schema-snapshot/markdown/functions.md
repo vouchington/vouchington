@@ -217,6 +217,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_i
  STABLE PARALLEL SAFE
 ```
 
+## `fn_min_uuidv7(p_at timestamp with time zone)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+```
+
 ## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
 
 ```sql

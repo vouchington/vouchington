@@ -314,6 +314,17 @@ per statement on a busy test shard (#2207).
 
 ## Covered service queries
 
+Materialized-view scenarios explain the live defining queries obtained through `pg_get_viewdef`,
+because PostgreSQL cannot EXPLAIN a `REFRESH MATERIALIZED VIEW`. `mv-top-hashtags-refresh`
+requires indexed content-id reads inside one transaction-time 30-day window; the seed has five old
+hashtag sources per recent source, plus recent RSS back catalogue rejected by `published_at`.
+`mv-rss-feed-crawl-tiers-refresh` budgets one read of each scoring input (shared feed inputs are
+materialized once), and `rss-feeds-to-fetch-tiered` captures the real dispatcher service call.
+Their `registerScenarioContract` relation budgets sit beside the scenarios, with measured rows
+plus 20% headroom. Processing counts include filtered rows and repeated probes;
+custom and generic plans must both pass. The tier refresh intentionally reads every
+feed to calculate percentiles; the dispatcher combines due and backfill candidates in one pass.
+
 [`scenario-manifest.mts`](../../../../backend/scripts/explain-analyze/scenario-manifest.mts) ratchet-enforces the set of scenario identities via
 `assertScenarioManifest()`, so an identity cannot be dropped, duplicated, or silently swapped for
 another. Those identities are the caller-supplied labels passed to `runAndCapture()`, not a binding

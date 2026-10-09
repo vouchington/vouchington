@@ -1,4 +1,7 @@
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  'mv-top-hashtags-refresh',
+  'mv-rss-feed-crawl-tiers-refresh',
+  'rss-feeds-to-fetch-tiered',
   'post-search-similar-post-new',
   'post-search-similar-post-relevance',
   'post-search-similar-rss-new',
