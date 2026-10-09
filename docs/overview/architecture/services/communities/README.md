@@ -87,6 +87,7 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 | [`automod-settings.mts`](../../../../../backend/services/communities/automod-settings.mts)     | Moderator-set `automod_action` (`record_only` default)    |
 | [`delete.mts`](../../../../../backend/services/communities/delete.mts)                         | Soft-delete (sets deleted_at)                             |
 | [`get.mts`](../../../../../backend/services/communities/get.mts)                               | Fetch community by slug or ID                             |
+| [`load-with-viewer.mts`](../../../../../backend/services/communities/load-with-viewer.mts)     | Community plus the viewer's membership in one query       |
 | [`columns.mts`](../../../../../backend/services/communities/columns.mts)                       | Response column list for detail, batch and search reads   |
 | [`authorization.mts`](../../../../../backend/services/communities/authorization.mts)           | Role-based permission helpers                             |
 | [`slugs.mts`](../../../../../backend/services/communities/slugs.mts)                           | Slug generation and uniqueness                            |

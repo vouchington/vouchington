@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { getCommunityMember, getCommunityOrThrow } from '@services/communities'
+import { getCommunityOrThrow, loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityAiAgents,
   disableCommunityAutoTaggerAgent,
@@ -12,8 +12,7 @@ import {
 app.route('/api/v1/communities/:idOrSlug/ai-agents').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/ai-agents')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   ctx.assert(
     currentUserCanManageCommunityAiAgents(currentUser, community, membership),
     403,

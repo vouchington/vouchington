@@ -8,13 +8,12 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  loadCommunityForViewer,
-  getCommunityMember,
-  currentUserCanManageCommunityList,
-  searchCommunityListItems,
   addCommunityListItem,
+  currentUserCanManageCommunityList,
+  loadCommunityForViewer,
+  loadCommunityWithViewer,
   removeCommunityListItem,
+  searchCommunityListItems,
 } from '@services/communities'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
 import { indexById } from '@modules/utils'
@@ -73,8 +72,7 @@ app
     )
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(
       currentUserCanManageCommunityList(currentUser, community, membership),
       403,
@@ -108,8 +106,7 @@ app
     )
 
     const { idOrSlug, itemId } = ctx.params as { idOrSlug: string; itemId: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(
       currentUserCanManageCommunityList(currentUser, community, membership),
       403,

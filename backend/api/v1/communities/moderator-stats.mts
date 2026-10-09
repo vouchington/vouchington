@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   aggregateModeratorActionCounts,
   currentUserCanViewCommunityModlog,
@@ -20,8 +20,7 @@ app.route('/api/v1/communities/:idOrSlug/moderator-stats').get(async (ctx: Conte
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/moderator-stats')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   const canView = currentUserCanViewCommunityModlog(currentUser, community, membership)
   if (!canView) {

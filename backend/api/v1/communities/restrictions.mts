@@ -9,14 +9,14 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
+  COMMUNITY_RESTRICTION_TYPES,
   activateCommunityRestrictions,
-  getCommunityMember,
+  currentUserCanModerateCommunity,
   getCommunityOrThrow,
   getRaidModeSuggestion,
   liftCommunityRestriction,
+  loadCommunityWithViewer,
   searchCommunityRestrictions,
-  currentUserCanModerateCommunity,
-  COMMUNITY_RESTRICTION_TYPES,
   type CommunityRestrictionType,
 } from '@services/communities'
 import { assertNotSuspended } from '@services/users'
@@ -27,8 +27,7 @@ app
     apiQuery('GET:/api/v1/communities/:idOrSlug/restrictions', communityPageQuery)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/restrictions')
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(
       currentUserCanModerateCommunity(currentUser, community, membership),

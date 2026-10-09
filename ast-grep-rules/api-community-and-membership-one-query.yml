@@ -1,0 +1,63 @@
+id: api-community-and-membership-one-query
+language: Tsx
+severity: error
+message: 'Load the community and the viewer membership together with loadCommunityWithViewer(idOrSlug, currentUser.id) instead of getCommunityOrThrow followed by getCommunityMember (one query, not two serial reads).'
+files:
+  - 'backend/api/**/*.mts'
+ignores:
+  - 'backend/api/**/*.test.mts'
+  - 'backend/api/**/__tests__/**'
+rule:
+  pattern: getCommunityMember($COMMUNITY.id, $$$ARGS)
+  inside:
+    stopBy: end
+    kind: statement_block
+    has:
+      stopBy: end
+      kind: lexical_declaration
+      regex: 'await\s+(?:getCommunityOrThrow\s*\(|Promise\.all[\s\S]*getCommunityOrThrow\s*\()'
+examples:
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const community = await getCommunityOrThrow(idOrSlug)
+        const membership = await getCommunityMember(community.id, currentUser.id)
+      })
+    isValid: false
+    file: 'backend/api/v1/communities/ai-agents.mts'
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const community = await getCommunityOrThrow(idOrSlug)
+        ctx.assert(!community.archived_at, 403, 'Community is archived')
+        if (currentUser) {
+          const membership = await getCommunityMember(community.id, currentUser.id)
+        }
+      })
+    isValid: false
+    file: 'backend/api/v1/communities/bans.mts'
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const [community, thread] = await Promise.all([getCommunityOrThrow(idOrSlug), getThread(id)])
+        const membership = await getCommunityMember(community.id, currentUser.id)
+      })
+    isValid: false
+    file: 'backend/api/v1/communities/modmail.mts'
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
+      })
+    isValid: true
+    file: 'backend/api/v1/communities/ai-agents.mts'
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const post = await getPost(postId)
+        const membership = await getCommunityMember(post.community_id, currentUser.id)
+      })
+    isValid: true
+    file: 'backend/api/v1/posts/post-routes/clearance-route.mts'
+  - code: |
+      app.route('/x').get(async (ctx) => {
+        const community = await getCommunityOrThrow(idOrSlug)
+        const membership = await getCommunityMember(community.id, currentUser.id)
+      })
+    isValid: true
+    file: 'backend/api/v1/communities/ai-agents.mock.test.mts'

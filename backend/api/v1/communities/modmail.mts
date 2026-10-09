@@ -1,3 +1,4 @@
+import { loadCommunityWithViewer } from '@services/communities'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -5,7 +6,6 @@ import { isUUID } from '@modules/utils'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
-import { getCommunityOrThrow } from '@services/communities/get'
 import { getCommunityMember } from '@services/communities/members/get'
 import {
   openModmailThread,
@@ -30,8 +30,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/modmail')
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/modmail', {
     path: ctx.params,
   })
@@ -75,8 +74,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
   assertNotSuspended(currentUser)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   const canOpen = currentUserCanOpenModmailThread(currentUser, community, membership)
   ctx.assert(canOpen, 403, 'You must be a community member to open a modmail thread')
@@ -116,11 +114,10 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').get(async (ct
   )
   const { idOrSlug, conversationId } = ctx.params as { idOrSlug: string; conversationId: string }
   ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
-  const [community, thread] = await Promise.all([
-    getCommunityOrThrow(idOrSlug),
+  const [{ community, membership }, thread] = await Promise.all([
+    loadCommunityWithViewer(idOrSlug, currentUser.id),
     getModmailThread(conversationId),
   ])
-  const membership = await getCommunityMember(community.id, currentUser.id)
   ctx.assert(thread, 404, 'Modmail thread not found')
   ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')
   const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
@@ -145,8 +142,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
     conversationId: string
   }
   ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanViewModmailThread(currentUser, community, membership), 403, 'Forbidden')
 

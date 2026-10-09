@@ -6,8 +6,7 @@ import { isUUID } from '@modules/utils'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { POST_THREAD_LOCKED } from '@modules/on-error/error-codes'
 import { getPostByAny } from '../get.mts'
-import { getCommunityMember } from '@services/communities/members/get'
-import { getCommunity } from '@services/communities/get'
+import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
 import { currentUserCanPostInCommunity } from '@services/communities/authorization'
 import { lockAndAssertNotBanned } from '@services/communities/bans/lock'
 import { getCommunityPostRestrictionDecision } from '@services/communities/restrictions/enforce'
@@ -59,11 +58,9 @@ async function resolveCommunityPostScope({
     422,
     'Community posts must be public for everyone or private for signed-in users',
   )
-  const [community, membership] = await Promise.all([
-    getCommunity(updates.community_id!, options),
-    getCommunityMember(updates.community_id!, creator.id, options),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(updates.community_id!, creator.id, options)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   // Lock + ban check inside the create transaction so a ban committing before the post insert
   // (later in the same transaction) cannot let a banned user's post through.

@@ -1,6 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryUuid } from '@modules/pagination'
-import { getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityPrompts,
   listCommunityAgentPromptHistory,
@@ -8,7 +8,6 @@ import {
 import app from '../../../app.mts'
 import { apiQuery } from '../../../response-contract.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { getCommunityOrThrow } from './shared.mts'
 
 const historyQuery = defineQueryContract({ promptId: queryUuid(), before: queryUuid() })
 
@@ -20,8 +19,7 @@ app.route('/api/v1/communities/:idOrSlug/agent-prompts/history').get(async (ctx:
   apiQuery('GET:/api/v1/communities/:idOrSlug/agent-prompts/history', historyQuery)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(ctx, idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(
     currentUserCanManageCommunityPrompts(currentUser, community, membership),

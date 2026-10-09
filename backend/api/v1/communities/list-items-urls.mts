@@ -8,13 +8,12 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  loadCommunityForViewer,
-  getCommunityMember,
-  currentUserCanManageCommunityList,
-  searchCommunityListItems,
   addCommunityListItem,
+  currentUserCanManageCommunityList,
+  loadCommunityForViewer,
+  loadCommunityWithViewer,
   removeCommunityListItem,
+  searchCommunityListItems,
 } from '@services/communities'
 import { getUrlsByIdBatch } from '@services/urls'
 import { indexById } from '@modules/utils'
@@ -70,8 +69,7 @@ app
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/list-items/urls')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(
       currentUserCanManageCommunityList(currentUser, community, membership),
       403,
@@ -98,8 +96,7 @@ app.route('/api/v1/communities/:idOrSlug/list-items/urls/:itemId').delete(async 
   )
 
   const { idOrSlug, itemId } = ctx.params as { idOrSlug: string; itemId: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   ctx.assert(
     currentUserCanManageCommunityList(currentUser, community, membership),
     403,

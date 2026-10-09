@@ -17,11 +17,7 @@ import { getUserActivePlan } from '@services/memberships'
 import { assertWithinTagAddLimit } from '@services/tag-limits'
 import { assertNotSuspended, entityRelationViewerFor, isAdminUser } from '@services/users'
 import { assertUserTagAllowed } from './user-tag-authorization.mts'
-import {
-  currentUserCanModerateCommunity,
-  getCommunity,
-  getCommunityMember,
-} from '@services/communities'
+import { currentUserCanModerateCommunity, getCommunityWithViewer } from '@services/communities'
 import type { PrivateUser } from '@services/users/types'
 
 export type EntityRelationActionAuthority =
@@ -163,9 +159,9 @@ async function assertCommunityAuthorization(
   parsed: ReturnType<typeof parseEntityRelationCreateInput>,
 ): Promise<void> {
   if (parsed.metadata.subject_type !== 'community') return
-  const community = await getCommunity(parsed.subjectId.id)
-  assert(community, 404, 'Community not found')
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const loaded = await getCommunityWithViewer(parsed.subjectId.id, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(
     currentUserCanModerateCommunity(currentUser, community, membership ?? undefined),
     403,

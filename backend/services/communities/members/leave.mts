@@ -1,16 +1,15 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from './get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
 
 export async function leaveCommunity(currentUserId: string, communityId: string): Promise<void> {
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(communityId, currentUserId)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
-  const membership = await getCommunityMember(communityId, currentUserId)
   assert(membership, 404, 'You are not a member of this community')
   assert(
     membership.role !== 'owner',

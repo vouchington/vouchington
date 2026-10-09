@@ -9,11 +9,10 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  getCommunityMember,
-  currentUserCanManageCommunityBans,
   banUserFromCommunity,
+  currentUserCanManageCommunityBans,
   liftCommunityBan,
+  loadCommunityWithViewer,
   searchCommunityBans,
 } from '@services/communities'
 import { assertNotSuspended } from '@services/users'
@@ -27,8 +26,7 @@ app
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/bans')
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(
       currentUserCanManageCommunityBans(currentUser, community, membership),
@@ -69,9 +67,8 @@ app
     assertNotSuspended(currentUser)
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(!community.archived_at, 403, 'Community is archived')
-    const membership = await getCommunityMember(community.id, currentUser.id)
 
     ctx.assert(
       currentUserCanManageCommunityBans(currentUser, community, membership),
@@ -123,8 +120,7 @@ app.route('/api/v1/communities/:idOrSlug/bans/:userId').delete(async (ctx: Conte
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const userId = validateUUIDParam(ctx, 'userId')
 
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(
     currentUserCanManageCommunityBans(currentUser, community, membership),

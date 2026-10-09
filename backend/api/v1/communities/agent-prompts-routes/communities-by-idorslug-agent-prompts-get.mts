@@ -1,6 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { hasPlusTier } from '@modules/membership-helpers'
-import { getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityPrompts,
   getSlotLimitForMembership,
@@ -12,14 +12,11 @@ import { getMembershipByUserId } from '@services/memberships/get'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
-import { getCommunityOrThrow } from './shared.mts'
-
 app.route('/api/v1/communities/:idOrSlug/agent-prompts').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/agent-prompts')
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(ctx, idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(
     currentUserCanManageCommunityPrompts(currentUser, community, membership),

@@ -2,10 +2,9 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
-  getCommunityMember,
-  getCommunityOrThrow,
-  updateCommunityPostTypeSettings,
+  loadCommunityWithViewer,
   type UpdateCommunityPostTypeSettingsInput,
+  updateCommunityPostTypeSettings,
 } from '@services/communities'
 import { attachWrittenCommunityProvenance } from '@services/content-provenance'
 
@@ -15,8 +14,7 @@ app.route('/api/v1/communities/:idOrSlug/post-type-settings').patch(async (ctx: 
     'PATCH:/api/v1/communities/:idOrSlug/post-type-settings',
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   const body = (await ctx.request.json('1mb')) as UpdateCommunityPostTypeSettingsInput
   validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/post-type-settings', {
     path: ctx.params,

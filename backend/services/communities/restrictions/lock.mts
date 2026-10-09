@@ -5,8 +5,7 @@ import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
 import { lockCommunityUser } from '../bans/lock.mts'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from '../members/get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
@@ -35,9 +34,9 @@ export async function lockCommunityRestrictionWrites(
   const actor = await getPrivateUserByAny(actorId, { query })
   assert(actor, 401, 'User not found')
   assertNotSuspended(actor)
-  const community = await getCommunity(communityId, { query })
-  assert(community, 404, 'Community not found')
-  const membership = await getCommunityMember(communityId, actorId, { query })
+  const loaded = await getCommunityWithViewer(communityId, actorId, { query })
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(currentUserCanModerateCommunity(actor, community, membership), 403, 'Forbidden')
   return rows[0]
 }

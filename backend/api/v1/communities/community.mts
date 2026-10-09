@@ -7,17 +7,16 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  loadCommunityForViewerOrApplicant,
-  updateCommunity,
-  deleteCommunity,
-  setCommunityArchiveState,
-  updateCommunityAndSetArchiveState,
-  getCommunityMember,
-  getCommunityMetrics,
-  currentUserCanUpdateCommunity,
   currentUserCanDeleteCommunity,
+  currentUserCanUpdateCommunity,
+  deleteCommunity,
+  getCommunityMetrics,
+  loadCommunityForViewerOrApplicant,
+  loadCommunityWithViewer,
+  setCommunityArchiveState,
   type UpdateCommunityInput,
+  updateCommunity,
+  updateCommunityAndSetArchiveState,
 } from '@services/communities'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
@@ -55,9 +54,7 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/communities/:idOrSlug')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     const parsedBody: unknown = await ctx.request.json('1mb')
     const isObjectBody =
@@ -133,9 +130,7 @@ app
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/communities/:idOrSlug')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(currentUserCanDeleteCommunity(currentUser, community, membership), 403, 'Forbidden')
     validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug', { path: ctx.params })
 
