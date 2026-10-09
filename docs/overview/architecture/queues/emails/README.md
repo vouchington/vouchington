@@ -14,7 +14,8 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
   - Each job processes one email recipient
   - Dispatcher jobs fan out engagement onboarding and moderation summary sends
   - `processSendCopyrightNoticeEmail` resolves a claimed legal-delivery intent at send time; no
-    recipient address or legal body is carried in the queue payload.
+    recipient address or legal body is carried in the queue payload. The delivery sweep adds a page
+    of them with `enqueueBulkSendCopyrightNoticeEmails`, each job keeping its own per-intent dedup id.
   - Jobs may carry an optional `uiLocale`; processors render Voucha-authored copy in `en`, `es`, `fr`, or `pt`, falling back to English.
   - JobId format: `email:{type}:{recipient}:{timestamp}` for deduplication
   - The worker rejects a job whose name and payload do not match that job's enqueue contract before the processor runs.

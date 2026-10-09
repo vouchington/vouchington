@@ -11,10 +11,18 @@ import {
 import { rss_feeds } from './queues.mts'
 import type { RssFeedDispatcherJobs, RssFeedsJobs } from './types.mts'
 
+/**
+ * `dispatch` (the default) is the dispatcher's backlog key. `request` is for a fetch someone asked
+ * for now (user refresh, redirect target, new feed): it must not be swallowed by a queued
+ * low-priority backlog job, and repeats of it still collapse while one is queued.
+ */
+type FetchRssFeedDeduplicationScope = 'dispatch' | 'request'
+
 type FetchRssFeedInput = {
   rssFeedId: string
   ttl?: number
   skipDeduplication?: boolean
+  deduplicationScope?: FetchRssFeedDeduplicationScope
 }
 
 type FetchRssFeedData = {
@@ -29,7 +37,10 @@ const defaults = {
   removeOnFail: RSS_FEEDS_DEFAULTS.removeOnFail,
 } satisfies Partial<JobOptions>
 
-const buildRssFeedJobId = (rssFeedId: string) => `rss-feed__${rssFeedId}`
+const buildRssFeedJobId = (
+  rssFeedId: string,
+  scope: FetchRssFeedDeduplicationScope = 'dispatch',
+) => (scope === 'request' ? `rss-feed-request__${rssFeedId}` : `rss-feed__${rssFeedId}`)
 
 const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
   FetchRssFeedInput,
@@ -43,20 +54,19 @@ const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
   buildJob: data => ({
     data: { rssFeedId: data.rssFeedId, ttl: data.ttl },
     opts: {
-      // The dedup throttle window only prevents duplicate enqueues of the same feed
-      // within a dispatch cycle; it is intentionally the SHORT default, decoupled from
-      // the per-tier SLA. The SLA flows to the worker as job.data.ttl and is enforced
-      // separately by the worker's last_fetched_at staleness check
-      // (getRssFeedByIdToFetch with job.data.ttl). A failed due crawl never updates
-      // last_fetched_at, so it is retried on the next dispatch tick once this short
-      // throttle expires, instead of being blocked for the full (up to 24h) SLA.
+      // `simple` dedup skips a feed while its fetch job is waiting, active, or retrying and admits
+      // it again once that job completes or fails, so a backlogged feed is queued once, not once
+      // per dispatch tick. The SLA flows to the worker as job.data.ttl and is enforced separately
+      // by the worker's last_fetched_at staleness check (getRssFeedByIdToFetch with job.data.ttl).
+      // A failed due crawl never updates last_fetched_at, so the next dispatch tick re-adds it
+      // once its job has failed. A requested fetch keeps its own key so a low-priority backlog job
+      // never swallows it; repeated requests still collapse while one is queued.
       ...(data.skipDeduplication
         ? {}
         : {
             deduplication: {
-              id: buildRssFeedJobId(data.rssFeedId),
-              mode: 'throttle' as const,
-              ttl: RSS_FEEDS_DEFAULTS.deduplicationTtlMs,
+              id: buildRssFeedJobId(data.rssFeedId, data.deduplicationScope),
+              mode: 'simple' as const,
             },
           }),
       ordering: RSS_FEEDS_ORDERING.fetch,
@@ -76,11 +86,16 @@ const enqueueDispatchRssFeedsJob = createEnqueueFunction<
 
 export const enqueueBulkFetchRssFeeds = (
   rssFeedIds: string[],
-  opts?: { ttl?: number; priority?: number; skipDeduplication?: boolean },
+  opts?: {
+    ttl?: number
+    priority?: number
+    skipDeduplication?: boolean
+    deduplicationScope?: FetchRssFeedDeduplicationScope
+  },
 ): EnqueueReturnType => {
-  const { ttl, priority, skipDeduplication } = opts ?? {}
+  const { ttl, priority, skipDeduplication, deduplicationScope } = opts ?? {}
   return enqueueBulkFetchRssFeedJobs(
-    rssFeedIds.map(rssFeedId => ({ rssFeedId, ttl, skipDeduplication })),
+    rssFeedIds.map(rssFeedId => ({ rssFeedId, ttl, skipDeduplication, deduplicationScope })),
     { priority: priority ?? PRIORITY_DEFAULT },
   )
 }

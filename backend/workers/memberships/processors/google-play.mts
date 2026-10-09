@@ -1,7 +1,7 @@
 import {
-  enqueueAcknowledgeGooglePlayPurchase,
-  enqueueProcessGooglePlayNotification,
-  enqueueReconcileGooglePlayActiveSource,
+  enqueueBulkAcknowledgeGooglePlayPurchases,
+  enqueueBulkProcessGooglePlayNotifications,
+  enqueueBulkReconcileGooglePlayActiveSources,
 } from '@queues/memberships/enqueues'
 import {
   acknowledgeGooglePlayPurchase,
@@ -25,18 +25,16 @@ export async function processGooglePlayNotification(data: { evidenceId: string }
 }
 
 export async function recoverGooglePlayNotifications(): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findRecoverableGooglePlayNotificationJobs()
-  await Promise.all(
-    batch.notifications.map(notification => enqueueProcessGooglePlayNotification(notification)),
-  )
+  await enqueueBulkProcessGooglePlayNotifications(batch.notifications)
   await advanceGooglePlayNotificationRecoveryCursor(batch)
 }
 
 export async function recoverGooglePlayActiveSources(): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findRecoverableGooglePlayActiveSourceJobs()
-  await Promise.all(
-    batch.sourceIds.map(sourceId => enqueueReconcileGooglePlayActiveSource({ sourceId })),
-  )
+  await enqueueBulkReconcileGooglePlayActiveSources(batch.sourceIds.map(sourceId => ({ sourceId })))
   await advanceGooglePlayActiveSourceRecoveryCursor(batch)
 }
 
@@ -57,11 +55,10 @@ export async function processGooglePlayAcknowledgement(data: {
 }
 
 export async function recoverGooglePlayAcknowledgements(): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findDueGooglePlayAcknowledgementIds()
-  await Promise.all(
-    batch.acknowledgementIds.map(acknowledgementId =>
-      enqueueAcknowledgeGooglePlayPurchase({ acknowledgementId }),
-    ),
+  await enqueueBulkAcknowledgeGooglePlayPurchases(
+    batch.acknowledgementIds.map(acknowledgementId => ({ acknowledgementId })),
   )
   await advanceGooglePlayAcknowledgementRecoveryCursor(batch)
 }

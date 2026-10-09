@@ -1,4 +1,4 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -18,12 +18,6 @@ const defaults = {
 }
 const recoveryOrdering = { key: 'microsoft-store-recovery', concurrency: 1 }
 
-const enqueueSource = createEnqueueFunction<ReconcileMicrosoftStoreSourceData, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'reconcileMicrosoftStoreSource',
-  defaults,
-})
 const enqueueRecovery = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
   queue: memberships,
   queueName: QUEUE_NAME,
@@ -31,20 +25,44 @@ const enqueueRecovery = createEnqueueFunction<Record<string, never>, Memberships
   defaults,
 })
 
-export function enqueueReconcileMicrosoftStoreSource(
+const enqueueBulkSource = createBulkEnqueueFunction<
+  ReconcileMicrosoftStoreSourceData & { bucket: number },
+  ReconcileMicrosoftStoreSourceData,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: 'reconcileMicrosoftStoreSource',
+  defaults,
+  buildJob: ({ bucket, ...data }) => ({ data, opts: sourceJobOptions(data, bucket) }),
+})
+
+function currentSourceBucket(): number {
+  return Math.floor(Date.now() / MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS)
+}
+
+function sourceJobOptions(
   data: ReconcileMicrosoftStoreSourceData,
-): EnqueueReturnType {
-  const bucket = Math.floor(Date.now() / MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS)
-  return enqueueSource(data, {
+  bucket: number,
+): Partial<JobOptions> {
+  return {
     jobId: `microsoft-store-source__${data.sourceId}__${bucket}`,
     priority: PRIORITY_DEFAULT,
     deduplication: { id: `microsoft-store-source__${data.sourceId}__${bucket}`, mode: 'simple' },
     ordering: { key: `microsoft-store-source:${data.sourceId}`, concurrency: 1 },
-  } satisfies Partial<JobOptions>)
+  }
+}
+
+/** One batched add of source reconciliation jobs sharing one recovery bucket. */
+export function enqueueBulkReconcileMicrosoftStoreSources(
+  sources: ReconcileMicrosoftStoreSourceData[],
+): ReturnType<typeof enqueueBulkSource> {
+  const bucket = currentSourceBucket()
+  return enqueueBulkSource(sources.map(source => ({ ...source, bucket })))
 }
 
 export function enqueueRecoverMicrosoftStoreSources(): EnqueueReturnType {
-  const bucket = Math.floor(Date.now() / MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS)
+  const bucket = currentSourceBucket()
   return enqueueRecovery({}, {
     jobId: `microsoft-store-recovery__${bucket}`,
     priority: PRIORITY_DISPATCHER,

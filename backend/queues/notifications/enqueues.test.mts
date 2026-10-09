@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
-  enqueueApplyMediaDeliveryRegistryRecord,
+  enqueueBulkApplyCopyrightActions,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
+  enqueueBulkDeliverCopyrightNotices,
   enqueueCheckCopyrightReviewTarget,
   enqueueReconcileCopyrightActionIntents,
   enqueueReconcileDsaStatementSubmissions,
@@ -66,20 +69,76 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     })
   })
 
-  it('deduplicates one registry projection per delivery key', async () => {
-    const deliveryKey = `image-placement:${crypto.randomUUID()}:0:${crypto.randomUUID()}`
-    await enqueueApplyMediaDeliveryRegistryRecord(deliveryKey)
-    const job = (await readAllQueueJobs(notifications)).find(
-      candidate =>
-        candidate.name === 'processApplyMediaDeliveryRegistryRecord' &&
-        (candidate.data as { deliveryKey?: string }).deliveryKey === deliveryKey,
-    )
-    expect(job?.data).toEqual({ deliveryKey })
-    expect(job?.opts).toMatchObject({
-      deduplication: {
-        id: `media-delivery-registry:${deliveryKey}`,
-        mode: 'throttle',
-      },
-    })
+  it('bulk-enqueues copyright action intents with the single-enqueue options per intent', async () => {
+    const intentIds = [randomUUID(), randomUUID(), randomUUID()]
+    await enqueueBulkApplyCopyrightActions(intentIds)
+
+    for (const intentId of intentIds) {
+      const jobs = await notifications.searchJobs({
+        name: 'processApplyCopyrightAction',
+        data: { intentId },
+      })
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]?.opts).toMatchObject({
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: 10,
+        deduplication: { id: `copyright-action:${intentId}`, mode: 'throttle', ttl: 300_000 },
+      })
+    }
+  })
+
+  it('bulk-enqueues in-app copyright delivery with the single-enqueue options per intent', async () => {
+    const intentIds = [randomUUID(), randomUUID()]
+    await enqueueBulkDeliverCopyrightNotices(intentIds)
+
+    for (const intentId of intentIds) {
+      const jobs = await notifications.searchJobs({
+        name: 'processDeliverCopyrightNotice',
+        data: { intentId },
+      })
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]?.opts).toMatchObject({
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: 10,
+        deduplication: {
+          id: `copyright-delivery:${intentId}:in-app`,
+          mode: 'throttle',
+          ttl: 300_000,
+        },
+      })
+    }
+  })
+
+  it('bulk-enqueues registry projections with one dedup id per delivery key', async () => {
+    const deliveryKeys = [
+      `image-placement:${randomUUID()}:0:${randomUUID()}`,
+      `image-placement:${randomUUID()}:1:${randomUUID()}`,
+    ]
+    await enqueueBulkApplyMediaDeliveryRegistryRecords(deliveryKeys)
+    // A replayed page is collapsed by the per-key throttle id rather than queued twice.
+    await enqueueBulkApplyMediaDeliveryRegistryRecords(deliveryKeys)
+
+    for (const deliveryKey of deliveryKeys) {
+      const jobs = await notifications.searchJobs({
+        name: 'processApplyMediaDeliveryRegistryRecord',
+        data: { deliveryKey },
+      })
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]?.opts).toMatchObject({
+        attempts: 5,
+        priority: 10,
+        deduplication: {
+          id: `media-delivery-registry:${deliveryKey}`,
+          mode: 'throttle',
+          ttl: 300_000,
+        },
+      })
+    }
   })
 })

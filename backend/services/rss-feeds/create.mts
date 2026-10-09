@@ -60,7 +60,10 @@ export const createRssFeed = async (
   // for the scheduled dispatcher. ttl=0 bypasses the "not fetched recently" check.
   // Skip if running inside a caller-managed transaction — the row may not be committed yet.
   if (!queryOptions.query && !queryOptions.client) {
-    void enqueueBulkFetchRssFeeds([feed.id as string], { ttl: 0 })
+    void enqueueBulkFetchRssFeeds([feed.id as string], {
+      ttl: 0,
+      deduplicationScope: 'request',
+    })
     void enqueueEvaluateRssFeedDiscoverability(feed.id as string)
     void enqueueRefreshTopHashtags()
   }

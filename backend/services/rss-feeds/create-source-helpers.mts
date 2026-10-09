@@ -157,7 +157,7 @@ export async function createRssFeedSource(
   if (topic) {
     finalizeCreatedTopic(topic, { name: args.topicName, slug: args.slug, topic_type: 'rss_feed' })
   }
-  void enqueueBulkFetchRssFeeds([result.rssFeedId], { ttl: 0 })
+  void enqueueBulkFetchRssFeeds([result.rssFeedId], { ttl: 0, deduplicationScope: 'request' })
   void enqueueEvaluateRssFeedDiscoverability(result.rssFeedId)
   return { ...result, slug: args.slug, name: args.topicName }
 }

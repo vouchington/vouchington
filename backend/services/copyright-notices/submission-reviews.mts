@@ -13,7 +13,7 @@ import { copyrightSubmissionHasGuidance } from './ai-assistance-disclosure.mts'
 import { COPYRIGHT_AI_ASSISTED_SENTENCE } from './statement-of-reasons-wording.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightHumanReviewAction } from './types.mts'
@@ -220,9 +220,7 @@ export async function reviewCopyrightAppeal(input: {
     })
   }
   await transaction.commit()
-  for (const intentId of reversalIntentIds) {
-    void enqueueApplyCopyrightAction(intentId)
-  }
+  void enqueueBulkApplyCopyrightActions(reversalIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)
   return { noticeId: appeal.copyright_notice_id, reviewIds }
 }

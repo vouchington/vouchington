@@ -1,7 +1,7 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { invalidate } from '@services/entity-cache'
@@ -134,14 +134,12 @@ async function invalidateRssFeedItemsInChunks(rssFeedItemIds: string[]) {
 }
 
 async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]) {
-  for (const row of rows) {
-    try {
-      // eslint-disable-next-line no-await-in-loop -- Sequential enqueues limit queue fanout pressure.
-      await enqueueLanguageDetection('rss_feed_item', row.id)
-    } catch (err) {
-      onError(toError(err))
-    }
-  }
+  await enqueueChunks(
+    rows.map(row => row.id),
+    async ids => {
+      await enqueueBulkLanguageDetection('rss_feed_item', ids)
+    },
+  )
 }
 
 async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown | Promise<unknown>) {

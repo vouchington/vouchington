@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { getImagePlacementKey } from '@services/images/placements'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -125,7 +125,7 @@ export async function recordTerritorialCopyrightRedressDecision(
     transaction,
   )
   await transaction.commit()
-  for (const intentId of restoreIntentIds) void enqueueApplyCopyrightAction(intentId)
+  void enqueueBulkApplyCopyrightActions(restoreIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)
   return created
 }

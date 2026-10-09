@@ -1,6 +1,6 @@
 import { getMediaDeliverySafetyWorkLimit } from '@services/media-delivery-safety/work-limits'
 import {
-  enqueueApplyMediaDeliveryRegistryRecord,
+  enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueContinueMediaDeliveryRegistryReconciliation,
   type ReconcileMediaDeliveryRegistryData,
 } from '@queues/notifications/enqueues'
@@ -14,7 +14,7 @@ import {
 } from '@services/media-delivery-safety'
 
 type MediaDeliveryRegistryProcessorDependencies = {
-  enqueueApplyMediaDeliveryRegistryRecord: typeof enqueueApplyMediaDeliveryRegistryRecord
+  enqueueBulkApplyMediaDeliveryRegistryRecords: (deliveryKeys: string[]) => Promise<unknown>
   listRecoverableMediaDeliveryRegistryKeys: typeof listRecoverableMediaDeliveryRegistryKeys
   processMediaDeliveryRegistryRecord: typeof processMediaDeliveryRegistryRecord
   stageAllCurrentImagePlacementDeliveryRecords: typeof stageAllCurrentImagePlacementDeliveryRecords
@@ -42,8 +42,9 @@ export async function processReconcileMediaDeliveryRegistry(
   const list =
     dependencies.listRecoverableMediaDeliveryRegistryKeys ??
     listRecoverableMediaDeliveryRegistryKeys
-  const enqueue =
-    dependencies.enqueueApplyMediaDeliveryRegistryRecord ?? enqueueApplyMediaDeliveryRegistryRecord
+  const enqueueBulk =
+    dependencies.enqueueBulkApplyMediaDeliveryRegistryRecords ??
+    enqueueBulkApplyMediaDeliveryRegistryRecords
   const pageSize = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   const stage =
     dependencies.stageAllCurrentImagePlacementDeliveryRecords ??
@@ -66,13 +67,11 @@ export async function processReconcileMediaDeliveryRegistry(
   // ast-grep-ignore: no-three-sequential-awaits -- terminal cleanup precedes primary discovery, then child acceptance precedes continuation
   await fail(scanBefore)
   const page = await list({ limit: pageSize, scanBefore, after: data.after })
-  const accepted = await Promise.allSettled(page.results.map(deliveryKey => enqueue(deliveryKey)))
-  const failures = accepted.filter(result => result.status === 'rejected')
-  if (failures.length)
-    throw new AggregateError(
-      failures.map(result => result.reason),
-      'Media delivery page enqueue failed',
-    )
+  try {
+    await enqueueBulk(page.results)
+  } catch (err) {
+    throw new AggregateError([err], 'Media delivery page enqueue failed', { cause: err })
+  }
   if (page.page_info.has_next_page && page.page_info.end_cursor)
     await continuation({ scanBefore, after: page.page_info.end_cursor })
   return { enqueued: page.results.length }

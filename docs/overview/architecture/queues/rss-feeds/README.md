@@ -19,7 +19,7 @@ One queue with two ordering groups:
   - A job for fetching RSS Feeds by ID.
   - Global concurrency of 5 via `ordering.concurrency`.
   - Worker local concurrency is 10, so effective fetch concurrency remains 5. No rate limit.
-  - Dispatcher/background fetches use a short throttle dedup key per feed to avoid duplicate fetches within one dispatch cycle.
+  - Dispatcher/background fetches use a `simple` dedup key per feed (`rss-feed__<rssFeedId>`): a feed whose fetch job is still waiting, active, or retrying is not queued again, and it is admitted again once that job completes or fails. A backlogged feed is therefore queued once, not once per dispatch tick. A fetch someone requests now (a non-forced administrator refresh, a redirect's canonical feed, a newly created feed) uses its own `rss-feed-request__<rssFeedId>` key, so a low-priority backlog job never swallows it.
   - Forced/manual refreshes skip that dedup key, so a recently queued normal fetch cannot suppress the caller's explicit refresh.
   - **Permanent errors** (parse failure, invalid content type, persistent 4xx) soft-delete the feed inline and rethrow; transient errors retry via `attempts: 3` with exponential backoff. Classification in [`services/rss-feeds/is-permanent-fetch-error.mts`](../../../../../backend/services/rss-feeds/is-permanent-fetch-error.mts).
 

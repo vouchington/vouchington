@@ -1,4 +1,4 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
@@ -15,13 +15,27 @@ const reconcileOptions = {
   removeOnFail: 100,
   priority: PRIORITY_DEFAULT,
 } satisfies Partial<JobOptions>
-const enqueueApply = createEnqueueFunction<
+/** One batched add of apply-record jobs, each with its own per-delivery-key dedup id. */
+export const enqueueBulkApplyMediaDeliveryRegistryRecords = createBulkEnqueueFunction<
+  string,
   { deliveryKey: string },
   'processApplyMediaDeliveryRegistryRecord'
 >({
   queue: notifications,
   queueName: QUEUE_NAME,
   jobName: 'processApplyMediaDeliveryRegistryRecord',
+  buildJob: deliveryKey => ({
+    data: { deliveryKey },
+    opts: {
+      ...reconcileOptions,
+      attempts: 5,
+      deduplication: {
+        id: `media-delivery-registry:${deliveryKey}`,
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  }),
 })
 const enqueueReconcile = createEnqueueFunction<
   ReconcileMediaDeliveryRegistryData,
@@ -31,21 +45,6 @@ const enqueueReconcile = createEnqueueFunction<
   queueName: QUEUE_NAME,
   jobName: 'processReconcileMediaDeliveryRegistry',
 })
-
-export function enqueueApplyMediaDeliveryRegistryRecord(deliveryKey: string): EnqueueReturnType {
-  return enqueueApply(
-    { deliveryKey },
-    {
-      ...reconcileOptions,
-      attempts: 5,
-      deduplication: {
-        id: `media-delivery-registry:${deliveryKey}`,
-        mode: 'throttle',
-        ttl: FIVE_MINUTES_MS,
-      },
-    },
-  )
-}
 
 export function enqueueReconcileMediaDeliveryRegistry(): EnqueueReturnType {
   return enqueueReconcile(

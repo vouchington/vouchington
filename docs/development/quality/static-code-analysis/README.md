@@ -244,6 +244,17 @@ GlideMQ's `upsertJobScheduler`, `getRepeatableJobs`, or `removeJobScheduler` dir
 manifest is reachable from both the API catalog and a worker runtime, and that every worker module
 is reachable from a runtime definition root.
 
+The warning-severity `backend-no-single-enqueue-in-loop` AST-grep rule flags a call to an
+`enqueue[A-Z]*` function (directly or as a member such as `deps.enqueueFoo`) inside a `for`,
+`for-in`/`for-of`, `while`, or `do` statement, or inside a `map`, `forEach`, or `flatMap` callback
+argument (including a bare `rows.map(enqueueFoo)` reference), in backend production code. A bulk enqueue (`enqueueBulk*`, built with
+`createBulkEnqueueFunction`) adds the whole batch in one Valkey round trip and keeps each job's own
+dedup id, `jobId`, priority, and delay in its `buildJob`. Tests and test helpers are exempt. It is a
+warning so the remaining single-enqueue loops stay visible without failing CI while each is
+converted or documented; a loop that must stay sequential (for example a reactivation helper that
+reads the retained job first) takes an `ast-grep-ignore` comment with the reason. Function names
+that already add one batch per iteration (`enqueue*Batch`) also match the name pattern.
+
 Four narrow `required-entrypoint-reachability` instances independently require Valkey pub/sub,
 rate-limiter, GlideMQ root, and direct GlideMQ factory consumers to load the actual
 `valkey-core/shutdown.mts` owner. The local `valkey-shutdown-owner-registration` AST-grep rule

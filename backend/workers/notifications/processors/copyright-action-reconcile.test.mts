@@ -79,8 +79,8 @@ function reconcileDeps(pages: SweepPages = {}) {
     searchActionIntents: vi.fn<Deps['searchActionIntents']>(
       sweep(log, 'action intents', pages.actionIntents),
     ),
-    enqueueApplyCopyrightAction: vi.fn<Deps['enqueueApplyCopyrightAction']>(async id => {
-      log.push(`enqueue ${id}`)
+    enqueueBulkApplyCopyrightActions: vi.fn<Deps['enqueueBulkApplyCopyrightActions']>(async ids => {
+      for (const id of ids) log.push(`enqueue ${id}`)
     }),
     now: () => NOW,
   }
@@ -193,13 +193,13 @@ describe('processReconcileCopyrightActionIntents', () => {
       expect(deps.searchDueRestorations).not.toHaveBeenCalled()
       expect(deps.createDueRestoreIntents).not.toHaveBeenCalled()
       expect(deps.searchActionIntents).not.toHaveBeenCalled()
-      expect(deps.enqueueApplyCopyrightAction).not.toHaveBeenCalled()
+      expect(deps.enqueueBulkApplyCopyrightActions).not.toHaveBeenCalled()
     } finally {
       released.resolve(1)
       await reconciliation
     }
     expect(deps.createDueRestoreIntents).toHaveBeenCalledWith('deadline', NOW)
-    expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('intent')
+    expect(deps.enqueueBulkApplyCopyrightActions).toHaveBeenCalledWith(['intent'])
   })
 
   it('keeps reconciling past failed items and stages, then fails with every error', async () => {
@@ -221,7 +221,7 @@ describe('processReconcileCopyrightActionIntents', () => {
     deps.liftSuspendedClaimantRestrictions.mockRejectedValueOnce(liftFailure)
     deps.searchDueRestorations.mockRejectedValueOnce(dueSearchFailure)
     deps.recoverBlockedHoldRestorations.mockRejectedValueOnce(holdFailure)
-    deps.enqueueApplyCopyrightAction.mockRejectedValueOnce(enqueueFailure)
+    deps.enqueueBulkApplyCopyrightActions.mockRejectedValueOnce(enqueueFailure)
 
     const failure = await processReconcileCopyrightActionIntents(deps).then(
       () => null,
@@ -241,7 +241,9 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(deps.enforceAssessment).toHaveBeenCalledWith('assessment')
     expect(deps.liftSuspendedClaimantRestrictions).toHaveBeenCalledWith('same-page-claimant', NOW)
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
-    expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('same-page-intent')
+    expect(deps.enqueueBulkApplyCopyrightActions.mock.calls).toEqual([
+      [['failing-intent', 'same-page-intent']],
+    ])
   })
   it('continues only unfinished stages at the configured cap even when a head item fails', async () => {
     overrideDynamicConfigFieldsForTest(copyrightSweepConfig, {
