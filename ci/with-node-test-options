@@ -6,4 +6,10 @@ case " ${NODE_OPTIONS:-} " in
   *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;;
 esac
 
+case "${1##*/}" in
+  vitest|vitest.mjs|node)
+    node "$(dirname "${BASH_SOURCE[0]}")/validate-vitest-cli-timeouts.mts" "$@"
+    ;;
+esac
+
 exec "$@"
