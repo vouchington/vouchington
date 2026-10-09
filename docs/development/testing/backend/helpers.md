@@ -87,6 +87,28 @@ Agent and manual community unpublish lock-order cases share
 [`expectUnpublishHoldsPublicationLockWhileWaitingOnReview`](../../../../backend/test-helpers/entities/community-post-review-publication-lock.mts).
 Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
+## Owned vote-route admissions
+
+[`observeOwnedVoteRouteAdmissions`](../../../../backend/test-helpers/owned-vote-route-admissions.mts)
+observes the real enqueue factory's retry and queue calls for an ownership predicate. Register
+owned fixture ids before the action, install the observer before the HTTP request, and register
+its returned cleanup with `onTestFinished`. `requireAdmission(kind)` requires an actual owned
+queue call for that kind; it does not invoke or promote a job.
+
+The normal factory invokes its first queue call synchronously and retries the captured payload.
+Cleanup selects logical attempts with owned calls, awaits those outer promises, then reads their
+settled call records, including subsequent retries. Foreign retry promises retain rejection
+observers but do not determine this test's completion. Returned jobs are associated with their
+actual queue-call kind, and cleanup preserves distinct failure reasons and lone-error identity.
+
+Election and topic-rating observations install terminal listeners before the action. Only active
+owned jobs of those kinds await completion; an observation deadline fails with the unfinished
+job id and does not cancel native work. Pending or scheduled jobs remain with canonical teardown.
+`observeOwnedPenaltyAdmissions(ownedUserIds)` captures vote-weight and vote-integrity admission
+without importing their workers or claiming processor completion. Neither helper forces the
+production debounce, polls history, or closes a shared worker. Cleanup removes its listeners,
+settles already-started event reads, and restores its spies even when observation fails.
+
 ## `onceEntityListenerCompleted`
 
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.

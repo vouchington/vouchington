@@ -89,14 +89,13 @@ export async function observeOwnedVoteRouteAdmissions(
     })
   }
   const settle = async () => {
-    const admitted = await Promise.allSettled(attempts.map(attempt => attempt.promise!))
-    const calls = attempts.flatMap(attempt => attempt.calls.filter(ownedCall))
+    const ownedAttempts = attempts.filter(attempt => attempt.calls.some(ownedCall))
+    const admitted = await Promise.allSettled(ownedAttempts.map(attempt => attempt.promise!))
+    const calls = ownedAttempts.flatMap(attempt => attempt.calls.filter(ownedCall))
     for (const kind of requiredKinds)
       if (!calls.some(call => call.kind === kind))
         failures.push(new Error(`No actual owned admission observed for ${kind}`))
-    for (let index = 0; index < admitted.length; index++)
-      if (admitted[index]!.status === 'rejected' && attempts[index]!.calls.some(ownedCall))
-        failures.push((admitted[index] as PromiseRejectedResult).reason)
+    for (const result of admitted) if (result.status === 'rejected') failures.push(result.reason)
     const jobs = new Map<string, Job>()
     const returnedCalls = calls.filter(call => call.result !== undefined)
     const actual = await Promise.allSettled(returnedCalls.map(call => call.result!))
