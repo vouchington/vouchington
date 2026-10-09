@@ -35,9 +35,11 @@ describe('OAuth authorization exchange enqueues', () => {
     await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
 
     const allJobs = await readAllQueueJobs(oauthAuthorizationExchangeQueue)
-    const jobs = allJobs.filter(job => job.opts.jobId === deduplicationId)
+    const jobs = allJobs.filter(job => job.opts.deduplication?.id === deduplicationId)
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.data).toEqual({})
+    // A stable jobId would outlive the job and silently refuse every later trigger.
+    expect(jobs[0]?.opts.jobId).toBeUndefined()
     expect(jobs[0]?.opts).toMatchObject({
       priority: 100,
       ordering: { key: 'dispatcher', concurrency: 1 },

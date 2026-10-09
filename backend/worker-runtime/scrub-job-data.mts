@@ -26,7 +26,11 @@ const SENSITIVE_KEY_SUBSTRINGS: readonly string[] = [
   'dob',
   'birthdate',
 ]
+// `code` is the community invite code: an 8-hex-digit value that starting with a letter would
+// otherwise pass the safe-scalar check and reach Sentry. Matched exactly so `zipcode` and similar
+// stay readable.
 const SENSITIVE_KEY_NAMES: readonly string[] = [
+  'code',
   'contactname',
   'sendername',
   'invitername',

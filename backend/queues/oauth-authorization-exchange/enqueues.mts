@@ -110,12 +110,21 @@ export async function enqueueOAuthAuthorizationExchange(authorizationId: string)
   )
 }
 
-export async function enqueueOAuthAuthorizationExchangeDispatcher(options?: {
-  deduplicationId?: string
-}): Promise<void> {
-  const deduplicationId = options?.deduplicationId ?? 'oauth-authorization-exchange-dispatcher'
-  await enqueueDispatcherJob({}, {
-    jobId: deduplicationId,
+const DEFAULT_DISPATCHER_DEDUPLICATION_ID = 'oauth-authorization-exchange-dispatcher'
+
+/**
+ * Repeated manual and backfill triggers collapse under one throttle window with no custom `jobId`.
+ * A stable `jobId` is a hard uniqueness key that outlives the job: GlideMQ keeps the claim while
+ * the terminal record is retained (100 newer completions), and a job that stalls past its limit
+ * lands in the failed set without honoring `removeOnFail`. Every trigger after the throttle window
+ * would then silently return `null`. The serialized `dispatcher` ordering key still keeps passes
+ * from racing, and the durable rows re-derive all work, so a trigger accepted while a pass runs
+ * just queues behind it.
+ */
+export function getOAuthAuthorizationExchangeDispatcherJobOptions(
+  deduplicationId: string = DEFAULT_DISPATCHER_DEDUPLICATION_ID,
+) {
+  return {
     priority: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCHER_PRIORITY,
     ordering: OAUTH_AUTHORIZATION_EXCHANGE_ORDERING.dispatcher,
     deduplication: {
@@ -123,7 +132,16 @@ export async function enqueueOAuthAuthorizationExchangeDispatcher(options?: {
       mode: 'throttle',
       ttl: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS,
     },
-  } satisfies Partial<JobOptions>)
+  } satisfies Partial<JobOptions>
+}
+
+export async function enqueueOAuthAuthorizationExchangeDispatcher(options?: {
+  deduplicationId?: string
+}): Promise<void> {
+  await enqueueDispatcherJob(
+    {},
+    getOAuthAuthorizationExchangeDispatcherJobOptions(options?.deduplicationId),
+  )
 }
 
 function getOAuthAuthorizationExchangeJobOptions(authorizationId: string): Partial<JobOptions> {

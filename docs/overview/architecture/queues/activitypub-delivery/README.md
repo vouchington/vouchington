@@ -41,6 +41,12 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
   - `simple`-deduplicated on `deliver_<activityId>__<inboxUrl>` as a backstop against
     `distributeActivity` retries re-enqueueing an inbox that was already queued. It is not a
     durable per-inbox receipt and cannot make the remote HTTP side effect exactly once.
+  - An `Accept` acknowledging an inbound Follow skips `distributeActivity` and enqueues straight to
+    the sender's inbox, `simple`-deduplicated on `deliver_accept__<followActivityId>` while a job is
+    in flight. Once that job finishes, a duplicate inbound Follow sends the Accept again on purpose.
+    Its activity id is a UUIDv5 of the local user and the inbound Follow id, so every repeat carries
+    the same id and the remote can treat it as the Accept it already processed. A re-follow after an
+    Undo arrives under a new Follow id and gets a new Accept id.
 
 A busy lease delays the same GlideMQ job until expiry without consuming its retry attempts.
 A rejected bulk enqueue releases only the matching lease and leaves the cursor unchanged.

@@ -19,6 +19,23 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
   - JobId format: `email:{type}:{recipient}:{timestamp}` for deduplication
   - The worker rejects a job whose name and payload do not match that job's enqueue contract before the processor runs.
 
+### Credential-bearing jobs
+
+`processSendEmailAddressLoginToken`, `processSendEmailVerificationToken`,
+`processSendCommunityInviteEmail`, and `processSendDataExportReadyEmail` (`SECRET_BEARING_EMAIL_JOBS`
+in `backend/queues/emails/enqueues/job-options.mts`) carry a value the recipient redeems: a login
+token, a verification code, an invite code, or a 7-day presigned download URL. The login token is
+stored hashed, so the raw value can only travel in the payload. These jobs set
+`removeOnComplete: true` and `removeOnFail: true`, so no copy stays in Valkey after the job finishes
+instead of sitting in the default 100-deep retained history. A terminal failure is still reported
+through `onError` from the worker's in-process `failed` event, with `scrubJobData` redacting
+`token`, `code`, and URL values.
+
+The payload remains in Valkey while the job is waiting, active, or backing off for a retry, and a job
+that stalls past its limit is moved to the failed set without honoring `removeOnFail`. Closing those
+windows needs worker-side handling or a payload that carries an id the processor resolves at send
+time. Every other email job keeps the default retention.
+
 ### Testing
 
 - Tests enqueue jobs and run processors under their owning test fixtures; enqueue admission does not synchronously process an email.
