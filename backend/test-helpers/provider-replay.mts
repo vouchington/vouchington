@@ -96,19 +96,29 @@ export function toReplayResponse(
 ): Response {
   const size = chunkBytes ?? Math.max(recorded.body.length, 1)
   let offset = 0
+  let onAbort: (() => void) | undefined
+  const detach = () => {
+    if (signal && onAbort) signal.removeEventListener('abort', onAbort)
+  }
   const body =
     recorded.body.length === 0
       ? null
       : new ReadableStream<Uint8Array>({
           start(controller) {
-            signal?.addEventListener('abort', () => controller.error(signal.reason), { once: true })
+            if (!signal) return
+            onAbort = () => controller.error(signal.reason)
+            signal.addEventListener('abort', onAbort, { once: true })
           },
           pull(controller) {
             if (signal?.aborted) return controller.error(signal.reason)
-            if (offset >= recorded.body.length) return controller.close()
+            if (offset >= recorded.body.length) {
+              detach()
+              return controller.close()
+            }
             controller.enqueue(recorded.body.subarray(offset, offset + size))
             offset += size
           },
+          cancel: detach,
         })
   return new Response(body, {
     status: recorded.status,
