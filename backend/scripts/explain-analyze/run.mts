@@ -30,6 +30,7 @@ import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-r
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
+import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 
 async function main() {
@@ -58,6 +59,7 @@ async function main() {
     await runEmbeddingReconciliationScenarios()
     await seedMediaDeliveryReplay()
     await runMediaDeliveryReplayScenarios()
+    await runRoundTripShapeScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

@@ -71,6 +71,7 @@ import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
 import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
 import { seedHostnameFlags } from './seed-data/hostname-flags.mts'
+import { seedBlocklistedDomains, seedUserAgentStrings } from './seed-data/round-trip-shapes.mts'
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
@@ -91,6 +92,8 @@ async function main() {
   await seedHostnames()
   await seedHostnameFlags()
   await seedHostnameCrawlSweeps()
+  await seedBlocklistedDomains()
+  await seedUserAgentStrings()
   await seedRemoteFollowers()
   await seedUrls()
   await seedTopics(2500)
