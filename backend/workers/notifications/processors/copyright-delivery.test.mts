@@ -67,6 +67,18 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     ])
   })
 
+  it('does not call a bulk enqueue for an empty page', async () => {
+    const deps = reconcileDeps({ inApp: [page([], null)], email: [page([], null)] })
+
+    await expect(processReconcileCopyrightDeliveryIntents(deps)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+
+    expect(deps.enqueueBulkDeliverCopyrightNotices).not.toHaveBeenCalled()
+    expect(deps.enqueueBulkSendCopyrightNoticeEmails).not.toHaveBeenCalled()
+  })
+
   it('keeps enqueueing past a failed page read and enqueue, then fails with both errors', async () => {
     const deps = reconcileDeps({})
     const searchFailure = new Error('email intent search failed')

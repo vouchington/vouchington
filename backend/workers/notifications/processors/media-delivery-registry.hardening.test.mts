@@ -56,6 +56,34 @@ describe('durable media registry recovery hardening', () => {
     })
   })
 
+  it('adds a recovery page through the default bulk enqueue with per-record dedup ids', async () => {
+    const user = await createTestUserDirect()
+    await withTestMediaRecoveryBacklog(user.id, 3, async ({ deliveryKeys, scanBefore }) => {
+      const first = await listRecoverableMediaDeliveryRegistryKeys({
+        limit: 1,
+        scanBefore,
+        deliveryKeys,
+      })
+      const data = { scanBefore, after: first.page_info.end_cursor! }
+
+      expect(
+        await processReconcileMediaDeliveryRegistry(
+          data,
+          scopedTestMediaRecoveryDependencies(deliveryKeys),
+        ),
+      ).toEqual({ enqueued: 2 })
+
+      for (const deliveryKey of deliveryKeys.slice(1)) {
+        const jobs = await notifications.searchJobs({
+          name: 'processApplyMediaDeliveryRegistryRecord',
+          data: { deliveryKey },
+        })
+        expect(jobs).toHaveLength(1)
+        expect(jobs[0]?.opts.deduplication?.id).toBe(`media-delivery-registry:${deliveryKey}`)
+      }
+    })
+  })
+
   it('enqueues 101 owned deliveries through persisted distinct continuation jobs', async () => {
     const user = await createTestUserDirect()
     await withTestMediaRecoveryBacklog(user.id, 102, async ({ deliveryKeys, scanBefore }) => {

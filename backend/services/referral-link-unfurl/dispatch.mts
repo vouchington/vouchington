@@ -47,14 +47,14 @@ export async function dispatchUnfurlReferralLinks(
         total += rows.length
         // One batched add, then one cursor save: progress advances past a batch only after the
         // whole batch was accepted. A failed batch is re-read and re-added on the next run, and
-        // each parent's debounce dedup id collapses that replay.
+        // each parent's debounce dedup id collapses that replay. The cursor helper never calls
+        // the handler with an empty batch.
         await enqueueBulkUnfurlReferralLinks(rows.map(row => ({ parentLinkId: row.id })))
-        const last = rows.at(-1)
-        if (last)
-          await saveProgress?.({
-            sweepStartedAt,
-            after: { requestedAt: last.requested_at, id: last.id },
-          })
+        const last = rows.at(-1)!
+        await saveProgress?.({
+          sweepStartedAt,
+          after: { requestedAt: last.requested_at, id: last.id },
+        })
       },
     },
   )
