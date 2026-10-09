@@ -2450,7 +2450,8 @@ rules:
         - '**/*.test.*'
         - '**/__tests__/**'
         - '**/test-helpers/**'
-        - backend/scripts/**
+        - backend/scripts/seeds/**
+        - backend/data-stores/psql/migration-runner/**
 
   - name: development runtime helper queries identify executed statements
     rule: postgres-require-query-annotation

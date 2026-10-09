@@ -544,9 +544,10 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `not-to-unresolvable`.
 
 `no-mistakes` enforces `postgres-require-query-annotation` for backend TypeScript runtime
-code, excluding tests, test helpers, and scripts, with a separate entry for the five
-development-runtime helpers. `postgres-no-offset` applies to that same
-runtime scope and to tracked migrations, views, and config-driven SQL. The
+code, excluding tests, test helpers, seed scripts, and the migration runner, with a separate
+entry for the five development-runtime helpers. Other backend scripts remain covered.
+`postgres-no-offset` excludes all backend scripts and applies to tracked migrations, views,
+and config-driven SQL. The
 `postgres-generated-column-predicates` runtime entry excludes tests plus only seed scripts and
 the migration runner; it scans other backend scripts, and a second entry explicitly scans the five
 development-runtime helpers and the same schema SQL sources. Both entries list the config-driven
