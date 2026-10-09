@@ -23,7 +23,7 @@ These rules apply to backend, web, and tooling tests, and to every file a test c
 - **R3. Event waits.** Do not wait with `setTimeout`, `setInterval`, `setImmediate`, `node:timers/promises`, `pg_sleep`, `waitForCondition`, `pollUntil*`, `vi.waitFor`, `vi.waitUntil`, `expect.poll`, or the database clock. Wait on the returned promise, a queue event, pub/sub, `LISTEN/NOTIFY`, or an injected or fake clock. Do not add a test-only branch to production code. Web tests may use Testing Library `findBy*`.
 - **R4. Smallest fixture.** Cross each boundary with the fewest rows. Lower a DynamicConfig work limit with `overrideDynamicConfigFieldsForTest`. Scale, plan, wall-time, heap, and pool checks belong in [explain-analyze](postgresql/explain-analyze/README.md). Unit tests do not assert `performance.now()` or `process.memoryUsage()`.
 - **R5. Allowlisted network.** A real call may go only to `example.com`, `example.net`, `example.org`, or loopback. The Vitest setup rejects other hosts. Fix a flake in production code, not with a skip.
-- **R6. No skips.** No `.skip`, `.skipIf`, `.runIf`, `.only`, `.todo`, `.fixme`, or `context.skip()`. A credentialed test runs only in the credentialed workflow. A missing credential fails the test.
+- **R6. No skips.** No `.skip`, `.skipIf`, `.runIf`, `.only`, `.todo`, `.fixme`, or `context.skip()`. A credentialed test runs only in the credentialed workflow. A missing credential fails the test. Credentialed tests are non-gating smoke checks; see [live-provider smoke checks](#live-provider-smoke-checks).
 - **R7. Timeouts.** Vitest and Playwright tests have a 30-second maximum. Vitest per-test, hook, and describe overrides stay at or below that cap; Playwright cannot extend a test deadline. Fix a slow test instead of raising the timeout. Moving Vitest project defaults to 5 seconds is the timeout cleanup in #2149; its existing override violations remain on the frozen baseline until then.
 - **R8. No repository-wide tooling.** A unit test does not generate a schema snapshot, run a full migrate, lint or analyze the repository, spawn Vitest, or run a build. Those jobs have their own workflows. A tool's own tests use a small fixture.
 - **R9. Injected clock.** A result must not depend on the real time of day, date, time zone, or day boundary. Pass a clock or `now`, or use fake timers. `Date.now()` used only to build a unique id is fine. `crypto.randomUUID()` is preferred.
@@ -35,6 +35,17 @@ These rules apply to backend, web, and tooling tests, and to every file a test c
 Dirty-database proof for a changed database test: run the file twice on the same database without resetting it, then run two processes on that file at the same time.
 
 `forbidden-calls` enforces the timer, isolated-database, benchmark, and live no-mistakes analysis bans. ast-grep enforces executed DDL, `pg_sleep`, skips, the 30-second cap, and oversized `Array.from({ length })` / `it.each` fixtures until `no-mistakes` ships statement policy (jonathanong/no-mistakes#1562, #1563, #1564), `test-no-skips` (#1565), and `vitest-timeout-cap` (#1566).
+
+## Live-provider smoke checks
+
+A test that calls a live provider (`*.openai*`, `*.anthropic*`, `*.openrouter`, `*.stripe`, `*.bedrock`, or `*.s3` in the file name) never gates CI. A provider outage, a flex-capacity failure, or an ambiguous billed error is not by itself a regression in this repository, and CI does not retry it. The `test-backend-credentialed` job still runs on pull requests, merge groups, and the nightly run. It is informational: the required `backend` gate does not wait on it, it publishes no coverage, and a failure leaves the job and the Nightly run red with a warning annotation and a job summary. See [CI](ci.md#live-provider-smoke-checks).
+
+Gating coverage of the request we build and the response we handle comes from recorded provider responses:
+
+- Record or hand-write the wire response as a `curl -si`-style file under `backend/test-helpers/provider-fixtures/<provider>/`, replay it through the provider SDK's own transport hook with `createProviderReplay()`, and assert our behavior: the request (model, parameters, headers we set), how we parse the result, and the usage and failure policy. Do not assert an upstream error message, the URL the SDK builds, or an SDK call count. See [recorded provider responses](testing/backend/helpers.md#recorded-provider-responses).
+- Name the fixture test so it does not match a live-provider glob (for example `create-response.replay.no-data.mock.test.mts`), or the credentialed project collects it and the unit projects drop it.
+- Keep the live file as a thin smoke check and say so in its header. Do not delete it: a live call is the only proof that the provider contract has not drifted.
+- Model-quality golden and eval files (for example `*.golden.*.test.mts`) are smoke and eval checks, not fixture candidates.
 
 ## Contents
 

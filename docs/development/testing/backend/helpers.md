@@ -254,6 +254,63 @@ try {
 }
 ```
 
+## Recorded Provider Responses
+
+Gate request construction and response handling for an external provider on a recorded wire
+response, and keep the live call as a non-gating smoke check ([live-provider smoke
+checks](../../tests.md#live-provider-smoke-checks)). `createProviderReplay()` from
+[`provider-replay.mts`](../../../../backend/test-helpers/provider-replay.mts) is a URL-agnostic
+`fetch` that answers each request with the next queued response, so the SDK parses real status
+lines, headers, and SSE or JSON bytes and nothing touches the network
+([R5](../../tests.md#test-suite-rules)).
+
+- **Fixtures** are `curl -si`-style files (a status line, headers, a blank line, then the raw body)
+  under `backend/test-helpers/provider-fixtures/<provider>/`. Record one with `curl -si`, or
+  hand-write it from the provider's documented wire format when recording is not possible, and say so
+  in the pull request. `loadRecordedResponse('openai/responses-stream-text-completed.http')` drops
+  the framing headers (`content-length`, `transfer-encoding`, `content-encoding`, `connection`,
+  `keep-alive`) because it serves the decoded body. Pass `{ replace: { token: value } }` to swap a
+  literal token, such as the sentinel response id, for an id the test owns on the shared database.
+- **Replay**: `replay.respondWith(...)` queues responses in request order, `replay.requests` holds
+  each captured request (`method`, `url`, lower-cased `headers`, `body` bytes, `json()`), and
+  `replay.assertDrained()` fails when a queued response was never requested. A request with no
+  queued response throws, so an unexpected retry or extra call fails loudly. `createProviderReplay({
+  chunkBytes })` streams the body in pieces that ignore event boundaries. `toReplayResponse()` builds
+  the `Response` for a transport that is not `fetch` (Stripe's `createFetchHttpClient`, an AWS SDK
+  request handler); Bedrock's binary event-stream body is just bytes in the fixture.
+- **Injecting it** without editing production code: a provider SDK package is resolvable only from the
+  package that depends on it (`openai` from `@modules/openai-utils`), so put the test beside the
+  client. Mock the external package with a subclass that forces the replay `fetch`:
+
+  ```ts
+  const replay = await vi.hoisted(async () => {
+    const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+    return createProviderReplay({ chunkBytes: 41 })
+  })
+  vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
+    const actual = await importOriginal()
+    const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+    return { ...actual, default: replayClient(actual.default, replay) }
+  })
+  ```
+
+  That `vi.mock` makes the file `*.mock.test.mts`; use `*.no-data.mock.test.mts` when it needs no
+  database so it runs in `backend-no-data-mocks`. Name it so it does not match a live-provider glob
+  (`*.openai*`, `*.anthropic*`, `*.openrouter`, `*.stripe`, `*.bedrock`, `*.s3`), for example
+  `create-response.replay.no-data.mock.test.mts`: the credentialed projects collect those suffixes
+  and the unit projects exclude them. Call `replay.reset()` in `beforeEach` because the client is a
+  module singleton.
+
+- **Assert our behavior**: the request we build (model, parameters, headers we set), how we parse
+  the result (the id, model, tier, and usage the ledger reads), and our failure policy (for example
+  the latch-and-stop on a possibly billed create failure). Do not assert an upstream error message,
+  a URL the SDK builds, or an SDK retry or call count. Existing `*.no-data.mock.test.mts` files that
+  mock the SDK object keep owning branch logic; the replay test owns the wire. Model-quality golden
+  and eval files (`*.golden.*.test.mts`) are smoke and eval checks, not fixture candidates.
+
+Worked example: [`create-response.replay.no-data.mock.test.mts`](../../../../backend/modules/openai-utils/create-response.replay.no-data.mock.test.mts)
+and [`moderate.replay.no-data.mock.test.mts`](../../../../backend/modules/openai-utils/moderate.replay.no-data.mock.test.mts).
+
 ## Focused PostgreSQL Test Operations
 
 Backend tests never import PostgreSQL executors or `sql-template-strings`. Put schema setup,

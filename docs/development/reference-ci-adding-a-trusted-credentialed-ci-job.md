@@ -47,3 +47,7 @@ The `__tests__/secret-context.permissions.test.mts` and `__tests__/secret-contex
 ### 4. CORS origin exactness
 
 CORS `Access-Control-Allow-Origin` entries require the exact scheme + host + port. `http://localhost:8787` and `https://localhost:8787` are different origins. Locally wrangler dev defaults to HTTP; use `http://` in test CORS configs.
+
+### 5. A live-provider job is informational
+
+A job whose tests call a live provider (`test-backend-credentialed` is the model) must not gate the area. Leave it out of the area gate's `needs:` and `results`, like `codecov`; keep it out of `coverage` and `codecov` `needs:` and never publish its LCOV, so the patch-coverage gate reads only deterministic suites. `area-workflows.test.mts` lists the report-only suites per area, and `tests-backend-credentialed.test.mts` pins the backend wiring. Gate the same behavior with recorded-response fixtures ([live-provider smoke checks](tests.md#live-provider-smoke-checks)). Do not add `continue-on-error` to the test step: the failed job staying red is what keeps the check and the Nightly alert visible.

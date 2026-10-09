@@ -27,7 +27,10 @@ fixture, and dirty-database patterns.
    mutations, and make assertions safe on a dirty, parallel database.
 4. Mock only external provider boundaries — see
    [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the exact boundary and naming
-   rules.
+   rules. Gate a provider integration on a recorded response replayed through the SDK's `fetch`
+   (see [recorded provider responses](../../../docs/development/testing/backend/helpers.md#recorded-provider-responses));
+   a live-provider test is a non-gating smoke check
+   ([rules](../../../docs/development/tests.md#live-provider-smoke-checks)).
 5. Run the exact file in its owning project before broader backend validation. If DB/Valkey setup is
    missing, follow [`local-site-testing`](../local-site-testing/SKILL.md) instead of bypassing the
    integration boundary.
