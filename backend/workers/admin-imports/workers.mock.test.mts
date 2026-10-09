@@ -7,12 +7,15 @@ const mockWorker = vi.hoisted(
       typeof import('glide-mq').Worker,
 )
 
-vi.mock<typeof import('glide-mq')>(import('glide-mq'), () => ({
+// The data-store factory is preloaded by the test setup, so reset modules to rebuild it on the mock.
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => ({
+  ...(await importOriginal()),
   Worker: mockWorker,
 }))
 
 describe('adminImports worker registration', () => {
   it('registers the admin-imports worker', async () => {
+    vi.resetModules()
     await import('./workers.mts')
 
     expect(Worker).toHaveBeenCalledWith(

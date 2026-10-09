@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { processSpamDetection } from './processors.mts'
 
 type SpamDetectionJobData = { id: string; contentSha256?: string }
@@ -11,9 +11,8 @@ export async function handleSpamDetectionJob(job: Job<SpamDetectionJobData>): Pr
   return { success: true, applied }
 }
 
-export const spamDetectionWorker = new Worker('spam_detection', handleSpamDetectionJob, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const spamDetectionWorker = createWorker('spam_detection', handleSpamDetectionJob, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('spamDetection', { baseline: 5 }),
   limiter: { max: 5, duration: 1000 },
 })

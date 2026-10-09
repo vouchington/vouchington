@@ -1,5 +1,5 @@
-import { Worker, type Job } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import type { Job } from 'glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { processPostMentions } from '@services/post-mentions'
 import { QUEUE_NAME } from '@queues/post-mentions/config'
@@ -9,7 +9,7 @@ const processors: Record<PostMentionsJobs, (data: { postId: string }) => Promise
   processPostMentions,
 }
 
-export const postMentions = new Worker(
+export const postMentions = createWorker(
   QUEUE_NAME,
   (job: Job) => {
     const fn = processors[job.name as PostMentionsJobs]
@@ -22,8 +22,7 @@ export const postMentions = new Worker(
     return fn(job.data)
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('postMentions', { baseline: 5 }),
   },
 )
