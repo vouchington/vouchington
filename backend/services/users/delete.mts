@@ -1,3 +1,4 @@
+import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -119,12 +120,6 @@ function getUserDeletionCacheTags(target: UserDeletionTarget): string[] {
   ]
 }
 
-function throwDeletionFailures(results: PromiseSettledResult<unknown>[], message: string) {
-  const errors = results.flatMap(r => (r.status === 'rejected' ? [r.reason] : []))
-  if (!errors.length) return
-  throw errors.length === 1 ? errors[0] : new AggregateError(errors, message)
-}
-
 async function attemptImmediateUserDeletionCacheEviction(
   requestId: string,
   target: UserDeletionTarget,
@@ -133,10 +128,10 @@ async function attemptImmediateUserDeletionCacheEviction(
   const tags = getUserDeletionCacheTags(target)
   try {
     await purge(tags)
-    const receipts = await Promise.allSettled(
+    await settleUserDeletionOperations(
       tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
+      'User deletion cache receipts failed',
     )
-    throwDeletionFailures(receipts, 'User deletion cache receipts failed')
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
@@ -177,11 +172,13 @@ export async function deleteUser(
   await query.commit()
 
   const purge = dependencies.purgeCacheTags ?? purgeCacheTags
-  const followUps = await Promise.allSettled([
-    invalidate.users(deletion.target.id, deletion.target.username),
-    attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
-  ])
-  throwDeletionFailures(followUps, 'User deletion follow-ups failed')
+  await settleUserDeletionOperations(
+    [
+      invalidate.users(deletion.target.id, deletion.target.username),
+      attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
+    ],
+    'User deletion follow-ups failed',
+  )
   await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
   try {
     await enqueueUserDeletion({
