@@ -46,6 +46,8 @@ cached, so run `./dev/claude-cloud backend` or `web` in the session when service
 
 ## Known limits
 
+- The VM kernel boots with IPv6 disabled. The shared API test server prefers `::1` and falls back
+  to `127.0.0.1` there; other code that binds `::1` explicitly fails with `EAFNOSUPPORT`.
 - The session's GitHub proxy only serves `api.github.com` for repositories attached to the session.
   mise resolves some `.mise.toml` tools through that API, so `mise install` can fail on restricted
   networks; `./dev/initialize` reports it as a warning.
