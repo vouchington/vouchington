@@ -47,11 +47,11 @@ Ordinary same-state staging leaves the entire persisted record unchanged, includ
 and failure evidence; authority changes and explicit forced generations restart publication.
 
 The root reconciler repairs markers and stages authority once, then captures an exact cutoff from
-the primary database. Recovery pages use opaque scoped cursors in immutable delivery-key order,
+the primary database. Recovery pages use opaque scoped cursors in immutable registry UUID order,
 with creation and retry eligibility bounded by that cutoff. This replaces oldest-first preference
 with complete traversal. Each queue continuation follows successful child enqueues and retains the
 same cutoff; later admissions or eligibility changes wait for the next root sweep. The primary
-pool preserves visibility of staging and cleanup writes. Internal exact-key scopes support owned
+pool preserves visibility of staging and cleanup writes. Internal exact-id scopes support owned
 recovery and replay; an empty supplied scope does no work, while omitted scope covers the registry.
 
 New binding admissions and unsafe image mutations first acquire the same immutable batch of
@@ -92,8 +92,8 @@ exact binding in that order, then inserts the live placement. Surface triggers r
 unprepared image instead of allocating a placement inside the owner transaction. Retained
 identities are not delivery authority; recovery still proves live ownership.
 
-An independently committed repair marker references an already committed registry delivery key
-with an `ON DELETE RESTRICT` foreign key and contains only that key, rotating token, and timestamps.
+An independently committed repair marker references an already committed registry UUID identity
+with an `ON DELETE RESTRICT` foreign key and contains only that id, rotating token, and timestamps.
 It precedes an owner pre-commit denial when that committed registry parent exists, and also
 precedes a publisher's local correction from stale allow to withheld, because that correction can
 roll back after the edge accepts its fresh token. Ordinary committed withheld publication does
@@ -135,3 +135,5 @@ and live expiry; completion removes work while immutable registry transitions re
 publication takes a fresh nontransactional generation and claims inside the retained legal
 transaction. Regular publication of an already-completed generation is idempotent. Each AWS
 command has a two-minute abort deadline within the five-minute projection lease.
+
+Operator replay is accepted asynchronously (`202`, no count). Small jobs carry the actor id, reopen one failed page with lifecycle evidence in one transaction, and enqueue cursor-deduplicated continuations in computed delivery-key order. Confirm convergence with the [coverage query](../../../../runbooks/media-delivery-edge-enforcement.md#coverage-query).

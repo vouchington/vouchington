@@ -12,28 +12,28 @@ export type MediaDeliveryClaim = ImageDeliveryRecord & { lease_token: string }
 /** Callers retain the authority lock before claiming or publishing this exact generation. */
 export async function claimMediaDeliveryProjection(
   query: QueryExecutor,
-  deliveryKey: string,
+  mediaDeliveryRegistryRecordId: string,
   now = new Date(),
 ): Promise<MediaDeliveryClaim | null> {
   const statement = sql`/* claimMediaDeliveryProjection */
     WITH candidate AS (
-      SELECT work.delivery_key FROM media_delivery_registry_projection_work_items work
-      JOIN media_delivery_registry_records record USING (delivery_key)
-      WHERE work.delivery_key = ${deliveryKey} AND work.generation = record.generation AND `
+      SELECT work.media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items work
+      JOIN media_delivery_registry_records record ON record.id = work.media_delivery_registry_record_id
+      WHERE work.media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId} AND work.generation = record.generation AND `
   statement.append(mediaDeliveryClaimable(now)).append(sql` FOR UPDATE OF work
     ), claimed AS (
       UPDATE media_delivery_registry_projection_work_items work
       SET lease_token = ${randomUUID()}::uuid, leased_at = clock_timestamp(),
         lease_expires_at = clock_timestamp() + ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond',
         attempt_count = attempt_count + 1
-      FROM candidate WHERE work.delivery_key = candidate.delivery_key
+      FROM candidate WHERE work.media_delivery_registry_record_id = candidate.media_delivery_registry_record_id
       RETURNING work.*
     ), history AS (
-      INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, claimed_at, delivery_attempt_count)
-      SELECT delivery_key, generation, 'claimed', leased_at, attempt_count FROM claimed
-    ) SELECT record.delivery_key, record.desired_state, record.placement_id,
+      INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, claimed_at, delivery_attempt_count)
+      SELECT media_delivery_registry_record_id, generation, 'claimed', leased_at, attempt_count FROM claimed
+    ) SELECT record.id AS media_delivery_registry_record_id, record.desired_state, record.placement_id,
       record.placement_revision, record.image_id, record.generation, claimed.lease_token
-      FROM claimed JOIN media_delivery_registry_records record USING (delivery_key)
+      FROM claimed JOIN media_delivery_registry_records record ON record.id = claimed.media_delivery_registry_record_id
   `)
   const { rows } = await query<MediaDeliveryClaim>(statement)
   return rows[0] ?? null
@@ -45,7 +45,7 @@ export async function ownsMediaDeliveryProjection(
 ): Promise<boolean> {
   const { rows } = await query(sql`/* ownsMediaDeliveryProjection */
     SELECT 1 FROM media_delivery_registry_projection_work_items
-    WHERE delivery_key = ${claim.delivery_key} AND generation = ${claim.generation}
+    WHERE media_delivery_registry_record_id = ${claim.media_delivery_registry_record_id} AND generation = ${claim.generation}
       AND lease_token = ${claim.lease_token}::uuid AND lease_expires_at > clock_timestamp()
     FOR UPDATE
   `)

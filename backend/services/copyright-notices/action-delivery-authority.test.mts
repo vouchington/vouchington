@@ -1,3 +1,4 @@
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
@@ -11,7 +12,6 @@ import {
   stageAllCurrentImagePlacementDeliveryRecords,
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,
@@ -48,7 +48,7 @@ describe('copyright action persisted delivery authority', () => {
     })
     let deliveryKey = ''
     try {
-      deliveryKey = await Promise.race([
+      await Promise.race([
         prepared.promise,
         restoring.then(() => {
           throw new Error('Restore finished before publication barrier')
@@ -56,6 +56,11 @@ describe('copyright action persisted delivery authority', () => {
       ])
       const current = await getImagePlacementForCopyright(scene.target.placement_id)
       if (!current) throw new Error('Prepared restoration tuple missing')
+      deliveryKey = getImagePlacementDeliveryKey({
+        placementId: current.placementId,
+        revision: current.revision,
+        imageId: current.imageId,
+      })
       await using transaction = await beginTransaction()
       await lockImageDeliveryMutation(transaction, {
         placementIds: [current.placementId],
@@ -100,14 +105,22 @@ describe('copyright action persisted delivery authority', () => {
         await publishStagedMediaDeliveryRecord(deliveryKey)
       },
     })
+    let mediaDeliveryRegistryRecordId = ''
     let deliveryKey = ''
     try {
-      deliveryKey = await Promise.race([
+      mediaDeliveryRegistryRecordId = await Promise.race([
         prepared.promise,
         restoring.then(() => {
           throw new Error('Restore finished before publication barrier')
         }),
       ])
+      const tuple = await getImagePlacementForCopyright(scene.target.placement_id)
+      if (!tuple) throw new Error('Prepared restoration tuple missing')
+      deliveryKey = getImagePlacementDeliveryKey({
+        placementId: tuple.placementId,
+        revision: tuple.revision,
+        imageId: tuple.imageId,
+      })
       await appendCopyrightNoticeSubmission({
         noticeId: scene.notice.id,
         kind: 'court_or_ccb_hold',
@@ -127,15 +140,19 @@ describe('copyright action persisted delivery authority', () => {
         .every(([record]) => record.state === 'withheld'),
     ).toBe(true)
     expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
-    await reconcileTestDeliveryRepairMarker(deliveryKey)
-    await processMediaDeliveryRegistryRecord(deliveryKey)
+    await reconcileTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)
+    await processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)
     const stableGeneration = edge.records.get(deliveryKey)!.generation
     const current = await getImagePlacementForCopyright(scene.target.placement_id)
     if (!current) throw new Error('Copyright placement missing')
     await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'not_claimed',
+    )
     await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'not_claimed',
+    )
     expect(edge.records.get(deliveryKey)?.generation).toBe(stableGeneration)
   })
 
@@ -171,13 +188,15 @@ describe('copyright action persisted delivery authority', () => {
       revision: current.revision,
       imageId: current.imageId,
     }
-    const deliveryKey = getImagePlacementDeliveryKey(tuple)
-    await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    await markTestMediaDeliveryRecordFailed(deliveryKey)
+    const { mediaDeliveryRegistryRecordId } = await stageImagePlacementDeliveryRecord({
+      ...tuple,
+      state: 'allow',
+    })
+    await markTestMediaDeliveryRecordFailed(mediaDeliveryRegistryRecordId)
     await using authority = await beginTransaction()
     let rollback: Promise<void> | undefined
     const releaseAuthority = () => (rollback ??= authority.rollback())
-    let replay: Promise<number> | undefined
+    let replay: ReturnType<typeof replayFailedMediaDeliveryRegistryRecords> | undefined
     // A timed-out test releases the lock, then drains any replay it unblocked.
     onTestFinished(async () => {
       await releaseAuthority()
@@ -194,11 +213,13 @@ describe('copyright action persisted delivery authority', () => {
     }
     replay = replayFailedMediaDeliveryRegistryRecords({
       actorUserId: scene.moderator.id,
-      deliveryKeys: [deliveryKey],
+      recordIds: [mediaDeliveryRegistryRecordId],
     })
     try {
-      await expect(replay).resolves.toBe(1)
-      expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ state: 'pending' })
+      await expect(replay).resolves.toMatchObject({ replayed: 1 })
+      expect(await getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).toMatchObject({
+        state: 'pending',
+      })
     } finally {
       await releaseAuthority()
     }

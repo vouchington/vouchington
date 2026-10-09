@@ -11,9 +11,10 @@ export { repairFailedImageDeliveryMutation } from './delivery-registry-recovery.
 export {
   replayFailedMediaDeliveryRegistryRecords,
   stageAllCurrentImagePlacementDeliveryRecords,
+  stageImagePlacementDeliveryRecordPage,
 } from './delivery-registry-reconciliation.mts'
 export {
-  listRecoverableMediaDeliveryRegistryKeys,
+  listRecoverableMediaDeliveryRegistryIds,
   getMediaDeliveryRegistryScanBefore,
   failExpiredExhaustedMediaDeliveryRegistryRecords,
 } from './delivery-registry-recovery-scan.mts'

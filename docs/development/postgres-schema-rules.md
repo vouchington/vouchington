@@ -47,7 +47,7 @@ expiry.
 Image delivery repair retains a concrete image identity and an immutable placement binding with an
 exact post or surface family. The owner transaction creates that binding, pins the image root and
 the binding in that order, then inserts the live placement. A repair marker references an already
-committed registry delivery key; it is not a direct pin of a reservation made before the owner
+committed registry UUID identity; it is not a direct pin of a reservation made before the owner
 transaction. Live image and placement rows, registry records, and repair markers use concrete FKs,
 but retained identity alone never grants delivery. Scheduled bounded cleanup removes an orphan
 binding after its last live, registry, and marker reference, then removes an unreferenced image

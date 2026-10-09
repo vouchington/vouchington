@@ -219,10 +219,9 @@ DECLARE
   v_revision integer;
 BEGIN
   INSERT INTO media_delivery_registry_records (
-    delivery_key, placement_id, placement_revision, image_id, desired_state
+    placement_id, placement_revision, image_id, desired_state
   )
-  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),
-    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
+  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
   FROM media_placements placement
   JOIN image_surface_placements surface ON surface.placement_id = placement.id
   WHERE placement.retired_at IS NULL
@@ -232,7 +231,8 @@ BEGIN
     AND surface.community_id IS NOT DISTINCT FROM p_community_id
     AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id
     AND surface.image_id IS DISTINCT FROM p_image_id
-  ON CONFLICT (delivery_key) DO UPDATE
+  ORDER BY placement.id, placement.revision, surface.image_id
+  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
   SET desired_state = 'withheld',
     generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
       THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;
@@ -279,16 +279,15 @@ BEGIN
   END IF;
 
   INSERT INTO media_delivery_registry_records (
-    delivery_key, placement_id, placement_revision, image_id, desired_state
+    placement_id, placement_revision, image_id, desired_state
   )
-  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),
-    v_placement_id, v_revision, p_image_id,
+  SELECT v_placement_id, v_revision, p_image_id,
     CASE WHEN image.deleted_at IS NULL
         AND image.quarantine_pending_at IS NULL
         AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
       THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END
   FROM images image WHERE image.id = p_image_id
-  ON CONFLICT (delivery_key) DO NOTHING;
+  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;
 
 END;
 $$;
@@ -438,7 +437,7 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
       AND EXISTS (
         SELECT 1
         FROM view_media_delivery_registry_current_records registry
-        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
+        WHERE registry.placement_id = p_placement_id AND registry.placement_revision = p_revision AND registry.image_id = p_image_id
           AND registry.desired_state = 'allow'
           AND registry.state = 'completed'
       )

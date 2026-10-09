@@ -1,24 +1,29 @@
 import { getMediaDeliverySafetyWorkLimit } from '@services/media-delivery-safety/work-limits'
 import {
+  enqueueReplayMediaDeliveryRegistry,
+  type ReplayMediaDeliveryRegistryData,
+  enqueueContinueMediaDeliveryRegistryStaging,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueContinueMediaDeliveryRegistryReconciliation,
   type ReconcileMediaDeliveryRegistryData,
 } from '@queues/notifications/enqueues'
 import {
-  listRecoverableMediaDeliveryRegistryKeys,
+  replayFailedMediaDeliveryRegistryRecords,
+  listRecoverableMediaDeliveryRegistryIds,
   processMediaDeliveryRegistryRecord,
-  stageAllCurrentImagePlacementDeliveryRecords,
+  stageImagePlacementDeliveryRecordPage,
   reconcileMediaDeliveryRepairMarkers,
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
 } from '@services/media-delivery-safety'
 
 type MediaDeliveryRegistryProcessorDependencies = {
-  enqueueBulkApplyMediaDeliveryRegistryRecords: (deliveryKeys: string[]) => Promise<unknown>
-  listRecoverableMediaDeliveryRegistryKeys: typeof listRecoverableMediaDeliveryRegistryKeys
+  enqueueBulkApplyMediaDeliveryRegistryRecords: (recordIds: string[]) => Promise<unknown>
+  listRecoverableMediaDeliveryRegistryIds: typeof listRecoverableMediaDeliveryRegistryIds
   processMediaDeliveryRegistryRecord: typeof processMediaDeliveryRegistryRecord
-  stageAllCurrentImagePlacementDeliveryRecords: typeof stageAllCurrentImagePlacementDeliveryRecords
+  stageImagePlacementDeliveryRecordPage: typeof stageImagePlacementDeliveryRecordPage
   reconcileMediaDeliveryRepairMarkers: typeof reconcileMediaDeliveryRepairMarkers
+  enqueueContinueMediaDeliveryRegistryStaging: typeof enqueueContinueMediaDeliveryRegistryStaging
   now: () => Date
   enqueueContinueMediaDeliveryRegistryReconciliation: typeof enqueueContinueMediaDeliveryRegistryReconciliation
   failExpiredExhaustedMediaDeliveryRegistryRecords: typeof failExpiredExhaustedMediaDeliveryRegistryRecords
@@ -26,13 +31,13 @@ type MediaDeliveryRegistryProcessorDependencies = {
 }
 
 export async function processApplyMediaDeliveryRegistryRecord(
-  data: { deliveryKey: string },
+  data: { mediaDeliveryRegistryRecordId: string },
   dependencies: Partial<MediaDeliveryRegistryProcessorDependencies> = {},
 ): Promise<'completed' | 'not_claimed'> {
   const process =
     dependencies.processMediaDeliveryRegistryRecord ?? processMediaDeliveryRegistryRecord
   const now = dependencies.now ?? (() => new Date())
-  return process(data.deliveryKey, now())
+  return process(data.mediaDeliveryRegistryRecordId, now())
 }
 
 export async function processReconcileMediaDeliveryRegistry(
@@ -40,20 +45,24 @@ export async function processReconcileMediaDeliveryRegistry(
   dependencies: Partial<MediaDeliveryRegistryProcessorDependencies> = {},
 ): Promise<{ enqueued: number }> {
   const list =
-    dependencies.listRecoverableMediaDeliveryRegistryKeys ??
-    listRecoverableMediaDeliveryRegistryKeys
+    dependencies.listRecoverableMediaDeliveryRegistryIds ?? listRecoverableMediaDeliveryRegistryIds
   const enqueueBulk =
     dependencies.enqueueBulkApplyMediaDeliveryRegistryRecords ??
     enqueueBulkApplyMediaDeliveryRegistryRecords
   const pageSize = getMediaDeliverySafetyWorkLimit('recovery_page_size')
   const stage =
-    dependencies.stageAllCurrentImagePlacementDeliveryRecords ??
-    stageAllCurrentImagePlacementDeliveryRecords
+    dependencies.stageImagePlacementDeliveryRecordPage ?? stageImagePlacementDeliveryRecordPage
   const repair =
     dependencies.reconcileMediaDeliveryRepairMarkers ?? reconcileMediaDeliveryRepairMarkers
   if (!data.scanBefore) {
-    await repair(pageSize)
-    await stage()
+    if (!data.staging) await repair(pageSize)
+    const staged = await stage(data.staging ?? {})
+    if (staged.hasMore && staged.after) {
+      const continueStaging =
+        dependencies.enqueueContinueMediaDeliveryRegistryStaging ??
+        enqueueContinueMediaDeliveryRegistryStaging
+      await continueStaging({ scanBefore: staged.scanBefore, after: staged.after })
+    }
   }
   const cutoff =
     dependencies.getMediaDeliveryRegistryScanBefore ?? getMediaDeliveryRegistryScanBefore
@@ -75,4 +84,19 @@ export async function processReconcileMediaDeliveryRegistry(
   if (page.page_info.has_next_page && page.page_info.end_cursor)
     await continuation({ scanBefore, after: page.page_info.end_cursor })
   return { enqueued: page.results.length }
+}
+
+export async function processReplayMediaDeliveryRegistry(
+  data: ReplayMediaDeliveryRegistryData,
+  dependencies: {
+    replay?: typeof replayFailedMediaDeliveryRegistryRecords
+    enqueue?: typeof enqueueReplayMediaDeliveryRegistry
+  } = {},
+): Promise<void> {
+  const page = await (dependencies.replay ?? replayFailedMediaDeliveryRegistryRecords)(data)
+  if (page.hasMore && page.after)
+    await (dependencies.enqueue ?? enqueueReplayMediaDeliveryRegistry)({
+      actorUserId: data.actorUserId,
+      after: page.after,
+    })
 }

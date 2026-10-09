@@ -155,7 +155,7 @@ Media delivery recovery uses the existing reconciliation job with two payload fo
 root payload, or an exact `scanBefore` plus opaque `after` cursor continuation. Root throttling and
 cursor-specific continuation deduplication have separate identities. Continuations keep the root
 retry and retention policy, and never use a stable custom job ID. Failed pages replay safely;
-terminal registry failures require the existing operator replay. See the
+terminal registry failures require operator replay. The staff route accepts replay with `202` and no count. Replay jobs carry the actor id and optional computed delivery-key cursor, atomically reopen one failed page with lifecycle evidence, and enqueue a cursor-deduplicated continuation when full. Registry apply jobs carry UUID record ids. See the
 [media-delivery safety protocol](../../services/media-delivery-safety/README.md) and
 [worker recovery](../workers/notifications/README.md).
 

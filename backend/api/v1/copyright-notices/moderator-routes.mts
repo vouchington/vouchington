@@ -6,7 +6,7 @@ import { defineQueryContract, queryInteger } from '@modules/pagination'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
 import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'
-import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
+import { enqueueReplayMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
   assertCopyrightIntakeEnabled,
   currentUserCanReviewCopyrightNotices,
@@ -328,10 +328,9 @@ app.route('/api/v1/copyright-media-delivery/replays').post(async (ctx: Context) 
     'POST:/api/v1/copyright-media-delivery/replays',
   )
   assertNotSuspended(currentUser)
-  const replayed = await replayFailedMediaDeliveryRegistryRecords({
-    actorUserId: currentUser.id,
-  })
-  ctx.json({ replayed })
+  await enqueueReplayMediaDeliveryRegistry({ actorUserId: currentUser.id })
+  ctx.setStatus(202)
+  ctx.json({})
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Context) => {

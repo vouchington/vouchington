@@ -49,6 +49,7 @@ export {
 } from './processors/copyright-dsa-submission.mts'
 export {
   processApplyMediaDeliveryRegistryRecord,
+  processReplayMediaDeliveryRegistry,
   processReconcileMediaDeliveryRegistry,
 } from './processors/media-delivery-registry.mts'
 

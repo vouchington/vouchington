@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -16,7 +15,7 @@ import {
   getMediaDeliveryRegistryScanBefore,
   stageAllCurrentImagePlacementDeliveryRecords,
   stageImagePlacementDeliveryRecord,
-  listRecoverableMediaDeliveryRegistryKeys,
+  listRecoverableMediaDeliveryRegistryIds,
   replayFailedMediaDeliveryRegistryRecords,
 } from './index.mts'
 
@@ -33,26 +32,32 @@ describe('scoped media delivery reconciliation', () => {
     )
     expect(
       (
-        await listRecoverableMediaDeliveryRegistryKeys({
+        await listRecoverableMediaDeliveryRegistryIds({
           limit: 100,
           scanBefore: await getMediaDeliveryRegistryScanBefore(),
-          deliveryKeys: [selected.deliveryKey],
+          recordIds: [selected.mediaDeliveryRegistryRecordId],
         })
       ).results,
-    ).toEqual([selected.deliveryKey])
+    ).toEqual([selected.mediaDeliveryRegistryRecordId])
     await Promise.all(
       [selected, unrelated].map(placement =>
-        markTestMediaDeliveryRecordFailed(placement.deliveryKey),
+        markTestMediaDeliveryRecordFailed(placement.mediaDeliveryRegistryRecordId),
       ),
     )
-    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(
+      unrelated.mediaDeliveryRegistryRecordId,
+    )
     expect(
-      await replayFailedMediaDeliveryRegistryRecords({ deliveryKeys: [selected.deliveryKey] }),
-    ).toBe(1)
-    expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
+      await replayFailedMediaDeliveryRegistryRecords({
+        recordIds: [selected.mediaDeliveryRegistryRecordId],
+      }),
+    ).toMatchObject({ replayed: 1 })
+    expect(await getTestMediaDeliveryRecord(selected.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'pending',
     })
-    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(unrelated.mediaDeliveryRegistryRecordId),
+    ).toEqual(unrelatedBefore)
   })
 
   it('stages current placement records only for selected images', async () => {
@@ -64,8 +69,13 @@ describe('scoped media delivery reconciliation', () => {
       stageImagePlacementDeliveryRecord({ ...selected, state: 'withheld' }),
       stageImagePlacementDeliveryRecord({ ...unrelated, state: 'withheld' }),
     ])
-    await scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, new Date(Date.now() + 60_000))
-    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    await scheduleTestMediaDeliveryRetry(
+      unrelated.mediaDeliveryRegistryRecordId,
+      new Date(Date.now() + 60_000),
+    )
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(
+      unrelated.mediaDeliveryRegistryRecordId,
+    )
     expect(unrelatedBefore).toMatchObject({
       desired_state: 'withheld',
       delivery_attempt_count: 3,
@@ -73,10 +83,12 @@ describe('scoped media delivery reconciliation', () => {
     })
 
     expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
-    expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(selected.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'allow',
     })
-    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(unrelated.mediaDeliveryRegistryRecordId),
+    ).toEqual(unrelatedBefore)
   })
 
   it('withholds only selected unsafe records and treats an empty scope as a no-op', async () => {
@@ -92,8 +104,13 @@ describe('scoped media delivery reconciliation', () => {
       markImageModerationFlagged(selected.imageId),
       markImageModerationFlagged(unrelated.imageId),
     ])
-    await scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, new Date(Date.now() + 60_000))
-    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    await scheduleTestMediaDeliveryRetry(
+      unrelated.mediaDeliveryRegistryRecordId,
+      new Date(Date.now() + 60_000),
+    )
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(
+      unrelated.mediaDeliveryRegistryRecordId,
+    )
     expect(unrelatedBefore).toMatchObject({
       desired_state: 'allow',
       delivery_attempt_count: 3,
@@ -101,15 +118,23 @@ describe('scoped media delivery reconciliation', () => {
     })
 
     expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
-    expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(selected.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'withheld',
     })
-    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
-    const selectedBefore = await getTestMediaDeliveryRecordSnapshot(selected.deliveryKey)
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(unrelated.mediaDeliveryRegistryRecordId),
+    ).toEqual(unrelatedBefore)
+    const selectedBefore = await getTestMediaDeliveryRecordSnapshot(
+      selected.mediaDeliveryRegistryRecordId,
+    )
     expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([])).toBe(0)
     expect(await stageAllCurrentImagePlacementDeliveryRecords([])).toBe(0)
-    expect(await getTestMediaDeliveryRecordSnapshot(selected.deliveryKey)).toEqual(selectedBefore)
-    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(selected.mediaDeliveryRegistryRecordId),
+    ).toEqual(selectedBefore)
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(unrelated.mediaDeliveryRegistryRecordId),
+    ).toEqual(unrelatedBefore)
   })
 })
 
@@ -117,7 +142,7 @@ async function createCurrentProfilePlacement(): Promise<{
   imageId: string
   placementId: string
   revision: number
-  deliveryKey: string
+  mediaDeliveryRegistryRecordId: string
 }> {
   const user = await createTestUserDirect()
   const imageId = await insertTestImage(user.id)
@@ -130,6 +155,8 @@ async function createCurrentProfilePlacement(): Promise<{
     imageId,
     placementId,
     revision,
-    deliveryKey: getImagePlacementDeliveryKey({ placementId, revision, imageId }),
+    mediaDeliveryRegistryRecordId: (
+      await stageImagePlacementDeliveryRecord({ placementId, revision, imageId, state: 'allow' })
+    ).mediaDeliveryRegistryRecordId,
   }
 }

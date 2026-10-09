@@ -6,7 +6,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/index.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
@@ -15,21 +15,22 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 
 export async function createFailedMediaDeliveryReplayFixture() {
   const fixture = await createCopyrightReplayFixture()
-  const deliveryKey = await failFixtureMediaDelivery(fixture)
-  return { ...fixture, deliveryKey }
+  const mediaDeliveryRegistryRecordId = await failFixtureMediaDelivery(fixture)
+  return { ...fixture, mediaDeliveryRegistryRecordId }
 }
 
 async function failFixtureMediaDelivery(
   fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
 ): Promise<string> {
   const placement = await applyCopyrightActionAndLoadPlacement(fixture)
-  const deliveryKey = getImagePlacementDeliveryKey({
+  const staged = await stageImagePlacementDeliveryRecord({
     placementId: placement.placement_id,
     revision: placement.placement_revision,
     imageId: fixture.imageId,
+    state: 'withheld',
   })
-  await markTestMediaDeliveryRecordFailed(deliveryKey)
-  return deliveryKey
+  await markTestMediaDeliveryRecordFailed(staged.mediaDeliveryRegistryRecordId)
+  return staged.mediaDeliveryRegistryRecordId
 }
 
 export async function createCopyrightReplayFixture() {
