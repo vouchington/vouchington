@@ -10,8 +10,8 @@ import {
 } from './schema-allowlist-freshness.mts'
 
 describe('schema allowlist freshness', () => {
-  it('reports allowlist entries whose table or column disappeared', () => {
-    const allowlist = `new Map([['posts.owner_id', 'reason'], ['removed.id', 'reason']])`
+  it('reports removed schema entries while ignoring other static string pairs', () => {
+    const allowlist = `new Map([['posts.owner_id', 'reason'], ['removed.id', 'reason'], ['display key', 'text']])`
     const schema = {
       tables: { posts: { columns: { id: {}, owner_id: {} } } },
     } as unknown as Pick<SchemaSnapshot, 'tables'>
