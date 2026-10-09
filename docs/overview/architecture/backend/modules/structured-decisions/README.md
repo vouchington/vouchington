@@ -61,9 +61,12 @@ retains its own validated native provider fragment. Fragments remain exactly as 
 provider keys answers by question ID outside the fragment, the decoder does not synthesize an ID
 inside it.
 
-The deterministic suite mocks only the provider edge. The one native OpenRouter contract test lives
-in the separate `backend-openrouter` Vitest project and requires `OPENROUTER_API_KEY`; it never skips
-when explicitly invoked.
+The deterministic suite mocks only the provider edge, and `structured-decisions.replay.test.mts`
+replays a recorded OpenRouter Decisions response (`backend/test-helpers/provider-fixtures/openrouter/`)
+through the client, so the request we send and the decoding of all three primitives gate CI. The one
+native OpenRouter contract test is a non-gating smoke check: it lives in the separate
+`backend-openrouter` Vitest project and requires `OPENROUTER_API_KEY`; it never skips when explicitly
+invoked.
 
 `benchmark.mts` is an opt-in, credentialed operator tool. It exercises the six real LLM-backed
 moderation prompts and a bounded sweep of realistically sized dynamic candidates. All provider and
