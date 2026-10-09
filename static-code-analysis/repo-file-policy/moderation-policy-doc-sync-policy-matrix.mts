@@ -71,7 +71,9 @@ export function extractPolicyMatrixAllEntityList(content: string): string[] {
       candidate.type === 'paragraph' && normalizeMarkdownText(candidate).includes('all means all'),
   )
   const tokens = nodes.flatMap(node =>
-    extractInlineCodeTokens(node).filter(token => token !== 'MODERATION_REPORT_ENTITY_TYPES'),
+    extractInlineCodeTokens(section, node).filter(
+      token => token !== 'MODERATION_REPORT_ENTITY_TYPES',
+    ),
   )
   const start = section.indexOf('"all" means all')
   return tokens.length > 0

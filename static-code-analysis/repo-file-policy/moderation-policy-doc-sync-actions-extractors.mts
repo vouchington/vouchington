@@ -115,7 +115,7 @@ function locatedInlineCodeTokens(
   fallbackSource: MarkdownSourceLocation,
 ): LocatedDocToken[] {
   const source = sourceAtNode(composition, node, fallbackSource)
-  return extractInlineCodeTokens(node).map(token => ({ source, token }))
+  return extractInlineCodeTokens(composition.content, node).map(token => ({ source, token }))
 }
 
 function locatedReportReasonTokens(
@@ -139,12 +139,9 @@ function locatedReportReasonTokens(
   const nodeContent = hasNodeOffsets
     ? content.slice(startOffset, endOffset)
     : lineMatching(content, pattern)
-  const tokens =
-    node && !hasNodeOffsets
-      ? extractInlineCodeTokens(node)
-      : extractInlineCodeTokensFromText(
-          sectionBetween(lineMatching(nodeContent, pattern), '(', ')'),
-        )
+  const tokens = extractInlineCodeTokensFromText(
+    sectionBetween(lineMatching(nodeContent, pattern), '(', ')'),
+  )
   return tokens.map(token => ({ source, token }))
 }
 
