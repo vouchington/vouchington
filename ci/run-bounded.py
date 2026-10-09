@@ -177,6 +177,8 @@ def main() -> int:
         return group_only(seconds)
     if not hasattr(os, 'pidfd_open') or not hasattr(signal, 'pidfd_send_signal'):
         raise RuntimeError('Linux CI requires identity-safe pidfd signaling')
+    # The current task cannot disappear: a missing interface here is unsupported, not a race.
+    Path(f'/proc/{os.getpid()}/task/{os.getpid()}/children').read_text()
     enable_subreaper()
     interrupted: list[int] = []
     for sig in (signal.SIGINT, signal.SIGTERM):
