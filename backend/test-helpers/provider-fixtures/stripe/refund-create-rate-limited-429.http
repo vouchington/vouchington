@@ -1,0 +1,6 @@
+HTTP/1.1 429 Too Many Requests
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"error":{"code":"rate_limit","doc_url":"https://stripe.com/docs/error-codes/rate-limit","message":"Request rate limit exceeded. Retry the request later.","request_log_url":"https://dashboard.stripe.com/test/logs/req_replay_fixture?t=1893369800","type":"invalid_request_error"}}
