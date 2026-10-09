@@ -29,6 +29,14 @@ This service calculates trending topics by counting recent post and RSS feed ite
 | `limit`     | `number`                   | Results per page (1-100)           |
 | `after`     | `string?`                  | Score-based cursor for pagination  |
 
+## Reference clock
+
+Direct service callers may provide `referenceTime`; omission resolves `Date.now()`
+once per request. Both relation aggregates use the half-open UUIDv7 window
+`[referenceTime - timeRange, referenceTime)`. Future relations are excluded for
+both explicit and current-clock reads. Every caller ranks the global topic set;
+there is no topic-selection query branch. REST and MCP parameters are unchanged.
+
 ## Response
 
 Each result includes:
@@ -41,7 +49,7 @@ Each result includes:
 ## Architecture Notes
 
 - Uses entity relation tables (`relation__post__category__topic`, `relation__rss_feed_item__category__topic`) rather than direct topic tables
-- **Time-range filtering** uses UUIDv7 `id >= lowerBound` instead of `created_at`, following the partition-pruning convention for UUIDv7-keyed tables. This leverages the `idx_*__trending_topics` partial index on `(id, object_id) WHERE deleted_at IS NULL AND votes_score_net > 0` — `id` is the leading column so Postgres can do an index range scan starting at the UUIDv7 lower bound
+- **Time-range filtering** uses UUIDv7 `lowerBound <= id < upperBound` instead of `created_at`, following the partition-pruning convention for UUIDv7-keyed tables. This leverages the `idx_*__trending_topics` partial index on `(id, object_id) WHERE deleted_at IS NULL AND votes_score_net > 0` — `id` is the leading column so Postgres can do an index range scan starting at the UUIDv7 lower bound
 - Score-based cursor pagination: sorts by `(trending_score DESC, id DESC)` with composite cursor for stable ordering
 - Only counts relations with positive vote scores, filtering out downvoted categorizations
 

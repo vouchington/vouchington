@@ -13,6 +13,7 @@ import { insertBatchPostRelations } from './trending-topics/post-relations.mts'
 import { insertBatchRssRelations } from './trending-topics/rss-relations.mts'
 import { insertTopicWithTimestamp } from './trending-topics/topic.mts'
 import { encodeCursor } from '@modules/pagination'
+import { registerTestTrendingTopicWindowFixture } from '../trending-topics-window.mts'
 
 type CreateTrendingTopicDataOptions = {
   postTagCount: number
@@ -35,17 +36,51 @@ export function createTrendingTopicCursorBefore(topicId: string, score: number):
 }
 
 export async function createTrendingTopicData(options: CreateTrendingTopicDataOptions) {
-  const { postTagCount, rssItemTagCount, netVote, createdAt } = options
-
   const user = await createTestUser()
   if (!user) throw new Error('Failed to create test user')
+  const topicId = await insertTrendingTopicPosts(options, user.id)
+  const feedId = await insertTrendingTopicRss(options, topicId, user.id)
+  return { topicId, userId: user.id, feedId }
+}
 
+/** Create bounded fixture batches, settling all started writes before reporting failures. */
+export async function createTrendingTopicsDataBatch(
+  options: readonly CreateTrendingTopicDataOptions[],
+  userId?: string,
+) {
+  const data: { topicId: string; userId: string }[] = []
+  if (options.length === 0) return data
+  const ownerId = userId ?? (await createTestUser()).id
+  for (let offset = 0; offset < options.length; offset += 8) {
+    const outcomes = await Promise.allSettled(
+      options.slice(offset, offset + 8).map(async option => {
+        const topicId = await insertTrendingTopicPosts(option, ownerId)
+        if (option.rssItemTagCount > 0) {
+          await insertTrendingTopicRss(option, topicId, ownerId)
+        }
+        return { topicId, userId: ownerId }
+      }),
+    )
+    const errors: unknown[] = []
+    for (const outcome of outcomes) {
+      if (outcome.status === 'fulfilled') data.push(outcome.value)
+      else errors.push(outcome.reason)
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) throw new AggregateError(errors, 'Trending topic fixture writes failed')
+  }
+  return data
+}
+
+async function insertTrendingTopicPosts(options: CreateTrendingTopicDataOptions, userId: string) {
+  const { postTagCount, netVote, createdAt } = options
   const random = createRandomString(10)
   // Always generate the topic ID in Node.js so UUIDv7 ordering is guaranteed:
   // topic at T-2ms, posts at T-1ms, relations at T.
   // This avoids DB/Node clock skew that could violate CHECK (id > object_id).
   const baseMs = createdAt ? createdAt.getTime() : Date.now()
-  const topicId = await insertTopicWithTimestamp(user.id, random, baseMs - 2)
+  const topicId = await insertTopicWithTimestamp(userId, random, baseMs - 2)
+  registerTestTrendingTopicWindowFixture(topicId, userId, baseMs)
 
   const postTopicMetadata = entityRelationMetadatum.find(
     m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',
@@ -57,13 +92,22 @@ export async function createTrendingTopicData(options: CreateTrendingTopicDataOp
     await insertBatchPostRelations({
       count: postTagCount,
       topicId,
-      userId: user.id,
+      userId,
       netVote,
       createdAt,
       tableName: postTopicMetadata.table_name,
     })
   }
 
+  return topicId
+}
+
+async function insertTrendingTopicRss(
+  options: CreateTrendingTopicDataOptions,
+  topicId: string,
+  userId: string,
+) {
+  const { rssItemTagCount, netVote, createdAt } = options
   // Create RSS feed items and relations
   const rssFeedItemTopicMetadata = entityRelationMetadatum.find(
     m =>
@@ -82,16 +126,12 @@ export async function createTrendingTopicData(options: CreateTrendingTopicDataOp
       count: rssItemTagCount,
       topicId,
       feedId,
-      userId: user.id,
+      userId,
       netVote,
       createdAt,
       tableName: rssFeedItemTopicMetadata.table_name,
     })
   }
 
-  return {
-    topicId,
-    userId: user.id,
-    feedId,
-  }
+  return feedId
 }

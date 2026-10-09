@@ -26,15 +26,17 @@ const RSS_FEED_ITEM_TOPIC_CATEGORY_RELATION_TABLE = getEntityRelationTableNameOr
 export async function getTrendingTopics(
   options: TrendingTopicsOptions,
 ): Promise<TrendingTopicsResult> {
-  const { timeRange, minScore, limit, after } = options
+  const { timeRange, minScore, limit, after, referenceTime } = options
 
   const rangeMs = TIME_RANGE_MS[timeRange]
   if (rangeMs === undefined) {
     throw createHttpError(400, 'Invalid time_range')
   }
 
-  // Use UUIDv7 lower bound for time filtering (avoids unindexed created_at scan)
-  const lowerBoundUuid = timestampToUuidv7LowerBound(Date.now() - rangeMs)
+  // Resolve one instant for both UUIDv7 bounds, including normal wall-clock reads.
+  const referenceMs = referenceTime?.getTime() ?? Date.now()
+  const lowerBoundUuid = timestampToUuidv7LowerBound(referenceMs - rangeMs)
+  const upperBoundUuid = timestampToUuidv7LowerBound(referenceMs)
 
   const safeLimit = Math.floor(clampLimit(limit, TRENDING_TOPICS_DEFAULT_LIMIT))
 
@@ -63,6 +65,8 @@ export async function getTrendingTopics(
       WHERE r.deleted_at IS NULL
         AND r.votes_score_net > 0
         AND r.id >= ${lowerBoundUuid}
+        AND r.id < ${upperBoundUuid}`)
+    .append(sql`
       GROUP BY r.object_id
     ),
     rss_tags AS (
@@ -75,6 +79,7 @@ export async function getTrendingTopics(
       WHERE r.deleted_at IS NULL
         AND r.votes_score_net > 0
         AND r.id >= ${lowerBoundUuid}
+        AND r.id < ${upperBoundUuid}`).append(sql`
       GROUP BY r.object_id
     ),
     combined AS (
