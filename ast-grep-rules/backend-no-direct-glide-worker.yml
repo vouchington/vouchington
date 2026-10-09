@@ -8,6 +8,9 @@ files:
   - 'backend/**/*.mts'
 ignores:
   - 'backend/data-stores/valkey-glide-mq/glide-mq-factory.mts'
+  # Pending conversion after #2447 lands (it edits this file's worker options). Drop this ignore
+  # when the worker moves to createWorker.
+  - 'backend/workers/bedrock-embeddings-batch/workers/bedrock-embeddings-batch-creation.mts'
   - 'backend/**/*.test.mts'
   - 'backend/**/__tests__/**'
   - 'backend/test-helpers/**'
@@ -192,6 +195,12 @@ examples:
       export function buildWorker(name, processor, options) {
         return new Worker(name, processor, options)
       }
+    isValid: true
+  - file: backend/workers/bedrock-embeddings-batch/workers/bedrock-embeddings-batch-creation.mts
+    code: |
+      import { Worker, type Job } from 'glide-mq'
+
+      const worker: Worker = new Worker(queue.name, (job: Job) => run(job, worker), { connection })
     isValid: true
   - file: backend/workers/vote-weight/workers.test.mts
     code: |
