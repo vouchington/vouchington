@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getCommunity, getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import { currentUserCanViewCommunityModerationResults } from '@services/community-agent-prompts'
 import { getMembershipByUserId } from '@services/memberships'
 import { isModerationStaff } from '@services/users'
@@ -33,10 +33,8 @@ app.route('/api/v1/communities/:idOrSlug/moderation-transparency').get(async (ct
   apiQuery('GET:/api/v1/communities/:idOrSlug/moderation-transparency', rangeQuery)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunity(idOrSlug)
-  ctx.assert(community, 404, 'Community not found')
-  const [membership, planMembership] = await Promise.all([
-    getCommunityMember(community.id, currentUser.id),
+  const [{ community, membership }, planMembership] = await Promise.all([
+    loadCommunityWithViewer(idOrSlug, currentUser.id),
     getMembershipByUserId(currentUser.id),
   ])
   const canView = currentUserCanViewCommunityModerationResults(

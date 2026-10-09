@@ -9,13 +9,12 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  loadCommunityForViewer,
-  getCommunityMember,
-  currentUserCanManageCommunityList,
-  searchCommunityListItems,
   addCommunityListItem,
+  currentUserCanManageCommunityList,
+  loadCommunityForViewer,
+  loadCommunityWithViewer,
   removeCommunityListItem,
+  searchCommunityListItems,
 } from '@services/communities'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
@@ -69,8 +68,7 @@ app
     )
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(
       currentUserCanManageCommunityList(currentUser, community, membership),
       403,
@@ -97,8 +95,7 @@ app.route('/api/v1/communities/:idOrSlug/list-items/posts/:itemId').delete(async
   )
 
   const { idOrSlug, itemId } = ctx.params as { idOrSlug: string; itemId: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   ctx.assert(
     currentUserCanManageCommunityList(currentUser, community, membership),
     403,

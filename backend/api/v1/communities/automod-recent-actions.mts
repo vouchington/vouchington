@@ -2,11 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import {
-  currentUserCanModerateCommunity,
-  getCommunityMember,
-  getCommunityOrThrow,
-} from '@services/communities'
+import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import {
   recordAutomodActionFeedback,
   searchRecentAutomodActions,
@@ -29,8 +25,7 @@ app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx
     'GET:/api/v1/communities/:idOrSlug/automod/recent-actions',
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/automod/recent-actions', {
@@ -82,8 +77,7 @@ app
       'POST:/api/v1/communities/:idOrSlug/automod/recent-actions/:sourceKey/feedback',
     )
     const { idOrSlug, sourceKey } = ctx.params as { idOrSlug: string; sourceKey: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(!community.archived_at, 403, 'Community is archived')
     ctx.assert(

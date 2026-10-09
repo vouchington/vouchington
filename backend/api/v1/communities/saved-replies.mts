@@ -1,11 +1,10 @@
+import { loadCommunityWithViewer } from '@services/communities'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
-import { getCommunityOrThrow } from '@services/communities/get'
-import { getCommunityMember } from '@services/communities/members/get'
 import {
   getCommunitySavedReplies,
   createSavedReply,
@@ -24,8 +23,7 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').get(async (ctx: Context
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/saved-replies')
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/saved-replies', {
@@ -54,8 +52,7 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').post(async (ctx: Contex
   assertNotSuspended(currentUser)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
 
@@ -82,8 +79,7 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies/:id').delete(async (ctx: 
   assertNotSuspended(currentUser)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
   validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/saved-replies/:id', {

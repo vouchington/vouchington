@@ -11,7 +11,7 @@ describe('MCP public community database failure', () => {
     const args = { community_id: community.id }
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(
-      '/* getCommunityById */',
+      '/* getCommunityWithViewerById */',
       () => callRejectedMcpTool(caller, 'get_community', args, ['communities:read']),
     )
 

@@ -1,6 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getCommunity } from '@services/communities/get'
-import { getCommunityMember } from '@services/communities/members/get'
+import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
 import type { Community, CommunityMember } from '@services/communities/types'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -25,10 +24,10 @@ export async function searchCommunityAutoTaggerAgents(
   communityId: string,
   membership?: CommunityMember | null,
 ): Promise<CommunityAutoTaggerAgent[]> {
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
-  const resolvedMembership =
-    membership !== undefined ? membership : await getCommunityMember(community.id, currentUser.id)
+  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community } = loaded
+  const resolvedMembership = membership !== undefined ? membership : loaded.membership
   const rows = await getCommunityAutoTaggerAgentRows(community.id)
   return rows.map(row => {
     const entitlement = getCommunityAiAgentEntitlement(
@@ -124,10 +123,10 @@ async function loadManagementTarget(
 ): Promise<{ community: Community; membership: CommunityMember | null; agentId: string }> {
   assert(isCommunityAutoTaggerAgentSlug(moderatorSlug), 404, 'AI agent not found')
 
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
-  const membership = await getCommunityMember(community.id, currentUser.id)
   const entitlement = getCommunityAiAgentEntitlement(
     currentUser,
     community,

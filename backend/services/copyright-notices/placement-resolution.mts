@@ -6,8 +6,7 @@ import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ImageSurfaceReference } from '@services/media-delivery-safety/surface-lock'
 import type { PrivateUser } from '@services/users/types'
 import { canViewPostsBatch } from '@services/posts'
-import { getCommunity } from '@services/communities/get'
-import { getCommunityMember } from '@services/communities/members/get'
+import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
 import { currentUserCanViewCommunity } from '@services/communities/authorization'
 import { resolveCopyrightSurfacePlacement } from './placement-adapters/surface.mts'
 
@@ -87,12 +86,11 @@ export async function claimantCanViewCopyrightImagePlacement(
     return Boolean(viewable.get(input.postId))
   }
   if ('communityId' in input) {
-    const community = await getCommunity(input.communityId, { query })
-    if (!community) return false
-    const membership = currentUser
-      ? await getCommunityMember(input.communityId, currentUser.id, { query })
-      : null
-    return currentUserCanViewCommunity(currentUser, community, membership)
+    const loaded = await getCommunityWithViewer(input.communityId, currentUser?.id ?? null, {
+      query,
+    })
+    if (!loaded) return false
+    return currentUserCanViewCommunity(currentUser, loaded.community, loaded.membership)
   }
   return true
 }

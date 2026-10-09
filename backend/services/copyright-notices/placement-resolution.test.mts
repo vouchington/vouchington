@@ -86,4 +86,13 @@ describe('copyright image placement resolution', () => {
     })
     await expect(testClaimantCanViewCopyrightImage(fixture.selector, claimant)).resolves.toBe(false)
   })
+
+  it('refuses a claimant a community banner whose community does not exist', async () => {
+    const fixture = await createTestCopyrightImageFixture('community-banner-image', {
+      communityVisibility: 'public',
+    })
+    const claimant = await createTestUserDirect()
+    const missing = { ...fixture.selector, communityId: '00000000-0000-0000-0000-000000000000' }
+    await expect(testClaimantCanViewCopyrightImage(missing, claimant)).resolves.toBe(false)
+  })
 })

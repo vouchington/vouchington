@@ -13,7 +13,7 @@ describe('GET /api/v1/feeds/posts/:feed_type community scope failure', () => {
     const url = `/api/v1/feeds/posts/any?community=${encodeURIComponent(community.slug)}`
 
     const { result: response, error } = await withPostgresPoolQueryFailureForTest(
-      '/* getCommunityBySlug */',
+      '/* getCommunityWithViewerBySlug */',
       async () => {
         await request.get(url).set('x-request-id', crypto.randomUUID()).expect(200)
         return request.get(url).set('x-request-id', requestId).expect(500)

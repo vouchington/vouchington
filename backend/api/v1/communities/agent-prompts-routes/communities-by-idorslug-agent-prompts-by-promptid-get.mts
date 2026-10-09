@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityPrompts,
   deleteCommunityAgentPrompt,
@@ -24,8 +24,7 @@ app
     )
 
     const { idOrSlug, promptId } = ctx.params as { idOrSlug: string; promptId: string }
-    const community = await getCommunityOrThrow(ctx, idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(
       currentUserCanManageCommunityPrompts(currentUser, community, membership),

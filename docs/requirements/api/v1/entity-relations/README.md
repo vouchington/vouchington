@@ -98,12 +98,12 @@ Response includes `results` and `page_info`.
 
 ## Performance
 
-| Endpoint                                                                   | Round Trips | Caching                                                  | Notes                                                                                                       |
-| -------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| GET /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType  | 2           | HTTP: anon Cache-Control (short); Entities: Valkey batch | Search IDs, then parallel streaming (elections, votes)                                                      |
-| POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType | 4-7         | None (write)                                             | Auth, parse, upsert, read-back; post tuples add a visibility check; community relations add 2 extra lookups |
-| PUT /api/v1/entity-relations/:id/vote                                      | 5           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, relation-table lookup, entity lookup, upsert)                      |
-| GET /api/v1/entity-relations/:id/votes                                     | 4           | Entities: Valkey batch                                   | Auth, relation-table lookup, cached entity lookup, votes query                                              |
+| Endpoint                                                                   | Round Trips | Caching                                                  | Notes                                                                                                                                                        |
+| -------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType  | 2           | HTTP: anon Cache-Control (short); Entities: Valkey batch | Search IDs, then parallel streaming (elections, votes)                                                                                                       |
+| POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType | 4-6         | None (write)                                             | Auth, parse, upsert, read-back; post tuples add a visibility check; community relations add 1 extra lookup (community and moderator membership in one query) |
+| PUT /api/v1/entity-relations/:id/vote                                      | 5           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, relation-table lookup, entity lookup, upsert)                                                                       |
+| GET /api/v1/entity-relations/:id/votes                                     | 4           | Entities: Valkey batch                                   | Auth, relation-table lookup, cached entity lookup, votes query                                                                                               |
 
 ## Related
 
