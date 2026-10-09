@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { validateVitestCliTimeouts } from './vitest-cli-timeout-policy.mts'
 import { backendCredentialedProjectNames } from '../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 import { toolingTestProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 
@@ -91,13 +92,15 @@ export function vitestProjectGroupCommand(
   group: string,
   forwardedArgs: readonly string[],
 ): { command: string; args: string[] } {
+  const args = normalizeForwardedVitestArgs(forwardedArgs)
+  validateVitestCliTimeouts(args)
   return {
     command: './ci/with-node-test-options',
     args: [
       'vitest',
       'run',
       ...projectsForVitestGroup(group).flatMap(project => ['--project', project]),
-      ...normalizeForwardedVitestArgs(forwardedArgs),
+      ...args,
       ...(vitestProjectGroupRequiresSerialExecution(group) ? ['--no-file-parallelism'] : []),
     ],
   }
