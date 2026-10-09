@@ -118524,23 +118524,23 @@
         },
         "is_blocked": {
           "collation": null,
-          "comment": "Whether this hostname is blocked from being used on the site (e.g. spam). Trigger-maintained from url_hostname_blocks — do not write directly in app code.",
+          "comment": "NOT NULL, default FALSE. TRUE blocks this hostname from being used on the site (e.g. spam); FALSE permits it. Trigger-maintained from url_hostname_blocks — do not write directly in app code.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 3,
           "type": "boolean"
         },
         "is_crawlable": {
           "collation": null,
-          "comment": "Whether pages on this hostname can be crawled.",
-          "defaultExpression": null,
+          "comment": "NOT NULL, default TRUE. TRUE permits crawling pages on this hostname; FALSE disables crawling.",
+          "defaultExpression": "true",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 4,
           "type": "boolean"
         },
@@ -118824,7 +118824,7 @@
         "idx_url_hostnames__blocked": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__blocked ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE (is_blocked = true)",
+          "definition": "CREATE INDEX idx_url_hostnames__blocked ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE is_blocked",
           "includedColumns": [],
           "keys": [
             {
@@ -118835,7 +118835,7 @@
               "opclass": "text_pattern_ops"
             }
           ],
-          "predicate": "(is_blocked = true)",
+          "predicate": "is_blocked",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -118901,6 +118901,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__not_crawlable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__not_crawlable ON public.url_hostnames USING btree (hostname) INCLUDE (is_blocked) WHERE (NOT is_crawlable)",
+          "includedColumns": ["is_blocked"],
+          "keys": [
+            {
+              "column": "hostname",
+              "descending": false,
+              "expression": "hostname",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(NOT is_crawlable)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__reversed_hostname__text_pattern_ops": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -118944,7 +118964,7 @@
         "idx_url_hostnames__top_sort": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((is_blocked IS NOT TRUE) AND (votes_count_up > 0))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))",
           "includedColumns": [],
           "keys": [
             {
@@ -118962,7 +118982,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((is_blocked IS NOT TRUE) AND (votes_count_up > 0))",
+          "predicate": "((NOT is_blocked) AND (votes_count_up > 0))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -118971,7 +118991,7 @@
         "idx_url_hostnames__top_sort_by_topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((is_blocked IS NOT TRUE) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -118996,7 +119016,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((is_blocked IS NOT TRUE) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
+          "predicate": "((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
