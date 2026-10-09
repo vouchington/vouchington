@@ -139,6 +139,23 @@ describe('provider replay transport', () => {
     expect(() => replay.assertDrained()).toThrow(/unrequested/)
   })
 
+  it('errors the body stream when the request is aborted while it is being read', async () => {
+    const replay = createProviderReplay({ chunkBytes: 4 })
+    replay.respondWith(
+      wire('HTTP/1.1 200 OK\ncontent-type: text/event-stream\n\ndata: 1\n\ndata: 2\n\n'),
+    )
+    const controller = new AbortController()
+
+    const response = await replay.fetch('https://provider.example.com/a', {
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    await reader.read()
+    controller.abort()
+
+    await expect(reader.read()).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('forces every client instance through the replay', async () => {
     const replay = createProviderReplay()
     replay.respondWith(ok)

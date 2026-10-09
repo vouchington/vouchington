@@ -86,15 +86,25 @@ export function parseRecordedResponse(raw: Buffer): RecordedResponse {
 /**
  * Builds the `Response` an SDK reads. The body streams in `chunkBytes` pieces (default: one), so a
  * small value proves the consumer does not depend on events arriving aligned to chunk boundaries.
+ * When the request's `signal` aborts while the body is being read, the stream errors with the
+ * signal's reason, as a real transport does.
  */
-export function toReplayResponse(recorded: RecordedResponse, chunkBytes?: number): Response {
+export function toReplayResponse(
+  recorded: RecordedResponse,
+  chunkBytes?: number,
+  signal?: AbortSignal | null,
+): Response {
   const size = chunkBytes ?? Math.max(recorded.body.length, 1)
   let offset = 0
   const body =
     recorded.body.length === 0
       ? null
       : new ReadableStream<Uint8Array>({
+          start(controller) {
+            signal?.addEventListener('abort', () => controller.error(signal.reason), { once: true })
+          },
           pull(controller) {
+            if (signal?.aborted) return controller.error(signal.reason)
             if (offset >= recorded.body.length) return controller.close()
             controller.enqueue(recorded.body.subarray(offset, offset + size))
             offset += size
@@ -113,7 +123,8 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
 
   const replayFetch: ProviderReplay['fetch'] = async (input, init) => {
     const request = input instanceof Request ? input : undefined
-    ;(init?.signal ?? request?.signal)?.throwIfAborted()
+    const signal = init?.signal ?? request?.signal
+    signal?.throwIfAborted()
     const body = await readBody(
       init?.body ?? (request ? await request.clone().arrayBuffer() : null),
     )
@@ -131,7 +142,7 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
         `Provider replay has no recorded response for request ${requests.length}: ${sent.method} ${sent.url}`,
       )
     }
-    return toReplayResponse(next, options.chunkBytes)
+    return toReplayResponse(next, options.chunkBytes, signal)
   }
 
   return {
