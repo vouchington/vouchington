@@ -16,6 +16,7 @@ export interface RequestQueryProfile {
   summarize: () => RequestQuerySummary
 }
 
+/** @public used by the API test server in backend/test-helpers, which production analysis ignores */
 export function createRequestQueryProfile(): RequestQueryProfile {
   const queries: RequestQuery[] = []
   return {
