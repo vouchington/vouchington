@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
@@ -28,6 +28,7 @@ test.describe('Referral Links Tab', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create referral links contributor')
     contributorId = contributor.id
@@ -124,6 +125,7 @@ test.describe('Referral Link Form Submission — create', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create referral form contributor')
     contributorId = contributor.id
@@ -158,6 +160,7 @@ test.describe('Referral Link Form Submission — validation error', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create referral validation contributor')
     contributorId = contributor.id

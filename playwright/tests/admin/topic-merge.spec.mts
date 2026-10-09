@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -13,6 +13,7 @@ test.describe('Admin Topic Merge', () => {
   let destTopicName: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     sourceTopicName = `Merge Source ${suffix}`
     const source = await insertTestTopic(sourceTopicName, `merge-source-${suffix}`)

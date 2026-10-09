@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -21,6 +21,7 @@ let sensitivePostSlug = ''
 
 test.describe('Sensitive-media blur gate on post page', () => {
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
 
     const mod = await createTestUser({ username: `exposure-mod-${suffix}`, administrator: true })
@@ -71,6 +72,7 @@ let cooldownModeratorId = ''
 
 test.describe('Exposure cooldown gate in review queue', () => {
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
 
     const cooldownMod = await createTestUser({

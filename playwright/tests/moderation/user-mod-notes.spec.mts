@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
+import { expect, test, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { createTestUser, insertTestModerationReport } from '../../../backend/test-helpers/index.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -12,6 +12,7 @@ let targetUsername = ''
 let suffix = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   suffix = randomSuffix()
 
   targetUsername = `modnote-target-${suffix}`
@@ -139,6 +140,7 @@ test.describe('User Mod Notes — Site Moderator', () => {
   let smModeratorId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const moderator = await createSiteModeratorUser()
     smModeratorId = moderator.id
   })

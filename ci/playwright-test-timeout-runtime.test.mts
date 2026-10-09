@@ -15,7 +15,12 @@ const capError =
 
 async function runFixture(
   body: string,
-  options: { collection?: string; cliTimeout?: string; extended?: boolean } = {},
+  options: {
+    collection?: string
+    cliTimeout?: string
+    extended?: boolean
+    workerFixture?: boolean
+  } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), 'playwright-public-cap-'))
   try {
@@ -28,30 +33,38 @@ async function runFixture(
       join(dir, 'playwright.config.mts'),
       `export default { testDir: '.', testMatch: '**/*.spec.mts', globalSetup: './setup.mts', timeout: 30000, workers: 1, retries: 0, reporter: 'json' }`,
     )
-    await writeFile(
-      join(dir, 'tiny.spec.mts'),
-      `
+    const specSource = `
       import { test as raw } from '@playwright/test'
       import { writeFileSync } from 'node:fs'
-      import { guardPlaywrightTestTimeouts } from ${JSON.stringify(guardPath)}
+      import { guardPlaywrightTestTimeouts, protectPlaywrightHookTimeouts } from ${JSON.stringify(guardPath)}
       const guarded = guardPlaywrightTestTimeouts(raw)
-      const test = ${options.extended ? `guarded.extend({ sample: async ({}, use) => await use('fixture') })` : 'guarded'}
+      const test = ${options.extended ? `guarded.extend({ sample: ${options.workerFixture ? "[async ({}, use) => await use('fixture'), { scope: 'worker' }]" : "async ({}, use) => await use('fixture')"} })` : 'guarded'}
       ${options.collection ?? ''}
       test('tiny public boundary', async (${options.extended ? '{ sample }' : '{}'}, info) => {
         ${body}
         writeFileSync(${JSON.stringify(join(dir, 'body.marker'))}, 'continued')
       })
-    `,
-    )
+    `
+    await writeFile(join(dir, 'tiny.spec.mts'), specSource)
     const args = [cli, 'test', '--config', join(dir, 'playwright.config.mts')]
     if (options.cliTimeout !== undefined) args.push('--timeout', options.cliTimeout)
     let code = 0
     let output = ''
     let stats: { expected: number; unexpected: number } | undefined
+    let errors: { message: string; location?: { file: string; line: number } }[] = []
     const capture = (stdout: string, stderr: string) => {
       output = stdout + stderr
       try {
-        stats = (JSON.parse(stdout) as { stats: typeof stats }).stats
+        const report = JSON.parse(stdout) as {
+          stats: typeof stats
+          suites: { specs: { tests: { results: { errors: typeof errors }[] }[] }[] }[]
+        }
+        stats = report.stats
+        errors = report.suites.flatMap(suite =>
+          suite.specs.flatMap(spec =>
+            spec.tests.flatMap(test => test.results.flatMap(result => result.errors)),
+          ),
+        )
       } catch {
         /* CLI argument failures may precede reporter creation. */
       }
@@ -65,7 +78,8 @@ async function runFixture(
       capture(result.stdout, result.stderr)
     }
     const marker = await readFile(join(dir, 'body.marker'), 'utf8').catch(() => undefined)
-    return { code, output, marker, stats }
+    const hookMarker = await readFile(join(dir, 'hook.marker'), 'utf8').catch(() => undefined)
+    return { code, output, marker, hookMarker, stats, errors, specSource }
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
@@ -148,6 +162,76 @@ describe('Playwright public timeout runtime', () => {
     expect(result.output).toMatch(capError)
     expect(result.marker).toBeUndefined()
   })
+
+  it.each([
+    ['beforeAll', 'info.setTimeout(30001)'],
+    ['afterAll', 'info.setTimeout(30001)'],
+    ['beforeAll', 'info.slow()'],
+    ['afterAll', 'info.slow()'],
+  ] as const)('rejects %s %s before continuing the hook', async (hook, action) => {
+    const result = await runFixture('', {
+      collection: `test[${JSON.stringify(hook)}]('owned cap hook', async ({}, info) => {
+          protectPlaywrightHookTimeouts(info)
+          ${action}
+          writeFileSync('hook.marker', 'continued')
+        })`,
+    })
+    expect(result.code).toBe(1)
+    expect(result.stats?.unexpected).toBe(1)
+    expect(result.output).toMatch(capError)
+    expect(result.hookMarker).toBeUndefined()
+  })
+
+  it('preserves named all-hook fixtures, ordering and legal hook deadlines', async () => {
+    const result = await runFixture('', {
+      extended: true,
+      workerFixture: true,
+      collection: `
+        const seen = []
+        test.beforeAll('owned setup', async ({ sample }, info) => {
+          protectPlaywrightHookTimeouts(info)
+          if (sample !== 'fixture') throw new Error('worker fixture lost')
+          info.setTimeout(25000)
+          seen.push('before')
+        })
+        test.afterAll('owned teardown', async ({ sample }, info) => {
+          protectPlaywrightHookTimeouts(info)
+          if (sample !== 'fixture' || seen.join() !== 'before') throw new Error('hook context lost')
+          info.setTimeout(30000)
+          writeFileSync('hook.marker', 'completed')
+        })`,
+    })
+    expect(result.code).toBe(0)
+    expect(result.stats).toMatchObject({ expected: 1, unexpected: 0 })
+    expect(result.hookMarker).toBe('completed')
+  })
+
+  it.each(['beforeAll', 'afterAll'] as const)(
+    'reports the original %s declaration on an actual hook timeout',
+    async phase => {
+      const result = await runFixture('', {
+        collection: `test[${JSON.stringify(phase)}]('owned timeout location', async ({}, info) => {
+            protectPlaywrightHookTimeouts(info)
+            info.setTimeout(25)
+            await new Promise(() => {})
+          })`,
+      })
+      expect(result.code).toBe(1)
+      expect(result.stats?.unexpected).toBe(1)
+      const failure = result.errors.find(error => error.location?.file.endsWith('tiny.spec.mts'))
+      expect(failure?.location?.file).toMatch(/tiny\.spec\.mts$/)
+      expect(failure?.location?.file).not.toBe(guardPath)
+      const declaration =
+        result.specSource
+          .split('\n')
+          .findIndex(line => line.includes(`]('owned timeout location', async`)) + 1
+      expect(declaration).toBeGreaterThan(0)
+      expect(failure?.location?.line).toBe(declaration)
+      expect(result.output).toMatch(/hook timeout.*exceeded/i)
+      expect(result.output).toContain('owned timeout location')
+      expect(result.output).toContain('protectPlaywrightHookTimeouts(info)')
+    },
+  )
 
   it('runs legal public setters and extended fixtures at the CLI ceiling', async () => {
     const result = await runFixture(

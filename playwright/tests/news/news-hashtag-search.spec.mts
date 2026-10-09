@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import {
@@ -22,6 +22,7 @@ test.describe('News Hashtag Search', () => {
   let contentTopicSlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const random = randomSuffix()
     contentTopicSlug = `pw-news-hashtag-${random}`
 

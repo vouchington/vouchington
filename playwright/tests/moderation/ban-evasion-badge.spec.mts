@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   createTestUser,
   insertTestCommunity,
@@ -57,6 +57,7 @@ let communitySlug = ''
 let reportId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   await reviewPendingTestModerationReportsByNotePrefixes([suiteReportNotePrefix])
   const result = await seedBanEvasionReport(randomSuffix())
   communitySlug = result.communitySlug
@@ -107,6 +108,7 @@ test.describe('Ban-evasion badge in admin reports queue', () => {
     let dismissReportId = ''
 
     test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
       const result = await seedBanEvasionReport(randomSuffix())
       dismissReportId = result.reportId
     })
@@ -134,6 +136,7 @@ test.describe('Ban-evasion badge — Site Moderator', () => {
   let smReportId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const moderator = await createSiteModeratorUser()
     smModeratorId = moderator.id
     const result = await seedBanEvasionReport(randomSuffix())
@@ -176,6 +179,7 @@ test.describe('Ban-evasion badge — SA confirm', () => {
   let saConfirmSuspectId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const result = await seedBanEvasionReport(randomSuffix())
     saReportId = result.reportId
     saConfirmCommunityId = result.communityId

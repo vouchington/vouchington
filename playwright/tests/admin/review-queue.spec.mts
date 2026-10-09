@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   createTestUser,
   insertTestImage,
@@ -15,6 +15,7 @@ let inReviewTitle = ''
 let approveTitle = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   const author = await createTestUser({ username: `review-queue-pw-${suffix}` })
   if (!author) throw new Error('Failed to create review queue author')

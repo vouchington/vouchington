@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 
@@ -34,6 +34,7 @@ test.describe('News Page', () => {
   let youtubeUrlId!: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // Seed a story-type post and link it to test-item-1's URL so that the /news
     // card for that item shows a "Discussions" link pointing to /story/<slug>.
     // This avoids triggering the story-teller OpenAI agent — we assert on the
@@ -95,6 +96,7 @@ test.describe('News Page', () => {
   })
 
   test.afterAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const errors: unknown[] = []
     if (youtubeFeedId && youtubeItemId) {
       try {

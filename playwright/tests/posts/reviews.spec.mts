@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -159,6 +159,7 @@ test.describe('Create Review Form', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create review contributor')
     contributorId = contributor.id

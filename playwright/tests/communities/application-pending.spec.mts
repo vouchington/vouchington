@@ -1,4 +1,9 @@
-import { test, expect, withMonitoredPage } from '../../helpers/test.mts'
+import {
+  test,
+  expect,
+  withMonitoredPage,
+  protectPlaywrightHookTimeouts,
+} from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -22,6 +27,7 @@ let communityId = ''
 let applicantUserId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   communitySlug = `pw-apply-pending-${suffix}`
 

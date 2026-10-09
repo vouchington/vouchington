@@ -1,4 +1,9 @@
-import { test, expect, withMonitoredPage } from '../../helpers/test.mts'
+import {
+  test,
+  expect,
+  withMonitoredPage,
+  protectPlaywrightHookTimeouts,
+} from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -25,6 +30,7 @@ test.describe('Explore Communities Page', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async ({ browser }, testInfo) => {
+    protectPlaywrightHookTimeouts(test.info())
     const fixture = createCommunityFixture()
     COMMUNITY_NAME = fixture.name
     COMMUNITY_SLUG = fixture.slug

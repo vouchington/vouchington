@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -11,6 +11,7 @@ let dstSlug = ''
 let dstName = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   srcName = `Merge Source ${suffix}`
   const src = await insertTestTopic(srcName, `merge-src-${suffix}`)

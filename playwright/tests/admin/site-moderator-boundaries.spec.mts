@@ -12,7 +12,7 @@
  * are consistent — moderators are blocked at both boundaries.
  */
 
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -38,6 +38,7 @@ let moderatorId = ''
 let targetUserId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
 
   // Clean up pending reports from all prior runs that used these stable prefixes.

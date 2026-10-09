@@ -128,3 +128,19 @@ describe('browser-free timeout guard', () => {
     },
   )
 })
+
+describe('reused public TestInfo guard', () => {
+  it('can protect the same info for a hook and its following test fixture', async () => {
+    const info = {
+      timeout: 30000,
+      setTimeout: vi.fn<(timeout: number) => void>(),
+    } as unknown as Parameters<typeof playwrightTimeoutFixture>[2]
+    const use = vi.fn<() => Promise<void>>()
+    await playwrightTimeoutFixture({}, use, info)
+    const setter = info.setTimeout
+    await playwrightTimeoutFixture({}, use, info)
+    expect(info.setTimeout).toBe(setter)
+    expect(use).toHaveBeenCalledTimes(2)
+    expect(() => info.setTimeout(30001)).toThrow(RangeError)
+  })
+})

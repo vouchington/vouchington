@@ -37,12 +37,10 @@ function rejectSlow(): never {
   throw new RangeError('Playwright slow modifiers are forbidden by the 30,000 ms test cap')
 }
 
-export async function playwrightTimeoutFixture(
-  // oxlint-disable-next-line no-empty-pattern -- Playwright parses this public fixture dependency list.
-  {}: object,
-  use: () => Promise<void>,
-  info: TestInfo,
-): Promise<void> {
+const protectedInfo = new WeakSet<TestInfo>()
+
+export function protectPlaywrightHookTimeouts(info: TestInfo): void {
+  if (protectedInfo.has(info)) return
   playwrightTestTimeout(info.timeout, 'Playwright effective test timeout')
   const setTimeout = Reflect.get(info, 'setTimeout') as TestInfo['setTimeout']
   Object.defineProperties(info, {
@@ -56,6 +54,16 @@ export async function playwrightTimeoutFixture(
     },
     slow: { value: rejectSlow, writable: false, configurable: false },
   })
+  protectedInfo.add(info)
+}
+
+export async function playwrightTimeoutFixture(
+  // oxlint-disable-next-line no-empty-pattern -- Playwright parses this public fixture dependency list.
+  {}: object,
+  use: () => Promise<void>,
+  info: TestInfo,
+): Promise<void> {
+  protectPlaywrightHookTimeouts(info)
   await use()
 }
 
@@ -81,6 +89,9 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
     W
   >['describe']['configure']
   Object.defineProperties(test, {
+    beforeAll: { value: test.beforeAll, writable: false, configurable: false },
+    afterAll: { value: test.afterAll, writable: false, configurable: false },
+    info: { value: test.info, writable: false, configurable: false },
     setTimeout: {
       writable: false,
       configurable: false,

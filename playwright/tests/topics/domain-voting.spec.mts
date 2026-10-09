@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { voteTrigger } from '../../helpers/semantic-vote.mts'
@@ -14,6 +14,7 @@ test.describe('Domain Voting', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create domain voting contributor')
     contributorId = contributor.id
