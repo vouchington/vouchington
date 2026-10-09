@@ -7,6 +7,7 @@ message:
 files:
   - playwright/**/*.spec.mts
   - playwright/**/*.spec.ts
+  - playwright/setup/**/*.setup.mts
 utils:
   trusted-inline-registration:
     all:
@@ -58,11 +59,9 @@ utils:
 rule:
   any:
     - all:
-        - kind: member_expression
-        - has:
-            kind: property_identifier
-            regex: ^(beforeAll|afterAll)$
-            stopBy: neighbor
+        - any:
+            - pattern: test.beforeAll
+            - pattern: test.afterAll
         - not:
             inside:
               matches: trusted-inline-registration
@@ -267,5 +266,24 @@ examples:
       await seed()
 
       })"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../helpers/test.mts'; test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); await seed(); });"
+    isValid: true
+    file: playwright/setup/auth.setup.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../helpers/test.mts'; test.beforeAll(async () => { await seed(); });"
+    isValid: false
+    file: playwright/setup/auth.setup.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../helpers/test.mts'; test.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); await cleanup(); });"
+    isValid: true
+    file: playwright/setup/auth.setup.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../helpers/test.mts'; test.afterAll(async () => { await cleanup(); });"
+    isValid: false
+    file: playwright/setup/auth.setup.mts
+  - code: 'server.beforeAll(async () => { await seed(); });'
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: 'fixture.afterAll(async () => { await cleanup(); });'
     isValid: true
     file: playwright/tests/contracts/all-hook.spec.mts

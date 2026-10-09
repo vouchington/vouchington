@@ -65,8 +65,9 @@ Feature-gated UI should enable the flag only for the current browser context wit
 
 A `test.beforeAll` hook can run more than once in the same worker process — `fullyParallel`
 scheduling can hand a worker a second test from the same file, re-entering the hook with module
-scope preserved. Call [`randomSuffix()`](../../../../../playwright/helpers/random-id.mts) as the first statement _inside_
-the hook, not at module or `describe` scope: a suffix hoisted above the hook keeps the same value
+scope preserved. Call [`randomSuffix()`](../../../../../playwright/helpers/random-id.mts) immediately after the first-statement
+`protectPlaywrightHookTimeouts(test.info())` guard, still _inside_ the hook, not at module or
+`describe` scope: a suffix hoisted above the hook keeps the same value
 across a re-entry and seeds the same slug/name twice, which throws on any globally unique DB column
 (e.g. `post_slugs_pkey`).
 
