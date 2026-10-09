@@ -1,4 +1,5 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   observeSharedDbScope,
@@ -32,6 +33,7 @@ type QueuedCase = CopyrightStaffQueueCase & { cursor: CopyrightStaffQueueCursor 
 export async function listCopyrightStaffQueue(
   currentUser: PrivateUser,
   options: { limit: number; after?: CopyrightStaffQueueCursor; noticeIds?: readonly string[] },
+  queryOptions: QueryOptions & { now?: Date } = {},
 ): Promise<{
   cases: QueuedCase[]
   endCursor: CopyrightStaffQueueCursor | null
@@ -42,20 +44,28 @@ export async function listCopyrightStaffQueue(
     return { cases: [], endCursor: null, hasNextPage: false }
   }
   if (options.noticeIds?.length === 0) return { cases: [], endCursor: null, hasNextPage: false }
-  const trustedFlaggerBoost =
-    (await isCopyrightTrustedFlaggerPriorityEnabled()) &&
-    (await findCurrentCopyrightJurisdictionPolicy('eu_dsa')) !== null
   observeSharedDbScope(
     'listCopyrightStaffQueue',
     options.noticeIds
       ? sharedDbIdsScope(options.noticeIds)
       : sharedDbCursorScope(options.after?.id),
   )
-  const noticeIds = options.noticeIds ? [...options.noticeIds] : null
+  if (queryOptions.query || queryOptions.client) {
+    return withTransactionOptions(queryOptions, execute)
+  }
   await using transaction = await beginTransaction()
-  const query = sql`/* listPendingCopyrightStaffCases */`.append(
-    copyrightStaffQueueKeysSql({ trustedFlaggerBoost }),
-  ).append(sql`
+  const result = await execute(transaction)
+  await transaction.commit()
+  return result
+
+  async function execute(transaction: TransactionQuery) {
+    const trustedFlaggerBoost =
+      (await isCopyrightTrustedFlaggerPriorityEnabled()) &&
+      (await findCurrentCopyrightJurisdictionPolicy('eu_dsa', transaction)) !== null
+    const noticeIds = options.noticeIds ? [...options.noticeIds] : null
+    const query = sql`/* listPendingCopyrightStaffCases */`.append(
+      copyrightStaffQueueKeysSql({ trustedFlaggerBoost, now: queryOptions.now }),
+    ).append(sql`
     SELECT queue_key.id, queue_key.urgency, queue_key.tier, queue_key.reasons, queue_key.waiting_since,
       to_char(queue_key.waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
         AS cursor_waiting_since,
@@ -70,35 +80,35 @@ export async function listCopyrightStaffQueue(
       LIMIT 1
     ) next_deadline ON true
   `)
-  if (options.after || noticeIds) {
-    query.append(sql` WHERE true`)
-    if (noticeIds) query.append(sql` AND queue_key.id = ANY(${noticeIds}::uuid[])`)
-    if (options.after) {
-      query.append(sql`
+    if (options.after || noticeIds) {
+      query.append(sql` WHERE true`)
+      if (noticeIds) query.append(sql` AND queue_key.id = ANY(${noticeIds}::uuid[])`)
+      if (options.after) {
+        query.append(sql`
         AND (queue_key.tier, queue_key.waiting_since, queue_key.id)
           > (${options.after.tier}::int, ${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`)
+      }
     }
-  }
-  query.append(sql`
+    query.append(sql`
     ORDER BY queue_key.tier, queue_key.waiting_since, queue_key.id
     LIMIT ${options.limit + 1}
   `)
-  const { rows } = await transaction<QueueKeyRow>(query)
-  const pageRows = rows.slice(0, options.limit)
-  const staffCases = await getPendingCopyrightStaffCases(
-    pageRows.map(row => row.id),
-    transaction,
-  )
-  const cases = pageRows.map(row => {
-    const staffCase = staffCases.get(row.id)
-    return staffCase ? { ...staffCase, ...queueFields(row), cursor: cursorFor(row) } : null
-  })
-  await transaction.commit()
-  const last = rows.length > options.limit ? rows[options.limit - 1] : undefined
-  return {
-    cases: cases.filter((item): item is QueuedCase => item !== null),
-    endCursor: last ? cursorFor(last) : null,
-    hasNextPage: rows.length > options.limit,
+    const { rows } = await transaction<QueueKeyRow>(query)
+    const pageRows = rows.slice(0, options.limit)
+    const staffCases = await getPendingCopyrightStaffCases(
+      pageRows.map(row => row.id),
+      transaction,
+    )
+    const cases = pageRows.map(row => {
+      const staffCase = staffCases.get(row.id)
+      return staffCase ? { ...staffCase, ...queueFields(row), cursor: cursorFor(row) } : null
+    })
+    const last = rows.length > options.limit ? rows[options.limit - 1] : undefined
+    return {
+      cases: cases.filter((item): item is QueuedCase => item !== null),
+      endCursor: last ? cursorFor(last) : null,
+      hasNextPage: rows.length > options.limit,
+    }
   }
 }
 

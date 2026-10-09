@@ -12,11 +12,16 @@ import { inAreaTrustedFlaggerMatchSql } from './trusted-flagger-match.mts'
  * and its distinct `reasons`. Callers append their own `SELECT ... FROM queue_key`.
  */
 export function copyrightStaffQueueKeysSql({
+  now,
   paging = false,
   trustedFlaggerBoost = false,
-}: { paging?: boolean; trustedFlaggerBoost?: boolean } = {}): SQLStatement {
+}: { now?: Date; paging?: boolean; trustedFlaggerBoost?: boolean } = {}): SQLStatement {
+  if (now && !Number.isFinite(now.getTime()))
+    throw new TypeError('Copyright queue clock must be valid')
   return sql`
-    WITH open_item AS (
+    WITH deadline_clock AS (
+      SELECT COALESCE(${now ?? null}::timestamptz, CURRENT_TIMESTAMP) AS now
+    ), open_item AS (
       SELECT intake.copyright_notice_id, 'form_intake_review'::text AS reason,
         submission.received_at AS since
       FROM copyright_notice_form_intakes intake
@@ -139,12 +144,12 @@ export function copyrightStaffQueueKeysSql({
       WHERE staydown_match.reviewed_at IS NULL
       UNION ALL
       SELECT deadline.copyright_notice_id,
-        CASE WHEN deadline.restoration_deadline_at <= CURRENT_TIMESTAMP
+        CASE WHEN deadline.restoration_deadline_at <= deadline_clock.now
           THEN 'deadline_missed' ELSE 'deadline_due' END,
         deadline.escalation_at
-      FROM copyright_notice_deadlines deadline
+      FROM copyright_notice_deadlines deadline CROSS JOIN deadline_clock
       WHERE deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
-        AND deadline.escalation_at <= CURRENT_TIMESTAMP
+        AND deadline.escalation_at <= deadline_clock.now
     ), queue_key_base AS (
       SELECT open_item.copyright_notice_id AS id,
         CASE

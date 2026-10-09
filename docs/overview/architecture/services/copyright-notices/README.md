@@ -193,3 +193,28 @@ current owner behavior remain unchanged.
 
 - `authorizeCopyrightGuestCapability`
 - `getCopyrightRepeatInfringerAccount`
+
+### Staff queue execution ownership
+
+Staff queue policy availability, native keys and case details use the same transaction executor.
+A caller-supplied transaction remains caller-owned; normal calls commit their own read transaction.
+An optional internal decision instant binds the deadline comparisons in the real queue SQL; when
+omitted they retain PostgreSQL `CURRENT_TIMESTAMP`. The listener forwards it with its query
+options, never from HTTP input. Native diagnostic key reads use that same decision instant.
+Server-owned request query options are execution dependencies, never HTTP inputs or authorization
+substitutes. Shared-database HTTP diagnostics can therefore reserve policy visibility in a real
+rollback-only snapshot while retaining normal middleware, serialized responses and native cursors.
+The diagnostic walk is bounded by that snapshot's real key suffix and drains responses/server before
+rollback. No global row cleanup or public queue filter is introduced.
+
+### Local seed identity and deadline clock
+
+The ordinary copyright seed accepts one identity set and business clock, shared by its media,
+email, form-case and deadline producers. The CLI retains the canonical identity set and samples its clock from primary PostgreSQL; callers
+seeding another owned dataset supply stable UUIDv7 keys, a bounded namespace and guest addresses.
+Repeating those inputs reuses the same evidence, screening and immutable deadlines. A later
+clock never rewrites an existing deadline or its history.
+
+Owned seed callers pass that same business clock through the staff queue execution options
+described above. They can advance it to prove a retained deadline becomes missed without
+changing its stored schedule; current authorization and persisted authority remain live.
