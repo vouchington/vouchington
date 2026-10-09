@@ -17,53 +17,84 @@ ignores:
   - 'backend/**/__tests__/**'
   - 'backend/test-helpers/**'
 rule:
-  kind: call_expression
-  all:
-    - any:
-        - has:
-            field: function
-            kind: identifier
-            regex: ^enqueue[A-Z]
-        - has:
-            field: function
-            kind: member_expression
-            has:
-              field: property
-              kind: property_identifier
-              regex: ^enqueue[A-Z]
-    - not:
-        any:
-          - has:
-              field: function
-              kind: identifier
-              regex: ^enqueueBulk
-          - has:
-              field: function
-              kind: member_expression
-              has:
-                field: property
-                kind: property_identifier
-                regex: ^enqueueBulk
-    - any:
-        - inside:
-            stopBy: end
+  any:
+    - kind: call_expression
+      all:
+        - any:
+            - has:
+                field: function
+                kind: identifier
+                regex: ^enqueue[A-Z]
+            - has:
+                field: function
+                kind: member_expression
+                has:
+                  field: property
+                  kind: property_identifier
+                  regex: ^enqueue[A-Z]
+        - not:
             any:
-              - kind: for_statement
-              - kind: for_in_statement
-              - kind: while_statement
-              - kind: do_statement
-        # A callback argument of map/forEach/flatMap; the receiver of such a call does not count.
+              - has:
+                  field: function
+                  kind: identifier
+                  regex: ^enqueueBulk
+              - has:
+                  field: function
+                  kind: member_expression
+                  has:
+                    field: property
+                    kind: property_identifier
+                    regex: ^enqueueBulk
+        - any:
+            - inside:
+                stopBy: end
+                any:
+                  - kind: for_statement
+                  - kind: for_in_statement
+                  - kind: while_statement
+                  - kind: do_statement
+            # A callback argument of map/forEach/flatMap; the receiver of such a call does not count.
+            - inside:
+                stopBy: end
+                field: arguments
+                kind: call_expression
+                has:
+                  field: function
+                  kind: member_expression
+                  has:
+                    field: property
+                    kind: property_identifier
+                    regex: ^(map|forEach|flatMap)$
+    # A bare enqueue function passed as the callback itself: rows.map(enqueueFoo).
+    - all:
+        - any:
+            - all:
+                - kind: identifier
+                - regex: ^enqueue[A-Z]
+                - not:
+                    regex: ^enqueueBulk
+            - all:
+                - kind: member_expression
+                - has:
+                    field: property
+                    kind: property_identifier
+                    regex: ^enqueue[A-Z]
+                - not:
+                    has:
+                      field: property
+                      kind: property_identifier
+                      regex: ^enqueueBulk
         - inside:
-            stopBy: end
-            field: arguments
-            kind: call_expression
-            has:
-              field: function
-              kind: member_expression
+            kind: arguments
+            inside:
+              kind: call_expression
               has:
-                field: property
-                kind: property_identifier
-                regex: ^(map|forEach|flatMap)$
+                field: function
+                kind: member_expression
+                has:
+                  field: property
+                  kind: property_identifier
+                  regex: ^(map|forEach|flatMap)$
 examples:
   - file: backend/services/copyright-notices/hold-resolution.mts
     code: |
@@ -135,6 +166,19 @@ examples:
         void enqueueOnPostCreated(row.id)
       })
     isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      await Promise.all(rows.map(enqueueFoo))
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      rows.forEach(deps.enqueueFoo)
+    isValid: false
+  - file: backend/workers/example/processors/loop.mts
+    code: |
+      await Promise.all(rows.map(toJobInput))
+      await Promise.all(rows.map(enqueueBulkFoo))
+    isValid: true
   - file: backend/workers/memberships/processors/google-play.mts
     code: |
       await enqueueBulkAcknowledgeGooglePlayPurchases(

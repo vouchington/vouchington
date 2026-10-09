@@ -247,7 +247,7 @@ is reachable from a runtime definition root.
 The warning-severity `backend-no-single-enqueue-in-loop` AST-grep rule flags a call to an
 `enqueue[A-Z]*` function (directly or as a member such as `deps.enqueueFoo`) inside a `for`,
 `for-in`/`for-of`, `while`, or `do` statement, or inside a `map`, `forEach`, or `flatMap` callback
-argument, in backend production code. A bulk enqueue (`enqueueBulk*`, built with
+argument (including a bare `rows.map(enqueueFoo)` reference), in backend production code. A bulk enqueue (`enqueueBulk*`, built with
 `createBulkEnqueueFunction`) adds the whole batch in one Valkey round trip and keeps each job's own
 dedup id, `jobId`, priority, and delay in its `buildJob`. Tests and test helpers are exempt. It is a
 warning so the remaining single-enqueue loops stay visible without failing CI while each is
