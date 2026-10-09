@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { QueryTimingInput } from './query-telemetry.mts'
 import {
   summarizeRequestQueries,
   type RequestQuery,
@@ -25,8 +24,16 @@ export function createRequestQueryProfile(): RequestQueryProfile {
   }
 }
 
+/** The `QueryTimingInput` fields used here (structural, so telemetry can import this module). */
+interface RequestQueryTimingInput {
+  annotation: string | null
+  durationMs: number
+  cursorBatches?: number
+  pipelined?: boolean
+}
+
 /** Fed from the query-timing hook, which fires for every query including in-transaction ones. */
-export function recordRequestQueryTiming(input: QueryTimingInput): void {
+export function recordRequestQueryTiming(input: RequestQueryTimingInput): void {
   const queries = requestProfiles.getStore()
   if (!queries) return
   const endMs = performance.now()

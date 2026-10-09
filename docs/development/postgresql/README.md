@@ -63,7 +63,7 @@ repeated annotation writes one stderr line:
   minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
   `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
   `docs/requirements/api/**` mean serial depth.
-- `PG_REQUEST_PROFILE=all` prints a line for every request, not only those with repeats.
+- `PG_REQUEST_REPORT=all` prints a line for every request, not only those with repeats.
 - Report-only: it never fails a test. Queries finishing after the response flushes, and Valkey
   commands (no command hook exists yet), are not covered.
 
