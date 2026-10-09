@@ -41,7 +41,7 @@ the separately exposed per-entity enqueue uses
 
 User candidates are selected by `updated_at`, which any later write to the row advances, including
 the vote-weight recalculation's own `vote_weight_recalculated_at` write. The candidate query
-therefore marks a user `createdInWindow` only when its UUIDv7 id is at or after the window start,
+therefore marks a user `createdInWindow` only when its UUIDv7 id is at or after the window start (an id of any other version counts as updated),
 and only those users replay one-time creation effects: `processUserCreated` (vote-weight
 recalculation, language detection, cache invalidation) and the referrer auto-follow. The
 auto-follow upserts with `skipIfDeleted`, so neither a replay nor a retried signup job resurrects a

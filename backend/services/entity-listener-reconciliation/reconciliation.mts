@@ -23,8 +23,9 @@ export type EntityReconciliationCandidate = {
   changeId?: string
   contentChanged?: boolean
   referrerId?: string
-  // Users only: true when the account was created inside the window, so its one-time creation
-  // effects (vote weight, referrer follow) still need recovery. Absent means "only updated".
+  // Users only: true when the account's UUIDv7 id falls at or after the window start, so its
+  // one-time creation effects (vote weight, referrer follow) still need recovery. A non-UUIDv7 id
+  // has no creation time, and absent means "only updated".
   createdInWindow?: boolean
 }
 
@@ -83,7 +84,7 @@ export async function* streamEntityReconciliationCandidateBatches(
           NULL::uuid AS change_id,
           jsonb_build_object(
             'referrerId', referrer_user_id,
-            'createdInWindow', id >= ${firstIdInWindow}
+            'createdInWindow', uuid_extract_version(id) = 7 AND id >= ${firstIdInWindow}
           ) AS details,
           updated_at AS changed_at
         FROM users
