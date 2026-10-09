@@ -1,89 +1,81 @@
 import type { ScheduledJobRepeat } from './types.mts'
 
 /**
- * Aurora Serverless v2 needs a contiguous idle window to auto-pause. Staging clamps every
- * scheduled job to fire at most once per hour so that window exists. This is a floor, not a
- * target: jobs already at or below hourly are left untouched.
+ * Aurora Serverless v2 needs a contiguous idle window to auto-pause, and every wake costs a resume.
+ * Staging therefore rewrites every scheduled job so it fires at most once per hour, and only at
+ * minute :00 UTC, so all jobs share one wake per hour instead of each keeping its own minute.
+ *
+ * A glide-mq `every` schedule keeps the phase of its first upsert, so unaligned `every` jobs drift
+ * onto different minutes, and a single-minute cron such as `17 * * * *` pins its own minute. Both
+ * are rewritten to a cron pattern whose minute field is `0`.
  */
 export const HOURLY_FLOOR_MS = 3_600_000
 export const HOURLY_FLOOR_PATTERN = '0 * * * *'
-export const HOURLY_FLOOR_SCHEDULE_TEXT = 'every 1h'
+const HOURLY_FLOOR_SCHEDULE_TEXT = 'every 1h'
 
-export type HourlyClampResult = {
-  repeat: ScheduledJobRepeat
-  clamped: boolean
-}
+const WAKE_MINUTE_FIELD = '0'
+const DAILY_PATTERN = '0 0 * * *'
+const WEEKLY_PATTERN = '0 0 * * 0'
+const MONTHLY_PATTERN = '0 0 1 * *'
+const HOURS_PER_DAY = 24
+const HOURS_PER_WEEK = 168
+// The hour steps that divide 24 evenly, so the cron fires on the same hours every day.
+const DAY_ALIGNED_HOUR_STEPS = [2, 3, 4, 6, 8, 12, 24] as const
+
+export type HourlyClampResult =
+  | { repeat: ScheduledJobRepeat; clamped: false }
+  | { repeat: { pattern: string }; clamped: true }
 
 /**
- * Clamps a resolved (non-thunk) repeat to at most once per hour. Only rewrites values that
- * actually exceed the floor; already-compliant values are returned unchanged (same reference)
- * so callers can cheaply detect whether a rewrite happened via the `clamped` flag.
+ * Aligns a resolved (non-thunk) repeat to the hourly wake. A cron pattern whose minute field is
+ * already `0` is returned unchanged (same reference), so callers can cheaply detect a rewrite via
+ * the `clamped` flag.
+ *
+ * - `every` at or below one hour becomes `0 * * * *`.
+ * - `every` above one hour rounds up to the next cadence that stays at :00 and does not fire more
+ *   often than declared: the smallest of 2, 3, 4, 6, 8, 12 or 24 hours that is at least the
+ *   declared interval (an hour-step cron: minute 0 of every Nth hour; `0 0 * * *` for 24 hours),
+ *   then weekly (`0 0 * * 0`) up to 7 days, then monthly (`0 0 1 * *`). Monthly is the least
+ *   frequent rung, so an interval longer than a month is capped there; no manifest job has one.
+ * - A cron pattern keeps its hour, day-of-month, month and day-of-week fields and has its minute
+ *   field replaced with `0`, so it never fires more than once in an hour it runs.
  */
 export function clampScheduledJobRepeatToHourlyFloor(
   repeat: ScheduledJobRepeat,
 ): HourlyClampResult {
   if ('every' in repeat) {
-    const clamped = repeat.every < HOURLY_FLOOR_MS
-    return { repeat: clamped ? { every: HOURLY_FLOOR_MS } : repeat, clamped }
+    return { repeat: { pattern: alignedEveryPattern(repeat.every) }, clamped: true }
   }
-  const clamped = maxCronFiringsPerHour(repeat.pattern) > 1
-  return { repeat: clamped ? { pattern: HOURLY_FLOOR_PATTERN } : repeat, clamped }
+  const pattern = alignedCronPattern(repeat.pattern)
+  return pattern === repeat.pattern
+    ? { repeat, clamped: false }
+    : { repeat: { pattern }, clamped: true }
 }
 
 /**
- * Counts how many times a 5-field cron pattern (minute hour day-of-month month day-of-week) can
- * fire within a single hour. The hour/day-of-month/month/day-of-week fields only gate *whether* a
- * given hour fires at all; only the minute field determines *how many times* it fires within an
- * hour that does. So only the minute field is parsed.
+ * Operator-facing schedule text for an aligned pattern: the top-of-hour pattern reads `every 1h`,
+ * an hour-step pattern reads `every Nh`, and any other pattern is shown as the cron itself.
  */
-export function maxCronFiringsPerHour(pattern: string): number {
-  const fields = pattern.trim().split(/\s+/)
-  const minuteField = fields[0]
-  if (fields.length !== 5 || minuteField === undefined || minuteField === '') {
+export function alignedScheduleText(pattern: string): string {
+  if (pattern === HOURLY_FLOOR_PATTERN) return HOURLY_FLOOR_SCHEDULE_TEXT
+  const hourStep = /^0 \*\/(\d+) \* \* \*$/.exec(pattern)?.[1]
+  return hourStep === undefined ? pattern : `every ${hourStep}h`
+}
+
+function alignedEveryPattern(everyMs: number): string {
+  const hours = everyMs / HOURLY_FLOOR_MS
+  if (hours <= 1) return HOURLY_FLOOR_PATTERN
+  if (hours <= HOURS_PER_DAY) {
+    const step = DAY_ALIGNED_HOUR_STEPS.find(candidate => candidate >= hours)!
+    return step === HOURS_PER_DAY ? DAILY_PATTERN : `0 */${step} * * *`
+  }
+  return hours <= HOURS_PER_WEEK ? WEEKLY_PATTERN : MONTHLY_PATTERN
+}
+
+function alignedCronPattern(pattern: string): string {
+  const [minuteField, ...rest] = pattern.trim().split(/\s+/)
+  if (minuteField === undefined || minuteField === '' || rest.length !== 4) {
     throw new Error(`Expected a 5-field cron pattern, got: ${JSON.stringify(pattern)}`)
   }
-  const minutes = new Set<number>()
-  for (const item of minuteField.split(',')) {
-    for (const minute of expandCronMinuteItem(item)) minutes.add(minute)
-  }
-  return minutes.size
-}
-
-/**
- * Expands one comma-separated item of a cron minute field (`*`, a step on `*`, a bare `N`, a step
- * on `N`, a range `N-M`, or a stepped range) into the concrete minute values (0-59) it matches.
- * A step on a bare `N` follows Vixie-cron semantics: start at N, step until the field's end (59).
- */
-function expandCronMinuteItem(item: string): number[] {
-  const [rangePart, stepPart, ...rest] = item.split('/')
-  if (rangePart === undefined || rangePart === '' || rest.length > 0) {
-    throw new Error(`Invalid cron minute field item: ${JSON.stringify(item)}`)
-  }
-
-  let start: number
-  let end: number
-  if (rangePart === '*') {
-    start = 0
-    end = 59
-  } else {
-    const rangeMatch = /^(\d+)(?:-(\d+))?$/.exec(rangePart)
-    if (rangeMatch?.[1] === undefined) {
-      throw new Error(`Invalid cron minute field item: ${JSON.stringify(item)}`)
-    }
-    start = Number(rangeMatch[1])
-    end =
-      rangeMatch[2] === undefined ? (stepPart === undefined ? start : 59) : Number(rangeMatch[2])
-  }
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > 59 || start > end) {
-    throw new Error(`Cron minute field item out of range 0-59: ${JSON.stringify(item)}`)
-  }
-
-  const step = stepPart === undefined ? 1 : Number(stepPart)
-  if (!Number.isInteger(step) || step <= 0) {
-    throw new Error(`Invalid cron minute field step: ${JSON.stringify(item)}`)
-  }
-
-  const values: number[] = []
-  for (let value = start; value <= end; value += step) values.push(value)
-  return values
+  return minuteField === WAKE_MINUTE_FIELD ? pattern : [WAKE_MINUTE_FIELD, ...rest].join(' ')
 }
