@@ -175,6 +175,17 @@ See `backend/queues/post-publication/enqueues.test.mts` for the full pattern, in
 test that attaches a no-op stub worker and proves the id-scoped read survives a live consumer
 draining the job. More GlideMQ testing patterns: [GlideMQ testing](glide-mq-testing.md).
 
+## `startRealGlideJobLifecycle`
+
+For a claim the in-memory shim cannot establish, such as whether a finished job's record still holds a
+custom `jobId` (`backend/test-helpers/real-glide-job-lifecycle.mts`). It builds an isolated real
+GlideMQ queue under a unique name plus one worker, for `*.real-glide.mock.test.mts` files that
+`vi.mock` `glide-mq` back to the real package. Replay the queue package's production job options on
+`lifecycle.queue`, choose the worker's outcome with `setOutcome('complete' | 'fail')`, and wait on
+`lifecycle.settled(job)` (the worker's own terminal event, never a timer). Pass
+`{ connection: workerQueueConnection, prefix: workerQueuePrefix }`, and call `lifecycle.close()` in
+`finally`. See `backend/queues/images/enqueues.real-glide.mock.test.mts`.
+
 ## Reducing Entity-Listener Load
 
 Entity listener jobs (processUserCreated, processTopicCreated, processPostCreated, etc.) run asynchronously in the in-process TestWorker. Under high concurrency, a large backlog causes test timeouts.

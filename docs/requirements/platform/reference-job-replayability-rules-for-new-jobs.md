@@ -30,7 +30,9 @@ When adding a new job handler:
    stable custom `jobId` on a queue with numeric `removeOnComplete`/`removeOnFail` retention
    silently no-ops the backfill's re-enqueue (GlideMQ returns `null`) once the prior job has
    finished, because the id's uniqueness claim outlives the job until enough newer terminal jobs
-   trim its record. See [Define a replay-safe
+   trim its record, and a job that stalls past its limit stays in the failed set even under
+   `removeOnFail: true`. Dropping the custom `jobId` and letting deduplication collapse in-flight
+   duplicates avoids the claim entirely. See [Define a replay-safe
    job](../../checklists/reference-backend-queues-define-a-replay-safe-job.md#define-a-replay-safe-job)
    for the retention-window mechanics and required mitigation.
 

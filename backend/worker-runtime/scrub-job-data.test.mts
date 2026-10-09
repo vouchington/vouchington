@@ -16,6 +16,7 @@ describe('scrubJobData', () => {
         emailAddress: 'tests+scrub@voucha.ai',
         email_address: 'tests+scrub@voucha.ai',
         token: 'login-token',
+        code: 'a3f9c2e1',
         password: 'hunter2',
         physicalAddress: '123 Main St',
         ipAddress: '203.0.113.5',
@@ -26,6 +27,7 @@ describe('scrubJobData', () => {
         inviterName: 'Jane Doe',
       }),
     ).toEqual({
+      code: '[Filtered]',
       contactName: '[Filtered]',
       email_address: '[Filtered]',
       emailAddress: '[Filtered]',

@@ -39,7 +39,9 @@ Every `queue.add()`, `queue.addBulk()`, and `queue.upsertJobScheduler()` must in
   must release its uniqueness claim the moment the job finishes, accepting the loss of that job's
   entry in the terminal-job history — see [Define a replay-safe
   job](../../../checklists/reference-backend-queues-define-a-replay-safe-job.md#define-a-replay-safe-job).
-- `removeOnFail` — at least `100`. Same stable-`jobId` exception applies.
+  A second exception: `true` is required on a job name whose payload carries a credential the
+  recipient redeems (the `emails` queue's `SECRET_BEARING_EMAIL_JOBS`), so no copy outlives the job.
+- `removeOnFail` — at least `100`. Both exceptions above apply.
 - `priority` — `PRIORITY_DEFAULT = 10` for regular jobs, `PRIORITY_DISPATCHER = 100` for dispatchers.
   Security-critical ActivityPub inbox retention cleanup is priority `1`, ahead of ordinary
   delivery work, so expired capacity cannot be starved by a saturated inbox.

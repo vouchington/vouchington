@@ -17,7 +17,10 @@ persisted them in PostgreSQL. Queue payloads contain only the durable authorizat
   the `oauth-authorization-exchange-dispatch` admin backfill. All dispatcher variants share the
   `dispatcher` ordering key at concurrency one so terminal-state inspection and reactivation cannot
   race another recovery pass. The same constant also backs the dispatcher enqueue's Valkey
-  throttle-dedup TTL, so the dedup window widened from 5s to 60s together with the interval.
+  throttle-dedup TTL, so the dedup window widened from 5s to 60s together with the interval. The
+  manual and backfill triggers carry only that throttle window and no custom job id: a custom id
+  would stay claimed while the finished pass is retained (and GlideMQ rejects the backfill's
+  `backfill:` prefix as an id), so every later trigger would fail or silently get `null`.
 
 Individual exchanges retry five times with exponential backoff. A failed attempt releases its
 durable claim before throwing. Provider work uses a 30-second end-to-end abort signal, below the

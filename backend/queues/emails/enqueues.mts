@@ -23,6 +23,7 @@ import type {
 } from './types.mts'
 import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { emails } from './queues.mts'
+import { getEmailSendJobOptions } from './enqueues/job-options.mts'
 
 export const enqueueSendCommunityInviteEmail =
   createEnqueueFunction<ProcessSendCommunityInviteEmailVariables>('processSendCommunityInviteEmail')
@@ -175,6 +176,6 @@ function createEnqueueFunction<V extends Record<string, unknown>>(jobName: Email
   })
 
   return (input: EmailJobInput, variables: V, priority?: number): EnqueueReturnType => {
-    return enqueue({ input, variables }, { priority: priority ?? PRIORITY_DEFAULT })
+    return enqueue({ input, variables }, getEmailSendJobOptions(jobName, priority))
   }
 }
