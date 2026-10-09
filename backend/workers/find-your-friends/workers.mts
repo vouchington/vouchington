@@ -11,12 +11,9 @@ import type { Job } from 'glide-mq'
 
 export const findYourFriends = createWorker(
   QUEUE_NAME,
-  async (job: Job) => {
-    if (job.name === 'enqueueDispatchFindYourFriends') {
-      // Settle the enqueue inside the processor so a rejection fails this job.
-      const enqueued = await enqueueDispatchFindYourFriends()
-      return enqueued
-    }
+  (job: Job) => {
+    // oxlint-disable-next-line no-mistakes/async-call-disposition -- glide-mq awaits the value this processor returns.
+    if (job.name === 'enqueueDispatchFindYourFriends') return enqueueDispatchFindYourFriends()
     if (job.name === 'dispatchFindYourFriends')
       return processRetainedSweep(job, save =>
         processFindYourFriendsDispatcher(undefined, job.data, save),
