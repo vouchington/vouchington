@@ -11,18 +11,23 @@ decide most plan fixes:
 
 ## Capture the plans
 
-If the database is not initialized, run `./dev/initialize web`, then `source .env`. Capture custom
-and generic prepared plans, as CI does:
+Run the same steps as `.github/workflows/explain-analyze.yml`, which captures custom and generic
+prepared plans. If the database is not initialized, run `./dev/initialize web`, then `source .env`;
+it sets the secrets the development seed needs. Then, in order:
 
+- `export EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)`, so the seed and the run derive the same ids
+- `pnpm run db:seed`, the development seed; some scenarios read its rows
 - `pnpm run explain:seed`
 - `EXPLAIN_PLAN_CACHE_MODE=compare pnpm run explain:run`
 - `pnpm run explain:analyze`
+- `node backend/scripts/explain-analyze/pruning/run.mts`, which proves pruning on explicit partitions
+  and writes `pruning-proof-*.json`
 - `pnpm run explain:dump`
 
 If PostgreSQL cannot run in this session, download the `explain-analyze-results` artifact from the
 newest `main` run of the Nightly workflow (`nightly.yml`, which calls the backend workflow), whatever
-that run's conclusion, and review its `results-*.json`. The artifact is uploaded even when a gate
-fails, and it is kept for 1 day. If neither works, report `Outcome: incomplete`.
+that run's conclusion, and review its `results-*.json` and `pruning-proof-*.json`. The artifact is
+uploaded even when a gate fails, and it is kept for 1 day. If neither works, report `Outcome: incomplete`.
 
 If a run fails a plan-shape gate, check the `results-*.json` artifact in
 `backend/scripts/explain-analyze/output/` before the thrown error message. `collectAndGate()` in
