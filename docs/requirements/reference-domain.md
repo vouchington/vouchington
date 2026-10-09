@@ -8,3 +8,7 @@
 | <a name="domain--mute"></a>Mute                     | `mute`                 | Hides content from this domain in the user's feed. Auth-only.                                                                                 | `PUT /api/v1/bookmarks/url_hostname/:id/mute`  | `web/components/shared/entity-bookmark-button.tsx` |
 | <a name="domain--block"></a>Block                   | `block`                | Blocks all content from this domain. Auth-only.                                                                                               | `PUT /api/v1/bookmarks/url_hostname/:id/block` | `web/components/shared/entity-bookmark-button.tsx` |
 | <a name="domain--report"></a>Report                 | n/a (moderation queue) | Submits a report with reason + optional note; creates a `moderation_reports` row for admin review. Auth-only. Placed in `DomainActionsAside`. | `POST /api/v1/reports`                         | `web/components/shared/report-menu-item.tsx`       |
+
+Site-wide admin moderation is separate from personal domain actions above. Its crawlable and
+blocked flags follow the [hostname contract](anatomy/domain.md) and
+[admin hostname flows](reference-domains-hostnames.md).
