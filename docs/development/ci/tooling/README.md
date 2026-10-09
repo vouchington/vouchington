@@ -68,3 +68,9 @@ exhausted.
 - <a id="download-helper-contract"></a>[Download helper contract](reference-download-helper-contract.md)
 - <a id="trivy-database-preparation-contract"></a>[Trivy database preparation contract](reference-trivy-database-preparation-contract.md)
 - <a id="inline-workflow-shell-footguns-actionlint--shellcheck"></a>[Inline-workflow shell footguns (actionlint + shellcheck)](reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
+
+## Bounded command ownership
+
+[`run-bounded.py`](../../../../ci/run-bounded.py) retains each caller’s command deadline and raw nonzero status. On Linux CI it establishes a child subreaper before launch, tracks descendants by PID and kernel start time, and includes detached server sessions adopted after a leader exits. Signals use identity-checked pidfds. Cleanup has bounded TERM and KILL phases; remaining descendants invalidate a successful command instead of silently leaving inherited output open. A command deadline still returns exit 124.
+
+The non-Linux path retains process-group cleanup and does not certify detached-session ownership. The Linux regression requires the normal CI kernel/Python pidfd capability; no platform skip converts an unsupported host into proof. Browser assertions, workflow deadlines and artifact conditions remain unchanged. This containment contract does not identify an unknown browser or server hang; preserve its phase logs and traces before changing test behavior.
