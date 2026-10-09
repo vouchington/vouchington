@@ -35,10 +35,13 @@ const DataExportReadyEmail: PreviewableEmailComponent<DataExportReadyComponentPr
     const t = emailCopy(locale, 'data-export-ready')
 
     return (
-      <Html>
+      <Html lang={locale}>
         <Head />
         <Preview>{t('preview')}</Preview>
-        <Body style={styles.main}>
+        <Body
+          lang={locale}
+          style={styles.main}
+        >
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>

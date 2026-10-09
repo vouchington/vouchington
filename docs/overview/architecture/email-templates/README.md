@@ -43,7 +43,7 @@ Templates whose Props include `physicalAddress` are commercial/marketing email a
 | `post-referral-link`  | Referral links from your circle    | The user has not activated a referral link          | None              | `userName?`, `referralPrograms[]`, `settingsUrl`, `unsubscribeUrl`, `physicalAddress` | Engagement emails |
 | `follow-news-sources` | News sources from people you trust | The user follows no sources and has recommendations | None              | `userName?`, `sources[]`, `settingsUrl`, `unsubscribeUrl`, `physicalAddress`          | Engagement emails |
 
-Transactional templates accept an optional `uiLocale` prop. Supported locales are `en`, `es`, `fr`, and `pt`; the renderer normalizes unknown values back to English. Voucha-authored copy is localized for those locales.
+Transactional templates accept an optional `uiLocale` prop. Supported locales are `en`, `es`, `fr`, and `pt`; the renderer normalizes unknown values back to English. Voucha-authored copy is localized for those locales. The rendered document and body `lang` use that same resolved locale ([Localization](../../../requirements/users/LOCALIZATION.md#transactional-email-locale)).
 
 ## Design
 

@@ -27,10 +27,13 @@ const EmailVerificationEmail: PreviewableEmailComponent<EmailVerificationEmailPr
     const t = emailCopy(locale, 'email-verification')
 
     return (
-      <Html>
+      <Html lang={locale}>
         <Head />
         <Preview>{t('preview')}</Preview>
-        <Body style={styles.main}>
+        <Body
+          lang={locale}
+          style={styles.main}
+        >
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>
