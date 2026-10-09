@@ -1,5 +1,8 @@
+import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { sha256 } from '@modules/utils'
 
 export type SharedMutationProbe =
   | 'eraseActor'
@@ -10,69 +13,148 @@ export type SharedMutationProbe =
   | 'deleteParent'
   | 'unchanged'
 
-/** Exercise the real shared guard with isolated FK erasure and cascade actions. */
+type ProbeResult = { count: number; actorErased: boolean; fact: string | null }
+
+/** Exercise installed canonical guards with transaction-owned rows, then roll everything back. */
 export async function probeSharedMutationTrigger(
   probe: SharedMutationProbe,
   allowActorErasure = true,
-): Promise<{
-  count: number
-  actorErased: boolean
-  fact: string | null
-}> {
-  await using query = await beginTransaction()
-  const suffix = randomUUID().replaceAll('-', '')
-  const parent = `probe_parent_${suffix}`
-  const actors = `probe_actors_${suffix}`
-  const ledger = `probe_ledger_${suffix}`
-  await query(
-    `/* createSharedGuardProbeParent */ CREATE TEMP TABLE ${parent} (id uuid PRIMARY KEY DEFAULT uuidv7()) ON COMMIT DROP`,
+): Promise<ProbeResult> {
+  const query = await beginTransaction()
+  const [result] = await Promise.allSettled([runCanonicalProbe(query, probe, allowActorErasure)])
+  const [cleanup] = await Promise.allSettled([Promise.resolve().then(() => query.rollback())])
+  if (result.status === 'rejected') {
+    if (cleanup.status === 'rejected' && !Object.is(result.reason, cleanup.reason))
+      throw new AggregateError(
+        [result.reason, cleanup.reason],
+        'Mutation probe and rollback failed',
+      )
+    throw result.reason
+  }
+  if (cleanup.status === 'rejected') throw cleanup.reason
+  return result.value
+}
+
+async function runCanonicalProbe(
+  query: TransactionQuery,
+  probe: SharedMutationProbe,
+  allowActorErasure: boolean,
+): Promise<ProbeResult> {
+  const { rows: actors } = await query<{ id: string }>(
+    '/* createSharedGuardProbeActor */ INSERT INTO users DEFAULT VALUES RETURNING id',
   )
-  await query(
-    `/* createSharedGuardProbeActors */ CREATE TEMP TABLE ${actors} (id uuid PRIMARY KEY DEFAULT uuidv7()) ON COMMIT DROP`,
+  const actorId = actors[0]?.id
+  assert(actorId)
+  if (!allowActorErasure) return runZeroArgumentProbe(query, probe, actorId)
+
+  const title = 'Shared mutation guard probe'
+  // Canonical title-only content payloads: no markdown, summary, images, or structured data.
+  const embeddingContentSha = sha256(title)
+  const moderationContentSha = sha256([title, '', '', '', ''].join('\n'))
+  const { rows: posts } = await query<{ id: string }>(
+    `/* createSharedGuardProbeParent */ INSERT INTO posts (
+      post_type, title, created_via, bedrock_nova_multimodal_v1_content_sha256,
+      llm_moderation_content_sha256
+    ) VALUES ('discussion', $1, 'system', $2, $3) RETURNING id`,
+    [title, embeddingContentSha, moderationContentSha],
   )
-  await query(`/* createSharedGuardProbeLedger */ CREATE TEMP TABLE ${ledger} (
-    id uuid PRIMARY KEY DEFAULT uuidv7(),
-    parent_post_id uuid NOT NULL REFERENCES ${parent}(id) ON DELETE CASCADE,
-    actor_user_id uuid REFERENCES ${actors}(id) ON DELETE SET NULL,
-    fact text NOT NULL
-  ) ON COMMIT DROP`)
-  await query(`/* attachSharedGuardProbe */ CREATE TRIGGER append_only BEFORE UPDATE OR DELETE ON ${ledger}
-    FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation(${allowActorErasure ? "'actor_user_id'" : ''})`)
-  await query(`/* insertSharedGuardProbeParent */ INSERT INTO ${parent} DEFAULT VALUES`)
-  await query(`/* insertSharedGuardProbeActor */ INSERT INTO ${actors} DEFAULT VALUES`)
-  await query(`/* insertSharedGuardProbeLedger */ INSERT INTO ${ledger}(parent_post_id, actor_user_id, fact)
-    SELECT parent.id, actor.id, 'original' FROM ${parent} parent CROSS JOIN ${actors} actor`)
+  const postId = posts[0]?.id
+  assert(postId)
+  const { rows: revisions } = await query<{ id: string }>(
+    `/* createSharedGuardProbeRevision */
+      INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
+      VALUES ($1, 'update', $2, '{"title":{"before":null,"after":"original"}}'::jsonb)
+      RETURNING id`,
+    [postId, actorId],
+  )
+  const revisionId = revisions[0]?.id
+  assert(revisionId)
   switch (probe) {
     case 'eraseActor':
-      await query(`/* eraseSharedGuardProbeActor */ DELETE FROM ${actors}`)
+      await query('/* eraseSharedGuardProbeActor */ DELETE FROM users WHERE id = $1', [actorId])
       break
-    case 'replaceActor':
+    case 'replaceActor': {
+      const { rows } = await query<{ id: string }>(
+        '/* createSharedGuardProbeReplacementActor */ INSERT INTO users DEFAULT VALUES RETURNING id',
+      )
+      assert(rows[0]?.id)
       await query(
-        `/* replaceSharedGuardProbeActor */ UPDATE ${ledger} SET actor_user_id = uuidv7()`,
+        '/* replaceSharedGuardProbeActor */ UPDATE post_revisions SET revised_by_id = $2 WHERE id = $1',
+        [revisionId, rows[0].id],
       )
       break
+    }
     case 'rewriteFact':
-      await query(`/* rewriteSharedGuardProbeFact */ UPDATE ${ledger} SET fact = 'changed'`)
+      await query(
+        `/* rewriteSharedGuardProbeFact */ UPDATE post_revisions
+          SET changes = '{"title":{"before":null,"after":"changed"}}'::jsonb WHERE id = $1`,
+        [revisionId],
+      )
       break
     case 'eraseAndRewrite':
       await query(
-        `/* eraseAndRewriteSharedGuardProbe */ UPDATE ${ledger} SET actor_user_id = NULL, fact = 'changed'`,
+        `/* eraseAndRewriteSharedGuardProbe */ UPDATE post_revisions SET revised_by_id = NULL,
+          changes = '{"title":{"before":null,"after":"changed"}}'::jsonb WHERE id = $1`,
+        [revisionId],
       )
       break
     case 'deleteDirectly':
-      await query(`/* deleteSharedGuardProbeDirectly */ DELETE FROM ${ledger}`)
+      await query('/* deleteSharedGuardProbeDirectly */ DELETE FROM post_revisions WHERE id = $1', [
+        revisionId,
+      ])
       break
     case 'deleteParent':
-      await query(`/* cascadeSharedGuardProbe */ DELETE FROM ${parent}`)
+      await query('/* cascadeSharedGuardProbe */ DELETE FROM posts WHERE id = $1', [postId])
       break
     case 'unchanged':
-      await query(`/* leaveSharedGuardProbeUnchanged */ UPDATE ${ledger} SET fact = fact`)
+      await query(
+        '/* leaveSharedGuardProbeUnchanged */ UPDATE post_revisions SET changes = changes WHERE id = $1',
+        [revisionId],
+      )
       break
   }
-  const { rows } = await query<{ count: number; actor_erased: boolean; fact: string | null }>(
+  const { rows } = await query<ProbeResult>(
     `/* readSharedGuardProbe */ SELECT count(*)::integer AS count,
-      COALESCE(bool_and(actor_user_id IS NULL), false) AS actor_erased, min(fact) AS fact FROM ${ledger}`,
+      COALESCE(bool_and(revised_by_id IS NULL), false) AS "actorErased",
+      min(changes->'title'->>'after') AS fact FROM post_revisions WHERE id = $1 AND post_id = $2`,
+    [revisionId, postId],
   )
-  await query.rollback()
-  return { count: rows[0]!.count, actorErased: rows[0]!.actor_erased, fact: rows[0]!.fact }
+  assert(rows[0])
+  return rows[0]
+}
+
+async function runZeroArgumentProbe(
+  query: TransactionQuery,
+  probe: SharedMutationProbe,
+  actorId: string,
+): Promise<ProbeResult> {
+  assert(['unchanged', 'rewriteFact', 'eraseActor'].includes(probe))
+  const { rows: approvals } = await query<{ id: string }>(
+    `/* createSharedGuardZeroArgumentProbe */
+      INSERT INTO copyright_jurisdiction_policy_approvals (jurisdiction, policy_version, approved_by_id)
+      VALUES ('uk', $1, $2) RETURNING id`,
+    [`guard-${randomUUID()}`, actorId],
+  )
+  const approvalId = approvals[0]?.id
+  assert(approvalId)
+  if (probe === 'eraseActor') {
+    await query('/* eraseSharedGuardZeroArgumentActor */ DELETE FROM users WHERE id = $1', [
+      actorId,
+    ])
+  } else {
+    await query(
+      probe === 'unchanged'
+        ? '/* leaveSharedGuardZeroArgumentUnchanged */ UPDATE copyright_jurisdiction_policy_approvals SET policy_version = policy_version WHERE id = $1'
+        : '/* rewriteSharedGuardZeroArgumentFact */ UPDATE copyright_jurisdiction_policy_approvals SET policy_version = $2 WHERE id = $1',
+      probe === 'unchanged' ? [approvalId] : [approvalId, `changed-${randomUUID()}`],
+    )
+  }
+  const { rows } = await query<ProbeResult>(
+    `/* readSharedGuardZeroArgumentProbe */ SELECT count(*)::integer AS count,
+      COALESCE(bool_and(approved_by_id IS NULL), false) AS "actorErased",
+      min(policy_version) AS fact FROM copyright_jurisdiction_policy_approvals WHERE id = $1`,
+    [approvalId],
+  )
+  assert(rows[0])
+  return rows[0]
 }
