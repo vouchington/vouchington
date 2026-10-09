@@ -1,6 +1,10 @@
+import pMap from 'p-map'
 import type { Job, Queue } from 'glide-mq'
 
 type JobLookupQueue = Pick<Queue, 'getJob'>
+
+/** Lookups in flight at once, whatever the size of the recovery page. */
+const LOOKUP_CONCURRENCY = 25
 
 /**
  * Adds `inputs` through `enqueueBulk`, then adds again the ones whose custom job id was held only
@@ -16,7 +20,8 @@ type JobLookupQueue = Pick<Queue, 'getJob'>
  * trimmed by retention between the lookup and the state read). A waiting, prioritized, delayed, or
  * active job is the canonical delivery of that attempt, including a retry backing off or a
  * deliberately delayed successor, so it is never touched. The durable source row, not the queue,
- * decides which attempts to dispatch; the caller's recovery page bounds the lookups.
+ * decides which attempts to dispatch; the caller's recovery page bounds how many ids are looked up,
+ * and a bounded number of lookups run at once.
  */
 export async function enqueueBulkReactivatingFinished<
   TInput,
@@ -44,8 +49,9 @@ async function releaseFinishedJobIds(
   jobIds: string[],
 ): Promise<Set<string>> {
   const released = new Set<string>()
-  await Promise.all(
-    jobIds.map(async jobId => {
+  await pMap(
+    jobIds,
+    async jobId => {
       const job = await queue.getJob(jobId, { excludeData: true })
       if (job) {
         const state = await job.getState()
@@ -54,7 +60,8 @@ async function releaseFinishedJobIds(
         else if (state !== 'unknown') return
       }
       released.add(jobId)
-    }),
+    },
+    { concurrency: LOOKUP_CONCURRENCY },
   )
   return released
 }
