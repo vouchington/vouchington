@@ -8,8 +8,8 @@ import { readAskedQuestions } from './data-stores/psql/classifier-runs/community
 type Question = { type: string; criteria: Record<string, string> }
 
 type ProviderOptions = {
-  /** Moves the faked clock while the provider "answers", so the measured latency is this long. */
-  latencyMs?: number
+  /** Signals the real provider boundary and waits for its explicit response release. */
+  beforeResponse?: () => Promise<void>
   /** The probability the model gives a yes/no question (default 0.9, which every scope acts on). */
   noul?: (questionId: string) => number
 }
@@ -51,7 +51,7 @@ export function installEfficiencyProvider(options: ProviderOptions = {}): Effici
       refusals -= 1
       return Response.json({ error: OUTAGE }, { status: 403 })
     }
-    if (options.latencyMs) vi.setSystemTime(Date.now() + options.latencyMs)
+    await options.beforeResponse?.()
     const id = `decision-${randomUUID()}`
     billedResponseIds.push(id)
     return Response.json({

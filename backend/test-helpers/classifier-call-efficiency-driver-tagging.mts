@@ -18,7 +18,6 @@ export const taggingEfficiencyDriver: EfficiencyDriver = {
   slug: TAGGING_CLASSIFIER_SLUG,
   scope: 'C6 tagging classifier',
   fanOuts: [1, 10],
-  lateCandidates: true,
   questions: topicCount => topicCount,
   async seed(topicCount) {
     const fixture = await createAutotaggerPostFixture({ plan: 'pro', topicCount })
