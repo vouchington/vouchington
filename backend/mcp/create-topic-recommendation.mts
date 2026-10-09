@@ -18,6 +18,7 @@ import { requireActiveToolUser } from './private-user.mts'
 import updateTool from './update-topic-recommendation.mts'
 import { TOPIC_RECOMMENDATION_RESULT_SCHEMA } from './topic-recommendation-tool-support.mts'
 import { toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import { getLoadedMembershipPlan } from '@services/users'
 
 type Args = CreateTopicRecommendationInput & { idempotency_key: string }
 const { id: _id, ...fields } = updateTool.schema.parameters!['properties'] as Record<
@@ -61,7 +62,7 @@ const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
     if (!currentUserCanCreatePost(user))
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const { idempotency_key, ...body } = args
-    const membershipPlan = user.membership_plan ?? null
+    const membershipPlan = getLoadedMembershipPlan(user)
     assertValidCreateTopicRecommendationInput(body)
     const post = await admitDelegatedContribution({
       authority,

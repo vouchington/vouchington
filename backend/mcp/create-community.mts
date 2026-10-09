@@ -11,6 +11,7 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
+import { getLoadedMembershipPlan } from '@services/users'
 
 type Args = {
   idempotency_key: string
@@ -125,7 +126,7 @@ const tool: Tool<Args, Result> = {
         post_approval_required_at: fields.post_approval_required_at === true,
       },
       beforeCreate: async () =>
-        assertWithinContributionActionLimit(user, user.membership_plan ?? null, 'community'),
+        assertWithinContributionActionLimit(user, getLoadedMembershipPlan(user), 'community'),
       execute: async query => {
         const community = await createCommunity(user.id, getRequestContentProvenance(), input, {
           query,

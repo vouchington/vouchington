@@ -1,5 +1,5 @@
 import assert from 'http-assert'
-import { isAdminUser } from '@services/users'
+import { isAdminUser, getLoadedMembershipPlan } from '@services/users'
 import { updatePost, type UpdatePostChanges } from '@services/posts'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -54,7 +54,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       changes.categories !== undefined ||
       changes.title !== undefined ||
       changes.markdown !== undefined
-        ? (user.membership_plan ?? null)
+        ? getLoadedMembershipPlan(user)
         : null
     return {
       success: true,
