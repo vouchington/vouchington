@@ -45,6 +45,7 @@ describe('GET /api/v1/reports?cluster=entity ban evasion', () => {
       suspect.id,
       'Suspected ban evasion',
       new Date(),
+      community.id,
     )
 
     const request = createRequest()

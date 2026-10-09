@@ -8,25 +8,28 @@ items, posts, comments, users, and URL hostnames). Canonical entity types are `r
 
 ## Data Model
 
-| Column              | Type                                   | Notes                                                                                          |
-| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `id`                | uuid                                   | PK, UUIDv7                                                                                     |
-| `created_at`        | timestamptz                            | Generated from `id`                                                                            |
-| `reviewed_at`       | timestamptz                            | Null until reviewed by an admin                                                                |
-| `reporter_user_id`  | uuid                                   | FK -> `users(id)`                                                                              |
-| Target FK           | uuid                                   | Exactly one of `post_id`, `reported_user_id`, `hostname_id`, or `rss_feed_item_id`             |
-| `case_id`           | uuid                                   | FK -> `moderation_cases(id)`                                                                   |
-| `reason`            | moderation_report_reasons              | One of `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other` |
-| `note`              | text                                   | Optional, max 1000 chars                                                                       |
-| `resolution_action` | `moderation_report_resolution_actions` | Null while pending; then `reviewed`, `actioned`, or `dismissed`                                |
-| `resolved_by_id`    | uuid                                   | FK -> `users(id)`, set when admin resolves                                                     |
-| `escalated_at`      | timestamptz                            | Null until a report is escalated for senior-mod review                                         |
-| `escalated_by_id`   | uuid                                   | FK -> `users(id)`, set when a moderator escalates                                              |
+| Column                                 | Type                                   | Notes                                                                                                                 |
+| -------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | uuid                                   | PK, UUIDv7                                                                                                            |
+| `created_at`                           | timestamptz                            | Generated from `id`                                                                                                   |
+| `reviewed_at`                          | timestamptz                            | Null until reviewed by an admin                                                                                       |
+| `reporter_user_id`                     | uuid                                   | FK -> `users(id)`                                                                                                     |
+| Target FK                              | uuid                                   | Exactly one of `post_id`, `reported_user_id`, `hostname_id`, or `rss_feed_item_id`                                    |
+| `case_id`                              | uuid                                   | FK -> `moderation_cases(id)`                                                                                          |
+| `reason`                               | moderation_report_reasons              | One of `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`                        |
+| `note`                                 | text                                   | Optional, max 1000 chars                                                                                              |
+| `resolution_action`                    | `moderation_report_resolution_actions` | Null while pending; then `reviewed`, `actioned`, or `dismissed`                                                       |
+| `resolved_by_id`                       | uuid                                   | FK -> `users(id)`, set when admin resolves                                                                            |
+| `community_id`                         | uuid                                   | Operational community owner. NULL when the report is not community-scoped. FK -> `communities(id)` ON DELETE SET NULL |
+| `moderation_transparency_community_id` | uuid                                   | Immutable audit snapshot copied from `community_id` or the reported post. Not a foreign key                           |
+| `escalated_at`                         | timestamptz                            | Null until a report is escalated for senior-mod review                                                                |
+| `escalated_by_id`                      | uuid                                   | FK -> `users(id)`, set when a moderator escalates                                                                     |
 
 A `num_nonnulls(...) = 1` check enforces one target FK per row. Per-target partial unique indexes
 with `reviewed_at IS NULL` prevent duplicate pending reports from the same reporter for the same
-target. A user report stamped with a community is pending once per community; a user report without
-that stamp stays one pending row per reporter and user.
+target. A user report with `community_id` set is pending once per community. A user report with
+`community_id` and `moderation_transparency_community_id` both null stays one pending row per
+reporter and user.
 Another check keeps `reviewed_at` and `resolution_action` paired so pending rows have no final action
 and reviewed rows always have one.
 `vote_manipulation` is valid only for `post` reports.

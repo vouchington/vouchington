@@ -140,7 +140,7 @@ export async function detectBanEvasionForMember(
           case_id,
           reason,
           original_reason,
-          moderation_transparency_community_id,
+          community_id,
           note,
           created_via,
           created_via_oauth_client_id
@@ -156,11 +156,11 @@ export async function detectBanEvasionForMember(
           ${SYSTEM_PROVENANCE.oauthClientId}
         )
         ON CONFLICT (
-          reporter_user_id, reported_user_id, moderation_transparency_community_id
+          reporter_user_id, reported_user_id, community_id
         )
         WHERE reviewed_at IS NULL
           AND reported_user_id IS NOT NULL
-          AND moderation_transparency_community_id IS NOT NULL
+          AND community_id IS NOT NULL
         DO NOTHING
         `,
         options,

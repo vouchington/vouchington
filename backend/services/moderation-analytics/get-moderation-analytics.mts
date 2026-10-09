@@ -112,13 +112,7 @@ async function getQueueVolume(
           r.post_id IS NULL
           AND r.reported_user_id IS NOT NULL
           AND reporter.username = ${BAN_EVASION_SYSTEM_USERNAME}
-          AND EXISTS (
-            SELECT 1
-            FROM community_members cm
-            WHERE cm.user_id = r.reported_user_id
-              AND cm.community_id = ${communityId}::uuid
-              AND cm.suspected_ban_evader_at IS NOT NULL
-          )
+          AND r.community_id = ${communityId}::uuid
         )
     ),
     reports AS (
@@ -192,13 +186,7 @@ async function getRuleViolations(
             r.post_id IS NULL
             AND r.reported_user_id IS NOT NULL
             AND reporter.username = ${BAN_EVASION_SYSTEM_USERNAME}
-            AND EXISTS (
-              SELECT 1
-              FROM community_members cm
-              WHERE cm.user_id = r.reported_user_id
-                AND cm.community_id = ${communityId}::uuid
-                AND cm.suspected_ban_evader_at IS NOT NULL
-            )
+            AND r.community_id = ${communityId}::uuid
           )
         )
     ),

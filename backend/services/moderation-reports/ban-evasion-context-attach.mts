@@ -3,6 +3,9 @@ import sql from 'sql-template-strings'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { CommunityBanEvasionContext } from './config.mts'
 
+const REPORT_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export async function attachBanEvasionContext(
   reports: PendingModerationReport[],
   options: { communityId?: string } = {},
@@ -10,6 +13,7 @@ export async function attachBanEvasionContext(
   const userReports = reports.filter(r => r.entity_type === 'user' && r.is_system_generated)
   if (userReports.length === 0) return reports
 
+  const storedCommunityIds = await readStoredReportCommunityIds(userReports)
   const userIds = userReports.map(r => r.entity_id)
   const query = sql`/* attachBanEvasionContext */
     SELECT
@@ -38,10 +42,11 @@ export async function attachBanEvasionContext(
     suspected_ban_evader_at: Date
   }>(query)
 
-  const flagsByUserId = new Map<string, CommunityBanEvasionContext>()
+  const flagsByUserAndCommunity = new Map<string, CommunityBanEvasionContext>()
   for (const row of rows) {
-    if (!flagsByUserId.has(row.user_id)) {
-      flagsByUserId.set(row.user_id, {
+    const key = flagKey(row.user_id, row.community_id)
+    if (!flagsByUserAndCommunity.has(key)) {
+      flagsByUserAndCommunity.set(key, {
         community_id: row.community_id,
         community_slug: row.community_slug,
         source_user_id: row.suspected_ban_evader_source_user_id ?? '',
@@ -52,11 +57,47 @@ export async function attachBanEvasionContext(
     }
   }
 
-  return reports.map(r => {
-    if (r.entity_type !== 'user' || !r.is_system_generated) return r
+  return reports.map(report => {
+    if (report.entity_type !== 'user' || !report.is_system_generated) return report
+    const communityId = resolveReportCommunityId(report, storedCommunityIds, options.communityId)
+    if (!communityId) return { ...report, community_ban_evasion: null }
     return {
-      ...r,
-      community_ban_evasion: flagsByUserId.get(r.entity_id) ?? null,
+      ...report,
+      community_ban_evasion:
+        flagsByUserAndCommunity.get(flagKey(report.entity_id, communityId)) ?? null,
     }
   })
+}
+
+async function readStoredReportCommunityIds(
+  reports: PendingModerationReport[],
+): Promise<Map<string, string | null>> {
+  const reportIds = reports.reduce<string[]>((ids, report) => {
+    if (REPORT_ID_PATTERN.test(report.id)) ids.push(report.id)
+    return ids
+  }, [])
+  const stored = new Map<string, string | null>()
+  if (reportIds.length === 0) return stored
+  const { rows } = await read<{ id: string; community_id: string | null }>(sql`
+    /* attachBanEvasionContext:report-communities */
+    SELECT id, community_id
+    FROM moderation_reports
+    WHERE id = ANY(${reportIds}::uuid[])
+  `)
+  for (const row of rows) stored.set(row.id, row.community_id)
+  return stored
+}
+
+function resolveReportCommunityId(
+  report: PendingModerationReport,
+  storedCommunityIds: Map<string, string | null>,
+  fallbackCommunityId: string | undefined,
+): string | null {
+  if (storedCommunityIds.has(report.id)) return storedCommunityIds.get(report.id) ?? null
+  if (report.community_id) return report.community_id
+  return fallbackCommunityId ?? null
+}
+
+function flagKey(userId: string, communityId: string): string {
+  return `${userId}:${communityId}`
 }
