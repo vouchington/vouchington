@@ -56,8 +56,9 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
     })
-    expect(decodeURIComponent(new URL(sent.url).pathname)).toBe(
-      `/model/${BEDROCK_NOVA_MULTIMODAL_MODEL_ID}/invoke`,
+    // The model id travels only in the request path; the rest of the path is the SDK's.
+    expect(decodeURIComponent(new URL(sent.url).pathname)).toContain(
+      BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
     )
     expect(sent.json()).toEqual({
       taskType: 'SINGLE_EMBEDDING',
@@ -67,14 +68,31 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
         text: { truncationMode: 'END', value: TEXT },
       },
     })
+    // The documented Nova body carries no token count, so the call succeeds with none and the
+    // ledger records zero tokens rather than failing.
+    expect(result.tokens).toBeNull()
     expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         service: 'bedrock',
         model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
+        tokens: 0,
         success: true,
         entityType: 'search',
         invocation: 'single',
       }),
+    )
+    replay.assertDrained()
+  })
+
+  it('records the input token count when the response body carries one', async () => {
+    // The shape `request.mts` reads (and `request.test.mts` mocks); the Nova docs do not list it.
+    replay.respondWith(loadRecordedResponse('bedrock/invoke-nova-embedding-text-token-count.http'))
+
+    const result = await createBedrockEmbedding(TEXT, { entityType: 'topic' })
+
+    expect(result.tokens).toBe(9)
+    expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ tokens: 9, success: true, entityType: 'topic' }),
     )
     replay.assertDrained()
   })

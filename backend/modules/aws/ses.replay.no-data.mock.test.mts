@@ -145,8 +145,8 @@ describe('sendEmail against recorded SES responses', () => {
     ).rejects.toMatchObject({ name: 'ServiceUnavailable' })
 
     // The SDK would retry a 503 by default; SES sends have no idempotency token, so we ask for one
-    // attempt and the replay is never asked for a second response.
-    expect(replay.requests).toHaveLength(1)
+    // attempt. Only one response is queued, so a retry would reach the replay with nothing to
+    // answer and reject with that error instead of the recorded one.
     replay.assertDrained()
   })
 })
