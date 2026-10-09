@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import type { ApiScope } from '@modules/scopes'
 import type { PrivateUser } from '@services/users/types'
@@ -10,9 +11,9 @@ import { listMcpToolsForUser } from './list-tools.mts'
 type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
 const READ_TOOLS = [
-  ['get_post', { post_id: 'some-post' }],
-  ['get_post_ancestors', { post_id: 'some-post' }],
-  ['get_post_descendants', { post_id: 'some-post' }],
+  ['read_posts', optionArgs('details', { post_id: 'some-post' })],
+  ['read_posts', optionArgs('ancestors', { post_id: 'some-post' })],
+  ['read_posts', optionArgs('descendants', { post_id: 'some-post' })],
   ['get_story', { story_id: crypto.randomUUID() }],
 ] as const
 

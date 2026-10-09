@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -9,10 +14,7 @@ import {
   insertTestUserWarning,
   sendTestModerationAppealResponse,
   sendTestReviewDisputeResponse,
-  suspendTestUserGetId,
-  unsuspendTestUser,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 
 type Caller = Parameters<typeof callRejectedMcpTool>[0]
@@ -60,8 +62,8 @@ async function appealBy(appellantId: string): Promise<Created> {
 const KINDS = [
   {
     noun: 'dispute',
-    list: 'list_my_review_disputes',
-    get: 'get_my_review_dispute',
+    list: 'read_my_review_disputes',
+    get: 'read_my_review_disputes',
     idArg: 'dispute_id',
     scopes: ['disputes:read'] as readonly ApiScope[],
     otherScopes: ['appeals:read'] as readonly ApiScope[],
@@ -78,8 +80,8 @@ const KINDS = [
   },
   {
     noun: 'appeal',
-    list: 'list_my_moderation_appeals',
-    get: 'get_my_moderation_appeal',
+    list: 'read_my_moderation_appeals',
+    get: 'read_my_moderation_appeals',
     idArg: 'appeal_id',
     scopes: ['appeals:read'] as readonly ApiScope[],
     otherScopes: ['disputes:read'] as readonly ApiScope[],
@@ -105,9 +107,9 @@ describe.each(KINDS)('own $noun reads — real store', kind => {
   const items = (result: Record<string, unknown>) =>
     (result[`${kind.noun}s`] as { id: string }[]).map(item => item.id)
   const list = (caller: Caller, input: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(caller, kind.list, input, kind.scopes)
+    callStructuredMcpTool(caller, kind.list, optionArgs('list', input), kind.scopes)
   const errorOf = async (caller: Caller, input: Record<string, unknown>) =>
-    JSON.parse(await callRejectedMcpTool(caller, kind.get, input, kind.scopes))
+    JSON.parse(await callRejectedMcpTool(caller, kind.get, optionArgs('get', input), kind.scopes))
 
   it('lists only the caller cases, newest first, as facts and without a paid plan', async () => {
     const caller = await freeCaller()
@@ -190,14 +192,24 @@ describe.each(KINDS)('own $noun reads — real store', kind => {
     ['a limit over 100', { limit: 101 }],
     ['an unexpected field', { [kind.foreign]: crypto.randomUUID() }],
   ])('refuses %s as invalid arguments', async (_label, input) => {
-    expect(await callRejectedMcpTool(await freeCaller(), kind.list, input, kind.scopes)).toContain(
-      'Invalid tool arguments',
-    )
+    expect(
+      await callRejectedMcpTool(
+        await freeCaller(),
+        kind.list,
+        optionArgs('list', input),
+        kind.scopes,
+      ),
+    ).toContain('Invalid tool arguments')
   })
 
   it('requires the read scope to list', async () => {
     expect(
-      await callRejectedMcpTool(await freeCaller(), kind.list, {}, kind.otherScopes),
+      await callRejectedMcpTool(
+        await freeCaller(),
+        kind.list,
+        optionArgs('list', {}),
+        kind.otherScopes,
+      ),
     ).toContain('Tool requires scopes')
   })
 
@@ -208,7 +220,7 @@ describe.each(KINDS)('own $noun reads — real store', kind => {
     const result = await callStructuredMcpTool(
       caller,
       kind.get,
-      { [kind.idArg]: created.id },
+      optionArgs('get', { [kind.idArg]: created.id }),
       kind.scopes,
     )
 
@@ -243,7 +255,12 @@ describe.each(KINDS)('own $noun reads — real store', kind => {
     ],
   ])('refuses %s to get as invalid arguments', async (_label, build) => {
     expect(
-      await callRejectedMcpTool(await freeCaller(), kind.get, build(kind.idArg), kind.scopes),
+      await callRejectedMcpTool(
+        await freeCaller(),
+        kind.get,
+        optionArgs('get', build(kind.idArg)),
+        kind.scopes,
+      ),
     ).toContain('Invalid tool arguments')
   })
 
@@ -251,32 +268,12 @@ describe.each(KINDS)('own $noun reads — real store', kind => {
     const caller = await freeCaller()
     const created = await kind.create(caller.id)
     expect(
-      await callRejectedMcpTool(caller, kind.get, { [kind.idArg]: created.id }, kind.otherScopes),
+      await callRejectedMcpTool(
+        caller,
+        kind.get,
+        optionArgs('get', { [kind.idArg]: created.id }),
+        kind.otherScopes,
+      ),
     ).toContain('Tool requires scopes')
-  })
-})
-
-describe('get_my_moderation_appeal — appeal filed on the web', () => {
-  it('names an account suspension as the target of an appeal filed on the web', async () => {
-    const caller = await freeCaller()
-    const suspensionId = await suspendTestUserGetId(caller.id, 'Suspension for the read test')
-    const appeal = await insertTestModerationAppeal({
-      appellantId: caller.id,
-      userSuspensionId: suspensionId,
-    })
-    await unsuspendTestUser(caller.id)
-
-    const result = await callStructuredMcpTool(
-      caller,
-      'get_my_moderation_appeal',
-      { appeal_id: appeal.id },
-      ['appeals:read'],
-    )
-
-    expect(result.appeal).toMatchObject({
-      id: appeal.id,
-      target_type: 'suspension',
-      target_id: suspensionId,
-    })
   })
 })

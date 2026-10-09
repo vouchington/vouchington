@@ -1,3 +1,4 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { beforeAll, describe, expect, it } from 'vitest'
 import searchDataPointsTool from '../search-data-points.mts'
 import { createTestUser } from '@voucha/test-helpers'
@@ -5,7 +6,7 @@ import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
 
-describe('search_data_points tool — real DB', () => {
+describe('read_data_points.search tool — real DB', () => {
   let user: PrivateUser
   let topicId: string
   const suffix = crypto.randomUUID().slice(0, 8)
@@ -40,7 +41,7 @@ describe('search_data_points tool — real DB', () => {
   })
 
   it('has correct schema name', () => {
-    expect(searchDataPointsTool.schema.name).toBe('search_data_points')
+    expect(getRegisteredToolByName('read_data_points')?.schema.name).toBe('read_data_points')
   })
 
   it('schema has all expected properties', () => {

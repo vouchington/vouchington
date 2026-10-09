@@ -4,7 +4,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { createTrendingTopicData } from '@voucha/test-helpers/entities/trending-topics'
 import type { PrivateUser } from '@services/users/types'
 
-describe('get_trending_topics tool — real DB', () => {
+describe('discover_topics.trending tool — real DB', () => {
   let user: PrivateUser
   let trendingTopicId: string
 

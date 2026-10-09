@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { addListItem } from '@services/lists'
 import { createApiKey } from '@services/api-keys'
@@ -34,12 +35,7 @@ const OWNED_PRIVATE = [
   'entity-relations:write',
   'post-relations.owned-private:write',
 ] as const
-const TOOLS = [
-  'get_community_list_items',
-  'get_community_list_item_counts',
-  'get_my_lists_containing',
-  'get_membership_plans',
-]
+const TOOLS = ['read_community', 'read_my_lists', 'read_reference_data']
 
 function postMcp(token: string, body: unknown) {
   return createRequest()
@@ -96,14 +92,22 @@ describe('community list item, list membership and membership plan read tools ov
     })
     const token = await issueCredential(kind, owner, READ)
 
-    const page = await readTool(token, 'get_community_list_items', {
-      community_id: community.slug,
-      item_type: 'topic',
-    })
-    const counts = await readTool(token, 'get_community_list_item_counts', {
-      community_id: community.id,
-    })
-    const plans = await readTool(token, 'get_membership_plans')
+    const page = await readTool(
+      token,
+      'read_community',
+      optionArgs('list_items', {
+        community_id: community.slug,
+        item_type: 'topic',
+      }),
+    )
+    const counts = await readTool(
+      token,
+      'read_community',
+      optionArgs('list_item_counts', {
+        community_id: community.id,
+      }),
+    )
+    const plans = await readTool(token, 'read_reference_data', optionArgs('membership_plans', {}))
 
     expect(page).toMatchObject({
       success: true,
@@ -134,13 +138,13 @@ describe('community list item, list membership and membership plan read tools ov
 
       const plain = await readTool(
         await issueCredential(kind, owner, READ),
-        'get_my_lists_containing',
-        args,
+        'read_my_lists',
+        optionArgs('containing', args),
       )
       const granted = await readTool(
         await issueCredential(kind, owner, OWNED_PRIVATE),
-        'get_my_lists_containing',
-        args,
+        'read_my_lists',
+        optionArgs('containing', args),
       )
 
       expect(plain).toEqual({ success: true, list_ids: [open!.id] })
@@ -183,9 +187,12 @@ describe('community list item, list membership and membership plan read tools ov
   it.each(KINDS)('%s is rejected once its owner is suspended', async kind => {
     const user = await createTestUser()
     const token = await issueCredential(kind, user, READ)
-    await readTool(token, 'get_membership_plans')
+    await readTool(token, 'read_reference_data', optionArgs('membership_plans', {}))
     await suspendTestUser(user.id)
 
-    await postMcp(token, toolCall('get_membership_plans', {})).expect(401)
+    await postMcp(
+      token,
+      toolCall('read_reference_data', optionArgs('membership_plans', {})),
+    ).expect(401)
   })
 })

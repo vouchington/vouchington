@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { randomUUID } from 'node:crypto'
 import { addListItem, softDeleteList } from '@services/lists'
 import {
@@ -11,10 +16,6 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
@@ -44,13 +45,18 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
 })
 const entities = (page: { results: Item[] }) => page.results.map(item => item.entity_id)
 
-describe('get_list_items — real DB', () => {
+describe('read_my_lists.items — real DB', () => {
   let owner: McpContractCaller
   let stranger: McpContractCaller
   let counter = 0
 
   const getItems = (list_id: string, args: Body = {}, who = owner, scopes: Scopes = READ) =>
-    callStructuredMcpTool(who, 'get_list_items', { list_id, ...args }, scopes) as Promise<Page>
+    callStructuredMcpTool(
+      who,
+      'read_my_lists',
+      optionArgs('items', { list_id, ...args }),
+      scopes,
+    ) as Promise<Page>
   const newPost = (privacy: 'public' | 'private' = 'public') => {
     const label = `${random}-${(counter += 1)}`
     return insertTestPost({

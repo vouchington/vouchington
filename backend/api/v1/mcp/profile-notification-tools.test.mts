@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 /**
  * The profile, notification and preference write tools over POST /api/v1/mcp: the scopes a
  * credential needs, the plan, the result a client receives and the audit row each call leaves.
@@ -59,7 +60,11 @@ describe.each<Kind>(['oauth', 'api_key'])(
         'plus',
       )
 
-      const response = await callTool(token, 'update_my_bio', { markdown: BIO }).expect(200)
+      const response = await callTool(
+        token,
+        'edit_my_profile',
+        optionArgs('bio', { markdown: BIO }),
+      ).expect(200)
 
       const body = response.body as ToolCallBody
       expect(body.result?.isError).toBeUndefined()
@@ -73,7 +78,7 @@ describe.each<Kind>(['oauth', 'api_key'])(
           ...identity,
           actor_user_id: user.id,
           jsonrpc_method: 'tools/call',
-          tool_name: 'update_my_bio',
+          tool_name: 'edit_my_profile',
           outcome: 'accepted',
         }),
       ])
@@ -86,23 +91,29 @@ describe.each<Kind>(['oauth', 'api_key'])(
     it('refuses a read-only grant, leaves the bio and audits the denial', async () => {
       const { user, token } = await issueCredential(kind, ['profile:read'], 'plus')
 
-      await callTool(token, 'update_my_bio', { markdown: BIO }).expect(kind === 'oauth' ? 403 : 200)
+      await callTool(token, 'edit_my_profile', optionArgs('bio', { markdown: BIO })).expect(
+        kind === 'oauth' ? 403 : 200,
+      )
 
       expect(await getProfile(user.id)).toEqual({ id: user.id, markdown: '' })
       expect(await readTestMcpCallAuditEvents(user.id)).toEqual([
-        expect.objectContaining({ tool_name: 'update_my_bio', outcome: 'insufficient_scope' }),
+        expect.objectContaining({ tool_name: 'edit_my_profile', outcome: 'insufficient_scope' }),
       ])
     })
 
     it('refuses a free plan in-band, leaves the bio and audits the denial', async () => {
       const { user, token } = await issueCredential(kind, ['profile:read', 'profile:write'], null)
 
-      const response = await callTool(token, 'update_my_bio', { markdown: BIO }).expect(200)
+      const response = await callTool(
+        token,
+        'edit_my_profile',
+        optionArgs('bio', { markdown: BIO }),
+      ).expect(200)
 
       expect((response.body as ToolCallBody).error?.code).toBe(-32600)
       expect(await getProfile(user.id)).toEqual({ id: user.id, markdown: '' })
       expect(await readTestMcpCallAuditEvents(user.id)).toEqual([
-        expect.objectContaining({ tool_name: 'update_my_bio', outcome: 'plan_denied' }),
+        expect.objectContaining({ tool_name: 'edit_my_profile', outcome: 'plan_denied' }),
       ])
     })
 
@@ -111,12 +122,20 @@ describe.each<Kind>(['oauth', 'api_key'])(
       const wrong = await issueCredential(kind, ['profile:read', 'profile:write'], 'plus')
       const before = await getEmailPreferences(wrong.user.id)
 
-      const response = await callTool(granted.token, 'update_my_email_preferences', {
-        news_digest_frequency: 'weekly',
-      }).expect(200)
-      await callTool(wrong.token, 'update_my_email_preferences', {
-        news_digest_frequency: 'weekly',
-      }).expect(kind === 'oauth' ? 403 : 200)
+      const response = await callTool(
+        granted.token,
+        'edit_my_preferences',
+        optionArgs('email', {
+          news_digest_frequency: 'weekly',
+        }),
+      ).expect(200)
+      await callTool(
+        wrong.token,
+        'edit_my_preferences',
+        optionArgs('email', {
+          news_digest_frequency: 'weekly',
+        }),
+      ).expect(kind === 'oauth' ? 403 : 200)
 
       expect((response.body as ToolCallBody).result?.structuredContent).toMatchObject({
         success: true,

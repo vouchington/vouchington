@@ -1,9 +1,9 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createTestUser, setTopicBestSortInputs } from '@voucha/test-helpers'
 import {
   insertTestCardTopicsWithDataPoints,
   type CardTopicDataPointFixture,
 } from '@voucha/test-helpers/entities/card-topic-data-points'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { getTopicByAny } from '@services/topics/get'
 import { updateCardAttributes } from '@services/topics/cards'
@@ -67,44 +67,53 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     await setTopicBestSortInputs(cardA, 7)
   })
 
-  it('returns populated get_topic_insights', async () => {
-    const result = await callStructuredMcpTool(caller, 'get_topic_insights', { topic_id: cardA }, [
-      'data-points:read',
-    ])
+  it('returns populated read_data_points.topic_insights', async () => {
+    const result = await callStructuredMcpTool(
+      caller,
+      'read_data_points',
+      optionArgs('topic_insights', { topic_id: cardA }),
+      ['data-points:read'],
+    )
 
     expect(result).toMatchObject({ success: true, topic_id: cardA, approved_count: 1 })
     expect(result['median_credit_limits']).toEqual([{ amount: 1_500_000, currency: 'usd' }])
     expect(Object.keys(result['credit_score_distribution'] as object).length).toBeGreaterThan(0)
   })
 
-  it('returns get_topic_insights for a topic without data points', async () => {
+  it('returns read_data_points.topic_insights for a topic without data points', async () => {
     const empty = await insertTestTopic({
       name: `Contract Empty ${suffix}`,
       slug: `contract-empty-${suffix}`,
       createdById: caller.id,
     })
 
-    const result = await callStructuredMcpTool(caller, 'get_topic_insights', { topic_id: empty }, [
-      'data-points:read',
-    ])
+    const result = await callStructuredMcpTool(
+      caller,
+      'read_data_points',
+      optionArgs('topic_insights', { topic_id: empty }),
+      ['data-points:read'],
+    )
 
     expect(result).toMatchObject({ success: true, total_count: 0, approval_rate: null })
   })
 
-  it('returns populated get_topic_metrics', async () => {
-    const result = await callStructuredMcpTool(caller, 'get_topic_metrics', { topic_id: cardA }, [
-      'topics:read',
-    ])
+  it('returns populated read_topic.metrics', async () => {
+    const result = await callStructuredMcpTool(
+      caller,
+      'read_topic',
+      optionArgs('metrics', { topic_id: cardA }),
+      ['topics:read'],
+    )
 
     expect(result).toMatchObject({ success: true, topic_id: cardA })
     expect(result['ratings']).toMatchObject({ count_4: 7 })
   })
 
-  it('returns populated compare_topics', async () => {
+  it('returns populated read_topic.compare', async () => {
     const result = await callStructuredMcpTool(
       caller,
-      'compare_topics',
-      { topic_id_a: cardA, topic_id_b: cardB },
+      'read_topic',
+      optionArgs('compare', { topic_id_a: cardA, topic_id_b: cardB }),
       ['topics:read'],
     )
 
@@ -115,7 +124,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     })
   })
 
-  it('returns get_topic_details for a card with its attributes resolved', async () => {
+  it('returns read_topic.details for a card with its attributes resolved', async () => {
     const bank = await insertTestTopic({
       name: `Contract Bank ${suffix}`,
       slug: `contract-bank-${suffix}`,
@@ -133,9 +142,12 @@ describe('MCP output schema contract for topic reads — real DB', () => {
       annual_fee: { amount: 9500, currency: 'usd' },
     })
 
-    const result = await callStructuredMcpTool(caller, 'get_topic_details', { topic_id: cardA }, [
-      'topics:read',
-    ])
+    const result = await callStructuredMcpTool(
+      caller,
+      'read_topic',
+      optionArgs('details', { topic_id: cardA }),
+      ['topics:read'],
+    )
 
     expect(result).toMatchObject({
       success: true,
@@ -147,7 +159,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     })
   })
 
-  it('returns get_topic_details for a rewards program with its company resolved', async () => {
+  it('returns read_topic.details for a rewards program with its company resolved', async () => {
     const company = await insertTestTopic({
       name: `Contract Company ${suffix}`,
       slug: `contract-company-${suffix}`,
@@ -163,9 +175,12 @@ describe('MCP output schema contract for topic reads — real DB', () => {
       company_topic_id: company,
     })
 
-    const result = await callStructuredMcpTool(caller, 'get_topic_details', { topic_id: program }, [
-      'topics:read',
-    ])
+    const result = await callStructuredMcpTool(
+      caller,
+      'read_topic',
+      optionArgs('details', { topic_id: program }),
+      ['topics:read'],
+    )
 
     expect(result).toMatchObject({
       topic_type: 'rewards_program',
@@ -173,7 +188,7 @@ describe('MCP output schema contract for topic reads — real DB', () => {
     })
   })
 
-  it('returns get_topic_details for a plain topic and for a card without attributes', async () => {
+  it('returns read_topic.details for a plain topic and for a card without attributes', async () => {
     const plain = await insertTestTopic({
       name: `Contract Plain ${suffix}`,
       slug: `contract-plain-${suffix}`,
@@ -182,23 +197,30 @@ describe('MCP output schema contract for topic reads — real DB', () => {
 
     const plainResult = await callStructuredMcpTool(
       caller,
-      'get_topic_details',
-      { topic_id: plain },
+      'read_topic',
+      optionArgs('details', { topic_id: plain }),
       ['topics:read'],
     )
-    const bareCard = await callStructuredMcpTool(caller, 'get_topic_details', { topic_id: cardB }, [
-      'topics:read',
-    ])
+    const bareCard = await callStructuredMcpTool(
+      caller,
+      'read_topic',
+      optionArgs('details', { topic_id: cardB }),
+      ['topics:read'],
+    )
 
     expect(plainResult).toMatchObject({ success: true, topic_type: 'topic' })
     expect(bareCard).toMatchObject({ success: true, annual_fee: null, bank_name: null })
   })
 
   it.each([
-    ['get_topic_insights', { topic_id: missing }, 'data-points:read'],
-    ['get_topic_metrics', { topic_id: missing }, 'topics:read'],
-    ['get_topic_details', { topic_id: missing }, 'topics:read'],
-    ['compare_topics', { topic_id_a: missing, topic_id_b: missing }, 'topics:read'],
+    ['read_data_points', optionArgs('topic_insights', { topic_id: missing }), 'data-points:read'],
+    ['read_topic', optionArgs('metrics', { topic_id: missing }), 'topics:read'],
+    ['read_topic', optionArgs('details', { topic_id: missing }), 'topics:read'],
+    [
+      'read_topic',
+      optionArgs('compare', { topic_id_a: missing, topic_id_b: missing }),
+      'topics:read',
+    ],
   ] as const)('returns the not-found result of %s', async (name, args, scope) => {
     const result = await callStructuredMcpTool(caller, name, args, [scope])
 

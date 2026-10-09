@@ -39,7 +39,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_recommended_topics',
     type: 'function',
     description:
-      "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
+      "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use read_topic (option details) for full card information.",
     parameters: {
       type: 'object',
       properties: {

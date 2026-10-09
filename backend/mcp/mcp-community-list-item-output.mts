@@ -20,7 +20,7 @@ const ITEM_FIELDS = ['id', 'item_type', 'entity_id', 'order_index', 'created_at'
 /**
  * One entry of a community list. `entity_id` is what the entry points at. `label` names it where
  * nothing else can: the hostname, the page URL or the feed title. Topics and posts have no label
- * because `get_topic_details` and `get_post` read them by id. Who added the entry stays out.
+ * because `read_topic (option details)` and `read_posts (option details)` read them by id. Who added the entry stays out.
  */
 export type McpCommunityListItem = {
   id: string

@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
 import { outcomeSchema } from './output-schema-shapes.mts'
 import {
@@ -34,10 +34,8 @@ type ToolResult =
       error: string
     }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_topic_metrics',
-    type: 'function',
     description:
       'Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.',
     parameters: {
@@ -50,7 +48,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['topic_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

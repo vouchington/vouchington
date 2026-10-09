@@ -40,11 +40,9 @@ const TOOLS = [
   'leave_community',
   'apply_to_community',
   'create_review_dispute',
-  'list_my_review_disputes',
-  'get_my_review_dispute',
+  'read_my_review_disputes',
   'create_moderation_appeal',
-  'list_my_moderation_appeals',
-  'get_my_moderation_appeal',
+  'read_my_moderation_appeals',
 ]
 
 function postMcp(token: string, body: unknown) {

@@ -1,4 +1,5 @@
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { MergedToolSource } from './create-merged-tool.mts'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
 import { LIST_NOT_FOUND, mcpListSchema, toMcpLists, type McpList } from './mcp-list-output.mts'
@@ -10,12 +11,10 @@ type ToolArgs = {
 
 type ToolResult = { success: true; list: McpList } | typeof LIST_NOT_FOUND
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_list',
-    type: 'function',
     description:
-      'Get one list by its UUID: its name, description, owner and visibility. Public and unlisted lists are readable by anyone who has the id. A private list is readable only by its owner, and only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it). Every other case, including an unknown, removed or another user\'s private list, returns the same { success: false, error: "List not found" }. Use get_list_items to read inside a list.',
+      'Get one list by its UUID: its name, description, owner and visibility. Public and unlisted lists are readable by anyone who has the id. A private list is readable only by its owner, and only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it). Every other case, including an unknown, removed or another user\'s private list, returns the same { success: false, error: "List not found" }. Use read_my_lists (option items) to read inside a list.',
     parameters: {
       type: 'object',
       properties: {
@@ -23,7 +22,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['list_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

@@ -1,9 +1,9 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { updateProfileImageId } from '@services/my/identity'
 import { updateUserFields } from '@services/users/update-fields'
 import type { BasicUser, PrivateUser } from '@services/users/types'
 import { IDENTITY_PARAMETERS, IDENTITY_RESULT_SCHEMA } from './profile-tool-support.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
 type UpdateMyDisplayIdentityArgs = {
   use_display_name_from?: NonNullable<PrivateUser['use_display_name_from']>
@@ -18,14 +18,11 @@ type UpdateMyDisplayIdentityResult = {
   }
 }
 
-const tool: Tool<UpdateMyDisplayIdentityArgs, UpdateMyDisplayIdentityResult> = {
+const tool: MergedToolSource<UpdateMyDisplayIdentityArgs, UpdateMyDisplayIdentityResult> = {
   schema: {
-    name: 'update_my_display_identity',
-    type: 'function',
     description:
       "Change where the current user's display name comes from (the username or a connected sign-in account) and the avatar image. Only the fields sent change. The username itself cannot be changed here, and an avatar must be an image the user uploaded.",
     parameters: IDENTITY_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

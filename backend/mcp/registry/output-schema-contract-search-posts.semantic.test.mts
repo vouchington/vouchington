@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   addDummyEmbeddingToPost,
   createTestPost,
@@ -6,7 +7,6 @@ import {
   makeRandomEmbedding,
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -19,16 +19,19 @@ const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: nul
 // Visibility is the MCP read policy (see the privacy and agreement tests), so this checks the
 // semantic path through the real call path: only the embedding can match these fixtures, and each
 // one has its own nearby vector.
-describe('search_posts semantic visibility — real DB', () => {
+describe('read_posts.search semantic visibility — real DB', () => {
   const query = `semantic visibility ${crypto.randomUUID()}`
   let author: Caller
   let viewer: Caller
   let ids: { open: string; ownFlagged: string; otherFlagged: string; recommendation: string }
 
   const search = (as: Caller) =>
-    callStructuredMcpTool(as, 'search_posts', { semantic_search_query: query }, SCOPES).then(page =>
-      (page as Page).results.map(result => result.id),
-    )
+    callStructuredMcpTool(
+      as,
+      'read_posts',
+      optionArgs('search', { semantic_search_query: query }),
+      SCOPES,
+    ).then(page => (page as Page).results.map(result => result.id))
 
   const queryEmbedding = makeRandomEmbedding()
 

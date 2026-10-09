@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPostFeedIds, VALID_POST_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
@@ -17,12 +17,10 @@ import {
   type PostArgs,
 } from './personal-feed-support.mts'
 
-const getPostFeedTool: Tool<PostArgs, FeedResult> = {
+const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
   schema: {
-    name: 'get_post_feed',
-    type: 'function',
     description:
-      'Page posts delivered to your own feed. Results identify each post for get_post; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.',
+      'Page posts delivered to your own feed. Results identify each post for read_posts (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.',
     parameters: {
       type: 'object',
       properties: {
@@ -37,7 +35,6 @@ const getPostFeedTool: Tool<PostArgs, FeedResult> = {
       },
       required: ['feed_type'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

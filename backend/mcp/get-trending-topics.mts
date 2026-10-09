@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getTrendingTopics, trendingTopicsPaginationParser } from '@services/trending-topics'
 import type { TrendingTopicsResult } from '@services/trending-topics/types'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
@@ -35,12 +35,10 @@ const OUTPUT_SCHEMA = successSchema({
   page_info: componentSchema('PageInfo'),
 })
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_trending_topics',
-    type: 'function',
     description:
-      'Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering "what credit cards are popular right now?" or "what topics are being discussed?". Returns topic IDs with trending scores — use get_topic_details to get full card information.',
+      'Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering "what credit cards are popular right now?" or "what topics are being discussed?". Returns topic IDs with trending scores — use read_topic (option details) to get full card information.',
     parameters: {
       type: 'object',
       properties: {
@@ -63,7 +61,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

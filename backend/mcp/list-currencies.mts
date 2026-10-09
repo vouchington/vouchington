@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { listCurrencies } from '@services/currencies'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import type { Currency } from '@ts-shared/money'
 import {
@@ -28,17 +28,14 @@ const { items: CURRENCY_SCHEMA } = routePropertySchema(routeResponseSchema(API),
 const CURRENCY_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 25 }
 const { default: defaultLimit, max } = CURRENCY_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'list_currencies',
-    type: 'function',
     description: `List the currencies Voucha supports, by code: each one's lowercase ISO 4217 code and its minor unit exponent (the number of decimal places, so 2 for usd and 0 for jpy). Returns at most ${max} currencies per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Currencies', CURRENCY_PAGE_LIMIT),
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

@@ -25,7 +25,7 @@ export function appendBaseFilters(
   if (!include_topic_recommendations) filters.push(sql`posts.post_type != 'topic_recommendation'`)
   if (!post_types?.length) filters.push(sql`posts.post_type != 'comment'`)
 
-  // Public-only callers (MCP search_posts) are judged as signed out, so neither an author nor an
+  // Public-only callers (MCP read_posts(search)) are judged as signed out, so neither an author nor an
   // administrator widens what they see. The exclusions below still follow `currentUser`.
   const viewer = public_eligibility_only ? undefined : currentUser
   const isAdmin = isAdminUser(viewer ?? null)

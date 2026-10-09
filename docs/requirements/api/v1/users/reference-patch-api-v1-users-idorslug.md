@@ -12,7 +12,7 @@ The check runs after authentication and the suspension check but before the serv
 target user, so a malformed body from a caller who may not edit the target is also `422`. See the
 [selected user-update request cases](../../reference-content-routes-request-validation.md#user-updates-and-data-request-stream).
 
-The `update_my_preferences` MCP tool runs this route's command for the caller only, with an allow-listed
+The `edit_my_preferences(general)` MCP tool runs this route's command for the caller only, with an allow-listed
 subset of the body: visibility, messaging, post defaults, country, locale, and Hacker News discussions. It
 needs the `preferences:read` and `preferences:write` scopes and a Plus plan. See
 [Profile, Notification, and Preference Write Tools](../../../../overview/architecture/mcp/profile-notification-write-tools.md).

@@ -80,3 +80,8 @@ export async function callStructuredMcpTool(
   expect(result.structuredContent).toEqual(JSON.parse(block.text))
   return result.structuredContent as Record<string, unknown>
 }
+
+/** The closed arguments envelope used by merged tool calls. */
+export function optionArgs(option: string, args: Record<string, unknown> = {}) {
+  return { option, arguments: args }
+}

@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
@@ -28,8 +29,8 @@ describe('listMcpToolsForUser', () => {
 
   it('hides tools whose explicit resource scope is absent', () => {
     const tools = listMcpToolsForUser(user, ['topics:read'], USER_MCP_SERVER_CONFIG)
-    expect(tools.map(tool => tool.name)).toContain('search_topics')
-    expect(tools.map(tool => tool.name)).not.toContain('search_posts')
+    expect(tools.map(tool => tool.name)).toContain('discover_topics')
+    expect(tools.map(tool => tool.name)).not.toContain('read_posts')
   })
 
   it('separates resource read and write tools by scope', () => {
@@ -204,13 +205,19 @@ describe('callMcpTool', () => {
   })
 
   it('rejects invalid registered tool arguments before invoking the tool', async () => {
-    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics')
-    if (!tool) throw new Error('Expected search_topics tool')
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'discover_topics')
+    if (!tool) throw new Error('Expected discover_topics tool')
     const invoke = vi.spyOn(tool, 'function')
 
     try {
       await expect(
-        callMcpTool('search_topics', { limit: 0 }, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
+        callMcpTool(
+          'discover_topics',
+          optionArgs('search', { limit: 0 }),
+          user,
+          ['mcp.user:read'],
+          USER_MCP_SERVER_CONFIG,
+        ),
       ).rejects.toMatchObject({
         code: ErrorCode.InvalidParams,
         message: expect.stringContaining('Invalid tool arguments'),
@@ -248,10 +255,10 @@ describe('callMcpTool', () => {
   })
 
   it('returns CallToolResult on successful tool call', async () => {
-    // search_topics is a read-only MCP tool
+    // discover_topics is a read-only MCP tool
     const result = await callMcpTool(
-      'search_topics',
-      { text_search_query: 'test' },
+      'discover_topics',
+      optionArgs('search', { text_search_query: 'test' }),
       user,
       ['mcp.user:read'],
       USER_MCP_SERVER_CONFIG,

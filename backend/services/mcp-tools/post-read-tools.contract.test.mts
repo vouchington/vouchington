@@ -10,6 +10,7 @@ import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { callMcpTool } from './call-tool.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 
 type Caller = PrivateUser & { membership_plan: null }
 type PostBody = Record<string, unknown>
@@ -29,11 +30,15 @@ function asCaller(user: PrivateUser): Caller {
 
 // Every call goes through the real call path, which checks the result against the output schema, so
 // a result the published schema rejects would surface here as an error result.
-async function call(caller: Caller, name: string, postId: string | null | undefined) {
+async function call(
+  caller: Caller,
+  option: 'details' | 'ancestors',
+  postId: string | null | undefined,
+) {
   if (!postId) throw new Error('the test post has no id or slug to read')
   const result = await callMcpTool(
-    name,
-    { post_id: postId },
+    'read_posts',
+    optionArgs(option, { post_id: postId }),
     caller,
     ['posts:read'],
     USER_MCP_SERVER_CONFIG,
@@ -50,7 +55,7 @@ async function pendingPost(user: PrivateUser, options: Parameters<typeof createT
   return post
 }
 
-describe('get_post and get_post_ancestors — real DB', () => {
+describe('read_posts.details and read_posts.ancestors — real DB', () => {
   let author: Caller
   let admin: Caller
 
@@ -63,8 +68,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
     it('is returned by id and by slug as wrapped external content', async () => {
       const post = await createTestPost({ user: author, markdown: 'A public post body' })
 
-      const byId = await call(author, 'get_post', post.id)
-      const bySlug = await call(admin, 'get_post', post.slug)
+      const byId = await call(author, 'details', post.id)
+      const bySlug = await call(admin, 'details', post.slug)
 
       expect(bySlug.body).toEqual(byId.body)
       expect(byId.body.post).toMatchObject({
@@ -84,7 +89,7 @@ describe('get_post and get_post_ancestors — real DB', () => {
     it('has no ancestors', async () => {
       const post = await createTestPost({ user: author })
 
-      expect((await call(author, 'get_post_ancestors', post.id)).body).toEqual({
+      expect((await call(author, 'ancestors', post.id)).body).toEqual({
         success: true,
         ancestors: [],
       })
@@ -94,7 +99,7 @@ describe('get_post and get_post_ancestors — real DB', () => {
       const post = await createTestPost({ user: author, is_anonymous: true })
 
       for (const caller of [author, admin]) {
-        const { body, text } = await call(caller, 'get_post', post.id)
+        const { body, text } = await call(caller, 'details', post.id)
         expect(body.post).toMatchObject({ is_anonymous: true, created_by_id: null })
         expect(text).not.toContain(author.id)
       }
@@ -137,9 +142,9 @@ describe('get_post and get_post_ancestors — real DB', () => {
       const post = await build(author)
 
       for (const caller of [author, admin]) {
-        for (const name of ['get_post', 'get_post_ancestors']) {
-          expect((await call(caller, name, post.id)).body).toEqual(NOT_FOUND)
-          expect((await call(caller, name, post.slug)).body).toEqual(NOT_FOUND)
+        for (const option of ['details', 'ancestors'] as const) {
+          expect((await call(caller, option, post.id)).body).toEqual(NOT_FOUND)
+          expect((await call(caller, option, post.slug)).body).toEqual(NOT_FOUND)
         }
       }
     })
@@ -151,8 +156,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
       await deleteTestPost(post.id)
 
       for (const postId of [post.id, post.slug, crypto.randomUUID(), 'No Such Post!']) {
-        for (const name of ['get_post', 'get_post_ancestors']) {
-          expect((await call(author, name, postId)).body).toEqual(NOT_FOUND)
+        for (const option of ['details', 'ancestors'] as const) {
+          expect((await call(author, option, postId)).body).toEqual(NOT_FOUND)
         }
       }
     })
@@ -172,8 +177,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
         parent_post_id: first.id,
       })
 
-      const { body } = await call(author, 'get_post_ancestors', second.id)
-      const comment = await call(author, 'get_post', second.id)
+      const { body } = await call(author, 'ancestors', second.id)
+      const comment = await call(author, 'details', second.id)
 
       expect(body.ancestors?.map(ancestor => ancestor['id'])).toEqual([root.id, first.id])
       expect(comment.body.post).toMatchObject({
@@ -197,12 +202,12 @@ describe('get_post and get_post_ancestors — real DB', () => {
       })
       await deleteTestPost(removed.id)
 
-      const { body, text } = await call(author, 'get_post_ancestors', reply.id)
+      const { body, text } = await call(author, 'ancestors', reply.id)
 
       expect(body.ancestors?.map(ancestor => ancestor['id'])).toEqual([root.id])
       expect(text).not.toContain(removed.slug)
-      expect((await call(author, 'get_post', removed.id)).body).toEqual(NOT_FOUND)
-      expect((await call(author, 'get_post', reply.id)).body.post).toMatchObject({
+      expect((await call(author, 'ancestors', removed.id)).body).toEqual(NOT_FOUND)
+      expect((await call(author, 'details', reply.id)).body.post).toMatchObject({
         parent_post_id: removed.id,
       })
     })
@@ -219,8 +224,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
         parent_post_id: hiddenParent.id,
       })
 
-      for (const name of ['get_post', 'get_post_ancestors']) {
-        const { body, text } = await call(admin, name, reply.id)
+      for (const option of ['details', 'ancestors'] as const) {
+        const { body, text } = await call(admin, option, reply.id)
         expect(body).toEqual(NOT_FOUND)
         expect(text).not.toContain(hiddenParent.id)
       }
@@ -234,8 +239,8 @@ describe('get_post and get_post_ancestors — real DB', () => {
         parent_post_id: root.id,
       })
 
-      for (const name of ['get_post', 'get_post_ancestors']) {
-        expect((await call(author, name, comment.id)).body).toEqual(NOT_FOUND)
+      for (const option of ['details', 'ancestors'] as const) {
+        expect((await call(author, option, comment.id)).body).toEqual(NOT_FOUND)
       }
     })
   })

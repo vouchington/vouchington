@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPinnedPosts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
 import { loadMcpPosts, mcpPostSchema, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -11,10 +11,8 @@ type ToolArgs = {
 
 type ToolResult = { success: true; pinned_posts: McpPost[] } | typeof COMMUNITY_NOT_FOUND
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_community_pinned_posts',
-    type: 'function',
     description:
       'Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out.',
     parameters: {
@@ -24,7 +22,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['community_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

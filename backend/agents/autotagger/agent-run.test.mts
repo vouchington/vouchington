@@ -79,7 +79,7 @@ describe.each([
     expect(first).toContain(accepted.id)
     expect(first).toContain(rejected.id)
     expect(first).not.toContain(applied.id)
-    expect(tools.map(tool => tool.name)).toEqual(['search_topics', 'submit_topics'])
+    expect(tools.map(tool => tool.name)).toEqual(['lookup_candidate_topics', 'submit_topics'])
     expect(lease.capturedTopicIds).toEqual(expect.arrayContaining([accepted.id, rejected.id]))
     expect(await getSubjectClassifierRunFacts(lease.subject, AUTOTAGGER_AGENT_SLUG)).toMatchObject([
       {
@@ -119,7 +119,9 @@ describe.each([
     const { accepted, lease } = await leasedAgentRun(create)
     const callTurn = vi
       .fn<AgentToolTurnCaller>()
-      .mockResolvedValueOnce(makeToolTurnResult([{ name: 'search_topics', input: { query: 'x' } }]))
+      .mockResolvedValueOnce(
+        makeToolTurnResult([{ name: 'lookup_candidate_topics', input: { query: 'x' } }]),
+      )
       .mockResolvedValueOnce(
         makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: [accepted.id] } }]),
       )

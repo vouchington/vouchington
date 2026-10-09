@@ -1,6 +1,7 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { isUUID } from '@modules/utils'
 import { getListsContainingEntity } from '@services/lists'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { hasOwnedPrivateGrant } from './list-read-access.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -13,12 +14,10 @@ type ToolResult =
   | { success: true; list_ids: string[] }
   | { success: false; error: 'Invalid entity_id' }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_my_lists_containing',
-    type: 'function',
     description:
-      "Find which of the current user's own lists hold a post or an RSS feed item, newest list first: the list_ids to read with get_list. Only the credential owner's lists are searched, never another user's. Public and unlisted lists are always searched. Private lists are searched only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. A removed list never appears. An entity on no list returns an empty list_ids. An entity_id that is not a UUID returns { success: false, error: \"Invalid entity_id\" }.",
+      "Find which of the current user's own lists hold a post or an RSS feed item, newest list first: the list_ids to read with read_my_lists (option get). Only the credential owner's lists are searched, never another user's. Public and unlisted lists are always searched. Private lists are searched only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. A removed list never appears. An entity on no list returns an empty list_ids. An entity_id that is not a UUID returns { success: false, error: \"Invalid entity_id\" }.",
     parameters: {
       type: 'object',
       properties: {
@@ -31,7 +30,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['item_type', 'entity_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

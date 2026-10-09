@@ -62,7 +62,7 @@ export type McpCommunityOwner = { id: string; username: string | null }
 
 export type McpCommunityMetrics = Pick<CommunityMetrics, (typeof METRIC_FIELDS)[number]>
 
-/** A community with its owner and public counts, as `search_communities` and `get_community` return it. */
+/** A community with its owner and public counts, as `discover_communities (option search)` and `read_community (option details)` return it. */
 export type McpCommunityEntry = {
   community: McpCommunity
   owner: McpCommunityOwner | null

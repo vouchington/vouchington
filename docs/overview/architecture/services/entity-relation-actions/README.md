@@ -12,7 +12,7 @@ credential ownership of both the candidate and its effective root. The upsert ca
 check after canonical candidate/root publication locks.
 
 `upsertBookmarkAction` and `deleteBookmarkAction` are the shared bookmark commands behind the
-PUT/DELETE bookmark routes and the `set_bookmark`/`remove_bookmark` MCP tools. Delete never reads
+PUT/DELETE bookmark routes and the `manage_bookmark(set)`/`manage_bookmark(remove)` MCP tools. Delete never reads
 the target, so it needs no authority. `assertPostTargetAccess` applies the same delegated
 post-visibility and own-private rules to a post a caller reaches indirectly, such as the MCP
 `add_list_item` tool.

@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { successSchema } from './output-schema-shapes.mts'
 import { pickProperties } from './read-tool-output-schema.mts'
@@ -14,14 +14,11 @@ type ToolResult = {
   hostname_count: number
 }
 
-const tool: Tool<Record<string, never>, ToolResult> = {
+const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
-    name: 'get_platform_stats',
-    type: 'function',
     description:
       'Get Voucha-wide counts: topics, enabled RSS feeds, public posts, reviews, data points and trusted hostnames. The counts are cached for a short time, so they can trail the database slightly.',
     parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

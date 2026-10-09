@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -10,12 +10,10 @@ type ToolArgs = {
 
 type ToolResult = { success: true; post: McpPost } | { success: false; error: string }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_post',
-    type: 'function',
     description:
-      'Get one post, comment or story post by its UUID or slug. Only public content is readable: a private, pending, deleted, missing or otherwise hidden post returns { success: false, error: "Post not found" }. A comment is readable only when its whole thread is. Use get_post_ancestors to walk up a thread and get_post_descendants to read its replies.',
+      'Get one post, comment or story post by its UUID or slug. Only public content is readable: a private, pending, deleted, missing or otherwise hidden post returns { success: false, error: "Post not found" }. A comment is readable only when its whole thread is. Use read_posts (option ancestors) to walk up a thread and read_posts (option descendants) to read its replies.',
     parameters: {
       type: 'object',
       properties: {
@@ -23,7 +21,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['post_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

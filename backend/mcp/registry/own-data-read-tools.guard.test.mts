@@ -1,24 +1,25 @@
-import { createFollowNotification, listNotifications } from '@services/notifications'
-import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  optionArgs,
   callRejectedMcpTool,
   callStructuredMcpTool,
   expectMcpToolFunctionThrows,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import { createFollowNotification, listNotifications } from '@services/notifications'
+import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
 
 const NOTIFICATIONS = ['notifications:read'] as const
 const OWN_DATA_TOOLS = [
-  'get_my_notifications',
-  'get_my_unread_notifications',
-  'get_my_bio',
-  'get_my_profile_links',
-  'get_my_email_preferences',
-  'get_my_preferences',
+  ['read_my_notifications', 'list'],
+  ['read_my_notifications', 'unread'],
+  ['read_my_profile', 'bio'],
+  ['read_my_profile', 'links'],
+  ['read_my_preferences', 'email'],
+  ['read_my_preferences', 'general'],
 ] as const
 
 async function callerWithNotification() {
@@ -30,19 +31,17 @@ async function callerWithNotification() {
 
 describe('own-data read tools, guards — real DB', () => {
   it.each(OWN_DATA_TOOLS)(
-    '%s refuses a caller whose account was deleted after its credential was issued',
-    async name => {
+    '%s.%s refuses a caller whose account was deleted after its credential was issued',
+    async (name, option) => {
       // The notification row outlives the account, so reading by id alone would still return it.
       const { caller } = await callerWithNotification()
       await softDeleteUser(caller.id)
       expect((await listNotifications(caller.id)).results).toHaveLength(1)
 
-      await expectMcpToolFunctionThrows(
-        caller,
-        name,
-        {},
-        { status: 401, message: 'Tool current user not found' },
-      )
+      await expectMcpToolFunctionThrows(caller, name, optionArgs(option, {}), {
+        status: 401,
+        message: 'Tool current user not found',
+      })
     },
   )
 
@@ -50,9 +49,14 @@ describe('own-data read tools, guards — real DB', () => {
     const { caller } = await callerWithNotification()
     await softDeleteUser(caller.id)
 
-    expect(await callRejectedMcpTool(caller, 'get_my_notifications', {}, NOTIFICATIONS)).toContain(
-      'Tool current user not found',
-    )
+    expect(
+      await callRejectedMcpTool(
+        caller,
+        'read_my_notifications',
+        optionArgs('list', {}),
+        NOTIFICATIONS,
+      ),
+    ).toContain('Tool current user not found')
   })
 
   it('leaves out the frontend route REST adds to a notification and keeps the structured target', async () => {
@@ -65,8 +69,13 @@ describe('own-data read tools, guards — real DB', () => {
     const restRecord = route.notifications[notificationId]!
 
     expect(restRecord['target_path']).toEqual(expect.any(String))
-    for (const name of ['get_my_notifications', 'get_my_unread_notifications']) {
-      const tool = (await callStructuredMcpTool(caller, name, {}, NOTIFICATIONS)) as {
+    for (const option of ['list', 'unread'] as const) {
+      const tool = (await callStructuredMcpTool(
+        caller,
+        'read_my_notifications',
+        optionArgs(option, {}),
+        NOTIFICATIONS,
+      )) as {
         notifications: Record<string, Body>
       }
       const record = tool.notifications[notificationId]!
@@ -82,10 +91,20 @@ describe('own-data read tools, guards — real DB', () => {
     const { caller } = await callerWithNotification()
 
     expect(
-      await callStructuredMcpTool(caller, 'get_my_notifications', {}, NOTIFICATIONS),
+      await callStructuredMcpTool(
+        caller,
+        'read_my_notifications',
+        optionArgs('list', {}),
+        NOTIFICATIONS,
+      ),
     ).toMatchObject({ success: true })
     expect(
-      await callStructuredMcpTool(caller, 'get_my_notifications', { after: '' }, NOTIFICATIONS),
+      await callStructuredMcpTool(
+        caller,
+        'read_my_notifications',
+        optionArgs('list', { after: '' }),
+        NOTIFICATIONS,
+      ),
     ).toEqual({ success: false, error: 'Invalid cursor' })
   })
 })

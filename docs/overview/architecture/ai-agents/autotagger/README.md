@@ -52,7 +52,7 @@ per service in `ai-model-routing`), and it answers with facts only. `agent-run.m
 (`executeAutotaggerAgentRun`) runs the leased run; `agent-loop.mts` is the loop, `agent-tools.mts`
 its two tools and `agent-instructions.mts` the prompt.
 
-- **The agent:** each turn the model must call a tool. `search_topics` looks topics up by text
+- **The agent:** each turn the model must call a tool. `discover_topics(search)` looks topics up by text
   (marking which hits are candidates); `submit_topics` ends the run with the candidate ids that are
   true of the content, or an empty list. Submitted ids are checked against the run's captured
   candidates, so nothing outside the set can be tagged. There is no probability, threshold,

@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { updateUser } from '@services/users'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -7,18 +8,14 @@ import {
   type SettingsToolArgs,
 } from './preference-tool-support.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
 type UpdateMyPreferencesResult = { success: true; settings: ReturnType<typeof pickSettings> }
 
-const tool: Tool<SettingsToolArgs, UpdateMyPreferencesResult> = {
+const tool: MergedToolSource<SettingsToolArgs, UpdateMyPreferencesResult> = {
   schema: {
-    name: 'update_my_preferences',
-    type: 'function',
     description:
       "Change the current user's privacy and posting settings: who can see their follows, followers, likes and community memberships, who can message them, the default audience and privacy of new posts, country, interface locale and Hacker News discussions. Only the fields sent change, and every current setting is returned. Financial-data visibility, consents, federation and the username cannot be changed here.",
     parameters: SETTINGS_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

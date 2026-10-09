@@ -28,9 +28,10 @@ export function buildToolResult(
   toolName: string,
   result: unknown,
   outputSchema: ToolOutputSchema | undefined,
+  selectedOutputSchema?: ToolOutputSchema,
 ): CallToolResult {
   const response = outputSchema
-    ? buildStructuredResponse(toolName, result, outputSchema)
+    ? buildStructuredResponse(toolName, result, outputSchema, selectedOutputSchema)
     : { content: [{ type: 'text' as const, text: serializeMcpToolResult(result) }] }
   if (Buffer.byteLength(JSON.stringify(response), 'utf8') > MAX_MCP_TOOL_RESULT_BYTES) {
     throw new McpToolResultTooLargeError('Tool response exceeds the MCP response limit')
@@ -42,11 +43,20 @@ function buildStructuredResponse(
   toolName: string,
   result: unknown,
   outputSchema: ToolOutputSchema,
+  selectedOutputSchema?: ToolOutputSchema,
 ): CallToolResult {
   // The JSON goes out twice, and the escaped text copy is never smaller than the JSON itself, so
   // a result over half the bound cannot fit. Rejecting it here skips the parse and validation.
   const text = serializeMcpToolResult(result, MAX_MCP_TOOL_RESULT_BYTES / 2)
   const structuredContent = JSON.parse(text) as Record<string, unknown>
+  if (selectedOutputSchema) {
+    const selectedViolation = findSchemaViolation(selectedOutputSchema, structuredContent)
+    if (selectedViolation) {
+      throw new McpToolOutputMismatchError(
+        `${toolName} returned a result that does not match its selected output schema: ${selectedViolation}`,
+      )
+    }
+  }
   const violation = findSchemaViolation(outputSchema, structuredContent)
   if (violation) {
     throw new McpToolOutputMismatchError(

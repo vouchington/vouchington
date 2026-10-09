@@ -62,8 +62,8 @@ stay available.
 
 ## MCP tools
 
-Six MCP-only tools (`create_referral_link`, `update_referral_link`, `delete_referral_link`,
-`activate_referral_link`, `deactivate_referral_link`, `request_referral_link_unfurl`) run the same
+Six MCP-only tools (`create_referral_link`, `update_referral_link`, `remove_referral_link(link)`,
+`activate_referral_link`, `remove_referral_link(activation)`, `request_referral_link_unfurl`) run the same
 service commands as the owner routes above, so ownership, administrator access to another user's
 links, the child-link rule, link validation and the paid unfurl gate are identical. They need the
 `referral-links:read` and `referral-links:write` scopes and a Plus plan, and refuse a suspended

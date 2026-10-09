@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { isUUID } from '@modules/utils'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
@@ -12,7 +13,6 @@ import {
   currentUserCanViewLatestRssFeedCrawl,
 } from '@services/rss-feeds/authorization'
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import createHttpError from 'http-errors'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
@@ -65,10 +65,8 @@ function toSummary(row: { id: string; response_code: number; created_at: Date })
   }
 }
 
-export const listRssFeedCrawlsTool: Tool<ListArgs, ListResult> = {
+export const listRssFeedCrawlsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    name: 'list_rss_feed_crawls',
-    type: 'function',
     description:
       'List crawl summaries for an RSS feed. REST requires a premium membership or administrator role. Returns at most 100 per page with page_info.end_cursor for the next page.',
     parameters: {
@@ -80,7 +78,6 @@ export const listRssFeedCrawlsTool: Tool<ListArgs, ListResult> = {
       },
       required: ['rss_feed_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -112,10 +109,8 @@ export const listRssFeedCrawlsTool: Tool<ListArgs, ListResult> = {
     },
 }
 
-export const getRssFeedCrawlTool: Tool<DetailArgs, DetailResult> = {
+export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
   schema: {
-    name: 'get_rss_feed_crawl',
-    type: 'function',
     description:
       'Get one RSS feed crawl. Premium callers receive only the REST paid summary; administrators may also receive raw feed data, fenced as external content.',
     parameters: {
@@ -126,7 +121,6 @@ export const getRssFeedCrawlTool: Tool<DetailArgs, DetailResult> = {
       },
       required: ['rss_feed_id', 'crawl_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

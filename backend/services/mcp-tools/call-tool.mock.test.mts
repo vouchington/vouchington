@@ -12,9 +12,10 @@ import {
   MAX_MCP_TOOL_RESULT_BYTES,
   MAX_MCP_TOOL_RESULT_VISITS,
 } from './serialize-mcp-tool-result.mts'
+import { optionArgs } from '../../test-helpers/mcp-tool-contract.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
 
-const TOOL_NAME = 'get_trending_topics'
+const TOOL_NAME = 'discover_topics'
 
 function stubToolFunction(
   run: (args: unknown, context?: ToolInvocationContext) => Promise<unknown>,
@@ -60,7 +61,8 @@ describe('callMcpTool result errors', () => {
     restoreOutputSchemas()
   })
 
-  const call = () => callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+  const call = () =>
+    callMcpTool(TOOL_NAME, optionArgs('search'), user, ['topics:read'], USER_MCP_SERVER_CONFIG)
 
   it.each([
     ['byte', () => ({ value: 'x'.repeat(MAX_MCP_TOOL_RESULT_BYTES + 1) })],
@@ -131,13 +133,19 @@ describe('callMcpTool result errors', () => {
       return {}
     })
 
-    await callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+    await callMcpTool(
+      TOOL_NAME,
+      optionArgs('search'),
+      user,
+      ['topics:read'],
+      USER_MCP_SERVER_CONFIG,
+    )
 
     expect(received).toEqual([{ credentialOwnerId: user.id, grantedScopes: ['topics:read'] }])
   })
 })
 
-// get_my_cards keeps its output schema; get_trending_topics is made text-only where a test needs one.
+// get_my_cards keeps its output schema; discover_topics is made text-only where a test needs one.
 describe('callMcpTool structured output', () => {
   const STRUCTURED_TOOL = 'get_my_cards'
   const GENERIC_FAILURE = 'Tool execution failed. Please try again.'
@@ -163,7 +171,13 @@ describe('callMcpTool structured output', () => {
     callMcpTool(STRUCTURED_TOOL, {}, user, ['cards:read'], USER_MCP_SERVER_CONFIG)
   const callPlain = () => {
     makeTextOnly()
-    return callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+    return callMcpTool(
+      TOOL_NAME,
+      optionArgs('search'),
+      user,
+      ['topics:read'],
+      USER_MCP_SERVER_CONFIG,
+    )
   }
 
   it('returns structured content equal to the JSON in the text block', async () => {

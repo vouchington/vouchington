@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getTrendingReferralPrograms } from '@services/trending-referral-programs'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   pageInputProperties,
@@ -26,17 +26,14 @@ type ToolResult = McpPage<TrendingReferralProgramEntry> | InvalidCursorResult
 
 const { default: defaultLimit, max } = TRENDING_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_trending_referral_programs',
-    type: 'function',
-    description: `List the referral programs that gained the most active referral links in the last 30 days. Each result is the referral program's topic id with its trending score and link count; use get_topic_details for the program itself and get_referral_links for its links. Returns at most ${max} programs per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description: `List the referral programs that gained the most active referral links in the last 30 days. Each result is the referral program's topic id with its trending score and link count; use read_topic (option details) for the program itself and get_referral_links for its links. Returns at most ${max} programs per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Referral programs', TRENDING_PAGE_LIMIT),
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

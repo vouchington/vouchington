@@ -1,4 +1,5 @@
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import type { ApiScope } from '@modules/scopes'
 import type { McpCallAuditEvent } from './audit.mts'
 import type { McpServerConfig } from './config.mts'
@@ -117,10 +118,17 @@ function classifyMessage(
     return uncharged({ jsonrpcMethod: method, toolName: null, outcome: 'not_found' })
   }
   if (resolution.status !== 'allowed') {
-    return uncharged({ jsonrpcMethod: method, toolName: name, outcome: resolution.status })
+    const option = getRegisteredToolByName(name)?.meta?.auditOption?.(args ?? {}) ?? undefined
+    return uncharged({
+      jsonrpcMethod: method,
+      toolName: name,
+      outcome: resolution.status,
+      ...(option === undefined ? {} : { option }),
+    })
   }
   const callArguments = args ?? {}
   const invalidArguments = validateToolArguments(resolution.tool.schema.parameters, callArguments)
+  const selectedOption = resolution.tool.meta?.auditOption?.(callArguments) ?? null
   const copyrightRationale =
     !invalidArguments &&
     resolution.tool.meta?.switch === 'copyright.mcpDecisionTools' &&
@@ -136,6 +144,7 @@ function classifyMessage(
       jsonrpcMethod: method,
       toolName: name,
       outcome: invalidArguments ? 'invalid_arguments' : 'accepted',
+      ...(selectedOption === null ? {} : { option: selectedOption }),
       ...(copyrightRationale === undefined ? {} : { copyrightRationale }),
     },
     charge: requestId !== null && routeKeys.length > 0 ? { requestId, routeKeys } : null,

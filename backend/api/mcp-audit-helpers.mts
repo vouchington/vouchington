@@ -14,8 +14,8 @@ export type McpRequestAudit = {
   // call never runs.
   record: (events: readonly McpCallAuditEvent[]) => Promise<void>
   // Best effort, after the call has already run: a lost follow-up row must not fail its response.
-  recordToolError: (toolName: string) => Promise<void>
-  recordToolRateLimit: (toolName: string) => Promise<void>
+  recordToolError: (toolName: string, option?: string) => Promise<void>
+  recordToolRateLimit: (toolName: string, option?: string) => Promise<void>
 }
 
 // A rejection that happens before any JSON-RPC message is read has no method or tool to name.
@@ -43,19 +43,29 @@ export function startMcpRequestAudit(
         ctx.throw(503, 'Audit log unavailable')
       }
     },
-    async recordToolError(toolName) {
+    async recordToolError(toolName, option) {
       try {
         await recordMcpCallAudit(context, [
-          { jsonrpcMethod: 'tools/call', toolName, outcome: 'tool_error' },
+          {
+            jsonrpcMethod: 'tools/call',
+            toolName,
+            ...(option === undefined ? {} : { option }),
+            outcome: 'tool_error',
+          },
         ])
       } catch (err) {
         onError(err instanceof Error ? err : new Error(String(err)))
       }
     },
-    async recordToolRateLimit(toolName) {
+    async recordToolRateLimit(toolName, option) {
       try {
         await recordMcpCallAudit(context, [
-          { jsonrpcMethod: 'tools/call', toolName, outcome: 'rate_limited' },
+          {
+            jsonrpcMethod: 'tools/call',
+            toolName,
+            ...(option === undefined ? {} : { option }),
+            outcome: 'rate_limited',
+          },
         ])
       } catch (err) {
         onError(err instanceof Error ? err : new Error(String(err)))

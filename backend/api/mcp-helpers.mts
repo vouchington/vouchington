@@ -144,9 +144,9 @@ export async function dispatchMcpRequest(
         clientIp: ctx.ip,
         rateLimitedCalls,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
-        onToolRateLimited: async (toolName, messageIndex) => {
+        onToolRateLimited: async (toolName, messageIndex, option) => {
           usage.markRateLimited(messageIndex)
-          await audit?.recordToolRateLimit(toolName)
+          await audit?.recordToolRateLimit(toolName, option)
         },
       })
     },

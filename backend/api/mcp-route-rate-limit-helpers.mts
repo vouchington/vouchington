@@ -32,8 +32,13 @@ export async function chargeMcpToolCalls(
       rateLimitedCalls.set(eventIndex, result.retryAfterSeconds)
       // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted
       // call) is not carried onto the row.
-      const { jsonrpcMethod, toolName } = plan.events[eventIndex] as McpCallAuditEvent
-      events[eventIndex] = { jsonrpcMethod, toolName, outcome: 'rate_limited' }
+      const { jsonrpcMethod, toolName, option } = plan.events[eventIndex] as McpCallAuditEvent
+      events[eventIndex] = {
+        jsonrpcMethod,
+        toolName,
+        ...(option === undefined ? {} : { option }),
+        outcome: 'rate_limited',
+      }
       break
     }
   }

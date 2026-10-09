@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey } from '@services/api-keys'
 import { createProfileLink } from '@services/my/profile-links'
@@ -30,12 +31,9 @@ const ALL = [
   'topic-recommendations:read',
 ] as const
 const TOOLS = [
-  'get_my_notifications',
-  'get_my_unread_notifications',
-  'get_my_bio',
-  'get_my_profile_links',
-  'get_my_email_preferences',
-  'get_my_preferences',
+  'read_my_notifications',
+  'read_my_profile',
+  'read_my_preferences',
   'list_my_topic_recommendations',
 ]
 
@@ -106,12 +104,12 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
     })
     const token = await issueCredential(kind, owner, ALL)
 
-    const page = await readTool(token, 'get_my_notifications')
-    const unread = await readTool(token, 'get_my_unread_notifications')
-    const bio = await readTool(token, 'get_my_bio')
-    const links = await readTool(token, 'get_my_profile_links')
-    const emailPreferences = await readTool(token, 'get_my_email_preferences')
-    const preferences = await readTool(token, 'get_my_preferences')
+    const page = await readTool(token, 'read_my_notifications', optionArgs('list', {}))
+    const unread = await readTool(token, 'read_my_notifications', optionArgs('unread', {}))
+    const bio = await readTool(token, 'read_my_profile', optionArgs('bio', {}))
+    const links = await readTool(token, 'read_my_profile', optionArgs('links', {}))
+    const emailPreferences = await readTool(token, 'read_my_preferences', optionArgs('email', {}))
+    const preferences = await readTool(token, 'read_my_preferences', optionArgs('general', {}))
     const recommendations = await readTool(token, 'list_my_topic_recommendations')
 
     expect(page).toMatchObject({
@@ -138,8 +136,7 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
       TOOLS.toSorted(),
     )
     expect(await listToolNames(await issueCredential(kind, user, ['notifications:read']))).toEqual([
-      'get_my_notifications',
-      'get_my_unread_notifications',
+      'read_my_notifications',
     ])
     expect(await listToolNames(await issueCredential(kind, user, ['hostnames:read']))).toEqual([])
   })
@@ -148,7 +145,9 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
     const user = await createTestUser()
     const token = await issueCredential(kind, user, ['notifications:read'])
 
-    const response = await callTool(token, 'get_my_bio').expect(kind === 'oauth' ? 403 : 200)
+    const response = await callTool(token, 'read_my_profile', optionArgs('bio', {})).expect(
+      kind === 'oauth' ? 403 : 200,
+    )
 
     expect((response.body as ToolCallBody).result?.structuredContent).toBeUndefined()
   })
@@ -156,9 +155,9 @@ describe('own profile, notification and preference read tools over MCP HTTP', ()
   it.each(KINDS)('%s is rejected once its owner is suspended', async kind => {
     const user = await createTestUser()
     const token = await issueCredential(kind, user, ALL)
-    await readTool(token, 'get_my_bio')
+    await readTool(token, 'read_my_profile', optionArgs('bio', {}))
     await suspendTestUser(user.id)
 
-    await callTool(token, 'get_my_bio').expect(401)
+    await callTool(token, 'read_my_profile', optionArgs('bio', {})).expect(401)
   })
 })

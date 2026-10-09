@@ -14,7 +14,7 @@ import {
 import type { BasicUser, PrivateUser } from '@services/users/types'
 import { randomUUID } from 'node:crypto'
 
-describe('get_my_profile tool — real DB', () => {
+describe('read_my_profile.overview tool — real DB', () => {
   let user: PrivateUser
 
   beforeAll(async () => {

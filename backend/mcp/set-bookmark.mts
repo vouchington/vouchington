@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { upsertBookmarkAction } from '@services/entity-relation-actions'
 import {
@@ -8,7 +9,7 @@ import {
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 
 type SetBookmarkResult = {
   success: true
@@ -21,14 +22,11 @@ type SetBookmarkResult = {
   }
 }
 
-const tool: Tool<BookmarkToolArgs, SetBookmarkResult> = {
+const tool: MergedToolSource<BookmarkToolArgs, SetBookmarkResult> = {
   schema: {
-    name: 'set_bookmark',
-    type: 'function',
     description:
       "Save, follow, mute, or block an entity for the current user. Setting a relation that already exists changes nothing. Muting or blocking a topic, user or feed also removes the user's follow of it. A post is only available if the user can see it; the user's own private posts additionally need the private-post consent scope.",
     parameters: BOOKMARK_TOOL_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

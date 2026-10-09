@@ -7,7 +7,7 @@ import { updateEntityRelationElection } from '@voucha/test-helpers/entities/user
 import type { PrivateUser } from '@services/users/types'
 import { VALID_TRENDING_POST_TYPES, VALID_TRENDING_TIME_RANGES } from '@ts-shared/feed-capabilities'
 
-describe('get_trending_posts tool — real DB', () => {
+describe('read_posts.trending tool — real DB', () => {
   let user: PrivateUser
   let trendingPostId: string
 

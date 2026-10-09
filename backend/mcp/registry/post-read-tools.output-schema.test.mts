@@ -1,3 +1,4 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
 import { assertMcpLocalSchemaRefs } from '../../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
@@ -80,7 +81,7 @@ describe('post and story read tool output schemas', () => {
   })
 
   it.each([
-    ['get_post_descendants', getPostDescendantsTool],
+    ['read_posts', getPostDescendantsTool],
     ['get_story', getStoryTool],
   ])('takes the page info of %s from the PageInfo contract', (_name, tool) => {
     const found = propertiesOf(branches(tool)[0]!)
@@ -93,15 +94,15 @@ describe('post and story read tool output schemas', () => {
   })
 
   it.each([
-    ['get_post', getPostTool, ['post']],
-    ['get_post_ancestors', getPostAncestorsTool, ['ancestors']],
-    ['get_post_descendants', getPostDescendantsTool, ['descendants', 'page_info']],
+    ['read_posts', getPostTool, ['post']],
+    ['read_posts', getPostAncestorsTool, ['ancestors']],
+    ['read_posts', getPostDescendantsTool, ['descendants', 'page_info']],
     ['get_story', getStoryTool, ['story', 'items', 'page_info']],
   ] as const)('publishes %s as a found-or-not-found object', (name, tool, fields) => {
     const schema = tool.meta?.outputSchema as JsonSchema
     const [found, notFound] = branches(tool)
 
-    expect(tool.schema.name).toBe(name)
+    expect(getRegisteredToolByName(name)?.schema.name).toBe(name)
     expect(schema['type']).toBe('object')
     expect(Object.keys(propertiesOf(found!))).toEqual(['success', ...fields])
     expect(found!['required']).toEqual(['success', ...fields])
@@ -114,9 +115,9 @@ describe('post and story read tool output schemas', () => {
   })
 
   it.each([
-    ['get_post', getPostTool, '/api/v1/posts/{idOrSlug}'],
-    ['get_post_ancestors', getPostAncestorsTool, '/api/v1/posts/{idOrSlug}/ancestors'],
-    ['get_post_descendants', getPostDescendantsTool, '/api/v1/posts/{idOrSlug}/descendants'],
+    ['read_posts', getPostTool, '/api/v1/posts/{idOrSlug}'],
+    ['read_posts', getPostAncestorsTool, '/api/v1/posts/{idOrSlug}/ancestors'],
+    ['read_posts', getPostDescendantsTool, '/api/v1/posts/{idOrSlug}/descendants'],
     ['get_story', getStoryTool, '/api/v1/stories/{id}'],
   ] as const)('names the documented REST twin of %s', (_name, tool, path) => {
     const [endpoint] = tool.meta?.api ?? []
@@ -126,9 +127,9 @@ describe('post and story read tool output schemas', () => {
   })
 
   it.each([
-    ['get_post', getPostTool],
-    ['get_post_ancestors', getPostAncestorsTool],
-    ['get_post_descendants', getPostDescendantsTool],
+    ['read_posts', getPostTool],
+    ['read_posts', getPostAncestorsTool],
+    ['read_posts', getPostDescendantsTool],
     ['get_story', getStoryTool],
   ] as const)('reads with the posts:read scope and declares %s read-only', (_name, tool) => {
     expect(tool.meta?.requiredScopes).toEqual({ mcp: ['posts:read'] })

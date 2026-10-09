@@ -32,7 +32,7 @@ type PostSearchFilterOptions = {
   time_range?: TimeRange // Time range filter (default: '1w' for feeds, 'all' for search)
   exclude_for_user_id?: string // Exclude muted/blocked hostnames, topics, and users for this user
   // Judge every candidate as a signed-out reader would, whoever `currentUser` is, so private data
-  // stays out of the results even for its owner or an administrator. Only MCP `search_posts` sets it:
+  // stays out of the results even for its owner or an administrator. Only MCP `read_posts(search)` sets it:
   // it must stay aligned with `resolveReadableThread` in backend/mcp/mcp-post-access.mts.
   // Viewer-keyed filters (`exclude_for_user_id`, the `following_new` join) still follow `currentUser`.
   public_eligibility_only?: boolean

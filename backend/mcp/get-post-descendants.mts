@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import {
   COMMENT_DESCENDANTS_LIMIT,
   getCommentDescendantsPage,
@@ -7,7 +8,6 @@ import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import type { Post } from '@services/posts'
 import type { BasicUser } from '@services/users/types'
 import createHttpError from 'http-errors'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
@@ -25,10 +25,8 @@ type ToolResult =
 
 const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_post_descendants',
-    type: 'function',
     description: `Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_post_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }. A page too large to return is refused, so lower the limit and try again.`,
     parameters: {
       type: 'object',
@@ -44,7 +42,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['post_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

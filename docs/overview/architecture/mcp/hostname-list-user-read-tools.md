@@ -7,15 +7,15 @@ description and scopes; the [agent tools overview](README.md) covers metadata an
 the [post, story and community read tools](../services/mcp-tools/read-tools.md) share the result
 shape and paging rules described here.
 
-| Tool                | REST twin                     | Scope            | Arguments                                                                     |
-| ------------------- | ----------------------------- | ---------------- | ----------------------------------------------------------------------------- |
-| `search_hostnames`  | `GET /api/v1/hostnames`       | `hostnames:read` | `query`, `hostname`, `topic` (UUID or slug), `sort` (trust), `limit`, `after` |
-| `get_top_hostnames` | `GET /api/v1/hostnames/top`   | `hostnames:read` | `topic` (UUID or slug), `limit`, `after`                                      |
-| `get_my_lists`      | `GET /api/v1/lists`           | `lists:read`     | `limit`, `after`                                                              |
-| `get_list`          | `GET /api/v1/lists/:id`       | `lists:read`     | `list_id`                                                                     |
-| `get_list_items`    | `GET /api/v1/lists/:id/items` | `lists:read`     | `list_id`, `media_type`, `limit`, `after`                                     |
-| `get_user`          | `GET /api/v1/users/:idOrSlug` | `users:read`     | `user_id` (UUID or username)                                                  |
-| `search_users`      | `GET /api/v1/users`           | `users:read`     | `q`, `limit`, `after`                                                         |
+| Tool                     | REST twin                     | Scope            | Arguments                                                                     |
+| ------------------------ | ----------------------------- | ---------------- | ----------------------------------------------------------------------------- |
+| `read_hostnames(search)` | `GET /api/v1/hostnames`       | `hostnames:read` | `query`, `hostname`, `topic` (UUID or slug), `sort` (trust), `limit`, `after` |
+| `read_hostnames(top)`    | `GET /api/v1/hostnames/top`   | `hostnames:read` | `topic` (UUID or slug), `limit`, `after`                                      |
+| `read_my_lists(list)`    | `GET /api/v1/lists`           | `lists:read`     | `limit`, `after`                                                              |
+| `read_my_lists(get)`     | `GET /api/v1/lists/:id`       | `lists:read`     | `list_id`                                                                     |
+| `read_my_lists(items)`   | `GET /api/v1/lists/:id/items` | `lists:read`     | `list_id`, `media_type`, `limit`, `after`                                     |
+| `read_users(details)`    | `GET /api/v1/users/:idOrSlug` | `users:read`     | `user_id` (UUID or username)                                                  |
+| `read_users(search)`     | `GET /api/v1/users`           | `users:read`     | `q`, `limit`, `after`                                                         |
 
 `hostnames:read` and `users:read` are resource scopes covered by the `mcp.user:read` umbrella
 ([scope policy](../backend/modules/scopes/README.md)); `lists:read` already gated the list write
@@ -33,8 +33,8 @@ Both hostname tools read as a signed-out reader for every caller, so an administ
 hostname never appears, even to an administrator, and no moderation filter or viewer sidecar is
 reachable. Each result is `{ id, hostname, topic_id, election }`, where `election` holds the public
 trust vote totals (`votes_count_up`, `votes_count_down`, `votes_score_net`) or is `null`. A `topic`
-that does not exist returns an empty page. `search_hostnames` sorts by hostname, or by net trust
-votes with `sort: "trust"`; `get_top_hostnames` lists hostnames with at least one trust vote up.
+that does not exist returns an empty page. `read_hostnames(search)` sorts by hostname, or by net trust
+votes with `sort: "trust"`; `read_hostnames(top)` lists hostnames with at least one trust vote up.
 
 ## Lists
 
@@ -43,17 +43,17 @@ list is readable only by its owner, and only when the credential also holds the 
 `post-relations.owned-private:write`, the consent the entity-relation write tools already demand
 before they touch an owner's private post. The grant is `requiresExactGrant`, so `mcp.user:write`
 and `lists:read` never satisfy it, and a credential that carries it also needs
-`entity-relations:read` and `entity-relations:write`. Without the grant `get_my_lists` leaves
+`entity-relations:read` and `entity-relations:write`. Without the grant `read_my_lists(list)` leaves
 private lists out of the page and its cursor as if they did not exist.
 
 Every denial is the same `{ success: false, error: "List not found" }`: another user's private
 list, a private list read without the grant, a removed list, an unknown id and a malformed id
 cannot be told apart. `loadReadableList` (`backend/mcp/list-read-access.mts`) decides this for
-`get_list` and `get_list_items`, and `hasOwnedPrivateGrant` answers false instead of throwing, so a
+`read_my_lists(get)` and `read_my_lists(items)`, and `hasOwnedPrivateGrant` answers false instead of throwing, so a
 read never reveals which condition failed.
 
-`get_list_items` returns post and RSS feed items with the `item_type` and `entity_id` to read them
-with. Each post goes through `resolveReadableThread`, the policy `get_post` uses, so a private,
+`read_my_lists(items)` returns post and RSS feed items with the `item_type` and `entity_id` to read them
+with. Each post goes through `resolveReadableThread`, the policy `read_posts(details)` uses, so a private,
 deleted or hidden post is left out and a public list is never a way around a private post. A page
 can therefore hold fewer items than `limit` while `page_info.has_next_page` is still true; keep
 paging until it is false. List descriptions are wrapped with `wrapExternalContent` and names are
@@ -66,8 +66,8 @@ another user and an administrator all see `{ id, username, markdown, verificatio
 is_verified_badge_visible, verified_display_name, account_type }` and nothing else, never an
 email address, phone number or suspension. `account_type` is `official`, `system`, `ai_agent` or
 `null` for an ordinary member, derived once in `view_embedded_users`. A deleted or unknown user is
-`{ success: false, error: "User not found" }`. `get_user` takes a UUID or a username (case
+`{ success: false, error: "User not found" }`. `read_users(details)` takes a UUID or a username (case
 insensitive) and refuses an email address or phone number as an invalid identifier. The verified
-name appears only while the user shows the verified badge. `search_users` matches the start of a
+name appears only while the user shows the verified badge. `read_users(search)` matches the start of a
 username, A to Z, treats a LIKE wildcard as plain text, and returns nothing for a blank query, an
 email address or an id. The bio is wrapped with `wrapExternalContent`.

@@ -1,17 +1,14 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { markAllNotificationsRead } from '@services/notifications'
 import type { BasicUser } from '@services/users/types'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
-const tool: Tool<Record<string, never>, { success: true; marked_read: number }> = {
+const tool: MergedToolSource<Record<string, never>, { success: true; marked_read: number }> = {
   schema: {
-    name: 'mark_all_notifications_read',
-    type: 'function',
     description:
       "Mark all of the current user's unread notifications as read, and report how many changed. Notifications that are already read or deleted are left alone.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

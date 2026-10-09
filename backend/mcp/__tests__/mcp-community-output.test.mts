@@ -1,6 +1,10 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
@@ -12,7 +16,10 @@ describe('MCP public community database failure', () => {
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(
       '/* getCommunityWithViewerById */',
-      () => callRejectedMcpTool(caller, 'get_community', args, ['communities:read']),
+      () =>
+        callRejectedMcpTool(caller, 'read_community', optionArgs('details', args), [
+          'communities:read',
+        ]),
     )
 
     expect(result).toBe('Tool execution failed. Please try again.')
@@ -20,7 +27,9 @@ describe('MCP public community database failure', () => {
       true,
     )
     expect(
-      await callStructuredMcpTool(caller, 'get_community', args, ['communities:read']),
+      await callStructuredMcpTool(caller, 'read_community', optionArgs('details', args), [
+        'communities:read',
+      ]),
     ).toMatchObject({ success: true, community: { id: community.id } })
   })
 })

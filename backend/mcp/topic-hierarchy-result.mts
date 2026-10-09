@@ -25,7 +25,7 @@ export type TopicHierarchyResult = {
   }
 }
 
-/** The hierarchy arguments of `get_topic_details`. Children are paged; parents are a short list. */
+/** The hierarchy arguments of `read_topic (option details)`. Children are paged; parents are a short list. */
 export const HIERARCHY_ARGUMENT_PROPERTIES = {
   hierarchy: {
     type: 'string',
@@ -53,7 +53,7 @@ const TOPIC_SUMMARY_SCHEMA = objectSchema({
   topic_type: componentPropertySchema('TopicBasic', 'topic_type'),
 })
 
-/** The optional hierarchy fields of the `get_topic_details` result. */
+/** The optional hierarchy fields of the `read_topic (option details)` result. */
 export const HIERARCHY_OUTPUT_PROPERTIES = {
   parents: { type: 'array', items: TOPIC_SUMMARY_SCHEMA },
   children: { type: 'array', items: TOPIC_SUMMARY_SCHEMA },
