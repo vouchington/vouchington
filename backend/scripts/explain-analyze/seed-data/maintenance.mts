@@ -70,6 +70,9 @@ export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
     'rss_feed_items',
+    'blocklisted_domains',
+    'domain_blocklist_sources',
+    'user_agent_strings',
     'post_topic_alias_sources',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',

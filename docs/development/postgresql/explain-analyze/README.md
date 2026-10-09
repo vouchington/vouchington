@@ -166,6 +166,17 @@ caps physical RSS candidate work at the scenario page size plus lookahead, count
 rechecked rows with their loops without summing ancestor result rows. Both prepared plan modes
 must pass; response-page timestamp formatting must preserve this index traversal.
 
+Round-trip-reduction scenarios cover the batched shapes the "Query round-trip reductions" milestone
+introduced: `community-with-viewer` (`getCommunityWithViewerBySlug` and `ById`),
+`hostname-policies-batch` (`getLocalHostnamePolicies`, `getFullHostnamePolicies`,
+`getBlocklistedDomainKeys`), `messaging-eligibility-batch` (`currentUserCanMessageUsers`),
+`copyright-staff-case-batch` (`getPendingCopyrightStaffCase:notice` and `:targets`) and
+`user-agent-read-first` (the leading `upsertUserAgentString` select). The seed adds 20,000
+URL-type `blocklisted_domains` rows and 5,000 `user_agent_strings` so a scan shows up. The harness
+rejects a plan that returns no rows, so the user-agent miss path and the copyright section
+statements that the development seed leaves empty are not captured; the DB-backed unit tests own
+those.
+
 Embedding reconciliation scenarios mark a sparse 100-item current-embedding cohort late in the
 25,000-item RSS seed. The RSS recovery service scans it with an opaque keyset cursor and a no-op
 queue boundary; its plan gate requires the pending partial index, an `id` index condition, `Limit`,

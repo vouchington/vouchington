@@ -818,5 +818,6 @@ Share a lookup when its columns describe the same value across sources. `user_ag
 stores each trimmed browser user-agent string once, capped at 1024 characters, with no source
 discriminator or `updated_at`. Sessions preserve an empty string for unknown agents and reference
 the lookup with `ON DELETE RESTRICT`; votes omit unknown agents and use `ON DELETE SET NULL`.
-`upsertUserAgentString` inserts without updating existing rows, then reads in a separate statement
-so concurrent first-use inserts are visible after the uniqueness conflict resolves.
+`upsertUserAgentString` reads first, because rows never change and a hit is final. Only on a miss
+does it insert without updating existing rows, then read again in a separate statement so
+concurrent first-use inserts are visible after the uniqueness conflict resolves.

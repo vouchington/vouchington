@@ -26,6 +26,7 @@ import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
+import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 
 async function main() {
@@ -50,6 +51,7 @@ async function main() {
     await runClassifierHumanVoteComparisonScenarios()
     await runCopyrightStatementFactsScenarios()
     await runEmbeddingReconciliationScenarios()
+    await runRoundTripShapeScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

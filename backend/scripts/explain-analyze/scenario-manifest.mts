@@ -181,4 +181,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'follower-distribution-rate-limit-rss_feed_item_share',
   'follower-distribution-rate-limit-rss_feed_item_send',
   'post-creation-moderation-bypass',
+  'community-with-viewer',
+  'hostname-policies-batch',
+  'messaging-eligibility-batch',
+  'copyright-staff-case-batch',
+  'user-agent-read-first',
 ] as const
