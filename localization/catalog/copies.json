@@ -3740,6 +3740,7 @@
 {"descriptor":null,"id":"copy.native.credentials.apiAudience"},
 {"descriptor":null,"id":"copy.native.credentials.catalogLoadFailed"},
 {"descriptor":null,"id":"copy.native.credentials.chooseScopes"},
+{"descriptor":null,"id":"copy.native.credentials.confirmRevokeGrant"},
 {"descriptor":null,"id":"copy.native.credentials.invalidSelection"},
 {"descriptor":null,"id":"copy.native.credentials.requires"},
 {"descriptor":null,"id":"copy.native.dotnet.auth.appleSignIn"},

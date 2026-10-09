@@ -6,6 +6,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_27 = [
   { key: 'native.credentials.apiAudience', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.catalogLoadFailed', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.chooseScopes', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.confirmRevokeGrant', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.connectedApps', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.grantActivity', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.grantRevoked', consumers: ['dotnet', 'swift'] },
