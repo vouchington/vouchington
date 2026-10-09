@@ -12,11 +12,11 @@ type JobLookupQueue = Pick<Queue, 'getJob'>
  * the failed set whatever `removeOnFail` says. A durable dispatcher that re-adds an attempt whose
  * token did not change would then be skipped on every pass.
  *
- * A skipped id is released only when its record is completed or failed, or already gone. A
- * waiting, prioritized, delayed, or active job is the canonical delivery of that attempt, including
- * a retry backing off or a deliberately delayed successor, so it is never touched. The durable
- * source row, not the queue, decides which attempts to dispatch; the caller's recovery page bounds
- * the lookups.
+ * A skipped id is released only when its record is completed or failed, or already gone (including
+ * trimmed by retention between the lookup and the state read). A waiting, prioritized, delayed, or
+ * active job is the canonical delivery of that attempt, including a retry backing off or a
+ * deliberately delayed successor, so it is never touched. The durable source row, not the queue,
+ * decides which attempts to dispatch; the caller's recovery page bounds the lookups.
  */
 export async function enqueueBulkReactivatingFinished<
   TInput,
@@ -49,8 +49,9 @@ async function releaseFinishedJobIds(
       const job = await queue.getJob(jobId, { excludeData: true })
       if (job) {
         const state = await job.getState()
-        if (state !== 'completed' && state !== 'failed') return
-        await job.remove()
+        if (state === 'completed' || state === 'failed') await job.remove()
+        // GlideMQ reports `unknown` when retention trimmed the record between the two reads.
+        else if (state !== 'unknown') return
       }
       released.add(jobId)
     }),

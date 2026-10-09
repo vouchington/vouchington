@@ -74,6 +74,22 @@ describe('user deletion lifecycle', () => {
     expect(stale?.processingAttemptId).not.toBe(unstarted.processingAttemptId)
   })
 
+  it('claims only the requested due requests', async () => {
+    const [owner, bystander] = await Promise.all([createTestUser(), createTestUser()])
+    const owned = await createUserDeletionRequest(owner.id, owner.id)
+    const other = await createUserDeletionRequest(bystander.id, bystander.id)
+    await makeUserDeletionRecoverableForTest(owned.id, 'unstarted')
+    await makeUserDeletionRecoverableForTest(other.id, 'unstarted')
+
+    await expect(claimRecoverableUserDeletions([owned.id])).resolves.toEqual([
+      { requestId: owned.id, processingAttemptId: owned.processingAttemptId },
+    ])
+    // The bystander was left due, so a second scoped claim still takes it.
+    await expect(claimRecoverableUserDeletions([other.id])).resolves.toEqual([
+      { requestId: other.id, processingAttemptId: other.processingAttemptId },
+    ])
+  })
+
   it('rotates the token after a terminal processing failure before recovery', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)

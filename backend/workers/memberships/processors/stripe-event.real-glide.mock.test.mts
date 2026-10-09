@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
 import type { ProcessStripeEventData } from '@queues/memberships/types'
 import { getStripeEventById, ingestStripeEvent } from '@services/stripe/events'
+import { claimRecoverableStripeEvents } from '@services/stripe/recovery'
 import { makeStripeEventRecoverableForTest } from '@voucha/test-helpers'
 import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 
@@ -23,7 +24,9 @@ describe('Stripe event recovery with a retained failed job under the lease token
       await expect((await memberships.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeStripeEventRecoverableForTest(stored.id, 'unstarted')
 
-      await recoverStripeEvents()
+      await recoverStripeEvents({
+        claimRecoverableStripeEvents: () => claimRecoverableStripeEvents([stored.id]),
+      })
 
       const redispatched = await memberships.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the event again')

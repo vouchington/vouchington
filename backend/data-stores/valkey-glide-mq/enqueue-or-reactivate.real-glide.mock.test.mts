@@ -112,6 +112,37 @@ describe('reactivating finished job records through real GlideMQ', () => {
     }
   })
 
+  it('adds an id whose record was trimmed between the lookup and the state read', async () => {
+    const harness = openHarness(async () => undefined)
+    const target = { id: randomUUID() }
+
+    try {
+      const firstRun = harness.settled(target.id)
+      await harness.add(target)
+      await firstRun
+
+      const rerun = harness.settled(target.id)
+      const added = await enqueueBulkReactivatingFinished({
+        // Retention trims the finished record right after the lookup read it.
+        queue: {
+          getJob: async (id, options) => {
+            const job = await harness.queue.getJob(id, options)
+            await job?.remove()
+            return job
+          },
+        },
+        inputs: [target],
+        jobIdOf: input => input.id,
+        enqueueBulk: harness.addBulk,
+      })
+      await rerun
+
+      expect(added.map(job => job.id)).toEqual([target.id])
+    } finally {
+      await harness.close()
+    }
+  })
+
   it('keeps an ordering group serialized when it reactivates a finished ordered job', async () => {
     const held = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { enqueueUserDeletion, userDeletionJobId } from '@queues/user-deletions/enqueues'
 import { userDeletions } from '@queues/user-deletions/queues'
-import { createUserDeletionRequest } from '@services/user-deletions'
+import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   getUserDeletionDispatchedAtForTest,
@@ -30,7 +30,9 @@ describe('user deletion recovery with a retained failed job under the attempt to
       await expect((await userDeletions.getJob(jobId))?.getState()).resolves.toBe('failed')
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
 
-      await recoverUserDeletions()
+      await recoverUserDeletions({
+        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
+      })
 
       const redispatched = await userDeletions.getJob(jobId)
       if (!redispatched) throw new Error('Expected recovery to dispatch the attempt again')
@@ -69,7 +71,9 @@ describe('user deletion recovery with a retained failed job under the attempt to
       await makeUserDeletionRecoverableForTest(request.id, 'unstarted')
       const staleDispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)
 
-      await recoverUserDeletions()
+      await recoverUserDeletions({
+        claimRecoverableUserDeletions: () => claimRecoverableUserDeletions([request.id]),
+      })
 
       // Recovery claimed the request, so it considered this exact token and left the job alone.
       const dispatchedAt = await getUserDeletionDispatchedAtForTest(request.id)
