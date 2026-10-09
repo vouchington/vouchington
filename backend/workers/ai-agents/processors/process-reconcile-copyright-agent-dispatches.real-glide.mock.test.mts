@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
@@ -10,6 +11,7 @@ import {
   issueCopyrightGuestCapability,
 } from '@services/copyright-notices'
 import { ai_agents } from '@queues/ai-agents/queues'
+import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
 
 // The real-Valkey project selects this suffix; keep the transport as the original module.
@@ -19,6 +21,8 @@ const jobId = (submissionId: string) => `copyright_submission_guidance_${submiss
 
 describe('copyright submission guidance backlog with new intake off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
+
+  afterAll(closeTestDataStores)
 
   it.each(['counter_notice', 'court_or_ccb_hold'] as const)(
     'reads a live %s gap from PostgreSQL and enqueues it through real GlideMQ',
@@ -62,18 +66,24 @@ describe('copyright submission guidance backlog with new intake off', () => {
         })
         submissionId = hold.id
       }
-      expect(await readTestPendingCopyrightAgentDispatches(submissionId)).toEqual([
-        { kind: 'submission-guidance', submissionId },
-      ])
-
       try {
+        expect(await readTestPendingCopyrightAgentDispatches(submissionId)).toEqual([
+          { kind: 'submission-guidance', submissionId },
+        ])
+        expect(await ai_agents.getJob(jobId(submissionId))).toBeNull()
+        const admittedSubmissionIds: string[] = []
         await processReconcileCopyrightAgentDispatches({
+          enqueueSubmissionGuidance: async id => {
+            await enqueueOrRetryCopyrightSubmissionGuidance(id)
+            admittedSubmissionIds.push(id)
+          },
           // The helper scopes the production PostgreSQL query to this test's submission.
           getPending: async () => ({
             results: await readTestPendingCopyrightAgentDispatches(submissionId),
             page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
           }),
         })
+        expect(admittedSubmissionIds).toEqual([submissionId])
         const job = await ai_agents.getJob(jobId(submissionId))
         expect(job?.name).toBe('copyright-submission-guidance')
         expect(job?.data).toEqual({ submission_id: submissionId })
@@ -82,6 +92,5 @@ describe('copyright submission guidance backlog with new intake off', () => {
         if (job) await job.remove()
       }
     },
-    60_000,
   )
 })
