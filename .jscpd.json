@@ -25,6 +25,7 @@
       "backend/scripts/seed-source/run.mts",
       "backend/types/lib-dom-absent.mts",
       "ci/transient-retry/rerun-known-transient.mts",
+      "ci/validate-vitest-cli-timeouts.mts",
       "dev/agent-issue-labels/batch-issues.mts",
       "dev/agent-issue-labels/labels-from-paths.mts",
       "dev/codex-hooks/persist-session-id.mts",
