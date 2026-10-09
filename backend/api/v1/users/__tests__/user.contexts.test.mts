@@ -7,13 +7,13 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
+import { withOwnedVouchStats } from '@voucha/test-helpers/user-vouch-vote-stats-admission'
 
 describe('User vouch-context route', () => {
   it('GET /api/v1/users/:id/vouch-context returns 401 for anonymous viewers', async () => {
     const target = await createTestUser()
     await createRequest().get(`/api/v1/users/${target.id}/vouch-context`).expect(401)
-  }, 60_000)
+  }, 30_000)
 
   it('GET /api/v1/users/:id/vouch-context returns vouchers and disavowers among followed users', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -30,14 +30,14 @@ describe('User vouch-context route', () => {
     await insertTestLocalFollow(viewer.id, disavower.id)
     // viewer does NOT follow stranger
 
-    await upsertUserVouchElectionVotes(voucher.id, [{ entityId: target.id, score: 2 }])
-    await upsertUserVouchElectionVotes(liker.id, [{ entityId: target.id, score: 1 }])
-    await upsertUserVouchElectionVotes(disliker.id, [{ entityId: target.id, score: -1 }])
-    await upsertUserVouchElectionVotes(disavower.id, [{ entityId: target.id, score: -2 }])
-    await upsertUserVouchElectionVotes(stranger.id, [{ entityId: target.id, score: 1 }])
-    await upsertUserVouchElectionVotes(viewer.id, [{ entityId: target.id, score: 1 }])
-
-    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
+    await withOwnedVouchStats(target.id, async () => {
+      await upsertUserVouchElectionVotes(voucher.id, [{ entityId: target.id, score: 2 }])
+      await upsertUserVouchElectionVotes(liker.id, [{ entityId: target.id, score: 1 }])
+      await upsertUserVouchElectionVotes(disliker.id, [{ entityId: target.id, score: -1 }])
+      await upsertUserVouchElectionVotes(disavower.id, [{ entityId: target.id, score: -2 }])
+      await upsertUserVouchElectionVotes(stranger.id, [{ entityId: target.id, score: 1 }])
+      await upsertUserVouchElectionVotes(viewer.id, [{ entityId: target.id, score: 1 }])
+    })
 
     const request = createRequest()
     await request.authenticateAs(viewer)
@@ -62,7 +62,7 @@ describe('User vouch-context route', () => {
       disliker.id,
     )
     expect(response.body.election_vote.choice).toBe('like')
-  }, 60_000)
+  }, 30_000)
 
   it('GET /api/v1/users/:id/vouch-context returns empty totals for self-target', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -73,7 +73,7 @@ describe('User vouch-context route', () => {
     expect(response.body.positive_by_following.total).toBe(0)
     expect(response.body.negative_by_following.total).toBe(0)
     expect(response.body.election_vote).toBeNull()
-  }, 60_000)
+  }, 30_000)
 
   it('GET /api/v1/users/:id/vouch-context buckets each voter by their most recent vote', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -84,9 +84,10 @@ describe('User vouch-context route', () => {
 
     // Voter initially vouches (+2) then disavows (-2). Vote tables are append-only,
     // so both rows persist; only the latest should determine the bucket.
-    await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: 2 }])
-    await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: -2 }])
-    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
+    await withOwnedVouchStats(target.id, async () => {
+      await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: 2 }])
+      await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: -2 }])
+    })
 
     const request = createRequest()
     await request.authenticateAs(viewer)
@@ -100,7 +101,7 @@ describe('User vouch-context route', () => {
     expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
       flipper.id,
     )
-  }, 60_000)
+  }, 30_000)
 
   it('GET /api/v1/users/:id/vouch-context excludes voters whose likes_visibility hides them', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -108,8 +109,9 @@ describe('User vouch-context route', () => {
     const hiddenVoucher = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
 
     await insertTestLocalFollow(viewer.id, hiddenVoucher.id)
-    await upsertUserVouchElectionVotes(hiddenVoucher.id, [{ entityId: target.id, score: 1 }])
-    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
+    await withOwnedVouchStats(target.id, async () => {
+      await upsertUserVouchElectionVotes(hiddenVoucher.id, [{ entityId: target.id, score: 1 }])
+    })
 
     // Update voter's likes_visibility to 'nobody'
     const voterRequest = createRequest()
@@ -124,5 +126,5 @@ describe('User vouch-context route', () => {
     const response = await request.get(`/api/v1/users/${target.id}/vouch-context`).expect(200)
 
     expect(response.body.positive_by_following.total).toBe(0)
-  }, 60_000)
+  }, 30_000)
 })
