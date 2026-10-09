@@ -17,6 +17,7 @@ RANGE partitioned on `id` (children: default, no retention owner, access class: 
 | `resource`                       | `text`                          | no       |                              |          |           |           | Protected resource URL of the MCP surface that received the call.                                                                                                                         |
 | `jsonrpc_method`                 | `text`                          | yes      |                              |          |           |           | JSON-RPC method from a fixed allowlist of MCP methods, or NULL when the request was rejected before its body was read or named no supported method.                                       |
 | `tool_name`                      | `text`                          | yes      |                              |          |           |           | Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.          |
+| `tool_option`                    | `text`                          | yes      |                              |          |           |           | Declared literal option of a registered merged tool, or NULL for flat tools and unknown selectors; arbitrary caller text is never stored.                                                 |
 | `outcome`                        | `mcp_call_audit_event_outcomes` | no       |                              |          |           |           | Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.                                                        |
 | `copyright_rationale_ciphertext` | `text`                          | yes      |                              |          |           |           | Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.                            |
 | `occurred_at`                    | `timestamp with time zone`      | no       | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the audit row was written, derived from the UUIDv7 id.                                                                                                                               |
@@ -28,14 +29,16 @@ _none_
 
 **Check constraints:**
 
-- `mcp_call_audit_events_check`: `CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))`
-- `mcp_call_audit_events_check1`: `CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))`
-- `mcp_call_audit_events_check2`: `CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))`
+- `mcp_call_audit_events_check`: `CHECK (((tool_option IS NULL) OR (tool_name IS NOT NULL)))`
+- `mcp_call_audit_events_check1`: `CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))`
+- `mcp_call_audit_events_check2`: `CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))`
+- `mcp_call_audit_events_check3`: `CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))`
 - `mcp_call_audit_events_jsonrpc_method_check`: `CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))`
 - `mcp_call_audit_events_outcome_check`: `CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))`
 - `mcp_call_audit_events_resource_check`: `CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))`
 - `mcp_call_audit_events_surface_check`: `CHECK ((surface = ANY (ARRAY['mcp'::mcp_call_audit_event_surfaces, 'admin_mcp'::mcp_call_audit_event_surfaces])))`
 - `mcp_call_audit_events_tool_name_check`: `CHECK ((tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'::text))`
+- `mcp_call_audit_events_tool_option_check`: `CHECK ((tool_option ~ '^[A-Za-z0-9_.-]{1,64}$'::text))`
 
 **Foreign keys:**
 
