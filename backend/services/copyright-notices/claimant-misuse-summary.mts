@@ -14,18 +14,10 @@ type SummaryQuery = (statement: SQLStatement) => Promise<{
 }>
 
 /**
- * Staff-facing ledger summary for one claimant account. Counts notices, not events, so a notice
+ * Staff-facing ledger summaries for claimant accounts. Counts notices, not events, so a notice
  * with several reversed restrictions is one outcome. It informs a moderator's decision about a
  * warned suspension; nothing reads it to act automatically.
  */
-export async function readClaimantMisuseSummary(
-  claimantUserId: string,
-  query: SummaryQuery = statement => read(statement),
-): Promise<ClaimantMisuseSummary> {
-  return (await readClaimantMisuseSummaries([claimantUserId], query)).get(claimantUserId)!
-}
-
-/** One statement for many claimants; every requested claimant has an entry, zero-filled. */
 export async function readClaimantMisuseSummaries(
   claimantUserIds: readonly string[],
   query: SummaryQuery = statement => read(statement),

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { eraseTestSuspendingAdministrator } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
+import {
+  eraseTestSuspendingAdministrator,
+  readTestClaimantMisuseSummary,
+} from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { readTestClaimantSuspensionReversal } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding-reads'
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
@@ -8,7 +11,6 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import { suspendUser, unsuspendUser } from '@services/users/suspension'
-import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
 import {
   liftSuspendedClaimantAutomaticRestrictions,
   searchSuspendedClaimantAutomaticRestrictionNoticeIds,
@@ -71,7 +73,7 @@ describe('lifting a suspended claimant automatic restrictions', () => {
       restoreIntents: 1,
     })
     await expect(listedBySweep(noticeId)).resolves.toEqual([])
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toMatchObject({
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toMatchObject({
       notice_rejected: 0,
       restriction_reversed_by_appeal: 0,
     })

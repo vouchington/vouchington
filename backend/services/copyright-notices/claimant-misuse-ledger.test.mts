@@ -14,7 +14,7 @@ import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/ps
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
-import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
+import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import {
@@ -86,7 +86,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
       rationale: 'The claimed work is not described.',
     })
 
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
       notice_rejected: 1,
     })
@@ -116,7 +116,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
       moderator: staff,
     })
 
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
       notice_withdrawn: 2,
     })
@@ -143,7 +143,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
       decisions: [{ restrictionId, action: 'reverse' }],
     })
 
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
       restriction_reversed_by_appeal: 1,
     })
@@ -156,7 +156,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
       createTestCopyrightDeliveryDependencies(publish),
     )
 
-    await expect(readClaimantMisuseSummary(scene.claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(scene.claimant.id)).resolves.toEqual({
       ...none,
       restriction_reversed_by_counter_notice: 1,
     })
@@ -181,7 +181,7 @@ describe('claimant misuse ledger scope', () => {
     await review(accepted!, true)
     await Promise.all(rejected.map(form => review(form, false)))
 
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
       notice_rejected: 3,
     })
@@ -203,8 +203,8 @@ describe('claimant misuse ledger scope', () => {
     await reject()
     await reject()
 
-    await expect(readClaimantMisuseSummary(other.id)).resolves.toEqual(none)
-    await expect(readClaimantMisuseSummary(claimant.id)).resolves.toEqual({
+    await expect(readTestClaimantMisuseSummary(other.id)).resolves.toEqual(none)
+    await expect(readTestClaimantMisuseSummary(claimant.id)).resolves.toEqual({
       ...none,
       notice_rejected: 1,
     })
