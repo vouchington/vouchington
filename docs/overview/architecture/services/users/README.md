@@ -26,6 +26,13 @@ Core user service — authentication flows, authorization, profile management, s
 | `delete-row-locks`                                 | Ascending-id `users` row locks for a deletion target and its requesting actor         |
 | `delete-oauth-pii`                                 | GDPR erasure: scrub OAuth PII on deletion                                             |
 
+Account deletion first tries the same transaction-scoped user-lifecycle advisory lock held by
+active-user writers. A failed try reports real lock contention to the optional synchronous internal
+`onLockContention` observer, then acquires that same lock with the ordinary blocking query before
+the publication and user-row locks. An observer error aborts the transaction. The uncontended path
+uses one lock query; contention uses two, and the gap before the blocking query does not establish
+a PostgreSQL wait-queue position. The active-user check still rejects writes after deletion commits.
+
 ## User view row shapes
 
 The [public and private user views](../../../../../backend/data-stores/psql/views/2025-01-01-view-users.sql)
