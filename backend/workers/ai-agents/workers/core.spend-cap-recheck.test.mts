@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import type { AIAgentJobData, SpendCapRecheckJobData } from '@queues/ai-agents/types'
 import {
   enqueueSpendCapRecheck,
@@ -27,10 +27,6 @@ function delayedJob<T>(name: string, data: T): Job<T> {
       .fn<(timestamp: number) => Promise<void>>()
       .mockRejectedValue(new Error('delayed')),
   } as unknown as Job<T>
-}
-
-function mockWorker(): Worker {
-  return {} as Worker
 }
 
 function clearRecheckDependencies() {
@@ -62,7 +58,7 @@ describe('AI spend-cap coordinated rechecks', () => {
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
@@ -86,7 +82,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       .mockRejectedValue(new Error('coordinator unavailable'))
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
@@ -115,7 +111,7 @@ describe('AI spend-cap coordinated rechecks', () => {
     })
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
@@ -138,7 +134,7 @@ describe('AI spend-cap coordinated rechecks', () => {
     const job = delayedJob('report-judgement', {} as AIAgentJobData)
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>
@@ -165,7 +161,7 @@ describe('AI spend-cap coordinated rechecks', () => {
       : vi.fn<() => Promise<boolean>>().mockRejectedValue(registrationError)
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { RateLimitError } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import {
   createTestUser,
   getTestPostModerationRetryDelayMinutes,
@@ -47,10 +47,9 @@ describe('openai moderation post job under a provider rate limit', () => {
     )
     requestOpenAIModeration.mockRejectedValueOnce(rateLimited)
 
-    const thrown: unknown = await handleOpenAIModerationOmniSingleJob(
-      makeJob(postId),
-      {} as Worker,
-    ).catch((err: unknown) => err)
+    const thrown: unknown = await handleOpenAIModerationOmniSingleJob(makeJob(postId)).catch(
+      (err: unknown) => err,
+    )
 
     expect(thrown).toMatchObject({ name: 'RateLimitError', delayMs: 30_000, cause: rateLimited })
     expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(0)
@@ -64,9 +63,7 @@ describe('openai moderation post job under a provider rate limit', () => {
     const outage = new Error('provider down')
     requestOpenAIModeration.mockRejectedValueOnce(outage)
 
-    await expect(handleOpenAIModerationOmniSingleJob(makeJob(postId), {} as Worker)).rejects.toBe(
-      outage,
-    )
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob(postId))).rejects.toBe(outage)
 
     expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
     expect(await getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).toBe(5)

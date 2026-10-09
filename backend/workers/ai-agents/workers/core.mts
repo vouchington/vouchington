@@ -61,11 +61,8 @@ const defaultDeps: AIAgentsWorkerDeps = {
   registerSpendCapRecheck,
 }
 
-// A provider 429 parks only the job that hit it, so the worker is not needed here. The parameter
-// stays until `createAIAgentsWorker` stops passing it.
 export async function processAIAgentWorkerJob(
   job: Job<AIAgentJobData>,
-  _worker: Worker,
   deps: Partial<AIAgentsWorkerDeps> = {},
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
@@ -136,11 +133,9 @@ async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
 
 export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {
   const dependencies = { ...defaultDeps, ...deps }
-  let worker!: Worker
-  worker = dependencies.createWorker(
+  return dependencies.createWorker(
     dependencies.queueName,
-    (job: Job<AIAgentJobData>): Promise<unknown> =>
-      processAIAgentWorkerJob(job, worker, dependencies),
+    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
     {
       dedicatedCommandClient: true,
       concurrency: dependencies.concurrency,
@@ -156,5 +151,4 @@ export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Wo
       backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
     },
   )
-  return worker
 }

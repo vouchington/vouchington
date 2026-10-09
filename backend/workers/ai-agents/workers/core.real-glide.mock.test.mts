@@ -56,7 +56,7 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
       const worker = new Worker<AIAgentJobData>(
         queueName,
         (job: Job<AIAgentJobData>) =>
-          processAIAgentWorkerJob(job, {} as Worker, {
+          processAIAgentWorkerJob(job, {
             ...spendCapDisabled,
             processAIAgent: async providerJob => {
               if (providerJob.name === 'report-judgement') throw createFailure()
