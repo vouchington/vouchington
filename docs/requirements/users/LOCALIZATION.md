@@ -330,6 +330,9 @@ key) across every consumer at once, not just the catalogs.
 - Topic about text uses `TopicAboutCopy` on the topic card. Topics have no declared language, so
   the excerpt sets `lang`/`dir` from `lingua_rs_detected_language`. The topic description aside
   passes that same detected language to `MarkdownContent`. Blank about text is omitted.
+- User profile bios and public landing-page bios use `UserBioCopy`. Users have no declared bio
+  language, so those surfaces set `lang`/`dir` from `lingua_rs_detected_language`. The owner's
+  empty-bio prompt is UI copy and stays unmarked.
 - APIs that project post titles or markdown retain nullable `declared_language` and
   `lingua_rs_detected_language`; shared API fixtures stage that contract before the linked native
   client change. Swift and .NET apply language and direction at the content leaf.
