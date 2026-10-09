@@ -31,12 +31,14 @@ describe('MCP output schema contract for search_posts — real DB', () => {
   const token = `srchpost${crypto.randomUUID().replaceAll('-', '')}`
   let caller: Caller
   let textIds: string[]
+  let authorId: string
 
   const search = (args: Record<string, unknown>, as: Caller = caller) =>
     callStructuredMcpTool(as, 'search_posts', args, SCOPES) as Promise<Page>
 
   beforeAll(async () => {
     const author = await createTestUser()
+    authorId = author.id
     caller = asCaller(await createTestUser())
     textIds = []
     for (const index of [1, 2, 3]) {
@@ -73,6 +75,15 @@ describe('MCP output schema contract for search_posts — real DB', () => {
 
     expect(page.results.map(result => result.id).toSorted()).toEqual(textIds.toSorted())
     expect(page.results[0]!.markdown).toContain('<external-content')
+  })
+
+  it('forwards the REST creator and post_types filters', async () => {
+    const matching = await search({ q: token, creator: authorId, post_types: ['discussion'] })
+    expect(matching.results.map(result => result.id).toSorted()).toEqual(textIds.toSorted())
+
+    const otherAuthor = await createTestUser()
+    const excluded = await search({ q: token, creator: otherAuthor.id })
+    expect(excluded.results).toEqual([])
   })
 
   it('searches by meaning through semantic_search_query and pages the results', async () => {

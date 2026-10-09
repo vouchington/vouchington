@@ -32,7 +32,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_trending_communities',
     type: 'function',
-    description: `List the public communities with the most recent activity, as a signed-out reader sees them: a private community never appears, whoever asks. Each result is a community id with its trending score and counts; use get_community for the community itself. "Trending" is the last 30 days of reviewed posts, members and follows. Returns at most ${max} communities per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the public communities with the most recent activity, as a signed-out reader sees them: a private community never appears, whoever asks. Each result is a community id with its trending score and counts; use get_community for the community itself. "Trending" is the last 30 days of reviewed posts, members and follows. Returns at most ${max} communities per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Communities', TRENDING_PAGE_LIMIT),

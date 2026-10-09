@@ -38,7 +38,7 @@ const tool: Tool<Args, Result> = {
     name: 'create_content_report',
     type: 'function',
     description:
-      'Report a post, comment, user, hostname or RSS feed item to the moderators. Reports are about user content only; copyright claims use the copyright process. Reporting something you already have an open report on updates that report and returns is_duplicate true. Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. The note is optional and at most 1000 characters. The vote_manipulation reason is for posts only.',
+      'Report a post, comment, user, hostname or RSS feed item to the moderators. Reports are about user content only; copyright claims use the copyright process. Reporting something you already have an open report on updates that report and returns is_duplicate true. The note is optional and at most 1000 characters. The vote_manipulation reason is for posts only.',
     parameters: {
       type: 'object',
       properties: {

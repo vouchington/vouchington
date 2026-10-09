@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getUserTool from './get-user.mts'
 import { mcpUserSchema, USER_PAGE_LIMIT } from './mcp-user-output.mts'
@@ -68,7 +69,7 @@ describe('user read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(tool.meta?.outputSchema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns the user as one entry and the matches as a page', () => {
@@ -101,7 +102,11 @@ describe('user read tool output schemas', () => {
     const properties = searchUsersTool.schema.parameters?.['properties'] as Record<string, unknown>
 
     expect(USER_PAGE_LIMIT).toEqual({ min: 1, max: 25, default: 10 })
-    expect(properties['limit']).toMatchObject({ type: 'integer', minimum: 1, maximum: 25 })
+    expect(properties['limit']).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 25,
+    })
     expect(searchUsersTool.schema.description).toContain('at most 25')
     expect(searchUsersTool.schema.parameters?.['required']).toEqual(['q'])
   })

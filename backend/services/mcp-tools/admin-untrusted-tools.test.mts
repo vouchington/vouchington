@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { toolToMcpTool } from '@voucha/mcp/registry/adapters'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { createTestUser } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
@@ -51,37 +52,84 @@ const secretFields = new Set([
   'password_hash',
 ])
 
-function findSchemaViolations(value: unknown, path: string): string[] {
+function findSchemaViolations(
+  value: unknown,
+  path: string,
+  definitions: Record<string, unknown> = {},
+  visitedReferences = new Set<string>(),
+): string[] {
   if (!value || typeof value !== 'object') return []
   if (Array.isArray(value))
-    return value.flatMap((child, index) => findSchemaViolations(child, `${path}[${index}]`))
+    return value.flatMap((child, index) =>
+      findSchemaViolations(child, `${path}[${index}]`, definitions, visitedReferences),
+    )
   const object = value as Record<string, unknown>
+  if (typeof object['$ref'] === 'string' && object['$ref'].startsWith('#/$defs/')) {
+    if (visitedReferences.has(object['$ref'])) return []
+    visitedReferences.add(object['$ref'])
+    const definitionName = object['$ref'].slice('#/$defs/'.length)
+    const resolved = definitions[definitionName]
+    return resolved === undefined
+      ? [`${path}: dangling local reference ${object['$ref']}`]
+      : findSchemaViolations(
+          resolved,
+          `${path} ($defs/${definitionName})`,
+          definitions,
+          visitedReferences,
+        )
+  }
   const properties = object['properties'] as Record<string, unknown> | undefined
   const violations: string[] = []
   for (const [key, schema] of Object.entries(properties ?? {})) {
     if (secretFields.has(key)) violations.push(`${path}.${key}: secret field`)
-    if (authoredFields.has(key) && !isUntrustedSchema(schema))
+    if (authoredFields.has(key) && !isUntrustedSchema(schema, definitions))
       violations.push(`${path}.${key}: missing untrusted declaration`)
   }
   return violations.concat(
-    Object.entries(object).flatMap(([key, child]) => findSchemaViolations(child, `${path}.${key}`)),
+    Object.entries(object).flatMap(([key, child]) =>
+      findSchemaViolations(
+        child,
+        `${path}.${key}`,
+        key === '$defs' && child && typeof child === 'object' && !Array.isArray(child)
+          ? (child as Record<string, unknown>)
+          : definitions,
+        visitedReferences,
+      ),
+    ),
   )
 }
 
-function isUntrustedSchema(value: unknown): boolean {
+function isUntrustedSchema(
+  value: unknown,
+  definitions: Record<string, unknown>,
+  visitedReferences = new Set<string>(),
+): boolean {
   if (!value || typeof value !== 'object') return false
-  const branches = (value as Record<string, unknown>)['anyOf']
+  const schema = value as Record<string, unknown>
+  if (typeof schema['$ref'] === 'string' && schema['$ref'].startsWith('#/$defs/')) {
+    if (visitedReferences.has(schema['$ref'])) return false
+    visitedReferences.add(schema['$ref'])
+    const resolved = definitions[schema['$ref'].slice('#/$defs/'.length)]
+    return resolved !== undefined && isUntrustedSchema(resolved, definitions, visitedReferences)
+  }
+  const branches = schema['anyOf']
   return (
     Array.isArray(branches) &&
-    branches.some(branch => {
-      if (!branch || typeof branch !== 'object') return false
-      const schema = branch as Record<string, unknown>
-      return (
-        schema['type'] === 'string' &&
-        typeof schema['description'] === 'string' &&
-        schema['description'].includes('Untrusted')
-      )
-    })
+    branches.length === 2 &&
+    branches.some(branch =>
+      Boolean(
+        branch &&
+        typeof branch === 'object' &&
+        (branch as Record<string, unknown>)['type'] === 'string',
+      ),
+    ) &&
+    branches.some(branch =>
+      Boolean(
+        branch &&
+        typeof branch === 'object' &&
+        (branch as Record<string, unknown>)['type'] === 'null',
+      ),
+    )
   )
 }
 
@@ -90,7 +138,14 @@ describe('registered admin authored-content contracts', () => {
     const tools = ALL_TOOLS.filter(tool => tool.meta?.surfaces.includes('admin_mcp'))
     expect(tools.length).toBeGreaterThan(0)
     expect(
-      tools.flatMap(tool => findSchemaViolations(tool.meta!.outputSchema, tool.schema.name)),
+      tools.flatMap(tool => {
+        const advertised = toolToMcpTool(tool, 'admin_mcp').outputSchema
+        const definitions =
+          advertised?.['$defs'] && typeof advertised['$defs'] === 'object'
+            ? (advertised['$defs'] as Record<string, unknown>)
+            : {}
+        return findSchemaViolations(advertised, tool.schema.name, definitions)
+      }),
     ).toEqual([])
   })
   it('wraps an injected moderator note through real write and read tools with actor history', async () => {

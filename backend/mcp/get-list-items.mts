@@ -20,6 +20,7 @@ type ToolArgs = {
   media_type?: string
   limit?: number
   after?: string
+  read?: boolean
 }
 
 type ToolResult = McpPage<McpListItem> | typeof LIST_NOT_FOUND | InvalidCursorResult
@@ -36,12 +37,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_list_items',
     type: 'function',
-    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {
         list_id: { type: 'string', format: 'uuid', description: 'The ID of the list.' },
         media_type: { type: 'string', description: 'Only RSS feed items of this media type' },
+        read: { type: 'boolean', description: 'Filter RSS feed items by your read state.' },
         ...pageInputProperties('Items', LIST_PAGE_LIMIT),
       },
       required: ['list_id'],
@@ -66,6 +68,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
           mediaType: args.media_type,
+          ...(args.read !== undefined && { read: args.read, currentUserId: currentUser.id }),
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT

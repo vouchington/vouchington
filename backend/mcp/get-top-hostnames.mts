@@ -32,7 +32,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_top_hostnames',
     type: 'function',
-    description: `List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {

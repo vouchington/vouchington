@@ -30,7 +30,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_trending_referral_programs',
     type: 'function',
-    description: `List the referral programs that gained the most active referral links in the last 30 days. Each result is the referral program's topic id with its trending score and link count; use get_topic_details for the program itself and get_referral_links for its links. Returns at most ${max} programs per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the referral programs that gained the most active referral links in the last 30 days. Each result is the referral program's topic id with its trending score and link count; use get_topic_details for the program itself and get_referral_links for its links. Returns at most ${max} programs per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Referral programs', TRENDING_PAGE_LIMIT),

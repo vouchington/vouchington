@@ -15,6 +15,29 @@ import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 
 describe('MCP RSS and feed edge contracts', () => {
+  it('forwards REST rss_feeds and media_type array filters', async () => {
+    const reader = { ...(await createTestUser()), membership_plan: null }
+    const topic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    const item = await createTestRssFeedItemWithUrl(feedId)
+    const matching = await callStructuredMcpTool(
+      reader,
+      'list_rss_feed_items',
+      { rss_feeds: [feedId], media_type: ['article'] },
+      ['rss-feed-items:read'],
+    )
+    expect(matching.results).toContainEqual(expect.objectContaining({ id: item.id }))
+    const otherTopic = await createTestTopic()
+    const otherFeedId = await createTestRssFeedWithTiming(otherTopic.id)
+    const excluded = await callStructuredMcpTool(
+      reader,
+      'list_rss_feed_items',
+      { rss_feeds: [otherFeedId], media_type: ['article'] },
+      ['rss-feed-items:read'],
+    )
+    expect(excluded.results).toEqual([])
+  })
+
   it('keeps followed RSS items visible with a stale community filter like REST', async () => {
     const reader = { ...(await createTestUser()), membership_plan: null }
     const topic = await createTestTopic()

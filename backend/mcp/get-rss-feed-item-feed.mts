@@ -33,6 +33,10 @@ const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
           type: 'array',
           items: { type: 'string', enum: ['article', 'audio', 'video'] },
         },
+        media_type: {
+          type: 'array',
+          items: { type: 'string', enum: ['article', 'audio', 'video'] },
+        },
       },
       required: ['feed_type'],
     },
@@ -65,7 +69,7 @@ const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
           min_score_follow_rss_feeds: args.min_score_follow_rss_feeds,
           min_score_follow_topics: args.min_score_follow_topics,
           has_related_posts: args.has_related_posts,
-          media_types: args.media_types,
+          media_types: args.media_types ?? args.media_type,
           limit: clampToolLimit(args.limit, 25, MAX_LIMIT),
           after: args.after,
         })

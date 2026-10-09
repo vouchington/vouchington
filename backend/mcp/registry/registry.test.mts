@@ -49,6 +49,7 @@ const NON_TOOL_FILES = new Set([
   'resolve-topic.mts',
   'route-response-schema.mts',
   'search-system.mts',
+  'search-post-input.mts',
   'schema-validator.mts',
   'select-api-by-argument.mts',
   'topic-hierarchy-result.mts',
@@ -56,6 +57,8 @@ const NON_TOOL_FILES = new Set([
   'topic-recommendation-post-text.mts',
   'topic-recommendation-read-output.mts',
   'topic-recommendation-tool-support.mts',
+  'tool-schema-contract.mts',
+  'tool-schema-traversal.mts',
 ])
 
 describe('tool registry', () => {
@@ -167,7 +170,12 @@ describe('tool registry', () => {
     // mutating tool exposed on both surfaces is unsupported until the model can encode
     // separate per-surface plans, whether or not it declares a plan at all.
     const sharedMutation: Tool = {
-      schema: { name: 'shared_mutation_fixture', type: 'function', parameters: null, strict: null },
+      schema: {
+        name: 'shared_mutation_fixture',
+        type: 'function',
+        parameters: null,
+        strict: null,
+      },
       function: (_user: unknown) => () => Promise.resolve({}),
       meta: {
         surfaces: ['mcp', 'admin_mcp'],

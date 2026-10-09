@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getCommunityMembersTool from './get-community-members.mts'
 import getCommunityPinnedPostsTool from './get-community-pinned-posts.mts'
@@ -122,7 +123,7 @@ describe('community read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(schema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(schema)
   })
 
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {
@@ -150,7 +151,11 @@ describe('community read tool output schemas', () => {
       | undefined
 
     expect(max).toBe(25)
-    expect(properties?.['limit']).toMatchObject({ type: 'integer', minimum: min, maximum: max })
+    expect(properties?.['limit']).toMatchObject({
+      type: 'integer',
+      minimum: min,
+      maximum: max,
+    })
     expect(tool.schema.description).toContain(`at most ${max}`)
   })
 })

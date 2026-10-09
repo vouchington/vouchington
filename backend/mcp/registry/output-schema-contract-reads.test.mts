@@ -128,7 +128,15 @@ describe('MCP output schema contract for the other read tools — real DB', () =
       'recommendations:read',
     ])
 
-    expect(result).toEqual({ success: true, results: [] })
+    expect(result).toEqual({
+      success: true,
+      results: [],
+      page_info: {
+        has_next_page: false,
+        start_cursor: null,
+        end_cursor: null,
+      },
+    })
   })
 
   it('returns get_referral_links with labelled and unlabelled links', async () => {

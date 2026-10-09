@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getListItemsTool from './get-list-items.mts'
 import getListTool from './get-list.mts'
@@ -86,7 +87,7 @@ describe('list read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(tool.meta?.outputSchema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns one list as an entry and the others as pages with their page info', () => {
@@ -127,7 +128,11 @@ describe('list read tool output schemas', () => {
     const properties = tool.schema.parameters?.['properties'] as Record<string, unknown>
 
     expect(LIST_PAGE_LIMIT).toEqual({ min: 1, max: 25, default: 20 })
-    expect(properties['limit']).toMatchObject({ type: 'integer', minimum: 1, maximum: 25 })
+    expect(properties['limit']).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 25,
+    })
     expect(tool.schema.description).toContain('at most 25')
   })
 

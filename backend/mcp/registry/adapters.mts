@@ -5,6 +5,7 @@ import type {
   ToolSurface,
 } from '@services/openai-agents/tool-types'
 import { getToolRequiredScopes } from './select.mts'
+import { closeDeclaredInputObjects, factorToolSchema } from '../tool-schema-contract.mts'
 
 export type McpToolAnnotations = {
   readOnlyHint: boolean
@@ -40,11 +41,14 @@ export function toolToMcpTool(
     name: tool.schema.name,
     ...(tool.meta ? { title: tool.meta.title } : {}),
     description: tool.schema.description ?? undefined,
-    inputSchema: (tool.schema.parameters ?? { type: 'object', properties: {} }) as Record<
-      string,
-      unknown
-    >,
-    ...(tool.meta?.outputSchema ? { outputSchema: tool.meta.outputSchema } : {}),
+    inputSchema: factorToolSchema(
+      closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
+    ),
+    ...(tool.meta?.outputSchema
+      ? {
+          outputSchema: factorToolSchema(tool.meta.outputSchema) as ToolOutputSchema,
+        }
+      : {}),
     ...(tool.meta ? { annotations: toMcpToolAnnotations(tool.meta.annotations) } : {}),
     ...(mcpScopes ? { _meta: { 'voucha/requiredScopes': mcpScopes } } : {}),
   }

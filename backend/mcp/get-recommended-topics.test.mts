@@ -16,7 +16,9 @@ describe('get_recommended_topics tool — real DB', () => {
     const result = await execute({})
 
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error(result.error)
     expect(Array.isArray(result.results)).toBe(true)
+    expect(result.page_info).toMatchObject({ has_next_page: expect.any(Boolean) })
     for (const r of result.results) {
       expect(r).toHaveProperty('id')
       expect(r).toHaveProperty('score')
@@ -31,6 +33,7 @@ describe('get_recommended_topics tool — real DB', () => {
     const result = await execute({ limit: 5 })
 
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error(result.error)
     expect(result.results.length).toBeLessThanOrEqual(5)
   })
 
@@ -39,6 +42,7 @@ describe('get_recommended_topics tool — real DB', () => {
     const result = await execute({ limit: 999 })
 
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error(result.error)
     expect(result.results.length).toBeLessThanOrEqual(25)
   })
 
@@ -53,6 +57,7 @@ describe('get_recommended_topics tool — real DB', () => {
     const result = await execute({ limit: 1 })
 
     expect(result.success).toBe(true)
+    if (!result.success) throw new Error(result.error)
     expect(result.results.length).toBeLessThanOrEqual(1)
   })
 
@@ -66,5 +71,13 @@ describe('get_recommended_topics tool — real DB', () => {
     const execute = getRecommendedTopicsTool.function(basicUser)
 
     await expect(execute({})).rejects.toMatchObject({ status: 401 })
+  })
+
+  it('returns an invalid-cursor result for malformed pagination input', async () => {
+    const execute = getRecommendedTopicsTool.function(user)
+    expect(await execute({ after: 'not-a-cursor' })).toEqual({
+      success: false,
+      error: 'Invalid cursor',
+    })
   })
 })
