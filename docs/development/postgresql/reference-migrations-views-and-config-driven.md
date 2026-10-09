@@ -222,7 +222,7 @@ config-driven operations, and views. After migration the database contains:
   authorization currently reads role slugs rather than these granular grants.
 - **URL blacklist sources** (19 entries) — seeded by
   [`config-driven/0050-00-01-seed-blacklist-sources.mts`](../../../backend/data-stores/psql/config-driven/0050-00-01-seed-blacklist-sources.mts).
-  Required for the weekly blacklist-refresh cron and the request-path `isUrlBlocked` check.
+  Required for the weekly blacklist-refresh cron and the request-path hostname-policy check (`getHostnamePolicy`).
 - **Publisher-type topics** — `publisher-types` parent plus 8 children (`mainstream-media`,
   `public-media`, `corporate-media`, `blog`, `aggregator`, `forum`, `ugc-platform`, `review`) with
   aliases and parent–child relations, seeded by

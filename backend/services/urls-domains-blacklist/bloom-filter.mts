@@ -8,18 +8,14 @@ import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
   type BlocklistBloomAddTarget,
-  type BlocklistBloomFilterReadTarget,
   repairStaleBlocklistReadyMarker,
 } from './blocklist-bloom-add.mts'
 import { urlBlocklistBatchesFromDb } from './bloom-filter-batches.mts'
-import {
-  checkBloomFilterRead,
-  checkBloomFiltersRead,
-  repairBloomFilterUnavailableRead,
-} from './read-repair.mts'
+import { checkBloomFiltersRead, repairBloomFilterUnavailableRead } from './read-repair.mts'
 import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
+import { bloomFilterConfig } from '@services/bloom-filter-config'
 
 function getBloomFilter() {
   return new ValkeyBloomFilter({
@@ -57,22 +53,14 @@ export async function enqueueUrlBlocklistRebuild(): Promise<void> {
   }
 }
 
-export async function checkBloomFilter(
-  hostname: string,
-  target?: BlocklistBloomFilterReadTarget,
-): Promise<boolean | null> {
-  const bloomFilter = getBloomFilter()
-  return checkBloomFilterRead({
-    readyKey: target?.readyKey ?? BLOOM_READY_KEY,
-    value: hostname,
-    liveKey: target?.liveKey ?? bloomFilter.getConfig().liveKey,
-    existsIfReady:
-      target?.existsIfReady ?? ((readyKey, value) => bloomFilter.existsIfReady(readyKey, value)),
-    repairUnavailableRead: target?.repairUnavailableRead ?? repairUrlBlocklistUnavailableRead,
-  })
+/** Dynamic-config switch for the URL blocklist Bloom filter; the read helpers below honor it. */
+export function isUrlBlocklistBloomFilterEnabled(): boolean {
+  return bloomFilterConfig.fields.get('urlBlocklistBloomFilterEnabled') !== false
 }
 
+/** `null` entries mean unknown, so callers must use the database. A disabled filter is always unknown. */
 export async function checkBloomFilters(hostnames: string[]): Promise<Array<boolean | null>> {
+  if (!isUrlBlocklistBloomFilterEnabled()) return hostnames.map(() => null)
   return checkBloomFiltersRead({
     readyKey: BLOOM_READY_KEY,
     liveKey: getBloomFilter().getConfig().liveKey,

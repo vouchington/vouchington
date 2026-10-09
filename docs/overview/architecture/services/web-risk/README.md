@@ -14,3 +14,15 @@ budgets. Owned checker instances can use an independent namespace and clock whil
 provider and hostname-blocking pipeline. Application clocks choose the UTC month and interpret dated
 Retry-After headers; rate-window timestamps and key expiry use the Valkey server clock. Production
 budgets persist independently of process teardown.
+
+## Per-URL depth
+
+`assertUrlAllowedByWebRisk(url, { policies? })` reads one hostname policy (blocking and
+`should_skip_web_risk`, from the shared `@services/urls-domains-blacklist` helper) concurrently with
+one pipelined Valkey `Batch` holding the exact-URL clean-verdict `GET` and the provider-cooldown
+`PTTL`. That is one concurrent step instead of the former six serial calls. A blocked hostname is
+reported even if the gate read fails, and a skipped hostname never surfaces a gate failure. The
+local rate-limit charge stays last and runs only when the URL is not skipped, not clean-cached and
+not cooling down. `assertUrlsAllowedByWebRisk(urls)` reads one batched policy for all hostnames and
+passes each result into the per-URL check; callers that already hold policies pass them in.
+When Web Risk is disabled, only the policy read runs.

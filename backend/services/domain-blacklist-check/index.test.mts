@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
+import * as domains from '@services/urls-domains-blacklist/domains'
 import { assertNoBlockedDomains, assertUrlNotBlocked } from './index.mts'
 import { insertTestDomainBlacklist, createTestBlacklistSource } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
@@ -51,6 +52,22 @@ describe('index', () => {
         message: expect.stringContaining(TEST_BLOCKED_DOMAIN),
       })
     })
+  })
+
+  it('reads one batched hostname policy for every domain and URL', async () => {
+    const batchSpy = vi.spyOn(domains, 'getHostnamePolicies')
+    const singleSpy = vi.spyOn(domains, 'getHostnamePolicy')
+    try {
+      await assertNoBlockedDomains(
+        '[a](https://example.com/a) [b](https://example.com/b) ![c](https://cdn.example.org/c.png)',
+      )
+
+      expect(batchSpy).toHaveBeenCalledTimes(1)
+      expect(singleSpy).not.toHaveBeenCalled()
+    } finally {
+      batchSpy.mockRestore()
+      singleSpy.mockRestore()
+    }
   })
 
   describe('assertUrlNotBlocked', () => {

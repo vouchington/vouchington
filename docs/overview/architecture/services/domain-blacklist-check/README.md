@@ -6,9 +6,9 @@ Validates URLs and markdown content against the domain blacklist before persisti
 
 ## Functions
 
-- **`assertNoBlockedDomains(markdown)`** — Extracts all URLs (links and images) from markdown via the Rust `extractMarkdownUrls` function, checks each domain against the domain blacklist, and throws HTTP 400 if any domain is blocked.
+- **`assertNoBlockedDomains(markdown)`** — Extracts all URLs (links and images) from markdown via the Rust `extractMarkdownUrls` function, reads one batched hostname policy for every domain and URL, throws HTTP 400 if any domain is blocked, then runs the Web Risk check for each URL with those precomputed policies (no repeated blocklist reads).
 
-- **`assertUrlNotBlocked(url)`** — Validates a single URL's domain against the domain blacklist. Throws HTTP 400 if blocked. Skips validation for unparseable URLs.
+- **`assertUrlNotBlocked(url)`** — Validates a single URL's domain against the domain blacklist and Web Risk from one policy read. Throws HTTP 400 if blocked. Skips validation for unparseable URLs.
 
 ## Consumers
 
@@ -19,7 +19,8 @@ Validates URLs and markdown content against the domain blacklist before persisti
 
 - `@services/markdown/extraction` — Rust-based URL extraction from markdown
 - `@ts-shared/utils/urls` — `extractDomain` helper
-- `@services/urls-domains-blacklist/domains` — `isUrlBlocked` (bloom filter + DB)
+- `@services/urls-domains-blacklist/domains` — `getHostnamePolicies` (bloom filter + DB, batched)
+- `@services/web-risk` — `assertUrlsAllowedByWebRisk`
 
 ## Related
 

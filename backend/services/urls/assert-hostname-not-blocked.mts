@@ -3,7 +3,7 @@ import assert from 'http-assert'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { penalizeBlockedHostnameAttempt } from '@services/hostname-blocking/penalize-blocked-hostname-attempt'
-import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
+import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
 
 /**
  * Throws 422 if any of the given URL IDs belong to a site-wide blocked hostname.
@@ -42,7 +42,5 @@ export async function assertUrlsHaveNoBlockedHostnames(
     FROM urls
     WHERE id = ANY(${urlIds}::uuid[])
   `)
-  await Promise.all(
-    (urlRows as Array<{ url: string }>).map(row => assertUrlAllowedByWebRisk(row.url)),
-  )
+  await assertUrlsAllowedByWebRisk((urlRows as Array<{ url: string }>).map(row => row.url))
 }
