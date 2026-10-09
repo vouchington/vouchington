@@ -56,7 +56,7 @@ function sourceJobOptions(
 /** One batched add of source reconciliation jobs sharing one recovery bucket. */
 export function enqueueBulkReconcileMicrosoftStoreSources(
   sources: ReconcileMicrosoftStoreSourceData[],
-): EnqueueReturnType {
+): ReturnType<typeof enqueueBulkSource> {
   const bucket = currentSourceBucket()
   return enqueueBulkSource(sources.map(source => ({ ...source, bucket })))
 }

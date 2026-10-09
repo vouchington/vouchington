@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS,
@@ -122,7 +121,7 @@ const enqueueBulkActiveSource = createBulkEnqueueFunction<
 /** One batched add of active-source reconciliation jobs sharing one hourly recovery bucket. */
 export function enqueueBulkReconcileGooglePlayActiveSources(
   sources: ReconcileGooglePlayActiveSourceData[],
-): EnqueueReturnType {
+): ReturnType<typeof enqueueBulkActiveSource> {
   const bucket = currentGooglePlayActiveSourceBucket()
   return enqueueBulkActiveSource(sources.map(source => ({ ...source, bucket })))
 }
