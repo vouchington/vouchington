@@ -1,0 +1,271 @@
+id: playwright-all-hook-inline-guard
+language: Tsx
+severity: error
+message:
+  Keep native all-hook registration and put the public timeout guard first. Unsupported aliases/computed/derived
+  local test flows must be made explicit in the shared fixture barrel, not silently bypassed.
+files:
+  - playwright/**/*.spec.mts
+  - playwright/**/*.spec.ts
+utils:
+  trusted-inline-registration:
+    all:
+      - any:
+          - pattern: test.beforeAll(async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern: test.beforeAll(($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern:
+              test.beforeAll($TITLE, async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY
+              })
+          - pattern: test.beforeAll($TITLE, ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern: test.afterAll(async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern: test.afterAll(($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern:
+              test.afterAll($TITLE, async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY
+              })
+          - pattern: test.afterAll($TITLE, ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info()); $$$BODY })
+          - pattern: "test.beforeAll(async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+          - pattern: "test.beforeAll(($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+          - pattern:
+              "test.beforeAll($TITLE, async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY\
+              \ })"
+          - pattern: "test.beforeAll($TITLE, ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+          - pattern: "test.afterAll(async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+          - pattern: "test.afterAll(($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+          - pattern:
+              "test.afterAll($TITLE, async ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY\
+              \ })"
+          - pattern: "test.afterAll($TITLE, ($$$PARAMS) => { protectPlaywrightHookTimeouts(test.info())\n $$$BODY })"
+      - inside:
+          all:
+            - kind: program
+            - has:
+                all:
+                  - kind: import_statement
+                  - has:
+                      kind: import_specifier
+                      regex: ^test$
+                      stopBy: end
+                  - has:
+                      kind: import_specifier
+                      regex: ^protectPlaywrightHookTimeouts$
+                      stopBy: end
+                  - has:
+                      kind: string
+                      regex: ^['\"](?:\.\./)+helpers/test\.mts['\"]$
+                      stopBy: neighbor
+                stopBy: end
+          stopBy: end
+rule:
+  any:
+    - all:
+        - kind: member_expression
+        - has:
+            kind: property_identifier
+            regex: ^(beforeAll|afterAll)$
+            stopBy: neighbor
+        - not:
+            inside:
+              matches: trusted-inline-registration
+              stopBy: neighbor
+    - pattern: test[$KEY]
+    - pattern: Reflect.get(test, $$$ARGS)
+    - pattern: const $ALIAS = test
+    - pattern: let $ALIAS = test
+    - pattern: const $ALIAS = test.extend($$$ARGS)
+    - pattern: const { $$$FIELDS } = test
+    - all:
+        - kind: variable_declarator
+        - regex: ^(test|protectPlaywrightHookTimeouts)\s*=
+    - all:
+        - kind: identifier
+        - regex: ^(test|protectPlaywrightHookTimeouts)$
+        - inside:
+            kind: formal_parameters
+            stopBy: end
+    - all:
+        - kind: shorthand_property_identifier_pattern
+        - regex: ^(beforeAll|afterAll|test|protectPlaywrightHookTimeouts)$
+    - pattern: test.extend
+    - all:
+        - any:
+            - kind: identifier
+            - kind: shorthand_property_identifier
+        - regex: ^test$
+        - not:
+            any:
+              - inside:
+                  kind: import_specifier
+                  regex: ^test$
+                  stopBy: neighbor
+              - inside:
+                  pattern: test($$$ARGS)
+                  stopBy: neighbor
+              - inside:
+                  kind: member_expression
+                  pattern: test.$MEMBER
+                  stopBy: neighbor
+    - all:
+        - kind: function_declaration
+        - has:
+            kind: identifier
+            regex: ^(test|protectPlaywrightHookTimeouts)$
+            stopBy: neighbor
+    - all:
+        - kind: import_specifier
+        - regex: ^(test|protectPlaywrightHookTimeouts)\s+as\s+
+        - &id001
+          inside:
+            all:
+              - kind: import_statement
+              - has:
+                  kind: string
+                  regex: ^['\"](?:\.\./)+helpers/(?:test|tag-voting-helpers)\.mts['\"]$
+                  stopBy: end
+            stopBy: end
+    - all:
+        - kind: namespace_import
+        - *id001
+    - all:
+        - kind: import_clause
+        - has:
+            kind: identifier
+            stopBy: neighbor
+        - *id001
+examples:
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); await seed(); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.afterAll('owned cleanup', async ({ browser }, info) => { protectPlaywrightHookTimeouts(test.info());
+      await cleanup(browser, info); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.describe('nested', () => { test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); await
+      seed(); }); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.beforeAll(async () => { await seed(); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.afterAll(async () => { await cleanup(); protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.beforeAll(async () => { protectPlaywrightHookTimeouts(other.info()); await seed(); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code:
+      import { test, protectPlaywrightHookTimeouts } from './lookalike.mts'; test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info());
+      await seed(); });
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      const setup = test.beforeAll; setup(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      const setup = test.beforeAll.bind(test); setup(async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      const { beforeAll } = test; beforeAll(async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test['before' + 'All'](async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      const extended = test.extend({}); extended.beforeAll(async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      function fake(protectPlaywrightHookTimeouts) { test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info());
+      }); }"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      const copied = { test }; copied.test['before' + 'All'](async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      externalRegister(test);"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.extend({})['before' + 'All'](async () => {});"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      function configure(test) { test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); }); }"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.beforeAll(ownedSetup);"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code:
+      import { test } from '../../helpers/test.mts'; test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info());
+      });
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
+
+      test.beforeAll(async ({}, info) => { protectPlaywrightHookTimeouts(info); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import { test as pw } from '../../helpers/test.mts'; pw['before'+'All'](async()=>{});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import * as pw from '../../helpers/test.mts'; pw.test['before'+'All'](async()=>{});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import { test, protectPlaywrightHookTimeouts as guard } from '../../helpers/test.mts'; test.beforeAll(async()=>{guard(test.info());});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code:
+      import { test } from '../../helpers/test.mts'; import { protectPlaywrightHookTimeouts } from './lookalike.mts';
+      test.beforeAll(async()=>{protectPlaywrightHookTimeouts(test.info());});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import pw from '../../helpers/test.mts'; pw['before'+'All'](async()=>{});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import * as values from './values.mts'; use(values);
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: import values from './values.mts'; use(values);
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import {test,protectPlaywrightHookTimeouts} from '../../helpers/test.mts'
+
+      test.beforeAll(async()=>{
+
+      protectPlaywrightHookTimeouts(test.info())
+
+      await seed()
+
+      })"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts

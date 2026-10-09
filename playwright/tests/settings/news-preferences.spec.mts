@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
@@ -19,6 +19,7 @@ test.describe('News Preferences Page', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await Promise.all(publisherTypeSeeds.map(({ name, slug }) => insertTestTopic(name, slug)))
   })
 

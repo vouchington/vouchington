@@ -39,7 +39,7 @@ function rejectSlow(): never {
 
 const protectedInfo = new WeakSet<TestInfo>()
 
-function protectTestInfo(info: TestInfo): void {
+export function protectPlaywrightHookTimeouts(info: TestInfo): void {
   if (protectedInfo.has(info)) return
   playwrightTestTimeout(info.timeout, 'Playwright effective test timeout')
   const setTimeout = Reflect.get(info, 'setTimeout') as TestInfo['setTimeout']
@@ -63,7 +63,7 @@ export async function playwrightTimeoutFixture(
   use: () => Promise<void>,
   info: TestInfo,
 ): Promise<void> {
-  protectTestInfo(info)
+  protectPlaywrightHookTimeouts(info)
   await use()
 }
 
@@ -75,20 +75,6 @@ export function guardPlaywrightTestTimeouts(base: typeof PlaywrightBase) {
 }
 
 function protectPublicMethods<T extends object, W extends object>(test: TestType<T, W>) {
-  for (const name of ['beforeAll', 'afterAll'] as const) {
-    const register = test[name]
-    Object.defineProperty(test, name, {
-      writable: false,
-      configurable: false,
-      value: (...args: unknown[]) => {
-        Reflect.apply(register, test, [
-          // oxlint-disable-next-line no-empty-pattern -- Public hook requests no fixtures.
-          async ({}, info: TestInfo) => protectTestInfo(info),
-        ])
-        return Reflect.apply(register, test, args)
-      },
-    })
-  }
   const setTimeout = Reflect.get(test, 'setTimeout') as TestType<T, W>['setTimeout']
   const extend = test.extend
   const use = test.use
@@ -103,6 +89,9 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
     W
   >['describe']['configure']
   Object.defineProperties(test, {
+    beforeAll: { value: test.beforeAll, writable: false, configurable: false },
+    afterAll: { value: test.afterAll, writable: false, configurable: false },
+    info: { value: test.info, writable: false, configurable: false },
     setTimeout: {
       writable: false,
       configurable: false,

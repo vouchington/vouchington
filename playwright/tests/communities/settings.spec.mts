@@ -1,4 +1,9 @@
-import { test, expect, withMonitoredPage } from '../../helpers/test.mts'
+import {
+  test,
+  expect,
+  withMonitoredPage,
+  protectPlaywrightHookTimeouts,
+} from '../../helpers/test.mts'
 import { loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -29,6 +34,7 @@ const createCommunityFixture = () => {
 
 test.describe('Community Settings', () => {
   test.beforeAll(async ({ browser }, testInfo) => {
+    protectPlaywrightHookTimeouts(test.info())
     const fixture = createCommunityFixture()
     COMMUNITY_NAME = fixture.name
     COMMUNITY_SLUG = fixture.slug

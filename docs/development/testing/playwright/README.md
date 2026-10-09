@@ -21,12 +21,25 @@ canonical links, JSON-LD, static copy, and external-link attributes.
 
 ## Hook deadline protection
 
-The shared test helper registers an independent public guard hook before each `beforeAll`
-and `afterAll` callback. It passes the original callback unchanged to Playwright, so fixture
-requests and named-hook context remain intact. The guard protects the current public `TestInfo`
-without extending the hook's own timeout slot. Hook budgets are separate from the test body;
-server readiness, navigation and external protocol durations are not test deadlines.
-Browser-free public CLI regressions cover both all-hook phases and worker-fixture preservation.
+All-hook callbacks call `protectPlaywrightHookTimeouts(test.info())` as their first statement.
+Import the guard alongside `test` from the shared test helper. Keep original native registration,
+fixture parameters, callback title and context unchanged:
+
+```typescript
+test.beforeAll(async ({ browser }, testInfo) => {
+  protectPlaywrightHookTimeouts(test.info())
+  // Original setup and fixture requests stay here.
+})
+```
+
+This protects the public `TestInfo` before callback work and preserves native timeout diagnostics
+at the original spec declaration. Each hook keeps its own timeout slot. The same rule applies
+inside describes using the native `test` object imported from the supported shared fixture barrel.
+Spec-level aliased, default, namespace and locally extended registration flows are rejected by the
+source rule; use the shared barrel and keep the guard first in the original inline callback. The ordinary automatic test fixture remains
+idempotent with this guard. Server readiness and external protocol deadlines are unchanged.
+Browser-free native CLI controls retain setter/slow negatives in both phases, named worker
+fixtures and legal budgets, and exercise the actual timeout location in both all-hook phases.
 
 ## Seed Setup
 

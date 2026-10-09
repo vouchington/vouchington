@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestTopic } from '../../../backend/test-helpers/entities/topics.mts'
@@ -14,6 +14,7 @@ let topicId: string
 let topicSlug: string
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   topicSlug = `pw-ta-topic-${suffix}`
   const communitySlug = `pw-ta-community-${suffix}`

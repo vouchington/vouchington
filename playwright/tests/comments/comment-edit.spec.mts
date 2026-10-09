@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -14,6 +14,7 @@ let suffix = ''
 let originalCommentText = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   suffix = randomSuffix()
   originalCommentText = `Original comment text ${suffix}`
   const commentAuthor = await createTestUser({ username: `pw-comment-author-${suffix}` })

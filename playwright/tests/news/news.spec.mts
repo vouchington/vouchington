@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 
 import { navigateTo } from '../../helpers/navigate-to.mts'
 
@@ -31,6 +31,7 @@ test.describe('News Page', () => {
   let storySlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // Seed a story-type post and link it to test-item-1's URL so that the /news
     // card for that item shows a "Discussions" link pointing to /story/<slug>.
     // This avoids triggering the story-teller OpenAI agent — we assert on the

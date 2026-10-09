@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -16,6 +16,7 @@ let appellantId = ''
 let smokeAppealId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   const usernameSuffix = suffix.replaceAll(/\d/g, digit => 'abcdefghij'[Number(digit)])
 
@@ -53,6 +54,7 @@ test.describe('Appeals — staff view', () => {
   let lifecycleAppealId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const usernameSuffix = suffix.replaceAll(/\d/g, digit => 'abcdefghij'[Number(digit)])
 

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -14,6 +14,7 @@ test.describe('Identity Profile Image', () => {
   test.describe.configure({ mode: 'serial' })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // Reset profile_image_id so reruns start from a clean state.
     // These tests must update TEST_USER_ID directly — a generic per-spec login
     // user would require a new test-login endpoint (larger refactor).

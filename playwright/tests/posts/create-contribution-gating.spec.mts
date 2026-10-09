@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -15,6 +15,7 @@ let eligibleUserId: string
 let communitySlug: string
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const tooNew = await createTestUserWithAge(0)
   if (!tooNew) throw new Error('Failed to create too-new test user')
   tooNewUserId = tooNew.id

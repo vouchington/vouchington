@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
@@ -9,6 +9,7 @@ test.describe('Topic settings — non-admin boundary', () => {
   let sourceTopicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const topic = await insertTestTopic(
       `Settings Boundary Topic ${suffix}`,

@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -21,6 +21,7 @@ test.describe('Downvote Visibility by Membership Tier', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create downvote visibility contributor')
     contributorId = contributor.id

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestAiUsageRecord } from '../../../backend/test-helpers/index.mts'
@@ -10,6 +10,7 @@ test.describe('Admin AI Costs', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await insertTestAiUsageRecord({
       communityId: PLAYWRIGHT_COMMUNITY_ID,
       agentSlug: 'ai-costs-spec',

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
@@ -10,6 +10,7 @@ import {
 let contributorId: string
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
   if (!contributor) throw new Error('Failed to create data point contributor')
   contributorId = contributor.id

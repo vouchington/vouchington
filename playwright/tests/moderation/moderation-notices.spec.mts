@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   createTestUser,
   insertTestPost,
@@ -21,6 +21,7 @@ let adminUserId = ''
 // blocks (e.g. "/my/account-status page") reuse ids from earlier sections, so each fixture must
 // stay in file scope rather than nested per describe.
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suspendedUserSuffix = randomSuffix()
   const user = await createTestUser({ username: `suspended-user-${suspendedUserSuffix}` })
   if (!user) throw new Error('Failed to create suspended test user')

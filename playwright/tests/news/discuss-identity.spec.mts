@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -76,6 +76,7 @@ test.describe('Discuss — IDENTITY_REQUIRED gate (global)', () => {
 
 test.describe('Discuss — IDENTITY_REQUIRED gate (community)', () => {
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // Link the seeded RSS feed to the community. Idempotent: on retry Playwright
     // re-runs beforeAll, which would hit the unique constraint — ignore it (23505).
     try {

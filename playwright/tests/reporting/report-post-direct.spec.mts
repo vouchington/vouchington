@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { createTestUser, insertTestPost } from '../../../backend/test-helpers/index.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -6,6 +6,7 @@ import { randomSuffix } from '../../helpers/random-id.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   const target = await createTestUser({ username: `rpt-card-target-${suffix}` })
   if (!target) throw new Error('Failed to create target user')

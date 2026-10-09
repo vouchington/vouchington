@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
@@ -9,6 +9,7 @@ test.describe('Source follow toggle', () => {
   let topicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const unique = randomSuffix()
     const topic = await insertTestTopic(
       `Follow Toggle Test ${unique}`,

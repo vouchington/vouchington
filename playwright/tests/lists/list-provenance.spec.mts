@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -49,6 +49,7 @@ const row = (page: Page, { name }: SeededList) =>
 const header = (page: Page) => page.getByTestId('list-header')
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   // Fresh per entry: users.username is globally unique.
   suffix = randomSuffix()
   clientName = `Provenance Agent ${suffix}`

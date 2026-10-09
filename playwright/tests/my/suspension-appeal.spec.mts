@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -9,6 +9,7 @@ let suspendedUserId = ''
 let suffix = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   suffix = randomSuffix()
   const suspendedUser = requireTestValue(
     await createTestUser({ username: `suspension-appeal-user-${suffix}` }),

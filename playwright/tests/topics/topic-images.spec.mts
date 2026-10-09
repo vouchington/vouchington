@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
@@ -27,6 +27,7 @@ test.describe('Topic Images - Upload UI', () => {
   let heroTopicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // Topic with no images — for the upload-button test
     const s1 = randomSuffix()
     const plain = await insertTestTopic(`Upload UI Test ${s1}`, `upload-ui-test-${s1}`)
@@ -102,6 +103,7 @@ test.describe('Topic Images - Detail Page', () => {
   let topicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const topic = await insertTestTopic(
       `Detail Image Test Topic ${suffix}`,
