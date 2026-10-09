@@ -54,6 +54,7 @@ export function createMergedTool(
     JSON.stringify({
       scopes: tool.meta?.requiredScopes?.mcp,
       plan: tool.meta?.plan ?? 'free',
+      // ast-grep-ignore: no-roles-outside-services -- Declared tool gates, not user roles; authorization stays in mcp-tools services.
       roles: tool.roles ?? null,
       annotations: tool.meta?.annotations,
     })
@@ -128,6 +129,7 @@ export function createMergedTool(
     $defs: Object.assign({}, ...inputBranches.map(entry => entry.definitions)),
   })
   return {
+    // ast-grep-ignore: no-roles-outside-services -- Copies declared tool gates; no caller roles or authorization decisions are read here.
     ...(first.roles ? { roles: first.roles } : {}),
     schema: {
       name,

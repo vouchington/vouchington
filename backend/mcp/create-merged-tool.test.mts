@@ -109,14 +109,20 @@ describe('createMergedTool', () => {
     ).toThrow(McpToolOutputMismatchError)
   })
 
-  it('rejects incompatible declared metadata', () => {
-    const different = source('list')
-    different.meta.plan = 'plus'
-    expect(() =>
-      createMergedTool('read_example', 'Read Example', [
-        { option: 'get', source: source('get') },
-        { option: 'list', source: different },
-      ]),
-    ).toThrow('incompatible declared metadata')
-  })
+  it.each(['plan', 'scopes', 'roles', 'annotations'] as const)(
+    'rejects incompatible declared %s metadata',
+    field => {
+      const different = source('list')
+      if (field === 'plan') different.meta.plan = 'plus'
+      if (field === 'scopes') different.meta.requiredScopes = { mcp: ['posts:read'] }
+      if (field === 'roles') different.roles = { administrator: true }
+      if (field === 'annotations') different.meta.annotations = { readOnlyHint: false }
+      expect(() =>
+        createMergedTool('read_example', 'Read Example', [
+          { option: 'get', source: source('get') },
+          { option: 'list', source: different },
+        ]),
+      ).toThrow('incompatible declared metadata')
+    },
+  )
 })
