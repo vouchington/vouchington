@@ -76,7 +76,9 @@ so a case whose deadline passes between pages moves to an earlier tier. The tier
 `urgency * 2 + 1` by default. When `copyright.trustedFlaggerPriority` and an unwithdrawn EU policy
 approval are both present, an in-area matched EU notice uses `urgency * 2`, ahead of ordinary
 notices within the same urgency. The boost never crosses urgency tiers. The new cursor scope
-rejects previous queue cursors with `400`; clients restart from the first page.
+rejects previous queue cursors with `400`; clients restart from the first page. A page loads the
+case sections of all its items with one statement per section, so the data-store round trips do
+not grow with `limit`.
 
 While `copyright.staydownMatching` is on, an upload that matches an image a moderator confirmed on
 a case adds the `staydown_review` reason to that case. Each item's `staydown_matches` lists its

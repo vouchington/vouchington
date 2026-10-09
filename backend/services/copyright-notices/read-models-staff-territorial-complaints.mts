@@ -23,6 +23,27 @@ export type CopyrightTerritorialStaffComplaint = {
   } | null
 }
 
+type ComplaintPage = { results: CopyrightTerritorialStaffComplaint[]; page_info: PageInfo }
+type ComplaintCase = {
+  noticeId: string
+  decisionId: string | null
+  decidedAt: Date | null
+  jurisdiction: TerritorialCopyrightJurisdiction
+}
+type ComplaintRow = {
+  decision_id: string
+  id: string
+  idempotency_key: string
+  filed_by: CopyrightTerritorialStaffComplaint['filed_by']
+  submitted_by_id: string | null
+  received_at: Date
+  explanation_ciphertext: string
+  redress_decision_id: string | null
+  redress_decided_at: Date | null
+  staff_disposition: 'maintain' | 'revoke' | null
+  rationale_ciphertext: string | null
+}
+
 export function territorialComplaintCursorScope(noticeId: string, decisionId: string): string {
   return `copyright-territorial-complaints:${noticeId}:${decisionId}:id-asc`
 }
@@ -34,37 +55,84 @@ export async function selectTerritorialStaffComplaints(
   jurisdiction: TerritorialCopyrightJurisdiction,
   query: TransactionQuery,
   options: { limit: number; afterId?: string } = { limit: 25 },
-): Promise<{ results: CopyrightTerritorialStaffComplaint[]; page_info: PageInfo }> {
-  // A decisionless case has no complaints. This is an actual empty collection, not truncation.
-  if (!decisionId || !decidedAt)
-    return {
-      results: [],
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+): Promise<ComplaintPage> {
+  const pages = await selectTerritorialStaffComplaintPages(
+    [{ noticeId, decisionId, decidedAt, jurisdiction }],
+    query,
+    options,
+  )
+  return pages.get(noticeId)!
+}
+
+/** One page of complaints per listed case, read in a single statement; each case gets an entry. */
+export async function selectTerritorialStaffComplaintPages(
+  cases: readonly ComplaintCase[],
+  query: TransactionQuery,
+  options: { limit: number; afterId?: string } = { limit: 25 },
+): Promise<Map<string, ComplaintPage>> {
+  const decided = cases.filter(item => item.decisionId && item.decidedAt)
+  const rowsByDecision = new Map<string, ComplaintRow[]>()
+  if (decided.length > 0) {
+    const statement = sql`/* selectTerritorialStaffComplaints */
+      SELECT request.*
+      FROM unnest(${decided.map(item => item.decisionId)}::uuid[]) AS listed(decision_id)
+      CROSS JOIN LATERAL (
+        SELECT request.copyright_territorial_decision_id AS decision_id, request.id,
+          request.idempotency_key, request.filed_by,
+          request.submitted_by_id, request.received_at, request.explanation_ciphertext,
+          redress_decision.id AS redress_decision_id, redress_decision.decided_at AS redress_decided_at,
+          redress_decision.staff_disposition, redress_decision.rationale_ciphertext
+        FROM copyright_territorial_redress_requests request
+        LEFT JOIN copyright_territorial_redress_decisions redress_decision
+          ON redress_decision.copyright_territorial_redress_request_id = request.id
+        WHERE request.copyright_territorial_decision_id = listed.decision_id`
+    if (options.afterId) statement.append(sql` AND request.id > ${options.afterId}`)
+    statement.append(sql`
+        ORDER BY request.id ASC LIMIT ${options.limit + 1}
+      ) request
+      ORDER BY request.id ASC
+    `)
+    const { rows } = await query<ComplaintRow>(statement)
+    for (const row of rows) {
+      const group = rowsByDecision.get(row.decision_id)
+      if (group) group.push(row)
+      else rowsByDecision.set(row.decision_id, [row])
     }
-  const statement = sql`/* selectTerritorialStaffComplaints */
-    SELECT request.id, request.idempotency_key, request.filed_by,
-      request.submitted_by_id, request.received_at, request.explanation_ciphertext,
-      redress_decision.id AS redress_decision_id, redress_decision.decided_at AS redress_decided_at,
-      redress_decision.staff_disposition, redress_decision.rationale_ciphertext
-    FROM copyright_territorial_redress_requests request
-    LEFT JOIN copyright_territorial_redress_decisions redress_decision
-      ON redress_decision.copyright_territorial_redress_request_id = request.id
-    WHERE request.copyright_territorial_decision_id = ${decisionId}`
-  if (options.afterId) statement.append(sql` AND request.id > ${options.afterId}`)
-  statement.append(sql` ORDER BY request.id ASC LIMIT ${options.limit + 1}`)
-  const { rows: fetched } = await query<{
-    id: string
-    idempotency_key: string
-    filed_by: CopyrightTerritorialStaffComplaint['filed_by']
-    submitted_by_id: string | null
-    received_at: Date
-    explanation_ciphertext: string
-    redress_decision_id: string | null
-    redress_decided_at: Date | null
-    staff_disposition: 'maintain' | 'revoke' | null
-    rationale_ciphertext: string | null
-  }>(statement)
-  const rows = fetched.slice(0, options.limit)
+  }
+  const pages = await Promise.all(
+    cases.map(async (item): Promise<[string, ComplaintPage]> => {
+      // A decisionless case has no complaints. This is an actual empty collection, not truncation.
+      if (!item.decisionId || !item.decidedAt)
+        return [
+          item.noticeId,
+          {
+            results: [],
+            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+          },
+        ]
+      const fetched = rowsByDecision.get(item.decisionId) ?? []
+      return [
+        item.noticeId,
+        await toComplaintPage(
+          { ...item, decisionId: item.decisionId, decidedAt: item.decidedAt },
+          { fetched, limit: options.limit, query },
+        ),
+      ]
+    }),
+  )
+  return new Map(pages)
+}
+
+async function toComplaintPage(
+  {
+    noticeId,
+    decisionId,
+    decidedAt,
+    jurisdiction,
+  }: ComplaintCase & { decisionId: string; decidedAt: Date },
+  input: { fetched: ComplaintRow[]; limit: number; query: TransactionQuery },
+): Promise<ComplaintPage> {
+  const rows = input.fetched.slice(0, input.limit)
   const labels = territorialLabels(jurisdiction)
   const windows = await Promise.all(
     rows.map(row =>
@@ -78,7 +146,7 @@ export async function selectTerritorialStaffComplaints(
               posterUserId:
                 row.filed_by === 'poster' ? (row.submitted_by_id ?? undefined) : undefined,
             },
-            query,
+            input.query,
           ),
     ),
   )
@@ -117,7 +185,7 @@ export async function selectTerritorialStaffComplaints(
   return {
     results: result,
     page_info: buildPageInfo(result, {
-      hasNextPage: fetched.length > options.limit,
+      hasNextPage: input.fetched.length > input.limit,
       getCursor: item => ({ id: item.id, scope }),
     }),
   }
