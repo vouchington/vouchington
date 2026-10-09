@@ -16,13 +16,13 @@ const request: ToolTurnRequest = {
     {
       role: 'assistant',
       text: 'Let me look.',
-      toolCalls: [{ id: 'call_1', name: 'search_topics', input: { query: 'rust' } }],
+      toolCalls: [{ id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } }],
     },
     { role: 'tool', results: [{ callId: 'call_1', content: '{"topics":[]}', isError: true }] },
   ],
   tools: [
     {
-      name: 'search_topics',
+      name: 'lookup_topics',
       description: 'Search.',
       inputSchema: { type: 'object', properties: { query: { type: 'string' } } },
     },
@@ -42,7 +42,7 @@ function message(overrides: Partial<Anthropic.Message> = {}): Anthropic.Message 
     model: 'claude-haiku-5-5',
     content: [
       { type: 'text', text: 'Searching.', citations: null },
-      { type: 'tool_use', id: 'toolu_1', name: 'search_topics', input: { query: 'go' } },
+      { type: 'tool_use', id: 'toolu_1', name: 'lookup_topics', input: { query: 'go' } },
     ],
     stop_reason: 'tool_use',
     stop_sequence: null,
@@ -74,14 +74,14 @@ describe('callAnthropicToolTurn', () => {
       system: 'Decide.',
       tool_choice: { type: 'any' },
       metadata: { user_id: 'actor' },
-      tools: [{ name: 'search_topics', description: 'Search.' }],
+      tools: [{ name: 'lookup_topics', description: 'Search.' }],
       messages: [
         { role: 'user', content: 'Which topics?' },
         {
           role: 'assistant',
           content: [
             { type: 'text', text: 'Let me look.' },
-            { type: 'tool_use', id: 'call_1', name: 'search_topics', input: { query: 'rust' } },
+            { type: 'tool_use', id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } },
           ],
         },
         {
@@ -105,7 +105,7 @@ describe('callAnthropicToolTurn', () => {
       usage: { inputTokens: 20, outputTokens: 8 },
       output: {
         text: 'Searching.',
-        toolCalls: [{ id: 'toolu_1', name: 'search_topics', input: { query: 'go' } }],
+        toolCalls: [{ id: 'toolu_1', name: 'lookup_topics', input: { query: 'go' } }],
       },
     })
   })
@@ -172,7 +172,7 @@ describe('generateToolTurn', () => {
     const createOpenRouterResponse = vi.fn<CreateOpenRouter>().mockResolvedValue({
       id: 'resp_1',
       status: 'completed',
-      output: [{ type: 'function_call', call_id: 'c1', name: 'search_topics', arguments: '{}' }],
+      output: [{ type: 'function_call', call_id: 'c1', name: 'lookup_topics', arguments: '{}' }],
       output_text: '',
       model: 'gpt-6-luna',
       usage: { input_tokens: 1, output_tokens: 1 },
@@ -201,7 +201,7 @@ describe('generateToolTurn', () => {
     const createOpenRouterResponse = vi.fn<CreateOpenRouter>().mockResolvedValue({
       id: 'resp_1',
       status: 'completed',
-      output: [{ type: 'function_call', call_id: 'c1', name: 'search_topics', arguments: '{}' }],
+      output: [{ type: 'function_call', call_id: 'c1', name: 'lookup_topics', arguments: '{}' }],
       output_text: '',
       model: 'gpt-6-luna',
       usage: { input_tokens: 1, output_tokens: 1 },

@@ -1,12 +1,13 @@
-import { randomUUID } from 'node:crypto'
-import { softDeleteList } from '@services/lists'
-import { createRandomString, createTestUser, insertTestList } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  optionArgs,
   callRejectedMcpTool,
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import { randomUUID } from 'node:crypto'
+import { softDeleteList } from '@services/lists'
+import { createRandomString, createTestUser, insertTestList } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 import getListTool from '../get-list.mts'
 
@@ -47,15 +48,15 @@ async function makeInOrder(ownerUserId: string, label: string, visibilities: Vis
   return made
 }
 
-describe('get_list and get_my_lists — real DB', () => {
+describe('read_my_lists.get and read_my_lists.list — real DB', () => {
   let owner: McpContractCaller
   let stranger: McpContractCaller
   let lists: Record<'public' | 'unlisted' | 'private' | 'strangers' | 'removed', string>
 
   const getList = (list_id: string, who = owner, scopes: Scopes = READ) =>
-    callStructuredMcpTool(who, 'get_list', { list_id }, scopes)
+    callStructuredMcpTool(who, 'read_my_lists', optionArgs('get', { list_id }), scopes)
   const myLists = (args: Body = {}, who = owner, scopes: Scopes = READ) =>
-    callStructuredMcpTool(who, 'get_my_lists', args, scopes) as Promise<Page>
+    callStructuredMcpTool(who, 'read_my_lists', optionArgs('list', args), scopes) as Promise<Page>
 
   beforeAll(async () => {
     ;[owner, stranger] = (await Promise.all([createTestUser(), createTestUser()])).map(
@@ -76,7 +77,7 @@ describe('get_list and get_my_lists — real DB', () => {
     }
   })
 
-  describe('get_list', () => {
+  describe('read_my_lists.get', () => {
     it('returns a public or unlisted list to its owner and to anyone else', async () => {
       for (const who of [owner, stranger]) {
         expect(await getList(lists.public, who)).toEqual({
@@ -140,7 +141,12 @@ describe('get_list and get_my_lists — real DB', () => {
     it('rejects an argument that is not a list id', async () => {
       for (const list_id of ['not-a-uuid', '', lists.private.toUpperCase().slice(0, 8)]) {
         expect(
-          await callRejectedMcpTool(owner, 'get_list', { list_id }, OWNED_PRIVATE),
+          await callRejectedMcpTool(
+            owner,
+            'read_my_lists',
+            optionArgs('get', { list_id }),
+            OWNED_PRIVATE,
+          ),
         ).toBeTruthy()
       }
     })
@@ -158,7 +164,7 @@ describe('get_list and get_my_lists — real DB', () => {
     })
   })
 
-  describe('get_my_lists', () => {
+  describe('read_my_lists.list', () => {
     it('lists the public and unlisted lists, newest first, and never a removed one', async () => {
       const page = await myLists()
 

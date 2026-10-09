@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import {
   getTestOAuthClientPublicId,
@@ -25,8 +25,17 @@ const verifiedApp = () => ({
   client_name: APP_NAME,
 })
 
-const read = async (tool: string, id: string, caller: PrivateUser = author) =>
-  callStructuredMcpTool({ ...caller, membership_plan: null }, tool, { post_id: id }, SCOPES)
+const read = async (
+  option: 'details' | 'ancestors' | 'descendants',
+  id: string,
+  caller: PrivateUser = author,
+) =>
+  callStructuredMcpTool(
+    { ...caller, membership_plan: null },
+    'read_posts',
+    optionArgs(option, { post_id: id }),
+    SCOPES,
+  )
 
 describe('MCP post provenance read tools', () => {
   beforeAll(async () => {
@@ -56,17 +65,17 @@ describe('MCP post provenance read tools', () => {
   })
 
   describe('MCP post provenance', () => {
-    it('get_post carries the public label for API and MCP posts', async () => {
-      expect((await read('get_post', root.id)).post).toMatchObject({
+    it('read_posts.details carries the public label for API and MCP posts', async () => {
+      expect((await read('details', root.id)).post).toMatchObject({
         provenance: { via: 'mcp', app: verifiedApp() },
       })
-      expect((await read('get_post', posts.api!.id)).post).toMatchObject({
+      expect((await read('details', posts.api!.id)).post).toMatchObject({
         provenance: { via: 'api', app: null },
       })
     })
 
     it('leaves the label off posts written on the web', async () => {
-      expect(await read('get_post', posts.web!.id)).toEqual({
+      expect(await read('details', posts.web!.id)).toEqual({
         success: true,
         post: expect.not.objectContaining({ provenance: expect.anything() }),
       })
@@ -74,7 +83,7 @@ describe('MCP post provenance read tools', () => {
 
     it('never names the client behind an anonymous post, even to an administrator or its author', async () => {
       for (const caller of [author, admin]) {
-        const { post } = await read('get_post', posts.anonymous!.id, caller)
+        const { post } = await read('details', posts.anonymous!.id, caller)
         expect(post).toMatchObject({ provenance: { via: 'mcp', app: null } })
         expect(JSON.stringify(post)).not.toContain(APP_NAME)
         expect(JSON.stringify(post)).not.toContain(clientId)
@@ -83,18 +92,18 @@ describe('MCP post provenance read tools', () => {
     })
 
     it('never returns the staff detail, even to an administrator', async () => {
-      const { post } = await read('get_post', root.id, admin)
+      const { post } = await read('details', root.id, admin)
       expect(post).not.toHaveProperty('staff_provenance')
       expect(post).toMatchObject({ provenance: { via: 'mcp', app: verifiedApp() } })
       expect(JSON.stringify(post)).not.toContain('metadata_url')
     })
 
-    it('labels the posts that get_post_ancestors and get_post_descendants return', async () => {
-      const { ancestors } = await read('get_post_ancestors', posts.api!.id)
+    it('labels the posts that read_posts.ancestors and read_posts.descendants return', async () => {
+      const { ancestors } = await read('ancestors', posts.api!.id)
       expect(ancestors).toEqual([
         expect.objectContaining({ id: root.id, provenance: { via: 'mcp', app: verifiedApp() } }),
       ])
-      const { descendants } = await read('get_post_descendants', root.id)
+      const { descendants } = await read('descendants', root.id)
       const byId = new Map((descendants as { id: string }[]).map(post => [post.id, post]))
       expect(byId.get(posts.api!.id)).toMatchObject({ provenance: { via: 'api', app: null } })
       expect(byId.get(posts.web!.id)).not.toHaveProperty('provenance')

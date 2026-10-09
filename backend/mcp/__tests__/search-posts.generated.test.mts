@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import * as entityListenerEnqueues from '../../queues/entity-listeners/enqueues.mts'
 import * as notificationEnqueues from '@queues/notifications/enqueues'
@@ -9,7 +10,6 @@ import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { insertEntityRelation } from '@voucha/test-helpers/entities/entity-relations'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { paginationConfig } from '@services/pagination/config'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createPost } from '@services/posts'
 import type { PrivateUser } from '@services/users/types'
 type SearchArgs = Parameters<ReturnType<typeof searchPostsTool.function>>[0]
@@ -170,8 +170,8 @@ describe('search-posts tool', () => {
     // Keep the actual default branch; the real MCP call also validates and serializes its schema.
     const protocol = await callStructuredMcpTool(
       { ...testUser, membership_plan: null },
-      'search_posts',
-      { limit: 5 },
+      'read_posts',
+      optionArgs('search', { limit: 5 }),
       ['posts:read'],
     )
     expect(protocol).toMatchObject({

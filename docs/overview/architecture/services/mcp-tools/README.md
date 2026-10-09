@@ -8,6 +8,23 @@ Lists and executes MCP tools through stateless HTTP requests.
 
 The [module inventory](module-inventory.md) maps each source file to its responsibility.
 
+## Merged tools
+
+Related user operations share a tool through `createMergedTool`. Every call uses a closed
+`{ option, arguments }` envelope: the option selects exactly one input schema, and unknown options,
+extra envelope fields, missing arguments, or fields from another option are rejected before dispatch.
+The registry compares declared MCP scopes, roles, plan and annotations across group members.
+Each option retains its source handler's runtime authorization and REST behavior.
+
+The selected option alone determines the REST routes charged to the caller. Its result must satisfy
+its own output schema before validation against the advertised union of all option outputs.
+There are no aliases for replaced tool names. Regenerate the catalog with `pnpm mcp:catalog`.
+
+The audit records only registered options in `tool_option`, without arguments or results. A handler
+that refuses an admitted call still writes the existing `accepted` and `tool_error` rows; both carry
+the selected option. For example, free callers can read RSS feed details, while crawl reads retain
+their existing runtime 403 rather than becoming a declared plan denial.
+
 ## Structured tool results
 
 A tool declares `meta.outputSchema` (JSON Schema, object root) and `toolToMcpTool` publishes it as
@@ -166,6 +183,7 @@ range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived f
 | `oauth_client_id`, `api_key_id`          | Exactly one is set (a `CHECK`): a foreign key to the OAuth client the token was issued to, or to the API key's `retained_api_key_identities` row                       |
 | `resource`                               | Protected resource URL of the route called                                                                                                                             |
 | `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                            |
+| `tool_option`                            | Selected registered option for a merged tool, otherwise `NULL`                                                                                                         |
 | `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
 | `copyright_rationale_ciphertext`         | Typed encrypted rationale for an admitted, validated copyright decision call; bound to the audit event id                                                              |
 | `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |

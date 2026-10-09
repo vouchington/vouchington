@@ -7,16 +7,16 @@ each tool's description and scopes; the [agent tools overview](README.md) covers
 gating, and the [hostname, list and user read tools](hostname-list-user-read-tools.md) describe the
 result shape and paging rules these tools share.
 
-| Tool                             | REST twin                                       | Scope                 | Arguments                               |
-| -------------------------------- | ----------------------------------------------- | --------------------- | --------------------------------------- |
-| `get_trending_communities`       | `GET /api/v1/trending-communities`              | `communities:read`    | `limit`, `after`                        |
-| `get_trending_referral_programs` | `GET /api/v1/trending-referral-programs`        | `topics:read`         | `limit`, `after`                        |
-| `get_topic_referral_program`     | `GET /api/v1/topics/:idOrSlug/referral-program` | `topics:read`         | `topic_id` (UUID or slug)               |
-| `get_my_referral_links`          | `GET /api/v1/referral-links`                    | `referral-links:read` | `referral_program_id`, `limit`, `after` |
-| `search_web`                     | `GET /api/v1/web-search`                        | `web-search:read`     | `query`, `limit`                        |
-| `list_countries`                 | `GET /api/v1/countries`                         | `reference-data:read` | none                                    |
-| `list_currencies`                | `GET /api/v1/currencies`                        | `reference-data:read` | `limit`, `after`                        |
-| `get_platform_stats`             | `GET /api/v1/platform-stats`                    | `reference-data:read` | none                                    |
+| Tool                                          | REST twin                                       | Scope                 | Arguments                               |
+| --------------------------------------------- | ----------------------------------------------- | --------------------- | --------------------------------------- |
+| `discover_communities(trending)`              | `GET /api/v1/trending-communities`              | `communities:read`    | `limit`, `after`                        |
+| `discover_topics(trending_referral_programs)` | `GET /api/v1/trending-referral-programs`        | `topics:read`         | `limit`, `after`                        |
+| `read_topic(referral_program)`                | `GET /api/v1/topics/:idOrSlug/referral-program` | `topics:read`         | `topic_id` (UUID or slug)               |
+| `get_my_referral_links`                       | `GET /api/v1/referral-links`                    | `referral-links:read` | `referral_program_id`, `limit`, `after` |
+| `search_web`                                  | `GET /api/v1/web-search`                        | `web-search:read`     | `query`, `limit`                        |
+| `read_reference_data(countries)`              | `GET /api/v1/countries`                         | `reference-data:read` | none                                    |
+| `read_reference_data(currencies)`             | `GET /api/v1/currencies`                        | `reference-data:read` | `limit`, `after`                        |
+| `read_reference_data(platform_stats)`         | `GET /api/v1/platform-stats`                    | `reference-data:read` | none                                    |
 
 `web-search:read` and `reference-data:read` are new resource scopes, and `mcp.user:read` covers them
 like every other user read scope ([scope policy](../backend/modules/scopes/README.md)). The other
@@ -29,18 +29,18 @@ cursor" }`.
 
 ## Trending
 
-Both trending tools return ids with a score, not the entities: use `get_community`,
-`get_topic_details` or `get_referral_links` for the rest. `get_trending_communities` reads as a
+Both trending tools return ids with a score, not the entities: use `read_community(details)`,
+`read_topic(details)` or `get_referral_links` for the rest. `discover_communities(trending)` reads as a
 signed-out reader for every caller, so a private community never appears, whatever it scores, even
 to its owner or an administrator. Each result is `{ id, trending_score, member_count, post_count,
-virtual_subscription_count }`. `get_trending_referral_programs` counts the active links of an
+virtual_subscription_count }`. `discover_topics(trending_referral_programs)` counts the active links of an
 enabled program from the last 30 days and returns `{ id, trending_score, link_count }`; a disabled
 program is left out. Both tools call the uncached service, not the cached one signed-out REST
 uses.
 
 ## Referral programs and links
 
-`get_topic_referral_program` takes a topic UUID or slug and returns `{ topic_id, company_topic_id,
+`read_topic(referral_program)` takes a topic UUID or slug and returns `{ topic_id, company_topic_id,
 enabled_at, disabled_at }`, with the dates as ISO text. It answers `Topic not found`, `Topic is not
 a referral program` or `Referral program attributes not found` instead of failing.
 
@@ -63,8 +63,8 @@ from another website: it is wrapped with `wrapExternalContent` (source `web_sear
 
 ## Reference data
 
-`list_countries` returns the fixed country list and `list_currencies` the supported currencies by
-code, each with its minor unit exponent, paged by cursor. `get_platform_stats` returns the six
+`read_reference_data(countries)` returns the fixed country list and `read_reference_data(currencies)` the supported currencies by
+code, each with its minor unit exponent, paged by cursor. `read_reference_data(platform_stats)` returns the six
 Voucha-wide counts (`topic_count`, `rss_feed_count`, `post_count`, `review_count`,
 `data_point_count`, `hostname_count`); the counts are cached for a short time and can trail the
 database slightly. All three read the same public data the signed-out REST routes return.

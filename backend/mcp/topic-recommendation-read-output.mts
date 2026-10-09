@@ -33,7 +33,7 @@ async function fencedText(text: string, contentType: string): Promise<string> {
   return (await externalText(text, SOURCE, contentType)) ?? ''
 }
 
-/** A user stub with the profile text any user can write sanitized, like `get_user` returns it. */
+/** A user stub with the profile text any user can write sanitized, like `read_users (option details)` returns it. */
 async function sanitizedUser(user: BasicUser | null | undefined) {
   if (!user) return user
   const text: BasicUser = { ...user }

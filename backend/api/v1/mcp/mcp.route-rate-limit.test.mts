@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createApiKey } from '@services/api-keys'
 import { checkUsageQuota } from '@services/route-rate-limits'
@@ -250,7 +251,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     })
 
     const response = await mcpPost(token, [
-      toolCall(1, 'get_topic_metrics', { topic_id: topicId }),
+      toolCall(1, 'read_topic', optionArgs('metrics', { topic_id: topicId })),
       reportCall(2, await newPostId()),
     ]).expect(200)
 

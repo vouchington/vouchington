@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import {
   createTestPost,
@@ -25,7 +26,13 @@ function asCaller(user: PrivateUser): Caller {
 }
 
 function callRaw(caller: Caller, args: Record<string, unknown>) {
-  return callMcpTool('get_post_descendants', args, caller, ['posts:read'], USER_MCP_SERVER_CONFIG)
+  return callMcpTool(
+    'read_posts',
+    optionArgs('descendants', args),
+    caller,
+    ['posts:read'],
+    USER_MCP_SERVER_CONFIG,
+  )
 }
 
 // Every call goes through the real call path, which checks the result against the output schema.
@@ -45,7 +52,7 @@ async function comment(user: PrivateUser, parentId: string) {
   return createTestPost({ user, post_type: 'comment', parent_post_id: parentId })
 }
 
-describe('get_post_descendants — real DB', () => {
+describe('read_posts.descendants — real DB', () => {
   let author: Caller
   let other: Caller
 

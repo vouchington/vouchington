@@ -1,5 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool, ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import {
   getIndividualCards,
   getIndividualRewardsProgramPointValuations,
@@ -62,10 +63,8 @@ type ToolResult = {
   rewards_program_statuses_page_info: IndividualRewardsProgramStatusPage['page_info']
 }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_my_profile',
-    type: 'function',
     description:
       "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
     parameters: {
@@ -98,7 +97,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

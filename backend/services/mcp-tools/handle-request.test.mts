@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { ErrorCode, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
@@ -111,8 +112,8 @@ describe('handleMcpHttpRequest', () => {
   })
 
   it('rejects malformed authorized envelopes before any tool invocation', async () => {
-    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics')
-    if (!tool) throw new Error('Expected search_topics tool')
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'discover_topics')
+    if (!tool) throw new Error('Expected discover_topics tool')
     const invoke = vi.spyOn(tool, 'function')
 
     try {
@@ -137,7 +138,10 @@ describe('handleMcpHttpRequest', () => {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
-      params: { name: 'search_topics', arguments: { text_search_query: 'hello' } },
+      params: {
+        name: 'discover_topics',
+        arguments: optionArgs('search', { text_search_query: 'hello' }),
+      },
     })
 
     expect(response.status).toBe(200)

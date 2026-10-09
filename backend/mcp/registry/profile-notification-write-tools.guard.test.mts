@@ -23,17 +23,17 @@ const PREFERENCES: ApiScope[] = ['preferences:read', 'preferences:write']
 
 // Every tool, with arguments that would change something for the fixture user.
 const TOOLS: [string, ApiScope[], (fixture: Fixture) => Record<string, unknown>][] = [
-  ['update_my_bio', PROFILE, () => ({ markdown: 'Changed' })],
+  ['edit_my_profile', PROFILE, () => ({ markdown: 'Changed' })],
   ['add_my_profile_link', PROFILE, () => ({ link_type: 'url', url: 'https://example.com/new' })],
-  ['update_my_profile_link', PROFILE, f => ({ link_id: f.linkIds[0], name: 'Changed' })],
+  ['edit_my_profile', PROFILE, f => ({ link_id: f.linkIds[0], name: 'Changed' })],
   ['delete_my_profile_link', PROFILE, f => ({ link_id: f.linkIds[0] })],
   ['reorder_my_profile_links', PROFILE, f => ({ ids: [...f.linkIds].toReversed() })],
-  ['update_my_display_identity', PROFILE, f => ({ profile_image_id: f.imageId })],
-  ['mark_notification_read', NOTIFICATIONS, f => ({ notification_id: f.notificationId })],
-  ['mark_all_notifications_read', NOTIFICATIONS, () => ({})],
+  ['edit_my_profile', PROFILE, f => ({ profile_image_id: f.imageId })],
+  ['mark_notifications_read', NOTIFICATIONS, f => ({ notification_id: f.notificationId })],
+  ['mark_notifications_read', NOTIFICATIONS, () => ({})],
   ['delete_notification', NOTIFICATIONS, f => ({ notification_id: f.notificationId })],
-  ['update_my_email_preferences', PREFERENCES, () => ({ news_digest_frequency: 'weekly' })],
-  ['update_my_preferences', PREFERENCES, () => ({ follows_visibility: 'nobody' })],
+  ['edit_my_preferences', PREFERENCES, () => ({ news_digest_frequency: 'weekly' })],
+  ['edit_my_preferences', PREFERENCES, () => ({ follows_visibility: 'nobody' })],
 ]
 
 async function createFixture(plan: 'plus' | null = 'plus') {

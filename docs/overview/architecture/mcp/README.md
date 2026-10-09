@@ -140,7 +140,7 @@ category path described in [Tags](../../../requirements/content/TAGS.md). Its re
 returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
 tables that persist a row identifier.
 
-`set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
+`manage_bookmark(set)`, `manage_bookmark(remove)`, and the five list write tools follow the same delegated-authority
 model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md). `remove_entity_relation` and
 the referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md). Post creation, replies, edits, archive and deletion use [Post and Comment Write Tools](post-comment-write-tools.md). Community creation, joining, leaving and applying, content reports, review disputes and moderation appeals use [Community, Report, Dispute and Appeal Tools](community-report-appeal-write-tools.md). The read tools are in [Hostname, List and User Read Tools](hostname-list-user-read-tools.md), [Trending, Referral, Search and Reference Read Tools](search-reference-read-tools.md), [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md), and [Own Profile, Notification, Preference and Recommendation Read Tools](own-data-read-tools.md).
 
@@ -160,4 +160,4 @@ these reasons:
 
 A tool result that includes member-authored or third-party text must mark that text with
 `wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model; for
-example, `get_topic_details` marks topic markdown and `search_posts` and `get_post` mark posts.
+example, `read_topic(details)` marks topic markdown and `read_posts(search)` and `read_posts(details)` mark posts.

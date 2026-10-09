@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import {
@@ -14,7 +15,6 @@ import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Entry = { id: string; trending_score: number } & Record<string, unknown>
@@ -52,7 +52,7 @@ async function seenUntil(wanted: string[], after: string, pageOf: PageOf): Promi
   return seen
 }
 
-describe('get_trending_communities — real DB', () => {
+describe('discover_communities.trending — real DB', () => {
   const random = createRandomString(8).toLowerCase()
   let caller: Caller
   let high: { id: string }
@@ -60,7 +60,7 @@ describe('get_trending_communities — real DB', () => {
   let hidden: { id: string }
 
   const trending = (args: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(caller, 'get_trending_communities', args, [
+    callStructuredMcpTool(caller, 'discover_communities', optionArgs('trending', args), [
       'communities:read',
     ]) as Promise<Page>
   const viaTool: PageOf = after => trending({ limit: 25, after })
@@ -169,16 +169,19 @@ describe('get_trending_communities — real DB', () => {
   })
 })
 
-describe('get_trending_referral_programs — real DB', () => {
+describe('discover_topics.trending_referral_programs — real DB', () => {
   let caller: Caller
   let busy: string
   let quiet: string
   let disabled: string
 
   const trending = (args: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(caller, 'get_trending_referral_programs', args, [
-      'topics:read',
-    ]) as Promise<Page>
+    callStructuredMcpTool(
+      caller,
+      'discover_topics',
+      optionArgs('trending_referral_programs', args),
+      ['topics:read'],
+    ) as Promise<Page>
   const viaTool: PageOf = after => trending({ limit: 25, after })
   const viaRest: PageOf = async after => {
     const request = createRequest()

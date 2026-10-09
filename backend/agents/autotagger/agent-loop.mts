@@ -54,7 +54,7 @@ function callsSignature(calls: readonly ToolCall[]): string {
 
 /**
  * The bounded tool-use loop of the reasoning autotagger. Each turn the model must call a tool:
- * `search_topics` to look a topic up, or `submit_topics` to answer with candidate ids. The loop
+ * `lookup_candidate_topics` to look a topic up, or `submit_topics` to answer with candidate ids. The loop
  * ends on the first valid submission, and answers with no topics when it runs out of turns or
  * output tokens, or repeats itself: a bound is a stop, never a reason to guess. Tool calls past the
  * bound get an error result that tells the model to submit. Every id the loop returns was checked

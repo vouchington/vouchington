@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
@@ -8,10 +13,6 @@ import {
 } from '@voucha/test-helpers'
 import { insertContentProvenanceOAuthClient } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-import {
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 
 type Body = Record<string, unknown>
 type Kind = 'api' | 'mcp' | 'web'
@@ -104,51 +105,61 @@ describe('MCP entity tools carry the public provenance label — real DB', () =>
 
   const call = (name: string, args: Body) => callStructuredMcpTool(admin, name, args, READ)
 
-  it('get_community labels an API or MCP community and leaves a web one bare', async () => {
+  it('read_community.details labels an API or MCP community and leaves a web one bare', async () => {
     const entries = await Promise.all(
-      KINDS.map(kind => call('get_community', { community_id: communities[kind] })),
+      KINDS.map(kind =>
+        call('read_community', optionArgs('details', { community_id: communities[kind] })),
+      ),
     )
 
     expect(entries.map(entry => seen(entry.community as Body))).toEqual(KINDS.map(k => EXPECTED[k]))
   })
 
-  it('search_communities labels each community it returns', async () => {
-    const page = await call('search_communities', { q: `Provenance ${token}` })
+  it('discover_communities.search labels each community it returns', async () => {
+    const page = await call(
+      'discover_communities',
+      optionArgs('search', { q: `Provenance ${token}` }),
+    )
     const results = (page.results as Array<{ community: Body }>).map(entry => entry.community)
 
     expect(seenInPage(results, communities)).toEqual(EXPECTED)
   })
 
-  it('get_topic_details labels an API or MCP topic and leaves a web one bare', async () => {
+  it('read_topic.details labels an API or MCP topic and leaves a web one bare', async () => {
     const details = await Promise.all(
-      KINDS.map(kind => call('get_topic_details', { topic_id: topics[kind] })),
+      KINDS.map(kind => call('read_topic', optionArgs('details', { topic_id: topics[kind] }))),
     )
 
     expect(details.map(seen)).toEqual(KINDS.map(k => EXPECTED[k]))
   })
 
-  it('get_list labels an API or MCP list and leaves a web one bare', async () => {
-    const found = await Promise.all(KINDS.map(kind => call('get_list', { list_id: lists[kind] })))
+  it('read_my_lists.get labels an API or MCP list and leaves a web one bare', async () => {
+    const found = await Promise.all(
+      KINDS.map(kind => call('read_my_lists', optionArgs('get', { list_id: lists[kind] }))),
+    )
 
     expect(found.map(entry => seen(entry.list as Body))).toEqual(KINDS.map(k => EXPECTED[k]))
   })
 
-  it('get_my_lists labels each of the caller lists', async () => {
-    const page = await call('get_my_lists', { limit: 25 })
+  it('read_my_lists.list labels each of the caller lists', async () => {
+    const page = await call('read_my_lists', optionArgs('list', { limit: 25 }))
 
     expect(seenInPage(page.results as Body[], lists)).toEqual(EXPECTED)
   })
 
-  it('get_rss_feed labels an API or MCP feed and leaves a web one bare', async () => {
+  it('read_rss_feed.details labels an API or MCP feed and leaves a web one bare', async () => {
     const found = await Promise.all(
-      KINDS.map(kind => call('get_rss_feed', { rss_feed_id: feeds[kind] })),
+      KINDS.map(kind => call('read_rss_feed', optionArgs('details', { rss_feed_id: feeds[kind] }))),
     )
 
     expect(found.map(entry => seen(entry.rss_feed as Body))).toEqual(KINDS.map(k => EXPECTED[k]))
   })
 
-  it('search_rss_feeds labels each feed it returns', async () => {
-    const page = await call('search_rss_feeds', { q: `Provenance ${token}` })
+  it('discover_rss_feeds.search labels each feed it returns', async () => {
+    const page = await call(
+      'discover_rss_feeds',
+      optionArgs('search', { q: `Provenance ${token}` }),
+    )
 
     expect(seenInPage(page.results as Body[], feeds)).toEqual(EXPECTED)
   })

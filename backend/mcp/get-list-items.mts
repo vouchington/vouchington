@@ -1,5 +1,6 @@
 import { searchListItems } from '@services/lists'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
 import {
@@ -27,11 +28,9 @@ type ToolResult = McpPage<McpListItem> | typeof LIST_NOT_FOUND | InvalidCursorRe
 
 const { default: defaultLimit, max } = LIST_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_list_items',
-    type: 'function',
-    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (read_posts (option details) or read_rss_feed_item (option details)). The list must be readable as read_my_lists (option get) describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {
@@ -42,7 +41,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['list_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

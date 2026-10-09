@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import assert from 'http-assert'
 import { getModerationAppealByIdFromPrimary } from '@services/moderation-appeals'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { APPEAL_SCHEMA, toMcpAppeal, type McpAppeal } from './mcp-case-output.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
@@ -8,10 +8,8 @@ import { requirePrivateToolUser } from './private-user.mts'
 type Args = { appeal_id: string }
 type Result = { success: true; appeal: McpAppeal }
 
-const tool: Tool<Args, Result> = {
+const tool: MergedToolSource<Args, Result> = {
   schema: {
-    name: 'get_my_moderation_appeal',
-    type: 'function',
     description:
       "Get one moderation appeal the current user filed, by id: its target_type and target_id (the warning, community ban, removed post or suspension it contests), the community_id and post_removal_kind where they apply, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. The call is refused with NOT_FOUND for an unknown id and with FORBIDDEN for another user's appeal.",
     parameters: {
@@ -22,7 +20,6 @@ const tool: Tool<Args, Result> = {
       required: ['appeal_id'],
       additionalProperties: false,
     },
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

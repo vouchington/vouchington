@@ -4,7 +4,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { insertTestTopic, updateTopicMarkdown } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
 
-describe('get_topic_details tool — real DB', () => {
+describe('read_topic.details tool — real DB', () => {
   let user: PrivateUser
   const suffix = crypto.randomUUID().slice(0, 8)
 

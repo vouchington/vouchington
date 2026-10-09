@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey } from '@services/api-keys'
 import { addListItem } from '@services/lists'
@@ -28,15 +29,7 @@ const OWNED_PRIVATE = [
   'post-relations.owned-private:write',
 ] as const
 const LIST_NOT_FOUND = { success: false, error: 'List not found' }
-const TOOLS = [
-  'search_hostnames',
-  'get_top_hostnames',
-  'get_user',
-  'search_users',
-  'get_my_lists',
-  'get_list',
-  'get_list_items',
-]
+const TOOLS = ['read_hostnames', 'read_users', 'read_my_lists']
 
 function postMcp(token: string, body: unknown) {
   return createRequest()
@@ -102,12 +95,16 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
     const hostnameId = await insertTestUrlHostname({ hostname })
     const token = await issueCredential(kind, owner, READ)
 
-    const user = await readTool(token, 'get_user', { user_id: owner.username! })
-    const users = await readTool(token, 'search_users', { q: owner.username! })
-    const hostnames = await readTool(token, 'search_hostnames', { hostname })
-    const mine = await readTool(token, 'get_my_lists')
-    const one = await readTool(token, 'get_list', { list_id: list.id })
-    const items = await readTool(token, 'get_list_items', { list_id: list.id })
+    const user = await readTool(
+      token,
+      'read_users',
+      optionArgs('details', { user_id: owner.username! }),
+    )
+    const users = await readTool(token, 'read_users', optionArgs('search', { q: owner.username! }))
+    const hostnames = await readTool(token, 'read_hostnames', optionArgs('search', { hostname }))
+    const mine = await readTool(token, 'read_my_lists', optionArgs('list', {}))
+    const one = await readTool(token, 'read_my_lists', optionArgs('get', { list_id: list.id }))
+    const items = await readTool(token, 'read_my_lists', optionArgs('items', { list_id: list.id }))
 
     expect(user).toMatchObject({ success: true, user: { id: owner.id } })
     expect(resultIds(users)).toEqual([owner.id])
@@ -139,17 +136,21 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
       })
       const strangerToken = await issueCredential(kind, stranger, OWNED_PRIVATE)
 
-      expect(await readTool(strangerToken, 'get_list', { list_id: pub.id })).toMatchObject({
+      expect(
+        await readTool(strangerToken, 'read_my_lists', optionArgs('get', { list_id: pub.id })),
+      ).toMatchObject({
         success: true,
         list: { id: pub.id },
       })
-      expect(await readTool(strangerToken, 'get_list', { list_id: priv.id })).toEqual(
-        LIST_NOT_FOUND,
-      )
-      expect(await readTool(strangerToken, 'get_list_items', { list_id: priv.id })).toEqual(
-        LIST_NOT_FOUND,
-      )
-      expect(resultIds(await readTool(strangerToken, 'get_my_lists'))).toEqual([])
+      expect(
+        await readTool(strangerToken, 'read_my_lists', optionArgs('get', { list_id: priv.id })),
+      ).toEqual(LIST_NOT_FOUND)
+      expect(
+        await readTool(strangerToken, 'read_my_lists', optionArgs('items', { list_id: priv.id })),
+      ).toEqual(LIST_NOT_FOUND)
+      expect(
+        resultIds(await readTool(strangerToken, 'read_my_lists', optionArgs('list', {}))),
+      ).toEqual([])
     },
   )
 
@@ -166,26 +167,36 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
       const ordinary = await issueCredential(kind, owner, READ)
       const exact = await issueCredential(kind, owner, OWNED_PRIVATE)
 
-      expect(await readTool(ordinary, 'get_list', { list_id: priv.id })).toEqual(LIST_NOT_FOUND)
-      expect(await readTool(ordinary, 'get_list_items', { list_id: priv.id })).toEqual(
-        LIST_NOT_FOUND,
+      expect(
+        await readTool(ordinary, 'read_my_lists', optionArgs('get', { list_id: priv.id })),
+      ).toEqual(LIST_NOT_FOUND)
+      expect(
+        await readTool(ordinary, 'read_my_lists', optionArgs('items', { list_id: priv.id })),
+      ).toEqual(LIST_NOT_FOUND)
+      expect(resultIds(await readTool(ordinary, 'read_my_lists', optionArgs('list', {})))).toEqual(
+        [],
       )
-      expect(resultIds(await readTool(ordinary, 'get_my_lists'))).toEqual([])
 
-      expect(await readTool(exact, 'get_list', { list_id: priv.id })).toMatchObject({
+      expect(
+        await readTool(exact, 'read_my_lists', optionArgs('get', { list_id: priv.id })),
+      ).toMatchObject({
         success: true,
         list: { id: priv.id, visibility: 'private' },
       })
-      expect(await readTool(exact, 'get_list_items', { list_id: priv.id })).toMatchObject({
+      expect(
+        await readTool(exact, 'read_my_lists', optionArgs('items', { list_id: priv.id })),
+      ).toMatchObject({
         success: true,
         results: [],
       })
-      expect(resultIds(await readTool(exact, 'get_my_lists'))).toEqual([priv.id])
+      expect(resultIds(await readTool(exact, 'read_my_lists', optionArgs('list', {})))).toEqual([
+        priv.id,
+      ])
     },
   )
 
   it.each(KINDS)(
-    '%s lists the seven tools with their schemas and nothing without the scopes',
+    '%s lists the three merged tools with their schemas and nothing without the scopes',
     async kind => {
       const user = await createTestUser()
       const listTools = async (token: string) => {
@@ -218,7 +229,10 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
     const user = await createTestUser()
     const token = await issueCredential('oauth', user, ['lists:read'])
 
-    const response = await postMcp(token, toolCall('search_users', { q: 'anyone' })).expect(403)
+    const response = await postMcp(
+      token,
+      toolCall('read_users', optionArgs('search', { q: 'anyone' })),
+    ).expect(403)
 
     expect(response.headers['www-authenticate']).toContain('error="insufficient_scope"')
     expect(response.headers['www-authenticate']).toContain('users:read')
@@ -228,9 +242,10 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
     const user = await createTestUser()
     const token = await issueCredential('api_key', user, ['lists:read'])
 
-    const response = await postMcp(token, toolCall('search_users', { q: user.username! })).expect(
-      200,
-    )
+    const response = await postMcp(
+      token,
+      toolCall('read_users', optionArgs('search', { q: user.username! })),
+    ).expect(200)
 
     expect(response.body).toMatchObject({ error: { code: -32600 } })
     expect(response.body).not.toHaveProperty('result')
@@ -239,9 +254,12 @@ describe('hostname, list and user read tools over MCP HTTP', () => {
   it.each(KINDS)('%s is rejected once its owner is suspended', async kind => {
     const user = await createTestUser()
     const token = await issueCredential(kind, user, READ)
-    await readTool(token, 'get_user', { user_id: user.id })
+    await readTool(token, 'read_users', optionArgs('details', { user_id: user.id }))
     await suspendTestUser(user.id)
 
-    await postMcp(token, toolCall('get_user', { user_id: user.id })).expect(401)
+    await postMcp(
+      token,
+      toolCall('read_users', optionArgs('details', { user_id: user.id })),
+    ).expect(401)
   })
 })

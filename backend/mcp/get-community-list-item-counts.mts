@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getCommunityListItemCounts } from '@services/communities'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_LIST_ITEM_TYPES } from './mcp-community-list-item-output.mts'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
@@ -11,18 +11,15 @@ type ToolResult =
   | ({ success: true } & Record<(typeof COMMUNITY_LIST_ITEM_TYPES)[number], number>)
   | typeof COMMUNITY_NOT_FOUND
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_community_list_item_counts',
-    type: 'function',
     description:
-      "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what get_community_list_items pages through.",
+      "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what read_community (option list_items) pages through.",
     parameters: {
       type: 'object',
       properties: { community_id: { type: 'string', description: 'Community UUID or slug' } },
       required: ['community_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

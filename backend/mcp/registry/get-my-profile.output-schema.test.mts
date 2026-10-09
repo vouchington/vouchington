@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { assertMcpLocalSchemaRefs } from '../../test-helpers/mcp-local-schema-refs.mts'
 import getMyProfileTool from '../get-my-profile.mts'
 type JsonSchema = Record<string, unknown>
-describe('get_my_profile output schema', () => {
+describe('read_my_profile.overview output schema', () => {
   const schema = getMyProfileTool.meta?.outputSchema as JsonSchema
   const properties = schema['properties'] as Record<string, unknown>
   it('is a closed object that requires every section', () => {
