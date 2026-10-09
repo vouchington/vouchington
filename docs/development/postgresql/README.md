@@ -43,6 +43,34 @@ rejections. The wrapper calls the real executor once and returns its original pr
 and unwrapped autocommit queries are outside this boundary. Completed advisory-lock SQL proves
 acquisition, not entry into a later server-side lock wait.
 
+## Per-Request Query Profile (API tests)
+
+The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts)) wraps every
+request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
+The `onQueryTiming` hook feeds it for every query, including `transaction.query()`, so unlike
+`runWithCapturedQueries` it sees in-transaction statements. Outside a scope (production, workers,
+non-API tests) the hook returns on its first line. When the response finishes, a request with a
+repeated annotation writes one stderr line:
+
+```text
+[pg-request-profile] route=GET /v1/posts/:id queries=14 serialDepth=6 repeats=getUserById(x5),getPostMedia(x3)
+```
+
+- **Repeat (N+1 suspect):** the same `/* annotation */` ran two or more times in one request.
+  Cursor-batch iteration (`cursorBatches`) and pipelined batches are one logical statement and are
+  excluded.
+- **Serial depth:** the largest set of non-overlapping query intervals (start = completion time
+  minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
+  `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
+  `docs/requirements/api/**` mean serial depth.
+- `PG_REQUEST_PROFILE=all` prints a line for every request, not only those with repeats.
+- Report-only: it never fails a test. Queries finishing after the response flushes, and Valkey
+  commands (no command hook exists yet), are not covered.
+
+Follow-up (second PR of the guard rollout): generate a baseline from CI output, then enforce that
+no request repeats an annotation or exceeds its baseline serial depth, except for entries in an
+allowlist shaped `{ annotation, reason, issue }` (a justified repeat with a tracking issue link).
+
 ## Query access references
 
 - <a id="query-helpers"></a>[Query Helpers](reference-query-helpers.md)
