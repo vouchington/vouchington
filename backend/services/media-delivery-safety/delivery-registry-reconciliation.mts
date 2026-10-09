@@ -19,6 +19,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   const limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
   const { rows: locked } = await transaction<{ id: string; delivery_key: string }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords:lock */
+    /* deadlock-safe: every replay chain locks in the same computed delivery-key order; the unique placement/revision/image tuple makes that order total. */
     SELECT record.id, ('image-placement:' || record.placement_id::text || ':' || record.placement_revision::text || ':' || record.image_id::text) AS delivery_key FROM media_delivery_registry_records record
     JOIN LATERAL (SELECT history.change_type, history.generation
       FROM media_delivery_registry_changes history
