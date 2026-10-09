@@ -30,7 +30,7 @@ export function parseSource(code: string): ParseResult {
   // (node-utils.js builds each token via `ast.text.slice(start, end)`) — roughly half of a parsed
   // AST's retained size. Nothing in this repo reads `ast.tokens`; drop the reference immediately
   // after parsing (explicit `undefined`, not `delete`, so the field stays traceable in the type)
-  // so streaming callers (repo-file-policy/ast-pass.mts) don't pay for it.
+  // so schema freshness checks do not retain unused token arrays.
   result.ast.tokens = undefined
   return result
 }
@@ -52,23 +52,4 @@ export function walk(node: UnknownNode | undefined, visit: (node: UnknownNode) =
       walk(value, visit)
     }
   }
-}
-
-export function nodeLine(node: UnknownNode): number {
-  return node.loc?.start.line ?? 1
-}
-
-export function propertyName(node: UnknownNode | undefined): string | null {
-  if (!node) return null
-  if (node.type === 'Identifier') return typeof node.name === 'string' ? node.name : null
-  if (node.type === 'Literal') return typeof node.value === 'string' ? node.value : null
-  return null
-}
-
-export function isFunctionLike(node: UnknownNode): boolean {
-  return (
-    node.type === 'FunctionDeclaration' ||
-    node.type === 'FunctionExpression' ||
-    node.type === 'ArrowFunctionExpression'
-  )
 }
