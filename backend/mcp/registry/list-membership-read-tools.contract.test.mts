@@ -1,3 +1,9 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { randomUUID } from 'node:crypto'
 import { addListItem, softDeleteList } from '@services/lists'
 import { membershipBenefitCatalog } from '@ts-shared/utils/membership-benefit-catalog'
@@ -11,11 +17,6 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callRejectedMcpTool,
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 import getMyListsContainingTool from '../get-my-lists-containing.mts'
 
@@ -33,7 +34,7 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
   membership_plan: null,
 })
 
-describe('get_my_lists_containing — real DB', () => {
+describe('read_my_lists.containing — real DB', () => {
   let ownerUser: Awaited<ReturnType<typeof createTestUser>>
   let owner: McpContractCaller
   let stranger: McpContractCaller
@@ -44,8 +45,8 @@ describe('get_my_lists_containing — real DB', () => {
   const containing = (entity_id: string, args: object = {}, who = owner, scopes: Scopes = READ) =>
     callStructuredMcpTool(
       who,
-      'get_my_lists_containing',
-      { item_type: 'post', entity_id, ...args },
+      'read_my_lists',
+      optionArgs('containing', { item_type: 'post', entity_id, ...args }),
       scopes,
     )
   const makeList = (who: McpContractCaller, label: string, visibility: Visibility) =>
@@ -132,8 +133,8 @@ describe('get_my_lists_containing — real DB', () => {
     expect(
       await callRejectedMcpTool(
         owner,
-        'get_my_lists_containing',
-        { item_type: 'post', entity_id: 'not-a-uuid' },
+        'read_my_lists',
+        optionArgs('containing', { item_type: 'post', entity_id: 'not-a-uuid' }),
         READ,
       ),
     ).toEqual(expect.stringContaining('entity_id'))
@@ -146,11 +147,13 @@ describe('get_my_lists_containing — real DB', () => {
   })
 })
 
-describe('get_membership_plans — real DB', () => {
+describe('read_reference_data.membership_plans — real DB', () => {
   let caller: McpContractCaller
 
   const plans = (who = caller) =>
-    callStructuredMcpTool(who, 'get_membership_plans', {}, ['reference-data:read'])
+    callStructuredMcpTool(who, 'read_reference_data', optionArgs('membership_plans', {}), [
+      'reference-data:read',
+    ])
 
   beforeAll(async () => {
     caller = asCaller(await createTestUser())

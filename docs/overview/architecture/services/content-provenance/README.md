@@ -64,12 +64,12 @@ This page covers how to call the service.
   `rss_feeds`, `communities` and `lists` sidecar maps. Slim records and nested entities, such as
   the `topic` of a `ViewRssFeed`, stay unlabeled.
 - A route that already read the entity from the primary passes `{ readOnly: false }`. The list
-  detail route and the MCP `get_list` do, so the facts match the row they labeled.
+  detail route and the MCP `read_my_lists(get)` do, so the facts match the row they labeled.
 - Write routes and the MCP `create_list` and `update_list` call the `attachWritten*` helper on the
   response with the signed-in writer, or `null` for MCP. Creating an RSS feed returns ids, so it
   calls none.
 - MCP read outputs attach the signed-out label through `toMcpLists`, `toMcpCommunityEntries` and
-  `toMcpRssFeeds`, and `get_topic_details` calls `attachTopicProvenance` with `null`.
+  `toMcpRssFeeds`, and `read_topic(details)` calls `attachTopicProvenance` with `null`.
   `staff_provenance` never reaches MCP.
 - Pass the signed-in viewer on every REST route. Without one, staff never get `staff_provenance`.
 
@@ -85,8 +85,8 @@ This page covers how to call the service.
   `backend/api/v1/rss-feeds`, and the RSS feeds collection under `backend/api/v1/users`.
 - Hostnames and the fediverse: the hostname list, detail, top, social and compare routes label the
   topics and feeds they return, and the fediverse instance routes label their topics.
-- MCP: `get_community`, `search_communities`, `get_list`, `get_my_lists`, `create_list`,
-  `update_list`, `get_topic_details`, `get_rss_feed` and `search_rss_feeds`.
+- MCP: `read_community(details)`, `discover_communities(search)`, `read_my_lists(get)`, `read_my_lists(list)`, `create_list`,
+  `update_list`, `read_topic(details)`, `read_rss_feed(details)` and `discover_rss_feeds(search)`.
 
 ## Tests
 

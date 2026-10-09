@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 /**
  * OAuth bearer tests for POST /api/v1/mcp.
  *
@@ -96,7 +97,7 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
   it('asks the client to step up when a single tool call lacks a scope', async () => {
     const response = await postMcp(
       topicsOnlyTokens.access_token,
-      toolCall('get_my_profile'),
+      toolCall('read_my_profile', undefined, optionArgs('overview', {})),
     ).expect(403)
 
     expect(response.headers['www-authenticate']).toBe(
@@ -121,7 +122,10 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
   it('runs the tool after the client re-authorizes with the step-up scopes', async () => {
     const stepped = await issueTestOAuthTokens(user, { scope: 'profile:read topics:read' })
 
-    const response = await postMcp(stepped.access_token, toolCall('get_my_profile')).expect(200)
+    const response = await postMcp(
+      stepped.access_token,
+      toolCall('read_my_profile', undefined, optionArgs('overview', {})),
+    ).expect(200)
 
     const body = response.body as JsonRpcResponse
     expect(body.error).toBeUndefined()
@@ -147,12 +151,12 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
 
   it('keeps scope errors in-band for batches, which callMcpTool still enforces', async () => {
     const response = await postMcp(topicsOnlyTokens.access_token, [
-      toolCall('get_my_profile', 1),
-      toolCall('get_my_profile', 2),
+      toolCall('read_my_profile', 1, optionArgs('overview', {})),
+      toolCall('read_my_profile', 2, optionArgs('overview', {})),
     ]).expect(200)
 
     expect(response.headers['www-authenticate']).toBeUndefined()
-    const scopeError = 'MCP error -32600: Tool requires scopes profile:read: get_my_profile'
+    const scopeError = 'MCP error -32600: Tool requires scopes profile:read: read_my_profile'
     expect(response.body).toEqual([inBandError(scopeError, 1), inBandError(scopeError, 2)])
   })
 
@@ -175,11 +179,14 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
   it('keeps an under-scoped API key on the in-band JSON-RPC error', async () => {
     const { rawKey } = await createApiKey(user.id, 'mcp', 'Topics MCP Key', ['topics:read'])
 
-    const response = await postMcp(rawKey, toolCall('get_my_profile')).expect(200)
+    const response = await postMcp(
+      rawKey,
+      toolCall('read_my_profile', undefined, optionArgs('overview', {})),
+    ).expect(200)
 
     expect(response.headers['www-authenticate']).toBeUndefined()
     expect(response.body).toEqual(
-      inBandError('MCP error -32600: Tool requires scopes profile:read: get_my_profile'),
+      inBandError('MCP error -32600: Tool requires scopes profile:read: read_my_profile'),
     )
   })
 })

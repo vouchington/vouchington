@@ -1,10 +1,14 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
-describe('get_post_descendants database failure', () => {
+describe('read_posts.descendants database failure', () => {
   it('reports a database failure instead of an invalid cursor and returns the page on retry', async () => {
     const caller = { ...(await createTestUser()), membership_plan: null }
     const post = await createTestPost({ user: caller })
@@ -17,7 +21,8 @@ describe('get_post_descendants database failure', () => {
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(
       '/* getVisibleCommentDescendantIdsPage */',
-      () => callRejectedMcpTool(caller, 'get_post_descendants', args, ['posts:read']),
+      () =>
+        callRejectedMcpTool(caller, 'read_posts', optionArgs('descendants', args), ['posts:read']),
     )
 
     expect(result).toBe('Tool execution failed. Please try again.')
@@ -25,7 +30,9 @@ describe('get_post_descendants database failure', () => {
       true,
     )
     expect(
-      await callStructuredMcpTool(caller, 'get_post_descendants', args, ['posts:read']),
+      await callStructuredMcpTool(caller, 'read_posts', optionArgs('descendants', args), [
+        'posts:read',
+      ]),
     ).toMatchObject({
       success: true,
       descendants: [{ id: reply.id }],

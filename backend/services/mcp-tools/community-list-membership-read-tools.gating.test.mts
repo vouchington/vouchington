@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe } from 'vitest'
 import { registerMcpReadToolGatingTests } from '@voucha/test-helpers/mcp-read-tool-gating'
 
@@ -8,16 +9,28 @@ describe('community list item, list membership and membership plan read tool gat
   registerMcpReadToolGatingTests({
     scopes: ['communities:read', 'lists:read', 'reference-data:read'],
     tools: [
-      ['get_community_list_items', 'communities:read', { community_id: 'some', item_type: 'post' }],
-      ['get_community_list_item_counts', 'communities:read', { community_id: 'some' }],
-      ['get_my_lists_containing', 'lists:read', { item_type: 'post', entity_id: ENTITY_ID }],
-      ['get_membership_plans', 'reference-data:read', {}],
+      [
+        'read_community',
+        'communities:read',
+        optionArgs('list_items', { community_id: 'some', item_type: 'post' }),
+      ],
+      [
+        'read_community',
+        'communities:read',
+        optionArgs('list_item_counts', { community_id: 'some' }),
+      ],
+      [
+        'read_my_lists',
+        'lists:read',
+        optionArgs('containing', { item_type: 'post', entity_id: ENTITY_ID }),
+      ],
+      ['read_reference_data', 'reference-data:read', optionArgs('membership_plans', {})],
     ],
-    pagedTools: ['get_community_list_items'],
+    pagedTools: [['read_community', 'list_items']],
     requiredArguments: [
-      ['get_community_list_items', { community_id: 'some' }],
-      ['get_community_list_item_counts', {}],
-      ['get_my_lists_containing', { item_type: 'post' }],
+      ['read_community', optionArgs('list_items', { community_id: 'some' })],
+      ['read_community', optionArgs('list_item_counts', {})],
+      ['read_my_lists', optionArgs('containing', { item_type: 'post' })],
     ],
   })
 })

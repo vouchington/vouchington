@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import type { ApiScope } from '@modules/scopes'
 import type { PrivateUser } from '@services/users/types'
@@ -11,17 +12,17 @@ type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
 const NO_SUCH_COMMUNITY = `no-such-community-${crypto.randomUUID().slice(0, 8)}`
 const READ_TOOLS = [
-  ['search_communities', {}],
-  ['get_community', { community_id: NO_SUCH_COMMUNITY }],
-  ['get_community_posts', { community_id: NO_SUCH_COMMUNITY }],
-  ['get_community_pinned_posts', { community_id: NO_SUCH_COMMUNITY }],
-  ['get_community_members', { community_id: NO_SUCH_COMMUNITY }],
+  ['discover_communities', optionArgs('search', {})],
+  ['read_community', optionArgs('details', { community_id: NO_SUCH_COMMUNITY })],
+  ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY })],
+  ['read_community', optionArgs('pinned_posts', { community_id: NO_SUCH_COMMUNITY })],
+  ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY })],
 ] as const
-const ID_TOOLS = READ_TOOLS.filter(([name]) => name !== 'search_communities')
+const ID_TOOLS = READ_TOOLS.filter(([name]) => name !== 'discover_communities')
 const PAGED_TOOLS = [
-  ['search_communities', {}],
-  ['get_community_posts', { community_id: NO_SUCH_COMMUNITY }],
-  ['get_community_members', { community_id: NO_SUCH_COMMUNITY }],
+  ['discover_communities', optionArgs('search', {})],
+  ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY })],
+  ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY })],
 ] as const
 
 describe('community read tool gating', () => {
@@ -86,7 +87,9 @@ describe('community read tool gating', () => {
 
   it.each(PAGED_TOOLS)('rejects %s limits outside 1 to 25', async (name, args) => {
     for (const limit of [0, 26, 100, 1.5, -1]) {
-      await expect(call(name, { ...args, limit }, ['communities:read'])).rejects.toMatchObject({
+      await expect(
+        call(name, { ...args, arguments: { ...args.arguments, limit } }, ['communities:read']),
+      ).rejects.toMatchObject({
         code: ErrorCode.InvalidParams,
       })
     }
@@ -94,15 +97,17 @@ describe('community read tool gating', () => {
 
   it.each(PAGED_TOOLS)('accepts the %s limit bounds 1 and 25', async (name, args) => {
     for (const limit of [1, 25]) {
-      const result = await call(name, { ...args, limit }, ['communities:read'])
+      const result = await call(name, { ...args, arguments: { ...args.arguments, limit } }, [
+        'communities:read',
+      ])
       expect(result.isError).toBeUndefined()
     }
   })
 
   it.each([
-    ['search_communities', { sort: 'newest' }],
-    ['get_community_posts', { community_id: NO_SUCH_COMMUNITY, sort: 'top' }],
-    ['get_community_members', { community_id: NO_SUCH_COMMUNITY, role: 'admin' }],
+    ['discover_communities', optionArgs('search', { sort: 'newest' })],
+    ['read_community', optionArgs('posts', { community_id: NO_SUCH_COMMUNITY, sort: 'top' })],
+    ['read_community', optionArgs('members', { community_id: NO_SUCH_COMMUNITY, role: 'admin' })],
   ] as const)('rejects %s arguments outside the documented enums', async (name, args) => {
     await expect(call(name, args, ['communities:read'])).rejects.toMatchObject({
       code: ErrorCode.InvalidParams,

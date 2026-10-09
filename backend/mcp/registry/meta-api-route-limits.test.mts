@@ -6,12 +6,7 @@ import { ALL_TOOLS } from './index.mts'
 // MCP charges a tool call to the rate-limit bucket of each REST route in `meta.api`, so a tool that
 // forgets to declare its REST twin skips that route's limit. These tools are read-only aggregates
 // built from data stores, with no REST route to charge.
-const NO_REST_TWIN = new Set([
-  'get_domain_ratings',
-  'get_topic_insights',
-  'get_topic_metrics',
-  'search_data_points',
-])
+const NO_REST_TWIN = new Set(['get_domain_ratings', 'read_data_points'])
 
 const isMcpTool = (tool: Tool) =>
   (tool.meta?.surfaces ?? []).some(surface => surface === 'mcp' || surface === 'admin_mcp')
@@ -38,7 +33,28 @@ function discriminatorCalls(schema: unknown): Record<string, unknown>[] {
 // The calls that can pick a route: no arguments, every discriminator value, and each argument merely
 // present, since a route can also depend on whether an optional argument is given.
 function routePickingCalls(schema: unknown): Record<string, unknown>[] {
-  const { properties } = (schema ?? {}) as { properties?: Record<string, unknown> }
+  const root = (schema ?? {}) as Record<string, unknown>
+  const branches = root['oneOf'] as Record<string, unknown>[] | undefined
+  if (
+    branches?.length &&
+    branches.every(
+      branch =>
+        typeof branch['properties'] === 'object' &&
+        branch['properties'] !== null &&
+        'option' in branch['properties'],
+    )
+  ) {
+    const defs = root['$defs'] as Record<string, unknown> | undefined
+    return branches.flatMap(branch => {
+      const properties = branch['properties'] as Record<string, Record<string, unknown>>
+      const option = (properties['option']!['enum'] as string[])[0]!
+      const argumentsSchema = properties['arguments']!
+      const ref = argumentsSchema['$ref'] as string | undefined
+      const resolved = ref ? defs?.[ref.slice('#/$defs/'.length)] : argumentsSchema
+      return routePickingCalls(resolved).map(args => ({ option, arguments: args }))
+    })
+  }
+  const { properties } = root as { properties?: Record<string, unknown> }
   return [
     {},
     ...discriminatorCalls(schema),
@@ -75,10 +91,10 @@ describe('MCP tools and their REST routes', () => {
     it.each(selecting.map(tool => [tool.schema.name, tool] as const))(
       '%s selects only routes that its meta.api lists, and each of them for some call',
       (_name, tool) => {
-        const listed = tool.meta!.api!
+        const listed = tool.meta!.api ?? []
         const selected = selectedRoutes(tool)
 
-        expect(selected.length).toBeGreaterThan(0)
+        expect(selected.length === 0).toBe(listed.length === 0)
         for (const endpoint of selected) {
           expect(listed.some(entry => sameEndpoint(entry, endpoint))).toBe(true)
         }

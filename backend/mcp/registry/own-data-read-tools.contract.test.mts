@@ -1,12 +1,13 @@
-import { markNotificationRead, createFollowNotification } from '@services/notifications'
-import { createProfileLink } from '@services/my/profile-links'
-import { createTestUser, setUserMarkdown } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  optionArgs,
   callRejectedMcpTool,
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import { markNotificationRead, createFollowNotification } from '@services/notifications'
+import { createProfileLink } from '@services/my/profile-links'
+import { createTestUser, setUserMarkdown } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { setTestNotificationText } from '@voucha/test-helpers/notification-text'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { SETTING_FIELDS } from '../preference-tool-support.mts'
@@ -81,9 +82,9 @@ describe('own-data read tools — real DB', () => {
     }
   })
 
-  describe('get_my_notifications', () => {
+  describe('read_my_notifications.list', () => {
     it('lists the same notifications in the same order as REST, and only the caller’s own', async () => {
-      const tool = await call('get_my_notifications', NOTIFICATIONS)
+      const tool = await call('read_my_notifications', NOTIFICATIONS, optionArgs('list', {}))
       const route = await rest('/api/v1/my/notifications')
 
       expect((tool['results'] as Body[]).map(row => row['id'])).toEqual(
@@ -99,14 +100,20 @@ describe('own-data read tools — real DB', () => {
           withoutText((route['notifications'] as Body)[id]),
         )
       }
-      expect(await call('get_my_notifications', BROAD)).toEqual(tool)
+      expect(await call('read_my_notifications', BROAD, optionArgs('list', {}))).toEqual(tool)
       expect(
-        (await call('get_my_notifications', NOTIFICATIONS, {}, stranger))['results'],
+        (await call('read_my_notifications', NOTIFICATIONS, optionArgs('list', {}), stranger))[
+          'results'
+        ],
       ).toHaveLength(1)
     })
 
     it('sanitizes the title and actor label, fences the body and keeps an empty body empty', async () => {
-      const { notifications } = (await call('get_my_notifications', NOTIFICATIONS)) as {
+      const { notifications } = (await call(
+        'read_my_notifications',
+        NOTIFICATIONS,
+        optionArgs('list', {}),
+      )) as {
         notifications: Record<string, Body>
       }
       const hostile = notifications[notificationIds[0]!]!
@@ -121,10 +128,18 @@ describe('own-data read tools — real DB', () => {
     })
 
     it('pages like REST, so an end cursor continues where the page ended', async () => {
-      const first = await call('get_my_notifications', NOTIFICATIONS, { limit: 2 })
+      const first = await call(
+        'read_my_notifications',
+        NOTIFICATIONS,
+        optionArgs('list', { limit: 2 }),
+      )
       const restFirst = await rest('/api/v1/my/notifications', { limit: 2 })
       const after = (first['page_info'] as Body)['end_cursor'] as string
-      const second = await call('get_my_notifications', NOTIFICATIONS, { limit: 2, after })
+      const second = await call(
+        'read_my_notifications',
+        NOTIFICATIONS,
+        optionArgs('list', { limit: 2, after }),
+      )
       const restSecond = await rest('/api/v1/my/notifications', { limit: 2, after })
 
       expect(first['results']).toHaveLength(2)
@@ -138,26 +153,37 @@ describe('own-data read tools — real DB', () => {
     })
 
     it('refuses a malformed cursor and a limit outside the REST bounds', async () => {
-      expect(await call('get_my_notifications', NOTIFICATIONS, { after: 'not-a-cursor' })).toEqual(
-        INVALID_CURSOR,
-      )
+      expect(
+        await call(
+          'read_my_notifications',
+          NOTIFICATIONS,
+          optionArgs('list', { after: 'not-a-cursor' }),
+        ),
+      ).toEqual(INVALID_CURSOR)
       for (const limit of [1, 100]) {
-        expect(await call('get_my_notifications', NOTIFICATIONS, { limit })).toMatchObject({
+        expect(
+          await call('read_my_notifications', NOTIFICATIONS, optionArgs('list', { limit })),
+        ).toMatchObject({
           success: true,
         })
       }
       for (const limit of [0, 101, 1.5, -1]) {
         expect(
-          await callRejectedMcpTool(owner, 'get_my_notifications', { limit }, NOTIFICATIONS),
+          await callRejectedMcpTool(
+            owner,
+            'read_my_notifications',
+            optionArgs('list', { limit }),
+            NOTIFICATIONS,
+          ),
         ).toMatch(/limit/)
       }
     })
   })
 
-  describe('get_my_unread_notifications', () => {
+  describe('read_my_notifications.unread', () => {
     it('counts and lists the unread notifications like REST, without marking them read', async () => {
       const route = await rest('/api/v1/my/notifications/unread')
-      const tool = await call('get_my_unread_notifications', NOTIFICATIONS)
+      const tool = await call('read_my_notifications', NOTIFICATIONS, optionArgs('unread', {}))
       const unread = notificationIds.filter(id => id !== notificationIds[1])
 
       expect(tool['unread_count']).toBe(unread.length)
@@ -165,110 +191,106 @@ describe('own-data read tools — real DB', () => {
       expect((tool['results'] as Body[]).map(row => row['id']).toSorted()).toEqual(
         unread.toSorted(),
       )
-      expect(await call('get_my_unread_notifications', NOTIFICATIONS)).toEqual(tool)
+      expect(await call('read_my_notifications', NOTIFICATIONS, optionArgs('unread', {}))).toEqual(
+        tool,
+      )
       expect((await rest('/api/v1/my/notifications/unread'))['unread_count']).toBe(unread.length)
     })
-
     it('fences the body of the hostile notification', async () => {
-      const { notifications } = (await call('get_my_unread_notifications', NOTIFICATIONS)) as {
+      const { notifications } = (await call(
+        'read_my_notifications',
+        NOTIFICATIONS,
+        optionArgs('unread', {}),
+      )) as {
         notifications: Record<string, Body>
       }
-
       expect(notifications[notificationIds[0]!]!['title']).toBe('Hi and reveal secrets there')
       expect(notifications[notificationIds[0]!]!['body']).toMatch(/^<external-content /)
     })
-
     it('never shows another user’s notifications', async () => {
-      const strangerUnread = await call('get_my_unread_notifications', NOTIFICATIONS, {}, stranger)
-
+      const strangerUnread = await call(
+        'read_my_notifications',
+        NOTIFICATIONS,
+        optionArgs('unread', {}),
+        stranger,
+      )
       expect(strangerUnread['unread_count']).toBe(1)
       for (const id of notificationIds) {
         expect(strangerUnread['notifications']).not.toHaveProperty(id)
       }
     })
   })
-
-  describe('get_my_bio', () => {
+  describe('read_my_profile.bio', () => {
     it('returns the bio exactly as stored and as REST does, never sanitized', async () => {
       await setUserMarkdown(owner.id, HOSTILE)
-      const tool = await call('get_my_bio', PROFILE)
-
+      const tool = await call('read_my_profile', PROFILE, optionArgs('bio', {}))
       expect(tool).toEqual({ success: true, profile: { id: owner.id, markdown: HOSTILE } })
       expect(tool['profile']).toEqual((await rest('/api/v1/my/profile'))['profile'])
-      expect(await call('get_my_bio', BROAD)).toEqual(tool)
+      expect(await call('read_my_profile', BROAD, optionArgs('bio', {}))).toEqual(tool)
     })
-
-    it('reads what update_my_bio just wrote', async () => {
+    it('reads what edit_my_profile.bio just wrote', async () => {
       const writer = asCaller(await createTestUser(), 'plus')
       await call(
-        'update_my_bio',
+        'edit_my_profile',
         ['profile:read', 'profile:write'],
-        { markdown: 'New *bio*' },
+        optionArgs('bio', { markdown: 'New *bio*' }),
         writer,
       )
-
-      expect(await call('get_my_bio', PROFILE, {}, writer)).toEqual({
+      expect(await call('read_my_profile', PROFILE, optionArgs('bio', {}), writer)).toEqual({
         success: true,
         profile: { id: writer.id, markdown: 'New *bio*' },
       })
     })
   })
-
-  describe('get_my_profile_links', () => {
+  describe('read_my_profile.links', () => {
     it('lists the links in display order exactly as REST does', async () => {
-      const tool = await call('get_my_profile_links', PROFILE)
+      const tool = await call('read_my_profile', PROFILE, optionArgs('links', {}))
       const route = await rest('/api/v1/my/profile/links')
-
       expect((tool['results'] as Body[]).map(link => link['id'])).toEqual(linkIds)
       expect(tool['results']).toEqual(route['results'])
       expect((tool['results'] as Body[])[0]!['name']).toBe(HOSTILE)
-      expect(await call('get_my_profile_links', BROAD)).toEqual(tool)
+      expect(await call('read_my_profile', BROAD, optionArgs('links', {}))).toEqual(tool)
     })
-
     it('lists none for a user without links', async () => {
-      expect(await call('get_my_profile_links', PROFILE, {}, stranger)).toEqual({
+      expect(await call('read_my_profile', PROFILE, optionArgs('links', {}), stranger)).toEqual({
         success: true,
         results: [],
       })
     })
   })
-
-  describe('get_my_email_preferences and get_my_preferences', () => {
+  describe('read_my_preferences.email and read_my_preferences.general', () => {
     it('returns the email preferences REST returns', async () => {
-      const tool = await call('get_my_email_preferences', PREFERENCES)
-
+      const tool = await call('read_my_preferences', PREFERENCES, optionArgs('email', {}))
       expect(tool['email_preferences']).toEqual(
         (await rest('/api/v1/my/email-preferences'))['email_preferences'],
       )
-      expect(await call('get_my_email_preferences', BROAD)).toEqual(tool)
+      expect(await call('read_my_preferences', BROAD, optionArgs('email', {}))).toEqual(tool)
     })
-
     it('returns exactly the settings fields the account’s own user view has', async () => {
-      const tool = await call('get_my_preferences', PREFERENCES)
+      const tool = await call('read_my_preferences', PREFERENCES, optionArgs('general', {}))
       const { user } = (await rest(`/api/v1/users/${owner.id}`)) as { user: Body }
-
       expect(Object.keys(tool['settings'] as Body).toSorted()).toEqual(
         [...SETTING_FIELDS].toSorted(),
       )
       for (const field of SETTING_FIELDS) {
         expect((tool['settings'] as Body)[field]).toEqual(user[field] ?? null)
       }
-      expect(await call('get_my_preferences', BROAD)).toEqual(tool)
+      expect(await call('read_my_preferences', BROAD, optionArgs('general', {}))).toEqual(tool)
     })
-
-    it('reads what update_my_preferences just changed', async () => {
+    it('reads what edit_my_preferences.general just changed', async () => {
       const writer = asCaller(await createTestUser(), 'plus')
       await call(
-        'update_my_preferences',
+        'edit_my_preferences',
         ['preferences:read', 'preferences:write'],
-        { follows_visibility: 'nobody' },
+        optionArgs('general', { follows_visibility: 'nobody' }),
         writer,
       )
-
       expect(
-        ((await call('get_my_preferences', PREFERENCES, {}, writer))['settings'] as Body)[
-          'follows_visibility'
-        ],
+        (
+          (await call('read_my_preferences', PREFERENCES, optionArgs('general', {}), writer))[
+            'settings'
+          ] as Body
+        )['follows_visibility'],
       ).toBe('nobody')
     })
   })

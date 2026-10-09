@@ -68,7 +68,7 @@ fails if a view references them. After the cache read, a per-entity helper
 (`attachCommunityProvenance`, `attachTopicProvenance`, `attachListProvenance` and
 `attachRssFeedProvenance`) runs one batched query over the ids on the page and returns copies with
 the fields set. It reads a replica by default. A route that already read the entity from the primary
-reads the facts from the primary too: the list detail route and the MCP `get_list` do.
+reads the facts from the primary too: the list detail route and the MCP `read_my_lists(get)` do.
 
 **Scope.** A public response labels every full entity object it serializes: the primary payload and
 the full-entity sidecar maps `topics`, `rss_feeds`, `communities` and `lists`. Slim records are not
@@ -79,16 +79,16 @@ the `topic` of a `ViewRssFeed`, is not labeled either.
 **Where it appears.** Every route that reads posts for display: post detail, the posts list,
 comment ancestors and descendants, community posts and news, feed posts and RSS feed items,
 trending posts, topic recommendations, list items, user collections and story related posts, plus
-the MCP `get_post`, `get_post_ancestors`, `get_post_descendants`, `get_community_posts` and
-`get_community_pinned_posts`. Lean result summaries that carry no post entity (`search_posts`,
-`get_trending_posts`) and omnisearch have nothing to attach it to.
+the MCP `read_posts(details)`, `read_posts(ancestors)`, `read_posts(descendants)`, `read_community(posts)` and
+`read_community(pinned_posts)`. Lean result summaries that carry no post entity (`read_posts(search)`,
+`read_posts(trending)`) and omnisearch have nothing to attach it to.
 
 The entity routes are the lists, details and sidecar maps of communities, topics, lists and RSS
 feeds, including the trending and recommended topics and RSS feeds, the hostname, fediverse
 instance, topic comparison and merge routes, and the community and user collections that hold them.
-The MCP carries the public label on `get_community`, `search_communities`, `get_list`,
-`get_my_lists`, `create_list`, `update_list`, `get_topic_details`, `get_rss_feed` and
-`search_rss_feeds`, and passes no viewer. The other MCP tools return slim records and carry none.
+The MCP carries the public label on `read_community(details)`, `discover_communities(search)`, `read_my_lists(get)`,
+`read_my_lists(list)`, `create_list`, `update_list`, `read_topic(details)`, `read_rss_feed(details)` and
+`discover_rss_feeds(search)`, and passes no viewer. The other MCP tools return slim records and carry none.
 
 **Write echoes.** The post that `POST /api/v1/posts`, `POST /api/v1/communities/:idOrSlug/posts`
 and `PATCH /api/v1/posts/:idOrSlug` return, and the post in the MCP `create_post` and `update_post`

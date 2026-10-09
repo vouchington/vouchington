@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { isUUID } from '@modules/utils'
 import {
   getRssFeedItemElectionVotesByElectionId,
@@ -7,7 +8,6 @@ import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import { isAdminUser } from '@services/users/authorization'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
@@ -33,10 +33,8 @@ const followUsersSchema = closedObject({
   users: { type: 'array', items: closedObject({ id: pickProperties('BasicUser', ['id']).id! }) },
 })
 
-export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
+export const getRssFeedItemFollowContextTool: MergedToolSource<DetailArgs, FollowResult> = {
   schema: {
-    name: 'get_rss_feed_item_follow_context',
-    type: 'function',
     description:
       'For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.',
     parameters: {
@@ -44,7 +42,6 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
       properties: { rss_feed_item_id: { type: 'string', format: 'uuid' } },
       required: ['rss_feed_item_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -92,10 +89,8 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
     },
 }
 
-export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
+export const getRssFeedItemVotesTool: MergedToolSource<VotesArgs, VotesResult> = {
   schema: {
-    name: 'get_rss_feed_item_votes',
-    type: 'function',
     description:
       'List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.',
     parameters: {
@@ -107,7 +102,6 @@ export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
       },
       required: ['rss_feed_item_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

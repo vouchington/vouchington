@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { deleteUserReferralLink } from '@services/user-referral-program-links'
 import { requireActiveToolUser } from './private-user.mts'
@@ -6,16 +7,12 @@ import {
   REFERRAL_LINK_SUCCESS_SCHEMA,
   type ReferralLinkIdArgs,
 } from './referral-link-tool-support.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
-const tool: Tool<ReferralLinkIdArgs, { success: true }> = {
+const tool: MergedToolSource<ReferralLinkIdArgs, { success: true }> = {
   schema: {
-    name: 'delete_referral_link',
-    type: 'function',
     description:
       'Delete a referral link you own, along with the links the system derived from it. Deleting a link that is already deleted fails as not found.',
     parameters: REFERRAL_LINK_ID_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

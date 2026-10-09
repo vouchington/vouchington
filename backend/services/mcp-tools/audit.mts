@@ -25,6 +25,7 @@ export type McpCallAuditOutcome =
 export type McpCallAuditEvent = {
   jsonrpcMethod: string | null
   toolName: string | null
+  option?: string
   outcome: McpCallAuditOutcome
   copyrightRationale?: string
 }
@@ -76,9 +77,9 @@ export async function recordMcpCallAudit(
     `/* recordMcpCallAudit */
     INSERT INTO mcp_call_audit_events
       (id, surface, correlation_id, actor_user_id, oauth_client_id, api_key_id, resource,
-       jsonrpc_method, tool_name, outcome, copyright_rationale_ciphertext)
+       jsonrpc_method, tool_name, tool_option, outcome, copyright_rationale_ciphertext)
     SELECT event.id, $1, $2::uuid, $3::uuid, subject.oauth_client_id, subject.api_key_id, $4,
-      event.jsonrpc_method, event.tool_name, event.outcome, event.copyright_rationale_ciphertext
+      event.jsonrpc_method, event.tool_name, event.tool_option, event.outcome, event.copyright_rationale_ciphertext
     FROM (
       SELECT client.id AS oauth_client_id, NULL::uuid AS api_key_id
       FROM oauth_clients AS client
@@ -86,8 +87,8 @@ export async function recordMcpCallAudit(
       UNION ALL
       SELECT NULL::uuid, $6::uuid WHERE $6::uuid IS NOT NULL
     ) AS subject
-    CROSS JOIN unnest($7::uuid[], $8::text[], $9::text[], $10::mcp_call_audit_event_outcomes[], $11::text[])
-      WITH ORDINALITY AS event(id, jsonrpc_method, tool_name, outcome, copyright_rationale_ciphertext, ordinal)
+    CROSS JOIN unnest($7::uuid[], $8::text[], $9::text[], $10::mcp_call_audit_event_outcomes[], $11::text[], $12::text[])
+      WITH ORDINALITY AS event(id, jsonrpc_method, tool_name, outcome, copyright_rationale_ciphertext, tool_option, ordinal)
     ORDER BY event.ordinal`,
     [
       context.surface,
@@ -108,6 +109,7 @@ export async function recordMcpCallAudit(
               `mcp-copyright-decision-rationale:${eventIds[index]}`,
             ),
       ),
+      events.map(event => event.option ?? null),
     ],
   )
   if (result.rowCount !== events.length) throw new Error('MCP call audit was not recorded')

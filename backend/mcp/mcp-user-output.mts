@@ -9,7 +9,7 @@ import {
 import { componentSchema } from './route-response-schema.mts'
 import { closedObject } from './read-tool-output-schema.mts'
 
-/** `search_users` pages like `GET /api/v1/users?q=`: 25 at most, 10 by default. */
+/** `read_users (option search)` pages like `GET /api/v1/users?q=`: 25 at most, 10 by default. */
 export const USER_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 10 }
 
 export const USER_NOT_FOUND = { success: false, error: 'User not found' } as const

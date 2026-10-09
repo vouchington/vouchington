@@ -1,6 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
@@ -21,8 +22,8 @@ type McpRequestContext = {
   parsedBody: unknown
   config: McpServerConfig
   // Awaited after an admitted tool call returns an error result, so the caller can record it.
-  onToolError?: (toolName: string) => Promise<void>
-  onToolRateLimited?: (toolName: string, messageIndex: number) => Promise<void>
+  onToolError?: (toolName: string, option?: string) => Promise<void>
+  onToolRateLimited?: (toolName: string, messageIndex: number, option?: string) => Promise<void>
   clientIp?: string
   // The retry delay of each `tools/call` whose REST route bucket was spent, by message index.
   // Those calls are refused in-band without running, and are already audited as rate limited.
@@ -67,6 +68,17 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
       const messageIndex = callIndexesById.get(extra.requestId)?.shift()
       const retryAfterSeconds = ctx.rateLimitedCalls.get(messageIndex ?? -1)
       if (retryAfterSeconds !== undefined) return buildRateLimitedToolResult(retryAfterSeconds)
+      const resolution = resolveMcpToolCall(
+        request.params.name,
+        ctx.user,
+        ctx.permissions,
+        ctx.config,
+        ctx.copyrightDecisionToolsEnabled,
+      )
+      const option =
+        resolution.status === 'allowed'
+          ? (resolution.tool.meta?.auditOption?.(request.params.arguments ?? {}) ?? undefined)
+          : undefined
       let rateLimited = false
       const result = await callMcpTool(
         request.params.name,
@@ -80,12 +92,12 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
           onRateLimited: async () => {
             rateLimited = true
             if (messageIndex !== undefined) {
-              await ctx.onToolRateLimited?.(request.params.name, messageIndex)
+              await ctx.onToolRateLimited?.(request.params.name, messageIndex, option)
             }
           },
         },
       )
-      if (result.isError && !rateLimited) await ctx.onToolError?.(request.params.name)
+      if (result.isError && !rateLimited) await ctx.onToolError?.(request.params.name, option)
       return result
     })()
     pendingToolCalls.add(call)

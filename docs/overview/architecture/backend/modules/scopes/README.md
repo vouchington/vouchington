@@ -41,7 +41,7 @@ other user read scope.
 `profile:read/write`, `notifications:read/write`, and `preferences:read/write` are user-audience
 resource scopes for the profile, notification, and preference write tools. Each write requires its
 read, `mcp.user:read` with `mcp.user:write` covers them, and none is an exact grant. `profile:read`
-already authorized `get_my_profile`, so a profile write grant also lets the credential read the
+already authorized `read_my_profile(overview)`, so a profile write grant also lets the credential read the
 profile. See
 [Profile, Notification, and Preference Write Tools](../../../mcp/profile-notification-write-tools.md).
 
@@ -68,9 +68,9 @@ own referral link read tools reuse `communities:read`, `topics:read` and `referr
 
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
-`mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
-grant before they touch an own private post, as does `remove_entity_relation`, and `get_my_lists`,
-`get_list` and `get_list_items` check it before they return an own private list; `bookmarks:write`,
+`mcp.user:write` never covers it. The `manage_bookmark(set)` and `add_list_item` MCP tools check the same
+grant before they touch an own private post, as does `remove_entity_relation`, and `read_my_lists(list)`,
+`read_my_lists(get)` and `read_my_lists(items)` check it before they return an own private list; `bookmarks:write`,
 `lists:write` and `lists:read` never imply it.
 
 `referral-links` and `topic-recommendations` are ordinary user read/write resources (write requires

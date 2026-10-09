@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'
@@ -31,10 +31,8 @@ type ToolResult =
       error: string
     }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_topic_insights',
-    type: 'function',
     description:
       'Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.',
     parameters: {
@@ -52,7 +50,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['topic_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

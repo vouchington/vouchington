@@ -165,17 +165,25 @@ instructions, and rejects unknown fields in declared input objects. Tool names s
 public-read and scoped-operation boundaries remain intact, with REST audit exceptions recorded
 in the producer PR. Native adoption continues through the same dependent client issue.
 
+#2495 applies the approved 25 user merge groups: 71 source tools become 25 option tools,
+with 44 kept tools, for 69 user tools total. Merged calls require the exact `{option, arguments}`
+envelope; kept tools retain flat inputs. Native consumers adopt the current names and options from
+the generated [MCP catalog](../overview/architecture/mcp/catalog.md), without aliases. Each selected
+option retains the existing runtime guards, REST route charges and structured output contract.
+The producer lands first; [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
+continues to own native adoption and supported-platform validation.
+
 Native agents receive MCP tool schemas and results, including the same authorization, plan, scope,
 rate-limit, quota, audit, and untrusted-content handling as other user-MCP clients. This includes
-the current paged contracts: `get_topic_details` returns parents and one bounded page of children
-through `hierarchy`, `children_after`, and `children_limit`; `search_posts`, `search_topics`,
-`get_trending_posts`, and `get_trending_topics` support `after` and `limit` and return `page_info`.
+the current paged contracts: `read_topic(details)` returns parents and one bounded page of children
+through `hierarchy`, `children_after`, and `children_limit`; `read_posts(search)`, `discover_topics(search)`,
+`read_posts(trending)`, and `discover_topics(trending)` support `after` and `limit` and return `page_info`.
 The absorbed `search_posts_semantic`, `search_topics_semantic`, and `search_topics_text` remain
-removed. `search_posts` accepts `new`, `best`, `hot`, `relevance`, and `following_new`; limits are
+removed. `read_posts(search)` accepts `new`, `best`, `hot`, `relevance`, and `following_new`; limits are
 clamped to 100 and malformed cursors return `{ success: false, error: "Invalid cursor" }`.
 
-`search_posts` applies the MCP post read policy on every surface, so its author cannot see their own
-private, audience-limited or unapproved posts, and a `similar_post_id` seed that `get_post` refuses
+`read_posts(search)` applies the MCP post read policy on every surface, so its author cannot see their own
+private, audience-limited or unapproved posts, and a `similar_post_id` seed that `read_posts(details)` refuses
 returns an empty page. Native agents receive this behavior through user MCP; the client switch is
 part of [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
@@ -315,8 +323,8 @@ rename or an unverify shows on the next request. A post marked anonymous sends `
 viewer who cannot see its author. Administrators and moderators also receive `staff_provenance`
 (`created_via` and, when the post came through an OAuth client, `oauth_client` with `client_id`,
 `client_name`, `metadata_url` and `verified`); the client is omitted for anonymous posts they
-cannot attribute. The REST read routes and the MCP `get_post`, `get_post_ancestors`,
-`get_post_descendants`, `get_community_posts` and `get_community_pinned_posts` tools carry the
+cannot attribute. The REST read routes and the MCP `read_posts(details)`, `read_posts(ancestors)`,
+`read_posts(descendants)`, `read_community(posts)` and `read_community(pinned_posts)` tools carry the
 public label, and so do the post in the `POST /api/v1/posts`,
 `POST /api/v1/communities/:idOrSlug/posts` and `PATCH /api/v1/posts/:idOrSlug` responses and in the
 MCP `create_post` and `update_post` results. MCP never carries `staff_provenance`.
@@ -327,9 +335,9 @@ and `lists` sidecar maps, on the list, detail, create and update routes, the tre
 recommended routes, the hostname and fediverse routes and the user collections. Slim records, such
 as the community on a post, trending communities and global search results, and entities nested in
 another entity, such as the `topic` of a `ViewRssFeed`, carry neither field. Creating an RSS feed
-returns ids and a slug, so it carries neither. The MCP `get_community`, `search_communities`,
-`get_list`, `get_my_lists`, `create_list`, `update_list`, `get_topic_details`, `get_rss_feed` and
-`search_rss_feeds` tools carry the public label and never the staff block.
+returns ids and a slug, so it carries neither. The MCP `read_community(details)`, `discover_communities(search)`,
+`read_my_lists(get)`, `read_my_lists(list)`, `create_list`, `update_list`, `read_topic(details)`, `read_rss_feed(details)` and
+`discover_rss_feeds(search)` tools carry the public label and never the staff block.
 
 Swift and .NET must decode both optional fields on all five entities and render the badge beside
 the post type badge on posts and on the cards and detail headers of communities, topics, lists and
@@ -387,7 +395,7 @@ already lists the simulate and test-run `reason` removal; this repository does n
 
 ## Semantic post search candidate window
 
-#1549 keeps REST post search and MCP `search_posts` on the same approximate, capped candidate
+#1549 keeps REST post search and MCP `read_posts(search)` on the same approximate, capped candidate
 window. Existing response fields and opaque cursors stay the same; pagination ends at the window,
 and facets count only its candidates. Web, Swift and .NET can continue using `has_next_page` and
 the server cursor without decoder changes. Hybrid results can omit matches outside the window;

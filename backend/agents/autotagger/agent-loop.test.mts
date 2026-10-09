@@ -8,7 +8,7 @@ const CANDIDATES = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-
 const BOUNDS: AutotaggerAgentBounds = { maxTurns: 4, maxToolCalls: 2, maxOutputTokens: 100 }
 
 const submit = (...ids: string[]) => ({ name: 'submit_topics', input: { topic_ids: ids } })
-const search = (query: string) => ({ name: 'search_topics', input: { query } })
+const search = (query: string) => ({ name: 'lookup_candidate_topics', input: { query } })
 
 function run(
   turns: ToolTurnResult[],

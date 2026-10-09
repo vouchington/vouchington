@@ -15,8 +15,8 @@ const variants = (tool: { meta?: { outputSchema?: unknown } }): JsonSchema[] => 
 
 describe('search tool output schemas', () => {
   it.each([
-    ['search_posts', searchPostsTool],
-    ['search_topics', searchTopicsTool],
+    ['read_posts', searchPostsTool],
+    ['discover_topics', searchTopicsTool],
   ])('%s admits the Invalid cursor failure next to its success result', (_, tool) => {
     expect(variants(tool)).toHaveLength(2)
     expect(properties(variants(tool)[0])['success']).toEqual({ const: true })
@@ -28,7 +28,7 @@ describe('search tool output schemas', () => {
     })
   })
 
-  it('search_posts and search_topics share the REST limit and cursor argument names', () => {
+  it('read_posts.search and discover_topics.search share the REST limit and cursor argument names', () => {
     for (const tool of [searchPostsTool, searchTopicsTool]) {
       const parameters = properties(tool.schema.parameters)
 

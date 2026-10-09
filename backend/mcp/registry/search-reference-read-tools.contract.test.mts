@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { randomBytes, randomUUID } from 'node:crypto'
 import {
   createTestUser,
@@ -7,10 +12,6 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
@@ -137,17 +138,17 @@ describe('search_web — real DB', () => {
   })
 })
 
-describe('list_countries, list_currencies and get_platform_stats — real DB', () => {
+describe('read_reference_data.countries, read_reference_data.currencies and read_reference_data.platform_stats — real DB', () => {
   let caller: McpContractCaller
 
   beforeAll(async () => {
     caller = asCaller(await createTestUser())
   })
 
-  it('list_countries returns the fixed list REST returns', async () => {
+  it('read_reference_data.countries returns the fixed list REST returns', async () => {
     const rest = await createRequest().get('/api/v1/countries').expect(200)
 
-    const result = await reference(caller, 'list_countries')
+    const result = await reference(caller, 'read_reference_data', optionArgs('countries', {}))
 
     expect(result).toEqual({ success: true, results: rest.body.results })
     expect(result['results']).toEqual(
@@ -155,10 +156,10 @@ describe('list_countries, list_currencies and get_platform_stats — real DB', (
     )
   })
 
-  it('list_currencies returns the seeded currencies by code, like REST', async () => {
+  it('read_reference_data.currencies returns the seeded currencies by code, like REST', async () => {
     const rest = await createRequest().get('/api/v1/currencies').expect(200)
 
-    const result = await reference(caller, 'list_currencies')
+    const result = await reference(caller, 'read_reference_data', optionArgs('currencies', {}))
 
     expect(result).toEqual({ success: true, ...rest.body })
     expect((result['results'] as Body[]).map(currency => currency['code'])).toEqual([
@@ -171,10 +172,18 @@ describe('list_countries, list_currencies and get_platform_stats — real DB', (
     ])
   })
 
-  it('list_currencies pages by cursor like REST and refuses a malformed one', async () => {
-    const first = await reference(caller, 'list_currencies', { limit: 4 })
+  it('read_reference_data.currencies pages by cursor like REST and refuses a malformed one', async () => {
+    const first = await reference(
+      caller,
+      'read_reference_data',
+      optionArgs('currencies', { limit: 4 }),
+    )
     const cursor = (first['page_info'] as Body)['end_cursor']
-    const second = await reference(caller, 'list_currencies', { limit: 4, after: cursor })
+    const second = await reference(
+      caller,
+      'read_reference_data',
+      optionArgs('currencies', { limit: 4, after: cursor }),
+    )
     const rest = await createRequest().get(`/api/v1/currencies?limit=4&after=${cursor}`).expect(200)
 
     expect((first['results'] as Body[]).map(currency => currency['code'])).toEqual([
@@ -186,14 +195,20 @@ describe('list_countries, list_currencies and get_platform_stats — real DB', (
     expect((first['page_info'] as Body)['has_next_page']).toBe(true)
     expect(second).toEqual({ success: true, ...rest.body })
     for (const after of ['not-a-cursor', 'bm9wZQ']) {
-      expect(await reference(caller, 'list_currencies', { after })).toEqual(INVALID_CURSOR)
+      expect(
+        await reference(caller, 'read_reference_data', optionArgs('currencies', { after })),
+      ).toEqual(INVALID_CURSOR)
     }
   })
 
-  it('get_platform_stats returns the six counts REST returns', async () => {
+  it('read_reference_data.platform_stats returns the six counts REST returns', async () => {
     const rest = await createRequest().get('/api/v1/platform-stats').expect(200)
 
-    const { success, ...counts } = await reference(caller, 'get_platform_stats')
+    const { success, ...counts } = await reference(
+      caller,
+      'read_reference_data',
+      optionArgs('platform_stats', {}),
+    )
 
     expect(success).toBe(true)
     expect(Object.keys(counts).toSorted()).toEqual(Object.keys(rest.body).toSorted())

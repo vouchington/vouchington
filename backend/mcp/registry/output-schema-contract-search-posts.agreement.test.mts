@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   addDummyEmbeddingToPost,
   createTestPost,
@@ -6,7 +7,6 @@ import {
   makeRandomEmbedding,
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   seedMcpPostReadabilityFixtures,
   type McpPostReadabilityFixtures,
@@ -21,9 +21,9 @@ const NOT_FOUND = { success: false, error: 'Post not found' }
 
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// search_posts and get_post share one read policy. A search result is a post get_post can open,
-// and a post get_post refuses never shows up in a search, whoever asks and however they search.
-describe('search_posts agrees with get_post — real DB', () => {
+// read_posts and read_posts share one read policy. A search result is a post read_posts can open,
+// and a post read_posts refuses never shows up in a search, whoever asks and however they search.
+describe('read_posts.search agrees with read_posts.details — real DB', () => {
   const token = `srchagree${crypto.randomUUID().replaceAll('-', '')}`
   const semanticQuery = `agreement post search ${crypto.randomUUID()}`
   const queryEmbedding = makeRandomEmbedding()
@@ -37,11 +37,15 @@ describe('search_posts agrees with get_post — real DB', () => {
   const searchIds = async (caller: Caller, args: Record<string, unknown>) => {
     const ids: string[] = []
     for (const post_type of [undefined, 'comment']) {
-      const page = await call(caller, 'search_posts', {
-        ...args,
-        ...(post_type && { post_type }),
-        limit: 100,
-      })
+      const page = await call(
+        caller,
+        'read_posts',
+        optionArgs('search', {
+          ...args,
+          ...(post_type && { post_type }),
+          limit: 100,
+        }),
+      )
       ids.push(...(page['results'] as { id: string }[]).map(result => result.id))
     }
     return ids
@@ -65,7 +69,7 @@ describe('search_posts agrees with get_post — real DB', () => {
     for (const caller of callers) {
       const answers: Record<string, unknown> = {}
       for (const post of [...fixtures.readable, ...fixtures.hidden]) {
-        const answer = await call(caller, 'get_post', { post_id: post.id })
+        const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: post.id }))
         answers[post.label] = answer['success'] ? 'opened' : answer
       }
 
@@ -76,13 +80,13 @@ describe('search_posts agrees with get_post — real DB', () => {
     }
   })
 
-  it('returns only posts that get_post opens, in every search mode', async () => {
+  it('returns only posts that read_posts.details opens, in every search mode', async () => {
     for (const caller of callers) {
       for (const args of searches) {
         const ids = [...new Set(await searchIds(caller, args))]
         const refused: unknown[] = []
         for (const id of ids) {
-          const answer = await call(caller, 'get_post', { post_id: id })
+          const answer = await call(caller, 'read_posts', optionArgs('details', { post_id: id }))
           if (!answer['success']) refused.push({ id, answer })
         }
 

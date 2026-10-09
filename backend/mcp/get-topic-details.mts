@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { attachTopicProvenance } from '@services/content-provenance'
 import { getTopicByAny } from '@services/topics/get'
 import { getCardAttributes } from '@services/topics/cards'
@@ -73,10 +73,8 @@ type ToolResult =
       error: string
     }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_topic_details',
-    type: 'function',
     description:
       'Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.',
     parameters: {
@@ -90,7 +88,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['topic_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

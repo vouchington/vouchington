@@ -1,7 +1,11 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestTopicParentRelation } from '@voucha/test-helpers/entities/topic-hierarchy'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -22,7 +26,7 @@ const SCOPES = ['topics:read'] as const
 
 // Every result goes through the real call path, which checks it against the tool's published output
 // schema. The children cursor is the one the tool itself returned, fed back as `children_after`.
-describe('get_topic_details hierarchy — real DB', () => {
+describe('read_topic.details hierarchy — real DB', () => {
   const suffix = crypto.randomUUID().slice(0, 8)
   let caller: PrivateUser & { membership_plan: null }
   let bank: string
@@ -31,7 +35,12 @@ describe('get_topic_details hierarchy — real DB', () => {
   let childIds: string[]
 
   const details = (args: Record<string, unknown>) =>
-    callStructuredMcpTool(caller, 'get_topic_details', args, SCOPES) as Promise<Details>
+    callStructuredMcpTool(
+      caller,
+      'read_topic',
+      optionArgs('details', args),
+      SCOPES,
+    ) as Promise<Details>
 
   const createTopic = (name: string, topicType: 'topic' | 'card' = 'topic') =>
     insertTestTopic({
@@ -163,16 +172,20 @@ describe('get_topic_details hierarchy — real DB', () => {
     await expect(
       callRejectedMcpTool(
         caller,
-        'get_topic_details',
-        { topic_id: bank, hierarchy: 'children', children_limit: 0 },
+        'read_topic',
+        optionArgs('details', { topic_id: bank, hierarchy: 'children', children_limit: 0 }),
         SCOPES,
       ),
     ).resolves.toContain('/children_limit must be >= 1')
     await expect(
       callRejectedMcpTool(
         caller,
-        'get_topic_details',
-        { topic_id: bank, hierarchy: 'children', children_after: 'not-a-cursor' },
+        'read_topic',
+        optionArgs('details', {
+          topic_id: bank,
+          hierarchy: 'children',
+          children_after: 'not-a-cursor',
+        }),
         SCOPES,
       ),
     ).resolves.toBe(
@@ -188,8 +201,12 @@ describe('get_topic_details hierarchy — real DB', () => {
     await expect(
       callRejectedMcpTool(
         caller,
-        'get_topic_details',
-        { topic_id: otherBank, hierarchy: 'children', children_after: cursor },
+        'read_topic',
+        optionArgs('details', {
+          topic_id: otherBank,
+          hierarchy: 'children',
+          children_after: cursor,
+        }),
         SCOPES,
       ),
     ).resolves.toBe(

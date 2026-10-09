@@ -1,4 +1,4 @@
-import type { Tool } from '@services/openai-agents/tool-types'
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { listReviewDisputePage } from '@services/review-disputes/list-page'
 import { REVIEW_DISPUTE_STATUSES } from '@ts-shared/utils/moderation-catalogs'
 import { DISPUTE_SCHEMA, toMcpDispute, type McpDispute } from './mcp-case-output.mts'
@@ -22,10 +22,8 @@ type Result =
 /** The page sizes of GET /api/v1/disputes. */
 const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
-const tool: Tool<Args, Result> = {
+const tool: MergedToolSource<Args, Result> = {
   schema: {
-    name: 'list_my_review_disputes',
-    type: 'function',
     description: `List the review disputes the current user filed, newest first. status is pending (default) for the ones the moderators have not decided, resolved for the decided ones, or dismissed for the ones the moderators dismissed. Each dispute has its id, the post_id and topic_id it disputes, the reason code, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. Returns at most ${PAGE_LIMIT.max} disputes per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. Other users' disputes are never listed.`,
     parameters: {
       type: 'object',
@@ -35,7 +33,6 @@ const tool: Tool<Args, Result> = {
       },
       additionalProperties: false,
     },
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

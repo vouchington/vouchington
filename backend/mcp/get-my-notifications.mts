@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { listNotifications } from '@services/notifications'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   notificationOutputProperties,
@@ -26,17 +26,14 @@ type ToolResult =
 /** The page sizes of GET /api/v1/my/notifications. */
 const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_my_notifications',
-    type: 'function',
-    description: `List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, read_at, target_entity, target_intent and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most ${PAGE_LIMIT.max} notifications per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after for the next page. get_my_unread_notifications gives just the unread ones with their count. Reading never marks a notification read.`,
+    description: `List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, read_at, target_entity, target_intent and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most ${PAGE_LIMIT.max} notifications per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after for the next page. read_my_notifications (option unread) gives just the unread ones with their count. Reading never marks a notification read.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Notifications', PAGE_LIMIT),
       additionalProperties: false,
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

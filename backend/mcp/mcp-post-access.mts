@@ -28,7 +28,7 @@ export type ReadableThread = {
  * reaching the caller through `parent_post_id`. A deleted post cannot be loaded, so a deleted target
  * is not found and a deleted ancestor is left out of the chain, as in the REST twin.
  *
- * `search_posts` applies this same rule to its results in SQL (`public_eligibility_only` in
+ * `read_posts (option search)` applies this same rule to its results in SQL (`public_eligibility_only` in
  * backend/services/posts/search/query-builder/base-filters.mts, plus `thread-readability.mts` for
  * comment chains), because a chain predicate cannot run per row. Discovery is stricter (public
  * audience, unarchived, unsuspended, no community), so a search result is always readable here but

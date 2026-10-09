@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getRssFeedItemByIdCachedBatch } from '@services/entity-fetch'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { searchRssFeedItems } from '@services/rss-feed-items'
@@ -43,10 +43,8 @@ type DetailResult =
   | { success: true; rss_feed_item: McpRssFeedItem }
   | { success: false; error: string }
 
-export const listRssFeedItemsTool: Tool<ListArgs, ListResult> = {
+export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    name: 'list_rss_feed_items',
-    type: 'function',
     description:
       'Search and page RSS feed items by keyword, semantic text, similar item, feed, media type or read state. Returns at most 100 items per page and page_info.end_cursor for the next page. The old internal search_rss_feed_items tool has no cursor; use this tool for MCP reads.',
     parameters: {
@@ -82,7 +80,6 @@ export const listRssFeedItemsTool: Tool<ListArgs, ListResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -140,17 +137,14 @@ export const listRssFeedItemsTool: Tool<ListArgs, ListResult> = {
     },
 }
 
-export const getRssFeedItemTool: Tool<DetailArgs, DetailResult> = {
+export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
   schema: {
-    name: 'get_rss_feed_item',
-    type: 'function',
     description: 'Get an RSS feed item by UUID, with article text marked as external content.',
     parameters: {
       type: 'object',
       properties: { rss_feed_item_id: { type: 'string', format: 'uuid' } },
       required: ['rss_feed_item_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

@@ -30,7 +30,7 @@ or removed. Suspended users receive the standard account-suspended error.
 
 ## MCP
 
-The `set_bookmark` and `remove_bookmark` MCP tools call the same shared bookmark commands as the
+The `manage_bookmark(set)` and `manage_bookmark(remove)` MCP tools call the same shared bookmark commands as the
 PUT and DELETE routes, for the `save`, `follow`, `mute`, and `block` predicates only. They need the
 `bookmarks:read` and `bookmarks:write` scopes and a Plus plan, and reach the caller's own private
 post only with the exact `post-relations.owned-private:write` grant. See

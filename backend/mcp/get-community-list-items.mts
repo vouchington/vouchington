@@ -1,5 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { searchCommunityListItems, type CommunityListItemType } from '@services/communities'
-import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_LIST_ITEM_TYPES,
@@ -41,11 +42,9 @@ const ENDPOINTS: Record<CommunityListItemType, ToolApiEndpoint> = {
   url: listItemsEndpoint('urls'),
 }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_community_list_items',
-    type: 'function',
-    description: `List the entries of a public community's curated list of one item_type, by the community's UUID or slug, in list order, as a signed-out reader sees them: topic, rss_feed, post, url_hostname or url. Each entry has an id, the item_type, the entity_id it points at, its order_index and created_at. label names the entity where no other tool reads it by id: the hostname for url_hostname, the page URL for url and the feed title for rss_feed (null if the entity can no longer be read). Read a topic with get_topic_details and a post with get_post (their label is null). A post the public cannot see (a private or deleted one, say) is left out of the page and of the counts. Returns at most ${max} entries per page and page_info.end_cursor; pass it as after to get the next page. get_community_list_item_counts gives the totals.`,
+    description: `List the entries of a public community's curated list of one item_type, by the community's UUID or slug, in list order, as a signed-out reader sees them: topic, rss_feed, post, url_hostname or url. Each entry has an id, the item_type, the entity_id it points at, its order_index and created_at. label names the entity where no other tool reads it by id: the hostname for url_hostname, the page URL for url and the feed title for rss_feed (null if the entity can no longer be read). Read a topic with read_topic (option details) and a post with read_posts (option details) (their label is null). A post the public cannot see (a private or deleted one, say) is left out of the page and of the counts. Returns at most ${max} entries per page and page_info.end_cursor; pass it as after to get the next page. read_community (option list_item_counts) gives the totals.`,
     parameters: {
       type: 'object',
       properties: {
@@ -59,7 +58,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['community_id', 'item_type'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

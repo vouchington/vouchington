@@ -13,13 +13,13 @@ const request: ToolTurnRequest = {
     {
       role: 'assistant',
       text: 'Let me look.',
-      toolCalls: [{ id: 'call_1', name: 'search_topics', input: { query: 'rust' } }],
+      toolCalls: [{ id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } }],
     },
     { role: 'tool', results: [{ callId: 'call_1', content: '{"topics":[]}', isError: true }] },
   ],
   tools: [
     {
-      name: 'search_topics',
+      name: 'lookup_topics',
       description: 'Search.',
       inputSchema: { type: 'object', properties: { query: { type: 'string' } } },
     },
@@ -46,7 +46,7 @@ function openAIResponse(output: unknown[]) {
 const functionCall = {
   type: 'function_call',
   call_id: 'call_9',
-  name: 'search_topics',
+  name: 'lookup_topics',
   arguments: '{"query":"go"}',
 }
 
@@ -72,14 +72,14 @@ describe('callOpenAIToolTurn', () => {
       safety_identifier: 'actor',
       prompt_cache_key: 'cache-v1',
       service_tier: 'flex',
-      tools: [{ type: 'function', name: 'search_topics', strict: false }],
+      tools: [{ type: 'function', name: 'lookup_topics', strict: false }],
       input: [
         { role: 'user', content: 'Which topics?' },
         { role: 'assistant', content: 'Let me look.' },
         {
           type: 'function_call',
           call_id: 'call_1',
-          name: 'search_topics',
+          name: 'lookup_topics',
           arguments: '{"query":"rust"}',
         },
         { type: 'function_call_output', call_id: 'call_1', output: 'Error: {"topics":[]}' },
@@ -91,7 +91,7 @@ describe('callOpenAIToolTurn', () => {
       responseId: 'resp_1',
       output: {
         text: 'Looking.',
-        toolCalls: [{ id: 'call_9', name: 'search_topics', input: { query: 'go' } }],
+        toolCalls: [{ id: 'call_9', name: 'lookup_topics', input: { query: 'go' } }],
       },
     })
   })

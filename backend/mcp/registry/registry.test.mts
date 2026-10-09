@@ -2,6 +2,9 @@ import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
+import { userMergedAccountGroups } from './user-merged-account-tools.mts'
+import { userMergedParticipationGroups } from './user-merged-participation-tools.mts'
+import { userMergedReadingGroups } from './user-merged-reading-tools.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
@@ -13,6 +16,7 @@ const NON_TOOL_FILES = new Set([
   'bookmark-tool-support.mts',
   'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
+  'create-merged-tool.mts',
   'delegated-authority.mts',
   'get-domain-ratings-helpers.mts',
   'get-domain-ratings-output-schema.mts',
@@ -62,7 +66,20 @@ const NON_TOOL_FILES = new Set([
 ])
 
 describe('tool registry', () => {
-  it('registers every tool source file', async () => {
+  it('registers named tools and references every anonymous option source exactly once', async () => {
+    const mergedGroups = [
+      ...userMergedAccountGroups,
+      ...userMergedParticipationGroups,
+      ...userMergedReadingGroups,
+    ]
+    const sourceCounts = new Map<object, number>()
+    for (const group of mergedGroups) {
+      for (const { source } of group.options) {
+        sourceCounts.set(source, (sourceCounts.get(source) ?? 0) + 1)
+      }
+    }
+    expect([...sourceCounts.values()].filter(count => count !== 1)).toEqual([])
+    expect(mergedGroups.filter(group => !getRegisteredToolByName(group.name))).toEqual([])
     const entries = await readdir(TOOLS_DIR)
     const toolFiles = entries.filter(
       f =>
@@ -79,7 +96,9 @@ describe('tool registry', () => {
       const mod = await import(`../${baseName}.mts`)
       const tool = mod.default as { schema?: { name?: string } } | undefined
       const name = tool?.schema?.name
-      if (name == null || !registeredNames.has(name)) unregistered.push(file)
+      if (!tool || (name == null ? sourceCounts.get(tool) !== 1 : !registeredNames.has(name))) {
+        unregistered.push(file)
+      }
     }
     expect(unregistered).toEqual([])
   })
@@ -224,8 +243,8 @@ describe('tool registry', () => {
   })
 
   it('getRegisteredToolByName returns correct tool', () => {
-    const tool = getRegisteredToolByName('search_topics')
-    expect(tool?.schema.name).toBe('search_topics')
+    const tool = getRegisteredToolByName('discover_topics')
+    expect(tool?.schema.name).toBe('discover_topics')
   })
 
   it('getRegisteredToolByName returns undefined for unknown name', () => {

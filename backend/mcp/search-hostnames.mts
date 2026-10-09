@@ -1,7 +1,7 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import { parseHostnamesSearchParams } from '@services/search-params'
 import { searchUrlHostnames } from '@services/urls-hostnames'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   HOSTNAME_PAGE_LIMIT,
@@ -35,10 +35,8 @@ type ToolResult = McpHostnamesPage | InvalidCursorResult
 
 const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_hostnames',
-    type: 'function',
     description: `Search the hostnames Voucha knows, as a signed-out reader sees them: an administratively blocked hostname never appears, whoever asks. Each hostname carries its topic_id and its public trust vote totals (election). query and hostname both match part of the hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Sorted by hostname (A to Z, the default) or, with sort "trust", by net trust votes (highest first). Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
     parameters: {
       type: 'object',
@@ -65,7 +63,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

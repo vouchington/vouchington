@@ -13,7 +13,7 @@ export type McpPostFixture = { label: string; id: string; post_type: PostType }
 export type McpPostReadabilityFixtures = {
   /** Public posts every MCP caller can read, so a search that finds them is behaving. */
   readable: McpPostFixture[]
-  /** Posts `get_post` answers as not found, even to their author and to administrators. */
+  /** Posts `read_posts(details)` answers as not found, even to their author and to administrators. */
   hidden: McpPostFixture[]
 }
 

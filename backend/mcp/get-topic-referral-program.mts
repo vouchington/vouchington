@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getReferralProgramAttributes } from '@services/topics'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { iso } from './mcp-read-output.mts'
 import { foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
@@ -22,10 +22,8 @@ type ToolResult =
 const optionalIso = (value: Date | string | null | undefined): string | null =>
   value ? iso(value) : null
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_topic_referral_program',
-    type: 'function',
     description:
       'Get the state of one referral program by its topic UUID or slug: the company it belongs to and when it was enabled or disabled. A topic that does not exist returns { success: false, error: "Topic not found" }, and a topic that is not a referral program returns { success: false, error: "Topic is not a referral program" }. Use get_referral_links for the links under a program.',
     parameters: {
@@ -35,7 +33,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['topic_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

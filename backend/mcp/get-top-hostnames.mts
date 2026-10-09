@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getTopicIdByAnyCached } from '@services/entity-cache'
 import { searchTopHostnames } from '@services/urls-hostnames/search-top'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   HOSTNAME_PAGE_LIMIT,
@@ -28,10 +28,8 @@ type ToolResult = McpHostnamesPage | InvalidCursorResult
 
 const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_top_hostnames',
-    type: 'function',
     description: `List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
@@ -41,7 +39,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

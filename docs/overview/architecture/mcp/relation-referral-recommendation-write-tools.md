@@ -12,10 +12,10 @@ call. The generated [tool catalog](catalog.md) holds each description, hint and 
   `action: remove_tag` and the `entity-relations:read/write` scopes.
 - `withdraw_entity_relation_vote` mirrors `DELETE /api/v1/entity-relations/:id/vote`; it removes
   only the caller's vote, and a never-cast vote still succeeds.
-- `create_referral_link`, `update_referral_link` and `delete_referral_link` mirror the collection
+- `create_referral_link`, `update_referral_link` and `remove_referral_link(link)` mirror the collection
   `POST` and item `PATCH`/`DELETE` referral-link routes. Re-adding reactivates a link and keeps its
   label; a null update label clears it; deleting a deleted link is not found.
-- `activate_referral_link` and `deactivate_referral_link` mirror the activation `POST` and `DELETE`
+- `activate_referral_link` and `remove_referral_link(activation)` mirror the activation `POST` and `DELETE`
   routes. Child links follow their parent and cannot be activated separately; deactivation is
   idempotent.
 - `request_referral_link_unfurl` mirrors `POST /api/v1/referral-links/:linkId/unfurls`. It accepts
@@ -79,7 +79,7 @@ Administrator text that survives a submitter edit stays external content.
 act on an existing recommendation the caller submitted, while it is pending.
 `dismiss_recommendation` is a different thing: a bookmark predicate that hides a recommended topic
 from a feed, not a change to a submitted recommendation. It stays REST-only, as
-[Bookmark and List Write Tools](bookmark-list-write-tools.md) decided, and `set_bookmark` rejects it.
+[Bookmark and List Write Tools](bookmark-list-write-tools.md) decided, and `manage_bookmark(set)` rejects it.
 The tag tools and the recommendation tools do not overlap: one edits a post's hashtags, the other
 edits the proposed-topic extension of a `topic_recommendation` post.
 
@@ -97,8 +97,8 @@ whose change was already made.
 | `PATCH /api/v1/posts/:idOrSlug` (remove a hashtag)                                                             | `remove_entity_relation`                                                                                 |
 | `DELETE /api/v1/entity-relations/:id/vote`                                                                     | `withdraw_entity_relation_vote`                                                                          |
 | `PUT /api/v1/entity-relations/:id/vote`                                                                        | No tool: casting is request-bound (rate limit, contribution gating, quota) and has no policy for a token |
-| `POST`, `PATCH`, `DELETE /api/v1/referral-links`, `.../:linkId`                                                | `create_referral_link`, `update_referral_link`, `delete_referral_link`                                   |
-| `POST` and `DELETE /api/v1/referral-links/:linkId/activations`                                                 | `activate_referral_link`, `deactivate_referral_link`                                                     |
+| `POST`, `PATCH`, `DELETE /api/v1/referral-links`, `.../:linkId`                                                | `create_referral_link`, `update_referral_link`, `remove_referral_link(link)`                             |
+| `POST` and `DELETE /api/v1/referral-links/:linkId/activations`                                                 | `activate_referral_link`, `remove_referral_link(activation)`                                             |
 | `POST /api/v1/referral-links/:linkId/unfurls`                                                                  | `request_referral_link_unfurl`                                                                           |
 | `POST`, `PATCH`, `DELETE /api/v1/referral-link-validations`, `.../rules`                                       | No tool: topic curation under `currentUserCanUpdateTopic`, not the caller's own links                    |
 | `POST /api/v1/referral-programs/:id/official-referral-links`, `DELETE /api/v1/official-referral-links/:linkId` | No tool: administrator-only (`currentUserCanManageOfficialReferralLink`); admin tools                    |

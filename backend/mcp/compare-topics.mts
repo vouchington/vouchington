@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import {
   getTopicDataPointInsights,
   type TopicDataPointInsights,
@@ -40,10 +40,8 @@ type ToolResult =
       error: string
     }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'compare_topics',
-    type: 'function',
     description:
       'Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like "which card has a better approval rate?"',
     parameters: {
@@ -65,7 +63,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['topic_id_a', 'topic_id_b'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
