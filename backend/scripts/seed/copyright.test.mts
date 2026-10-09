@@ -14,6 +14,7 @@ describe('seedCopyright', () => {
   it('fills both staff queues with every review state and adds nothing when run again', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const inputs = await createCopyrightSeedInputsForTest()
+    inputs.now = new Date(inputs.now.getTime() - 3 * 60 * 60 * 1000)
     const foreign = await createParsedCopyrightEmailIntake(inputs.now)
     const first = await seedCopyright(inputs)
     const second = await seedCopyright(inputs)
@@ -102,7 +103,9 @@ describe('seedCopyright', () => {
       first.deadlineCase.noticeId,
       first.intakeReviewCase.noticeId,
     ])
+    expect(cases.map(queued => queued.received_at)).toEqual([inputs.now, inputs.now])
     const [deadlineCase, intakeReviewCase] = cases
+    expect(intakeReviewCase!.waiting_since).toEqual(inputs.now)
     expect(deadlineCase).toMatchObject({
       reasons: ['deadline_due'],
       claimant: { display_name: 'Priya Natarajan' },
@@ -150,6 +153,8 @@ describe('seedCopyright', () => {
       { now: laterNow },
     )
     expect(later.hasNextPage).toBe(false)
+    expect(later.cases.map(queued => queued.received_at)).toEqual([inputs.now, inputs.now])
+    expect(later.cases[1]!.waiting_since).toEqual(inputs.now)
     expect(later.cases.map(queued => queued.id)).toEqual(noticeIds)
     expect(later.cases[0]).toMatchObject({
       reasons: ['deadline_missed'],

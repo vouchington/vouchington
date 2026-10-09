@@ -78,30 +78,34 @@ async function seedCopyrightFormCase(
   seed: SeedFormCase,
   media: CopyrightSeedMedia,
   identity: { idempotencyKey: string; ipAddress: string },
+  now: Date,
 ): Promise<CopyrightSeedCase> {
-  const { intake } = await createCopyrightFormIntake({
-    currentUser: null,
-    requesterIdentity: createCopyrightGuestIdentity(identity.ipAddress),
-    idempotencyKey: identity.idempotencyKey,
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: seed.claimantDisplayName,
-      claimantContact: `${seed.claimantEmail}, 12 Quay Street, Portsmouth`,
-      claimantEmail: seed.claimantEmail,
-      workDescription: seed.workDescription,
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: seed.claimantDisplayName,
-      claimantTargets: [
-        {
-          surfaceKind: 'post-image',
-          postId: media.postId,
-          imageId: media.imageId,
-          hostedUseUrl: media.hostedUseUrl,
-        },
-      ],
+  const { intake } = await createCopyrightFormIntake(
+    {
+      currentUser: null,
+      requesterIdentity: createCopyrightGuestIdentity(identity.ipAddress),
+      idempotencyKey: identity.idempotencyKey,
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: seed.claimantDisplayName,
+        claimantContact: `${seed.claimantEmail}, 12 Quay Street, Portsmouth`,
+        claimantEmail: seed.claimantEmail,
+        workDescription: seed.workDescription,
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: seed.claimantDisplayName,
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image',
+            postId: media.postId,
+            imageId: media.imageId,
+            hostedUseUrl: media.hostedUseUrl,
+          },
+        ],
+      },
     },
-  })
+    { now },
+  )
   const attempt = await claimCopyrightFormScreening(intake.id)
   if (attempt) {
     await completeCopyrightFormScreening(attempt, {
@@ -119,16 +123,26 @@ async function seedCopyrightFormCase(
 
 export async function seedCopyrightCases(
   media: CopyrightSeedMedia,
-  { identity }: CopyrightSeedContext,
+  { identity, now }: CopyrightSeedContext,
 ) {
   return {
-    intakeReviewCase: await seedCopyrightFormCase(intakeReviewCase, media, {
-      idempotencyKey: identity.intakeReviewKey,
-      ipAddress: identity.intakeIpAddress,
-    }),
-    deadlineCase: await seedCopyrightFormCase(deadlineCase, media, {
-      idempotencyKey: identity.deadlineKey,
-      ipAddress: identity.deadlineIpAddress,
-    }),
+    intakeReviewCase: await seedCopyrightFormCase(
+      intakeReviewCase,
+      media,
+      {
+        idempotencyKey: identity.intakeReviewKey,
+        ipAddress: identity.intakeIpAddress,
+      },
+      now,
+    ),
+    deadlineCase: await seedCopyrightFormCase(
+      deadlineCase,
+      media,
+      {
+        idempotencyKey: identity.deadlineKey,
+        ipAddress: identity.deadlineIpAddress,
+      },
+      now,
+    ),
   }
 }

@@ -212,6 +212,9 @@ rollback. No global row cleanup or public queue filter is introduced.
 The ordinary copyright seed accepts one identity set and business clock, shared by its media,
 email, form-case and deadline producers. The CLI retains the canonical identity set and samples its clock from primary PostgreSQL; callers
 seeding another owned dataset supply stable UUIDv7 keys, a bounded namespace and guest addresses.
+Form filing receives the same server-owned instant for the notice and initial submission;
+ordinary API callers omit it and retain the current form-filing clock. Replays return the stored
+form receipt without rewriting its original arrival time.
 Repeating those inputs reuses the same evidence, screening and immutable deadlines. A later
 clock never rewrites an existing deadline or its history.
 
