@@ -3,6 +3,13 @@ import { EMBEDDING_DIMENSION } from '../../config.mts'
 import { createBedrockEmbedding } from '../request.mts'
 
 describe('Bedrock Nova multimodal embeddings', () => {
+  /**
+   * Non-gating smoke check of the Nova embeddings model against the live Bedrock API.
+   * The request we build, response parsing and the failure policy are gated by recorded responses in
+   * backend/services/bedrock-embeddings/single/request.replay.no-data.mock.test.mts.
+   * See docs/development/tests.md#live-provider-smoke-checks.
+   */
+
   it(
     'returns a 1024-dimensional text embedding from the real Bedrock API',
     { timeout: 30_000 },

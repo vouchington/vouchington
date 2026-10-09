@@ -1,0 +1,6 @@
+HTTP/1.1 400 Bad Request
+content-type: application/json
+x-amzn-requestid: 2b7d9e4a-5c1f-4a8e-b3d6-0f9a8c7e6d52
+x-amzn-errortype: ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/
+
+{"message":"The provided request is not valid."}
