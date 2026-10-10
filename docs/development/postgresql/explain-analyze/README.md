@@ -88,11 +88,13 @@ Remote-follower, user, and post COPY candidates have no stable measured benefit.
 
 ### UUID media replay workload
 
-The canonical seed adds 12,000 retained delivery authorities, with every fourth authority in
-failed replay membership and the others pending. Placement UUIDs run in reverse record UUID
-order. Each record has one owned notice target, so actor lifecycle writes have real join partners.
+Immediately before the replay scenarios, `run.mts` adds 12,000 retained delivery authorities,
+with every fourth authority in failed replay membership and the others pending. Placement UUIDs
+run in reverse record UUID order. Each record has one owned notice target, so actor lifecycle
+writes have real join partners.
 The loader uses bounded 250-row inserts with normal FKs, authority-generation and history triggers;
-reruns preserve identities and rearm only the known fixture's failed cohort.
+reruns preserve identities and rearm only the known fixture's failed cohort. Loading this fixture
+after the existing scenarios keeps their plan measurements on the corpus seeded by `seed.mts`.
 
 The three `media-delivery-replay-*` scenarios capture the actual service's first page, UUID
 continuation and scoped UUID-array page. They require the canonical 1,000-row page configuration,

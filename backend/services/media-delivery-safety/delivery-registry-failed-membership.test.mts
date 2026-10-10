@@ -1,5 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest'
-import { closeTestDataStores } from '@voucha/test-helpers/close-data-stores'
+import { describe, expect, it } from 'vitest'
 import {
   membership,
   rollbackMediaReplayMembership,
@@ -24,7 +23,6 @@ import {
 
 describe('derived media replay membership', () => {
   useTestMediaDeliveryReplayProviders()
-  afterAll(closeTestDataStores)
   it('retains the exact failed transition without making it normal recovery work', async () => {
     const fixture = await createFailedMediaDeliveryReplayFixture()
     const id = fixture.mediaDeliveryRegistryRecordId
