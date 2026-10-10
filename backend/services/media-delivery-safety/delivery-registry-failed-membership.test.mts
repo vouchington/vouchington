@@ -47,7 +47,7 @@ describe('derived media replay membership', () => {
     expect(await membership(id)).toEqual([])
     expect(await getTestMediaDeliveryTransitionHistory(id)).toEqual([
       {
-        generation: before!.generation,
+        generation: claim.generation,
         desired_state: before!.desired_state,
         change_type: 'completed',
       },
