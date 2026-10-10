@@ -766,6 +766,9 @@ advisory lock coordinates concurrent runs of this file only; it does not seriali
 production writers. Persist owned accounting rows, include other-work positive controls in the
 unfiltered aggregate, observe committed owned-job queue events, and drain before owned cleanup
 and configuration restoration. No test creates a database or raises capacity to hide saturation.
+Quota cases retain the captured dirty-database accounting baseline. Unrelated-work positive controls
+remain in the global aggregate; the temporary count ceiling never exceeds the normal configured
+ceiling, and owned cleanup restores the captured count and size rather than requiring zero usage.
 Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
 admission within the test budget; this preserves priority ordering and delayed-job due times.
 The normal worker factory forwards that optional setting without changing production defaults.

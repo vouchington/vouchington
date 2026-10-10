@@ -96,14 +96,17 @@ describe('same-job embedding continuation', () => {
     'parks production %s on the original job when provider capacity is full',
     async type => {
       const owned = createOwnedEmbeddingQueue(quota, 'routes', connection)
+      const otherWork = await quota.insertOtherWork(1)
+      const countLimit = otherWork.after.count + 1
+      expect(countLimit).toBeLessThanOrEqual(getRateLimitConfig().MAX_INFLIGHT_JOBS)
       const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-        max_inflight_jobs: 1,
+        max_inflight_jobs: countLimit,
         creation_retry_delay_ms: 30000,
       })
       quota.beforeRelease(async () => restore())
       expect(await getBatchCreationLimits()).toMatchObject({ allowed: true })
       const contribution = await quota.insertCountReservation()
-      expect(contribution.before.count).toBe(0)
+      expect(contribution.before).toEqual(otherWork.after)
       expect(contribution.after.count - contribution.before.count).toBe(1)
       expect(await getBatchCreationLimits()).toEqual({
         allowed: false,
@@ -128,7 +131,9 @@ describe('same-job embedding continuation', () => {
         expect(await owned.add(type, {}, creationJobOptions(type))).toBeNull()
         expect([...seen]).toEqual([type])
       })
-      expect((await quota.removeOwnedReservations()).count).toBe(0)
+      const restored = await quota.removeOwnedReservations()
+      expect(restored.count).toBe(otherWork.before.count)
+      expect(restored.inputSizeMB).toBeCloseTo(otherWork.before.inputSizeMB, 6)
       expect(await getBatchCreationLimits()).toMatchObject({ allowed: true })
     },
   )
@@ -169,8 +174,8 @@ describe('same-job embedding continuation', () => {
     const config = getRateLimitConfig()
     const baseline = await requireAdmitted(true)
     const foreign = await quota.insertOtherWork(1)
-    expect(foreign.before).toEqual({ count: 0, inputSizeMB: 0 })
-    expect(foreign.after).toEqual({ count: 1, inputSizeMB: 1 })
+    expect(foreign.after.count - foreign.before.count).toBe(1)
+    expect(foreign.after.inputSizeMB - foreign.before.inputSizeMB).toBeCloseTo(1, 6)
     const usage = await quota.readGlobalUsage()
     if (usage.count + 1 >= config.MAX_INFLIGHT_JOBS)
       throw new Error('Global quota precondition: no count slot for the owned reservation')
@@ -218,7 +223,9 @@ describe('same-job embedding continuation', () => {
       expect((await owned.queue.getJob(image.id))?.data).toEqual({ cursor })
       expect(await owned.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
     })
-    expect(await quota.removeOwnedReservations()).toEqual({ count: 0, inputSizeMB: 0 })
+    const restored = await quota.removeOwnedReservations()
+    expect(restored.count).toBe(foreign.before.count)
+    expect(restored.inputSizeMB).toBeCloseTo(foreign.before.inputSizeMB, 6)
     expect((await requireAdmitted(true)).maxSizeMB).toBe(baseline.maxSizeMB)
   })
 })
