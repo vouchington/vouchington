@@ -76,7 +76,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.head_sha }}
           persist-credentials: false
-      - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: '.nvmrc'
           package-manager-cache: false
