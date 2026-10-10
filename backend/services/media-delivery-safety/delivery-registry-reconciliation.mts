@@ -31,11 +31,18 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   await using transaction = await beginTransaction()
   const candidates = sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
     /* deadlock-safe: every replay chain locks authority rows in the same total record UUID order. */
-    WITH candidates AS MATERIALIZED (
-      SELECT media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items
-      WHERE failed_change_id IS NOT NULL`
+    WITH `
   if (recordIds)
-    candidates.append(sql` AND media_delivery_registry_record_id = ANY(${recordIds}::uuid[])`)
+    candidates.append(sql`requested_record_ids AS MATERIALIZED (
+      SELECT ${recordIds}::uuid[] AS record_ids
+    ), `)
+  candidates.append(sql`candidates AS MATERIALIZED (
+      SELECT media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items
+      WHERE failed_change_id IS NOT NULL`)
+  if (recordIds)
+    candidates.append(
+      ` AND media_delivery_registry_record_id = ANY((SELECT record_ids FROM requested_record_ids)::uuid[])`,
+    )
   if (after) candidates.append(sql` AND media_delivery_registry_record_id > ${after}::uuid`)
   candidates.append(sql`
       ORDER BY media_delivery_registry_record_id LIMIT ${limit}
