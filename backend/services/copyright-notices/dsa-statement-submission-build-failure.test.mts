@@ -9,10 +9,8 @@ import {
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import {
+  createTestDsaPayloadBuildFailure,
   readTestDsaSubmissionForRestriction,
-  removeTestCopyrightTargetImageRow,
-  restoreTestCopyrightTargetImageRow,
-  setTestImageUploadCompletedAt,
 } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
 import {
   countTestDsaSubmissionsForRestriction,
@@ -48,11 +46,12 @@ describe('DSA statement payload build failures', () => {
     const last = await newRestriction()
     const foreign = await newRestriction()
     const ownedIds = [first.restrictionId, broken.restrictionId, last.restrictionId]
-    await removeTestCopyrightTargetImageRow(broken.targetId)
+    const buildPayload = createTestDsaPayloadBuildFailure(broken.restrictionId, 404)
     const report = vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>()
 
     await expect(
       materializeDsaStatementSubmissions(from, {
+        buildPayload,
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
@@ -72,6 +71,7 @@ describe('DSA statement payload build failures', () => {
     // The next run neither retries the failed restriction nor warns again.
     await expect(
       materializeDsaStatementSubmissions(from, {
+        buildPayload,
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
@@ -122,19 +122,19 @@ describe('DSA statement payload build failures', () => {
     ).resolves.toBe(1)
   })
 
-  it('records a restriction whose built payload fails the closed contract as a 422 and keeps going', async () => {
+  it('records a restriction whose builder rejects an invalid payload as a 422 and keeps going', async () => {
     const from = new Date('2026-07-01T00:00:00.000Z')
-    const invalidImage = await createTestCopyrightImageFixture('post-image')
-    const invalid = await createTestCopyrightRestrictionForImage(invalidImage)
+    const invalid = await newRestriction()
     const valid = await newRestriction()
     const foreign = await newRestriction()
-    // The builder's own validation throws a 422 HttpError, so it is a data problem the sweep records.
-    await setTestImageUploadCompletedAt(invalidImage.imageId, new Date('1999-12-31T00:00:00.000Z'))
+    // The real payload validator throws a 422 HttpError, so the sweep records this build failure.
+    const buildPayload = createTestDsaPayloadBuildFailure(invalid.restrictionId, 422)
     const report = vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>()
 
     const ownedIds = [invalid.restrictionId, valid.restrictionId]
     await expect(
       materializeDsaStatementSubmissions(from, {
+        buildPayload,
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
@@ -153,6 +153,7 @@ describe('DSA statement payload build failures', () => {
     })
     await expect(
       materializeDsaStatementSubmissions(from, {
+        buildPayload,
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
@@ -161,13 +162,14 @@ describe('DSA statement payload build failures', () => {
     expect(report).toHaveBeenCalledOnce()
   })
 
-  it('replays a failed restriction only after its data is fixed, then submits the rebuilt payload', async () => {
+  it('replays a failed restriction after its builder recovers, then submits the rebuilt payload', async () => {
     const from = new Date('2026-07-01T00:00:00.000Z')
     const broken = await newRestriction()
     const foreign = await newRestriction()
-    const removedImageRow = await removeTestCopyrightTargetImageRow(broken.targetId)
+    const buildPayload = createTestDsaPayloadBuildFailure(broken.restrictionId, 404)
     await expect(
       materializeDsaStatementSubmissions(from, {
+        buildPayload,
         reportBuildFailure: vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>(),
         restrictionIds: [broken.restrictionId],
       }),
@@ -176,15 +178,16 @@ describe('DSA statement payload build failures', () => {
     const failed = await readTestDsaSubmissionForRestriction(broken.restrictionId)
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
 
-    // The data is still broken: nothing changes and no attempt is appended.
-    await expect(replayDsaStatementSubmission(administrator.id, failed.id)).resolves.toBe(false)
+    // The builder still fails: nothing changes and no attempt is appended.
+    await expect(
+      replayDsaStatementSubmission(administrator.id, failed.id, buildPayload),
+    ).resolves.toBe(false)
     expect(await readTestDsaSubmissionForRestriction(broken.restrictionId)).toMatchObject({
       payload: null,
       failure_code: 'http_404',
     })
     expect(await readTestDsaAttempts(failed.id)).toEqual([])
 
-    await restoreTestCopyrightTargetImageRow(removedImageRow)
     await expect(replayDsaStatementSubmission(administrator.id, failed.id)).resolves.toBe(true)
     expect(await readTestDsaSubmissionForRestriction(broken.restrictionId)).toMatchObject({
       payload: { puid: broken.restrictionId },

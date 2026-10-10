@@ -80,48 +80,52 @@ async function createTestNotificationPushRecoveryBacklog(input: {
 }): Promise<CreatedNotificationPushRecoveryFixture> {
   const ownedNotificationIds = Array.from({ length: input.count }, () => v7()).toSorted()
   const notificationIds = Object.freeze([...ownedNotificationIds])
-  const updatedAt = createTestNotificationPushRecoveryTimestamp(input.userId)
-  const afterUpdatedAt = new Date(updatedAt.getTime() - 1)
-
-  {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(sql`/* createTestNotificationPushRecoveryBacklog */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* createTestNotificationPushRecoveryBacklog */
         INSERT INTO notifications (id, user_id, entity_type, delivery_type, title, body, target_path)
         SELECT notification_id, ${input.userId}::uuid, 'referral_click', 'subscription',
           'Recovery page notification', 'Durable push recovery fixture', '/my/referrals'
         FROM UNNEST(${ownedNotificationIds}::uuid[]) AS fixture(notification_id)
       `)
-    // Preserve the pinned cursor timestamp by bypassing the managed updated_at trigger for this write.
-    await query(sql`SET LOCAL session_replication_role = replica`)
-    await query(sql`/* pinTestNotificationPushRecoveryBacklog */
-        UPDATE notification_push_intents
-        SET updated_at = ${updatedAt}
-        WHERE user_id = ${input.userId}::uuid
-          AND notification_id = ANY(${ownedNotificationIds}::uuid[])
-    `)
-    await transaction.commit()
+  // Capture the transaction's common timestamp as text: JavaScript Date would lose microseconds.
+  const { rows } = await transaction<{
+    scan_before: string | null
+    after_updated_at: string | null
+    notification_count: number
+    timestamp_count: number
+  }>(sql`/* readTestNotificationPushRecoverySnapshot */
+    SELECT min(updated_at)::text AS scan_before,
+      (min(updated_at) - interval '1 microsecond')::text AS after_updated_at,
+      count(*)::integer AS notification_count,
+      count(DISTINCT updated_at)::integer AS timestamp_count
+    FROM notification_push_intents
+    WHERE user_id = ${input.userId}::uuid
+      AND notification_id = ANY(${ownedNotificationIds}::uuid[])
+  `)
+  const snapshot = rows[0]
+  if (
+    !snapshot?.scan_before ||
+    !snapshot.after_updated_at ||
+    snapshot.notification_count !== input.count ||
+    snapshot.timestamp_count !== 1
+  ) {
+    throw new Error('Notification push recovery fixture requires one complete transaction snapshot')
   }
+  await transaction.commit()
 
   return {
     ownedNotificationIds,
     fixture: {
       userId: input.userId,
       notificationIds,
-      scanBefore: updatedAt.toISOString(),
+      scanBefore: snapshot.scan_before,
       after: {
-        updatedAt: afterUpdatedAt.toISOString(),
+        updatedAt: snapshot.after_updated_at,
         userId: input.userId,
         notificationId: notificationIds[0]!,
       },
     },
   }
-}
-
-function createTestNotificationPushRecoveryTimestamp(userId: string): Date {
-  const millisecondsInYear = 31_536_000_000n
-  const userBits = BigInt(`0x${userId.replaceAll('-', '')}`)
-  return new Date(Date.UTC(2200, 0, 1) + Number(userBits % millisecondsInYear))
 }
 
 async function deleteTestNotificationPushRecoveryBacklog(

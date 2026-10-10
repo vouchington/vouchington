@@ -7,6 +7,23 @@ Testing utility library for the Voucha backend.
 
 Tests share one dirty database ([suite rule R1](../../tests.md#test-suite-rules)). Assert owned ids, page with an owned-row cursor such as `encodeUuidCursorBefore(id)`, and take an advisory-lock reservation window such as `acquireTestAiUsageDateReservation` when the assertion is an exact global aggregate. Inject a write failure through a throwing `QueryExecutor` ([R2](../../tests.md#test-suite-rules)). Wait on the promise, queue event, or notification the code returns ([R3](../../tests.md#test-suite-rules)). Lower a DynamicConfig work limit with `overrideDynamicConfigFieldsForTest` instead of building a large fixture ([R4](../../tests.md#test-suite-rules)).
 
+Delegated-write fence tests use
+[`post-delegated-write-race.mts`](../../../../backend/test-helpers/post-delegated-write-race.mts).
+It reserves an owned observer connection from the primary advisory pool before acquiring the
+holder transaction or starting the mutation. Before each observation, it discards its own
+transaction-local statistics snapshot with `pg_stat_clear_snapshot()`. The observer reads the actual PostgreSQL lock wait,
+matching the query marker and holder PID through `pg_blocking_pids`; connection admission alone
+is not evidence of a blocked mutation. Cleanup settles and disposes the holder and observer, then
+drains the mutation, preserving the original failure and distinct cleanup failures. The existing
+lock-wait poll remains; reserving the observer does not eliminate pool acquisition or event-loop
+stalls.
+
+[`createTestDsaPayloadBuildFailure`](../../../../backend/test-helpers/dsa-statement-build-failure-fixtures.mts)
+scopes a DSA build failure to one restriction through the existing builder dependency. Its 404
+case calls the real builder with a missing restriction UUID; its 422 case builds a real payload
+then calls the real validator with an invalid content date. Other restrictions use the normal
+builder. Recovery uses the normal builder again; fixtures keep immutable rows and constraints intact.
+
 SQL setup and assertions are grouped by concern in `sql-*.mts` (posts, RSS feeds, topics,
 moderation, feed shares, follower distribution, URLs, configuration, and agent prompts).
 Language detection separates fixture creation from state assertions, and `sql-query-inputs.mts`
@@ -410,9 +427,12 @@ receives the real transport and request count; server and dispatcher close after
 
 Use `withTestNotificationPushRecoveryBacklog()` from
 `@voucha/test-helpers/notification-push-recovery` for a fixed recovery snapshot spanning multiple
-pages. It pins owned intent timestamps to one isolated cursor window, exposes a frozen ordered ID
-snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
-settles.
+pages. Its normal notification insert captures intents with one transaction timestamp. It derives
+the cursor from those owned rows and keeps PostgreSQL's timestamp text to preserve microseconds,
+exposes a frozen ordered ID snapshot and endpoint-state readers, and deletes only its owned
+notifications after the callback settles. `createTestNotificationWithoutPushIntent()` creates a
+normal notification, then removes only its owned intent to exercise missing-intent recovery with
+all constraints and triggers enabled.
 
 ## Image Moderation Fixtures
 
