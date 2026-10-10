@@ -53,6 +53,7 @@ runs:
       with:
         # Hosted runners are ephemeral, so builder teardown only adds post-job tail.
         cleanup: false
+        driver-opts: image=mirror.gcr.io/moby/buildkit:buildx-stable-1
         buildkitd-config-inline: |
           [worker.oci]
             # Keep the proven parallelism ceiling for the api, worker-cpu, and
