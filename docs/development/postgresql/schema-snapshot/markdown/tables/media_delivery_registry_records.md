@@ -14,6 +14,7 @@ Not partitioned — growth: unbounded.
 | `image_id`           | `uuid`                          | no       |                              |          |           |           | Immutable image bound to the exact public-use placement.                                                                                                                                                        |
 | `desired_state`      | `media_delivery_desired_states` | no       |                              |          |           |           | Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.                                                       |
 | `generation`         | `bigint`                        | no       | `0`                          |          |           |           | Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused. |
+| `latest_change_id`   | `uuid`                          | yes      |                              |          |           |           | Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.                                                                                |
 | `created_at`         | `timestamp with time zone`      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                 |
 | `updated_at`         | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                                                 |
 
@@ -32,6 +33,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_media_delivery_registry_records__retained_image_binding`: `FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT`
+- `fk_media_registry_records__latest_change`: `FOREIGN KEY (id, latest_change_id) REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, id) ON DELETE RESTRICT`
 - `media_delivery_registry_records_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 
 **Indexes:**

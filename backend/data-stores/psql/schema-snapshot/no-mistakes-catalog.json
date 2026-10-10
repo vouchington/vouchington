@@ -1335,7 +1335,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE latest_change_id uuid;\nBEGIN\n  -- The BEFORE trigger retains the authority lock. Ignore a late lower-ID transition,\n  -- matching the canonical latest-ID/current-generation view rather than insertion order.\n  SELECT history.id INTO latest_change_id FROM media_delivery_registry_changes history\n    WHERE history.media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n      AND history.generation = NEW.generation ORDER BY history.id DESC LIMIT 1;\n  IF latest_change_id IS DISTINCT FROM NEW.id THEN RETURN NEW; END IF;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -50429,6 +50429,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_media_registry_changes__record_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -50453,6 +50485,9 @@
       "uniqueConstraints": {
         "uq_media_registry_changes__record_generation_id": {
           "columns": ["media_delivery_registry_record_id", "generation", "id"]
+        },
+        "uq_media_registry_changes__record_id": {
+          "columns": ["media_delivery_registry_record_id", "id"]
         }
       }
     },
@@ -50738,7 +50773,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "desired_state": {
           "comment": "Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.",
@@ -50780,6 +50815,16 @@
           "nullable": false,
           "ordinalPosition": 4
         },
+        "latest_change_id": {
+          "comment": "Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "placement_id": {
           "comment": "Typed placement authority; never inferred from image existence.",
           "dataType": "uuid",
@@ -50808,7 +50853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         }
       },
       "comment": "Durable exact image-placement delivery outbox; image and placement parents are retained.",
@@ -50819,6 +50864,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["placement_id", "image_id"],
           "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
+        "fk_media_registry_records__latest_change": {
+          "columns": ["id", "latest_change_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["media_delivery_registry_record_id", "id"],
+          "referencedTable": "media_delivery_registry_changes",
           "validated": true
         },
         "media_delivery_registry_records_placement_id_fkey": {
@@ -140730,7 +140783,7 @@
     },
     "view_media_delivery_registry_current_records": {
       "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
-      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.media_delivery_registry_record_id,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.media_delivery_registry_record_id = record.id AND history.generation = record.generation\n          ORDER BY history.id DESC\n         LIMIT 1) change ON true;",
+      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN media_delivery_registry_changes change ON change.media_delivery_registry_record_id = record.id AND change.id = record.latest_change_id AND change.generation = record.generation;",
       "materialized": false
     },
     "view_memberships": {
