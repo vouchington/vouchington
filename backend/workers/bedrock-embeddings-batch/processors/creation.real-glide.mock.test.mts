@@ -13,7 +13,10 @@ import {
   bedrockEmbeddingsBatchConfig,
 } from '@services/bedrock-embeddings/batch/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
+import {
+  acquireEmbeddingQuotaFixture,
+  emptyEmbeddingCreationDependencies,
+} from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { createEmbeddingCreationWorker } from '../workers/bedrock-embeddings-batch-creation.mts'
 import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
@@ -141,17 +144,17 @@ describe('same-job embedding continuation', () => {
   it.each(['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images', 'unknown'])(
     'drains an empty fixed %s sweep or rejects an unknown creation type',
     async type => {
-      // Known routes discover the real global quota before scanning. No registry-max override.
-      if (type !== 'unknown') await requireAdmitted(type === 'images')
+      // Controlled admission isolates empty routing; SQL, SDK workers and submission remain real.
       const owned = createOwnedEmbeddingQueue(quota, 'empty', connection)
       await owned.run(async () => {
         await owned.ready()
         const job = await owned.add(type, { cursor: fixedEmptyCursor() }, creationJobOptions(type))
         if (!job) throw new Error('Expected empty creation sweep job')
-        const worker = await createEmbeddingCreationWorker(owned.queue, {
-          blockTimeout: 100,
-          promotionInterval: 100,
-        })
+        const worker = await createEmbeddingCreationWorker(
+          owned.queue,
+          { blockTimeout: 100, promotionInterval: 100 },
+          emptyEmbeddingCreationDependencies,
+        )
         owned.watchWorker(worker)
         await worker.waitUntilReady()
         await owned.waitFor(job.id, type === 'unknown' ? 'failed' : 'completed')
