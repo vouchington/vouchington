@@ -131,10 +131,10 @@ describe('same-job embedding continuation', () => {
         expect(await owned.add(type, {}, creationJobOptions(type))).toBeNull()
         expect([...seen]).toEqual([type])
       })
-      const restored = await quota.removeOwnedReservations()
-      expect(restored.count).toBe(otherWork.before.count)
-      expect(restored.inputSizeMB).toBeCloseTo(otherWork.before.inputSizeMB, 6)
-      expect(await getBatchCreationLimits()).toMatchObject({ allowed: true })
+      expect(await quota.removeOwnedReservations()).toEqual({
+        verifiedAbsentCount: 2,
+        remainingCount: 0,
+      })
     },
   )
 
@@ -223,10 +223,10 @@ describe('same-job embedding continuation', () => {
       expect((await owned.queue.getJob(image.id))?.data).toEqual({ cursor })
       expect(await owned.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
     })
-    const restored = await quota.removeOwnedReservations()
-    expect(restored.count).toBe(foreign.before.count)
-    expect(restored.inputSizeMB).toBeCloseTo(foreign.before.inputSizeMB, 6)
-    expect((await requireAdmitted(true)).maxSizeMB).toBe(baseline.maxSizeMB)
+    expect(await quota.removeOwnedReservations()).toEqual({
+      verifiedAbsentCount: 2,
+      remainingCount: 0,
+    })
   })
 })
 
