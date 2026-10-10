@@ -2,11 +2,12 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { currentUserCanCreatePost } from '@services/posts/authorization'
-import { assertCanContribute } from '@services/contribution-gating/assert'
+import {
+  currentUserCanCreatePost,
+  getAuthorizedPostContributionMembershipPlan,
+} from '@services/posts/authorization'
 import { admitRouteContribution, executePreparedContribution } from '@services/contribution-gating'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
-import { getUserActivePlan } from '@services/memberships'
 import { prepareLinkPost } from '@services/posts'
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -61,8 +62,7 @@ app.route('/api/v1/rss-feed-items/:id/discussions').post(async (ctx: Context) =>
   const itemId = ctx.params.id!
   ctx.assert(isUUID(itemId), 400, 'Invalid RSS feed item ID')
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
   let item: NonNullable<Awaited<ReturnType<typeof getRssFeedItemById>>> | undefined
   const admission = await admitRouteContribution({
     currentUser,

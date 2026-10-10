@@ -7,6 +7,7 @@ import {
   readEnqueuedJob,
 } from '@voucha/test-helpers'
 import { archiveCommunity } from './archive.mts'
+import { getCommunityOrThrow } from './get.mts'
 import { getCommunityMember } from './members/get.mts'
 import { initiateOwnershipTransfer } from './ownership-transfer.mts'
 import { emails } from '@queues/emails/queues'
@@ -30,7 +31,7 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
+    await initiateOwnershipTransfer(owner.id, community, moderator.id)
 
     const ownerAfter = await getCommunityMember(community.id, owner.id)
     expect(ownerAfter?.role).toBe('moderator')
@@ -58,7 +59,7 @@ describe('initiateOwnershipTransfer', () => {
     ])
 
     await expect(
-      initiateOwnershipTransfer(owner.id, community.id, regularMember.id),
+      initiateOwnershipTransfer(owner.id, community, regularMember.id),
     ).rejects.toMatchObject({ status: 422 })
   })
 
@@ -83,7 +84,7 @@ describe('initiateOwnershipTransfer', () => {
     ])
 
     await expect(
-      initiateOwnershipTransfer(nonOwner.id, community.id, moderator.id),
+      initiateOwnershipTransfer(nonOwner.id, community, moderator.id),
     ).rejects.toMatchObject({ status: 403 })
   })
 
@@ -108,7 +109,7 @@ describe('initiateOwnershipTransfer', () => {
     await archiveCommunity(community.id, owner.id)
 
     await expect(
-      initiateOwnershipTransfer(owner.id, community.id, moderator.id),
+      initiateOwnershipTransfer(owner.id, await getCommunityOrThrow(community.id), moderator.id),
     ).rejects.toMatchObject({ status: 403, message: 'Community is archived' })
   })
 
@@ -144,7 +145,7 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
+    await initiateOwnershipTransfer(owner.id, community, moderator.id)
 
     const moderatorAfter = await getCommunityMember(community.id, moderator.id)
     expect(moderatorAfter?.role).toBe('owner')
@@ -170,7 +171,7 @@ describe('initiateOwnershipTransfer', () => {
 
     const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
       owner.id,
-      community.id,
+      community,
       moderator.id,
     )
     expect(newOwnerEmailEnqueue).not.toBeNull()
@@ -209,7 +210,7 @@ describe('initiateOwnershipTransfer', () => {
 
     const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
       owner.id,
-      community.id,
+      community,
       moderator.id,
     )
     expect(newOwnerEmailEnqueue).not.toBeNull()
@@ -241,7 +242,7 @@ describe('initiateOwnershipTransfer', () => {
 
     const { newOwnerEmailEnqueue, previousOwnerEmailEnqueue } = await initiateOwnershipTransfer(
       owner.id,
-      community.id,
+      community,
       moderator.id,
     )
     expect(newOwnerEmailEnqueue).not.toBeNull()

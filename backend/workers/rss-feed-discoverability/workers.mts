@@ -1,11 +1,11 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { RSS_FEED_DISCOVERABILITY_QUEUE_NAME } from '@queues/rss-feed-discoverability/config'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
 import type { RssFeedDiscoverabilityJobData } from '@queues/rss-feed-discoverability/types'
 
-export const rssFeedDiscoverability = new Worker(
+export const rssFeedDiscoverability = createWorker(
   RSS_FEED_DISCOVERABILITY_QUEUE_NAME,
   (job: Job) => {
     const jobName = job.name as RssFeedDiscoverabilityJobData['name']
@@ -23,8 +23,7 @@ export const rssFeedDiscoverability = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('rssFeedDiscoverability', { baseline: 5 }),
   },
 )

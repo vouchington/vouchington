@@ -1,11 +1,11 @@
-import { Worker, type Job } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import type { Job } from 'glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { processImportRow } from './processors.mts'
 import { ADMIN_IMPORTS_DEFAULTS, QUEUE_NAME } from '@queues/admin-imports/config'
 import type { AdminImportJobs } from '@queues/admin-imports/types'
 
-export const adminImports = new Worker(
+export const adminImports = createWorker(
   QUEUE_NAME,
   (job: Job) => {
     switch (job.name as AdminImportJobs) {
@@ -22,8 +22,7 @@ export const adminImports = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('adminImports', { baseline: 5 }),
   },
 )

@@ -2,11 +2,9 @@ import type { TestProjectConfiguration } from 'vitest/config'
 
 // The credentialed Vitest projects: the ones that probe a real external provider with live
 // credentials, run by `.github/workflows/tests-backend-credentialed.yml`. `vitest.config.mts`
-// spreads them into its `projects`. `backend-credentialed-project-info.mts` reads their names and
-// includes for the Node-run consumers: the project groups in `ci/run-vitest-project-group.mts` and
-// the transient-retry classifier (`ci/transient-retry/backend-credentialed-log-fingerprints.mts`,
-// whose `FAIL <project> <path>` matcher and Vitest command markers come from the same objects), so
-// neither can drift from what Vitest actually runs. Those scripts must not import
+// spreads them into its `projects`. `backend-credentialed-project-info.mts` reads their names for
+// the Node-run consumers: the project groups in `ci/run-vitest-project-group.mts` and the workflow
+// tests, so neither can drift from what Vitest actually runs. Those scripts must not import
 // `vitest.config.mts` itself: that pulls in DB/Valkey alias resolution and `vitest`, which a
 // Node-run CI script stays free of. This module holds only literals plus a type-only import (erased
 // under Node type stripping).

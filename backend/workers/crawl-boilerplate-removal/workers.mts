@@ -1,12 +1,12 @@
 import type { BoilerplateRemovalJobs } from '@queues/crawl-boilerplate-removal/types'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { BOILERPLATE_REMOVAL_QUEUE_NAME } from '@queues/crawl-boilerplate-removal/config'
 import { processBoilerplateRemovalDispatcher, processBoilerplateRemoval } from './processors.mts'
 import { enqueueBulkBoilerplateRemoval } from '@queues/crawl-boilerplate-removal/enqueues'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 
-export const boilerplateRemoval = new Worker(
+export const boilerplateRemoval = createWorker(
   BOILERPLATE_REMOVAL_QUEUE_NAME,
   async (job: Job) => {
     switch (job.name as BoilerplateRemovalJobs) {
@@ -29,8 +29,7 @@ export const boilerplateRemoval = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('crawlBoilerplateRemoval', { baseline: 5 }),
   },
 )

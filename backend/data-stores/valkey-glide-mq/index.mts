@@ -1,4 +1,6 @@
-export { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+/** @public Worker-queue connection options for tests that build raw glide-mq handles on an isolated prefix; production handles come from the factory. */
+export { workerQueueConnection } from '@data-stores/valkey-core/glide-mq-client'
+export { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 export * from './glide-mq-factory.mts'
 export * from './glide-mq-enqueue.mts'
 export * from './glide-mq-shared-client.mts'

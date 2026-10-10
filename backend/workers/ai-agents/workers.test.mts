@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimitError } from 'openai'
 import type { Job, Worker } from 'glide-mq'
+import type { createWorker } from '@data-stores/valkey-glide-mq'
 import { StructuredDecisionError } from '@modules/structured-decisions'
 import { AI_AGENTS_QUEUE_NAME, CLASSIFIER_RUN_BACKOFF } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
@@ -29,36 +30,35 @@ describe('ai-agents workers', () => {
     mockHandleOpenAIRateLimit.mockResolvedValue(undefined)
   })
 
-  it('constructs the worker with the queue processor and runtime options', () => {
-    const constructed: unknown[] = []
-    function CapturingWorker(
+  it('builds the worker through the factory with a dedicated command client and runtime options', () => {
+    const created: unknown[] = []
+    const factoryWorker = {} as Worker
+    const createWorkerStub = ((
       name: string,
       processor: (job: Job<AIAgentJobData>) => unknown,
       options: unknown,
-    ): void {
-      constructed.push({ name, processor, options })
-    }
+    ) => {
+      created.push({ name, processor, options })
+      return factoryWorker
+    }) as unknown as typeof createWorker
 
     const worker = createAIAgentsWorker({
-      WorkerCtor: CapturingWorker as unknown as typeof Worker,
+      createWorker: createWorkerStub,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
       handleOpenAIRateLimit: mockHandleOpenAIRateLimit,
       queueName: AI_AGENTS_QUEUE_NAME,
-      connection: { host: 'localhost' } as never,
-      prefix: 'test-prefix' as never,
       concurrency: 7,
       openAIRateLimitPerMinute: 42,
       openAITokenLimitPerMinute: 1234,
     })
 
-    expect(worker).toBeInstanceOf(CapturingWorker)
-    expect(constructed).toEqual([
+    expect(worker).toBe(factoryWorker)
+    expect(created).toEqual([
       {
         name: AI_AGENTS_QUEUE_NAME,
         processor: expect.any(Function),
         options: {
-          connection: { host: 'localhost' },
-          prefix: 'test-prefix',
+          dedicatedCommandClient: true,
           concurrency: 7,
           limiter: { max: 42, duration: 60_000 },
           tokenLimiter: {

@@ -149,6 +149,52 @@ describe('backend-local flush concurrency', () => {
     })
   })
 
+  it('starts a new drain when a record arrives during the settlement handoff', async () => {
+    await withLocalAnalytics(async localDir => {
+      const boundaryFlush = Promise.withResolvers<void>()
+      let boundaryWriteScheduled = false
+      await withAppendFileMock(
+        async (_filePath, _data, append) => {
+          await append()
+          if (boundaryWriteScheduled) return
+          boundaryWriteScheduled = true
+          // Schedule the write after the append, group, batch, and drain promise reactions.
+          // This reaches the old ownership-release continuation without a timer or polling.
+          let handoff = Promise.resolve()
+          for (let reaction = 0; reaction < 5; reaction += 1) {
+            handoff = handoff.then(() => undefined)
+          }
+          void handoff.then(() => {
+            writeRecord('queue_workers', makeRecord('at-drain-boundary'))
+            void flush().then(boundaryFlush.resolve, boundaryFlush.reject)
+          }, boundaryFlush.reject)
+        },
+        async () => {
+          try {
+            writeRecord('queue_workers', makeRecord('first'))
+            const firstFlush = flush()
+            const results = await Promise.allSettled([firstFlush, boundaryFlush.promise])
+            expect(results).toEqual([
+              { status: 'fulfilled', value: undefined },
+              { status: 'fulfilled', value: undefined },
+            ])
+            const contents = await readFile(
+              join(localDir, 'queue_workers', '2026-08-08.jsonl'),
+              'utf8',
+            )
+            const eventIds = contents
+              .split('\n')
+              .filter(Boolean)
+              .map(line => (JSON.parse(line) as { event_id: string }).event_id)
+            expect(eventIds).toEqual(['first', 'at-drain-boundary'])
+          } finally {
+            await flush()
+          }
+        },
+      )
+    })
+  })
+
   it('drains records added during a failed threshold flush before rejecting', async () => {
     await withLocalAnalytics(async localDir => {
       const appendStarted = Promise.withResolvers<void>()

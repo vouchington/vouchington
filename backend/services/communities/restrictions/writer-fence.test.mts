@@ -29,6 +29,7 @@ import { lockCommunityRestrictionWrites } from './lock.mts'
 import { activateCommunityRestrictions } from './activate.mts'
 import { liftCommunityRestriction } from './lift.mts'
 import { getActiveCommunityRestrictions } from './get.mts'
+import { loadCommunityWithViewer } from '../load-with-viewer.mts'
 
 async function fixture() {
   const user = await createTestUser()
@@ -43,19 +44,20 @@ async function fixture() {
   return {
     currentUser: (await getTestPrivateUserById(user.id))!,
     community,
+    loaded: await loadCommunityWithViewer(community.id, user.id),
     delegateActorId: delegate.id,
   }
 }
 
 describe('community restriction writers share delegated post fences', () => {
   it('uses database expiry time when the application clock trails PostgreSQL', async () => {
-    const { currentUser, community } = await fixture()
+    const { currentUser, loaded, community } = await fixture()
     const expiresAt = new Date(Date.now() - 1000)
     await withCommunityRestrictionApplicationClockForTest(
       new Date(expiresAt.getTime() - 1000),
       async () => {
         await expect(
-          activateCommunityRestrictions(currentUser, community.id, {
+          activateCommunityRestrictions(currentUser, loaded, {
             restrictionTypes: ['no_links'],
             expiresAt,
           }),
@@ -74,7 +76,7 @@ describe('community restriction writers share delegated post fences', () => {
     ).rejects.toMatchObject({ code: '25P02' })
   })
   it('refuses activation if its expiry passes while waiting for the fence', async () => {
-    const { currentUser, community, delegateActorId } = await fixture()
+    const { currentUser, loaded, community, delegateActorId } = await fixture()
     let expiresAt: Date
     await expect(
       withHeldDelegatedCommunityFenceForTest(
@@ -82,7 +84,7 @@ describe('community restriction writers share delegated post fences', () => {
         delegateActorId,
         () => {
           expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
-          return activateCommunityRestrictions(currentUser, community.id, {
+          return activateCommunityRestrictions(currentUser, loaded, {
             restrictionTypes: ['no_links'],
             expiresAt,
           })
@@ -94,9 +96,9 @@ describe('community restriction writers share delegated post fences', () => {
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
   it('does not manually lift a restriction that expires while waiting for the fence', async () => {
-    const { currentUser, community, delegateActorId } = await fixture()
+    const { currentUser, loaded, community, delegateActorId } = await fixture()
     const expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
-    const [restriction] = await activateCommunityRestrictions(currentUser, community.id, {
+    const [restriction] = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],
       expiresAt,
     })
@@ -105,7 +107,7 @@ describe('community restriction writers share delegated post fences', () => {
       withHeldDelegatedCommunityFenceForTest(
         community.id,
         delegateActorId,
-        () => liftCommunityRestriction(currentUser, community.id, restriction!.id),
+        () => liftCommunityRestriction(currentUser, loaded, restriction!.id),
         () => expiresAt,
       ),
     ).rejects.toMatchObject({ status: 404, message: 'No active restriction found' })
@@ -113,12 +115,12 @@ describe('community restriction writers share delegated post fences', () => {
     expect(await readStaffActionHistory(currentUser.id)).toEqual(history)
   })
   it('refuses activation when community archiving wins the fence', async () => {
-    const { currentUser, community } = await fixture()
+    const { currentUser, loaded, community } = await fixture()
     await expect(
       withConcurrentCommunityArchiveForTest(
         community.id,
         () =>
-          activateCommunityRestrictions(currentUser, community.id, {
+          activateCommunityRestrictions(currentUser, loaded, {
             restrictionTypes: ['no_links'],
             expiresAt: null,
           }),
@@ -134,10 +136,10 @@ describe('community restriction writers share delegated post fences', () => {
   ] as const)(
     'refuses activation when moderator %s wins its lifecycle fence',
     async (_label, race, status, message) => {
-      const { currentUser, community } = await fixture()
+      const { currentUser, loaded, community } = await fixture()
       await expect(
         race(currentUser.id, () =>
-          activateCommunityRestrictions(currentUser, community.id, {
+          activateCommunityRestrictions(currentUser, loaded, {
             restrictionTypes: ['no_links'],
             expiresAt: null,
           }),
@@ -148,12 +150,12 @@ describe('community restriction writers share delegated post fences', () => {
     },
   )
   it('activation waits until the delegated community fence releases', async () => {
-    const { currentUser, community, delegateActorId } = await fixture()
+    const { currentUser, loaded, community, delegateActorId } = await fixture()
     const restrictions = await withHeldDelegatedCommunityFenceForTest(
       community.id,
       delegateActorId,
       () =>
-        activateCommunityRestrictions(currentUser, community.id, {
+        activateCommunityRestrictions(currentUser, loaded, {
           restrictionTypes: ['require_post_approval'],
           expiresAt: null,
         }),
@@ -164,13 +166,13 @@ describe('community restriction writers share delegated post fences', () => {
     ])
   })
   it('refuses activation when moderator membership removal wins its row fence', async () => {
-    const { currentUser, community } = await fixture()
+    const { currentUser, loaded, community } = await fixture()
     await expect(
       withConcurrentCommunityMembershipRemovalForTest(
         community.id,
         currentUser.id,
         () =>
-          activateCommunityRestrictions(currentUser, community.id, {
+          activateCommunityRestrictions(currentUser, loaded, {
             restrictionTypes: ['no_links'],
             expiresAt: null,
           }),
@@ -181,18 +183,18 @@ describe('community restriction writers share delegated post fences', () => {
     expect(await readStaffActionHistory(currentUser.id)).toEqual([])
   })
   it('lifting waits until the delegated community fence releases', async () => {
-    const { currentUser, community, delegateActorId } = await fixture()
-    const [restriction] = await activateCommunityRestrictions(currentUser, community.id, {
+    const { currentUser, loaded, community, delegateActorId } = await fixture()
+    const [restriction] = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],
       expiresAt: null,
     })
     await withHeldDelegatedCommunityFenceForTest(community.id, delegateActorId, () =>
-      liftCommunityRestriction(currentUser, community.id, restriction!.id),
+      liftCommunityRestriction(currentUser, loaded, restriction!.id),
     )
     expect(await getActiveCommunityRestrictions(community.id, { readOnly: false })).toEqual([])
   })
   it('a committed no-links activation governs the next delegated contribution', async () => {
-    const { currentUser, community } = await fixture()
+    const { currentUser, loaded, community } = await fixture()
     const member = await createTestUser()
     await createTestMembership({ user_id: member.id, plan: 'plus' })
     await insertTestCommunityMember({
@@ -200,7 +202,7 @@ describe('community restriction writers share delegated post fences', () => {
       userId: member.id,
       role: 'member',
     })
-    await activateCommunityRestrictions(currentUser, community.id, {
+    await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],
       expiresAt: null,
     })

@@ -5,7 +5,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
-import { getCommunityWithViewer } from '../load-with-viewer.mts'
+import type { LoadedCommunity } from '../load-with-viewer.mts'
 import type { CommunityRestriction, CommunityRestrictionType } from '../types.mts'
 import { COMMUNITY_RESTRICTION_TYPES } from './types.mts'
 
@@ -17,9 +17,10 @@ export type ActivateCommunityRestrictionsInput = {
 
 export async function activateCommunityRestrictions(
   currentUser: PrivateUser,
-  communityId: string,
+  { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: ActivateCommunityRestrictionsInput,
 ): Promise<CommunityRestriction[]> {
+  const communityId = community.id
   const restrictionTypes = normalizeRestrictionTypes(input.restrictionTypes)
   assert(restrictionTypes.length > 0, 422, 'At least one restriction type is required')
   if (input.expiresAt !== null) {
@@ -34,9 +35,6 @@ export async function activateCommunityRestrictions(
     assert(input.reason.length <= 1000, 422, 'Reason must be at most 1000 characters')
   }
 
-  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
-  assert(loaded, 404, 'Community not found')
-  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 

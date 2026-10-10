@@ -35,6 +35,12 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
   The isolated `postgresql-snapshot-update.yml#generate` job is the single direct-install exception:
   it uses pinned public setup actions and a restore-only pnpm cache, avoiding candidate-owned
   composites and cache-save hooks. Its workflow tests enforce this boundary.
+- **Docker Hub images** — pull Docker Hub images through `mirror.gcr.io/<namespace>/<image>`
+  (official images use `mirror.gcr.io/library/<image>`) in `services:`, `docker run` steps,
+  Dockerfile `FROM` and `# syntax=` lines, and the buildx BuildKit image. Anonymous Docker Hub
+  pulls from hosted runners hit its rate limit and eject unrelated merge-queue entries
+  ([#2653](https://github.com/vouchington/vouchington/issues/2653)); the mirror needs no
+  credentials and serves the pinned digest unchanged.
 - **Docker host ports** — normally let Docker allocate the host-side port (use `-p "127.0.0.1::<container_port>"`); never hardcode a literal host port. A workflow that needs coordination inside one job may use `ci/allocate-browser-safe-ports.py`. Allocate immediately before binding and let the allocator print and exit; GitHub-hosted jobs are single-tenant VMs, so do not add port holds, reapers, or collision diagnostics. A caller that can choose a new port may reallocate once on `EADDRINUSE`.
 - **Script portability** — CI runs on Linux. Scripts shared with local development must also support macOS hosts. In shared scripts, avoid Bash features unavailable in macOS `/bin/bash` 3.2 unless the caller explicitly installs and invokes a newer shell.
 - **Binary downloads** — when downloading binary archives, include the tool version or resolved revision in the downloaded filename/directory so updates cannot reuse stale generic `/tmp` paths.

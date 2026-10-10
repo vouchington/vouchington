@@ -1,3 +1,4 @@
+import type { CopyrightSeedContext } from './copyright-context.mts'
 import { createHash } from 'node:crypto'
 import {
   createCopyrightFormIntake,
@@ -16,10 +17,6 @@ import type { CopyrightSeedMedia } from './copyright-media.mts'
 export type CopyrightSeedCase = { noticeId: string; intakeId: string }
 
 type SeedFormCase = {
-  // Both are part of the form's idempotency identity and must not change between runs; the key
-  // is a column of type uuid.
-  idempotencyKey: string
-  ipAddress: string
   claimantDisplayName: string
   claimantEmail: string
   workDescription: string
@@ -37,8 +34,6 @@ const allElements = (
 
 // Intake review is still open here, so the case waits on a moderator with gap-bearing guidance.
 const intakeReviewCase: SeedFormCase = {
-  idempotencyKey: '019c64e6-f720-7c03-a001-000000000001',
-  ipAddress: '203.0.113.10',
   claimantDisplayName: 'Marcus Lee',
   claimantEmail: 'marcus@lee-studio.example',
   workDescription: 'A harbour sunrise photograph I took in 2024 and licence through my studio.',
@@ -61,8 +56,6 @@ const intakeReviewCase: SeedFormCase = {
 
 // Staff accepted this one and a counter notice followed, so only its overdue deadline queues it.
 const deadlineCase: SeedFormCase = {
-  idempotencyKey: '019c64e6-f720-7c03-a002-000000000001',
-  ipAddress: '203.0.113.11',
   claimantDisplayName: 'Priya Natarajan',
   claimantEmail: 'priya@natarajan-images.example',
   workDescription:
@@ -84,35 +77,40 @@ const deadlineCase: SeedFormCase = {
 async function seedCopyrightFormCase(
   seed: SeedFormCase,
   media: CopyrightSeedMedia,
+  identity: { idempotencyKey: string; ipAddress: string },
+  now: Date,
 ): Promise<CopyrightSeedCase> {
-  const { intake } = await createCopyrightFormIntake({
-    currentUser: null,
-    requesterIdentity: createCopyrightGuestIdentity(seed.ipAddress),
-    idempotencyKey: seed.idempotencyKey,
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: seed.claimantDisplayName,
-      claimantContact: `${seed.claimantEmail}, 12 Quay Street, Portsmouth`,
-      claimantEmail: seed.claimantEmail,
-      workDescription: seed.workDescription,
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: seed.claimantDisplayName,
-      claimantTargets: [
-        {
-          surfaceKind: 'post-image',
-          postId: media.postId,
-          imageId: media.imageId,
-          hostedUseUrl: media.hostedUseUrl,
-        },
-      ],
+  const { intake } = await createCopyrightFormIntake(
+    {
+      currentUser: null,
+      requesterIdentity: createCopyrightGuestIdentity(identity.ipAddress),
+      idempotencyKey: identity.idempotencyKey,
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: seed.claimantDisplayName,
+        claimantContact: `${seed.claimantEmail}, 12 Quay Street, Portsmouth`,
+        claimantEmail: seed.claimantEmail,
+        workDescription: seed.workDescription,
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: seed.claimantDisplayName,
+        claimantTargets: [
+          {
+            surfaceKind: 'post-image',
+            postId: media.postId,
+            imageId: media.imageId,
+            hostedUseUrl: media.hostedUseUrl,
+          },
+        ],
+      },
     },
-  })
+    { now },
+  )
   const attempt = await claimCopyrightFormScreening(intake.id)
   if (attempt) {
     await completeCopyrightFormScreening(attempt, {
       intakeId: intake.id,
-      inputSha256: createHash('sha256').update(seed.idempotencyKey).digest(),
+      inputSha256: createHash('sha256').update(identity.idempotencyKey).digest(),
       recommendation: 'not_obviously_invalid',
       rationale: 'No spam or abuse markers; the notice reads as a genuine ownership claim.',
       guidance: seed.guidance,
@@ -123,9 +121,28 @@ async function seedCopyrightFormCase(
   return { noticeId: intake.copyright_notice_id, intakeId: intake.id }
 }
 
-export async function seedCopyrightCases(media: CopyrightSeedMedia) {
+export async function seedCopyrightCases(
+  media: CopyrightSeedMedia,
+  { identity, now }: CopyrightSeedContext,
+) {
   return {
-    intakeReviewCase: await seedCopyrightFormCase(intakeReviewCase, media),
-    deadlineCase: await seedCopyrightFormCase(deadlineCase, media),
+    intakeReviewCase: await seedCopyrightFormCase(
+      intakeReviewCase,
+      media,
+      {
+        idempotencyKey: identity.intakeReviewKey,
+        ipAddress: identity.intakeIpAddress,
+      },
+      now,
+    ),
+    deadlineCase: await seedCopyrightFormCase(
+      deadlineCase,
+      media,
+      {
+        idempotencyKey: identity.deadlineKey,
+        ipAddress: identity.deadlineIpAddress,
+      },
+      now,
+    ),
   }
 }

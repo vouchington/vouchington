@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
+import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { crawlUrls } from '@queues/crawler/queues'
 import { setDomainRateLimited } from '@services/crawls/domain-rate-limit'
 import { buildCrawlerJobResult, handleCrawlerProcessorError } from './processors/outcomes.mts'
@@ -137,6 +138,18 @@ describe('crawler processor', () => {
       handleCrawlerProcessorError(urlId, 3, new CrawlerRateLimitError(url, 429, 10, 0)),
     ).rejects.toThrow(CrawlerRateLimitError)
     expect(observer.ownedPromises()).toHaveLength(1)
+  })
+
+  it('fails the job instead of completing when the rate-limit replacement is skipped', async () => {
+    const { urlId, url } = await createCrawlerUrlFixture('rate-limit-skipped')
+    const rateLimitError = new CrawlerRateLimitError(url, 429, 10, 0)
+    // A waiting replacement for the same retry already holds the dedup id, so a second add is skipped.
+    await enqueueBulkCrawlUrls([{ urlId, rateLimitRetryCount: 1 }], { priority: 0 })
+
+    await expect(handleCrawlerProcessorError(urlId, 0, rateLimitError)).rejects.toMatchObject({
+      message: `Rate-limited crawl ${urlId} was not re-enqueued for retry 1`,
+      cause: rateLimitError,
+    })
   })
 
   it('preserves discovery crawl options on rate-limit replacement jobs', async () => {

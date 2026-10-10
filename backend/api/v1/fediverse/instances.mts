@@ -29,7 +29,6 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseBooleanish } from '@ts-shared/utils/query'
 
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { getUserActivePlan } from '@services/memberships'
 import { parseTopicsSearchParams, prepareTopicsSearchParams } from '@services/search-params'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
@@ -184,8 +183,7 @@ app
     validateRequestContract(ctx, 'POST:/api/v1/fediverse/instances', { body })
     ctx.assert(body.hostname.length > 0, 422, 'hostname must be a non-empty string')
 
-    // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-    const membershipPlan = await getUserActivePlan(currentUser.id)
+    const membershipPlan = currentUser.membership_plan ?? null
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'fediverse_instance')
 
     const result = await createInstanceFromHostname(

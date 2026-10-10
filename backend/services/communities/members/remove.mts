@@ -1,8 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity } from '../get.mts'
 import { getCommunityMember } from './get.mts'
+import type { Community } from '../types.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { lockCommunityUsers } from '../bans/lock.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -11,12 +11,11 @@ import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.
 
 export async function removeMember(
   currentUserId: string,
-  communityId: string,
+  community: Community,
   targetUserId: string,
 ): Promise<void> {
   assert(currentUserId !== targetUserId, 422, 'Use leaveCommunity to remove yourself')
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const communityId = community.id
   assert(!community.archived_at, 403, 'Community is archived')
 
   await using query = await beginTransaction()

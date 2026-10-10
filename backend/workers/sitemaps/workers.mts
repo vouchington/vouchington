@@ -1,4 +1,4 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import {
   processMonthlyBackfillArchiveDispatcher,
@@ -17,7 +17,7 @@ import type {
   SitemapPostDayJobs,
 } from '@queues/sitemaps/types'
 import { requireJobFamily, requireJobPostType, requireJobString } from './processors/job-data.mts'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 
 const sitemapJobProcessors = {
   processUpdatePostDaySitemap,
@@ -82,8 +82,7 @@ export function processSitemapJob(
   }
 }
 
-export const sitemaps = new Worker(QUEUE_NAME, processSitemapJob, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const sitemaps = createWorker(QUEUE_NAME, processSitemapJob, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('sitemaps', { baseline: 5 }),
 })

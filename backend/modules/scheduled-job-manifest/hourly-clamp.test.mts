@@ -2,90 +2,156 @@ import { describe, expect, it } from 'vitest'
 import {
   HOURLY_FLOOR_MS,
   HOURLY_FLOOR_PATTERN,
+  alignedScheduleText,
   clampScheduledJobRepeatToHourlyFloor,
-  maxCronFiringsPerHour,
 } from './hourly-clamp.mts'
 
-describe('maxCronFiringsPerHour', () => {
-  it.each([
-    ['* * * * *', 60],
-    ['*/5 * * * *', 12],
-    ['*/15 * * * *', 4],
-    ['*/30 * * * *', 2],
-    ['0 * * * *', 1],
-    ['0 2 * * *', 1],
-    ['0 0 1 * *', 1],
-    ['0 9 * * 1', 1],
-    ['30 2 * * *', 1],
-    ['0,30 * * * *', 2],
-    ['10-20 * * * *', 11],
-    ['0-30/10 * * * *', 4],
-    ['5/10 * * * *', 6],
-  ] as const)('%s -> %d firings/hr', (pattern, expected) => {
-    expect(maxCronFiringsPerHour(pattern)).toBe(expected)
-  })
-
-  it('rejects a pattern that is not exactly 5 fields', () => {
-    expect(() => maxCronFiringsPerHour('* * * *')).toThrow('Expected a 5-field cron pattern')
-    expect(() => maxCronFiringsPerHour('* * * * * *')).toThrow('Expected a 5-field cron pattern')
-  })
-
-  it('rejects an invalid minute field item', () => {
-    expect(() => maxCronFiringsPerHour('a * * * *')).toThrow('Invalid cron minute field item')
-    expect(() => maxCronFiringsPerHour('70 * * * *')).toThrow('out of range 0-59')
-    expect(() => maxCronFiringsPerHour('*/0 * * * *')).toThrow('Invalid cron minute field step')
-    expect(() => maxCronFiringsPerHour('1/2/3 * * * *')).toThrow('Invalid cron minute field item')
-  })
-})
+const HOUR = HOURLY_FLOOR_MS
+const DAY = 24 * HOUR
 
 describe('clampScheduledJobRepeatToHourlyFloor', () => {
   describe('every-type repeat', () => {
     it.each([
-      [60_000, HOURLY_FLOOR_MS],
-      [300_000, HOURLY_FLOOR_MS],
-      [5_000, HOURLY_FLOOR_MS],
-    ])('clamps every: %d up to the hourly floor', (every, expected) => {
-      const result = clampScheduledJobRepeatToHourlyFloor({ every })
-      expect(result).toEqual({ repeat: { every: expected }, clamped: true })
+      ['5 seconds', 5_000],
+      ['1 minute', 60_000],
+      ['5 minutes', 300_000],
+      ['59 minutes', 59 * 60_000],
+      ['exactly 1 hour', HOUR],
+    ])('aligns every %s to the top of the hour', (_label, every) => {
+      expect(clampScheduledJobRepeatToHourlyFloor({ every })).toEqual({
+        repeat: { pattern: HOURLY_FLOOR_PATTERN },
+        clamped: true,
+      })
     })
 
-    it('leaves every: exactly the floor untouched, same reference', () => {
-      const repeat = { every: HOURLY_FLOOR_MS }
-      const result = clampScheduledJobRepeatToHourlyFloor(repeat)
-      expect(result).toEqual({ repeat, clamped: false })
-      expect(result.repeat).toBe(repeat)
-    })
-
-    it('leaves every: less frequent than hourly untouched, same reference', () => {
-      const repeat = { every: 7_200_000 }
-      const result = clampScheduledJobRepeatToHourlyFloor(repeat)
-      expect(result).toEqual({ repeat, clamped: false })
-      expect(result.repeat).toBe(repeat)
-    })
-  })
-
-  describe('pattern-type repeat', () => {
-    it.each(['* * * * *', '*/5 * * * *', '*/15 * * * *', '*/30 * * * *'])(
-      'clamps pattern %s down to the hourly floor',
-      pattern => {
-        const result = clampScheduledJobRepeatToHourlyFloor({ pattern })
-        expect(result).toEqual({ repeat: { pattern: HOURLY_FLOOR_PATTERN }, clamped: true })
+    it.each([
+      ['2 hours', 2 * HOUR, '0 */2 * * *'],
+      ['3 hours', 3 * HOUR, '0 */3 * * *'],
+      ['4 hours', 4 * HOUR, '0 */4 * * *'],
+      ['6 hours', 6 * HOUR, '0 */6 * * *'],
+      ['8 hours', 8 * HOUR, '0 */8 * * *'],
+      ['12 hours', 12 * HOUR, '0 */12 * * *'],
+      ['24 hours', DAY, '0 0 * * *'],
+    ])(
+      'aligns every %s, which divides 24h, to the matching hour-step cron',
+      (_l, every, pattern) => {
+        expect(clampScheduledJobRepeatToHourlyFloor({ every })).toEqual({
+          repeat: { pattern },
+          clamped: true,
+        })
       },
     )
 
     it.each([
-      '0 * * * *',
-      '0 2 * * *',
-      '30 2 * * *',
-      '0 0 1 * *',
-      '0 9 * * 1',
-      '0 3 * * 0',
-      '0 4 * * 1',
-    ])('leaves already-hourly-or-slower pattern %s untouched, same reference', pattern => {
-      const repeat = { pattern }
-      const result = clampScheduledJobRepeatToHourlyFloor(repeat)
-      expect(result).toEqual({ repeat, clamped: false })
-      expect(result.repeat).toBe(repeat)
+      ['90 minutes', 1.5 * HOUR, '0 */2 * * *'],
+      ['2 hours 1 minute', 2 * HOUR + 60_000, '0 */3 * * *'],
+      ['5 hours', 5 * HOUR, '0 */6 * * *'],
+      ['7 hours', 7 * HOUR, '0 */8 * * *'],
+      ['9 hours', 9 * HOUR, '0 */12 * * *'],
+      ['13 hours', 13 * HOUR, '0 0 * * *'],
+    ])('rounds every %s up to the next hour-step cron that is no more frequent', (_l, every, p) => {
+      expect(clampScheduledJobRepeatToHourlyFloor({ every })).toEqual({
+        repeat: { pattern: p },
+        clamped: true,
+      })
     })
+
+    it.each([
+      ['24 hours 1 minute', DAY + 60_000, '0 0 * * 0'],
+      ['3 days', 3 * DAY, '0 0 * * 0'],
+      ['7 days', 7 * DAY, '0 0 * * 0'],
+      ['8 days', 8 * DAY, '0 0 1 * *'],
+      ['90 days', 90 * DAY, '0 0 1 * *'],
+    ])('rounds every %s up to a weekly or monthly cron', (_label, every, pattern) => {
+      expect(clampScheduledJobRepeatToHourlyFloor({ every })).toEqual({
+        repeat: { pattern },
+        clamped: true,
+      })
+    })
+  })
+
+  describe('pattern-type repeat', () => {
+    it.each([
+      ['* * * * *', '0 * * * *'],
+      ['*/5 * * * *', '0 * * * *'],
+      ['*/15 * * * *', '0 * * * *'],
+      ['*/30 * * * *', '0 * * * *'],
+      ['0,30 * * * *', '0 * * * *'],
+      ['10-20 * * * *', '0 * * * *'],
+      ['17 * * * *', '0 * * * *'],
+    ])('rewrites hourly-or-faster pattern %s to %s', (pattern, expected) => {
+      expect(clampScheduledJobRepeatToHourlyFloor({ pattern })).toEqual({
+        repeat: { pattern: expected },
+        clamped: true,
+      })
+    })
+
+    it.each([
+      ['30 2 * * *', '0 2 * * *'],
+      ['5 4 1 * *', '0 4 1 * *'],
+      ['45 9 * * 1', '0 9 * * 1'],
+      ['*/10 9-17 * * 1-5', '0 9-17 * * 1-5'],
+      ['  15   3 * 6 *  ', '0 3 * 6 *'],
+    ])('keeps the other fields and moves the minute of %s to :00', (pattern, expected) => {
+      expect(clampScheduledJobRepeatToHourlyFloor({ pattern })).toEqual({
+        repeat: { pattern: expected },
+        clamped: true,
+      })
+    })
+
+    it.each(['0 * * * *', '0 2 * * *', '0 3 * * 0', '0 4 * * 1', '0 9 * * 1', '0 0 1 * *'])(
+      'leaves already-aligned pattern %s untouched, same reference',
+      pattern => {
+        const repeat = { pattern }
+        const result = clampScheduledJobRepeatToHourlyFloor(repeat)
+        expect(result).toEqual({ repeat, clamped: false })
+        expect(result.repeat).toBe(repeat)
+      },
+    )
+
+    it.each(['5/10 * * * *', '0-30/10 * * * *', '59 * * * *', '1,2,3 * * * *', '*/59 * * * *'])(
+      'accepts the valid minute field of %s',
+      pattern => {
+        expect(clampScheduledJobRepeatToHourlyFloor({ pattern }).repeat).toEqual({
+          pattern: HOURLY_FLOOR_PATTERN,
+        })
+      },
+    )
+
+    it.each([
+      'a * * * *',
+      '60 * * * *',
+      '61 * * * *',
+      '*/0 * * * *',
+      '*/ * * * *',
+      '30-10 * * * *',
+      '5-70 * * * *',
+      '1/2/3 * * * *',
+      '5-10-15 * * * *',
+      '1,,2 * * * *',
+      '-5 * * * *',
+    ])('rejects the invalid minute field of %s instead of rewriting it', pattern => {
+      expect(() => clampScheduledJobRepeatToHourlyFloor({ pattern })).toThrow(
+        'Invalid cron minute field',
+      )
+    })
+
+    it.each(['', '* * * *', '* * * * * *'])('rejects the non-5-field pattern %j', pattern => {
+      expect(() => clampScheduledJobRepeatToHourlyFloor({ pattern })).toThrow(
+        'Expected a 5-field cron pattern',
+      )
+    })
+  })
+})
+
+describe('alignedScheduleText', () => {
+  it.each([
+    ['0 * * * *', 'every 1h'],
+    ['0 */3 * * *', 'every 3h'],
+    ['0 */12 * * *', 'every 12h'],
+    ['0 2 * * *', '0 2 * * *'],
+    ['0 0 * * 0', '0 0 * * 0'],
+  ])('describes %s as %s', (pattern, expected) => {
+    expect(alignedScheduleText(pattern)).toBe(expected)
   })
 })
