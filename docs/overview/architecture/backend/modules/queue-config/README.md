@@ -7,7 +7,7 @@ Shared helpers for sizing glide-mq workers in a single Node process.
 ## Why
 
 The worker process hosts ~34 glide-mq workers in one Node process. Without a shared sizing helper,
-each `Worker(...)` constructor either hard-codes `concurrency` or reads a one-off env var, so it is
+each worker either hard-codes `concurrency` or reads a one-off env var, so it is
 hard to scale them together for different deployment shapes (1 vCPU dev box, 2 vCPU Fargate task,
 4 vCPU stress test). The helper standardizes the env knobs and enforces a hard ceiling.
 
@@ -26,11 +26,10 @@ example `psql`, which serializes itself, or `kagiSmallWeb`, which is bound by an
 limit).
 
 ```ts
-import { Worker } from 'glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 
-new Worker(QUEUE_NAME, processFoo, {
-  connection,
+createWorker(QUEUE_NAME, processFoo, {
   concurrency: getWorkerConcurrency('foo', { baseline: 5 }),
 })
 ```

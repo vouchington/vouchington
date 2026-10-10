@@ -25,13 +25,13 @@ non-`main` PR-branch helper documented below remains available.
   project's own `testTimeout` already owns that number, and a title is a surface variant that drifts
   on rename with zero test signal. `hasBackendSesSendEmailTimeout` (#10806/#10825) required
   `Test timed out in 120000ms` and went silently dead for months after `testTimeout` dropped from
-  `120000` to `60000`, because its own fixture synthesized the same stale digits. Match on the vitest
-  project plus its own `include` glob (the credentialed-probe boundary) and a provider-transport
-  marker instead — see [`backend-credentialed-log-fingerprints.mts`](../../../../ci/transient-retry/backend-credentialed-log-fingerprints.mts),
-  which derives that boundary from the same project objects Vitest runs
-  ([`backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts)),
-  and [`backend-credentialed-config-agreement.test.mts`](../../../../ci/transient-retry/backend-credentialed-config-agreement.test.mts),
-  which checks the workflow still runs exactly those projects. Any repo-owned source-path literal
-  that does survive in this directory needs a tracked-file existence check beside its rule's test.
-  A pinned title or timeout digit count has no automated guard at all, which is exactly why pinning
-  either is disallowed outright rather than merely discouraged.
+  `120000` to `60000`, because its own fixture synthesized the same stale digits. Match on markers the
+  failing tool owns instead. Any repo-owned source-path literal that does survive in this directory
+  needs a tracked-file existence check beside its rule's test. A pinned title or timeout digit count
+  has no automated guard at all, which is exactly why pinning either is disallowed outright rather
+  than merely discouraged.
+- No rule reruns a live-provider failure. Those jobs are informational smoke checks that never gate
+  CI, and an automatic rerun of a non-gating job gains nothing
+  ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)). The shared
+  `runner-shutdown-leaf-rerun` and Playwright-setup apt-lock rules can still rerun these jobs after
+  an infrastructure failure, because they also guard gating jobs.

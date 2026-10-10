@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { QUEUE_NAME } from '@queues/report-integrity/config'
 import type { ReportIntegrityJobs } from '@queues/report-integrity/types'
 import { processBackfillReportIntegrity, processReportIntegrityCheck } from './processors.mts'
@@ -20,8 +20,7 @@ async function processJob(job: Job): Promise<void> {
   }
 }
 
-export const reportIntegrity = new Worker(QUEUE_NAME, processJob, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const reportIntegrity = createWorker(QUEUE_NAME, processJob, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('reportIntegrity', { baseline: 5 }),
 })

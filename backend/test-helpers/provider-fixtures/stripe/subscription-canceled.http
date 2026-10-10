@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"id":"SUBSCRIPTION_ID","object":"subscription","automatic_tax":{"enabled":false},"billing_cycle_anchor":1893369600,"cancel_at":null,"cancel_at_period_end":false,"canceled_at":1893369700,"cancellation_details":{"comment":null,"feedback":null,"reason":"cancellation_requested"},"collection_method":"charge_automatically","created":1893369600,"currency":"usd","customer":"CUSTOMER_ID","ended_at":1893369700,"items":{"object":"list","data":[{"id":"si_replay_1","object":"subscription_item","created":1893369600,"current_period_end":1896048000,"current_period_start":1893369600,"metadata":{},"price":{"id":"PRICE_ID","object":"price","active":true,"currency":"usd","type":"recurring","unit_amount":1000},"quantity":1,"subscription":"SUBSCRIPTION_ID"}],"has_more":false,"url":"/v1/subscription_items?subscription=SUBSCRIPTION_ID"},"livemode":false,"metadata":{},"start_date":1893369600,"status":"canceled"}

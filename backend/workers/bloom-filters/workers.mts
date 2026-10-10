@@ -1,4 +1,4 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createBatchWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import {
   BLOOM_FILTER_LOCK_DURATION_MS,
@@ -6,7 +6,7 @@ import {
   QUEUE_NAME,
 } from '@queues/bloom-filters/config'
 import type { BloomFilterProcessorJobs } from '@queues/bloom-filters/types'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { processBatchSettled } from './processors/process-batch-settled.mts'
 import * as processors from './processors.mts'
 
@@ -33,12 +33,11 @@ function runOne(job: Job): Promise<void> {
   }
 }
 
-export const bloomFilters = new Worker(
+export const bloomFilters = createBatchWorker(
   QUEUE_NAME,
   (jobs: Job[]) => processBatchSettled(jobs, runOne),
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('bloomFilters', { baseline: 5 }),
     lockDuration: BLOOM_FILTER_LOCK_DURATION_MS,
     stalledInterval: BLOOM_FILTER_STALLED_INTERVAL_MS,

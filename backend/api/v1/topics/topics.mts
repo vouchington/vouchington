@@ -27,7 +27,6 @@ import {
 
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { getUserActivePlan } from '@services/memberships'
 import { currentUserCanCreateTopic } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
 import { apiQuery } from '../../response-contract.mts'
@@ -157,8 +156,7 @@ app
       422,
       'Instance topics can only be created by suggesting a hostname',
     )
-    // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-    const membershipPlan = await getUserActivePlan(currentUser.id)
+    const membershipPlan = currentUser.membership_plan ?? null
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'topic')
     const topic = await createTopic(currentUser, provenance, body)
 

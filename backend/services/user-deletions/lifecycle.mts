@@ -46,7 +46,10 @@ export async function renewUserDeletionAttempt(
   return (rowCount ?? 0) > 0
 }
 
-export async function claimRecoverableUserDeletions(): Promise<UserDeletionAttempt[]> {
+/** `requestIds` limits the claim to those requests, so a test can own the rows it recovers. */
+export async function claimRecoverableUserDeletions(
+  requestIds?: readonly string[],
+): Promise<UserDeletionAttempt[]> {
   const USER_DELETIONS_DISPATCH_TIMEOUT_MINUTES = getUserDeletionsWorkLimit(
     'dispatch_timeout_minutes',
   )
@@ -59,6 +62,7 @@ export async function claimRecoverableUserDeletions(): Promise<UserDeletionAttem
       SELECT request.id
       FROM user_deletion_requests request
       WHERE request.completed_at IS NULL
+        AND (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
         AND (
           (request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${USER_DELETIONS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
           OR request.processing_started_at < NOW() - ${USER_DELETIONS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'

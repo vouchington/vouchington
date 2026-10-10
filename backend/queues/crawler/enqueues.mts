@@ -85,9 +85,11 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
           : {}),
         priority: priority ?? PRIORITY_DEFAULT,
         deduplication: {
+          // A replacement is enqueued from inside the previous replacement while that job still
+          // holds its dedup id, so each retry count needs its own id or the add is skipped.
           id:
             rateLimitRetryCount != null
-              ? `${JOB_NAME}_ratelimit__${urlId}`
+              ? `${JOB_NAME}_ratelimit__${urlId}__${rateLimitRetryCount}`
               : `${JOB_NAME}__${urlId}`,
           mode: 'debounce',
           ttl: Math.max(rateLimitMs, delay),

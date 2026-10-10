@@ -90,8 +90,10 @@ function register(
 ): Promise<unknown> {
   const resolvedRepeat = resolve(job.repeat)
   validateScheduledJobRepeat(resolvedRepeat, job.schedulerId, job.subMinuteJustification)
-  // The floor clamps the resolved value, not the definition: a thunk must re-resolve to its
+  // The floor aligns the resolved value, not the definition: a thunk must re-resolve to its
   // real interval on every call, and only the interval actually about to be registered matters.
+  // glide-mq keeps a stored next run only when the upserted schedule is identical, so moving an
+  // existing scheduler to :00 needs no remove-and-re-add (see the manifest docs).
   // `environment: 'production'` jobs (e.g. psql's dataRetentionCleanup) are excluded here too,
   // even though the upstream filter above already excludes them whenever applyHourlyFloor would
   // correctly be true (on staging): this is intentional defense-in-depth. It decouples "a

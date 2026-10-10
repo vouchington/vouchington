@@ -6,5 +6,4 @@
 - Reuse `hasAwsTransportTransientError()` and `gh-api.mts`'s shared Go `net/http` subset; reuse `hasUndiciConnectTimeout()` instead of copying markers.
 - Repo-owned `##[group]Run` markers are exported constants listed in `step-group-marker-freshness.test.mts` Table A. External-package markers use fixture logs, never installed package files.
 - Never fingerprint repo-owned application spec paths/titles under `playwright/tests/**`; failures caused by the diff remain bugs. Credentialed external probes (`playwright/credentialed/**`) and shared infrastructure (`playwright/helpers/**`) remain allowed; preserve `transient-retry-no-repo-owned-spec-pinning.yml`.
-- Never pin `describe`/`it` titles or raw timeout digits. Match Vitest project/include-glob credentialed boundaries and provider-transport markers; use `backend-credentialed-log-fingerprints.mts`.
-- The credentialed project boundary comes from `test-helpers/vitest-config/backend-credentialed-projects.mts`, never a copied list; a surviving repo-owned path literal needs a tracked-file existence check beside its rule's test.
+- Never pin `describe`/`it` titles or raw timeout digits; a surviving repo-owned path literal needs a tracked-file existence check beside its rule's test.

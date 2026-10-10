@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
 import { decryptSecret } from '@modules/token-secrets'
 import {
@@ -7,24 +7,7 @@ import {
   type StripeMembershipEvidenceEnvelope,
 } from './membership-provider-evidence.mts'
 
-const ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
-
 describe('Stripe membership provider evidence', () => {
-  let previousEncryptionKeys: string | undefined
-
-  beforeEach(() => {
-    previousEncryptionKeys = process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS
-    process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = ENCRYPTION_KEYS
-  })
-
-  afterEach(() => {
-    if (previousEncryptionKeys === undefined) {
-      delete process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS
-    } else {
-      process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = previousEncryptionKeys
-    }
-  })
-
   it('keeps the complete original JSON for a bounded Stripe payload', () => {
     const eventId = 'evt_complete_membership_evidence'
     const subscription = makeSubscription(0)

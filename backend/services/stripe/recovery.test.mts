@@ -27,6 +27,21 @@ describe('Stripe event recovery', () => {
     expect(stale?.leaseToken).not.toBe(event.lease_token)
   })
 
+  it('claims only the requested due events', async () => {
+    const owned = await insertStripeEvent(makeEvent())
+    const other = await insertStripeEvent(makeEvent())
+    await makeStripeEventRecoverableForTest(owned.id, 'unstarted')
+    await makeStripeEventRecoverableForTest(other.id, 'unstarted')
+
+    expect(
+      (await claimRecoverableStripeEvents([owned.id])).map(e => e.stripeEventRecordId),
+    ).toEqual([owned.id])
+    // The bystander was left due, so a second scoped claim still takes it.
+    expect(
+      (await claimRecoverableStripeEvents([other.id])).map(e => e.stripeEventRecordId),
+    ).toEqual([other.id])
+  })
+
   it('returns the durable subscription identity needed to serialize recovery jobs', async () => {
     const subscriptionId = `sub_${randomUUID()}`
     const event = await insertStripeEvent(makeEvent({ subscriptionId, livemode: true }))

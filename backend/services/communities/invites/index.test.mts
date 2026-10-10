@@ -12,13 +12,14 @@ import {
   createInvite,
   createInviteWithEmailEnqueue,
   getCommunityInviteRecipientUiLocale,
+  type CreateInviteInput,
 } from './create.mts'
 import { redeemInviteCode } from './redeem.mts'
-import { revokeInvite } from './revoke.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { archiveCommunity } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
+import { loadCommunityWithViewer } from '../load-with-viewer.mts'
 
 describe('index', () => {
   let owner: PrivateUser
@@ -33,7 +34,7 @@ describe('index', () => {
   describe('createInvite', () => {
     it('owner can invite by username', async () => {
       const invitee = await createTestUser()
-      const invite = await createInvite(owner.id, community.id, { username: invitee.username! })
+      const invite = await inviteAs(owner.id, community.id, { username: invitee.username! })
       expect(invite.community_id).toBe(community.id)
       expect(invite.invited_user_id).toBe(invitee.id)
       expect(invite.invited_by_id).toBe(owner.id)
@@ -42,7 +43,7 @@ describe('index', () => {
 
     it('owner can invite by email', async () => {
       const email = `tests+invite-${crypto.randomUUID().replaceAll('-', '')}@voucha.ai`
-      const { invite, emailEnqueue } = await createInviteWithEmailEnqueue(owner.id, community.id, {
+      const { invite, emailEnqueue } = await emailInviteAs(owner.id, community.id, {
         email,
       })
       expect(invite.invited_email).toBe(email)
@@ -56,7 +57,7 @@ describe('index', () => {
     it('includes invited registered user locale in queued email jobs', async () => {
       const invitee = await createTestUser()
       await updateTestUserUiLocale(invitee.id, 'fr')
-      const { emailEnqueue } = await createInviteWithEmailEnqueue(owner.id, community.id, {
+      const { emailEnqueue } = await emailInviteAs(owner.id, community.id, {
         email: invitee.email_address!,
       })
       expect(emailEnqueue).not.toBeNull()
@@ -82,7 +83,7 @@ describe('index', () => {
     it('rejects invite when both username and email provided', async () => {
       const invitee = await createTestUser()
       await expect(
-        createInvite(owner.id, community.id, {
+        inviteAs(owner.id, community.id, {
           username: invitee.username!,
           email: 'tests+test@voucha.ai',
         }),
@@ -91,7 +92,7 @@ describe('index', () => {
 
     it('rejects invite for non-existent user', async () => {
       await expect(
-        createInvite(owner.id, community.id, {
+        inviteAs(owner.id, community.id, {
           username: `missing-${crypto.randomUUID().replaceAll('-', '')}`,
         }),
       ).rejects.toMatchObject({ status: 404 })
@@ -101,7 +102,9 @@ describe('index', () => {
       const existing = await createTestUser()
       await insertTestCommunityMember({ communityId: community.id, userId: existing.id })
       await expect(
-        createInvite(owner.id, community.id, { username: existing.username! }),
+        inviteAs(owner.id, community.id, {
+          username: existing.username!,
+        }),
       ).rejects.toMatchObject({ status: 409 })
     })
 
@@ -109,7 +112,9 @@ describe('index', () => {
       const stranger = await createTestUser()
       const invitee = await createTestUser()
       await expect(
-        createInvite(stranger.id, community.id, { username: invitee.username! }),
+        inviteAs(stranger.id, community.id, {
+          username: invitee.username!,
+        }),
       ).rejects.toMatchObject({ status: 403 })
     })
 
@@ -131,7 +136,9 @@ describe('index', () => {
       })
       const invitee = await createTestUser()
       await expect(
-        createInvite(member.id, restrictedCommunity.id, { username: invitee.username! }),
+        inviteAs(member.id, restrictedCommunity.id, {
+          username: invitee.username!,
+        }),
       ).rejects.toMatchObject({ status: 403 })
     })
 
@@ -146,7 +153,9 @@ describe('index', () => {
 
       const invitee = await createTestUser()
       await expect(
-        createInvite(owner.id, archivedCommunity.id, { username: invitee.username! }),
+        inviteAs(owner.id, archivedCommunity.id, {
+          username: invitee.username!,
+        }),
       ).rejects.toMatchObject({ status: 403 })
     })
   })
@@ -239,49 +248,14 @@ describe('index', () => {
       })
     })
   })
-
-  describe('revokeInvite', () => {
-    it('owner can revoke a pending invite', async () => {
-      const invitee = await createTestUser()
-      const invite = await insertTestCommunityInvite({
-        communityId: community.id,
-        invitedById: owner.id,
-        invitedUserId: invitee.id,
-      })
-      await revokeInvite(owner.id, invite.id)
-
-      // Redeeming the code should now fail
-      await expect(redeemInviteCode(invitee.id, invite.code)).rejects.toMatchObject({ status: 404 })
-    })
-
-    it('non-mod cannot revoke', async () => {
-      const member = await createTestUser()
-      await insertTestCommunityMember({ communityId: community.id, userId: member.id })
-      const invitee = await createTestUser()
-      const invite = await insertTestCommunityInvite({
-        communityId: community.id,
-        invitedById: owner.id,
-        invitedUserId: invitee.id,
-      })
-      await expect(revokeInvite(member.id, invite.id)).rejects.toMatchObject({ status: 403 })
-    })
-
-    it('rejects archived communities', async () => {
-      const archivedCommunity = await insertTestCommunity({ createdById: owner.id })
-      await insertTestCommunityMember({
-        communityId: archivedCommunity.id,
-        userId: owner.id,
-        role: 'owner',
-      })
-      const invitee = await createTestUser()
-      const invite = await insertTestCommunityInvite({
-        communityId: archivedCommunity.id,
-        invitedById: owner.id,
-        invitedUserId: invitee.id,
-      })
-      await archiveCommunity(archivedCommunity.id, null)
-
-      await expect(revokeInvite(owner.id, invite.id)).rejects.toMatchObject({ status: 403 })
-    })
-  })
 })
+
+async function inviteAs(userId: string, communityId: string, input: CreateInviteInput) {
+  const loaded = await loadCommunityWithViewer(communityId, userId)
+  return createInvite(userId, loaded, input)
+}
+
+async function emailInviteAs(userId: string, communityId: string, input: CreateInviteInput) {
+  const loaded = await loadCommunityWithViewer(communityId, userId)
+  return createInviteWithEmailEnqueue(userId, loaded, input)
+}

@@ -16,7 +16,6 @@ import {
 } from '@services/posts'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
-import { getUserActivePlan } from '@services/memberships'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiRequestContract } from '../../../response-contract.mts'
@@ -55,7 +54,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
     changes.categories !== undefined ||
     changes.title !== undefined ||
     changes.markdown !== undefined
-      ? await getUserActivePlan(currentUser.id)
+      ? (currentUser.membership_plan ?? null)
       : null
   const updated = await updatePost(currentUser, post, changes, membershipPlan)
 

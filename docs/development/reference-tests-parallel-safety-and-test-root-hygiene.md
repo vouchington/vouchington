@@ -126,7 +126,7 @@ of mutating the shared production mapping — see [Test Helpers § Shared member
 ### Live GlideMQ workers must not leak across isolate:false files
 
 `backend-data-stores` runs `pool: 'forks'` with `isolate: false`, so importing a
-`new Worker(...)` singleton starts a real consumer for every later file in that fork. This is not a
+`createWorker(...)` singleton starts a real consumer for every later file in that fork. This is not a
 timing race: the in-memory test shim's `add()` (`test-helpers/glide-mq-vitest-flush-wait.mts`)
 blocks until every attached worker drains the job to a terminal state before resolving. So once a
 worker is attached to a queue in the fork, `getJobs('waiting')` on that queue is _deterministically_

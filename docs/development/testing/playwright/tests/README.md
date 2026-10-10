@@ -105,11 +105,13 @@ is dedicated to the credentialed flow.
 The credentialed suite uses a separate config (`playwright.credentialed.config.mts`) and is
 **not** part of the `playwright/tests/` selection/sharding logic. It runs as the
 `test-playwright-credentialed` CI job, which is gated on `trusted-secret-context` (trusted
-PRs and main pushes only).
+PRs and main pushes only). The job is informational: the `web` gate does not wait on it, so a
+failure never blocks a merge ([live-provider smoke checks](../../../tests.md#live-provider-smoke-checks)).
 
-| Spec                                                                                                 | What it tests                                      | Credential required                           |
-| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------- |
-| [`credentialed/image-upload.spec.mts`](../../../../../playwright/credentialed/image-upload.spec.mts) | Real S3 presigned PUT (CORS allow-list validation) | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
+| Spec                                                                                                                               | What it tests                                                                     | Credential required                           |
+| ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
+| [`credentialed/image-upload.spec.mts`](../../../../../playwright/credentialed/image-upload.spec.mts)                               | Real S3 presigned PUT (CORS allow-list validation)                                | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
+| [`credentialed/rss-modal-sideloaded-images.spec.mts`](../../../../../playwright/credentialed/rss-modal-sideloaded-images.spec.mts) | Signed `/sideload/` image in the RSS item modal, decoded through the image lambda | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
 
 ### Sidebar Starts Open
 

@@ -60,7 +60,7 @@ jobs:
         shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}
     services:
       postgres:
-        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        image: mirror.gcr.io/pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
         env:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
@@ -77,7 +77,7 @@ jobs:
           --health-start-interval 1s
           --tmpfs /var/lib/postgresql:rw,size=1g
       valkey:
-        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
         ports:
           - 6379
         options: >-

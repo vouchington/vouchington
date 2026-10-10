@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
 import {
   createTestSku,
@@ -13,28 +13,7 @@ import { recordStripeMembershipProviderFacts } from '../membership-provider-fact
 
 const PERIOD_END = 1_744_076_800
 
-// The backend-stripe vitest project has no globalSetup (unlike backend-aws/backend-openai), so
-// unlike backend-data-stores tests this file cannot rely on a default being populated for it —
-// recordStripeMembershipProviderFacts encrypts Stripe evidence via @modules/token-secrets, which
-// requires this var. Mirrors membership-provider-evidence.stripe.test.mts's existing pattern.
-const ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
-
 describe('Stripe scheduled membership renewals', () => {
-  let previousEncryptionKeys: string | undefined
-
-  beforeEach(() => {
-    previousEncryptionKeys = process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS
-    process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = ENCRYPTION_KEYS
-  })
-
-  afterEach(() => {
-    if (previousEncryptionKeys === undefined) {
-      delete process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS
-    } else {
-      process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = previousEncryptionKeys
-    }
-  })
-
   it('suppresses renewal facts when cancellation is scheduled no later than period end', async () => {
     const applicationId = `test-snapshot-stripe-${randomUUID()}`
     const user = await createTestUser()

@@ -3,8 +3,8 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
-import { getCommunity } from './get.mts'
 import { getCommunityMember } from './members/get.mts'
+import type { Community } from './types.mts'
 import { lockCommunityUsers } from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
@@ -71,12 +71,11 @@ export async function transferCommunityOwnershipWithOptions(
  */
 export async function initiateOwnershipTransfer(
   currentUserId: string,
-  communityId: string,
+  community: Community,
   targetUserId: string,
 ): Promise<OwnershipTransferEmailEnqueues> {
   assert(currentUserId !== targetUserId, 422, 'You cannot transfer ownership to yourself')
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const communityId = community.id
   assert(!community.archived_at, 403, 'Community is archived')
 
   await using query = await beginTransaction()

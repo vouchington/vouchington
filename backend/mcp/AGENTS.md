@@ -7,5 +7,6 @@
 - Paged search tools (`search_posts`, `search_topics`) build their REST query through `paged-search.mts` and parse it with `@services/search-params`, so limits and cursors match the REST twin. Leave `limit` without a schema `maximum`: the REST parser clamps it.
 - Every tool exposed on `mcp` or `admin_mcp` declares `meta.outputSchema`; the catalog test fails for one that does not. A new list of related rows is bounded and paged, the way `get_topic_details` pages children (`@services/topics/children-page`).
 - CRUD manage-my tools use `createManageEntityTool(config)`.
+- Lists use batch APIs, never per-entity loop lookups; `get_list_items` resolves a page's posts with `resolveReadableThreads`, not `resolveReadableThread` per item.
 - Tools reading private fields or writing hydrate `BasicUser` through `requirePrivateToolUser()` and explicitly authorize before mutating services.
 - Inventory/examples belong in [agent docs](../agents/); apply [agent invariants](../agents/AGENTS.md) and use [tool architecture](../../docs/overview/architecture/mcp/README.md).

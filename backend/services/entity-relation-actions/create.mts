@@ -13,9 +13,13 @@ import { refreshEntityRelationVoteStatsFromPrimaryWithFallback } from '@services
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
 import { getContributionStatus } from '@services/contribution-gating/assert'
-import { getUserActivePlan } from '@services/memberships'
 import { assertWithinTagAddLimit } from '@services/tag-limits'
-import { assertNotSuspended, entityRelationViewerFor, isAdminUser } from '@services/users'
+import {
+  assertNotSuspended,
+  entityRelationViewerFor,
+  isAdminUser,
+  getLoadedMembershipPlan,
+} from '@services/users'
 import { assertUserTagAllowed } from './user-tag-authorization.mts'
 import { currentUserCanModerateCommunity, getCommunityWithViewer } from '@services/communities'
 import type { PrivateUser } from '@services/users/types'
@@ -62,12 +66,13 @@ export async function createEntityRelationAction(
 
   const viewer = entityRelationViewerFor(currentUser)
   const postIds = postParticipantIds(parsed.metadata, parsed.subjectId.id, parsed.objectIds)
+  const membershipPlan = getLoadedMembershipPlan(currentUser)
   // Ordinary visibility/existence comes first so private authorization never discloses a hidden post.
   // ast-grep-ignore: no-three-sequential-awaits -- preserve visibility, user-tag/community admission, relation quota, then delegated-private authorization error order.
   await assertRelatablePostAccess(viewer, postIds)
-  const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed)
+  const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed, membershipPlan)
   await assertCommunityAuthorization(currentUser, parsed)
-  await assertRelationLimit(currentUser, parsed)
+  await assertRelationLimit(currentUser, parsed, membershipPlan)
   const postRootIds = await assertPostMutationAccess(viewer, authority, postIds)
 
   const relations = await upsertEntityRelation(
@@ -131,6 +136,7 @@ function postParticipantIds(
 async function resolveUserTagTarget(
   currentUser: PrivateUser,
   parsed: ReturnType<typeof parseEntityRelationCreateInput>,
+  membershipPlan: ReturnType<typeof getLoadedMembershipPlan>,
 ): Promise<string | undefined> {
   if (parsed.metadata.subject_type !== 'user') return undefined
   const targetId = await assertUserTagAllowed(
@@ -139,7 +145,6 @@ async function resolveUserTagTarget(
     parsed.objectIds[0]!.id,
   )
   if (!isAdminUser(currentUser)) {
-    const membershipPlan = await getUserActivePlan(currentUser.id)
     const contributionStatus = await getContributionStatus(currentUser, {
       membershipPlan,
       skipAccountAgeGate: true,
@@ -172,6 +177,7 @@ async function assertCommunityAuthorization(
 async function assertRelationLimit(
   currentUser: PrivateUser,
   parsed: ReturnType<typeof parseEntityRelationCreateInput>,
+  membershipPlan: ReturnType<typeof getLoadedMembershipPlan>,
 ): Promise<void> {
   if (
     !parsed.metadata.election ||
@@ -180,7 +186,6 @@ async function assertRelationLimit(
   ) {
     return
   }
-  const membershipPlan = isAdminUser(currentUser) ? null : await getUserActivePlan(currentUser.id)
   await assertWithinTagAddLimit(
     currentUser,
     membershipPlan,

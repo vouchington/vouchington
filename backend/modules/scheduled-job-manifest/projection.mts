@@ -1,7 +1,4 @@
-import {
-  clampScheduledJobRepeatToHourlyFloor,
-  HOURLY_FLOOR_SCHEDULE_TEXT,
-} from './hourly-clamp.mts'
+import { alignedScheduleText, clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
 import type { ProjectedScheduledJob, ScheduledJobManifest } from './types.mts'
 import { validateScheduledJobManifests } from './validation.mts'
 
@@ -65,7 +62,6 @@ function clampedSurfaceSchedule(
   if (!applyHourlyFloor || job.environment === 'production' || typeof job.repeat === 'function') {
     return schedule
   }
-  return clampScheduledJobRepeatToHourlyFloor(job.repeat).clamped
-    ? HOURLY_FLOOR_SCHEDULE_TEXT
-    : schedule
+  const aligned = clampScheduledJobRepeatToHourlyFloor(job.repeat)
+  return aligned.clamped ? alignedScheduleText(aligned.repeat.pattern) : schedule
 }

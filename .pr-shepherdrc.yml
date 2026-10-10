@@ -9,6 +9,9 @@ ignoreChecks:
   # must not either; the red check, its job summary, and the Nightly run still report a failure.
   # See docs/development/tests.md#live-provider-smoke-checks.
   - 'test-backend-credentialed / backend-credentialed-tests'
+  # Informational credentialed Playwright checks against real cloud resources; the `web` gate does
+  # not wait on them either. See docs/development/tests.md#live-provider-smoke-checks.
+  - 'test-playwright-credentialed / playwright-credentialed-tests'
 
 # Single source of the WAIT-tick cadence: checked-in guidance omits `--interval` so this applies.
 # GraphQL quota-warning bands scale from it (2x/5x/10x → 6/15/30 minutes).

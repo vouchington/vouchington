@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { QUEUE_NAME } from '@queues/vote-weight/config'
 import type { VoteWeightJobs } from '@queues/vote-weight/types'
 import {
@@ -21,8 +21,7 @@ async function processJob(job: Job): Promise<void> {
   }
 }
 
-export const voteWeight = new Worker(QUEUE_NAME, processJob, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const voteWeight = createWorker(QUEUE_NAME, processJob, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('voteWeight', { baseline: 5 }),
 })

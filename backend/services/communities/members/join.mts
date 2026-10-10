@@ -6,18 +6,16 @@ import { enqueueDetectBanEvasionOnJoin } from '@queues/ban-evasion/enqueues'
 import onError from '@modules/on-error'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { COMMUNITY_BANNED } from '@modules/on-error/error-codes'
-import { getCommunity } from '../get.mts'
 import { lockCommunityUser } from '../bans/lock.mts'
-import type { CommunityMember } from '../types.mts'
+import type { Community, CommunityMember } from '../types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
 
 export async function joinCommunity(
   currentUserId: string,
-  communityId: string,
+  community: Community,
 ): Promise<CommunityMember> {
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const communityId = community.id
   assert(!community.archived_at, 403, 'Community is archived')
   assert(
     community.visibility === 'public',
