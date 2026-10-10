@@ -411,6 +411,13 @@ The registry validates scenario identities and expectation kinds, then verifies 
 registered scenario produced a captured result. The evaluator in `plan-gates.mts` implements
 `maxProcessedRows`, `usesIndexes`, `queryBinds`, `forbidCorrelatedAggregates`, and `singleLeaf`.
 Structural checks that do not fit these kinds have names in the same registry.
+`feed-posts-batch` hydrates fifty populated posts; `post-by-slug` reads the recommendation
+fixture. Their shared hydration contracts cap each subquery relation at the maximum measured
+work across forced custom and generic plans plus 20%, and require the post-ID indexes.
+The seed includes authored hashtags, explicit topics, two delivered images per measured post,
+and separate recommendation and category-rated review branches. Fixed background cohorts
+make those index probes representative; child index names resolve from the fixture's partition
+instead of pinning a calendar month.
 All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
 filter removals, and index rechecks, multiplied by actual loops.
 
@@ -443,3 +450,9 @@ artifact (`explain-analyze-results`) rather than guessing it from local output.
 RSS feed search includes both direct topic filtering and
 `rss-feed-search-by-topic-descendants`, which exercises `include_descendants=true` against seeded
 `relation__topic__parent__topic` rows.
+
+Hostname scheduling has indexed threshold-seek and due-range scenarios. The seven-day fixture contains three never-swept hosts, three overdue hosts and 2000 recent completions. Both plan modes must use `idx_url_hostnames__crawl_due` without sorting or reading the recent cohort. The dispatcher preserves domain-blocklist exclusions through capped per-host index probes after the due page, so excluded hosts still consume the examined-row budget and advance its cursor. URL attempt retry rules remain unchanged.
+
+### Bloom reconciliation windows
+
+The Bloom repair scenarios use the existing entity-listener checkpoint window, with 36 recent candidates and older source cohorts outside it. Each source seeks its timestamp and composite identity in index order with its own cap; the outer ordered merge retains the shared cursor. Custom and generic plans use the new source indexes. The full-window processed-row budgets are 5 per source (10 for the two blocklist sources); one-row and resumed runs budget 3 per source, including lookahead. These budgets add 20% to measured reads. A source read never scans its older cohort. The same window handles current names and inserted slugs; full rebuilds remain admin or failure recovery.

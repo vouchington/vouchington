@@ -61,13 +61,19 @@ export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
   const nonModeratorRequest = createRequest()
   await nonModeratorRequest.authenticateAs(fixture.nonModerator)
   await nonModeratorRequest.post('/api/v1/copyright-media-delivery/replays').expect(403)
-  const replayOwned = (deliveryKeys: readonly string[]) =>
+  const moderatorRequest = createRequest()
+  await moderatorRequest.authenticateAs(fixture.moderator)
+  const accepted = await moderatorRequest
+    .post('/api/v1/copyright-media-delivery/replays')
+    .expect(202)
+  expect(accepted.body).toEqual({})
+  const replayOwned = (recordIds: readonly string[]) =>
     replayFailedMediaDeliveryRegistryRecords({
       actorUserId: fixture.moderator.id,
-      deliveryKeys,
+      recordIds,
     })
-  expect(await replayOwned([fixture.deliveryKey])).toBe(1)
-  expect(await replayOwned([fixture.deliveryKey])).toBe(0)
+  expect(await replayOwned([fixture.mediaDeliveryRegistryRecordId])).toMatchObject({ replayed: 1 })
+  expect(await replayOwned([fixture.mediaDeliveryRegistryRecordId])).toMatchObject({ replayed: 0 })
   await expectOneReplayAudit(fixture, 'media_delivery_registry_replayed')
   expect(
     await countTestCopyrightLifecycleEvents({

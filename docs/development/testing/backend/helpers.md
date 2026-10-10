@@ -89,6 +89,11 @@ Each case keeps its title, slug prefix, review-lock SQL comment, member setup, u
 
 ## `onceEntityListenerCompleted`
 
+For a mutation whose entity may already have completed jobs, use
+[`withTestEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-transition.mts)
+with the mutation callback. It registers before the mutation and waits for a new owned completion,
+so an earlier job or an initially drained worker cannot satisfy the wait.
+
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.
 
 **Signature:** `onceEntityListenerCompleted(jobName, entityId?, count?, timeoutMs?)`

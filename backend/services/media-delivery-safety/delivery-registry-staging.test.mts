@@ -20,20 +20,22 @@ describe('media registry staging state', () => {
   it('retains earlier desired states and generations when authority changes or is republished', async () => {
     const tuple = await createPlacement()
     const first = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    const before = await getTestMediaDeliveryTransitionHistory(first.deliveryKey)
+    const before = await getTestMediaDeliveryTransitionHistory(first.mediaDeliveryRegistryRecordId)
     const changed = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
     const forced = await stageImagePlacementDeliveryRecord(
       { ...tuple, state: 'withheld' },
       { forceGeneration: true },
     )
-    const after = await getTestMediaDeliveryTransitionHistory(first.deliveryKey)
+    const after = await getTestMediaDeliveryTransitionHistory(first.mediaDeliveryRegistryRecordId)
     expect(before.at(-1)?.desired_state).toBe('allow')
     expect(after.slice(0, before.length)).toEqual(before)
     expect(after.slice(before.length)).toEqual([
       { generation: changed.generation, desired_state: 'withheld', change_type: 'pending' },
       { generation: forced.generation, desired_state: 'withheld', change_type: 'pending' },
     ])
-    expect(await getTestMediaDeliveryRecordSnapshot(first.deliveryKey)).toMatchObject({
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(first.mediaDeliveryRegistryRecordId),
+    ).toMatchObject({
       desired_state: 'withheld',
       state: 'pending',
     })
@@ -41,7 +43,7 @@ describe('media registry staging state', () => {
   it('retains unchanged placement snapshots in every lifecycle state', async () => {
     const tuple = await createPlacement()
     const placement = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    const keys = [placement.deliveryKey]
+    const keys = [placement.mediaDeliveryRegistryRecordId]
     for (const state of ['pending', 'claimed', 'completed', 'failed'] as const) {
       await setTestMediaRecoveryState(keys, {
         state,
@@ -75,23 +77,27 @@ describe('media registry staging state', () => {
       imageId,
     }
     const initial = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    await setTestMediaRecoveryState([initial.deliveryKey], {
+    await setTestMediaRecoveryState([initial.mediaDeliveryRegistryRecordId], {
       state: 'pending',
       attempts: 3,
       at: new Date().toISOString(),
       nextAttemptAt: '2300-01-01T00:00:00Z',
     })
-    const before = await getTestMediaDeliveryRecordSnapshot(initial.deliveryKey)
+    const before = await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)
     await stagePostImagePlacementDeliveryRecords(postId)
-    expect(await getTestMediaDeliveryRecordSnapshot(initial.deliveryKey)).toEqual(before)
+    expect(await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)).toEqual(
+      before,
+    )
     await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
-    await setTestMediaRecoveryState([initial.deliveryKey], {
+    await setTestMediaRecoveryState([initial.mediaDeliveryRegistryRecordId], {
       state: 'failed',
       attempts: 5,
       at: new Date().toISOString(),
     })
     await stagePostImagePlacementDeliveryRecords(postId)
-    expect(await getTestMediaDeliveryRecordSnapshot(initial.deliveryKey)).toMatchObject({
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId),
+    ).toMatchObject({
       desired_state: 'allow',
       state: 'pending',
       delivery_attempt_count: 0,
@@ -104,30 +110,45 @@ describe('media registry staging state', () => {
   it('preserves every persisted field on unchanged placement staging', async () => {
     const tuple = await createPlacement()
     const initial = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    await scheduleTestMediaDeliveryRetry(initial.deliveryKey, new Date(Date.now() + 60_000))
-    const before = await getTestMediaDeliveryRecordSnapshot(initial.deliveryKey)
+    await scheduleTestMediaDeliveryRetry(
+      initial.mediaDeliveryRegistryRecordId,
+      new Date(Date.now() + 60_000),
+    )
+    const before = await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)
     expect(await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })).toEqual(initial)
-    expect(await getTestMediaDeliveryRecordSnapshot(initial.deliveryKey)).toEqual(before)
+    expect(await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)).toEqual(
+      before,
+    )
   })
   it('resets changed authority and explicit republishing without reusing generations', async () => {
     const tuple = await createPlacement()
     const first = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    await scheduleTestMediaDeliveryRetry(first.deliveryKey, new Date(Date.now() + 60_000))
+    await scheduleTestMediaDeliveryRetry(
+      first.mediaDeliveryRegistryRecordId,
+      new Date(Date.now() + 60_000),
+    )
     const changed = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
     expect(BigInt(changed.generation)).toBeGreaterThan(BigInt(first.generation))
-    expect(await getTestMediaDeliveryRecordSnapshot(first.deliveryKey)).toMatchObject({
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(first.mediaDeliveryRegistryRecordId),
+    ).toMatchObject({
       state: 'pending',
       delivery_attempt_count: 0,
       next_attempt_at: null,
       failure_message: null,
     })
-    await scheduleTestMediaDeliveryRetry(first.deliveryKey, new Date(Date.now() + 60_000))
+    await scheduleTestMediaDeliveryRetry(
+      first.mediaDeliveryRegistryRecordId,
+      new Date(Date.now() + 60_000),
+    )
     const forced = await stageImagePlacementDeliveryRecord(
       { ...tuple, state: 'withheld' },
       { forceGeneration: true },
     )
     expect(BigInt(forced.generation)).toBeGreaterThan(BigInt(changed.generation))
-    expect(await getTestMediaDeliveryRecordSnapshot(first.deliveryKey)).toMatchObject({
+    expect(
+      await getTestMediaDeliveryRecordSnapshot(first.mediaDeliveryRegistryRecordId),
+    ).toMatchObject({
       state: 'pending',
       delivery_attempt_count: 0,
       next_attempt_at: null,

@@ -99,7 +99,7 @@ describe('concrete retained media identities', () => {
     expect(markerKeys).toEqual([
       expect.objectContaining({
         definition: expect.stringContaining(
-          'FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key)',
+          'FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id)',
         ),
       }),
     ])
@@ -151,14 +151,14 @@ describe('concrete retained media identities', () => {
 
   it('rejects a repair marker without a committed registry parent', async () => {
     await using query = await beginTransaction()
-    const { rows: identities } = await query<{ image_id: string; placement_id: string }>(
-      '/* allocateUnknownMarkerIds */ SELECT uuidv7() AS image_id, uuidv7() AS placement_id',
+    const { rows: identities } = await query<{ record_id: string }>(
+      '/* allocateUnknownMarkerIds */ SELECT uuidv7() AS record_id',
     )
-    const { image_id: imageId, placement_id: placementId } = identities[0]!
+    const { record_id: recordId } = identities[0]!
     await expect(
       query(
-        '/* rejectUnknownRegistryMarker */ INSERT INTO media_delivery_repair_markers (delivery_key, marker_token) VALUES ($1, 1)',
-        [`image-placement:${placementId}:0:${imageId}`],
+        '/* rejectUnknownRegistryMarker */ INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id, marker_token) VALUES ($1, 1)',
+        [recordId],
       ),
     ).rejects.toMatchObject({ code: '23503' })
   })

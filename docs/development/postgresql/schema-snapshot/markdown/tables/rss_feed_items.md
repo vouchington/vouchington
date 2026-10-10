@@ -95,6 +95,7 @@ _none_
 - `idx_rss_feed_items__search_vector`: `CREATE INDEX idx_rss_feed_items__search_vector ON ONLY public.rss_feed_items USING gin (search_vector) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__story_id__deleted_at__id`: `CREATE INDEX idx_rss_feed_items__story_id__deleted_at__id ON ONLY public.rss_feed_items USING btree (story_id, deleted_at, id) WHERE (story_id IS NOT NULL)`
 - `idx_rss_feed_items__story_id__id__url_id`: `CREATE INDEX idx_rss_feed_items__story_id__id__url_id ON ONLY public.rss_feed_items USING btree (story_id, id) INCLUDE (url_id) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))`
+- `idx_rss_feed_items__updated_at_id_active`: `CREATE INDEX idx_rss_feed_items__updated_at_id_active ON ONLY public.rss_feed_items USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__url_id`: `CREATE INDEX idx_rss_feed_items__url_id ON ONLY public.rss_feed_items USING btree (url_id)`
 - `idx_rss_feed_items__votes_score_sort__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__votes_score_sort__positive__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__positive__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`

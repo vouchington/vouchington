@@ -6,22 +6,22 @@ Append-only edge delivery transitions. Current workflow state is the latest tran
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                                   | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                |
-| ------------------------ | -------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------ |
-| `id`                     | `uuid`                                 | no       | `uuidv7()`                   |          |           |           |                                                                                                        |
-| `delivery_key`           | `text`                                 | no       |                              |          |           |           | Concrete exact edge-delivery authority whose transition this records.                                  |
-| `generation`             | `bigint`                               | no       |                              |          |           |           | Nontransactional authority generation fencing stale acknowledgements.                                  |
-| `change_type`            | `media_delivery_registry_change_types` | no       |                              |          |           |           | Typed edge-delivery transition.                                                                        |
-| `desired_state`          | `media_delivery_desired_states`        | no       |                              |          |           |           | Exact edge state selected by this authority generation, retained after later changes and republishing. |
-| `changed_by_id`          | `uuid`                                 | yes      |                              |          |           |           | Retained operator identity, or null for system delivery work.                                          |
-| `delivery_attempt_count` | `integer`                              | no       | `0`                          |          |           |           | Number of claims already made in this authority generation.                                            |
-| `claimed_at`             | `timestamp with time zone`             | yes      |                              |          |           |           | Worker claim represented by this transition.                                                           |
-| `projected_at`           | `timestamp with time zone`             | yes      |                              |          |           |           | Successful edge publication time for this transition.                                                  |
-| `invalidated_at`         | `timestamp with time zone`             | yes      |                              |          |           |           | Successful edge invalidation time for this transition.                                                 |
-| `completed_at`           | `timestamp with time zone`             | yes      |                              |          |           |           | Terminal delivery outcome time for this transition.                                                    |
-| `failure_message`        | `text`                                 | yes      |                              |          |           |           | Bounded delivery diagnostic.                                                                           |
-| `next_attempt_at`        | `timestamp with time zone`             | yes      |                              |          |           |           | Earliest retry time for this pending transition.                                                       |
-| `created_at`             | `timestamp with time zone`             | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                        |
+| Column                              | Type                                   | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                |
+| ----------------------------------- | -------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------ |
+| `id`                                | `uuid`                                 | no       | `uuidv7()`                   |          |           |           |                                                                                                        |
+| `media_delivery_registry_record_id` | `uuid`                                 | no       |                              |          |           |           | Retained delivery authority whose transition this records.                                             |
+| `generation`                        | `bigint`                               | no       |                              |          |           |           | Nontransactional authority generation fencing stale acknowledgements.                                  |
+| `change_type`                       | `media_delivery_registry_change_types` | no       |                              |          |           |           | Typed edge-delivery transition.                                                                        |
+| `desired_state`                     | `media_delivery_desired_states`        | no       |                              |          |           |           | Exact edge state selected by this authority generation, retained after later changes and republishing. |
+| `changed_by_id`                     | `uuid`                                 | yes      |                              |          |           |           | Retained operator identity, or null for system delivery work.                                          |
+| `delivery_attempt_count`            | `integer`                              | no       | `0`                          |          |           |           | Number of claims already made in this authority generation.                                            |
+| `claimed_at`                        | `timestamp with time zone`             | yes      |                              |          |           |           | Worker claim represented by this transition.                                                           |
+| `projected_at`                      | `timestamp with time zone`             | yes      |                              |          |           |           | Successful edge publication time for this transition.                                                  |
+| `invalidated_at`                    | `timestamp with time zone`             | yes      |                              |          |           |           | Successful edge invalidation time for this transition.                                                 |
+| `completed_at`                      | `timestamp with time zone`             | yes      |                              |          |           |           | Terminal delivery outcome time for this transition.                                                    |
+| `failure_message`                   | `text`                                 | yes      |                              |          |           |           | Bounded delivery diagnostic.                                                                           |
+| `next_attempt_at`                   | `timestamp with time zone`             | yes      |                              |          |           |           | Earliest retry time for this pending transition.                                                       |
+| `created_at`                        | `timestamp with time zone`             | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -38,13 +38,13 @@ _none_
 
 **Foreign keys:**
 
+- `media_delivery_registry_chang_media_delivery_registry_reco_fkey`: `FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT`
 - `media_delivery_registry_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `media_delivery_registry_changes_delivery_key_fkey`: `FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_media_delivery_registry_changes__actor`: `CREATE INDEX idx_media_delivery_registry_changes__actor ON public.media_delivery_registry_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
-- `idx_media_delivery_registry_changes__latest`: `CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (delivery_key, id DESC)`
+- `idx_media_delivery_registry_changes__latest`: `CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id DESC)`
 - `media_delivery_registry_changes_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_changes_pkey ON public.media_delivery_registry_changes USING btree (id)`
 
 **Triggers:**

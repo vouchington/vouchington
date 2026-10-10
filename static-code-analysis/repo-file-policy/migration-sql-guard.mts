@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { stripSqlComments } from './sql-scanner.mts'
-import { lineOfUtf8ByteOffset } from './sql-ast.mts'
+import { lineOfUtf8ByteOffset } from 'vouchington-tooling/sql-ast'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import {
   ALLOWED_POLYMORPHIC_TARGET_TABLES,

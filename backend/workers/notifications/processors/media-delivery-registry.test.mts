@@ -3,9 +3,9 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { mediaDeliverySafetyWorkConfig } from '@services/media-delivery-safety/work-limits'
 import type { enqueueBulkApplyMediaDeliveryRegistryRecords } from '@queues/notifications/enqueues'
 import type {
-  listRecoverableMediaDeliveryRegistryKeys,
+  listRecoverableMediaDeliveryRegistryIds,
   processMediaDeliveryRegistryRecord,
-  stageAllCurrentImagePlacementDeliveryRecords,
+  stageImagePlacementDeliveryRecordPage,
   reconcileMediaDeliveryRepairMarkers,
 } from '@services/media-delivery-safety'
 import {
@@ -32,7 +32,7 @@ describe('media delivery registry processors', () => {
     await expect(
       processApplyMediaDeliveryRegistryRecord(
         {
-          deliveryKey:
+          mediaDeliveryRegistryRecordId:
             'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
         },
         { processMediaDeliveryRegistryRecord: process, now: () => now },
@@ -51,7 +51,7 @@ describe('media delivery registry processors', () => {
         recovery_page_size: pageSize,
       })
       try {
-        const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryKeys>().mockResolvedValue({
+        const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryIds>().mockResolvedValue({
           results: [
             'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
             'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
@@ -62,8 +62,8 @@ describe('media delivery registry processors', () => {
           .fn<typeof enqueueBulkApplyMediaDeliveryRegistryRecords>()
           .mockResolvedValue([])
         const stage = vi
-          .fn<typeof stageAllCurrentImagePlacementDeliveryRecords>()
-          .mockResolvedValue(2)
+          .fn<typeof stageImagePlacementDeliveryRecordPage>()
+          .mockResolvedValue({ staged: 2, hasMore: false, scanBefore: '2026-07-01T12:00:00.000Z' })
         const repair = vi.fn<typeof reconcileMediaDeliveryRepairMarkers>().mockResolvedValue(0)
         const now = new Date('2026-07-01T12:00:00.000Z')
 
@@ -71,9 +71,9 @@ describe('media delivery registry processors', () => {
           processReconcileMediaDeliveryRegistry(
             {},
             {
-              listRecoverableMediaDeliveryRegistryKeys: list,
+              listRecoverableMediaDeliveryRegistryIds: list,
               enqueueBulkApplyMediaDeliveryRegistryRecords: enqueue,
-              stageAllCurrentImagePlacementDeliveryRecords: stage,
+              stageImagePlacementDeliveryRecordPage: stage,
               reconcileMediaDeliveryRepairMarkers: repair,
               now: () => now,
               getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),

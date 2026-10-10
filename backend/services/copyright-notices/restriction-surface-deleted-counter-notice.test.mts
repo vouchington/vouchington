@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   completeTestMediaDeliveryRecord,
   getTestMediaDeliveryRecord,
+  getTestMediaDeliveryRegistryRecordId,
 } from '@voucha/test-helpers/entities/image-surface-placements'
 import { getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { createTestLiftClaimantReceipt } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
@@ -38,13 +38,13 @@ describe('deleted community image setters and copyright response flows', () => {
       createTestCopyrightDeliveryDependencies(async () => undefined),
     )
     const initialWithheld = await getImagePlacementForCopyright(fixture.placementId)
-    await completeTestMediaDeliveryRecord(
-      getImagePlacementDeliveryKey({
-        placementId: fixture.placementId,
-        revision: initialWithheld!.revision,
-        imageId: fixture.imageId,
-      }),
-    )
+    const recordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: fixture.placementId,
+      revision: initialWithheld!.revision,
+      imageId: fixture.imageId,
+    })
+    expect(recordId).not.toBeNull()
+    await completeTestMediaDeliveryRecord(recordId!)
     await deleteUserAndDrainForTest(setter, setter)
 
     const aggregate = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
@@ -68,15 +68,15 @@ describe('deleted community image setters and copyright response flows', () => {
     })
     const withheld = await getImagePlacementForCopyright(fixture.placementId)
     expect(withheld).toMatchObject({ withheld: true, imageId: fixture.imageId })
-    await expect(
-      getTestMediaDeliveryRecord(
-        getImagePlacementDeliveryKey({
-          placementId: fixture.placementId,
-          revision: withheld!.revision,
-          imageId: fixture.imageId,
-        }),
-      ),
-    ).resolves.toMatchObject({ desired_state: 'withheld' })
+    const withheldRecordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: fixture.placementId,
+      revision: withheld!.revision,
+      imageId: fixture.imageId,
+    })
+    expect(withheldRecordId).not.toBeNull()
+    await expect(getTestMediaDeliveryRecord(withheldRecordId!)).resolves.toMatchObject({
+      desired_state: 'withheld',
+    })
   })
 
   it('keeps the restriction withheld when staff reject the setter’s counter-notice', async () => {

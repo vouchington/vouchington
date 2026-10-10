@@ -2,7 +2,7 @@
 
 import { clientApi } from './instance'
 
-export function replayCopyrightMediaDelivery(): Promise<{ replayed: number }> {
+export function replayCopyrightMediaDelivery(): Promise<void> {
   return clientApi.post('/api/v1/copyright-media-delivery/replays', {})
 }
 

@@ -47,8 +47,8 @@ describe('retained media binding behavior', () => {
     ])
     await expect(
       query(
-        "/* rejectWrongRegistryPair */ INSERT INTO media_delivery_registry_records (delivery_key, placement_id, placement_revision, image_id, desired_state) VALUES ($1, $2, 0, $3, 'withheld')",
-        [`image-placement:${placementId}:0:${wrongImageId}`, placementId, wrongImageId],
+        "/* rejectWrongRegistryPair */ INSERT INTO media_delivery_registry_records (id, placement_id, placement_revision, image_id, desired_state) VALUES (uuidv7(), $1, 0, $2, 'withheld')",
+        [placementId, wrongImageId],
       ),
     ).rejects.toMatchObject({ code: '23503' })
   })

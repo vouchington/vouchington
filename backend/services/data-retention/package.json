@@ -30,7 +30,6 @@
     "@services/post-publication": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
-    "@ts-shared/url-signing": "workspace:^",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
   },

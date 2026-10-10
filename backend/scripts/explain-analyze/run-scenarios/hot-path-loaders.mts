@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import { SEED_PREFIX, runAndCapture, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
 
@@ -40,7 +41,12 @@ export async function runHotPathLoaderScenarios() {
 
   // Feed fan-out: getPostFeedIds (covered above) returns post ids, then the route
   // batch-loads posts, shared-by users, post elections, and post communities.
-  await runAndCapture('feed-posts-batch', () => getPostsByAnyBatch(postIds))
+  const feedPostIds = Array.from({ length: 50 }, (_, index) => seedUuid(index, '05'))
+  registerScenarioContract(
+    'feed-posts-batch',
+    await getViewPostsHydrationContract('feed-posts-batch'),
+  )
+  await runAndCapture('feed-posts-batch', () => getPostsByAnyBatch(feedPostIds))
   await runAndCapture('feed-shared-by-users-batch', () => getPublicUsersByAnyBatch(userIds))
 
   // Post elections + communities batches are shared between the feed and post-detail paths.

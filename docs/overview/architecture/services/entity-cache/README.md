@@ -40,27 +40,20 @@ same keys. Never fetch, cache or invalidate an entity-relation election by bare 
 
 ## Bloom Filter Warmup
 
-On worker startup, `warmUpEntityCacheBloomFilters()` checks whether each live entity-cache
-bloom filter key exists and enqueues a backfill job only for missing filters. That's it — it
-does **not** call `ensureExists()`.
+On worker startup, `warmUpEntityCacheBloomFilters()` checks the live filter and its completeness
+marker and requests a full rebuild when either is missing. A successful atomic rename publishes the
+ready marker. Entity cache and availability reads trust a Bloom miss only while both keys exist;
+an unavailable or incomplete filter sends reads to PostgreSQL and requests recovery.
 
-The live filter key (e.g. `bloom-filter:posts`) only appears in Valkey after
-`rebuildFromStream` completes its atomic `RENAME buildingKey → liveKey`. During the backfill
-window the key is absent, and the Lua get-with-TTL scripts treat an absent bloom filter key
-as "inconclusive" and fall back to MGET, so cache reads hit the DB normally — no 404s for
-real entities.
+Post-commit adds use `addOrThrow` and the existing live/building dual write. A failed add clears the
+ready marker and requests a rebuild only when it removed that marker. The existing
+[entity-listener reconciliation window](../entity-listener-reconciliation/README.md) repairs missed
+adds from current source state, including username/slug changes, aliases and post-slug rows.
+There are no scheduled full rebuilds; admins handle deletion compaction and capacity growth.
 
-Write-time population uses the dual-write pattern in `bloom-filter-add.lua`, which adds items
-to both the live key and the building key (if a rebuild is in progress). If neither key exists
-yet, `add()` is a no-op to prevent `BF.MADD` from auto-creating an under-provisioned filter.
-
-Tests that assert scheduled write-time entity-cache bloom population should use an isolated
-`ValkeyBloomFilter` name and a bounded wait instead of the shared `entityCacheBloomFilters` live
-keys. The shared keys are global Valkey state and other parallel backend test files may rebuild or
-delete them.
-
-Backfill jobs use one queue ordering lane per entity type so startup, manual, and scheduled
-backfills cannot rebuild the same physical filter concurrently.
+Tests own isolated Bloom and cache names. Recovery tests inject an add failure into that owned
+filter, verify marker invalidation and database fallback, then verify completeness after a rebuild.
+One ordering lane per filter and the stable rebuild job ID prevent concurrent rebuilds.
 
 ## Related
 

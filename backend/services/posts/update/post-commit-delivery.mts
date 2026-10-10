@@ -1,7 +1,7 @@
 import { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { Post, UpdatePostChanges } from '../types.mts'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import onError from '@modules/on-error'
 
@@ -35,7 +35,7 @@ export async function finalizePostUpdateAndDeliver(
 ): Promise<Post> {
   const resolvedDependencies = { ...defaultPostCommitDeliveryDependencies, ...dependencies }
   if (changes.slug && updatedPost.slug) {
-    void entityCacheBloomFilters.posts.add([normalizeKey(updatedPost.slug)])
+    void addEntityBloomKeys('posts', [normalizeKey(updatedPost.slug)])
   }
 
   await resolvedDependencies

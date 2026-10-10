@@ -12,7 +12,6 @@ export const BLOOM_FILTER_LOCK_DURATION_MS = 600_000
 export const BLOOM_FILTER_STALLED_INTERVAL_MS = 30_000
 
 export const BLOOM_FILTER_ORDERING = {
-  populate_embedding: { key: 'openai-text-embedding-3-small', concurrency: 1 },
   rebuild_embedding: { key: 'openai-text-embedding-3-small', concurrency: 1 },
   rebuild_url_blocklist: { key: 'url-blocklist', concurrency: 1 },
   rebuild_email_blocklist: { key: 'email-blocklist', concurrency: 1 },
@@ -24,26 +23,12 @@ export const BLOOM_FILTER_ORDERING = {
   backfill_rss_feed_items: { key: 'entity-cache:rss_feed_items', concurrency: 1 },
 } as const
 
-const EMBEDDING_BLOOM_FILTER_DEDUPLICATION_ID = 'bloom-filter__openai-text-embedding-3-small'
-
 const BLOOM_FILTER_JOB_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
   removeOnComplete: 100,
   removeOnFail: 100,
 } satisfies Partial<JobOptions>
-
-export function populateBloomFilterJobOptions(priority?: number): Partial<JobOptions> {
-  return {
-    ...BLOOM_FILTER_JOB_DEFAULTS,
-    priority: priority ?? PRIORITY_DEFAULT,
-    ordering: BLOOM_FILTER_ORDERING.populate_embedding,
-    deduplication: {
-      id: EMBEDDING_BLOOM_FILTER_DEDUPLICATION_ID,
-      mode: 'simple',
-    },
-  } satisfies Partial<JobOptions>
-}
 
 export function backfillBloomFilterJobOptions(
   data: BackfillBloomFilterData,
@@ -53,10 +38,9 @@ export function backfillBloomFilterJobOptions(
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: BLOOM_FILTER_ORDERING[`backfill_${data.entityType}`],
-    deduplication: {
-      id: `processBackfillBloomFilter__${data.entityType}`,
-      mode: 'simple' as const,
-    },
+    jobId: `bloomFilterRebuild__${data.entityType}`,
+    removeOnComplete: true,
+    removeOnFail: true,
   } satisfies Partial<JobOptions>
 }
 
@@ -100,13 +84,9 @@ export function rebuildBloomFilterJobOptions(
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: rebuildBloomFilterOrdering(data),
-    deduplication: {
-      id:
-        data.filter === 'embedding'
-          ? EMBEDDING_BLOOM_FILTER_DEDUPLICATION_ID
-          : `processRebuildBloomFilter__${data.filter}`,
-      mode: 'simple' as const,
-    },
+    jobId: `bloomFilterRebuild__${data.filter}`,
+    removeOnComplete: true,
+    removeOnFail: true,
   } satisfies Partial<JobOptions>
 }
 
@@ -128,9 +108,8 @@ export function rebuildEmbeddingBloomFilterJobOptions(priority?: number): Partia
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: BLOOM_FILTER_ORDERING.rebuild_embedding,
-    deduplication: {
-      id: EMBEDDING_BLOOM_FILTER_DEDUPLICATION_ID,
-      mode: 'simple',
-    },
+    jobId: 'bloomFilterRebuild__embedding',
+    removeOnComplete: true,
+    removeOnFail: true,
   } satisfies Partial<JobOptions>
 }

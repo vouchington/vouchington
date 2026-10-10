@@ -1,4 +1,10 @@
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  'bloom-repair-window',
+  'bloom-repair-capped',
+  'bloom-repair-resumed',
+  'crawl-hostname-threshold-seek',
+  'crawl-hostnames-due',
+  'crawl-hostnames-due-capped',
   'url-blocklist-hostnames',
   'mv-top-hashtags-refresh',
   'mv-rss-feed-crawl-tiers-refresh',

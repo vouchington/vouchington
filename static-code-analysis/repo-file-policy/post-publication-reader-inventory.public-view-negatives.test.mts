@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
 import {
   canonicalBuilder,
   inventoryPath,
   makeContext,
 } from './post-publication-reader-inventory.test-support.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 const publicViewCompositionError = `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`
 

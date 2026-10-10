@@ -1,3 +1,4 @@
+import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import {
@@ -25,6 +26,7 @@ import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-clien
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
+import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 
@@ -32,8 +34,10 @@ async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
+    await runBloomReconciliationScenarios()
     await runMaterializedViewRefreshScenarios()
     await runHostnameBlocklistScenario()
+    await runHostnameCrawlSweepScenarios()
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runPostFeedShareScenarios()

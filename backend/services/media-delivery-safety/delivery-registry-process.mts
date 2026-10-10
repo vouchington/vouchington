@@ -14,15 +14,18 @@ import {
 } from './delivery-registry-policy.mts'
 
 export async function processMediaDeliveryRegistryRecord(
-  deliveryKey: string,
+  mediaDeliveryRegistryRecordId: string,
   now = new Date(),
   dependencies: Partial<MediaDeliveryDependencies> = {},
 ): Promise<'completed' | 'not_claimed'> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return 'not_claimed'
-  const record = await claimMediaDeliveryRegistryRecord(deliveryKey, now)
+  const record = await claimMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId, now)
   if (!record) return 'not_claimed'
   try {
-    await publishStagedMediaDeliveryRecord(record.delivery_key, { dependencies, claim: record })
+    await publishStagedMediaDeliveryRecord(record.media_delivery_registry_record_id, {
+      dependencies,
+      claim: record,
+    })
     return 'completed'
   } catch (err) {
     await failMediaDeliveryRegistryRecord(
@@ -35,19 +38,19 @@ export async function processMediaDeliveryRegistryRecord(
 }
 
 async function claimMediaDeliveryRegistryRecord(
-  deliveryKey: string,
+  mediaDeliveryRegistryRecordId: string,
   now: Date,
 ): Promise<MediaDeliveryClaim | null> {
   await using transaction = await beginTransaction()
   const { rows: locked } = await transaction(sql`/* claimMediaDeliveryRegistryRecord:lock */
-    SELECT delivery_key FROM media_delivery_registry_records
-    WHERE delivery_key = ${deliveryKey} FOR UPDATE SKIP LOCKED
+    SELECT id FROM media_delivery_registry_records
+    WHERE id = ${mediaDeliveryRegistryRecordId} FOR UPDATE SKIP LOCKED
   `)
   if (!locked.length) {
     await transaction.commit()
     return null
   }
-  const record = await claimMediaDeliveryProjection(transaction, deliveryKey, now)
+  const record = await claimMediaDeliveryProjection(transaction, mediaDeliveryRegistryRecordId, now)
   await transaction.commit()
   return record
 }
@@ -59,19 +62,19 @@ async function failMediaDeliveryRegistryRecord(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* failMediaDeliveryRegistryRecord:lock */
-    SELECT delivery_key FROM media_delivery_registry_records WHERE delivery_key = ${claim.delivery_key} FOR UPDATE
+    SELECT id FROM media_delivery_registry_records WHERE id = ${claim.media_delivery_registry_record_id} FOR UPDATE
   `)
   await transaction(sql`/* failMediaDeliveryRegistryRecord */
     WITH released AS (
       UPDATE media_delivery_registry_projection_work_items
       SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
         available_at = ${new Date(now.getTime() + RETRY_BASE_MS)}
-      WHERE delivery_key = ${claim.delivery_key} AND generation = ${claim.generation}
+      WHERE media_delivery_registry_record_id = ${claim.media_delivery_registry_record_id} AND generation = ${claim.generation}
         AND lease_token = ${claim.lease_token}::uuid AND lease_expires_at > clock_timestamp()
-      RETURNING delivery_key, generation, attempt_count, available_at
-    ) INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type,
+      RETURNING media_delivery_registry_record_id, generation, attempt_count, available_at
+    ) INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type,
       delivery_attempt_count, completed_at, next_attempt_at, failure_message)
-    SELECT delivery_key, generation,
+    SELECT media_delivery_registry_record_id, generation,
       CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN 'failed'::media_delivery_registry_change_types ELSE 'pending'::media_delivery_registry_change_types END,
       attempt_count, CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN clock_timestamp() ELSE NULL::timestamptz END,
       CASE WHEN attempt_count >= ${MAX_ATTEMPTS} THEN NULL::timestamptz ELSE available_at END,

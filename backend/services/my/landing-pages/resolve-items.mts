@@ -18,7 +18,7 @@ async function getProfileLinksByIds(
   if (ids.length === 0) return new Map()
   const { rows } = await read(sql`/* getProfileLinksByIds */
     SELECT pl.id, pl.user_id, pl.link_type, pl.sort_order, pl.url_id, u.url, pl.handle, pl.name, pl.image_id, pl.created_at, pl.updated_at,
-      CASE WHEN placement.id IS NULL THEN NULL ELSE jsonb_build_object(
+      CASE WHEN public_delivery.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
         'placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id
       ) END AS image_placement
     FROM user_profile_links pl
@@ -27,7 +27,10 @@ async function getProfileLinksByIds(
       ON surface.user_profile_link_id = pl.id AND surface.surface_kind = 'user-profile-link-image'
     LEFT JOIN media_placements placement
       ON placement.id = surface.placement_id AND placement.retired_at IS NULL
-      AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+    LEFT JOIN view_publicly_projected_image_placements public_delivery
+      ON public_delivery.placement_id = placement.id
+      AND public_delivery.placement_revision = placement.revision
+      AND public_delivery.image_id = surface.image_id
     WHERE pl.user_id = ${userId}
       AND pl.id = ANY(${ids}::uuid[])
   `)

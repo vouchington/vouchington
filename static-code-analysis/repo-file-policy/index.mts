@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkGhaWorkspacePolicy } from 'vouchington-tooling/gha-workspace-policy'
-import { initSqlAst } from './sql-ast.mts'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { checkMigrationSqlGuard } from './migration-sql-guard.mts'
 import { checkUuidv7CreatedAtDdl } from './uuidv7-created-at-ddl-guard.mts'
 import { checkModerationHistoryGuard } from './moderation-history-guard.mts'

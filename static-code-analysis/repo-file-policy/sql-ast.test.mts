@@ -1,12 +1,9 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { initSqlAst } from './sql-ast.mts'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import { stripSqlComments } from './sql-scanner.mts'
 
-describe('sql-ast local consume wrappers', () => {
-  beforeAll(() => initSqlAst())
-
+describe('sql AST facts consumers', () => {
   it('rejects stored entity pairs but permits generated compatibility columns', async () => {
     expect(
       await extractPolymorphicTargetTables(`

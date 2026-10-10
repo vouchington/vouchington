@@ -14,15 +14,13 @@ import { currentUserCanCreateTopic } from './authorization.mts'
 import { getUrlById } from '@services/urls'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
 import { claimTopicAlias, linkTopicAlias } from './aliases.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 
 export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates): void {
-  void entityCacheBloomFilters.topics.add(
-    [topic.id, topic.slug, ...topic.aliases].map(normalizeKey),
-  )
+  void addEntityBloomKeys('topics', [topic.id, topic.slug, ...topic.aliases].map(normalizeKey))
   void enqueueOnTopicCreated(topic.id, updates)
   if (updates.source_topic_alias_id)
     void invalidatePostsForTopicAliases([updates.source_topic_alias_id])
