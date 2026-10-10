@@ -78,6 +78,7 @@ export async function fetchBanEvasionReports(
     LEFT JOIN users tu ON tu.id = r.reported_user_id
     WHERE r.reviewed_at IS NULL
       AND r.reported_user_id IS NOT NULL
+      AND r.community_id = ${communityId}
   `
   if (afterCursor) {
     if (sort === 'severity') {

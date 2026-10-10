@@ -37,7 +37,7 @@ export async function insertTestModerationReport(options: {
   if (reportId) query.append(sql`id, `)
   query.append(sql`reporter_user_id, `)
   query.append(fkColumn)
-  query.append(sql`, case_id, reason, original_reason, moderation_transparency_community_id, note, created_via)
+  query.append(sql`, case_id, reason, original_reason, community_id, moderation_transparency_community_id, note, created_via)
     VALUES (
       `)
   if (reportId) query.append(sql`${reportId}, `)
@@ -47,6 +47,7 @@ export async function insertTestModerationReport(options: {
       ${caseId},
       ${options.reason ?? 'spam'},
       ${options.reason ?? 'spam'},
+      ${options.communityId ?? null},
       ${options.communityId ?? null},
       ${options.note ?? null},
       'system'

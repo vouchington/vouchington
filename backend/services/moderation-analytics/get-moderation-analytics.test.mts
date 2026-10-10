@@ -185,7 +185,13 @@ describe('getModerationAnalytics', () => {
       userId: suspect.id,
       sourceUserId: sourceUser.id,
     })
-    await insertTestSystemModerationReport('user', suspect.id, 'Suspected ban evasion')
+    await insertTestSystemModerationReport(
+      'user',
+      suspect.id,
+      'Suspected ban evasion',
+      undefined,
+      community.id,
+    )
 
     const metrics = await getModerationAnalytics('7d', {
       type: 'community',
@@ -213,7 +219,13 @@ describe('getModerationAnalytics', () => {
       userId: suspect.id,
       sourceUserId: sourceUser.id,
     })
-    await insertTestSystemModerationReport('user', suspect.id, 'Suspected ban evasion')
+    await insertTestSystemModerationReport(
+      'user',
+      suspect.id,
+      'Suspected ban evasion',
+      undefined,
+      community.id,
+    )
 
     const metrics = await getModerationAnalytics('7d', {
       type: 'community',

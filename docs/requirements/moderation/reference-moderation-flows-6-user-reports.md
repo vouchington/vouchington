@@ -19,9 +19,9 @@
 
 **Idempotency:** One unresolved report per reporter and concrete target FK (`post_id`,
 `reported_user_id`, `hostname_id`, or `rss_feed_item_id`). Duplicate unresolved reports update the
-existing report. A user report stamped with a community is unresolved once per community, so
-ban-evasion can keep a separate pending report in each community. A user report without that stamp
-stays one pending row per reporter and user.
+existing report. A user report owned by a community (`community_id`) is unresolved once per
+community, so ban-evasion can keep a separate pending report in each community. A user report with
+no operational community and no transparency snapshot stays one pending row per reporter and user.
 
 **Rate limits:** 1–20 reports/hour based on trust tier (429 with Retry-After header).
 
