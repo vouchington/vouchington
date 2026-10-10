@@ -3537,6 +3537,9 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../services/entity-fetch
+      '@services/entity-listener-reconciliation':
+        specifier: workspace:^
+        version: link:../services/entity-listener-reconciliation
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../services/entity-relations
@@ -6144,6 +6147,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -6281,6 +6287,21 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/api-keys':
+        specifier: workspace:^
+        version: link:../api-keys
+      '@services/bedrock-embeddings':
+        specifier: workspace:^
+        version: link:../bedrock-embeddings
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
+      '@services/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../urls-domains-blacklist
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

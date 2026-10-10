@@ -445,3 +445,7 @@ RSS feed search includes both direct topic filtering and
 `relation__topic__parent__topic` rows.
 
 Hostname scheduling has indexed threshold-seek and due-range scenarios. The seven-day fixture contains three never-swept hosts, three overdue hosts and 2000 recent completions. Both plan modes must use `idx_url_hostnames__crawl_due` without sorting or reading the recent cohort. The dispatcher preserves domain-blocklist exclusions through capped per-host index probes after the due page, so excluded hosts still consume the examined-row budget and advance its cursor. URL attempt retry rules remain unchanged.
+
+### Bloom reconciliation windows
+
+The Bloom repair scenarios use the existing entity-listener checkpoint window, with 36 recent candidates and older source cohorts outside it. Each source seeks its timestamp and composite identity in index order with its own cap; the outer ordered merge retains the shared cursor. Custom and generic plans use the new source indexes. The full-window processed-row budgets are 5 per source (10 for the two blocklist sources); one-row and resumed runs budget 3 per source, including lookahead. These budgets add 20% to measured reads. A source read never scans its older cohort. The same window handles current names and inserted slugs; full rebuilds remain admin or failure recovery.

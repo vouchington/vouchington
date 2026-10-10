@@ -31,6 +31,7 @@ _none_
 
 - `blocklisted_domains_pkey`: `CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (domain, source_id)`
 - `idx_blocklisted_domains__source_id__domain`: `CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain)`
+- `idx_blocklisted_domains__updated_at_domain_source_id`: `CREATE INDEX idx_blocklisted_domains__updated_at_domain_source_id ON public.blocklisted_domains USING btree (updated_at, domain, ((source_id)::text))`
 
 **Triggers:**
 

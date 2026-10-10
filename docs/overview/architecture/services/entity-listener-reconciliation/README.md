@@ -11,6 +11,15 @@ is at or after the window start, so the worker replays creation effects only for
 worker runs each candidate's idempotent processor and advances the checkpoint only after all of
 them succeed.
 
+The same overlapping window repairs Bloom additions for communities, RSS items, API keys,
+blocklisted domains, embeddings, post slugs, topic aliases and locally blocked/uncrawlable hostnames.
+Each source uses an indexed timestamp range; the hostname branches use disjoint plain predicates.
+Composite domain/source keys and embedding hashes retain their current identity. Cursor timestamps
+keep microsecond precision, and text/composite keys resume without dropping ties. The existing
+`entity-reconciliation-work-config` owns the batch size and per-run cap. Capped or failed runs keep
+their window and keyset position; only a completed window advances the checkpoint.
+Full Bloom rebuilds have no schedule: they run only for an admin request or missing/failed filters.
+
 The default hourly cadence, logical job IDs, scheduler, and admin trigger are documented in the
 [entity-listener queue](../../queues/entity-listeners/README.md). The durable recovery contract is
 tracked in [job replayability](../../../../requirements/platform/JOB-REPLAYABILITY.md).

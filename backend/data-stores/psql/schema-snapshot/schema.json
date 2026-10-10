@@ -6304,6 +6304,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_api_keys__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__updated_at_id_active ON public.api_keys USING btree (updated_at, ((id)::text)) INCLUDE (key_hash) WHERE (revoked_at IS NULL)",
+          "includedColumns": ["key_hash"],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_api_keys__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -7573,6 +7600,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash ON public.bedrock_nova_multimodal_v1_embeddings USING btree (updated_at, encode(content_sha256, 'hex'::text))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "encode(content_sha256, 'hex'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -7783,6 +7837,40 @@
               "column": "domain",
               "descending": false,
               "expression": "domain",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_blocklisted_domains__updated_at_domain_source_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_blocklisted_domains__updated_at_domain_source_id ON public.blocklisted_domains USING btree (updated_at, domain, ((source_id)::text))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "domain",
+              "descending": false,
+              "expression": "domain",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(source_id::text)",
               "nullsFirst": false,
               "opclass": "text_ops"
             }
@@ -14008,6 +14096,33 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_communities__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -46043,7 +46158,7 @@
         "idx_images__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -46054,11 +46169,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "id",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": "((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))",
@@ -78346,6 +78461,40 @@
               "expression": "post_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "slug",
+              "descending": false,
+              "expression": "slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_slugs__updated_at_post_id_slug": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_slugs__updated_at_post_id_slug ON public.post_slugs USING btree (updated_at, ((post_id)::text), slug)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(post_id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
             },
             {
               "column": "slug",
@@ -111095,6 +111244,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_rss_feed_items__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__updated_at_id_active ON ONLY public.rss_feed_items USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_items__url_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -115126,6 +115302,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_topic_aliases__updated_at_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_aliases__updated_at_id ON public.topic_aliases USING btree (updated_at, ((id)::text))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_aliases__updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -118110,7 +118313,7 @@
         "idx_topics__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
+          "definition": "CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -118121,11 +118324,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "id",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": "((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
@@ -119121,6 +119324,60 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__updated_at_id_blocked": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__updated_at_id_blocked ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE is_blocked",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "is_blocked",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__updated_at_id_not_crawlable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__updated_at_id_not_crawlable ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE ((NOT is_crawlable) AND (NOT is_blocked))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((NOT is_crawlable) AND (NOT is_blocked))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -119458,7 +119715,7 @@
         "idx_urls__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, id)",
+          "definition": "CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, ((id)::text))",
           "includedColumns": [],
           "keys": [
             {
@@ -119469,11 +119726,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "id",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": null,
@@ -130035,7 +130292,7 @@
         "idx_users__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, id) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -130046,11 +130303,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "id",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": "(deleted_at IS NULL)",

@@ -1,3 +1,4 @@
+import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import {
@@ -33,6 +34,7 @@ async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
+    await runBloomReconciliationScenarios()
     await runMaterializedViewRefreshScenarios()
     await runHostnameBlocklistScenario()
     await runHostnameCrawlSweepScenarios()

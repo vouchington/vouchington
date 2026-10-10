@@ -1,3 +1,4 @@
+import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
@@ -5,12 +6,14 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 
 export const processUserCreated = async ({ id }: { id: string }) => {
+  await repairEntityBloomKeys('users', id)
   await invalidate.users(id)
   void enqueueRecalculateUserVoteWeight(id)
   void enqueueLanguageDetection('user', id)
 }
 
 export const processUserUpdated = async ({ id }: { id: string }) => {
+  await repairEntityBloomKeys('users', id)
   await invalidate.users(id)
   void enqueueLanguageDetection('user', id)
 }

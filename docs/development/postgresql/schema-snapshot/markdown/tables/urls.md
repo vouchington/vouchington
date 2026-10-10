@@ -46,7 +46,7 @@ Not partitioned — growth: unbounded.
 - `idx_urls__canonical_url_id`: `CREATE INDEX idx_urls__canonical_url_id ON public.urls USING btree (canonical_url_id) WHERE (canonical_url_id IS NOT NULL)`
 - `idx_urls__hostname_id`: `CREATE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id)`
 - `idx_urls__media_type_id`: `CREATE INDEX idx_urls__media_type_id ON public.urls USING btree (media_type_id) WHERE (media_type_id IS NOT NULL)`
-- `idx_urls__updated_at_id_active`: `CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, id)`
+- `idx_urls__updated_at_id_active`: `CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, ((id)::text))`
 - `idx_urls__url__text_pattern_ops`: `CREATE INDEX idx_urls__url__text_pattern_ops ON public.urls USING btree (url text_pattern_ops)`
 - `idx_urls__url_trgm`: `CREATE INDEX idx_urls__url_trgm ON public.urls USING gin (url gin_trgm_ops)`
 - `urls_pkey`: `CREATE UNIQUE INDEX urls_pkey ON public.urls USING btree (id)`

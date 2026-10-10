@@ -56,7 +56,7 @@ Not partitioned — growth: unbounded.
 - `idx_images__created_by_id`: `CREATE INDEX idx_images__created_by_id ON public.images USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_images__quarantine_pending`: `CREATE INDEX idx_images__quarantine_pending ON public.images USING btree (quarantine_pending_at, id) WHERE ((quarantine_pending_at IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_images__staged_source_cleanup`: `CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))`
-- `idx_images__updated_at_id_active`: `CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))`
+- `idx_images__updated_at_id_active`: `CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))`
 - `idx_images__upload_in_flight`: `CREATE INDEX idx_images__upload_in_flight ON public.images USING btree (id) WHERE ((upload_completed_at IS NULL) AND (upload_failed_at IS NULL))`
 - `images_pkey`: `CREATE UNIQUE INDEX images_pkey ON public.images USING btree (id)`
 - `images_sha_256_key`: `CREATE UNIQUE INDEX images_sha_256_key ON public.images USING btree (sha_256)`
