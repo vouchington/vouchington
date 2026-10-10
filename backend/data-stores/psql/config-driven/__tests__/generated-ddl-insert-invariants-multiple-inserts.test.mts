@@ -10,14 +10,14 @@ describe('config-driven generated DDL insert invariant: multiple inserts in one 
   it(
     'fails closed on a DO-body fragment carrying two inserts when a guard token on one ' +
       'could otherwise mask the other',
-    () => {
+    async () => {
       // splitSqlStatements has no PL/pgSQL grammar, so the leading BEGIN of a DO body glues
       // onto whatever comes before the first top-level semicolon — here, a whole two-CTE
       // WITH statement. That combined text fails to parse standalone, so this reaches the
       // masked text fallback with two INSERT INTO occurrences: foo's own DO NOTHING must not
       // be mistaken for a guard on bar's entirely unguarded insert.
       expect(
-        findFirstUnguardedInsertViolation(`DO $$
+        await findFirstUnguardedInsertViolation(`DO $$
 BEGIN
 WITH a AS (
   INSERT INTO foo (id) VALUES ('a') ON CONFLICT (id) DO NOTHING
@@ -37,9 +37,9 @@ $$;`),
     },
   )
 
-  it('does not flag a DO-body fragment whose single glued-BEGIN chunk carries only one insert', () => {
+  it('does not flag a DO-body fragment whose single glued-BEGIN chunk carries only one insert', async () => {
     expect(
-      findFirstUnguardedInsertViolation(`DO $$
+      await findFirstUnguardedInsertViolation(`DO $$
 BEGIN
 INSERT INTO foo (id) VALUES ('a') ON CONFLICT (id) DO NOTHING;
 END

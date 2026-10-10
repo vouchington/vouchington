@@ -1,4 +1,4 @@
-import { parseSync } from '@libpg-query/parser'
+import type { PostgresSqlTrigger } from 'no-mistakes'
 
 import {
   isDistinctFromExcluded,
@@ -17,8 +17,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /**
  * Whether a value-convergent `ON CONFLICT DO UPDATE` (per `isConvergentOnConflict`) can still
  * corrupt state via a trigger — `isConvergentOnConflict` never inspects triggers or the DO
- * UPDATE's own WHERE clause. Timing/event bits verified empirically against @libpg-query/parser's
- * `CreateTrigStmt` shape. A trigger is:
+ * UPDATE's own WHERE clause. A trigger is:
  * - **Unconditional** (unsafe unless allowlisted, no WHERE/column exemption possible): `FOR EACH
  *   STATEMENT` on INSERT or UPDATE (fires once per statement regardless of affected rows), or
  *   `FOR EACH ROW BEFORE INSERT` (fires before Postgres checks for a conflict; `AFTER INSERT` is
@@ -31,10 +30,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * - **Out of scope**: `AFTER INSERT` row triggers, DELETE/TRUNCATE triggers.
  */
 
-const TRIGGER_TYPE_BEFORE = 2
-const TRIGGER_EVENT_INSERT = 4
-const TRIGGER_EVENT_UPDATE = 16
-
 const REPLAY_SAFE_TRIGGER_FUNCTIONS = new Set([
   // Only stamps updated_at; every replay produces a fresh, disposable timestamp.
   'fn_update_updated_at',
@@ -44,60 +39,32 @@ const REPLAY_SAFE_TRIGGER_FUNCTIONS = new Set([
   'fn_project_topic_aliases', // Sorted alias cache; empty transition tables do no work.
 ])
 
-function parseTrigger(trigger: unknown): Record<string, unknown> | undefined {
-  if (isRecord(trigger)) {
-    return isRecord(trigger.CreateTrigStmt) ? trigger.CreateTrigStmt : undefined
-  }
-  if (typeof trigger !== 'string') return undefined
-  try {
-    const parsed = parseSync(trigger) as { stmts?: unknown[] }
-    const stmtNode = isRecord(parsed.stmts?.[0]) ? parsed.stmts[0].stmt : undefined
-    return isRecord(stmtNode) && isRecord(stmtNode.CreateTrigStmt)
-      ? stmtNode.CreateTrigStmt
-      : undefined
-  } catch {
-    return undefined
-  }
+function hasEvent(trig: PostgresSqlTrigger, kind: 'insert' | 'update'): boolean {
+  return trig.eventFacts.some(event => event.kind === kind)
 }
 
-function hasEvent(trig: Record<string, unknown>, bit: number): boolean {
-  return typeof trig.events === 'number' && (trig.events & bit) === bit
-}
-
-function firesOnUpdateForEachRow(trig: Record<string, unknown>): boolean {
-  return hasEvent(trig, TRIGGER_EVENT_UPDATE) && trig.row === true
+function firesOnUpdateForEachRow(trig: PostgresSqlTrigger): boolean {
+  return hasEvent(trig, 'update') && trig.forEach === 'FOR EACH ROW'
 }
 
 // A FOR EACH STATEMENT trigger on INSERT or UPDATE fires once per statement regardless of
 // whether any row was actually inserted/updated; a FOR EACH ROW BEFORE INSERT trigger fires for
 // the proposed row before Postgres even checks for a conflict. Neither is gated by the DO
 // UPDATE's WHERE clause or by which columns it assigns.
-function firesUnconditionally(trig: Record<string, unknown>): boolean {
-  if (trig.row !== true)
-    return hasEvent(trig, TRIGGER_EVENT_INSERT) || hasEvent(trig, TRIGGER_EVENT_UPDATE)
-  return hasEvent(trig, TRIGGER_EVENT_INSERT) && trig.timing === TRIGGER_TYPE_BEFORE
+function firesUnconditionally(trig: PostgresSqlTrigger): boolean {
+  if (trig.forEach !== 'FOR EACH ROW') return hasEvent(trig, 'insert') || hasEvent(trig, 'update')
+  return hasEvent(trig, 'insert') && trig.timing === 'BEFORE'
 }
 
-function triggerFunctionName(trig: Record<string, unknown>): string | undefined {
-  const funcname = trig.funcname
-  if (!Array.isArray(funcname)) return undefined
-  const last = funcname.at(-1)
-  return isRecord(last) && isRecord(last.String) && typeof last.String.sval === 'string'
-    ? last.String.sval
-    : undefined
+function triggerFunctionName(trig: PostgresSqlTrigger): string | undefined {
+  return trig.function?.parts.at(-1)?.value
 }
 
 // `undefined` means the trigger has no `UPDATE OF <cols>` restriction and watches every column.
-function triggerWatchedColumns(trig: Record<string, unknown>): Set<string> | undefined {
-  const columns = trig.columns
-  if (!Array.isArray(columns)) return undefined
-  const out = new Set<string>()
-  for (const column of columns) {
-    if (isRecord(column) && isRecord(column.String) && typeof column.String.sval === 'string') {
-      out.add(column.String.sval)
-    }
-  }
-  return out
+function triggerWatchedColumns(trig: PostgresSqlTrigger): ReadonlySet<string> | undefined {
+  const update = trig.eventFacts.find(event => event.kind === 'update')
+  if (!update?.updateOf) return undefined
+  return new Set(update.updateColumns.map(column => column.identity))
 }
 
 // A WHERE-proof for `column` only holds if the SET target for that exact column assigns
@@ -117,7 +84,7 @@ function whereProvesNoReplay(
 }
 
 function isTriggerReplayUnsafe(
-  trig: Record<string, unknown>,
+  trig: PostgresSqlTrigger,
   assignedColumns: ReadonlySet<string>,
   excludedAssignedColumns: ReadonlySet<string>,
   conflictWhereClause: unknown,
@@ -135,7 +102,7 @@ function isTriggerReplayUnsafe(
   if (candidateColumns.size === 0) return false
   // BEFORE fires before the row is stored and can rewrite NEW.<col>, so no WHERE proof can vouch
   // for what it lets through — only AFTER reaches the WHERE-proof exemption.
-  if (trig.timing === TRIGGER_TYPE_BEFORE) return true
+  if (trig.timing === 'BEFORE') return true
   return !whereProvesNoReplay(conflictWhereClause, candidateColumns, excludedAssignedColumns)
 }
 
@@ -177,18 +144,15 @@ export function excludedAssignedColumnsFromOnConflict(onConflict: unknown): Read
   return out
 }
 
-/** `triggers` are the target table's own `CREATE TRIGGER ...` DDL strings (or already-parsed
- * `{ CreateTrigStmt }` nodes, for tests) — typically `schema.json`'s per-table `triggers` map. */
+/** The target table's parsed `CREATE TRIGGER` facts. `undefined` means parsing failed. */
 export function replayUnsafeTrigger(
-  triggers: readonly unknown[],
+  triggers: readonly (PostgresSqlTrigger | undefined)[],
   assignedColumns: ReadonlySet<string>,
   excludedAssignedColumns: ReadonlySet<string>,
   conflictWhereClause: unknown,
 ): boolean {
-  for (const trigger of triggers) {
-    const trig = parseTrigger(trigger)
-    // Fail closed, matching every other unknown-shape decision in this module: a trigger this
-    // parser cannot understand is judged unsafe, not silently skipped.
+  for (const trig of triggers) {
+    // Fail closed: a trigger the parser cannot understand is unsafe.
     if (
       !trig ||
       isTriggerReplayUnsafe(trig, assignedColumns, excludedAssignedColumns, conflictWhereClause)

@@ -30,7 +30,7 @@ describe('config-driven generated DDL guards', () => {
     const generatedSql = await loadGeneratedConfigDrivenSql(configDrivenDir)
 
     for (const { file, sql } of generatedSql) {
-      expect({ file, violation: findFirstGeneratedDdlViolation(sql) }).toEqual({
+      expect({ file, violation: await findFirstGeneratedDdlViolation(sql) }).toEqual({
         file,
         violation: null,
       })
@@ -41,7 +41,7 @@ describe('config-driven generated DDL guards', () => {
     const generatedSql = await loadGeneratedConfigDrivenSql(configDrivenDir)
 
     for (const { file, sql } of generatedSql) {
-      expect({ file, violation: findFirstUuidv7CreatedAtViolation(sql) }).toEqual({
+      expect({ file, violation: await findFirstUuidv7CreatedAtViolation(sql) }).toEqual({
         file,
         violation: null,
       })
@@ -52,7 +52,7 @@ describe('config-driven generated DDL guards', () => {
     const generatedSql = await loadGeneratedConfigDrivenSql(configDrivenDir)
 
     for (const { file, sql } of generatedSql) {
-      expect({ file, violation: findFirstUnguardedInsertViolation(sql) }).toEqual({
+      expect({ file, violation: await findFirstUnguardedInsertViolation(sql) }).toEqual({
         file,
         violation: null,
       })
@@ -78,7 +78,7 @@ describe('config-driven generated DDL guards', () => {
     )
   })
 
-  it('keeps SQL literal scanners quote-aware while removing executable comments', () => {
+  it('keeps SQL literal scanners quote-aware while removing executable comments', async () => {
     expect(
       stripSqlComments(
         "SELECT 'it''s /* still text */'; /* outer /* nested */ done */ CREATE TABLE hidden (id uuid);",
@@ -103,7 +103,7 @@ describe('config-driven generated DDL guards', () => {
       text: "can't /* still text */",
     })
     expect(
-      findFirstGeneratedDdlViolation(
+      await findFirstGeneratedDdlViolation(
         String.raw`INSERT INTO prompts (body) VALUES (E'can\'t /* IF NOT EXISTS */ ALTER TABLE hidden');`,
       ),
     ).toBeNull()
