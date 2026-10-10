@@ -15,6 +15,7 @@ import {
 } from './delivery-registry-publish.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { publishPersistedDeliveryRecord } from './delivery-registry-acknowledgement.mts'
+import { claimMediaDeliveryProjection } from './delivery-registry-claims.mts'
 
 describe('publication failure and recovery boundaries', () => {
   afterEach(() => {
@@ -41,6 +42,38 @@ describe('publication failure and recovery boundaries', () => {
     const edge = installTestMediaDeliveryEdge()
     await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('allow')
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
+      state: 'completed',
+    })
+  })
+
+  it('preserves an owned lease when another publisher or a stale claim attempts publication', async () => {
+    const fixture = await createTestDeliverySurface()
+    const edge = installTestMediaDeliveryEdge()
+    await using transaction = await beginTransaction()
+    await lockImageDeliveryMutation(transaction, {
+      placementIds: [fixture.tuple.placementId],
+      placementOnly: true,
+    })
+    const claim = await claimMediaDeliveryProjection(
+      transaction,
+      fixture.mediaDeliveryRegistryRecordId,
+    )
+    expect(claim).not.toBeNull()
+    await transaction.commit()
+    await expect(
+      publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId),
+    ).rejects.toThrow('already owned')
+    await expect(
+      publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId, {
+        claim: { ...claim!, generation: (BigInt(claim!.generation) + 1n).toString() },
+      }),
+    ).rejects.toThrow('generation changed')
+    expect(edge.put).not.toHaveBeenCalled()
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
+      state: 'claimed',
+    })
+    await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId, { claim: claim! })
     expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'completed',
     })
