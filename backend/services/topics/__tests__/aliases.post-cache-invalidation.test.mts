@@ -12,7 +12,8 @@ import {
   insertTestTopic,
   softDeleteTopic,
 } from '@voucha/test-helpers'
-import { describe, expect, it } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTopicAliases,
   createUnlinkedTopicAlias,
@@ -22,6 +23,7 @@ import {
 import { getTopicByAny } from '../get.mts'
 import { mergeTopicAliases } from '../merge-aliases.mts'
 import { updateTopic } from '../update.mts'
+import { topicsWorkConfig } from '../work-limits.mts'
 
 describe('topic alias post-cache invalidation', () => {
   it('invalidates posts when an unlinked alias is linked and unlinked again', async () => {
@@ -150,29 +152,50 @@ describe('topic alias post-cache invalidation', () => {
   })
 
   it('persists a cursor continuation after invalidating the first bounded alias-post page', async () => {
-    const suffix = Math.random().toString(36).slice(2, 12)
-    const user = await createTestUser({ administrator: true })
-    const topicId = await insertTestTopic({
-      name: `Bounded cache topic ${suffix}`,
-      slug: `bounded-cache-topic-${suffix}`,
-      createdById: user.id,
+    const restoreConfig = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+      alias_post_invalidation_batch_size: 3,
     })
-    const alias = await createUnlinkedTopicAlias(`bounded-cache-${suffix}`)
-    const postIds = await createCachedAliasPosts(alias.id, user, suffix, 101)
+    onTestFinished(restoreConfig)
 
-    await linkTopicAlias(topicId, alias.id)
+    try {
+      const suffix = Math.random().toString(36).slice(2, 12)
+      const user = await createTestUser({ administrator: true })
+      const topicId = await insertTestTopic({
+        name: `Bounded cache topic ${suffix}`,
+        slug: `bounded-cache-topic-${suffix}`,
+        createdById: user.id,
+      })
+      const alias = await createUnlinkedTopicAlias(`bounded-cache-${suffix}`)
+      const postIds = await createCachedAliasPosts(alias.id, user, suffix, 4)
+      const sortedPostIds = postIds.toSorted()
+      const firstPostId = sortedPostIds[0]!
+      const secondPostId = sortedPostIds[1]!
+      const thirdPostId = sortedPostIds[2]!
+      const fourthPostId = sortedPostIds[3]!
 
-    const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
-    expect(cached.filter(value => value === null)).toHaveLength(100)
-    expect(cached.filter(value => value !== null)).toHaveLength(1)
-    // Prioritized jobs are not in `getJobs('waiting')` until a worker promotes them.
-    const continuation = (
-      await topicAliases.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
-    ).find(job => (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id))
-    expect(continuation?.data).toEqual({
-      afterPostId: expect.any(String),
-      topicAliasIds: [alias.id],
-    })
+      await linkTopicAlias(topicId, alias.id)
+
+      const cacheValues = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
+      const invalidatedPostIds = postIds
+        .filter((_, index) => cacheValues[index] === null)
+        .toSorted()
+      const stillCachedPostIds = postIds
+        .filter((_, index) => cacheValues[index] !== null)
+        .toSorted()
+      expect(invalidatedPostIds).toEqual([firstPostId, secondPostId, thirdPostId])
+      expect(stillCachedPostIds).toEqual([fourthPostId])
+
+      // Prioritized jobs are not in `getJobs('waiting')` until a worker promotes them.
+      const continuation = (
+        await topicAliases.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
+      ).find(job => (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id))
+      expect(continuation?.data).toEqual({
+        afterPostId: thirdPostId,
+        topicAliasIds: [alias.id],
+      })
+    } finally {
+      restoreConfig()
+    }
   })
 })
 
@@ -210,25 +233,17 @@ async function cachePosts(postIds: string[]): Promise<void> {
 }
 
 async function expectPostCachesInvalidated(postIds: string[]): Promise<void> {
-  await expect
-    .poll(async () => {
-      const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
-      return cached.every(value => value === null)
-    })
-    .toBe(true)
+  const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
+  expect(cached.every(value => value === null)).toBe(true)
 }
 
 // The reconciliation job is prioritized, which `getJobs('waiting')` excludes until a worker
 // promotes it, so search every state by name and post id.
 async function expectPostNotificationReconciliationEnqueued(postIds: string[]): Promise<void> {
-  await expect
-    .poll(async () => {
-      const found = await Promise.all(
-        postIds.map(postId =>
-          notifications.searchJobs({ name: 'processReconcilePostNotifications', data: { postId } }),
-        ),
-      )
-      return found.every(jobs => jobs.length > 0)
-    })
-    .toBe(true)
+  const found = await Promise.all(
+    postIds.map(postId =>
+      notifications.searchJobs({ name: 'processReconcilePostNotifications', data: { postId } }),
+    ),
+  )
+  expect(found.every(jobs => jobs.length > 0)).toBe(true)
 }
