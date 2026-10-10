@@ -1,0 +1,1142 @@
+[
+  {
+    "annotation": "addUserDeletionExternalWork",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "allocateCommunityAgentPromptSlot",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "approveApplication",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "assertContributionAdmissionCapacity.count",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "assertEmailAddressAvailableForUser",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "assertImagesReadyForSurface",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "assertOAuthAccountConnectionUserActive",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "assertPostMutationAccess",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "assertReferralProgramExists",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "assertReportablePost",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "backfillCategoriesForTopicAliases",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "backfillPostsBloomFilter",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "backfillTopicsBloomFilter",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "beginTransaction",
+    "reason": "The request opens several transactions",
+    "issue": 2616
+  },
+  {
+    "annotation": "blockHostname_findPostRelatedUrlPosts",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "buildCountQuery",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "buildEntityRelationSelectQuery",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "buildInsertQuery",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "canViewPostsBatch",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "claimContributionAdmission.abandonExpiredAttempt",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.claim",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.insert",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.liveClaim",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.mark",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.recordAttempt",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "claimContributionAdmission.reservation",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "completeUserDeletionExternalWork",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "countUserMemberCommunities",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "createCommunity",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "createCommunityAgentPrompt",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "createCommunityLifecycleNotification",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "createCommunityPostReview",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "createCopyrightDeliveryIntent",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "createCopyrightStatementDeliveryInTransaction:activeRecipient",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "createCopyrightStatementDeliveryInTransaction:existing",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "createCopyrightStatementDeliveryInTransaction:recipientLifecycleLock",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "createDataRequest",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "createDeterministicCopyrightCorrespondenceInTransaction",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "createDistribution",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "createEmailVerificationToken",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "createImportBatch",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "createIndividualCard",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "createModerationReport",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "createMyLandingPage",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "createPost",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "createPublicationAliasIdentityStaging",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "createRssFeedImport",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "createTopicRevision",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "createTotpAuthenticator",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "currentCopyrightJurisdictionPolicy",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "currentUserCanChangeParticipantPolicy",
+    "reason": "Messaging authorization and lookups repeat per request",
+    "issue": 2615
+  },
+  {
+    "annotation": "currentUserCanManageParticipants",
+    "reason": "Messaging authorization and lookups repeat per request",
+    "issue": 2615
+  },
+  {
+    "annotation": "deletePasskey",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "deletePendingRecommendation",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "deleteProfileLink",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "deleteTotpAuthenticator",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "deleteUserModNote",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "disconnectOAuthAccount",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "ensureConsentVersion",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "ensureImagePlacementBinding:image",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "ensureImagePlacementBinding:insert",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "ensureImagePlacementBinding:pin",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "extendContributionAdmissionReplay",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "fencePublicationIdentityBridgeCapture",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "fetchConversationById",
+    "reason": "Messaging authorization and lookups repeat per request",
+    "issue": 2615
+  },
+  {
+    "annotation": "fetchElectionVoteRowsByUser",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "fetchListById",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "findAutomaticWithholdingSwitchOnTime",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "findOpenCaseForEntity",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getActiveUserIdsForEntityCache",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getAdministratorRefundRequestForMembershipKey",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getAutomodFeedbackContext:agent",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getBlocklistedDomainKeys",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getCommunityAgentPrompt",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "getCommunityById",
+    "reason": "Community re-fetch; #2544 covers only part of the routes",
+    "issue": 2614
+  },
+  {
+    "annotation": "getCommunityMember",
+    "reason": "Community re-fetch; #2544 covers only part of the routes",
+    "issue": 2614
+  },
+  {
+    "annotation": "getCommunityWithViewerById",
+    "reason": "Community and viewer re-fetched after the route preamble",
+    "issue": 2544
+  },
+  {
+    "annotation": "getCrawlerById",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getDataRequestById",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getElectionsByIdBatch",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getFollowedUsersByElectionVote",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getFollowedUsersFollowingTopic",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getIndividual",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getLandingPageRowForUser",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getLatestJudgementForEntity",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getLocalHostnamePolicies",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getMembershipPurchaseIntent",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getModeratedCommunityIds",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getModerationAppealById",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getModmailThread",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "getOAuthClient",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "getPostByAny",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getPostCacheKeys",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getPostProvenanceFacts",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getPostsByAnyBatch",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getPrivateUserByAny",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getPublicUserByAny",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getPublicUsersByAnyBatch",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getRelatablePostIds",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getReportJudgementContextsForEntitiesBatch",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getReportResolutionContext",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getRetainedPostCategories hashtags",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getRetainedPostCategories topics",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getReviewDisputeById",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "getRssFeedById",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getRssFeedHardDeleteTopicImpacts",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "getRssFeedImport",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getRssFeedItemById",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "getRssFeedScopesForCategoryPublicationLocks",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "getTerritorialInformedWindow",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "getTopicAliasesForMergeRevision",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "getTopicByAny",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getTopicCacheKeys",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getTopicDataPointInsights",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getTopicsByAnyBatch",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getUrlById",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getUserBookmarkCounts",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getUserCacheKeys",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getUserMetricsRowByAny",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getUserPrivacySettings",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getUserReferralLink",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "getUserTagRelationById",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "grantConsent",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "insertCopyrightDeliveryRecipient",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "insertRssFeedSettingChange",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "listDescendantPostPublicationSitemapPage",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "listPostPublicationIdentityNativeSourcePage",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "listPublicationIdentityFeedItem",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "listPublicationIdentityFeedSourcePage",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "listTopicAliasPublicationPostImpacts",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "lockActiveUserSubjectsForMutation",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "lockApiKeyOwner",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockAssessmentForm",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "lockBlueskyLinkAuthorization",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockBlueskySessionOwner:did",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockBlueskySessionOwner:user",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockCommunityUsers",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "lockEntityRelationElectionVoteMutations",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "lockExistingTopicAliasPublicationScopes",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockImageAssetAdmission:reserve",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockImageDeliveryMutation:advisory",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockImageDeliveryMutation:findBindings",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockImageDeliveryMutation:lockPlacements",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockImageSurfacePlacements",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockOAuthAccountConnectionUser",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockOAuthAccountConnectionUserRow",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "lockPostPublicationCaptures",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockPostPublicationRssFeedScopes",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockPostPublicationScope",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockPreparedPublicationScopes",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockRssFeedItemsForStoryPublicationChanges",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockStoryLifecycles",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "lockSurfaceOwnerDomains",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "lockTopicAliasPublicationCaptures",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "markImageDeliveryAuthorityStarted",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "maybeResolveCases",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "openOrGetOpenCase:insert",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "orderPostPublicationRetainedKeyInput",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "pagePublicationAliasIdentityStaging",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "pagePublicationAliasSourceIdentities",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "persistFinalizedContributionResponse",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "prepublishImageSurfaceDenial:current",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "publishFinalizedContributionResponse.lockClaim",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "publishFinalizedContributionResponse.release",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "queryEntityBookmarksForRelations",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "readBlueskyLinkAuthorization",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "readFirstOwedCopyrightEnforcementTarget",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "receiveOAuthAuthorizationCallback",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "recordMcpCallAudit",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "recordModeratorAction",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
+  },
+  {
+    "annotation": "recordPostTopicRelationPublicationChanges:aliases",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "recordTerritorialCopyrightRedressDecision:request",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "redeemInviteCode",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "removeEmailAddress",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "renameTotpAuthenticator",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "renewContributionAdmissionLease",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "reorderProfileLinks",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "replaceMyLandingPageItems",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "replaceTopicRecommendationHostnames",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "replayClientGeneratedTurn",
+    "reason": "Messaging authorization and lookups repeat per request",
+    "issue": 2615
+  },
+  {
+    "annotation": "replayFailedCopyrightActionIntent",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "replayFailedCopyrightActionIntent:identity",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "replayFailedCopyrightActionIntent:placementLock",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "resetPostClearance",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "resolveEntityRelationElectionTargetById",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "resolvePublicationPostScopeLiveOwner",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "retainCurrentRssFeedPublicationKeys",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "retainPostPublicationDirtyWorkKeys",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "retainPublicationIdentityBridges",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "retainPublicationIdentityRoots",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "revokeAllAuthenticatedSessions",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "revokeApiKey",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "revokeAuthenticatedSession",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "revokeInvite",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "rotateApiKey",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "runContributionAdmission.commit",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "runContributionAdmission.lockActor",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "runContributionAdmission.lockReservation",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "runContributionAdmission.recordAttemptResult",
+    "reason": "Contribution admission steps repeat per admitted item",
+    "issue": 2608
+  },
+  {
+    "annotation": "selectCopyrightStatementFacts",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "selectCopyrightTargetPosters",
+    "reason": "Copyright delivery steps run once per recipient or target",
+    "issue": 2607
+  },
+  {
+    "annotation": "setApplicationQuestions",
+    "reason": "Community lookups repeat after the route preamble",
+    "issue": 2614
+  },
+  {
+    "annotation": "setMyLandingPageDefault",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "setPostImages",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "setPrimaryEmailAddress",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "setRssFeedStateAsCurrentUser:latest",
+    "reason": "Post, feed and import steps repeat per item",
+    "issue": 2613
+  },
+  {
+    "annotation": "sharePublicationIdentityBridgeOwnership",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "stageImagePlacementDeliveryRecord",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "syncPostImagePlacements:allocate",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "syncPostImagePlacements:createChild",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "syncPostImagePlacements:createParent",
+    "reason": "Image delivery and placement locks run once per image or surface",
+    "issue": 2606
+  },
+  {
+    "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "updateTopicRecommendation",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "upsertEntityRelationElectionVotes",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "upsertPostPublicationDirtyWork",
+    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "issue": 2605
+  },
+  {
+    "annotation": "upsertUrlHostnames",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "upsertUserAgentString",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "upsertUserFinancialProfile",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "verifyEmailVerificationToken",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "verifyTotpSetup",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  },
+  {
+    "annotation": "withClientTransaction",
+    "reason": "User and profile lookups repeat per request step",
+    "issue": 2611
+  },
+  {
+    "annotation": "withMfaLock",
+    "reason": "Auth and account steps repeat per session, factor or address",
+    "issue": 2610
+  }
+]
