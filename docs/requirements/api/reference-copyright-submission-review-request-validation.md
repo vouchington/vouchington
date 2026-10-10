@@ -76,3 +76,5 @@ request behaves exactly as before.
 - For repeat-infringer routes (the notice accounts read, dispositions, outcomes, and reinstatements),
   see
   [repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md).
+
+Replay jobs carry the authenticated actor through each page and lifecycle event. Continuations use an opaque scope-bound record UUID cursor; the endpoint does not return a synchronous replay total.

@@ -1335,7 +1335,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -50388,6 +50388,79 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_media_registry_changes__record_generation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_generation_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, generation, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_media_registry_changes__record_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -50409,7 +50482,14 @@
           "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_media_registry_changes__record_generation_id": {
+          "columns": ["media_delivery_registry_record_id", "generation", "id"]
+        },
+        "uq_media_registry_changes__record_id": {
+          "columns": ["media_delivery_registry_record_id", "id"]
+        }
+      }
     },
     "media_delivery_registry_projection_work_items": {
       "checkConstraints": {
@@ -50418,6 +50498,10 @@
           "validated": true
         },
         "media_delivery_registry_projection_work_items_check": {
+          "definition": "CHECK (((failed_change_id IS NULL) OR (lease_token IS NULL)))",
+          "validated": true
+        },
+        "media_delivery_registry_projection_work_items_check1": {
           "definition": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
           "validated": true
         },
@@ -50435,7 +50519,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "available_at": {
           "comment": "Earliest time an idle projection can be claimed.",
@@ -50445,7 +50529,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
+        },
+        "failed_change_id": {
+          "comment": "Exact authoritative failed transition requiring operator replay; null for active projection work.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         },
         "generation": {
           "comment": "Current nontransactional edge authority generation.",
@@ -50465,7 +50559,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "lease_token": {
           "comment": "Opaque worker ownership token, never an entity reference.",
@@ -50475,7 +50569,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "leased_at": {
           "comment": "Database time the current lease began.",
@@ -50485,7 +50579,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "media_delivery_registry_record_id": {
           "comment": "Retained delivery authority being projected.",
@@ -50498,8 +50592,16 @@
           "ordinalPosition": 1
         }
       },
-      "comment": "Current edge projection ownership; deleted on terminal publication while immutable transitions survive.",
+      "comment": "Derived current-generation projection ownership and failed replay membership; immutable transitions remain authoritative.",
       "foreignKeys": {
+        "fk_media_projection_failed_change": {
+          "columns": ["media_delivery_registry_record_id", "generation", "failed_change_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["media_delivery_registry_record_id", "generation", "id"],
+          "referencedTable": "media_delivery_registry_changes",
+          "validated": true
+        },
         "media_delivery_registry_proje_media_delivery_registry_reco_fkey": {
           "columns": ["media_delivery_registry_record_id"],
           "onDelete": "CASCADE",
@@ -50513,7 +50615,7 @@
         "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE ((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -50536,7 +50638,7 @@
             }
           ],
           "live": true,
-          "predicate": "(lease_token IS NULL)",
+          "predicate": "((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -50545,7 +50647,7 @@
         "idx_media_delivery_registry_projection_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE ((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -50568,7 +50670,48 @@
             }
           ],
           "live": true,
-          "predicate": "(lease_token IS NOT NULL)",
+          "predicate": "((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_projection_work_items__failed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__failed ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id, generation, failed_change_id) WHERE (failed_change_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "failed_change_id",
+              "descending": false,
+              "expression": "failed_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(failed_change_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -50630,7 +50773,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "desired_state": {
           "comment": "Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.",
@@ -50672,6 +50815,16 @@
           "nullable": false,
           "ordinalPosition": 4
         },
+        "latest_change_id": {
+          "comment": "Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "placement_id": {
           "comment": "Typed placement authority; never inferred from image existence.",
           "dataType": "uuid",
@@ -50700,7 +50853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         }
       },
       "comment": "Durable exact image-placement delivery outbox; image and placement parents are retained.",
@@ -50711,6 +50864,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["placement_id", "image_id"],
           "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
+        "fk_media_registry_records__latest_change": {
+          "columns": ["id", "latest_change_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["media_delivery_registry_record_id", "id"],
+          "referencedTable": "media_delivery_registry_changes",
           "validated": true
         },
         "media_delivery_registry_records_placement_id_fkey": {
@@ -50736,29 +50897,6 @@
               "expression": "image_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_media_delivery_registry_records__replay_cursor": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__replay_cursor ON public.media_delivery_registry_records USING btree ((((((('image-placement:'::text || (placement_id)::text) || ':'::text) || (placement_revision)::text) || ':'::text) || (image_id)::text)))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "((((('image-placement:'::text || placement_id::text) || ':'::text) || placement_revision::text) || ':'::text) || image_id::text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
@@ -140645,7 +140783,7 @@
     },
     "view_media_delivery_registry_current_records": {
       "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
-      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.media_delivery_registry_record_id,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.media_delivery_registry_record_id = record.id AND history.generation = record.generation\n          ORDER BY history.id DESC\n         LIMIT 1) change ON true;",
+      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.media_delivery_registry_record_id,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.media_delivery_registry_record_id = record.id AND history.id = record.latest_change_id AND history.generation = record.generation\n         LIMIT 1) change ON true;",
       "materialized": false
     },
     "view_memberships": {
@@ -140665,7 +140803,7 @@
     },
     "view_posts": {
       "comment": "Current post response projection; callers enforce publication, deletion and audience access.",
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.updated_by_id) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE post_slugs.post_id = posts.id\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN posts.post_type = 'review'::post_types THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON prtr.topic_id = review_topics.id\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON t_cat.id = rel_cat.object_id AND t_cat.deleted_at IS NULL\n                      WHERE rel_cat.subject_id = prtr.topic_id AND rel_cat.deleted_at IS NULL AND rel_cat.votes_score_net > 0::double precision\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON true\n              WHERE prtr.post_id = posts.id), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM ( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE rel.subject_id = posts.id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON topics.id = top5.object_id), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM ( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE post_topic_alias_sources.post_id = posts.id\n                  ORDER BY post_topic_alias_sources.topic_alias_id, (\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END)) source\n             JOIN topic_aliases alias ON alias.id = source.topic_alias_id), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON topic.id = explicit.topic_id\n                  WHERE explicit.post_id = posts.id\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE source.post_id = posts.id AND source.source = 'explicit'::post_topic_alias_source_types) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM post_images\n             JOIN image_placements image_placement ON image_placement.post_id = post_images.post_id AND image_placement.image_id = post_images.image_id\n             JOIN media_placements placement ON placement.id = image_placement.placement_id AND placement.retired_at IS NULL\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = post_images.image_id\n          WHERE post_images.post_id = posts.id), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN openai_moderation.disposition IS NULL THEN NULL::boolean\n            ELSE openai_moderation.disposition <> 'pass'::post_moderation_disposition_types\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN posts.post_type = 'topic_recommendation'::post_types THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE vuh.id = ptr.hostname_id\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id\n                      WHERE ptrh.post_id = ptr.post_id), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE urls.id = ptr.example_referral_url_id), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON urls.id = submitted.url_id\n                      WHERE submitted.post_id = ptr.post_id), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN ptr.reviewed_at IS NULL THEN 'pending'::text\n                        WHEN ptr.created_topic_id IS NOT NULL THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE t.id = ptr.created_topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE ptr.post_id = posts.id\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM posts\n     JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id\n          WHERE version.post_id = posts.id AND version.content_sha256 = posts.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'::text AND disposition.source = 'openai_omni'::post_moderation_sources\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON true\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE post_locks.post_id = posts.id AND post_locks.lifted_at IS NULL\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON true\n  WHERE posts.deleted_at IS NULL;",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.updated_by_id) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE post_slugs.post_id = posts.id\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN posts.post_type = 'review'::post_types THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON prtr.topic_id = review_topics.id\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON t_cat.id = rel_cat.object_id AND t_cat.deleted_at IS NULL\n                      WHERE rel_cat.subject_id = prtr.topic_id AND rel_cat.deleted_at IS NULL AND rel_cat.votes_score_net > 0::double precision\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON true\n              WHERE prtr.post_id = posts.id), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM ( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE rel.subject_id = posts.id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON topics.id = top5.object_id), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM ( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE post_topic_alias_sources.post_id = posts.id\n                  ORDER BY post_topic_alias_sources.topic_alias_id, (\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END)) source\n             JOIN topic_aliases alias ON alias.id = source.topic_alias_id), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON topic.id = explicit.topic_id\n                  WHERE explicit.post_id = posts.id\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE source.post_id = posts.id AND source.source = 'explicit'::post_topic_alias_source_types) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE post_images_1.post_id = posts.id\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM selected_post_images post_images\n             JOIN image_placements image_placement ON image_placement.post_id = post_images.post_id AND image_placement.image_id = post_images.image_id\n             JOIN media_placements placement ON placement.id = image_placement.placement_id AND placement.retired_at IS NULL\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = post_images.image_id\n          WHERE post_images.post_id = posts.id), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN openai_moderation.disposition IS NULL THEN NULL::boolean\n            ELSE openai_moderation.disposition <> 'pass'::post_moderation_disposition_types\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN posts.post_type = 'topic_recommendation'::post_types THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE vuh.id = ptr.hostname_id\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id\n                      WHERE ptrh.post_id = ptr.post_id), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE urls.id = ptr.example_referral_url_id), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON urls.id = submitted.url_id\n                      WHERE submitted.post_id = ptr.post_id), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN ptr.reviewed_at IS NULL THEN 'pending'::text\n                        WHEN ptr.created_topic_id IS NOT NULL THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE t.id = ptr.created_topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE ptr.post_id = posts.id\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM posts\n     JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id\n          WHERE version.post_id = posts.id AND version.content_sha256 = posts.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'::text AND disposition.source = 'openai_omni'::post_moderation_sources\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON true\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE post_locks.post_id = posts.id AND post_locks.lifted_at IS NULL\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON true\n  WHERE posts.deleted_at IS NULL;",
       "materialized": false
     },
     "view_public_post_eligibility": {

@@ -22,6 +22,7 @@
       "backend/modules/structured-decisions/benchmark.mts",
       "backend/scripts/backfill-rss-feed-item-source-publications.mts",
       "backend/scripts/classifier-call-efficiency.mts",
+      "backend/scripts/explain-analyze/media-delivery-replay.mts",
       "backend/scripts/seed-source/run.mts",
       "backend/types/lib-dom-absent.mts",
       "ci/transient-retry/rerun-known-transient.mts",

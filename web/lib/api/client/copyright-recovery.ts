@@ -2,8 +2,8 @@
 
 import { clientApi } from './instance'
 
-export function replayCopyrightMediaDelivery(): Promise<void> {
-  return clientApi.post('/api/v1/copyright-media-delivery/replays', {})
+export async function replayCopyrightMediaDelivery(): Promise<void> {
+  await clientApi.post('/api/v1/copyright-media-delivery/replays', {})
 }
 
 export function replayCopyrightActionIntent(noticeId: string, intentId: string): Promise<void> {

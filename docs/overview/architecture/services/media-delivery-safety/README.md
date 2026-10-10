@@ -133,6 +133,11 @@ flowchart LR
   outbox --> publisher[Locked exact-tuple publisher]
 ```
 
+The authority's trigger-maintained `latest_change_id`
+points to the current immutable transition in authority-lock order; history UUID order does not
+determine current state. Its composite foreign key keeps the transition within the same authority,
+and the current-state view additionally fences generation. A lower-UUID completion still removes
+work, and a lower-UUID replay still clears failed membership.
 Current media projection leases live in `media_delivery_registry_projection_work_items`, keyed by
 exact delivery authority and generation. Claim, failure and acknowledgement compare a UUID token
 and live expiry; completion removes work while immutable registry transitions remain. Denial
@@ -140,4 +145,6 @@ publication takes a fresh nontransactional generation and claims inside the reta
 transaction. Regular publication of an already-completed generation is idempotent. Each AWS
 command has a two-minute abort deadline within the five-minute projection lease.
 
-Operator replay is accepted asynchronously (`202`, no count). Small jobs carry the actor id, reopen one failed page with lifecycle evidence in one transaction, and enqueue cursor-deduplicated continuations in computed delivery-key order. Confirm convergence with the [coverage query](../../../../runbooks/media-delivery-edge-enforcement.md#coverage-query).
+Operator replay is accepted asynchronously (`202`, no count). Small jobs carry the actor id, reopen one failed page with lifecycle evidence in one transaction, and enqueue cursor-deduplicated continuations in immutable registry UUID order. Confirm convergence with the [coverage query](../../../../runbooks/media-delivery-edge-enforcement.md#coverage-query).
+
+Replay selects a capped page of derived failed work-item memberships ordered by registry record UUID, then locks their authority rows and rechecks canonical current-generation failure state in a fresh statement. A full candidate page schedules the next scoped UUID cursor after commit. Failed history remains authoritative; normal projection and recovery never claim retained failed memberships. Retrying a committed page selects the next remaining failed candidates; overlapping chains do not duplicate pending transitions or actor lifecycle records.

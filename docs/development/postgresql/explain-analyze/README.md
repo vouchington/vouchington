@@ -86,6 +86,40 @@ reruns kept those counts and fingerprints. The single faster 10,000-row sample d
 
 Remote-follower, user, and post COPY candidates have no stable measured benefit.
 
+### UUID media replay workload
+
+Immediately before the replay scenarios, `run.mts` adds 12,000 retained delivery authorities,
+with every fourth authority in failed replay membership and the others pending. Placement UUIDs
+run in reverse record UUID order. Each record has one owned notice target, so actor lifecycle
+writes have real join partners.
+The loader uses bounded 250-row inserts with normal FKs, authority-generation and history triggers;
+reruns preserve identities and rearm only the known fixture's failed cohort. Loading this fixture
+after the existing scenarios keeps their plan measurements on the corpus seeded by `seed.mts`.
+
+The three `media-delivery-replay-*` scenarios capture the actual service's first page, UUID
+continuation and scoped UUID-array page. They require the canonical 1,000-row page configuration,
+verify every candidate belongs to the seed before a global-page call, and rearm only that page
+before explaining its lock, pending-transition and actor-event statements. Both custom and generic
+plans must use the UUID-leading failed-membership index and stay within their driving-row budgets.
+Scoped UUID arrays are materialized before the failed-index candidate lookup, preserving the
+ordered seek and page limit when custom planning would expand a constant array into bitmap work.
+Actor-event targets are materialized per selected placement through the placement index so a
+replay page does not scan unrelated notice targets.
+All current-view, lifecycle, retained-identity and FK/trigger partner statistics are refreshed.
+The capture requires exactly those three statements from the committing service call; verification
+and fixture rearming run after capture so they cannot be mistaken for replay queries.
+
+For a focused local proof after normal backend initialization and sourcing `.env`, run the same
+loader and scenarios without the rest of the corpus:
+
+```bash
+node backend/scripts/explain-analyze/media-delivery-replay.mts --seed-only /tmp/media-replay-seed.json
+EXPLAIN_PLAN_CACHE_MODE=compare node backend/scripts/explain-analyze/media-delivery-replay.mts --run-only /tmp/media-replay-plans.json
+```
+
+The output retains partial raw plans on failure. These are PostgreSQL replay plans; native queue
+producer and worker/retry proof stays in the owning backend test projects.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with
@@ -419,7 +453,8 @@ and separate recommendation and category-rated review branches. Fixed background
 make those index probes representative; child index names resolve from the fixture's partition
 instead of pinning a calendar month.
 All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
-filter removals, and index rechecks, multiplied by actual loops.
+filter removals, and index rechecks, multiplied by actual loops. Media replay driving-row budgets
+exclude `ModifyTable` output: inserted rows are writes, while its child scans still count as reads.
 
 Universal checks apply to every captured scenario. An executing read of an unbounded partitioned
 parent must use one leaf unless that scenario declares a `crossPartition` reason for the parent.

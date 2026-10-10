@@ -1,13 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 
-vi.mock(
-  import('../instance'),
-  () =>
-    ({
-      clientApi: { get: vi.fn<VitestLooseMock>(), post: vi.fn<VitestLooseMock>() },
-    }) as unknown as typeof import('../instance'),
-)
-
+import {
+  fetchTransport,
+  jsonResponse,
+  expectTransportWrapperCall,
+} from '@/test-helpers/copyright-client-transport'
 import { clientApi } from '../instance'
 import {
   assessCopyrightLegalHold,
@@ -34,21 +31,31 @@ import {
   recordCopyrightRepeatInfringerReviewOutcome,
 } from '../copyright-repeat-infringer'
 import { reviewCopyrightStaydownMatch } from '../copyright-staydown'
-import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import type { CopyrightNoticesPage, CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
-const mockGet = vi.mocked(clientApi.get)
-const mockPost = vi.mocked(clientApi.post)
+let mockGet: MockInstance<typeof clientApi.get>
+let mockPost: MockInstance<typeof clientApi.post>
+
 const response: CopyrightNoticesPage = {
   copyright_notices: [],
   page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
 }
 
 describe('copyright notices client', () => {
-  afterEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    fetchTransport.mockReset()
+    vi.stubGlobal('fetch', fetchTransport)
+    mockGet = vi.spyOn(clientApi, 'get')
+    mockPost = vi.spyOn(clientApi, 'post')
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
 
   it('forwards the opaque accepted-case continuation cursor', async () => {
-    await expectApiWrapperCall({
+    expect.hasAssertions()
+    await expectTransportWrapperCall({
       mock: mockGet,
       response,
       call: () => listCopyrightNotices({ after: 'next', limit: 100 }),
@@ -57,11 +64,12 @@ describe('copyright notices client', () => {
   })
 
   it('forwards the opaque staff queue continuation cursor', async () => {
+    expect.hasAssertions()
     const staffResponse: CopyrightStaffQueuePage = {
       copyright_notices: [],
       page_info: { has_next_page: false, start_cursor: 'next', end_cursor: 'next' },
     }
-    await expectApiWrapperCall({
+    await expectTransportWrapperCall({
       mock: mockGet,
       response: staffResponse,
       call: () => listCopyrightReviewQueue({ after: 'next', limit: 50 }),
@@ -91,9 +99,11 @@ describe('copyright notices client', () => {
       ],
       cf_turnstile_response: 'first-turnstile-token',
     }
-    mockPost
+    fetchTransport
       .mockRejectedValueOnce(new Error('response lost'))
-      .mockResolvedValueOnce({ copyright_notice: { id: 'notice-1' }, is_duplicate: true })
+      .mockResolvedValueOnce(
+        jsonResponse({ copyright_notice: { id: 'notice-1' }, is_duplicate: true }),
+      )
 
     await expect(createCopyrightNotice(input)).rejects.toThrow('response lost')
     await createCopyrightNotice({ ...input, cf_turnstile_response: 'replacement-turnstile-token' })
@@ -105,11 +115,15 @@ describe('copyright notices client', () => {
   it('reuses idempotency keys for appeal and counter-notice retries', async () => {
     const noticeId = '019f0000-0000-7000-8000-000000000010'
     const targetId = '019f0000-0000-7000-8000-000000000011'
-    mockPost
+    fetchTransport
       .mockRejectedValueOnce(new Error('appeal response lost'))
-      .mockResolvedValueOnce({ copyright_submission: { id: 'appeal-1' }, is_duplicate: true })
+      .mockResolvedValueOnce(
+        jsonResponse({ copyright_submission: { id: 'appeal-1' }, is_duplicate: true }),
+      )
       .mockRejectedValueOnce(new Error('counter response lost'))
-      .mockResolvedValueOnce({ copyright_submission: { id: 'counter-1' }, is_duplicate: true })
+      .mockResolvedValueOnce(
+        jsonResponse({ copyright_submission: { id: 'counter-1' }, is_duplicate: true }),
+      )
 
     const appeal = { reason: 'This is my work.', target_ids: [targetId] }
     await expect(createCopyrightAppeal(noticeId, appeal)).rejects.toThrow('appeal response lost')
@@ -212,7 +226,10 @@ describe('copyright notices client', () => {
         { resolution_kind: 'dismissed', rationale: 'Dismissed.' },
       ],
     )
-    await expectPost({}, () => replayCopyrightMediaDelivery(), [
+    fetchTransport.mockResolvedValueOnce(jsonResponse({}))
+    await expect(replayCopyrightMediaDelivery()).resolves.toBeUndefined()
+    expect(mockPost).toHaveBeenLastCalledWith('/api/v1/copyright-media-delivery/replays', {})
+    await expectPost(undefined, () => replayCopyrightMediaDelivery(), [
       '/api/v1/copyright-media-delivery/replays',
       {},
     ])
@@ -267,7 +284,7 @@ async function expectGet(
   expectedArgs: readonly unknown[],
 ) {
   mockGet.mockClear()
-  await expectApiWrapperCall({ mock: mockGet, response, call, expectedArgs })
+  await expectTransportWrapperCall({ mock: mockGet, response, call, expectedArgs })
 }
 
 async function expectPost(
@@ -276,5 +293,5 @@ async function expectPost(
   expectedArgs: readonly unknown[],
 ) {
   mockPost.mockClear()
-  await expectApiWrapperCall({ mock: mockPost, response, call, expectedArgs })
+  await expectTransportWrapperCall({ mock: mockPost, response, call, expectedArgs })
 }
