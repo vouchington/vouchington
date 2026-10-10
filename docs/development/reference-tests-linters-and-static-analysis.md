@@ -17,6 +17,10 @@ retains only the shared producer contracts those clients consume.
 and the file-universe check (`tsconfig-file-coverage`) that every tracked TypeScript file belongs
 to a compiler program.
 
+The root `vitest.config.mts` is explicitly included in [the root TypeScript project](../../tsconfig.json)
+so type-aware lint can assign it directly to an ancestor project. Its inclusion through
+`test-helpers/tsconfig.json` alone does not provide an ancestor project for that root file.
+
 The `no-mistakes` `unconstructed-error-class` rule reports exported `Error` subclasses that no
 production code constructs or subclasses. A class that only `catch`, `instanceof`, or a type guard
 mentions is dead error handling, and Knip does not flag it while those production sites still
