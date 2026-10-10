@@ -145,6 +145,8 @@ SELECT CASE WHEN current_setting('application_name') =
       await vi.advanceTimersByTimeAsync(delayMs)
       await migration
     } finally {
+      // Drain retained spy restorers before reinstalling real timers: Vitest restores
+      // them again between files, and this spy captured the fake setTimeout.
       vi.restoreAllMocks()
       vi.useRealTimers()
     }
