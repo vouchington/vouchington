@@ -1,8 +1,5 @@
 import { write } from '@data-stores/psql'
-import {
-  decodeScopedUuidCursor,
-  encodeScopedUuidCursor,
-} from '../../../modules/pagination/index.mts'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety/delivery-registry-reconciliation'
 import {
   getMediaDeliverySafetyWorkLimit,
