@@ -1,4 +1,5 @@
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
+import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
 import { runFollowerDistributionScenarios } from './run-scenarios/follower-distributions.mts'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
@@ -54,8 +55,9 @@ async function main() {
     await runReviewSuccessionScenarios()
     await runClassifierHumanVoteComparisonScenarios()
     await runCopyrightStatementFactsScenarios()
-    await runMediaDeliveryReplayScenarios()
     await runEmbeddingReconciliationScenarios()
+    await seedMediaDeliveryReplay()
+    await runMediaDeliveryReplayScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {
