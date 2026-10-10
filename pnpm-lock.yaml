@@ -3486,6 +3486,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../modules/pagination
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../modules/token-secrets
