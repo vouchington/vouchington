@@ -58,6 +58,7 @@ CREATE TABLE media_delivery_registry_records (
   image_id uuid NOT NULL,
   desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
+  latest_change_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (placement_id, placement_revision, image_id)
@@ -115,6 +116,8 @@ CREATE TABLE media_delivery_registry_changes (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT uq_media_registry_changes__record_generation_id
     UNIQUE (media_delivery_registry_record_id, generation, id),
+  CONSTRAINT uq_media_registry_changes__record_id
+    UNIQUE (media_delivery_registry_record_id, id),
   CHECK ((change_type = 'pending' AND claimed_at IS NULL AND completed_at IS NULL)
     OR (change_type = 'claimed' AND claimed_at IS NOT NULL AND completed_at IS NULL)
     OR (change_type IN ('completed', 'failed') AND completed_at IS NOT NULL))
@@ -123,6 +126,11 @@ ALTER TABLE media_delivery_registry_projection_work_items
   ADD CONSTRAINT fk_media_projection_failed_change FOREIGN KEY (media_delivery_registry_record_id, generation, failed_change_id)
   REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, generation, id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE media_delivery_registry_projection_work_items VALIDATE CONSTRAINT fk_media_projection_failed_change;
+ALTER TABLE media_delivery_registry_records
+  ADD CONSTRAINT fk_media_registry_records__latest_change
+  FOREIGN KEY (id, latest_change_id)
+  REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE media_delivery_registry_records VALIDATE CONSTRAINT fk_media_registry_records__latest_change;
 CREATE INDEX idx_media_delivery_registry_changes__latest ON media_delivery_registry_changes(media_delivery_registry_record_id, id DESC);
 CREATE INDEX idx_media_delivery_registry_changes__actor ON media_delivery_registry_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE OR DELETE ON media_delivery_registry_changes
@@ -145,14 +153,11 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_project_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE latest_change_id uuid;
 BEGIN
-  -- The BEFORE trigger retains the authority lock. Ignore a late lower-ID transition,
-  -- matching the canonical latest-ID/current-generation view rather than insertion order.
-  SELECT history.id INTO latest_change_id FROM media_delivery_registry_changes history
-    WHERE history.media_delivery_registry_record_id = NEW.media_delivery_registry_record_id
-      AND history.generation = NEW.generation ORDER BY history.id DESC LIMIT 1;
-  IF latest_change_id IS DISTINCT FROM NEW.id THEN RETURN NEW; END IF;
+  -- The BEFORE trigger retains the authority lock and rejects stale generations.
+  -- Accepted transitions advance current state in that lock order, never UUID order.
+  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id
+    WHERE id = NEW.media_delivery_registry_record_id;
   IF NEW.change_type = 'pending' THEN
     INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)
       VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))
@@ -193,9 +198,9 @@ SELECT record.id AS media_delivery_registry_record_id,
   change.delivery_attempt_count, change.claimed_at, change.projected_at, change.invalidated_at,
   change.completed_at, change.failure_message, change.next_attempt_at
 FROM media_delivery_registry_records record
-JOIN LATERAL (SELECT * FROM media_delivery_registry_changes history
-  WHERE history.media_delivery_registry_record_id = record.id AND history.generation = record.generation
-  ORDER BY history.id DESC LIMIT 1) change ON true;
+JOIN media_delivery_registry_changes change
+  ON change.media_delivery_registry_record_id = record.id AND change.id = record.latest_change_id
+    AND change.generation = record.generation;
 COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.';
 COMMENT ON VIEW view_media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
 COMMENT ON COLUMN media_delivery_registry_changes.media_delivery_registry_record_id IS 'Retained delivery authority whose transition this records.';
@@ -262,6 +267,7 @@ COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Typed placeme
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
 COMMENT ON COLUMN media_delivery_registry_records.image_id IS 'Immutable image bound to the exact public-use placement.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.';
+COMMENT ON COLUMN media_delivery_registry_records.latest_change_id IS 'Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.';
 
 CREATE FUNCTION fn_create_media_delivery_generation_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

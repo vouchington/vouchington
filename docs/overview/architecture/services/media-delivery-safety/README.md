@@ -133,6 +133,11 @@ flowchart LR
   outbox --> publisher[Locked exact-tuple publisher]
 ```
 
+The authority's trigger-maintained `latest_change_id`
+points to the current immutable transition in authority-lock order; history UUID order does not
+determine current state. Its composite foreign key keeps the transition within the same authority,
+and the current-state view additionally fences generation. A lower-UUID completion still removes
+work, and a lower-UUID replay still clears failed membership.
 Current media projection leases live in `media_delivery_registry_projection_work_items`, keyed by
 exact delivery authority and generation. Claim, failure and acknowledgement compare a UUID token
 and live expiry; completion removes work while immutable registry transitions remain. Denial

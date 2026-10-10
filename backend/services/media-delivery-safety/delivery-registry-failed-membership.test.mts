@@ -5,6 +5,8 @@ import {
   rejectOldGenerationMediaReplayMembership,
   regenerateMediaReplayMembership,
   completeMediaReplayMembership,
+  appendLowerUuidMediaDeliveryTransition,
+  claimTestMediaDeliveryMembership,
 } from '@voucha/test-helpers/media-delivery-membership-fixtures'
 import {
   createFailedMediaDeliveryReplayFixture,
@@ -23,6 +25,57 @@ import {
 
 describe('derived media replay membership', () => {
   useTestMediaDeliveryReplayProviders()
+  it('makes a lower-UUID completion current and removes its projection work', async () => {
+    const fixture = await createFailedMediaDeliveryReplayFixture()
+    const id = fixture.mediaDeliveryRegistryRecordId
+    await replayFailedMediaDeliveryRegistryRecords({
+      actorUserId: fixture.moderator.id,
+      recordIds: [id],
+    })
+    const claim = await claimTestMediaDeliveryMembership(id)
+    expect((await membership(id))[0]).toMatchObject({ lease_token: claim.lease_token })
+    const before = await getTestMediaDeliveryRecordSnapshot(id)
+    const history = await getTestMediaDeliveryTransitionHistory(id)
+    const completion = await appendLowerUuidMediaDeliveryTransition(id, 'completed')
+    expect(completion.id.localeCompare(String(before!.latest_change_id))).toBeLessThan(0)
+    expect(await getTestMediaDeliveryRecordSnapshot(id)).toMatchObject({
+      latest_change_id: completion.id,
+      generation: before!.generation,
+      desired_state: before!.desired_state,
+      state: 'completed',
+    })
+    expect(await membership(id)).toEqual([])
+    expect(await getTestMediaDeliveryTransitionHistory(id)).toEqual([
+      {
+        generation: before!.generation,
+        desired_state: before!.desired_state,
+        change_type: 'completed',
+      },
+      ...history,
+    ])
+    expect(await processMediaDeliveryRegistryRecord(id)).toBe('not_claimed')
+  })
+  it('makes a lower-UUID actor replay current and eligible for normal publication', async () => {
+    const fixture = await createFailedMediaDeliveryReplayFixture()
+    const id = fixture.mediaDeliveryRegistryRecordId
+    const before = await getTestMediaDeliveryRecordSnapshot(id)
+    const replay = await appendLowerUuidMediaDeliveryTransition(id, 'pending', fixture.moderator.id)
+    expect(replay.id.localeCompare(String(before!.latest_change_id))).toBeLessThan(0)
+    expect(replay.changed_by_id).toBe(fixture.moderator.id)
+    expect(await getTestMediaDeliveryRecordSnapshot(id)).toMatchObject({
+      latest_change_id: replay.id,
+      state: 'pending',
+      generation: before!.generation,
+    })
+    expect((await membership(id))[0]).toMatchObject({
+      failed_change_id: null,
+      lease_token: null,
+      attempt_count: 0,
+    })
+    expect(await processMediaDeliveryRegistryRecord(id)).toBe('completed')
+    expect(await getTestMediaDeliveryRecordSnapshot(id)).toMatchObject({ state: 'completed' })
+    expect(await membership(id)).toEqual([])
+  })
   it('retains the exact failed transition without making it normal recovery work', async () => {
     const fixture = await createFailedMediaDeliveryReplayFixture()
     const id = fixture.mediaDeliveryRegistryRecordId
@@ -52,9 +105,11 @@ describe('derived media replay membership', () => {
     const fixture = await createFailedMediaDeliveryReplayFixture()
     const id = fixture.mediaDeliveryRegistryRecordId
     const before = await membership(id)
+    const snapshot = await getTestMediaDeliveryRecordSnapshot(id)
     const history = await getTestMediaDeliveryTransitionHistory(id)
     expect(await rollbackMediaReplayMembership(id)).toBeNull()
     expect(await membership(id)).toEqual(before)
+    expect(await getTestMediaDeliveryRecordSnapshot(id)).toEqual(snapshot)
     expect(await getTestMediaDeliveryTransitionHistory(id)).toEqual(history)
     const stale = await rejectOldGenerationMediaReplayMembership(id)
     expect(stale.rowCount).toBe(0)
