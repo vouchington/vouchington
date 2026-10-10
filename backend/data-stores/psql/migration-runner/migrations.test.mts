@@ -107,12 +107,10 @@ SELECT id FROM config_driven_session;
 
     vi.useFakeTimers()
     const originalSetTimeout = globalThis.setTimeout
-    const setTimeoutSpy = vi
-      .spyOn(globalThis, 'setTimeout')
-      .mockImplementation((callback, delay, ...args) => {
-        retryDelay.resolve(Number(delay))
-        return originalSetTimeout(callback, delay, ...args)
-      })
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation((callback, delay, ...args) => {
+      retryDelay.resolve(Number(delay))
+      return originalSetTimeout(callback, delay, ...args)
+    })
     try {
       const migration = runConfigDriven('/unused-root', {
         folder,
@@ -128,7 +126,9 @@ SELECT id FROM config_driven_session;
       await vi.advanceTimersByTimeAsync(delayMs)
       await migration
     } finally {
-      setTimeoutSpy.mockRestore()
+      // Drain retained spy restorers before reinstalling real timers: Vitest restores
+      // them again between files, and this spy captured the fake setTimeout.
+      vi.restoreAllMocks()
       vi.useRealTimers()
     }
 

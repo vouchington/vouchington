@@ -11,6 +11,8 @@ describe('background response lease controller', () => {
   })
 
   afterEach(() => {
+    // Drain retained restorers before restoring real timer globals.
+    vi.restoreAllMocks()
     vi.useRealTimers()
   })
 

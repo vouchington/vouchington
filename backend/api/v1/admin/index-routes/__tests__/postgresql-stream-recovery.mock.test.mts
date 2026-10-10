@@ -102,6 +102,8 @@ describe('PostgreSQL SSE stream recovery', () => {
       } finally {
         readdirSpy.mockRestore()
         clearIntervalSpy.mockRestore()
+        // Drain retained restorers before restoring real timer globals.
+        vi.restoreAllMocks()
         vi.useRealTimers()
       }
     }
