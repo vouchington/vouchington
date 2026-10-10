@@ -101,6 +101,8 @@ continuation and scoped UUID-array page. They require the canonical 1,000-row pa
 verify every candidate belongs to the seed before a global-page call, and rearm only that page
 before explaining its lock, pending-transition and actor-event statements. Both custom and generic
 plans must use the UUID-leading failed-membership index and stay within their driving-row budgets.
+Scoped UUID arrays are materialized before the failed-index candidate lookup, preserving the
+ordered seek and page limit when custom planning would expand a constant array into bitmap work.
 Actor-event targets are materialized per selected placement through the placement index so a
 replay page does not scan unrelated notice targets.
 All current-view, lifecycle, retained-identity and FK/trigger partner statistics are refreshed.
