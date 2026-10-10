@@ -768,7 +768,8 @@ unfiltered aggregate, observe committed owned-job queue events, and drain before
 and configuration restoration. No test creates a database or raises capacity to hide saturation.
 Quota cases retain the captured dirty-database accounting baseline. Unrelated-work positive controls
 remain in the global aggregate; the temporary count ceiling never exceeds the normal configured
-ceiling, and owned cleanup restores the captured count and size rather than requiring zero usage.
+ceiling. Cleanup verifies that every owned accounting ID is absent; it does not require unrelated
+batches to preserve the captured global aggregate while the test runs.
 Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
 admission within the test budget; this preserves priority ordering and delayed-job due times.
 The normal worker factory forwards that optional setting without changing production defaults.

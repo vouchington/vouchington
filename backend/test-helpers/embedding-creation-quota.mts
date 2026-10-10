@@ -13,7 +13,6 @@ export async function acquireEmbeddingQuotaFixture() {
   const ids: string[] = []
   const drains: Array<{ run(): Promise<void>; safeAfterFailure?: () => boolean }> = []
   let acquired = false
-  let accountingBaseline: Awaited<ReturnType<typeof readGlobalUsage>> | undefined
   let disposal: Promise<void> | undefined
   const close = () => (disposal ??= dispose())
   onTestFinished(close)
@@ -35,13 +34,14 @@ export async function acquireEmbeddingQuotaFixture() {
       drains.push({ run, safeAfterFailure }),
     readGlobalUsage,
     removeOwnedReservations: async () => {
-      await cleanupTestEmbeddingsBatches(ids)
+      const ownedIds = [...ids]
+      await cleanupTestEmbeddingsBatches(ownedIds)
+      await assertOwnedAccountingRemoved(ownedIds)
       ids.length = 0
-      return readGlobalUsage()
+      return { verifiedAbsentCount: ownedIds.length, remainingCount: 0 }
     },
     insertOtherWork: async (inputSizeMB: number) => {
       const before = await readGlobalUsage()
-      accountingBaseline ??= before
       const id = `embedding-other-work-${randomUUID()}`
       ids.push(id)
       await insertTestEmbeddingsBatch({
@@ -56,7 +56,6 @@ export async function acquireEmbeddingQuotaFixture() {
     },
     insertCountReservation: async () => {
       const before = await readGlobalUsage()
-      accountingBaseline ??= before
       const id = `embedding-capacity-${randomUUID()}`
       ids.push(id)
       await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
@@ -69,7 +68,6 @@ export async function acquireEmbeddingQuotaFixture() {
     },
     insertFairnessReservation: async (inflightLimitMB: number, remainingMB: number) => {
       const before = await readGlobalUsage()
-      accountingBaseline ??= before
       const reservationMB = inflightLimitMB - before.inputSizeMB - remainingMB
       if (!Number.isFinite(reservationMB) || reservationMB < 0)
         throw new Error('Global quota precondition: no nonnegative owned reservation')
@@ -112,13 +110,7 @@ export async function acquireEmbeddingQuotaFixture() {
     }
     if (safeToRestore) {
       await attempt(() => cleanupTestEmbeddingsBatches(ids))
-      const baseline = accountingBaseline
-      if (baseline)
-        await attempt(async () => {
-          const restored = await readGlobalUsage()
-          expect(restored.count).toBe(baseline.count)
-          expect(restored.inputSizeMB).toBeCloseTo(baseline.inputSizeMB, 6)
-        })
+      await attempt(() => assertOwnedAccountingRemoved(ids))
     }
     if (acquired)
       await attempt(async () => {
@@ -155,4 +147,15 @@ async function readGlobalUsage() {
       AND failed_at IS NULL AND cancelled_at IS NULL`,
   )
   return { count: Number(rows[0]!.count), inputSizeMB: rows[0]!.input_size_mb }
+}
+
+/** Teardown observes only owned identity; unrelated global accounting may keep changing. */
+async function assertOwnedAccountingRemoved(ids: string[]) {
+  if (ids.length === 0) return
+  const { rows } = await read<{ id: string }>(
+    `/* embeddingQuotaFixture:ownedRemoval */
+    SELECT id FROM bedrock_embedding_batches WHERE id = ANY($1)`,
+    [ids],
+  )
+  expect(rows).toEqual([])
 }
