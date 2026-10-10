@@ -4,8 +4,9 @@ import { parse as load } from 'yaml'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { maxCiVitestWorkers } from '../../test-helpers/vitest-config/environment.mts'
 
-const pgvectorImagePattern = /pgvector\/pgvector:[^\s'"\\)]+/g
-const pgvectorDigestPinnedPattern = /^pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
+const pgvectorImagePattern = /[\w./-]*pgvector\/pgvector:[^\s'"\\)]+/g
+const pgvectorDigestPinnedPattern =
+  /^mirror\.gcr\.io\/pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
 const workflowDirectory = '.github/workflows'
 const ciPostgresMaxConnections = 300
 // Tests trigger ERRORs on purpose, and every ERROR already reaches the client that caused it, so
