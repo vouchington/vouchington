@@ -118,6 +118,12 @@ See the [Google Play failure-transition matrix](reference-google-play-recovery.m
 
 ## Refund reconciliation transitions
 
+The dispatcher enqueue accepts an optional internal deduplication identity for independently owned
+wake-ups; its default identity and five-minute bucket remain unchanged. Targeted reconciliation
+wake-ups return a best-effort completion promise after the queue attempt settles, while service
+callers may continue to fire them without awaiting. Tests await that completion and read their own
+operation and lease job identities without clearing shared queues.
+
 PostgreSQL owns refund work and provider identity. See the complete
 [failure-transition and Stripe identity reference](reference-refund-reconciliation.md).
 

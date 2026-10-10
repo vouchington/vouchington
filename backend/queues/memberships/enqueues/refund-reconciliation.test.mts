@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
-import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import { memberships } from '../queues.mts'
 import {
   enqueueDispatchMembershipRefundReconciliation,
@@ -8,58 +8,60 @@ import {
   enqueueReconcileMembershipRefundOperationBestEffort,
 } from './refund-reconciliation.mts'
 
-const QUEUE_STATES = ['waiting', 'active', 'completed', 'failed', 'delayed'] as const
-
 describe('refund reconciliation enqueues', () => {
-  it('uses durable operation and lease identities', async () => {
-    await memberships.obliterate({ force: true })
-    const operationId = randomUUID()
-    const leaseToken = randomUUID()
-    try {
-      await enqueueDispatchMembershipRefundReconciliation()
-      await enqueueReconcileMembershipRefundOperation({ operationId, leaseToken })
-      const jobs = (
-        await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state, 0, -1)))
-      ).flat()
-      const child = jobs.find(job => job.name === 'reconcileMembershipRefundOperation')
-      expect(child).toMatchObject({
-        data: { operationId, leaseToken },
-        opts: {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-          deduplication: {
-            id: `membership-refund-reconciliation__${operationId}__${leaseToken}`,
-            mode: 'simple',
-          },
-        },
-      })
-      expect(
-        jobs.find(job => job.name === 'dispatchMembershipRefundReconciliation')?.data,
-      ).toStrictEqual({})
-    } finally {
-      await memberships.obliterate({ force: true })
-    }
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-01T00:00:00Z'))
   })
 
-  it('fires the reconciliation enqueue without requiring a caller await', async () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('uses durable operation and lease identities', async () => {
     const operationId = randomUUID()
     const leaseToken = randomUUID()
+    const deduplicationId = `refund-dispatch-test-${randomUUID()}`
+    const dispatch = await enqueueDispatchMembershipRefundReconciliation({ deduplicationId })
+    const reconciliation = await enqueueReconcileMembershipRefundOperation({
+      operationId,
+      leaseToken,
+    })
+    const child = await readEnqueuedJob(memberships, reconciliation)
 
-    try {
-      void enqueueReconcileMembershipRefundOperationBestEffort({ operationId, leaseToken })
+    expect(child).toMatchObject({
+      data: { operationId, leaseToken },
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+        deduplication: {
+          id: `membership-refund-reconciliation__${operationId}__${leaseToken}`,
+          mode: 'simple',
+        },
+      },
+    })
+    const dispatcher = await readEnqueuedJob(memberships, dispatch)
+    expect(dispatcher).toMatchObject({
+      name: 'dispatchMembershipRefundReconciliation',
+      opts: { deduplication: { id: deduplicationId, mode: 'throttle', ttl: 300_000 } },
+    })
+    expect(dispatcher.data).toStrictEqual({})
+  })
 
-      await expect
-        .poll(async () => readAllQueueJobs(memberships), { timeout: 5_000 })
-        .toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              data: { operationId, leaseToken },
-              name: 'reconcileMembershipRefundOperation',
-            }),
-          ]),
-        )
-    } finally {
-      await memberships.obliterate({ force: true })
-    }
+  it('exposes completion of the best-effort reconciliation enqueue', async () => {
+    const operationId = randomUUID()
+    const leaseToken = randomUUID()
+    const completion = enqueueReconcileMembershipRefundOperationBestEffort({
+      operationId,
+      leaseToken,
+    })
+
+    await completion
+    expect(
+      await memberships.getJob(`membership-refund-reconciliation__${operationId}__${leaseToken}`),
+    ).toMatchObject({
+      data: { operationId, leaseToken },
+      name: 'reconcileMembershipRefundOperation',
+    })
   })
 })

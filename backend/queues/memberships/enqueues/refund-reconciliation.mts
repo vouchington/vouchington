@@ -35,13 +35,16 @@ const enqueueReconciliationJob = createEnqueueFunction<
   },
 })
 
-export function enqueueDispatchMembershipRefundReconciliation(): EnqueueReturnType {
+export function enqueueDispatchMembershipRefundReconciliation(
+  options: { deduplicationId?: string } = {},
+): EnqueueReturnType {
   const bucket = Math.floor(Date.now() / INTERVAL_MS)
+  const deduplicationId = options.deduplicationId ?? 'membership-refund-reconciliation-dispatch'
   return enqueueDispatchJob({}, {
-    jobId: `membership-refund-reconciliation-dispatch__${bucket}`,
+    jobId: `${deduplicationId}__${bucket}`,
     priority: PRIORITY_DISPATCHER,
     deduplication: {
-      id: 'membership-refund-reconciliation-dispatch',
+      id: deduplicationId,
       mode: 'throttle',
       ttl: INTERVAL_MS,
     },
@@ -76,7 +79,7 @@ export const refundReconciliationSchedule = {
 /** Durable reconciliation state is already committed when this wake-up is requested. */
 export function enqueueDispatchMembershipRefundReconciliationBestEffort(): Promise<void> {
   return Promise.resolve()
-    .then(enqueueDispatchMembershipRefundReconciliation)
+    .then(() => enqueueDispatchMembershipRefundReconciliation())
     .then(() => undefined, onError)
 }
 
