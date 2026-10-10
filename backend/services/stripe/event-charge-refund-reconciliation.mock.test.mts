@@ -6,6 +6,8 @@ import {
   recordRefundReconciliationAttempt,
   scheduleRefundReconciliationRetry,
 } from '@services/memberships'
+import * as membershipServices from '@services/memberships'
+import * as refundEnqueues from '@queues/memberships/enqueues'
 import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import { createTestMembership, createTestSku, createTestUser } from '@voucha/test-helpers'
 import { getMatchedChargeRefundedReceiptForTest } from '@voucha/test-helpers/entities/membership-refund-event-state'
@@ -120,35 +122,71 @@ describe('charge.refunded reconciliation receipt', () => {
     const refundId = `re_wch_matched_${randomUUID()}`
     const admission = Promise.withResolvers<unknown>()
     const add = memberships.add
-    let ownedAdd: ReturnType<typeof add> | undefined
-    const addSpy = vi
-      .spyOn(memberships, 'add')
-      .mockImplementation((...args: Parameters<typeof add>) => {
-        const job = Reflect.apply(add, memberships, args) as ReturnType<typeof add>
-        const [name, data] = args
-        if (
-          name === 'reconcileMembershipRefundOperation' &&
-          typeof data === 'object' &&
-          data !== null &&
-          (data as { operationId?: unknown }).operationId === operation.id
-        ) {
-          ownedAdd = job
-          void job.then(admission.resolve, admission.reject)
-        }
-        return job
-      })
+    const ownedAdds: ReturnType<typeof add>[] = []
+    const leaseRefund = membershipServices.leaseDueRefundReconciliation
+    const ownedLeases: ReturnType<typeof leaseRefund>[] = []
+    const enqueueRefund = refundEnqueues.enqueueReconcileMembershipRefundOperationBestEffort
+    const ownedEnqueues: ReturnType<typeof enqueueRefund>[] = []
+    let handlerPromise: Promise<void> | undefined
+    const restoreObservers: (() => void)[] = []
     let stopped: Promise<void> | undefined
     stopObservingAdmission = () =>
       (stopped ??= (async () => {
-        addSpy.mockRestore()
-        admission.resolve(null)
-        if (ownedAdd) await Promise.allSettled([ownedAdd])
+        try {
+          admission.resolve(null)
+          if (handlerPromise) await Promise.allSettled([handlerPromise])
+          await Promise.allSettled(ownedLeases)
+          await Promise.allSettled(ownedEnqueues)
+          let drained = 0
+          while (drained < ownedAdds.length) {
+            const pending = ownedAdds.slice(drained)
+            drained = ownedAdds.length
+            await Promise.allSettled(pending)
+          }
+        } finally {
+          for (const restore of restoreObservers.toReversed()) restore()
+        }
       })())
     // The best-effort enqueue reports failures without failing the handler; observe its real result.
     void admission.promise.catch(() => {})
 
     try {
-      await handle(`evt_matched_${randomUUID()}`, {
+      const leaseSpy = vi
+        .spyOn(membershipServices, 'leaseDueRefundReconciliation')
+        .mockImplementation((...args: Parameters<typeof leaseRefund>) => {
+          const leased = leaseRefund(...args)
+          if (args[0] === operation.id) ownedLeases.push(leased)
+          return leased
+        })
+      restoreObservers.push(() => leaseSpy.mockRestore())
+      const enqueueSpy = vi
+        .spyOn(refundEnqueues, 'enqueueReconcileMembershipRefundOperationBestEffort')
+        .mockImplementation(data => {
+          const enqueued = enqueueRefund(data)
+          if (data.operationId === operation.id) ownedEnqueues.push(enqueued)
+          return enqueued
+        })
+      restoreObservers.push(() => enqueueSpy.mockRestore())
+      const addSpy = vi
+        .spyOn(memberships, 'add')
+        .mockImplementation((...args: Parameters<typeof add>) => {
+          const [name, data] = args
+          const matches =
+            name === 'reconcileMembershipRefundOperation' &&
+            typeof data === 'object' &&
+            data !== null &&
+            (data as { operationId?: unknown }).operationId === operation.id
+          const job = matches
+            ? Promise.resolve().then(() => Reflect.apply(add, memberships, args))
+            : Reflect.apply(add, memberships, args)
+          if (matches) {
+            ownedAdds.push(job)
+            void job.then(admission.resolve, admission.reject)
+          }
+          return job
+        })
+      restoreObservers.push(() => addSpy.mockRestore())
+      handlerPromise = handle(`evt_matched_${randomUUID()}`, {
         id: chargeId,
         invoice: 'in_1',
         created: 1_700_000_000,
@@ -168,6 +206,7 @@ describe('charge.refunded reconciliation receipt', () => {
         },
       })
 
+      await handlerPromise
       const job = await readEnqueuedJob(memberships, await admission.promise)
       expect(job).toMatchObject({
         name: 'reconcileMembershipRefundOperation',
@@ -176,6 +215,8 @@ describe('charge.refunded reconciliation receipt', () => {
       const { leaseToken } = job.data as { leaseToken: string }
       expect(job.id).toBe(`membership-refund-reconciliation__${operation.id}__${leaseToken}`)
       expect(job.opts.deduplication).toEqual({ id: job.id, mode: 'simple' })
+      await stopObservingAdmission()
+      expect(ownedAdds).toHaveLength(1)
       await expect(
         getMatchedChargeRefundedReceiptForTest({
           applicationId: applicationContext.applicationId,
