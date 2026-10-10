@@ -26,6 +26,7 @@ keep each topic within one further link hop.
 - [Core CI](../../docs/development/ci/workflows/reference-core-ci.md)
 - [Deploy and release](../../docs/development/ci/workflows/reference-deploy-and-release.md)
 - [Docker image path filters](../../docs/development/ci/workflows/reference-docker-image-path-filters.md)
+- [Executed script path filters](../../docs/development/ci/workflows/reference-executed-script-path-filters.md)
 - [Extracted shell scripts](../../docs/development/ci/workflows/reference-extracted-shell-scripts.md)
 - [Fixed-branch automation PRs](../../docs/development/ci/workflows/reference-fixed-branch-automation-prs.md)
 - [Maintenance, security, and utilities](../../docs/development/ci/workflows/reference-maintenance-security-and-utilities.md)
