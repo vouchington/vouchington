@@ -1,3 +1,4 @@
+import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -127,8 +128,9 @@ async function attemptImmediateUserDeletionCacheEviction(
   const tags = getUserDeletionCacheTags(target)
   try {
     await purge(tags)
-    await Promise.all(
+    await settleUserDeletionOperations(
       tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
+      'User deletion cache receipts failed',
     )
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
@@ -169,15 +171,15 @@ export async function deleteUser(
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()
 
-  await Promise.all([
-    invalidate.users(deletion.target.id, deletion.target.username),
-    attemptImmediateUserDeletionCacheEviction(
-      deletion.request.id,
-      deletion.target,
-      dependencies.purgeCacheTags ?? purgeCacheTags,
-    ),
-  ])
-  enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
+  const purge = dependencies.purgeCacheTags ?? purgeCacheTags
+  await settleUserDeletionOperations(
+    [
+      invalidate.users(deletion.target.id, deletion.target.username),
+      attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
+    ],
+    'User deletion follow-ups failed',
+  )
+  await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,
