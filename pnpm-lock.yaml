@@ -83,8 +83,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.84.2
+        version: 0.84.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.40.0
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -159,7 +159,7 @@ importers:
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1315,8 +1315,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1147.0
@@ -1438,11 +1438,11 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -1462,8 +1462,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
     devDependencies:
       uuid:
         specifier: ^14.0.2
@@ -1481,8 +1481,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/data-stores/valkey-glide-mq:
     dependencies:
@@ -1508,8 +1508,8 @@ importers:
         specifier: ^7.0.8
         version: 7.0.8
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/data-stores/valkey-pubsub:
     dependencies:
@@ -1526,8 +1526,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -1535,8 +1535,8 @@ importers:
         specifier: workspace:^
         version: link:../valkey-core
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/entrypoints/api:
     dependencies:
@@ -6032,8 +6032,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/services/email-classification:
     dependencies:
@@ -10661,8 +10661,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
 
   backend/services/urls-domains-blacklist-sync:
     dependencies:
@@ -11176,8 +11176,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -11451,8 +11451,8 @@ importers:
         specifier: ^6.2.12
         version: 6.2.12
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       openai:
         specifier: ^7.30.0
         version: 7.30.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -11478,11 +11478,11 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       valkyries:
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13471,8 +13471,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13496,7 +13496,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13725,8 +13725,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -13735,7 +13735,7 @@ importers:
         version: 1.9.0
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -14079,8 +14079,8 @@ importers:
         specifier: ^30.1.2
         version: 30.1.2(@noble/hashes@2.4.0)
       no-mistakes:
-        specifier: ^0.83.0
-        version: 0.83.0
+        specifier: ^0.84.2
+        version: 0.84.2
       storybook:
         specifier: ^10.6.1
         version: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
@@ -14095,7 +14095,7 @@ importers:
         version: 8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3)
 
 packages:
 
@@ -20263,8 +20263,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.83.0:
-    resolution: {integrity: sha512-kHTrwPKQoRv1uGWcPxeDvp4yEAX0/TPbsrrc4m65aTujzdy5tIjVyW8stHzSmi+lY4HVTINuZdj3U8rUOVZK1w==}
+  eslint-plugin-no-mistakes@0.84.2:
+    resolution: {integrity: sha512-QKXcnUtJHiVQPpDP9wwlt/1/jFijxBAklZ7SJKUcL/7j/EAbzD0AlF9ws+bU1xjajEiUxzDNgcqCTv4FOgCkiQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21615,30 +21615,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.83.0:
-    resolution: {integrity: sha512-tCXJ7imwPItJPlnkK3MSpFP7AG2GRIAN7FLnLQzV+G92U8DVAqaNj8Q+XZVF63QahCp3iCNKbcnB5DUSJvUZnQ==}
+  no-mistakes-darwin-arm64@0.84.2:
+    resolution: {integrity: sha512-gModJ062FRQkGLxFkjdZiuEytnqq0EtVXhge5RML435x3QeUuJDFqIJTT6ewsNMa/AYBuvxglaezl9o8mSM2Zg==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.83.0:
-    resolution: {integrity: sha512-QEZo02s4+bYLD55qvqTPJqJFd7aktV8G+1FmHa9mJNMGhAJAEyp/pTSFOaaE6xk/yTItxYmus/wm4GbmlMeDiw==}
+  no-mistakes-linux-arm64-gnu@0.84.2:
+    resolution: {integrity: sha512-ZZ4ASCLBHmW7JbxhN05r58Im4S44Y/+ZatQBgNvG7xB5XZOx988VMUsXa9V8INph4gx171JJbScAfTj0H6Mh+g==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.83.0:
-    resolution: {integrity: sha512-ektG0h+bsqOSrJIK+Yknc8p+36mf0zN/vinDPHMXHDUYeeCjJ3M4eg5sMnPAsIimHEl9cNgi/lsLG6KrQuG2lw==}
+  no-mistakes-linux-x64-gnu@0.84.2:
+    resolution: {integrity: sha512-D8Bb9bvMjoiHhUOFKW+nNPGqB8WaPd6lhkuUSdvNyWxiEX+WSy6JrP9sLqfo81r0MNVAJJLyqJDtAMKm+73esA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.83.0:
-    resolution: {integrity: sha512-V0kRAzHGsreslgNejmTJUz59e3D/nNJ4Uh6XXNj2auvePnknwD1n9L5BbB+AkfIbnMZ2aFVw0SlNvd9X6iKgKQ==}
+  no-mistakes-win32-x64-msvc@0.84.2:
+    resolution: {integrity: sha512-o90Vf6F/C84G51Xe4/l9E2RkZCC8vxSW3vd38mlcktcOO4ygYoQ8mt4C3x/49awWUtcADk+JIQucF1BFnJKTTA==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.83.0:
-    resolution: {integrity: sha512-byaK+spPGI/deudq0LOaIFtlGUMC5IP4t0y4q4nU+lN6hNjCS3KGwyaGSlqEyRTmQnqVUfRIVZp8UGZ3rtMxXA==}
+  no-mistakes@0.84.2:
+    resolution: {integrity: sha512-ULHUh+2kVjXKbIPdWhUpz/NKMsuSVf4m/BSV2BV5GIIPGkmjwtyKHgNM0hvu+eQp5yaVxR6ZAQjWTdH3ZVZy7A==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -23006,8 +23006,8 @@ packages:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
     engines: {node: '>= 0.10'}
 
-  valkyries@0.8.1:
-    resolution: {integrity: sha512-9ddwmEBr/ex50NJK5H3FIsGQWPhaZOAklXV4NnM/eXm82dR+SJrQIELWtJvXV/0rqI4UCnfDIVlsiy2oF/tGmQ==}
+  valkyries@0.8.2:
+    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -29284,7 +29284,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.83.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.84.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30796,24 +30796,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.83.0:
+  no-mistakes-darwin-arm64@0.84.2:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.83.0:
+  no-mistakes-linux-arm64-gnu@0.84.2:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.83.0:
+  no-mistakes-linux-x64-gnu@0.84.2:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.83.0:
+  no-mistakes-win32-x64-msvc@0.84.2:
     optional: true
 
-  no-mistakes@0.83.0:
+  no-mistakes@0.84.2:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.83.0
-      no-mistakes-linux-arm64-gnu: 0.83.0
-      no-mistakes-linux-x64-gnu: 0.83.0
-      no-mistakes-win32-x64-msvc: 0.83.0
+      no-mistakes-darwin-arm64: 0.84.2
+      no-mistakes-linux-arm64-gnu: 0.84.2
+      no-mistakes-linux-x64-gnu: 0.84.2
+      no-mistakes-win32-x64-msvc: 0.84.2
 
   node-app-attest@1.0.1:
     dependencies:
@@ -32427,7 +32427,7 @@ snapshots:
 
   validator@13.15.35: {}
 
-  valkyries@0.8.1:
+  valkyries@0.8.2:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
@@ -32531,7 +32531,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.84.2)(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -32549,7 +32549,7 @@ snapshots:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@typescript/typescript6': 6.0.2
       agent-blackboard: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
-      no-mistakes: 0.83.0
+      no-mistakes: 0.84.2
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
