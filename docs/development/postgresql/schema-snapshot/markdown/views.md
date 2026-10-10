@@ -648,7 +648,23 @@ Current authority record joined to its latest immutable delivery transition; no 
     change.failure_message,
     change.next_attempt_at
    FROM (media_delivery_registry_records record
-     JOIN media_delivery_registry_changes change ON (((change.media_delivery_registry_record_id = record.id) AND (change.id = record.latest_change_id) AND (change.generation = record.generation))));
+     JOIN LATERAL ( SELECT history.id,
+            history.media_delivery_registry_record_id,
+            history.generation,
+            history.change_type,
+            history.desired_state,
+            history.changed_by_id,
+            history.delivery_attempt_count,
+            history.claimed_at,
+            history.projected_at,
+            history.invalidated_at,
+            history.completed_at,
+            history.failure_message,
+            history.next_attempt_at,
+            history.created_at
+           FROM media_delivery_registry_changes history
+          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.id = record.latest_change_id) AND (history.generation = record.generation))
+         LIMIT 1) change ON (true));
 ```
 
 ## `view_memberships`
