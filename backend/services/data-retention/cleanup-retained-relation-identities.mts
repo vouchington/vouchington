@@ -1,4 +1,9 @@
-import { read, withTransactionOptions, type QueryOptions } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  withTransactionOptions,
+  type QueryOptions,
+} from '@data-stores/psql'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   electedRelationMetadata,
@@ -81,7 +86,13 @@ async function cleanupRelationFamily(
   const metadata = electedRelationMetadata.find(item => item.table_name === relationTable)!
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
-  return withTransactionOptions(options, async query => {
+  if (options.query) return withTransactionOptions(options, cleanup)
+  await using transaction = await beginTransaction()
+  const result = await cleanup(transaction)
+  await transaction.commit()
+  return result
+
+  async function cleanup(query: NonNullable<QueryOptions['query']>) {
     await query(
       `/* reserveRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
       [`retained-relation-cleanup:${relationTable}`],
@@ -151,5 +162,5 @@ async function cleanupRelationFamily(
         [relationTable, last?.subject_id ?? null, last?.id ?? null],
       )
     return { relationTable, scanned: page.length, deleted: rowCount ?? 0, hasMore }
-  })
+  }
 }
