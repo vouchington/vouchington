@@ -66,7 +66,12 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
       SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
         record.id, 'operator_replay'
       FROM media_delivery_registry_records record
-      JOIN copyright_notice_targets target ON target.placement_id = record.placement_id
+      CROSS JOIN LATERAL (
+        WITH targets AS MATERIALIZED (
+          SELECT id, copyright_notice_id FROM copyright_notice_targets
+          WHERE placement_id = record.placement_id
+        ) SELECT id, copyright_notice_id FROM targets
+      ) target
       WHERE record.id = ANY(${rows.map(row => row.media_delivery_registry_record_id)}::uuid[])
       ORDER BY record.id, target.id
     `)
