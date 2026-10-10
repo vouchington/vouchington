@@ -1,5 +1,5 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { decryptCopyrightText, liveCopyrightCiphertext } from './erased-ciphertext.mts'
@@ -7,10 +7,7 @@ import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import { groupByNotice } from './read-models-staff-group.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
-export async function selectStaffTargets(
-  noticeIds: readonly string[],
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-) {
+export async function selectStaffTargets(noticeIds: readonly string[], query: TransactionQuery) {
   const { rows } = await query<
     CopyrightStaffCase['targets'][number] & { copyright_notice_id: string }
   >(
@@ -39,10 +36,7 @@ export async function selectStaffTargets(
   return groupByNotice(rows)
 }
 
-export async function selectStaffEvidence(
-  noticeIds: readonly string[],
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-) {
+export async function selectStaffEvidence(noticeIds: readonly string[], query: TransactionQuery) {
   const { rows } = await query<{
     copyright_notice_id: string
     id: string
@@ -78,14 +72,14 @@ type FormReviewRow = {
  */
 export async function selectStaffFormReview(
   noticeIds: readonly string[],
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<Map<string, NonNullable<CopyrightStaffCase['form_review']>>> {
   const { rows } = await query<FormReviewRow>(sql`/* getPendingCopyrightStaffCase:formReview */
     SELECT DISTINCT ON (intake.copyright_notice_id) intake.copyright_notice_id,
       intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
       review.is_accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
-    LEFT JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
+    LEFT JOIN LATERAL (SELECT attempt.state, attempt.copyright_notice_form_screening_id FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON true
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
     LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
     WHERE intake.copyright_notice_id = ANY(${noticeIds}::uuid[])

@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { readClaimantMisuseSummaries } from './claimant-misuse-summary.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
@@ -45,7 +45,7 @@ type NoticeRow = {
  */
 export async function getPendingCopyrightStaffCases(
   noticeIds: readonly string[],
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<Map<string, CopyrightStaffCase>> {
   if (noticeIds.length === 0) return new Map()
   const { rows } = await query<NoticeRow>(sql`/* getPendingCopyrightStaffCase:notice */

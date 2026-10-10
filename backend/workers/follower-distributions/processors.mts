@@ -1,19 +1,17 @@
+import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   advanceFollowerDistributionChunkCursor,
   processFollowerDistributionChunk,
   streamIncompleteFollowerDistributionIdBatches,
 } from '@services/follower-distributions'
-import {
-  enqueueBulkProcessFollowerDistributions,
-  enqueueProcessFollowerDistribution,
-} from '@queues/follower-distributions/enqueues'
+import { enqueueBulkProcessFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
+import type { Job } from 'glide-mq'
 
 type FollowerDistributionDependencies = {
   advanceFollowerDistributionChunkCursor: typeof advanceFollowerDistributionChunkCursor
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueBulkProcessFollowerDistributions: typeof enqueueBulkProcessFollowerDistributions
-  enqueueProcessFollowerDistribution: typeof enqueueProcessFollowerDistribution
   processFollowerDistributionChunk: typeof processFollowerDistributionChunk
   streamIncompleteFollowerDistributionIdBatches: typeof streamIncompleteFollowerDistributionIdBatches
 }
@@ -22,7 +20,6 @@ type ProcessFollowerDistributionDependencies = Pick<
   FollowerDistributionDependencies,
   | 'advanceFollowerDistributionChunkCursor'
   | 'enqueueBulkDeliverNotificationPushIntents'
-  | 'enqueueProcessFollowerDistribution'
   | 'processFollowerDistributionChunk'
 >
 
@@ -31,34 +28,38 @@ type BackfillFollowerDistributionDependencies = Pick<
   'enqueueBulkProcessFollowerDistributions' | 'streamIncompleteFollowerDistributionIdBatches'
 >
 
+/**
+ * Processes one recipient chunk and, while recipients may remain, moves the same job to delayed
+ * so it runs the next chunk. The active job holds the distribution's dedup id, so enqueueing a
+ * continuation under that id would be skipped. The delay error `moveToDelayed` throws must reach
+ * GlideMQ, so nothing here catches it; the PostgreSQL cursor carries the progress.
+ */
 export async function processFollowerDistribution(
-  data: { distributionId: string },
+  job: Pick<Job<{ distributionId: string }>, 'data' | 'updateData' | 'moveToDelayed'>,
   dependencies?: Partial<ProcessFollowerDistributionDependencies>,
 ) {
   const deps = {
     advanceFollowerDistributionChunkCursor,
     enqueueBulkDeliverNotificationPushIntents,
-    enqueueProcessFollowerDistribution,
     processFollowerDistributionChunk,
     ...dependencies,
   }
-  const result = await deps.processFollowerDistributionChunk(data.distributionId, {
-    deferCursorUpdate: true,
+  return processRetainedSweep(job, async () => {
+    const result = await deps.processFollowerDistributionChunk(job.data.distributionId, {
+      deferCursorUpdate: true,
+    })
+    if (result.notificationsToDeliver.length > 0) {
+      await deps.enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
+    }
+    if (result.cursorRecipientId) {
+      await deps.advanceFollowerDistributionChunkCursor(
+        result.distributionId,
+        result.cursorRecipientId,
+        result.completed,
+      )
+    }
+    return { ...result, hasMore: !result.completed }
   })
-  if (result.notificationsToDeliver.length > 0) {
-    await deps.enqueueBulkDeliverNotificationPushIntents(result.notificationsToDeliver)
-  }
-  if (result.cursorRecipientId) {
-    await deps.advanceFollowerDistributionChunkCursor(
-      result.distributionId,
-      result.cursorRecipientId,
-      result.completed,
-    )
-  }
-  if (!result.completed) {
-    await deps.enqueueProcessFollowerDistribution(data.distributionId)
-  }
-  return result
 }
 
 export async function backfillFollowerDistributions(

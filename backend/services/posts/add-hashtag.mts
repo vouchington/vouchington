@@ -1,5 +1,4 @@
 import type { PrivateUser } from '@services/users/types'
-import { getUserActivePlan } from '@services/memberships'
 import { getTopicAliasIdByKey } from '@services/topics/get-topic-aliases'
 import type { PostMutationAuthority } from '@services/entity-relations/post-access'
 import { resolveHashtagMutation } from './hashtag-mutation-access.mts'
@@ -18,7 +17,7 @@ export async function addPostHashtag(
     tag,
     authority,
   )
-  const membershipPlan = await getUserActivePlan(currentUser.id)
+  const membershipPlan = currentUser.membership_plan ?? null
   await updatePost(currentUser, post, {}, membershipPlan, {
     change: { op: 'add', hashtag: normalized },
     authority,

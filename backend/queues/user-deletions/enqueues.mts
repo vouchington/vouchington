@@ -2,6 +2,7 @@ import {
   createBulkEnqueueFunction,
   createEnqueueFunction as createGlideMqEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -53,6 +54,20 @@ export const enqueueBulkUserDeletions = createBulkEnqueueFunction<
     }
   },
 })
+
+/**
+ * Recovery re-adds an attempt under the same token while its job may still be queued, so a live
+ * job stays the canonical delivery. A retained failed or completed record under that token would
+ * otherwise block the id on every pass, so recovery releases it first.
+ */
+export function enqueueOrReactivateBulkUserDeletions(attempts: UserDeletionJobData[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: userDeletions,
+    inputs: attempts,
+    jobIdOf: userDeletionJobId,
+    enqueueBulk: enqueueBulkUserDeletions,
+  })
+}
 
 const enqueueRecoverUserDeletionsJob = createGlideMqEnqueueFunction<
   Record<string, never>,

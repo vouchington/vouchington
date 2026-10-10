@@ -100,6 +100,9 @@ jobs:
       actions: read
       contents: read
 
+  # Informational browser checks against real cloud resources (S3 uploads, the image lambda); the
+  # `web` gate does not wait on it and it publishes no LCOV. A failure keeps this check red, and
+  # keeps the Nightly run red, without blocking a pull request or a merge group.
   test-playwright-credentialed:
     needs: [changes, static-web]
     if: needs.changes.outputs.trusted-secret-context == 'true'
@@ -199,7 +202,6 @@ jobs:
         test-web-integration,
         storybook,
         test-playwright,
-        test-playwright-credentialed,
         validate-web-images,
         publish-web-images,
         coverage,
@@ -215,4 +217,4 @@ jobs:
         timeout-minutes: 1
         with:
           results: >-
-            {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"validate-web-images":{"result":"${{ needs.validate-web-images.result }}"},"publish-web-images":{"result":"${{ needs.publish-web-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"validate-web-images":{"result":"${{ needs.validate-web-images.result }}"},"publish-web-images":{"result":"${{ needs.publish-web-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

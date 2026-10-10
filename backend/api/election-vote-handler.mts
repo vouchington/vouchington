@@ -13,7 +13,6 @@ import {
 } from '@services/elections-votes/shared'
 import { enqueueVoteIntegrityCheck } from '@queues/vote-integrity/enqueues'
 import type { VoteEventContext } from '@voucha/types/entities/election'
-import { getUserActivePlan } from '@services/memberships'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
 import { createCodedError } from '@modules/on-error/create-coded-error'
@@ -140,7 +139,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
         }
 
         if (!isClear) {
-          const membershipPlan = await getUserActivePlan(currentUser.id)
+          const membershipPlan = currentUser.membership_plan ?? null
           if (!bypassContributionGating) {
             const contributionStatus = await getContributionStatus(currentUser, {
               membershipPlan,

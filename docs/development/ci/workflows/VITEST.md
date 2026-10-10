@@ -105,7 +105,7 @@ coverage but did not write LCOV fails its parent case.
 Current conventions for future credentialed suites all use
 `tests-backend-credentialed.yml` / `backend-credentialed-tests`:
 
-- Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. That list owns each project's name and `include` globs. The transient-retry classifier and the runner groups derive from it.
+- Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. That list owns each project's name and `include` globs. The runner groups derive from it.
 - A credentialed suite is an informational smoke check: it is not in the `backend` gate and publishes no coverage. Gate the same behavior with a recorded-response fixture test in a unit project, named so it does not match the project's `include` glob ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)).
 
 If a Playwright or web-integration test starts requiring external credentials, gate the credential setup with `if:` and make the suite skip when the env vars are absent.

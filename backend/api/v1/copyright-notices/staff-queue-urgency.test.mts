@@ -1,6 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { copyrightConfig } from '@services/copyright-notices/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { listCopyrightStaffQueuePage } from '@services/copyright-notices/staff-queue-page'
+import { withCopyrightStaffQueueHttp } from '@voucha/test-helpers/copyright-staff-queue-http'
 import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
@@ -15,14 +17,36 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 
 const day = 24 * 60 * 60 * 1000
 
+const decisionNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-06T12:00:00.000Z')
+if (!Number.isFinite(decisionNow.getTime())) throw new Error('Invalid VOUCH_PROOF_NOW')
+
 describe('copyright staff queue urgency', () => {
   useCopyrightIntakeEnvironment()
 
+  let restorePriority: (() => void) | undefined
+  beforeAll(async () => {
+    await copyrightConfig.waitForInitialization()
+    await copyrightConfig.close()
+  }, 5_000)
+
+  beforeEach(() => {
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(decisionNow)
+  })
+
   afterEach(() => {
+    restorePriority?.()
+    restorePriority = undefined
     vi.useRealTimers()
   })
 
   it('lists missed then due restoration deadlines ahead of older intake work across pages', async () => {
+    restorePriority = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      trustedFlaggerPriority: false,
+    })
     const fixture = await createCopyrightFormFixture()
     const target = fixture.form.targets[0]!
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
@@ -53,22 +77,25 @@ describe('copyright staff queue urgency', () => {
       return intake.copyright_notice_id
     }
     // The plain intake has waited longest, so only urgency can put the deadline cases ahead of it.
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(Date.now() - 30 * day))
-    const olderIntake = await createGuestNotice()
-    vi.useRealTimers()
+    vi.setSystemTime(new Date(decisionNow.getTime() - 30 * day))
+    let olderIntake: string
+    try {
+      olderIntake = await createGuestNotice()
+    } finally {
+      vi.setSystemTime(decisionNow)
+    }
     const due = await createGuestNotice()
     const missed = await createGuestNotice()
     const filingCase = await createGuestNotice()
     const capability = await issueCopyrightGuestCapability({
       currentUser: moderator,
       noticeId: filingCase,
-      expiresAt: new Date(Date.now() + day),
+      expiresAt: new Date(decisionNow.getTime() + day),
     })
     await appendCopyrightGuestFiling({
       noticeId: filingCase,
       token: capability.token,
-      now: new Date(),
+      now: decisionNow,
       kind: 'court_or_ccb_hold',
       statement: 'An action has been filed.',
     })
@@ -81,43 +108,61 @@ describe('copyright staff queue urgency', () => {
         noticeId,
         reviewerUserId: moderator.id,
         state,
+        now: decisionNow,
       })
     }
-    const ownedIds = [missed, due, filingCase, olderIntake]
-    const owned = []
-    const endCursors: Array<string | null> = []
-    let after: string | undefined
-    let remaining = ownedIds.length
-    while (remaining > 0) {
-      remaining -= 1
-      const page = await listCopyrightStaffQueuePage(moderator, {
-        limit: 1,
-        after,
-        noticeIds: ownedIds,
-      })
-      owned.push(...page.copyright_notices)
-      endCursors.push(page.page_info.end_cursor)
-      if (!page.page_info.has_next_page) break
-      after = page.page_info.end_cursor ?? undefined
-    }
-    expect(owned.map(notice => notice.id)).toEqual(ownedIds)
-    expect(endCursors.at(-1)).toBeNull()
-    const [missedCase, dueCase, unassessedCase, intakeCase] = owned
-    expect(missedCase).toMatchObject({
-      reasons: ['deadline_missed'],
-      next_deadline: {
-        escalation_at: expect.any(Date),
-        restoration_deadline_at: expect.any(Date),
-      },
+    // Eligible owned control interleaves between the due deadline and newer legal hold.
+    const interleavingControl = await createGuestNotice()
+    await insertReviewedCopyrightFormIntake({
+      noticeId: interleavingControl,
+      reviewerUserId: moderator.id,
     })
-    expect(missedCase!.next_deadline!.restoration_deadline_at.getTime()).toBeLessThan(Date.now())
-    expect(dueCase).toMatchObject({ reasons: ['deadline_due'] })
-    expect(dueCase!.next_deadline!.escalation_at.getTime()).toBeLessThan(Date.now())
-    expect(dueCase!.next_deadline!.restoration_deadline_at.getTime()).toBeGreaterThan(Date.now())
-    expect(dueCase!.waiting_since.getTime()).toBe(dueCase!.next_deadline!.escalation_at.getTime())
-    expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
-    expect(unassessedCase!.reasons).toContain('legal_hold_review')
-    expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
-    expect(intakeCase!.waiting_since.getTime()).toBeLessThan(missedCase!.waiting_since.getTime())
+    await insertOpenCopyrightCounterNoticeDeadline({
+      noticeId: interleavingControl,
+      reviewerUserId: moderator.id,
+      state: 'due',
+      now: new Date(decisionNow.getTime() + 1),
+    })
+    const ownedIds = [missed, due, filingCase, olderIntake]
+    await withCopyrightStaffQueueHttp(
+      moderator,
+      undefined,
+      async ({ read, assertInterleaving }) => {
+        await assertInterleaving(due, interleavingControl, filingCase, false)
+        const first = await read(ownedIds, false, 100)
+        expect(first.copyright_notices.map(item => item.id)).toEqual(ownedIds)
+        const walked = await read(ownedIds, false, 1)
+        const owned = walked.copyright_notices
+        expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
+        expect(walked.page_info.end_cursor).toBeNull()
+        expect(owned.map(notice => notice.id)).toEqual(ownedIds)
+        const [missedCase, dueCase, unassessedCase, intakeCase] = owned
+        expect(missedCase).toMatchObject({
+          reasons: ['deadline_missed'],
+          next_deadline: {
+            escalation_at: expect.any(String),
+            restoration_deadline_at: expect.any(String),
+          },
+        })
+        expect(Date.parse(missedCase!.next_deadline!.restoration_deadline_at)).toBeLessThan(
+          decisionNow.getTime(),
+        )
+        expect(dueCase).toMatchObject({ reasons: ['deadline_due'] })
+        expect(Date.parse(dueCase!.next_deadline!.escalation_at)).toBeLessThan(
+          decisionNow.getTime(),
+        )
+        expect(Date.parse(dueCase!.next_deadline!.restoration_deadline_at)).toBeGreaterThan(
+          decisionNow.getTime(),
+        )
+        expect(dueCase!.waiting_since).toBe(dueCase!.next_deadline!.escalation_at)
+        expect(unassessedCase).toMatchObject({ id: filingCase, next_deadline: null })
+        expect(unassessedCase!.reasons).toContain('legal_hold_review')
+        expect(intakeCase).toMatchObject({ reasons: ['form_intake_review'], next_deadline: null })
+        expect(Date.parse(intakeCase!.waiting_since)).toBeLessThan(
+          Date.parse(missedCase!.waiting_since),
+        )
+      },
+      decisionNow,
+    )
   })
 })

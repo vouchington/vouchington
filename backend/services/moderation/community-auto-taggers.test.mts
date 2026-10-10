@@ -13,6 +13,7 @@ import {
   searchCommunityAutoTaggerAgents,
   SELF_PROMOTION_MODERATOR_SLUG,
 } from './index.mts'
+import { loadCommunityWithViewer } from '@services/communities/load-with-viewer'
 
 describe('community auto taggers', () => {
   it('returns the fixed-label agent matrix disabled by default', async () => {
@@ -27,7 +28,10 @@ describe('community auto taggers', () => {
       role: 'owner',
     })
 
-    const agents = await searchCommunityAutoTaggerAgents(owner, community.id)
+    const agents = await searchCommunityAutoTaggerAgents(
+      owner,
+      await loadCommunityWithViewer(community.id, owner.id),
+    )
     const selfPromotion = agents.find(agent => agent.slug === SELF_PROMOTION_MODERATOR_SLUG)
     const marketplace = agents.find(agent => agent.slug === 'marketplace')
 
@@ -67,17 +71,21 @@ describe('community auto taggers', () => {
       role: 'owner',
     })
 
-    await enableCommunityAutoTaggerAgent(owner, community.id, SELF_PROMOTION_MODERATOR_SLUG)
+    await enableCommunityAutoTaggerAgent(
+      owner,
+      await loadCommunityWithViewer(community.id, owner.id),
+      SELF_PROMOTION_MODERATOR_SLUG,
+    )
     const enabledAgain = await enableCommunityAutoTaggerAgent(
       owner,
-      community.id,
+      await loadCommunityWithViewer(community.id, owner.id),
       SELF_PROMOTION_MODERATOR_SLUG,
     )
     expect(enabledAgain.enabled).toBe(true)
 
     const disabled = await disableCommunityAutoTaggerAgent(
       owner,
-      community.id,
+      await loadCommunityWithViewer(community.id, owner.id),
       SELF_PROMOTION_MODERATOR_SLUG,
     )
     expect(disabled.enabled).toBe(false)
@@ -96,10 +104,18 @@ describe('community auto taggers', () => {
     })
 
     await expect(
-      enableCommunityAutoTaggerAgent(member!, community.id, SELF_PROMOTION_MODERATOR_SLUG),
+      enableCommunityAutoTaggerAgent(
+        member!,
+        await loadCommunityWithViewer(community.id, member!.id),
+        SELF_PROMOTION_MODERATOR_SLUG,
+      ),
     ).rejects.toMatchObject({ status: 403 })
     await expect(
-      enableCommunityAutoTaggerAgent(owner!, community.id, 'not-real'),
+      enableCommunityAutoTaggerAgent(
+        owner!,
+        await loadCommunityWithViewer(community.id, owner!.id),
+        'not-real',
+      ),
     ).rejects.toMatchObject({
       status: 404,
     })
@@ -121,15 +137,23 @@ describe('community auto taggers', () => {
     })
 
     await expect(
-      enableCommunityAutoTaggerAgent(owner!, community.id, AI_GENERATED_MODERATOR_SLUG),
+      enableCommunityAutoTaggerAgent(
+        owner!,
+        await loadCommunityWithViewer(community.id, owner!.id),
+        AI_GENERATED_MODERATOR_SLUG,
+      ),
     ).rejects.toMatchObject({ status: 403 })
     await expect(
-      disableCommunityAutoTaggerAgent(owner!, community.id, AI_GENERATED_MODERATOR_SLUG),
+      disableCommunityAutoTaggerAgent(
+        owner!,
+        await loadCommunityWithViewer(community.id, owner!.id),
+        AI_GENERATED_MODERATOR_SLUG,
+      ),
     ).rejects.toMatchObject({ status: 403 })
 
     const disabled = await disableCommunityAutoTaggerAgent(
       admin!,
-      community.id,
+      await loadCommunityWithViewer(community.id, admin!.id),
       AI_GENERATED_MODERATOR_SLUG,
     )
     expect(disabled.enabled).toBe(false)
@@ -137,7 +161,7 @@ describe('community auto taggers', () => {
 
     const reenabled = await enableCommunityAutoTaggerAgent(
       admin!,
-      community.id,
+      await loadCommunityWithViewer(community.id, admin!.id),
       AI_GENERATED_MODERATOR_SLUG,
     )
     expect(reenabled.enabled).toBe(true)
@@ -157,10 +181,18 @@ describe('community auto taggers', () => {
     await archiveCommunity(community.id, owner.id)
 
     await expect(
-      enableCommunityAutoTaggerAgent(owner, community.id, SELF_PROMOTION_MODERATOR_SLUG),
+      enableCommunityAutoTaggerAgent(
+        owner,
+        await loadCommunityWithViewer(community.id, owner.id),
+        SELF_PROMOTION_MODERATOR_SLUG,
+      ),
     ).rejects.toMatchObject({ status: 403, message: 'Community is archived' })
     await expect(
-      disableCommunityAutoTaggerAgent(owner, community.id, SELF_PROMOTION_MODERATOR_SLUG),
+      disableCommunityAutoTaggerAgent(
+        owner,
+        await loadCommunityWithViewer(community.id, owner.id),
+        SELF_PROMOTION_MODERATOR_SLUG,
+      ),
     ).rejects.toMatchObject({ status: 403, message: 'Community is archived' })
   })
 })

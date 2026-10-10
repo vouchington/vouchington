@@ -1,4 +1,4 @@
-import { searchListItems, type ListItem } from '@services/lists'
+import { searchListItems } from '@services/lists'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
@@ -9,7 +9,7 @@ import {
   toMcpListItem,
   type McpListItem,
 } from './mcp-list-output.mts'
-import { resolveReadableThread } from './mcp-post-access.mts'
+import { resolveReadableThreads } from './mcp-post-access.mts'
 import { pageInputProperties, pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -26,12 +26,6 @@ type ToolArgs = {
 type ToolResult = McpPage<McpListItem> | typeof LIST_NOT_FOUND | InvalidCursorResult
 
 const { default: defaultLimit, max } = LIST_PAGE_LIMIT
-
-/** A post on a list is listed only when the MCP post read policy lets the caller read it. */
-async function isListable(currentUser: BasicUser, item: ListItem): Promise<boolean> {
-  if (item.item_type !== 'post') return true
-  return (await resolveReadableThread(currentUser, item.entity_id)) !== null
-}
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -72,10 +66,16 @@ const tool: Tool<ToolArgs, ToolResult> = {
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT
-      const listable = await Promise.all(page.results.map(item => isListable(currentUser, item)))
+      // One batch read for the whole page, never a lookup per item.
+      const postItems = page.results.filter(item => item.item_type === 'post')
+      const threads = await resolveReadableThreads(
+        currentUser,
+        postItems.map(item => item.entity_id),
+      )
+      const hidden = new Set(postItems.filter((_, index) => !threads[index]))
       return {
         success: true,
-        results: page.results.filter((_, index) => listable[index]).map(toMcpListItem),
+        results: page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
         // The cursor comes from the unfiltered page, so it advances past every hidden item.
         page_info: page.page_info,
       }

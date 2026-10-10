@@ -1,3 +1,4 @@
+import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import {
   createPaginationParser,
@@ -18,17 +19,22 @@ export const copyrightStaffQueueParser = createPaginationParser({
 export async function listCopyrightStaffQueuePage(
   currentUser: PrivateUser,
   args: { after?: string; limit: number; noticeIds?: readonly string[] },
+  options: QueryOptions & { now?: Date } = {},
 ) {
   const message = 'Invalid copyright staff queue cursor'
   const after = args.after
     ? decodeScopedTierPreciseUuidCursor(args.after, copyrightStaffQueueCursorScope, message)
     : undefined
   assert(!after || [0, 1, 2, 3, 4, 5].includes(after.tier), 400, message)
-  const { cases, endCursor, hasNextPage } = await listCopyrightStaffQueue(currentUser, {
-    limit: args.limit,
-    after,
-    noticeIds: args.noticeIds,
-  })
+  const { cases, endCursor, hasNextPage } = await listCopyrightStaffQueue(
+    currentUser,
+    {
+      limit: args.limit,
+      after,
+      noticeIds: args.noticeIds,
+    },
+    options,
+  )
   const encode = (cursor: CopyrightStaffQueueCursor) =>
     encodeScopedTierPreciseUuidCursor(
       cursor.timestamp,

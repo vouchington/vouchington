@@ -3,7 +3,6 @@ import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryEnum } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { getUserActivePlan } from '@services/memberships'
 import { isAdminUser } from '@services/users'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { getContributionQuota } from '@services/contribution-gating/quota'
@@ -38,7 +37,7 @@ app.route('/api/v1/my/contribution-status').get(async (ctx: Context) => {
     query: action ? { action } : {},
   })
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
+  const membershipPlan = currentUser.membership_plan ?? null
   const isAdmin = isAdminUser(currentUser)
   const source = sourceForContributionAction(action)
   const actionLimit = action

@@ -35,7 +35,7 @@ describe('community ban enforcement', () => {
       })
       await banUserFromCommunity(owner!, community.id, user!.id)
 
-      await expect(joinCommunity(user!.id, community.id)).rejects.toMatchObject({
+      await expect(joinCommunity(user!.id, community)).rejects.toMatchObject({
         status: 403,
         code: 'COMMUNITY_BANNED',
       })

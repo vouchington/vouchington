@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"object":"list","data":[{"id":"il_replay_1","object":"line_item","amount":1000,"currency":"usd","description":"1 x Voucha Pro (at $10.00 / month)","invoice":"INVOICE_ID","livemode":false,"metadata":{},"parent":{"type":"subscription_item_details","subscription_item_details":{"invoice_item":null,"proration":false,"proration_details":{"credited_items":null},"subscription":"SUBSCRIPTION_ID","subscription_item":"si_replay_1"}},"period":{"start":1893369600,"end":1896048000},"pricing":{"type":"price_details","price_details":{"price":"PRICE_ID","product":"prod_replay_pro"},"unit_amount_decimal":"1000"},"quantity":1,"subscription":"SUBSCRIPTION_ID","taxes":[]}],"has_more":false,"url":"/v1/invoices/INVOICE_ID/lines"}

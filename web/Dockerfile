@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1-labs
+# syntax=mirror.gcr.io/docker/dockerfile:1-labs
 
 # Stage 1: Build
-FROM node:26-slim AS builder
+FROM mirror.gcr.io/library/node:26-slim AS builder
 
 # Install web dependencies first (separate layer for caching)
 WORKDIR /app
@@ -73,7 +73,7 @@ RUN find /app/web/.next/standalone /app/web/.next/static -type f -name '*.map' -
 # web-prewarm needs npm/npx from this image. The pulled runtime image does not
 # inherit these layers; runtime-base snapshots the cleaned filesystem below.
 # apk upgrade here rather than in every consumer means the upgrade runs once.
-FROM node:26-alpine AS base-alpine
+FROM mirror.gcr.io/library/node:26-alpine AS base-alpine
 # Bump this after a security advisory so the cached package layer is rebuilt.
 ARG ALPINE_SECURITY_REFRESH=2026-08-26
 RUN echo "Refreshing Alpine security packages: ${ALPINE_SECURITY_REFRESH}" && \

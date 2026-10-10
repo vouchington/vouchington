@@ -9,6 +9,7 @@ import {
 import { joinCommunity } from '../join.mts'
 
 import { archiveCommunity } from '../../archive.mts'
+import { getCommunityOrThrow } from '../../get.mts'
 
 import { leaveCommunity } from '../leave.mts'
 
@@ -56,7 +57,7 @@ describe('index', () => {
     it('owner can remove a member', async () => {
       const user = await createTestUser()
       await insertTestCommunityMember({ communityId: publicCommunity.id, userId: user.id })
-      await removeMember(owner.id, publicCommunity.id, user.id)
+      await removeMember(owner.id, publicCommunity, user.id)
       const membership = await getCommunityMember(publicCommunity.id, user.id)
       expect(membership).toBeNull()
     })
@@ -68,7 +69,7 @@ describe('index', () => {
         userId: mod.id,
         role: 'moderator',
       })
-      await expect(removeMember(mod.id, publicCommunity.id, owner.id)).rejects.toMatchObject({
+      await expect(removeMember(mod.id, publicCommunity, owner.id)).rejects.toMatchObject({
         status: 403,
       })
     })
@@ -93,7 +94,9 @@ describe('index', () => {
       ])
       await archiveCommunity(archivedCommunity.id, owner.id)
 
-      await expect(removeMember(owner.id, archivedCommunity.id, target.id)).rejects.toMatchObject({
+      await expect(
+        removeMember(owner.id, await getCommunityOrThrow(archivedCommunity.id), target.id),
+      ).rejects.toMatchObject({
         status: 403,
         message: 'Community is archived',
       })

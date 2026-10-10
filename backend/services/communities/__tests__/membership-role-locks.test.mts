@@ -114,7 +114,7 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const update = updateMemberRole(owner.id, community.id, target.id, 'moderator')
+    const update = updateMemberRole(owner.id, community, target.id, 'moderator')
     try {
       await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
       const beforeRelease = await getCommunityMember(community.id, target.id)
@@ -146,7 +146,7 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const removal = removeMember(owner.id, community.id, target.id)
+    const removal = removeMember(owner.id, community, target.id)
     try {
       await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
       const beforeRelease = await getCommunityMember(community.id, target.id)
@@ -178,7 +178,7 @@ describe('community membership role locks', () => {
     }
     await ready.promise
 
-    const transfer = initiateOwnershipTransfer(owner.id, community.id, target.id)
+    const transfer = initiateOwnershipTransfer(owner.id, community, target.id)
     try {
       await waitForTestPostgresLockWaiter(await holderProcessId.promise, 'lockCommunityUsers')
       const beforeRelease = await getCommunityMember(community.id, target.id)

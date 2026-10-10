@@ -1,4 +1,4 @@
-import { getCommunityOrThrow, leaveCommunity } from '@services/communities'
+import { leaveCommunity, loadCommunityWithViewer } from '@services/communities'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
@@ -36,9 +36,9 @@ const tool: Tool<Args, Result> = {
 }
 
 async function leave(userId: string, communityIdOrSlug: string): Promise<Result> {
-  const community = await getCommunityOrThrow(communityIdOrSlug)
-  await leaveCommunity(userId, community.id)
-  return { success: true, community_id: community.id }
+  const loaded = await loadCommunityWithViewer(communityIdOrSlug, userId)
+  await leaveCommunity(userId, loaded)
+  return { success: true, community_id: loaded.community.id }
 }
 
 export default tool

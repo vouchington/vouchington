@@ -72,6 +72,29 @@ describe('Community Members Routes', () => {
       await request.delete(`/api/v1/communities/${community.slug}/members`).expect(401)
     })
 
+    it('returns 404 for a missing community', async () => {
+      const user = await createTestUser()
+      const request = createRequest()
+      await request.authenticateAs(user)
+
+      await request
+        .delete(`/api/v1/communities/members-leave-missing-${createRandomString(8)}/members`)
+        .expect(404)
+    })
+
+    it('returns 404 when the user is not a member', async () => {
+      const [owner, stranger] = await Promise.all([createTestUser(), createTestUser()])
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `members-leave-stranger-${createRandomString(8)}`,
+        visibility: 'public',
+      })
+      const request = createRequest()
+      await request.authenticateAs(stranger)
+
+      await request.delete(`/api/v1/communities/${community.slug}/members`).expect(404)
+    })
+
     it('leaves community and returns 204 as member', async () => {
       const [owner, member] = await Promise.all([createTestUser(), createTestUser()])
       const random = createRandomString(8)
