@@ -60,6 +60,20 @@ shard 5 ran until the job cap and GitHub dropped the log (run
 runner kills the group and lets the step exit, which keeps the failure log and the existing
 failure artifacts.
 
+Credentialed Playwright uses the same bounded runner with a maximum 420-second
+command deadline inside its unchanged eight-minute test step and thirteen-minute job cap.
+A single paginated current-attempt Jobs API traversal validates complete pages, matches the
+running job and runner, and captures
+its absolute deadline from `started_at`, including provisioning before authored steps.
+The command uses the smaller of 420 seconds and the remaining job budget, reserving
+ten seconds for termination grace and two minutes for upload and post-step work.
+Missing, ambiguous, invalid, or exhausted timing fails before the command starts;
+there is no polling, first-step clock fallback, or credentialed-test skip.
+A command timeout exits 124 and remains a failed step; the existing failure/retry
+JUnit upload condition remains in place. This bounds the command process group
+and preserves failure evidence, but does not diagnose the test or server that
+caused a hang.
+
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
 dependency check, typecheck, production build, and smoke test moved to
