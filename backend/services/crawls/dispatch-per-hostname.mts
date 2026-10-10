@@ -1,4 +1,4 @@
-import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
+import { executeHandlerWithCursorInBatches, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
@@ -24,7 +24,7 @@ export const dispatchCrawlUrlsPerHostname = async (
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
-  const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
+  const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId, { readOnly: false })
   if (!hostname || !hostname.is_crawlable || hostname.is_blocked)
     return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
@@ -58,7 +58,7 @@ export const dispatchCrawlUrlsPerHostname = async (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
           AND c.embeddings_generated_at IS NOT NULL
-          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * COALESCE(h.age_threshold_days, 1)
+          AND c.embeddings_generated_at > ${sweepStartedAt}::timestamptz - INTERVAL '1 day' * h.age_threshold_days
       )
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
@@ -77,7 +77,7 @@ export const dispatchCrawlUrlsPerHostname = async (
     {
       batchSize: limits.batchSize,
       maxRows: limits.maxRows,
-      readOnly: true,
+      readOnly: false,
       handler: async rows => {
         total += rows.length
         await enqueueBulkCrawlUrls(
@@ -89,5 +89,14 @@ export const dispatchCrawlUrlsPerHostname = async (
     },
   )
 
+  if (!result.hasMore) {
+    await write(sql`/* completeHostnameCrawlSweep */
+      UPDATE url_hostnames
+      SET crawl_swept_at = GREATEST(crawl_swept_at, ${sweepStartedAt}::timestamptz)
+      WHERE id = ${hostnameId}::uuid
+        AND is_crawlable AND NOT is_blocked
+        AND updated_at <= ${sweepStartedAt}::timestamptz
+    `)
+  }
   return { count: total, hasMore: result.hasMore }
 }

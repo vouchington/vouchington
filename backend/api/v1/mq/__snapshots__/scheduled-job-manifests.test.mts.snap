@@ -946,10 +946,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Dispatch hostname crawl jobs (daily)",
+        "description": "Dispatch due hostname crawl jobs (hourly)",
         "id": "crawl_hostnames_dispatcher",
         "kind": "scheduled-jobs",
-        "schedule": "0 2 * * *",
+        "schedule": "0 * * * *",
         "trigger": "[function]",
       },
       {
@@ -960,12 +960,12 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "queueName": "crawl_hostnames",
     "registration": "sequential",
     "repeat": {
-      "pattern": "0 2 * * *",
+      "pattern": "0 * * * *",
     },
     "schedulerId": "crawl_hostnames_dispatcher",
     "template": {
       "data": {},
-      "name": "crawl_hostnames_dispatcher",
+      "name": "enqueueCrawlHostnamesDispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -3349,11 +3349,11 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueuePostEmbeddingTriggerRecovery",
   },
   {
-    "description": "Dispatch hostname crawl jobs (daily)",
+    "description": "Dispatch due hostname crawl jobs (hourly)",
     "id": "crawl_hostnames_dispatcher",
-    "job_name": "crawl_hostnames_dispatcher",
+    "job_name": "enqueueCrawlHostnamesDispatcher",
     "queue_name": "crawl_hostnames",
-    "schedule": "0 2 * * *",
+    "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
   },
   {

@@ -79,6 +79,7 @@ owner modules below are the canonical field/default/ceiling inventory:
 | `hostname-blocking-work-config`           | [hostname-blocking limits](../../../../../backend/services/hostname-blocking/work-limits.mts)                     |
 | `moderation-reports-work-config`          | [moderation-reports limits](../../../../../backend/services/moderation-reports/work-limits.mts)                   |
 | `communities-work-config`                 | [communities limits](../../../../../backend/services/communities/work-limits.mts)                                 |
+| `crawl-dispatch-work-config`              | [crawl dispatch limits](../../../../../backend/services/crawls/work-limits.mts)                                   |
 | `admin-imports-work-config`               | [admin-imports limits](../../../../../backend/queues/admin-imports/config.mts)                                    |
 | `follower-distributions-work-config`      | [follower-distributions limits](../../../../../backend/services/follower-distributions/work-limits.mts)           |
 | `oauth-facebook-work-config`              | [oauth-facebook limits](../../../../../backend/services/oauth-facebook/work-limits.mts)                           |
@@ -111,9 +112,7 @@ owner modules below are the canonical field/default/ceiling inventory:
 | `post-clearance-work-config`              | [post-clearance limits](../../../../../backend/services/post-clearance/work-limits.mts)                           |
 | `users-work-config`                       | [users limits](../../../../../backend/services/users/work-limits.mts)                                             |
 
-Existing account-data, membership, copyright, crawl-dispatch and Bedrock namespaces also expose
-their recovery windows and additional work bounds; their registry entries use the same numeric
-metadata and bounded-reader policy.
+Existing namespaces expose recovery windows and work bounds through the same numeric metadata and bounded-reader policy.
 
 ## Related
 

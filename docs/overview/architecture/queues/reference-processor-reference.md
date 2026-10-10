@@ -38,6 +38,7 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | crawl_html_boilerplate_removal               | boilerplate_removal_dispatcher                 | —                                        | 100              |
 | crawl_html_boilerplate_removal               | boilerplate_removal                            | —                                        | 10               |
 | crawl_hostnames                              | crawl_hostnames_dispatcher                     | —                                        | 100              |
+| crawl_hostnames                              | enqueueCrawlHostnamesDispatcher                | —                                        | 100              |
 | crawl_hostnames                              | crawl_urls_per_hostname_dispatcher             | —                                        | 100              |
 | crawl_hostnames                              | crawl_tier1_dispatcher                         | —                                        | 100              |
 | crawl_hostnames                              | crawl_tier2_dispatcher                         | —                                        | 100              |

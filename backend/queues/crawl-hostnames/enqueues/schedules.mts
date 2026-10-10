@@ -24,9 +24,9 @@ const DEFAULT_OPTIONS = {
 export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_HOSTNAMES_QUEUE_NAME, [
   crawlJob(
     'crawl_hostnames_dispatcher',
-    '0 2 * * *',
+    '0 * * * *',
     PRIORITY_DISPATCHER,
-    'Dispatch hostname crawl jobs (daily)',
+    'Dispatch due hostname crawl jobs (hourly)',
     enqueueCrawlHostnamesDispatcher,
     'crawl-hostnames-dispatch',
   ),
@@ -80,11 +80,13 @@ function crawlJob(
     repeat: { pattern },
     template: {
       name:
-        id === 'crawl_tier1_dispatcher'
-          ? 'enqueueCrawlTier1Dispatcher'
-          : id === 'crawl_tier2_dispatcher'
-            ? 'enqueueCrawlTier2Dispatcher'
-            : id,
+        id === 'crawl_hostnames_dispatcher'
+          ? 'enqueueCrawlHostnamesDispatcher'
+          : id === 'crawl_tier1_dispatcher'
+            ? 'enqueueCrawlTier1Dispatcher'
+            : id === 'crawl_tier2_dispatcher'
+              ? 'enqueueCrawlTier2Dispatcher'
+              : id,
       data: {},
       opts: { ...DEFAULT_OPTIONS, priority } satisfies JobOptions,
     },

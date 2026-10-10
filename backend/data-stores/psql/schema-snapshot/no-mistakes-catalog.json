@@ -124292,7 +124292,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 11
         },
         "attempt_threshold_hours": {
@@ -124313,7 +124313,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
+        },
+        "crawl_swept_at": {
+          "comment": "Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12
         },
         "created_at": {
           "comment": null,
@@ -124323,7 +124333,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "created_by_id": {
           "comment": null,
@@ -124333,7 +124343,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -124343,7 +124353,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "hostname": {
           "comment": "Lowercase, unique hostname (e.g. example.com).",
@@ -124403,7 +124413,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
@@ -124423,7 +124433,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "should_follow_link_rel": {
           "comment": "If TRUE, links to this hostname use rel=follow. Only for trusted sites.",
@@ -124453,7 +124463,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -124463,7 +124473,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -124483,7 +124493,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "votes_count_down": {
           "comment": null,
@@ -124493,7 +124503,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "votes_count_none": {
           "comment": null,
@@ -124503,7 +124513,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "votes_count_up": {
           "comment": null,
@@ -124513,7 +124523,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "votes_score_down": {
           "comment": null,
@@ -124523,7 +124533,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "votes_score_net": {
           "comment": null,
@@ -124533,7 +124543,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_score_none": {
           "comment": null,
@@ -124543,7 +124553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "votes_score_sort": {
           "comment": null,
@@ -124553,7 +124563,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_score_up": {
           "comment": null,
@@ -124563,7 +124573,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -124573,7 +124583,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -124583,7 +124593,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -124593,7 +124603,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -124603,7 +124613,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -124613,7 +124623,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -124654,6 +124664,47 @@
           ],
           "live": true,
           "predicate": "is_blocked",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__crawl_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__crawl_due ON public.url_hostnames USING btree (age_threshold_days, crawl_swept_at NULLS FIRST, id) INCLUDE (hostname) WHERE (is_crawlable AND (NOT is_blocked))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "age_threshold_days",
+              "descending": false,
+              "expression": "age_threshold_days",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "crawl_swept_at",
+              "descending": false,
+              "expression": "crawl_swept_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(is_crawlable AND (NOT is_blocked))",
           "primary": false,
           "ready": true,
           "unique": false,
