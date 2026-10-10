@@ -86,6 +86,34 @@ reruns kept those counts and fingerprints. The single faster 10,000-row sample d
 
 Remote-follower, user, and post COPY candidates have no stable measured benefit.
 
+### UUID media replay workload
+
+The canonical seed adds 12,000 retained delivery authorities, with every fourth authority in
+failed replay membership and the others pending. Placement UUIDs run in reverse record UUID
+order. Each record has one owned notice target, so actor lifecycle writes have real join partners.
+The loader uses bounded 250-row inserts with normal FKs, authority-generation and history triggers;
+reruns preserve identities and rearm only the known fixture's failed cohort.
+
+The three `media-delivery-replay-*` scenarios capture the actual service's first page, UUID
+continuation and scoped UUID-array page. They require the canonical 1,000-row page configuration,
+verify every candidate belongs to the seed before a global-page call, and rearm only that page
+before explaining its lock, pending-transition and actor-event statements. Both custom and generic
+plans must use the UUID-leading failed-membership index and stay within their driving-row budgets.
+All current-view, lifecycle, retained-identity and FK/trigger partner statistics are refreshed.
+The capture requires exactly those three statements from the committing service call; verification
+and fixture rearming run after capture so they cannot be mistaken for replay queries.
+
+For a focused local proof after normal backend initialization and sourcing `.env`, run the same
+loader and scenarios without the rest of the corpus:
+
+```bash
+node backend/scripts/explain-analyze/media-delivery-replay.mts --seed-only /tmp/media-replay-seed.json
+EXPLAIN_PLAN_CACHE_MODE=compare node backend/scripts/explain-analyze/media-delivery-replay.mts --run-only /tmp/media-replay-plans.json
+```
+
+The output retains partial raw plans on failure. These are PostgreSQL replay plans; native queue
+producer and worker/retry proof stays in the owning backend test projects.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with

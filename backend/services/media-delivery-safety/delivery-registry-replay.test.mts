@@ -1,3 +1,4 @@
+import { encodeScopedUuidCursor } from '@modules/pagination'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -7,7 +8,10 @@ import {
   type ReplayMediaDeliveryRegistryData,
 } from '../../queues/notifications/enqueues.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createFailedMediaDeliveryReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import {
+  settleReplayFixtureOperations,
+  createFailedMediaDeliveryReplayFixture,
+} from '@voucha/test-helpers/copyright-route-replay-setup'
 import { countTestCopyrightLifecycleEvents } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { getTestMediaDeliveryTransitionHistory } from '@voucha/test-helpers/entities/media-delivery-retry'
 import { processReplayMediaDeliveryRegistry } from '../../workers/notifications/processors/media-delivery-registry.mts'
@@ -20,15 +24,30 @@ describe('media delivery replay jobs', () => {
   })
   it('retries and overlaps chains without reopening a failed record twice', async () => {
     installTestMediaDeliveryEdge()
-    const [first, second] = await Promise.all([
+    const [first, second] = await settleReplayFixtureOperations([
       createFailedMediaDeliveryReplayFixture(),
       createFailedMediaDeliveryReplayFixture(),
     ])
     const fixtures = [first, second]
     const recordIds = fixtures.map(fixture => fixture.mediaDeliveryRegistryRecordId)
-    const before = await Promise.all(recordIds.map(getTestMediaDeliveryTransitionHistory))
-    const snapshots = await Promise.all(recordIds.map(getTestMediaDeliveryRecordSnapshot))
-    const keys = snapshots.map(snapshot => String(snapshot?.delivery_key)).toSorted()
+    const before = await settleReplayFixtureOperations(
+      recordIds.map(getTestMediaDeliveryTransitionHistory),
+    )
+    const snapshots = await settleReplayFixtureOperations(
+      recordIds.map(getTestMediaDeliveryRecordSnapshot),
+    )
+    expect(snapshots.every(snapshot => snapshot?.state === 'failed')).toBe(true)
+    const keys = [
+      encodeScopedUuidCursor(
+        recordIds.toSorted()[0]!,
+        JSON.stringify({
+          operation: 'media-delivery-registry-replay',
+          order: 'media-delivery-registry-record-id-asc',
+          recordIds: recordIds.toSorted(),
+          actorUserId: first.moderator.id,
+        }),
+      ),
+    ]
     const continuations: ReplayMediaDeliveryRegistryData[] = []
     const restore = overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
       registry_reconciliation_page_size: 1,
@@ -43,7 +62,7 @@ describe('media delivery replay jobs', () => {
     }
     const data = { actorUserId: first.moderator.id }
     try {
-      await Promise.all([
+      await settleReplayFixtureOperations([
         processReplayMediaDeliveryRegistry(data, dependencies),
         processReplayMediaDeliveryRegistry(data, dependencies),
       ])
@@ -53,7 +72,7 @@ describe('media delivery replay jobs', () => {
         ),
       ).toBe(true)
       const next = { ...data, after: keys[0] }
-      await Promise.all([
+      await settleReplayFixtureOperations([
         processReplayMediaDeliveryRegistry(next, dependencies),
         processReplayMediaDeliveryRegistry(next, dependencies),
       ])

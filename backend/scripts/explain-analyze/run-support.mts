@@ -134,7 +134,11 @@ export async function runAndCapture(
   fn: () => Promise<unknown>,
   nameSuffix?: string,
   captureQueryName?: string | readonly string[],
-  explainOptions: { localSettings?: Readonly<Record<string, string>> } = {},
+  explainOptions: {
+    localSettings?: Readonly<Record<string, string>>
+    afterCapture?: () => Promise<void>
+    exactCapturedNames?: readonly string[]
+  } = {},
 ): Promise<void> {
   ensureScenarioContract(label)
   console.log(`Running: ${label}`)
@@ -148,6 +152,13 @@ export async function runAndCapture(
   }
 
   const allCaptured = getCapturedQueries()
+  if (
+    explainOptions.exactCapturedNames &&
+    JSON.stringify(allCaptured.map(query => extractQueryName(query.text))) !==
+      JSON.stringify(explainOptions.exactCapturedNames)
+  )
+    throw new Error(`${label} did not capture exactly the expected operation statements`)
+  await explainOptions.afterCapture?.()
   const selectedNames = typeof captureQueryName === 'string' ? [captureQueryName] : captureQueryName
   const captured = selectedNames
     ? allCaptured.filter(query => selectedNames.includes(extractQueryName(query.text) ?? ''))
@@ -165,7 +176,7 @@ export async function runAndCapture(
       )
       const name = suffixes.length > 0 ? `${baseName}:${suffixes.join(':')}` : baseName
       const result = await explainAnalyze(name, cq.text, cq.values, {
-        ...explainOptions,
+        localSettings: explainOptions.localSettings,
         planCacheMode,
       })
       result.scenario_id = label

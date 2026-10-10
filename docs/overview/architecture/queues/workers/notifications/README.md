@@ -31,7 +31,7 @@ schedule by priority.
 
 Media-registry root reconciliation repairs markers and stages current authority before capturing a
 primary-database cutoff. Root and continuation jobs terminalize a bounded set of abandoned final
-claims, then dispatch one recovery page. Continuations retain an opaque delivery-key cursor and
+claims, then dispatch one recovery page. Continuations retain an opaque registry UUID cursor and
 cutoff, omit root staging, and are enqueued only after all child enqueues succeed. Failed pages
 retry from the same cursor; the next scheduled root covers later eligibility changes. See the
 [media-delivery safety protocol](../../../services/media-delivery-safety/README.md).
@@ -56,4 +56,4 @@ flowchart LR
 
 Copyright action stages and delivery channels share one captured page allowance per job. Each page rotates the unfinished stage/channel to the end of an explicit pending list; continuations preserve that order, each cursor, and the fixed action evaluation time. A page-read failure is deferred to a continuation while other stages use the remaining allowance.
 
-Media-delivery replay jobs atomically reopen one failed page and append actor-attributed lifecycle changes. Full pages enqueue a continuation using the last computed delivery key. Retried and overlapping pages recheck current failed state under retained record locks, so a successful reopen produces one transition and lifecycle event. Apply jobs use registry UUID ids; external edge keys stay unchanged.
+Media-delivery replay jobs atomically reopen one failed page and append actor-attributed lifecycle changes. Full pages enqueue a continuation using the last registry record UUID. Retried and overlapping pages recheck current failed state under retained record locks, so a successful reopen produces one transition and lifecycle event. Apply jobs use registry UUID ids; external edge keys stay unchanged.

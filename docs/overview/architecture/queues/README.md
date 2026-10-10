@@ -57,3 +57,5 @@ active, so a processor must not enqueue its own continuation under the id its ac
 [`crawl_urls`](crawler/README.md) keys each 429 rate-limit replacement by its retry count
 (`crawl_url_ratelimit__<urlId>__<n>`) and fails the job, so GlideMQ retries it, when the
 replacement add returns no job.
+
+Operator media-registry replay uses the [notifications queue](notifications/README.md#media-delivery-replay) to reopen one UUID page per job, preserving the actor across awaited continuations.
