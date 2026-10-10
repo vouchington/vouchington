@@ -5629,9 +5629,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
