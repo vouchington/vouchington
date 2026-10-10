@@ -23,6 +23,7 @@
   "scripts": {},
   "dependencies": {
     "@backend/service-registrations": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@modules/csv": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -40,6 +41,7 @@
     "@services/copyright-notices": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/data-points": "workspace:^",
+    "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",

@@ -3477,6 +3477,9 @@ importers:
       '@backend/service-registrations':
         specifier: workspace:^
         version: link:../service-registrations
+      '@data-stores/graceful-shutdown':
+        specifier: workspace:^
+        version: link:../data-stores/graceful-shutdown
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../data-stores/psql
@@ -3528,6 +3531,9 @@ importers:
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points
+      '@services/data-retention':
+        specifier: workspace:^
+        version: link:../services/data-retention
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../services/elections-votes

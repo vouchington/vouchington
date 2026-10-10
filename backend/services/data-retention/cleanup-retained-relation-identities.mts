@@ -1,4 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  withTransactionOptions,
+  type QueryOptions,
+} from '@data-stores/psql'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   electedRelationMetadata,
@@ -14,11 +19,32 @@ export type RetainedRelationIdentityCleanupPage = {
 
 export type RetainedRelationIdentityKey = { subjectId: string; relationId: string }
 
+export type RetainedRelationCleanupCursor = {
+  entity_relation: string
+  cursor_subject_id: string | null
+  cursor_relation_id: string | null
+}
+
+/** Enum primary keys bound this inventory to the elected families; reads never change progress. */
+export async function readRetainedRelationCleanupCursors(
+  options: QueryOptions = {},
+): Promise<RetainedRelationCleanupCursor[]> {
+  const { rows } = await read<RetainedRelationCleanupCursor>(
+    `/* readRetainedRelationCleanupCursors */
+     SELECT entity_relation, cursor_subject_id, cursor_relation_id
+     FROM retained_relation_identity_cleanup_cursors
+     ORDER BY entity_relation LIMIT $1`,
+    [electedRelationMetadata.length],
+    options,
+  )
+  return rows
+}
+
 /** Each elected relation has a separate bounded cursor and transaction. */
 export async function cleanupRetainedRelationIdentities(
   pageSize = 1_000,
   keysByTable?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>,
-  options?: { ensureCursors?: boolean },
+  options?: QueryOptions & { ensureCursors?: boolean },
 ): Promise<RetainedRelationIdentityCleanupPage[]> {
   if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
     throw new RangeError('Retained relation cleanup page size must be between 1 and 1000')
@@ -33,6 +59,8 @@ export async function cleanupRetainedRelationIdentities(
     observeSharedDbScope(
       'cleanupRetainedRelationIdentities',
       sharedDbIdsScope(keys?.flatMap(key => [key.subjectId, key.relationId])),
+      undefined,
+      options?.query,
     )
     pages.push(
       // oxlint-disable-next-line no-await-in-loop -- each concrete family owns an independent bounded transaction.
@@ -41,6 +69,7 @@ export async function cleanupRetainedRelationIdentities(
         pageSize,
         keys,
         options?.ensureCursors === true,
+        options,
       ),
     )
   }
@@ -52,51 +81,62 @@ async function cleanupRelationFamily(
   pageSize: number,
   keys?: readonly RetainedRelationIdentityKey[],
   ensureCursor = false,
+  options: QueryOptions = {},
 ): Promise<RetainedRelationIdentityCleanupPage> {
   const metadata = electedRelationMetadata.find(item => item.table_name === relationTable)!
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
-  await using query = await beginTransaction()
-  if (!keys || ensureCursor)
+  if (options.query) return withTransactionOptions(options, cleanup)
+  await using transaction = await beginTransaction({ client: options.client })
+  const result = await cleanup(transaction)
+  await transaction.commit()
+  return result
+
+  async function cleanup(query: NonNullable<QueryOptions['query']>) {
     await query(
-      `/* ensureRetainedRelationCleanupProgress */
+      `/* reserveRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+      [`retained-relation-cleanup:${relationTable}`],
+    )
+    if (!keys || ensureCursor)
+      await query(
+        `/* ensureRetainedRelationCleanupProgress */
        INSERT INTO retained_relation_identity_cleanup_cursors (entity_relation)
        VALUES ($1) ON CONFLICT (entity_relation) DO NOTHING`,
-      [relationTable],
-    )
-  const cursor = keys
-    ? null
-    : (
-        await query<{
-          cursor_subject_id: string | null
-          cursor_relation_id: string | null
-        }>(
-          `/* lockRetainedRelationCleanupProgress */
+        [relationTable],
+      )
+    const cursor = keys
+      ? null
+      : (
+          await query<{
+            cursor_subject_id: string | null
+            cursor_relation_id: string | null
+          }>(
+            `/* lockRetainedRelationCleanupProgress */
            SELECT cursor_subject_id, cursor_relation_id
            FROM retained_relation_identity_cleanup_cursors
            WHERE entity_relation = $1 FOR UPDATE`,
-          [relationTable],
-        )
-      ).rows[0]
-  const { rows: candidates } = await query<{ subject_id: string; id: string }>(
-    `/* listRetainedRelationCleanupCandidates */
+            [relationTable],
+          )
+        ).rows[0]
+    const { rows: candidates } = await query<{ subject_id: string; id: string }>(
+      `/* listRetainedRelationCleanupCandidates */
      SELECT candidate.subject_id, candidate.id FROM ${owner} candidate
      WHERE ($1::uuid[] IS NOT NULL AND EXISTS (
        SELECT 1 FROM UNNEST($1::uuid[], $2::uuid[]) owned(subject_id, relation_id)
        WHERE owned.subject_id = candidate.subject_id AND owned.relation_id = candidate.id
      )) OR ($1::uuid[] IS NULL AND ($3::uuid IS NULL OR (candidate.subject_id, candidate.id) > ($3::uuid, $4::uuid)))
      ORDER BY candidate.subject_id, candidate.id LIMIT $5`,
-    [
-      keys?.map(key => key.subjectId) ?? null,
-      keys?.map(key => key.relationId) ?? null,
-      cursor?.cursor_subject_id ?? null,
-      cursor?.cursor_relation_id ?? null,
-      pageSize + 1,
-    ],
-  )
-  const page = candidates.slice(0, pageSize)
-  const { rowCount } = await query(
-    `/* deleteUnreferencedRetainedRelationPage */
+      [
+        keys?.map(key => key.subjectId) ?? null,
+        keys?.map(key => key.relationId) ?? null,
+        cursor?.cursor_subject_id ?? null,
+        cursor?.cursor_relation_id ?? null,
+        pageSize + 1,
+      ],
+    )
+    const page = candidates.slice(0, pageSize)
+    const { rowCount } = await query(
+      `/* deleteUnreferencedRetainedRelationPage */
      WITH locked AS MATERIALIZED (
        SELECT owner.subject_id, owner.id FROM ${owner} owner
        JOIN UNNEST($1::uuid[], $2::uuid[]) candidate(subject_id, relation_id)
@@ -109,18 +149,18 @@ async function cleanupRelationFamily(
          SELECT 1 FROM user_deletion_relation_impacts impact
          WHERE impact.subject_id = locked.subject_id AND impact.${targetColumn} = locked.id
        )`,
-    [page.map(item => item.subject_id), page.map(item => item.id)],
-  )
-  const hasMore = candidates.length > pageSize
-  const last = hasMore ? page.at(-1)! : null
-  if (!keys)
-    await query(
-      `/* checkpointRetainedRelationCleanup */
+      [page.map(item => item.subject_id), page.map(item => item.id)],
+    )
+    const hasMore = candidates.length > pageSize
+    const last = hasMore ? page.at(-1)! : null
+    if (!keys)
+      await query(
+        `/* checkpointRetainedRelationCleanup */
        UPDATE retained_relation_identity_cleanup_cursors
        SET cursor_subject_id = $2, cursor_relation_id = $3
        WHERE entity_relation = $1`,
-      [relationTable, last?.subject_id ?? null, last?.id ?? null],
-    )
-  await query.commit()
-  return { relationTable, scanned: page.length, deleted: rowCount ?? 0, hasMore }
+        [relationTable, last?.subject_id ?? null, last?.id ?? null],
+      )
+    return { relationTable, scanned: page.length, deleted: rowCount ?? 0, hasMore }
+  }
 }
