@@ -99,8 +99,8 @@ describe('same-job embedding continuation', () => {
     'parks production %s on the original job when provider capacity is full',
     async type => {
       const owned = createOwnedEmbeddingQueue(quota, 'routes', connection)
-      const otherWork = await quota.insertOtherWork(1)
-      const countLimit = otherWork.after.count + 1
+      const baseline = await quota.readGlobalUsage()
+      const countLimit = baseline.count + 1
       expect(countLimit).toBeLessThanOrEqual(getRateLimitConfig().MAX_INFLIGHT_JOBS)
       const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
         max_inflight_jobs: countLimit,
@@ -108,9 +108,7 @@ describe('same-job embedding continuation', () => {
       })
       quota.beforeRelease(async () => restore())
       expect(await getBatchCreationLimits()).toMatchObject({ allowed: true })
-      const contribution = await quota.insertCountReservation()
-      expect(contribution.before).toEqual(otherWork.after)
-      expect(contribution.after.count - contribution.before.count).toBe(1)
+      await quota.insertOtherWork(1)
       expect(await getBatchCreationLimits()).toEqual({
         allowed: false,
         reason: 'inflight_job_limit_exceeded',
@@ -135,7 +133,7 @@ describe('same-job embedding continuation', () => {
         expect([...seen]).toEqual([type])
       })
       expect(await quota.removeOwnedReservations()).toEqual({
-        verifiedAbsentCount: 2,
+        verifiedAbsentCount: 1,
         remainingCount: 0,
       })
     },
@@ -176,9 +174,7 @@ describe('same-job embedding continuation', () => {
     quota.beforeRelease(async () => restore())
     const config = getRateLimitConfig()
     const baseline = await requireAdmitted(true)
-    const foreign = await quota.insertOtherWork(1)
-    expect(foreign.after.count - foreign.before.count).toBe(1)
-    expect(foreign.after.inputSizeMB - foreign.before.inputSizeMB).toBeCloseTo(1, 6)
+    await quota.insertOtherWork(1)
     const usage = await quota.readGlobalUsage()
     if (usage.count + 1 >= config.MAX_INFLIGHT_JOBS)
       throw new Error('Global quota precondition: no count slot for the owned reservation')

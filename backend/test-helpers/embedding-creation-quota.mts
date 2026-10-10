@@ -63,22 +63,8 @@ export async function acquireEmbeddingQuotaFixture() {
         bedrockStatus: 'Submitted',
         batchData: { metadata: { inputSizeMB } },
       })
-      const after = await readGlobalUsage()
-      expect(after.count).toBe(before.count + 1)
-      expect(after.inputSizeMB - before.inputSizeMB).toBeCloseTo(inputSizeMB, 6)
-      return { before, after }
-    },
-    insertCountReservation: async () => {
-      const before = await readGlobalUsage()
-      const id = `embedding-capacity-${randomUUID()}`
-      ids.push(id)
-      await insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })
-      const after = await readGlobalUsage()
-      expect(after.count).toBe(before.count + 1)
-      expect(after.inputSizeMB).toBe(before.inputSizeMB)
-      // The first CI group requires admitted baseline usage; the caller verifies that
-      // this owned row alone crosses its configured count ceiling. No foreign filtering.
-      return { before, after }
+      await assertOwnedReservation(id, inputSizeMB)
+      return { before, id, inputSizeMB }
     },
     insertFairnessReservation: async (inflightLimitMB: number, remainingMB: number) => {
       const before = await readGlobalUsage()
@@ -92,9 +78,7 @@ export async function acquireEmbeddingQuotaFixture() {
         bedrockStatus: 'Submitted',
         batchData: { metadata: { inputSizeMB: reservationMB } },
       })
-      const after = await readGlobalUsage()
-      expect(after.count).toBe(before.count + 1)
-      expect(after.inputSizeMB - before.inputSizeMB).toBeCloseTo(reservationMB, 6)
+      await assertOwnedReservation(id, reservationMB)
       return { before, reservationMB }
     },
   }
@@ -172,4 +156,20 @@ async function assertOwnedAccountingRemoved(ids: string[]) {
     [ids],
   )
   expect(rows).toEqual([])
+}
+
+/** Setup checks the owned contribution while unrelated global accounting may change. */
+async function assertOwnedReservation(id: string, inputSizeMB: number) {
+  const { rows } = await read<{ id: string; input_size_mb: number }>(
+    `/* embeddingQuotaFixture:ownedInsertion */
+    SELECT id,
+      COALESCE((data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION, 0) AS input_size_mb
+    FROM bedrock_embedding_batches
+    WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NULL
+      AND failed_at IS NULL AND cancelled_at IS NULL`,
+    [id],
+  )
+  expect(rows).toHaveLength(1)
+  expect(rows[0]!.id).toBe(id)
+  expect(rows[0]!.input_size_mb).toBeCloseTo(inputSizeMB, 6)
 }
