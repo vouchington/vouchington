@@ -48,7 +48,6 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   // A new statement after row locks refreshes READ COMMITTED visibility for overlapping chains.
   const { rows } = await transaction<{
     media_delivery_registry_record_id: string
-    placement_id: string
   }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
     WITH inserted AS (
@@ -58,8 +57,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
       WHERE media_delivery_registry_record_id = ANY(${ids}::uuid[]) AND state = 'failed'
       ORDER BY media_delivery_registry_record_id
       RETURNING media_delivery_registry_record_id
-    ) SELECT record.id AS media_delivery_registry_record_id, record.placement_id FROM inserted
-      JOIN media_delivery_registry_records record ON record.id = inserted.media_delivery_registry_record_id
+    ) SELECT media_delivery_registry_record_id FROM inserted
   `)
   if (input?.actorUserId && rows.length) {
     await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
