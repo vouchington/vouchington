@@ -9,9 +9,9 @@ import {
   publishStagedMediaDeliveryRecord,
   replayFailedMediaDeliveryRegistryRecords,
   stageImagePlacementDeliveryRecord,
-  stageAllCurrentImagePlacementDeliveryRecords,
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
+import { stageAllCurrentImagePlacementDeliveryRecords } from '@services/media-delivery-safety/delivery-registry-reconciliation'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,

@@ -10,7 +10,6 @@ export {
 export { repairFailedImageDeliveryMutation } from './delivery-registry-recovery.mts'
 export {
   replayFailedMediaDeliveryRegistryRecords,
-  stageAllCurrentImagePlacementDeliveryRecords,
   stageImagePlacementDeliveryRecordPage,
 } from './delivery-registry-reconciliation.mts'
 export {

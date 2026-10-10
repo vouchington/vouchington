@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
+import {
+  stageCurrentImagePlacementDeliveryRecordsForImageIds,
+  stageAllCurrentImagePlacementDeliveryRecords,
+} from './delivery-registry-reconciliation.mts'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -13,7 +16,6 @@ import {
 } from '@voucha/test-helpers'
 import {
   getMediaDeliveryRegistryScanBefore,
-  stageAllCurrentImagePlacementDeliveryRecords,
   stageImagePlacementDeliveryRecord,
   listRecoverableMediaDeliveryRegistryIds,
   replayFailedMediaDeliveryRegistryRecords,

@@ -94,6 +94,7 @@ describe('PostgreSQL ordering guard config', () => {
       'backend/services/identity-verification/attempts.mts:1',
       'backend/services/individuals-households/households/spending-categories.mts:1',
       'backend/services/lists/items.mts:1',
+      'backend/services/media-delivery-safety/delivery-registry-reconciliation.mts:1',
       'backend/services/notifications/create-critical-moderation-alert-notification.mts:1',
       'backend/services/notifications/create-moderation-report-reviewed-notification.mts:1',
       'backend/services/notifications/reconcile-post-writes.mts:1',
