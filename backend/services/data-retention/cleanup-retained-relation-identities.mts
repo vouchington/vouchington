@@ -87,7 +87,7 @@ async function cleanupRelationFamily(
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
   if (options.query) return withTransactionOptions(options, cleanup)
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction({ client: options.client })
   const result = await cleanup(transaction)
   await transaction.commit()
   return result
