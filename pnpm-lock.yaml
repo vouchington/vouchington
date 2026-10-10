@@ -5629,9 +5629,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7234,6 +7231,9 @@ importers:
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -7834,9 +7834,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

@@ -55,3 +55,5 @@ flowchart LR
 - Worker entrypoint: [../../entrypoints/worker-io/README.md](../../../backend/entrypoints/worker-io/README.md)
 
 Copyright action stages and delivery channels share one captured page allowance per job. Each page rotates the unfinished stage/channel to the end of an explicit pending list; continuations preserve that order, each cursor, and the fixed action evaluation time. A page-read failure is deferred to a continuation while other stages use the remaining allowance.
+
+Media-delivery replay jobs atomically reopen one failed page and append actor-attributed lifecycle changes. Full pages enqueue a continuation using the last computed delivery key. Retried and overlapping pages recheck current failed state under retained record locks, so a successful reopen produces one transition and lifecycle event. Apply jobs use registry UUID ids; external edge keys stay unchanged.

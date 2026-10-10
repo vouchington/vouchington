@@ -27,9 +27,9 @@ export async function getPostImages(postId: string): Promise<PostImagePlacement[
         OR EXISTS (
           SELECT 1
           FROM view_media_delivery_registry_current_records delivery
-          WHERE delivery.delivery_key = concat(
-            'image-placement:', placement.id, ':', placement.revision, ':', pi.image_id
-          )
+          WHERE delivery.placement_id = placement.id
+            AND delivery.placement_revision = placement.revision
+            AND delivery.image_id = pi.image_id
             AND delivery.desired_state = 'allow'
             AND delivery.state = 'completed'
         )

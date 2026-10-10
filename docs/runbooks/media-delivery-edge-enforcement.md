@@ -37,8 +37,9 @@ its own owner-approved plan. Never combine them into one apply.
    Every current placement needs a completed record; pending, claimed, failed, and missing records
    identify gaps to resolve. A stale-generation rejection requires the
    [reset and restore runbook](media-delivery-reset-restore.md#supported-workflows). For a transient
-   failure, fix the cause, then replay all failed records through
-   `POST /api/v1/copyright-media-delivery/replays` and return to step 2.
+   failure, fix the cause, then queue replay through
+   `POST /api/v1/copyright-media-delivery/replays` (`202`, no count). Small jobs reopen failed
+   records in cursor order; confirm completion through the coverage query and return to step 2.
 4. **Compare edge inventory.** Use [workflow B](media-delivery-reset-restore.md#b-edge-registry-rebuild-with-postgresql-intact)
    to classify each edge key against PostgreSQL and resolve every difference.
 5. **Turn report on.** Apply `MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE=report`, then redeploy backend
@@ -77,19 +78,22 @@ staging job reads, then compares it with the current registry record:
 /* mediaDeliveryCoverageGaps */
 WITH expected AS (
   SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id) AS delivery_key,
-    placement.id AS placement_id
+    placement.id AS placement_id, placement.revision AS placement_revision, binding.image_id
   FROM media_placements placement
   JOIN (SELECT placement_id, image_id FROM image_placements
     UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
     ON binding.placement_id = placement.id
   WHERE placement.retired_at IS NULL
 )
-SELECT delivery_key,
+SELECT COALESCE(expected.delivery_key, record.delivery_key) AS delivery_key,
   COALESCE(expected.placement_id, record.placement_id) AS placement_id,
   COALESCE(record.state, 'missing') AS state,
   record.failure_message
 FROM expected
-FULL JOIN view_media_delivery_registry_current_records record USING (delivery_key)
+FULL JOIN view_media_delivery_registry_current_records record
+  ON record.placement_id = expected.placement_id
+  AND record.placement_revision = expected.placement_revision
+  AND record.image_id = expected.image_id
 WHERE record.state IS DISTINCT FROM 'completed'
 ORDER BY delivery_key
 ```

@@ -38,14 +38,15 @@ export async function executeCopyrightActionIntent(
   try {
     const prepared = await prepareCopyrightAction(intent, now, dependencies)
     if (typeof prepared === 'string') return prepared
-    const { legal, placement, deliveryKey } = prepared
+    const { legal, placement, mediaDeliveryRegistryRecordId } = prepared
     const tuple = {
       placementId: placement.placementId,
       revision: placement.revision,
       imageId: placement.imageId,
     }
     if (legal.action === 'restore') restorePublishedTuple = tuple
-    if (deliveryKey) await dependencies.publishStagedMediaDeliveryRecord(deliveryKey)
+    if (mediaDeliveryRegistryRecordId)
+      await dependencies.publishStagedMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
     else await dependencies.prepublishImagePlacementDenial({ ...tuple })
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
@@ -78,7 +79,7 @@ async function prepareCopyrightAction(
       placement: NonNullable<
         Awaited<ReturnType<CopyrightActionDeliveryDependencies['getImagePlacementForCopyright']>>
       >
-      deliveryKey: string | null
+      mediaDeliveryRegistryRecordId: string | null
     }
 > {
   await using transaction = await beginTransaction()
@@ -178,7 +179,11 @@ async function prepareCopyrightAction(
     { query: transaction },
   )
   await transaction.commit()
-  return { legal, placement: mutation.placement, deliveryKey: staged.deliveryKey }
+  return {
+    legal,
+    placement: mutation.placement,
+    mediaDeliveryRegistryRecordId: staged.mediaDeliveryRegistryRecordId,
+  }
 }
 
 async function commitOutcome(

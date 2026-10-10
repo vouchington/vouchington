@@ -1260,7 +1260,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgment_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_google_play_acknowledgment_work_items (membership_google_play_acknowledgment_id, completed_at)\n  VALUES (NEW.id, COALESCE(NEW.acknowledged_at, NEW.skipped_at));\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_media_delivery_generation_change": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)\n      VALUES (NEW.delivery_key, NEW.generation, 'pending');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type)\n      VALUES (NEW.id, NEW.generation, 'pending');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_membership_operation_work": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.completed_at IS NULL THEN\n    INSERT INTO membership_operation_execution_work_items (membership_operation_id)\n    VALUES (NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1290,7 +1290,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n"
     },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.is_flagged_by_openai_omni_moderation = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM view_media_delivery_registry_current_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.is_flagged_by_openai_omni_moderation = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM view_media_delivery_registry_current_records registry\n        WHERE registry.placement_id = p_placement_id AND registry.placement_revision = p_revision AND registry.image_id = p_image_id\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
@@ -1356,7 +1356,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)\n      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -1491,7 +1491,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column text;\n  old_actor jsonb;\n  new_actor jsonb;\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(OLD) - TG_ARGV) IS DISTINCT FROM (to_jsonb(NEW) - TG_ARGV) THEN\n    RAISE EXCEPTION 'copyright legal records are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  FOREACH actor_column IN ARRAY TG_ARGV LOOP\n    old_actor := to_jsonb(OLD) -> actor_column;\n    new_actor := to_jsonb(NEW) -> actor_column;\n    IF old_actor IS DISTINCT FROM new_actor\n      AND (old_actor = 'null'::jsonb OR new_actor <> 'null'::jsonb) THEN\n      RAISE EXCEPTION 'copyright legal record actors may only be erased' USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_lifecycle_event_source_notice": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_delivery_key IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.delivery_key = NEW.media_delivery_registry_record_delivery_key\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1641,7 +1641,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n"
     },
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
@@ -1662,7 +1662,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_media_delivery_change_authority": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_media_delivery_registry_generation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_registry_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT'\n    OR NEW.desired_state IS DISTINCT FROM OLD.desired_state\n    OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    NEW.generation := nextval('media_delivery_registry_generation_sequence');\n  ELSE\n    NEW.generation := OLD.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -32078,7 +32078,7 @@
     "copyright_notice_lifecycle_changes": {
       "checkConstraints": {
         "copyright_lifecycle_event_notice_scope": "CHECK (((copyright_notice_id IS NOT NULL) OR (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types)))",
-        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_delivery_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_delivery_key IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
+        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_id, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
         "copyright_notice_lifecycle_changes_check": "CHECK (((review_rationale_id IS NULL) OR (review_rationale_id = id)))",
         "copyright_notice_lifecycle_changes_check1": "CHECK ((((review_action IS NULL) AND (review_rationale_id IS NULL)) OR ((change_type = 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types) AND (review_action IS NOT NULL) AND (review_rationale_id IS NOT NULL))))",
         "copyright_notice_lifecycle_changes_check2": "CHECK (((is_counter_notice_accepted IS NULL) OR (change_type = 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types)))",
@@ -32290,7 +32290,7 @@
           "ordinalPosition": 20,
           "type": "boolean"
         },
-        "media_delivery_registry_record_delivery_key": {
+        "media_delivery_registry_record_id": {
           "collation": null,
           "comment": "Media delivery registry record replayed by this event.",
           "defaultExpression": null,
@@ -32299,7 +32299,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 16,
-          "type": "text"
+          "type": "uuid"
         },
         "recovery_source": {
           "collation": null,
@@ -32385,11 +32385,11 @@
           "validated": true
         },
         "copyright_lifecycle_event_media_registry_fk": {
-          "columns": ["media_delivery_registry_record_delivery_key"],
-          "definition": "FOREIGN KEY (media_delivery_registry_record_delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
+          "columns": ["media_delivery_registry_record_id"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         },
@@ -32781,18 +32781,18 @@
         "idx_copyright_notice_lifecycle_changes__media_registry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_record_delivery_key) WHERE (media_delivery_registry_record_delivery_key IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_record_id) WHERE (media_delivery_registry_record_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "media_delivery_registry_record_delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "media_delivery_registry_record_delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(media_delivery_registry_record_delivery_key IS NOT NULL)",
+          "predicate": "(media_delivery_registry_record_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -47938,17 +47938,6 @@
           "ordinalPosition": 7,
           "type": "integer"
         },
-        "delivery_key": {
-          "collation": null,
-          "comment": "Concrete exact edge-delivery authority whose transition this records.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        },
         "desired_state": {
           "collation": null,
           "comment": "Exact edge state selected by this authority generation, retained after later changes and republishing.",
@@ -48004,6 +47993,17 @@
           "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
+        "media_delivery_registry_record_id": {
+          "collation": null,
+          "comment": "Retained delivery authority whose transition this records.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
         "next_attempt_at": {
           "collation": null,
           "comment": "Earliest retry time for this pending transition.",
@@ -48029,6 +48029,15 @@
       },
       "comment": "Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.",
       "foreignKeys": {
+        "media_delivery_registry_chang_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_delivery_registry_records",
+          "validated": true
+        },
         "media_delivery_registry_changes_changed_by_id_fkey": {
           "columns": ["changed_by_id"],
           "definition": "FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
@@ -48036,15 +48045,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "retained_user_identities",
-          "validated": true
-        },
-        "media_delivery_registry_changes_delivery_key_fkey": {
-          "columns": ["delivery_key"],
-          "definition": "FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["delivery_key"],
-          "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
       },
@@ -48073,15 +48073,15 @@
         "idx_media_delivery_registry_changes__latest": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (delivery_key, id DESC)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             },
             {
               "column": "id",
@@ -48162,17 +48162,6 @@
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
-        "delivery_key": {
-          "collation": null,
-          "comment": "Exact delivery authority being projected.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
-        },
         "generation": {
           "collation": null,
           "comment": "Current nontransactional edge authority generation.",
@@ -48216,16 +48205,27 @@
           "nullable": true,
           "ordinalPosition": 4,
           "type": "timestamp with time zone"
+        },
+        "media_delivery_registry_record_id": {
+          "collation": null,
+          "comment": "Retained delivery authority being projected.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         }
       },
       "comment": "Current edge projection ownership; deleted on terminal publication while immutable transitions survive.",
       "foreignKeys": {
-        "media_delivery_registry_projection_work_items_delivery_key_fkey": {
-          "columns": ["delivery_key"],
-          "definition": "FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE CASCADE",
+        "media_delivery_registry_proje_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
@@ -48235,7 +48235,7 @@
         "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE (lease_token IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -48246,11 +48246,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(lease_token IS NULL)",
@@ -48262,7 +48262,7 @@
         "idx_media_delivery_registry_projection_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE (lease_token IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -48273,11 +48273,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(lease_token IS NOT NULL)",
@@ -48289,15 +48289,15 @@
         "media_delivery_registry_projection_work_items_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -48310,8 +48310,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"],
-        "definition": "PRIMARY KEY (delivery_key)"
+        "columns": ["media_delivery_registry_record_id"],
+        "definition": "PRIMARY KEY (media_delivery_registry_record_id)"
       },
       "relationKind": "table",
       "triggers": {},
@@ -48319,9 +48319,7 @@
     },
     "media_delivery_registry_records": {
       "checkConstraints": {
-        "media_delivery_registry_records_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
         "media_delivery_registry_records_desired_state_check": "CHECK ((desired_state = ANY (ARRAY['allow'::media_delivery_desired_states, 'withheld'::media_delivery_desired_states])))",
-        "media_delivery_registry_records_exact_key": "CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))",
         "media_delivery_registry_records_generation_check": "CHECK ((generation >= 0))",
         "media_delivery_registry_records_placement_revision_check": "CHECK ((placement_revision >= 0))"
       },
@@ -48329,24 +48327,13 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
-        },
-        "delivery_key": {
-          "collation": null,
-          "comment": "Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
         },
         "desired_state": {
           "collation": null,
@@ -48369,6 +48356,17 @@
           "nullable": false,
           "ordinalPosition": 6,
           "type": "bigint"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Stable retained delivery authority identity for an exact placement revision and image binding.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "image_id": {
           "collation": null,
@@ -48458,18 +48456,18 @@
           "unique": false,
           "valid": true
         },
-        "idx_media_delivery_registry_records__placement": {
+        "idx_media_delivery_registry_records__replay_cursor": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__replay_cursor ON public.media_delivery_registry_records USING btree ((((((('image-placement:'::text || (placement_id)::text) || ':'::text) || (placement_revision)::text) || ':'::text) || (image_id)::text)))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "placement_id",
+              "column": null,
               "descending": false,
-              "expression": "placement_id",
+              "expression": "((((('image-placement:'::text || placement_id::text) || ':'::text) || placement_revision::text) || ':'::text) || image_id::text)",
               "nullsFirst": false,
-              "opclass": "uuid_ops"
+              "opclass": "text_ops"
             }
           ],
           "predicate": null,
@@ -48478,18 +48476,52 @@
           "unique": false,
           "valid": true
         },
-        "media_delivery_registry_records_pkey": {
+        "media_delivery_registry_recor_placement_id_placement_revisi_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_recor_placement_id_placement_revisi_key ON public.media_delivery_registry_records USING btree (placement_id, placement_revision, image_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "delivery_key",
+              "column": "placement_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "placement_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "placement_revision",
+              "descending": false,
+              "expression": "placement_revision",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "media_delivery_registry_records_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -48502,8 +48534,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"],
-        "definition": "PRIMARY KEY (delivery_key)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
@@ -48511,7 +48543,12 @@
         "trigger_media_delivery_registry_records_new_generation": "CREATE TRIGGER trigger_media_delivery_registry_records_new_generation AFTER INSERT OR UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_create_media_delivery_generation_change()",
         "trigger_media_delivery_registry_records_updated_at": "CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "media_delivery_registry_recor_placement_id_placement_revisi_key": {
+          "columns": ["placement_id", "placement_revision", "image_id"],
+          "definition": "UNIQUE (placement_id, placement_revision, image_id)"
+        }
+      }
     },
     "media_delivery_repair_markers": {
       "checkConstraints": {},
@@ -48527,17 +48564,6 @@
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
-        "delivery_key": {
-          "collation": null,
-          "comment": "Exact immutable delivery URL identity; coalesces outstanding repair work.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
-        },
         "marker_token": {
           "collation": null,
           "comment": "Monotonic wakeup identity allocated on coalescing; acknowledgement deletes only its observed token.",
@@ -48548,6 +48574,17 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "bigint"
+        },
+        "media_delivery_registry_record_id": {
+          "collation": null,
+          "comment": "Retained delivery authority identity; coalesces outstanding repair work.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
@@ -48563,12 +48600,12 @@
       },
       "comment": "Committed registry-backed wakeup for pre-commit edge denial recovery; drained by the existing media delivery reconciler.",
       "foreignKeys": {
-        "media_delivery_repair_markers_delivery_key_fkey": {
-          "columns": ["delivery_key"],
-          "definition": "FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
+        "media_delivery_repair_markers_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
@@ -48578,7 +48615,7 @@
         "idx_media_delivery_repair_markers__oldest": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, delivery_key)",
+          "definition": "CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, media_delivery_registry_record_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -48589,11 +48626,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -48605,15 +48642,15 @@
         "media_delivery_repair_markers_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (media_delivery_registry_record_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "delivery_key",
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -48626,8 +48663,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"],
-        "definition": "PRIMARY KEY (delivery_key)"
+        "columns": ["media_delivery_registry_record_id"],
+        "definition": "PRIMARY KEY (media_delivery_registry_record_id)"
       },
       "relationKind": "table",
       "triggers": {
@@ -133985,7 +134022,7 @@
     },
     "view_media_delivery_registry_current_records": {
       "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
-      "definition": " SELECT record.delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    (change.change_type)::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM (media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.delivery_key,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))\n          ORDER BY history.id DESC\n         LIMIT 1) change ON (true));",
+      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    (change.change_type)::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM (media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.media_delivery_registry_record_id,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.generation = record.generation))\n          ORDER BY history.id DESC\n         LIMIT 1) change ON (true));",
       "materialized": false
     },
     "view_memberships": {

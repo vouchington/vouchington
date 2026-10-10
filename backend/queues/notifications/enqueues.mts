@@ -15,11 +15,16 @@ type ReconcileRssFeedItemNotificationData = { rssFeedItemId: string }
 type CopyrightDeliveryIntentData = { intentId: string }
 type CopyrightActionIntentData = { intentId: string }
 export {
+  enqueueReplayMediaDeliveryRegistry,
+  enqueueContinueMediaDeliveryRegistryStaging,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueReconcileMediaDeliveryRegistry,
   enqueueContinueMediaDeliveryRegistryReconciliation,
 } from './enqueues/media-delivery-registry.mts'
-export type { ReconcileMediaDeliveryRegistryData } from './enqueues/media-delivery-registry.mts'
+export type {
+  ReplayMediaDeliveryRegistryData,
+  ReconcileMediaDeliveryRegistryData,
+} from './enqueues/media-delivery-registry.mts'
 export { enqueueCheckCopyrightReviewTarget } from './enqueues/copyright-review-target.mts'
 export { enqueueSweepCopyrightEvidenceRetention } from './enqueues/copyright-evidence-retention.mts'
 export {

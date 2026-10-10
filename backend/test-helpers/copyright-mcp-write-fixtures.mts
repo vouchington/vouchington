@@ -36,7 +36,7 @@ export async function publishTestHostedPostImageDelivery(postId: string, imageId
     imageId,
     state: 'allow',
   })
-  await publishStagedMediaDeliveryRecord(staged.deliveryKey)
+  await publishStagedMediaDeliveryRecord(staged.mediaDeliveryRegistryRecordId)
 }
 
 /** Test-fork switch override; never persists operator config into the shared database. */

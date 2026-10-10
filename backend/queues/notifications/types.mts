@@ -19,6 +19,7 @@ export type NotificationJobs =
   | 'processSweepCopyrightEvidenceRetention'
   | 'processSubmitDsaStatementOfReasons'
   | 'processReconcileDsaStatementSubmissions'
+  | 'processReplayMediaDeliveryRegistry'
   | 'processApplyMediaDeliveryRegistryRecord'
   | 'processReconcileMediaDeliveryRegistry'
 

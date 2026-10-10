@@ -84,17 +84,15 @@ The edge may be ahead of the restored rows, and it may remember takedowns the re
    | Edge record absent, PostgreSQL row completed | Reopen. The edge denies until it is rewritten and remembers no withhold.                                                |
    | Edge record with no PostgreSQL row           | Keep a withheld record. Tighten an allow record (withhold or remove it), because PostgreSQL can no longer vouch for it. |
 
-4. Fence and reopen the keys chosen above in one transaction:
+4. Map the chosen edge keys to their typed placement/revision/image tuples and retained registry UUID ids. Fence and reopen those ids in one transaction:
 
    ```sql
    SELECT setval('media_delivery_registry_generation_sequence',
      GREATEST(:edge_high_water::bigint,
        (SELECT last_value FROM media_delivery_registry_generation_sequence)));
    UPDATE media_delivery_registry_records
-   SET generation = generation + 1, state = 'pending', delivery_attempt_count = 0,
-     claimed_at = NULL, completed_at = NULL, projected_at = NULL, invalidated_at = NULL,
-     next_attempt_at = NULL, failure_message = NULL
-   WHERE delivery_key = ANY(:reopen_keys::text[]);
+   SET generation = generation + 1
+   WHERE id = ANY(:reopen_record_ids::uuid[]);
    ```
 
    The sequence lift guarantees every new generation exceeds every edge generation. Assigning
