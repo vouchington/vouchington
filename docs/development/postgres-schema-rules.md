@@ -793,6 +793,9 @@ and order/paginate by `id` rather than `created_at`.
 Enforced statically by `static-code-analysis/repo-file-policy/uuidv7-created-at-ddl-guard.mts`, which
 flags any UUIDv7-keyed `CREATE TABLE` whose `created_at` is not generated from the id. This is the
 DDL-time complement to the runtime "query by `id`, not `created_at`" predicate guard.
+TypeScript-generated config-driven SQL uses
+[`generated-ddl-schema-invariants.mts`](../../backend/test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts)
+for the same check, including tables inside `DO` blocks and literal `EXECUTE` commands.
 
 DML that writes those generated `created_at` columns is enforced by
 `postgres-no-generated-column-writes` in [`.no-mistakes.yml`](../../.no-mistakes.yml).

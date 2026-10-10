@@ -1,108 +1,101 @@
-import { extractCreateTableMetadata } from 'vouchington-tooling/sql-ast'
+import {
+  parsePostgresSql,
+  type PostgresSqlColumn,
+  type PostgresSqlExpressionRoot,
+  type PostgresSqlStatement,
+} from 'no-mistakes'
 
-import { splitSqlStatements } from '../../../../data-stores/psql/migration-runner/sql-statements.mts'
-import { extractDoBlocks } from './do-block-readers.mts'
-import { loadExecutableSqlStrings } from './generated-ddl-execute-helpers.mts'
 import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mts'
 
-/**
- * Flags CREATE TABLE statements whose `id` column is a UUIDv7 primary key
- * (`PRIMARY KEY DEFAULT uuidv7()`) but whose `created_at` column is not
- * `GENERATED ALWAYS AS (uuid_extract_timestamp(id))`. Mirrors
- * `static-code-analysis/repo-file-policy/uuidv7-created-at-ddl-guard.mts`, which only
- * scans migration files and never sees this config-driven generated SQL.
- *
- * "UUIDv7 table" is detected solely from the id column's own PRIMARY KEY + uuidv7()
- * default — never from whether created_at already looks generated, which would make
- * the check circular and unable to catch the violation it exists to catch.
- *
- * Also scans DO block bodies, and literal `EXECUTE` payloads within them: the real
- * PostgreSQL parser treats a dollar-quoted DO body as one opaque string, and a
- * dynamically executed literal is opaque again one level deeper, so a CREATE TABLE
- * nested in either is otherwise invisible to `extractCreateTableMetadata`. Mirrors
- * `findFirstGeneratedDdlViolation`'s own DO-block-and-EXECUTE-payload recursion in
- * `generated-ddl-guard-helpers.mts`.
- *
- * Requires `initSqlAst()` (from `vouchington-tooling/sql-ast`) to have resolved before
- * the first call.
- */
+/** Check generated config-driven SQL, including statements inside DO blocks and literal EXECUTE
+ * payloads. A UUIDv7 primary-key table's created_at must derive from its id. */
 export async function findFirstUuidv7CreatedAtViolation(sql: string): Promise<string | null> {
-  const executableSql = stripSqlComments(sql)
-  const selectExecutableSql = await loadExecutableSqlStrings(executableSql)
-  const topLevelViolation = findFirstUuidv7CreatedAtViolationIn(sql)
-  if (topLevelViolation) return topLevelViolation
-
-  for (const { body } of extractDoBlocks(executableSql)) {
-    const violation = await findFirstUuidv7CreatedAtViolationInDoBlockBody(
-      stripSqlComments(body),
-      selectExecutableSql,
-    )
-    if (violation) return violation
-  }
-
-  return null
+  const facts = await parsePostgresSql({ sql: stripSqlComments(sql) })
+  return findViolation(facts.statements)
 }
 
-async function findFirstUuidv7CreatedAtViolationInDoBlockBody(
-  body: string,
-  selectExecutableSql: (fragment: string) => string[] | null,
-): Promise<string | null> {
-  for (const statement of splitSqlStatements(body)) {
-    // Masked so that "CREATE TABLE" text inside an EXECUTE literal's own string
-    // argument (or any other quoted content) cannot be mistaken for a real statement.
-    const createTableMatch =
-      /\bCREATE\s+(?:(?:(?:GLOBAL|LOCAL)\s+)?(?:TEMPORARY|TEMP)\s+|UNLOGGED\s+)?TABLE\b/is.exec(
-        maskSqlLiterals(statement),
-      )
-    if (createTableMatch) {
-      // The fallback splitter used inside a DO block body has no PL/pgSQL grammar, so
-      // a leading BEGIN/DECLARE can end up glued onto the split statement. Slice from
-      // the actual CREATE TABLE keyword so the parser sees valid standalone SQL.
-      const violation = findFirstUuidv7CreatedAtViolationIn(statement.slice(createTableMatch.index))
+function findViolation(statements: readonly PostgresSqlStatement[]): string | null {
+  for (const statement of statements) {
+    if (statement.kind === 'createTable') {
+      const violation = tableViolation(statement)
       if (violation) return violation
-      continue
-    }
-
-    const executableStrings = selectExecutableSql(statement)
-    if (executableStrings === null) return 'EXECUTE statements must use literal SQL payloads'
-    for (const executableString of executableStrings) {
-      const nestedSql = stripSqlComments(executableString)
-      const nestedSelector = await loadExecutableSqlStrings(nestedSql)
-      const violation = await findFirstUuidv7CreatedAtViolationInDoBlockBody(
-        nestedSql,
-        nestedSelector,
-      )
+    } else if (statement.kind === 'doBlock') {
+      const violation = findViolation(statement.block.statements)
       if (violation) return violation
+    } else if (statement.kind === 'conditional') {
+      for (const branch of statement.branches) {
+        const violation = findViolation(branch.statements)
+        if (violation) return violation
+      }
+    } else if (statement.kind === 'literalExecute') {
+      const violation = findViolation(statement.execute.statements)
+      if (violation) return violation
+    } else if (statement.kind === 'other' && /\bEXECUTE\b/i.test(maskSqlLiterals(statement.sql))) {
+      return 'EXECUTE statements must use literal SQL payloads'
     }
   }
   return null
 }
 
-function findFirstUuidv7CreatedAtViolationIn(sql: string): string | null {
-  let tables: ReturnType<typeof extractCreateTableMetadata>
-  try {
-    tables = extractCreateTableMetadata(sql)
-  } catch {
-    return null
-  }
+function tableViolation(
+  statement: Extract<PostgresSqlStatement, { kind: 'createTable' }>,
+): string | null {
+  const id = statement.columns.find(column => column.name.value.toLowerCase() === 'id')
+  if (!id || !isIdPrimaryKey(id, statement.constraints)) return null
+  if (rootFunctionName(id.default?.root)?.toLowerCase() !== 'uuidv7') return null
 
-  for (const table of tables) {
-    const idColumn = table.columns.find(column => column.name.toLowerCase() === 'id')
-    if (!idColumn?.isPrimaryKey || idColumn.defaultFunction !== 'uuidv7') continue
+  const createdAt = statement.columns.find(
+    column => column.name.value.toLowerCase() === 'created_at',
+  )
+  if (!createdAt || isGeneratedFromId(createdAt, id)) return null
 
-    const createdAtColumn = table.columns.find(column => column.name.toLowerCase() === 'created_at')
-    if (!createdAtColumn) continue
+  const tableName = statement.table.parts.at(-1)?.value ?? statement.table.sql
+  return (
+    `${tableName}.created_at must be GENERATED ALWAYS AS ` +
+    `(uuid_extract_timestamp(id)) because ${tableName}.id is a UUIDv7 primary key`
+  )
+}
 
-    const isGeneratedFromId =
-      createdAtColumn.generatedFunction === 'uuid_extract_timestamp' &&
-      createdAtColumn.generatedFunctionArgColumns.includes(idColumn.name.toLowerCase())
-    if (isGeneratedFromId) continue
+function isIdPrimaryKey(
+  id: PostgresSqlColumn,
+  constraints: Extract<PostgresSqlStatement, { kind: 'createTable' }>['constraints'],
+): boolean {
+  if (id.constraints.some(constraint => constraint.kind === 'primaryKey')) return true
+  return constraints.some(
+    constraint =>
+      constraint.kind === 'primaryKey' &&
+      constraint.columns.some(column => column.identity === id.name.identity),
+  )
+}
 
+function isGeneratedFromId(createdAt: PostgresSqlColumn, id: PostgresSqlColumn): boolean {
+  const root = unwrapExpression(createdAt.generated?.expression.root)
+  if (root?.kind !== 'functionCall') return false
+  if (root.name.parts.at(-1)?.value.toLowerCase() !== 'uuid_extract_timestamp') return false
+  return root.arguments.some(argument => {
+    const column = unwrapParentheses(argument.root)
     return (
-      `${table.tableName}.created_at must be GENERATED ALWAYS AS ` +
-      `(uuid_extract_timestamp(id)) because ${table.tableName}.id is a UUIDv7 primary key`
+      column?.kind === 'columnReference' &&
+      column.name.parts.at(-1)?.value.toLowerCase() === id.name.value.toLowerCase()
     )
-  }
+  })
+}
 
-  return null
+function rootFunctionName(root: PostgresSqlExpressionRoot | undefined): string | undefined {
+  const unwrapped = unwrapExpression(root)
+  return unwrapped?.kind === 'functionCall' ? unwrapped.name.parts.at(-1)?.value : undefined
+}
+
+function unwrapExpression(
+  root: PostgresSqlExpressionRoot | undefined,
+): PostgresSqlExpressionRoot | undefined {
+  let current = root
+  while (current?.kind === 'parenthesized' || current?.kind === 'cast') current = current.expression
+  return current
+}
+
+function unwrapParentheses(root: PostgresSqlExpressionRoot): PostgresSqlExpressionRoot {
+  let current = root
+  while (current.kind === 'parenthesized') current = current.expression
+  return current
 }
