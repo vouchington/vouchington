@@ -1,12 +1,11 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/test-helpers/api/server'
+import { afterEach, beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   insertOpenCopyrightCounterNoticeDeadline,
   insertReviewedCopyrightFormIntake,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
-import { listCopyrightStaffQueuePage } from '@services/copyright-notices/staff-queue-page'
+import { withCopyrightStaffQueueHttp } from '@voucha/test-helpers/copyright-staff-queue-http'
 import {
   createTestCopyrightTrustedFlagger,
   readTestCopyrightTrustedFlaggerMatch,
@@ -23,8 +22,10 @@ import {
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { encodeScopedTierPreciseUuidCursor } from '@modules/pagination'
 
-const queuePath = '/api/v1/copyright-notices/review-queue'
 const priorQueueCursorScope = 'copyright-notices:staff-queue:urgency-asc-waiting-since-asc-id-asc'
+
+const decisionNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-06T12:00:00.000Z')
+if (!Number.isFinite(decisionNow.getTime())) throw new Error('Invalid VOUCH_PROOF_NOW')
 
 describe('trusted-flagger staff queue priority', () => {
   useCopyrightIntakeEnvironment()
@@ -34,7 +35,7 @@ describe('trusted-flagger staff queue priority', () => {
   beforeAll(async () => {
     await copyrightConfig.waitForInitialization()
     await copyrightConfig.close()
-  })
+  }, 5_000)
 
   afterEach(() => {
     restoreConfig?.()
@@ -44,13 +45,22 @@ describe('trusted-flagger staff queue priority', () => {
   it('boosts only in-area EU matches within urgency tiers and pages with the new cursor', async () => {
     const administrator = await createTestUser({ administrator: true })
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    let ownedApprovalId: string | undefined
+    // Register before approval/setup so every subsequent failure owns normal durable cleanup.
+    onTestFinished(async () => {
+      if (ownedApprovalId)
+        await withdrawCopyrightJurisdictionPolicyApproval(administrator, ownedApprovalId)
+    })
     const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
+    ownedApprovalId = approval.id
     const [unmatchedClaimant, inAreaClaimant, outOfAreaClaimant] = await Promise.all([
       createTestUser(),
       createTestUser(),
       createTestUser(),
     ])
     const unmatched = await seedPendingTerritorialNotice('eu_dsa', unmatchedClaimant)
+    const interleavingClaimant = await createTestUser()
+    const interleavingControl = await seedPendingTerritorialNotice('eu_dsa', interleavingClaimant)
     const inAreaFlagger = await createTestCopyrightTrustedFlagger(administrator, inAreaClaimant.id)
     const boosted = await seedPendingTerritorialNotice('eu_dsa', inAreaClaimant)
     const outOfAreaFlagger = await createTestCopyrightTrustedFlagger(
@@ -100,90 +110,81 @@ describe('trusted-flagger staff queue priority', () => {
       noticeId: missed,
       reviewerUserId: moderator.id,
       state: 'missed',
+      now: decisionNow,
     })
 
     const ownedIds = [unmatched, boosted, outOfArea, missed]
-    const request = createRequest()
-    await request.authenticateAs(moderator)
-    restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
-      trustedFlaggerPriority: false,
-    })
-    const off = await listCopyrightStaffQueuePage(moderator, {
-      limit: ownedIds.length,
-      noticeIds: ownedIds,
-    })
-    expect(off.copyright_notices.map(item => item.id)).toEqual([
-      missed,
-      unmatched,
-      boosted,
-      outOfArea,
-    ])
+    await withCopyrightStaffQueueHttp(
+      moderator,
+      {
+        approvalId: approval.id,
+        actor: administrator,
+      },
+      async ({ query, read, rejectPriorCursor, assertInterleaving }) => {
+        restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+          trustedFlaggerPriority: false,
+        })
+        await assertInterleaving(unmatched, interleavingControl, boosted, false)
+        const off = await read(ownedIds, false, 100)
+        expect(off.copyright_notices.map(item => item.id)).toEqual([
+          missed,
+          unmatched,
+          boosted,
+          outOfArea,
+        ])
 
-    restoreConfig()
-    restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
-      trustedFlaggerPriority: true,
-    })
-    const on = await listCopyrightStaffQueuePage(moderator, {
-      limit: ownedIds.length,
-      noticeIds: ownedIds,
-    })
-    expect(on.copyright_notices.map(item => item.id)).toEqual([
-      missed,
-      boosted,
-      unmatched,
-      outOfArea,
-    ])
-    expect(on.copyright_notices[0]).toMatchObject({ id: missed, reasons: ['deadline_missed'] })
-    expect(on.copyright_notices[1]).toMatchObject({
-      id: boosted,
-      reasons: ['territorial_notice_review'],
-    })
-    const effects = await Promise.all(ownedIds.map(readTestTrustedFlaggerNoticeEffects))
-    for (const effect of effects) {
-      expect(effect).toEqual({
-        hasDecision: false,
-        hasRestriction: false,
-      })
-    }
+        restoreConfig()
+        restoreConfig = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+          trustedFlaggerPriority: true,
+        })
+        const on = await read(ownedIds, true, 100)
+        expect(on.copyright_notices.map(item => item.id)).toEqual([
+          missed,
+          boosted,
+          unmatched,
+          outOfArea,
+        ])
+        expect(on.copyright_notices[0]).toMatchObject({ id: missed, reasons: ['deadline_missed'] })
+        expect(on.copyright_notices[1]).toMatchObject({
+          id: boosted,
+          reasons: ['territorial_notice_review'],
+        })
+        const effects = await Promise.all(ownedIds.map(readTestTrustedFlaggerNoticeEffects))
+        for (const effect of effects) {
+          expect(effect).toEqual({
+            hasDecision: false,
+            hasRestriction: false,
+          })
+        }
 
-    const walked: string[] = []
-    const endCursors: Array<string | null> = []
-    let after: string | undefined
-    let remaining = ownedIds.length
-    while (remaining > 0) {
-      remaining -= 1
-      const page = await listCopyrightStaffQueuePage(moderator, {
-        limit: 1,
-        after,
-        noticeIds: ownedIds,
-      })
-      walked.push(...page.copyright_notices.map(item => item.id))
-      endCursors.push(page.page_info.end_cursor)
-      if (!page.page_info.has_next_page) break
-      after = page.page_info.end_cursor ?? undefined
-    }
-    expect(walked).toEqual([missed, boosted, unmatched, outOfArea])
-    expect(new Set(walked).size).toBe(walked.length)
-    expect(endCursors.at(-1)).toBeNull()
+        const walk = await read(ownedIds, true, 1)
+        const walked = walk.copyright_notices.map(item => item.id)
+        expect(walked).toEqual([missed, boosted, unmatched, outOfArea])
+        expect(new Set(walked).size).toBe(walked.length)
+        expect(walk.page_info.end_cursor).toBeNull()
 
-    const priorCursor = encodeScopedTierPreciseUuidCursor(
-      '2026-01-01T00:00:00.000000Z',
-      2,
-      crypto.randomUUID(),
-      priorQueueCursorScope,
-    )
-    await request.get(`${queuePath}?after=${encodeURIComponent(priorCursor)}`).expect(400)
+        const priorCursor = encodeScopedTierPreciseUuidCursor(
+          '2026-01-01T00:00:00.000000Z',
+          2,
+          crypto.randomUUID(),
+          priorQueueCursorScope,
+        )
+        await rejectPriorCursor(priorCursor)
 
-    // Another unwithdrawn approval can stay current, so this does not assert boost-off order.
-    expect(await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)).toEqual({
-      id: expect.any(String),
-    })
-    const afterWithdrawal = await listCopyrightStaffQueuePage(moderator, {
-      limit: ownedIds.length,
-      noticeIds: ownedIds,
-    })
-    expect(afterWithdrawal.copyright_notices.map(item => item.id).toSorted()).toEqual(
-      [...ownedIds].toSorted(),
+        expect(
+          await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id, { query }),
+        ).toEqual({
+          id: expect.any(String),
+        })
+        const afterWithdrawal = await read(ownedIds, false, 100)
+        expect(afterWithdrawal.copyright_notices.map(item => item.id)).toEqual([
+          missed,
+          unmatched,
+          boosted,
+          outOfArea,
+        ])
+      },
+      decisionNow,
     )
   })
 })

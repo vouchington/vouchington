@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
+import type { LoadedCommunity } from '@services/communities/load-with-viewer'
 import type { Community, CommunityMember } from '@services/communities/types'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
@@ -19,21 +19,18 @@ import {
 
 export { type CommunityAutoTaggerAgent } from './community-auto-tagger-data.mts'
 
+type LoadedViewer = Pick<LoadedCommunity, 'community' | 'membership'>
+
 export async function searchCommunityAutoTaggerAgents(
   currentUser: PrivateUser,
-  communityId: string,
-  membership?: CommunityMember | null,
+  { community, membership }: LoadedViewer,
 ): Promise<CommunityAutoTaggerAgent[]> {
-  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
-  assert(loaded, 404, 'Community not found')
-  const { community } = loaded
-  const resolvedMembership = membership !== undefined ? membership : loaded.membership
   const rows = await getCommunityAutoTaggerAgentRows(community.id)
   return rows.map(row => {
     const entitlement = getCommunityAiAgentEntitlement(
       currentUser,
       community,
-      resolvedMembership,
+      membership,
       isBaselineModeratorSlug(row.slug),
     )
     return mapCommunityAutoTaggerAgent(row, entitlement)
@@ -42,12 +39,12 @@ export async function searchCommunityAutoTaggerAgents(
 
 export async function enableCommunityAutoTaggerAgent(
   currentUser: PrivateUser,
-  communityId: string,
+  loaded: LoadedViewer,
   moderatorSlug: string,
 ): Promise<CommunityAutoTaggerAgent> {
   const { community, membership, agentId } = await loadManagementTarget(
     currentUser,
-    communityId,
+    loaded,
     moderatorSlug,
   )
   const entitlement = getCommunityAiAgentEntitlement(
@@ -81,12 +78,12 @@ export async function enableCommunityAutoTaggerAgent(
 
 export async function disableCommunityAutoTaggerAgent(
   currentUser: PrivateUser,
-  communityId: string,
+  loaded: LoadedViewer,
   moderatorSlug: string,
 ): Promise<CommunityAutoTaggerAgent> {
   const { community, membership, agentId } = await loadManagementTarget(
     currentUser,
-    communityId,
+    loaded,
     moderatorSlug,
   )
   const entitlement = getCommunityAiAgentEntitlement(
@@ -118,14 +115,11 @@ export async function disableCommunityAutoTaggerAgent(
 
 async function loadManagementTarget(
   currentUser: PrivateUser,
-  communityId: string,
+  { community, membership }: LoadedViewer,
   moderatorSlug: string,
 ): Promise<{ community: Community; membership: CommunityMember | null; agentId: string }> {
   assert(isCommunityAutoTaggerAgentSlug(moderatorSlug), 404, 'AI agent not found')
 
-  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
-  assert(loaded, 404, 'Community not found')
-  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   const entitlement = getCommunityAiAgentEntitlement(
     currentUser,

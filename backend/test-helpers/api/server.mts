@@ -1,3 +1,5 @@
+import type { QueryOptions } from '@data-stores/psql/types'
+import { createRequestQueryOptionsListener } from '../../api/request-query-options.mts'
 import supertest from 'supertest'
 import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
 // Register this package's v1 routes on the shared app singleton. Route
@@ -12,6 +14,7 @@ import { v7 } from 'uuid'
 import { listenOnLoopbackEphemeralPort, type LoopbackHost } from '@ts-shared/utils/ephemeral-ports'
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
+import { withOwnedApiServer } from '../api-query-options-server.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 
@@ -35,7 +38,6 @@ type ApiTestServerGlobal = typeof globalThis & {
 // directly, while the dedicated origin-guard suites own browser-origin coverage.
 const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort
-const serverUrlHost = serverHost === '::1' ? '[::1]' : serverHost
 const testRequestIpState = globalThis as typeof globalThis & {
   vouchaTestRequestIpCounter?: number
 }
@@ -54,10 +56,13 @@ interface AuthenticatedAgent extends supertest.Agent {
   setClientInfo: (headers: Partial<Record<string, string>>) => void
 }
 
-export const createRequest = (): AuthenticatedAgent => {
+export const createRequest = (
+  address: ApiTestServerAddress = { host: serverHost, port: serverPort },
+): AuthenticatedAgent => {
+  const requestUrlHost = address.host === '::1' ? '[::1]' : address.host
   // Use the bound loopback URL directly so supertest never falls back to its
   // hardcoded 127.0.0.1 URL (in supertest/lib/test.js Test.serverAddress()).
-  const agent = supertest.agent(`http://${serverUrlHost}:${serverPort}`) as AuthenticatedAgent
+  const agent = supertest.agent(`http://${requestUrlHost}:${address.port}`) as AuthenticatedAgent
   agent.authCookie = ''
   agent.featureFlagCookie = ''
   agent.set('x-forwarded-for', nextTestRequestIp())
@@ -98,14 +103,14 @@ export const createRequest = (): AuthenticatedAgent => {
     this.sid = sessionToken.payload.sid
     // Set cookies for all subsequent requests
     this.authCookie = cookies.join('; ')
-    this.jar.setCookies(cookies, serverHost, '/')
+    this.jar.setCookies(cookies, address.host, '/')
     syncCookieHeader(this)
   }
 
   agent.setFeatureFlags = function (overrides: FeatureFlags) {
     const encoded = encodeFeatureFlagCookie(overrides)
     this.featureFlagCookie = `ff=${encoded}`
-    this.jar.setCookies([this.featureFlagCookie], serverHost, '/')
+    this.jar.setCookies([this.featureFlagCookie], address.host, '/')
     syncCookieHeader(this)
   }
 
@@ -165,4 +170,16 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
 
 function formatIpv6Segment(value: number): string {
   return (value & 0xffff).toString(16)
+}
+
+/** Real HTTP dispatch; the caller retains inherited transaction ownership. */
+export async function withApiRequestQueryOptions<Result>(
+  options: QueryOptions & { now?: Date },
+  run: (request: AuthenticatedAgent) => Promise<Result>,
+): Promise<Result> {
+  const listener = createRequestQueryOptionsListener(
+    createApiRequestGuardedListener(fn.callback()),
+    options,
+  )
+  return withOwnedApiServer(listener, address => run(createRequest(address)))
 }

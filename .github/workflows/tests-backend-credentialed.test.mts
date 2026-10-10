@@ -3,8 +3,6 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { backendCredentialedProjectNames } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 
-// The exact `vitest run --project ...` command is asserted against the shared project list in
-// ci/transient-retry/backend-credentialed-config-agreement.test.mts.
 const workflow = readFileSync('.github/workflows/tests-backend-credentialed.yml', 'utf8')
 
 function jobSection(jobName: string): string {
@@ -45,6 +43,19 @@ describe('backend credentialed test workflow', () => {
     }
   })
 
+  // The Anthropic project needs the federated token, which only branch runs mint, so it has its own
+  // step that pull-request runs skip; the two steps together run every credentialed project.
+  it('runs exactly the shared credentialed Vitest projects, in any order', () => {
+    const job = jobSection('backend-credentialed-tests')
+    const runText = [
+      stepSection(job, 'Run backend credentialed tests'),
+      stepSection(job, 'Run Anthropic credentialed tests'),
+    ].join('\n')
+    const projectFlags = [...runText.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
+
+    expect(projectFlags.toSorted()).toEqual([...backendCredentialedProjectNames].toSorted())
+  })
+
   it('does not shard the credentialed job', () => {
     expect(workflow).not.toContain('--shard')
   })
@@ -76,6 +87,7 @@ describe('backend credentialed test workflow', () => {
     // and the step would be skipped on exactly the failure it reports.
     expect(report).toContain('if: ${{ failure() && (')
     expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
+    expect(report).toContain("steps.anthropic-token.outcome == 'failure'")
     expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
     expect(report).toContain('::warning title=Live provider smoke check failed::')
     expect(report).toContain('>> "$GITHUB_STEP_SUMMARY"')
@@ -85,6 +97,27 @@ describe('backend credentialed test workflow', () => {
     )
     expect(stepSection(credentialedJob, 'Run Anthropic credentialed tests')).not.toContain(
       'continue-on-error',
+    )
+  })
+
+  // One provider's failure must not hide another's signal. Each later provider step carries a status
+  // function, so it runs after an earlier failure, and an explicit outcome check, so it runs only
+  // when what it needs exists. The federation exchange sits after the other providers' tests, so a
+  // failed exchange cannot skip them either.
+  it('runs the Anthropic steps whether or not the other providers passed', () => {
+    const credentialedJob = jobSection('backend-credentialed-tests')
+    const mint = stepSection(credentialedJob, 'Mint Anthropic federation token')
+    const anthropic = stepSection(credentialedJob, 'Run Anthropic credentialed tests')
+
+    expect(mint).toContain(
+      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.migrate.outcome == 'success' }}",
+    )
+    expect(anthropic).toContain(
+      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.anthropic-token.outcome == 'success' }}",
+    )
+    expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain('if:')
+    expect(credentialedJob.indexOf('id: credentialed-tests')).toBeLessThan(
+      credentialedJob.indexOf('id: anthropic-token'),
     )
   })
 })

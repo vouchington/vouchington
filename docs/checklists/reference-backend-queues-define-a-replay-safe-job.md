@@ -39,7 +39,10 @@
   a miss (see `ses-inbound`'s reconciler); or, when replay must succeed on demand, pair it with an
   explicit reactivation helper that calls `job.remove()`/`job.retry()` on matching completed/failed
   jobs before re-enqueuing (see `enqueueOrReactivateBulkOAuthAuthorizationExchanges` in
-  `oauth-authorization-exchange`); or key the id by the entity and triggering event, for example
+  `oauth-authorization-exchange`). A recovery dispatcher driven by a durable row whose token is the
+  fence shares `enqueueBulkReactivatingFinished`: it adds the page first, then removes only the
+  completed or failed record behind each skipped id, leaving a waiting, delayed, or active job as the
+  canonical delivery (see `enqueueOrReactivateBulkUserDeletions` in `user-deletions`); or key the id by the entity and triggering event, for example
   `voteWeight__<userId>__membershipExpired__<membershipId>`. An overlapping sweep that re-reads
   the same event gets the same id and deduplicates; a new event gets a new id and is enqueued.
   This guarantees each trigger is enqueued once, not that it runs. If it fails permanently,

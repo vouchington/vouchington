@@ -5,65 +5,45 @@ import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-jo
 
 type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
-const NON_PRODUCTION_CLAMP_JOBS = [
-  'activitypub-inbox/activitypub-inbox-cleanup',
-  'heartbeat/publish-glidemq-stats',
-  'post-publication/reconcile-post-publication',
-  'rss-feed-item-categories/reconcileRssFeedItemCategorySnapshots',
-  'story-post-related-url-projections/reconcileStoryPostRelatedUrlProjections',
-  'topic-aliases/reconcileTopicAliasCategoryMappings',
-  'account-data-requests/accountDataRequestRecovery',
-  'activitypub-inbox/activitypub-inbox-recovery',
-  'ai_agents/reconcileAutoDispatchJudgements',
-  'ai_agents/reconcileBackgroundResponses',
-  'ai_agents/reconcileCopyrightAgentDispatches',
-  'ai_agents/reconcileClassifierRuns',
-  'bedrock-embeddings-batch/backlog_dispatcher',
-  'bedrock-embeddings-batch/creation_dispatcher',
-  'bedrock-embeddings-batch/poll_dispatcher',
-  'bedrock-embeddings-batch/reconcile_existing_topics',
-  'bedrock-embeddings-batch/reconcile_existing_posts',
-  'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
-  'bedrock-embeddings-batch/post_trigger_recovery',
-  'emails/dispatchCommunityModerationSummaryEmails',
-  'memberships/appleNotificationRecovery',
-  'memberships/googlePlayNotificationRecovery',
-  'memberships/googlePlayAcknowledgementRecovery',
-  'memberships/dispatchMembershipRefundReconciliation',
-  'memberships/membershipEntitlementEffects',
-  'memberships/membershipGrantExpiry',
-  'memberships/membershipVerificationRecovery',
-  'memberships/stripeCatalogReconciliation',
-  'memberships/stripeEventRecovery',
-  'notifications/copyright-action-reconciliation',
-  'notifications/copyright-delivery-reconciliation',
-  'notifications/copyright-dsa-statement-reconciliation',
-  'notifications/copyright-review-target-page',
-  'notifications/media-delivery-registry-reconciliation',
-  'notifications/notification-push-intent-recovery',
-  'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
-  'openai_moderation_omni_single/reconcile-image-quarantines',
-  'openai_moderation_omni_single/reconcile-post-moderation',
-  'rss-feeds/dispatchRssFeeds',
-  'ses_inbound/ses-inbound-reconciliation',
-  'user-deletions/userDeletionRecovery',
-].toSorted() as `${string}/${string}`[]
-
-describe('staging hourly-floor clamp', () => {
+describe('staging hourly wake alignment', () => {
   afterEach(() => vi.restoreAllMocks())
 
   // ECS sets NODE_ENV to production in every deployed environment, including staging. The explicit
-  // deployment-environment source exercises the real staging clamp without mutating process.env.
-  it('clamps exactly the non-production high-frequency jobs and leaves every other repeat unchanged', async () => {
+  // deployment-environment source exercises the real staging alignment without mutating process.env.
+  it('registers every staging scheduler as a cron at minute :00 and leaves aligned crons unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
     expect(baseline.size).toBe(83)
     expect(staging.size).toBe(83)
-    const clamped = [...baseline.keys()].filter(
-      key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
-    )
-    expect(clamped.toSorted()).toEqual(NON_PRODUCTION_CLAMP_JOBS)
-    for (const key of clamped) expect(isExactlyAtHourlyFloor(staging.get(key))).toBe(true)
+    const notAtMinuteZero = [...staging]
+      .filter(([, repeat]) => !isCronAtMinuteZero(repeat))
+      .map(([key]) => key)
+    const movedAlignedCron = [...baseline]
+      .filter(
+        ([key, declared]) =>
+          isCronAtMinuteZero(declared) &&
+          JSON.stringify(staging.get(key)) !== JSON.stringify(declared),
+      )
+      .map(([key]) => key)
+    expect(notAtMinuteZero).toEqual([])
+    expect(movedAlignedCron).toEqual([])
+  })
+
+  it('aligns the off-minute, interval and sub-hourly jobs onto the shared hourly wake', async () => {
+    const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
+    expect(staging.get('heartbeat/publish-glidemq-stats')).toEqual({ pattern: '0 * * * *' })
+    expect(staging.get('images/cleanup-abandoned-uploads-schedule')).toEqual({
+      pattern: '0 * * * *',
+    })
+    expect(staging.get('notifications/copyright-evidence-retention')).toEqual({
+      pattern: '0 * * * *',
+    })
+    expect(staging.get('memberships/googlePlayOidcTrustRefresh')).toEqual({
+      pattern: '0 */3 * * *',
+    })
+    expect(staging.get('bloom-filters/backfillEntityCacheBloomFilter_topics')).toEqual({
+      pattern: '0 4 * * 0',
+    })
   })
 
   it('leaves the production-only daily cleanup schedule unchanged in staging', async () => {
@@ -86,34 +66,36 @@ describe('staging hourly-floor clamp', () => {
     for (const [key, repeat] of repeats) expect(repeat).toEqual(production.get(key))
   })
 
-  it('keeps projected operator schedules aligned with the clamped runtime repeats', () => {
-    const surfaceIdByJobKey = new Map(
+  it('keeps projected operator schedules aligned with the registered staging repeats', async () => {
+    const jobKeyBySurfaceId = new Map(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
-        manifest.jobs.flatMap(job => {
-          const surface = job.operatorSurfaces.find(
-            candidate => candidate.kind === 'scheduled-jobs',
-          )
-          return surface ? [[`${manifest.queueName}/${job.schedulerId}`, surface.id] as const] : []
-        }),
+        manifest.jobs.flatMap(job =>
+          job.operatorSurfaces.flatMap(surface =>
+            surface.kind === 'scheduled-jobs'
+              ? [[surface.id, `${manifest.queueName}/${job.schedulerId}`] as const]
+              : [],
+          ),
+        ),
       ),
     )
-    const expectedClampedIds = NON_PRODUCTION_CLAMP_JOBS.flatMap(key => {
-      const id = surfaceIdByJobKey.get(key)
-      return id === undefined ? [] : [id]
-    }).toSorted()
+    const baselineRepeats = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
+    const stagingRepeats = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
     const baseline = projectScheduledJobs(SCHEDULED_JOB_MANIFESTS)
     const staging = projectScheduledJobs(SCHEDULED_JOB_MANIFESTS, undefined, {
       applyHourlyFloor: true,
     })
     const baselineById = new Map(baseline.map(job => [job.id, job.schedule]))
-    const actualClampedIds = staging
-      .filter(job => job.schedule !== baselineById.get(job.id))
-      .map(job => job.id)
-      .toSorted()
-    expect(actualClampedIds).toEqual(expectedClampedIds)
-    expect(
-      staging.filter(job => actualClampedIds.includes(job.id)).map(job => job.schedule),
-    ).toEqual(actualClampedIds.map(() => 'every 1h'))
+    const mismatches = staging.flatMap(job => {
+      const key = jobKeyBySurfaceId.get(job.id)!
+      const stagingRepeat = stagingRepeats.get(key) as { pattern: string }
+      const realigned = JSON.stringify(stagingRepeat) !== JSON.stringify(baselineRepeats.get(key))
+      const expected = realigned
+        ? expectedOperatorText(stagingRepeat.pattern)
+        : baselineById.get(job.id)
+      return job.schedule === expected ? [] : [{ id: job.id, schedule: job.schedule, expected }]
+    })
+    expect(mismatches).toEqual([])
+    expect(staging.find(job => job.id === 'publish-glidemq-stats')?.schedule).toBe('every 1h')
   })
 })
 
@@ -144,9 +126,13 @@ function makeQueue(upsertJobScheduler: ScheduledJobQueue['upsertJobScheduler']):
   }
 }
 
-function isExactlyAtHourlyFloor(repeat: unknown): boolean {
-  if (typeof repeat !== 'object' || repeat === null) return false
-  if ('every' in repeat) return repeat.every === 3_600_000
-  if ('pattern' in repeat) return repeat.pattern === '0 * * * *'
-  return false
+function expectedOperatorText(pattern: string): string {
+  if (pattern === '0 * * * *') return 'every 1h'
+  const hourStep = /^0 \*\/(\d+) \* \* \*$/.exec(pattern)?.[1]
+  return hourStep === undefined ? pattern : `every ${hourStep}h`
+}
+
+function isCronAtMinuteZero(repeat: unknown): boolean {
+  if (typeof repeat !== 'object' || repeat === null || !('pattern' in repeat)) return false
+  return typeof repeat.pattern === 'string' && repeat.pattern.split(/\s+/)[0] === '0'
 }

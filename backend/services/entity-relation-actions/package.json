@@ -30,7 +30,6 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-relations": "workspace:^",
-    "@services/memberships": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/tag-limits": "workspace:^",

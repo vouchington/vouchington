@@ -19,9 +19,11 @@ const schemaWorkflow = readFileSync(
   new URL('../.github/workflows/tests-postgres-schema.yml', import.meta.url),
   'utf8',
 )
-const imageTag = /image: pgvector\/pgvector:([\w.-]+)@sha256:/u.exec(schemaWorkflow)?.[1]
+const imageTag = /image: mirror\.gcr\.io\/pgvector\/pgvector:([\w.-]+)@sha256:/u.exec(
+  schemaWorkflow,
+)?.[1]
 if (!imageTag) throw new Error('Expected a pgvector image tag in the schema workflow')
-const image = `pgvector/pgvector:${imageTag}@sha256:${digest}`
+const image = `mirror.gcr.io/pgvector/pgvector:${imageTag}@sha256:${digest}`
 const repository = 'vouchington/vouchington'
 const identity = {
   repository,

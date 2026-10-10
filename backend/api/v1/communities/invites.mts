@@ -4,8 +4,8 @@ import { communityPageQuery, communityPageQueryInput } from './query-contracts-h
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
   loadCommunityForModerator,
+  loadCommunityWithViewer,
   searchInvites,
   createInvite,
   revokeInvite,
@@ -52,14 +52,14 @@ app
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/invites')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
+    const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     const body = (await ctx.request.json('1mb')) as CreateInviteInput
     validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/invites', {
       path: ctx.params,
       body,
     })
-    const invite = await createInvite(currentUser.id, community.id, body)
+    const invite = await createInvite(currentUser.id, loaded, body)
 
     ctx.setStatus(201)
     ctx.json({ community_invite: invite })

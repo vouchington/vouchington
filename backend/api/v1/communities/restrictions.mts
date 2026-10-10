@@ -12,7 +12,6 @@ import {
   COMMUNITY_RESTRICTION_TYPES,
   activateCommunityRestrictions,
   currentUserCanModerateCommunity,
-  getCommunityOrThrow,
   getRaidModeSuggestion,
   liftCommunityRestriction,
   loadCommunityWithViewer,
@@ -66,7 +65,7 @@ app
     assertNotSuspended(currentUser)
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
+    const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     const body = await parseJsonBody<{
       restriction_types?: unknown
@@ -100,7 +99,7 @@ app
       ctx.assert(!isNaN(expiresAt.getTime()), 422, 'expires_at is not a valid date')
     }
 
-    const restrictions = await activateCommunityRestrictions(currentUser, community.id, {
+    const restrictions = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes,
       expiresAt,
       reason: typeof body.reason === 'string' ? body.reason : null,
@@ -124,11 +123,11 @@ app.route('/api/v1/communities/:idOrSlug/restrictions/:id').delete(async (ctx: C
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const restrictionId = validateUUIDParam(ctx, 'id')
-  const community = await getCommunityOrThrow(idOrSlug)
+  const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/restrictions/:id', {
     path: ctx.params,
   })
 
-  await liftCommunityRestriction(currentUser, community.id, restrictionId)
+  await liftCommunityRestriction(currentUser, loaded, restrictionId)
   ctx.setStatus(204)
 })

@@ -1,5 +1,5 @@
 import { isSlug, isUUID } from '@modules/utils'
-import { getCommentAncestorsByAny } from '@services/comments'
+import { getCommentAncestorsBatch, getCommentAncestorsByAny } from '@services/comments'
 import { getPostByAnyCached, getPostByAnyCachedBatch } from '@services/entity-fetch'
 import type { Post } from '@services/posts'
 import { BLOCKED_POST_TYPES, canViewPostsBatch } from '@services/posts/check-privacy-access'
@@ -61,4 +61,56 @@ async function loadCommentChain(post: Post): Promise<Post[] | null> {
   const chain = posts.filter((node): node is Post => Boolean(node))
   if (chain.length !== nodes.length || chain.at(-1)?.id !== post.id) return null
   return chain
+}
+
+const live = (node: { deleted_at: Date | null }) => !node.deleted_at
+
+/**
+ * Resolves many posts at once with exactly the visibility `resolveReadableThread` gives each one,
+ * in the order of `postIds`: the thread, or null where it answers as not found. A page costs one
+ * ancestors query, one cached post read, one `requirePrivateToolUser` and one `canViewPostsBatch`
+ * pair over the union of the thread chains, however many posts it holds. Takes post ids only; an
+ * entry that is not a UUID is not found.
+ */
+export async function resolveReadableThreads(
+  currentUser: BasicUser,
+  postIds: string[],
+): Promise<(ReadableThread | null)[]> {
+  const ids = [...new Set(postIds.filter(isUUID))]
+  const nodesById = await getCommentAncestorsBatch(ids)
+  const chainIds = [
+    ...new Set(
+      [...nodesById.values()]
+        .flat()
+        .filter(live)
+        .map(node => node.id),
+    ),
+  ]
+  const loaded = new Map(
+    (await getPostByAnyCachedBatch(chainIds)).flatMap(post => (post ? [[post.id, post]] : [])),
+  )
+
+  const chains = new Map<string, Post[]>()
+  for (const id of ids) {
+    const nodes = (nodesById.get(id) ?? []).filter(live)
+    const chain = nodes.flatMap(node => loaded.get(node.id) ?? [])
+    const intact = chain.length === nodes.length && chain.at(-1)?.id === id
+    if (intact && !chain.some(node => BLOCKED_POST_TYPES.has(node.post_type))) chains.set(id, chain)
+  }
+  const readable = new Set<string>()
+  if (chains.size > 0) {
+    const privateUser = await requirePrivateToolUser(currentUser)
+    const union = [...new Map([...chains.values()].flat().map(node => [node.id, node])).values()]
+    const [asOwner, asSignedOut] = await Promise.all([
+      canViewPostsBatch(privateUser, union),
+      canViewPostsBatch(null, union),
+    ])
+    for (const [id, chain] of chains) {
+      if (chain.every(node => asOwner.get(node.id) && asSignedOut.get(node.id))) readable.add(id)
+    }
+  }
+  return postIds.map(id => {
+    const chain = readable.has(id) ? chains.get(id) : undefined
+    return chain ? { post: chain.at(-1) as Post, ancestors: chain.slice(0, -1) } : null
+  })
 }

@@ -25,6 +25,23 @@ describe('enqueueBulkCrawlUrls', () => {
       ordering: { key: 'hostname-1', rateLimit: { max: 1, duration: 1234 } },
     })
   })
+
+  it('gives each rate-limit replacement its own dedup id per retry count', async () => {
+    await enqueueBulkCrawlUrls([
+      { urlId: 'url-ratelimit', rateLimitRetryCount: 1 },
+      { urlId: 'url-ratelimit', rateLimitRetryCount: 2 },
+    ])
+
+    const jobs = await readAllQueueJobs(crawlUrls)
+    const dedupIds = jobs
+      .filter(j => (j.data as { url_id?: string }).url_id === 'url-ratelimit')
+      .map(j => (j.opts as { deduplication?: { id?: string } }).deduplication?.id)
+      .toSorted()
+    expect(dedupIds).toEqual([
+      'crawl_url_ratelimit__url-ratelimit__1',
+      'crawl_url_ratelimit__url-ratelimit__2',
+    ])
+  })
 })
 
 describe('enqueueCrawlUrlAndWait', () => {

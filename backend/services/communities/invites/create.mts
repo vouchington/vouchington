@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunityWithViewer } from '../load-with-viewer.mts'
+import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { getPublicUserByAny } from '@services/users/get'
 import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
@@ -20,16 +20,16 @@ export type CreateInviteInput = {
 
 export async function createInvite(
   currentUserId: string,
-  communityId: string,
+  loaded: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
 ): Promise<CommunityInvite> {
-  const { invite } = await createInviteWithEmailEnqueue(currentUserId, communityId, input)
+  const { invite } = await createInviteWithEmailEnqueue(currentUserId, loaded, input)
   return invite
 }
 
 export async function createInviteWithEmailEnqueue(
   currentUserId: string,
-  communityId: string,
+  { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
 ): Promise<{
   invite: CommunityInvite
@@ -38,9 +38,7 @@ export async function createInviteWithEmailEnqueue(
   assert(input.username || input.email, 422, 'Either username or email is required')
   assert(!(input.username && input.email), 422, 'Provide either username or email, not both')
 
-  const loaded = await getCommunityWithViewer(communityId, currentUserId)
-  assert(loaded, 404, 'Community not found')
-  const { community, membership } = loaded
+  const communityId = community.id
   assert(!community.archived_at, 403, 'Community is archived')
   assert(membership, 403, 'Forbidden')
 

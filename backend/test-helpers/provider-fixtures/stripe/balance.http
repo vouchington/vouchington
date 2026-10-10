@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"object":"balance","available":[{"amount":4210,"currency":"usd","source_types":{"card":4210}}],"livemode":false,"pending":[{"amount":0,"currency":"usd","source_types":{"card":0}}]}

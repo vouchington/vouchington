@@ -67,7 +67,7 @@ jobs:
             -e POSTGRES_USER=postgres \
             -e POSTGRES_INITDB_ARGS="-c max_connections=300 -c log_min_messages=log" \
             -p "127.0.0.1::5432" \
-            pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+            mirror.gcr.io/pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
           PGPORT=$(docker port "$pg_container" 5432 | cut -d: -f2)
           if [ -z "$PGPORT" ]; then echo "::error::Failed to retrieve Postgres host port from docker"; exit 1; fi
           export PGHOST=localhost

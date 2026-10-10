@@ -11,7 +11,7 @@ describe('projectScheduledJobs applyHourlyFloor', () => {
     expect(projected[0]?.schedule).toBe('*/5 * * * *')
   })
 
-  it('rewrites the schedule text to the hourly-floor text when the repeat is clamped', () => {
+  it('rewrites the schedule text to the top-of-hour text when the repeat is clamped', () => {
     const manifest = manifestOf([job('every-5m', { every: 300_000 }, '*/5 * * * *')])
 
     const projected = projectScheduledJobs([manifest], undefined, { applyHourlyFloor: true })
@@ -19,7 +19,23 @@ describe('projectScheduledJobs applyHourlyFloor', () => {
     expect(projected[0]?.schedule).toBe('every 1h')
   })
 
-  it('leaves the schedule text untouched when the repeat is already at or slower than the floor', () => {
+  it.each([
+    ['every 1h', { every: 3_600_000 }, 'hourly', 'every 1h'],
+    ['every 3h', { every: 3 * 3_600_000 }, 'every 3 hours', 'every 3h'],
+    ['an off-minute hourly cron', { pattern: '17 * * * *' }, '17 * * * *', 'every 1h'],
+    ['an off-minute daily cron', { pattern: '30 2 * * *' }, '30 2 * * *', '0 2 * * *'],
+  ] satisfies [string, ScheduledJobDefinition['repeat'], string, string][])(
+    'rewrites the schedule text to the aligned schedule for %s',
+    (_label, repeat, schedule, expected) => {
+      const manifest = manifestOf([job('aligned', repeat, schedule)])
+
+      const projected = projectScheduledJobs([manifest], undefined, { applyHourlyFloor: true })
+
+      expect(projected[0]?.schedule).toBe(expected)
+    },
+  )
+
+  it('leaves the schedule text untouched when the repeat is already aligned', () => {
     const manifest = manifestOf([job('daily', { pattern: '0 3 * * *' }, '0 3 * * *')])
 
     const projected = projectScheduledJobs([manifest], undefined, { applyHourlyFloor: true })

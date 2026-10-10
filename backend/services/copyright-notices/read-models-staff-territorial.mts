@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
 import type { CopyrightStaffTerritorialCase } from './read-models-staff-territorial-types.mts'
@@ -15,7 +15,7 @@ import { selectEuStaffSettlementPages } from './read-models-eu-settlements.mts'
  */
 export async function selectStaffTerritorialCases(
   noticeIds: readonly string[],
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<Map<string, CopyrightStaffTerritorialCase>> {
   if (noticeIds.length === 0) return new Map()
   const { rows } = await query<{
