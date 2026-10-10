@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { claimMediaDeliveryProjection } from '../services/media-delivery-safety/delivery-registry-claims.mts'
 
 export async function membership(id: string) {
   const { rows } = await write<{
@@ -50,4 +51,34 @@ export async function completeMediaReplayMembership(id: string) {
       SELECT id, generation, 'completed', clock_timestamp()
       FROM media_delivery_registry_records WHERE id = ${id}::uuid
     `)
+}
+
+/** Simulate an accepted transition whose UUID sorts before previously committed history. */
+export async function appendLowerUuidMediaDeliveryTransition(
+  id: string,
+  changeType: 'pending' | 'completed',
+  changedById: string | null = null,
+) {
+  const { rows } = await write<{ id: string; changed_by_id: string | null }>(sql`
+    /* appendLowerUuidMediaDeliveryTransition */
+    INSERT INTO media_delivery_registry_changes
+      (id, media_delivery_registry_record_id, generation, change_type, changed_by_id, completed_at)
+    SELECT uuidv7(interval '-1 day'), id, generation, ${changeType}::media_delivery_registry_change_types,
+      ${changedById}::uuid, CASE WHEN ${changeType} = 'completed' THEN clock_timestamp() ELSE NULL END
+    FROM media_delivery_registry_records WHERE id = ${id}::uuid
+    RETURNING id, changed_by_id
+  `)
+  if (!rows[0]) throw new Error(`Missing media delivery transition fixture ${id}`)
+  return rows[0]
+}
+
+export async function claimTestMediaDeliveryMembership(id: string) {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* claimTestMediaDeliveryMembership:lock */
+    SELECT id FROM media_delivery_registry_records WHERE id = ${id}::uuid FOR UPDATE
+  `)
+  const claim = await claimMediaDeliveryProjection(transaction, id)
+  if (!claim) throw new Error(`Missing claimable media delivery fixture ${id}`)
+  await transaction.commit()
+  return claim
 }
