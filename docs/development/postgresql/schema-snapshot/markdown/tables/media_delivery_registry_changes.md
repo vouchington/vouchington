@@ -28,6 +28,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `uq_media_registry_changes__record_generation_id`: `UNIQUE (media_delivery_registry_record_id, generation, id)`
+- `uq_media_registry_changes__record_id`: `UNIQUE (media_delivery_registry_record_id, id)`
 
 **Check constraints:**
 
@@ -48,6 +49,7 @@ Not partitioned — growth: unbounded.
 - `idx_media_delivery_registry_changes__latest`: `CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id DESC)`
 - `media_delivery_registry_changes_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_changes_pkey ON public.media_delivery_registry_changes USING btree (id)`
 - `uq_media_registry_changes__record_generation_id`: `CREATE UNIQUE INDEX uq_media_registry_changes__record_generation_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, generation, id)`
+- `uq_media_registry_changes__record_id`: `CREATE UNIQUE INDEX uq_media_registry_changes__record_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id)`
 
 **Triggers:**
 
