@@ -14,7 +14,7 @@ describe('hostname routes - request contract validation', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     user = await createTestUser()
-  }, 60_000)
+  }, 5_000)
 
   describe('POST /api/v1/hostnames', () => {
     it('returns 401 without a diagnostic for an anonymous malformed body', async () => {
