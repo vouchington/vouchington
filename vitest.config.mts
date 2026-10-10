@@ -34,6 +34,7 @@ export default defineConfig({
     // overwrites any per-project value during vitest's config resolution, so a literal is both
     // banned (see dev/vitest-config.test.mts) and non-functional whenever the env var is set.
     fileParallelism: true,
+    sequence: { groupOrder: 1 },
     maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS),
     // Persist transformed modules across local `vitest run` processes. Path stays under the
     // workspace `.cache/vite/` tree — not the default `node_modules/.vitest-cache`, which
@@ -92,9 +93,31 @@ export default defineConfig({
           isolate: true,
           name: 'backend-real-glide-mq',
           include: ['backend/**/*.real-glide.mock.test.mts'],
-          exclude: ['**/node_modules/**', '**/.git/**'],
+          exclude: [
+            '**/node_modules/**',
+            '**/.git/**',
+            'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
+          ],
           testTimeout: 30_000,
           hookTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        resolve: {
+          alias: [realGlideMqAlias(), ...backendAliases({ useGlideMqShim: false })],
+        },
+        test: {
+          name: 'backend-embedding-creation-capacity',
+          pool: 'forks',
+          isolate: true,
+          include: [
+            'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
+          ],
+          exclude: ['**/node_modules/**', '**/.git/**'],
+          sequence: { groupOrder: 0 },
+          testTimeout: 5000,
+          hookTimeout: 5000,
         },
       },
       ...toolingProjects,

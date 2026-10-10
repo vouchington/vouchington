@@ -79,6 +79,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-real-glide-mq',
+      'backend-embedding-creation-capacity',
     ]),
   },
   {

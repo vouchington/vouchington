@@ -759,3 +759,26 @@ from calls that create or retire provider mappings.
 ### Retained relation cleanup reservation
 
 `withTestRetainedRelationCleanupReservation` acquires every elected-family advisory transaction lock before admitting the normal global worker call. Admission matches the actual query executor, active test, and retained-relation operation; it closes before the helper awaits rollback. Worker deletes and cursor checkpoints remain in that transaction and are rolled back, including on assertion or registration failure. A handler failure retains its original identity unless rollback also fails, when both errors are reported in an `AggregateError`. A rollback failure always fails the test. Calls outside the reservation, on another executor, or from another test remain rejected by the shared-database scope guard. This is trusted test infrastructure: registration must stay after successful lock acquisition and must never be used to admit committed global writes.
+
+Embedding creation's exact global-capacity cases run in the first project group on the ordinary
+backend shard database. Later projects reuse the same database without resetting it. The fixture
+advisory lock coordinates concurrent runs of this file only; it does not serialize arbitrary
+production writers. Persist owned accounting rows, include other-work positive controls in the
+unfiltered aggregate, observe committed owned-job queue events, and drain before owned cleanup
+and configuration restoration. No test creates a database or raises capacity to hide saturation.
+Quota cases retain the captured dirty-database accounting baseline. Unrelated-work positive controls
+remain in the global aggregate; the temporary count ceiling never exceeds the normal configured
+ceiling. The count-denial fixture uses one positive-size owned row as both the unrelated-work
+control and the ceiling-crossing reservation, requiring only one spare count slot. Setup verifies
+that owned row's active contribution directly; cleanup verifies every owned accounting ID is
+absent. Neither step requires unrelated batches to preserve the captured global aggregate.
+The six empty/unknown embedding-creation route cases use `emptyEmbeddingCreationDependencies`
+from the existing quota helper. This typed fixture injects controlled admitted capacity through
+the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL
+empty scans and real SDK worker completion or unknown-route failure, retaining actual `createBatch`
+(which empty scans must not invoke). They do not prove ambient provider admission. The five route
+denial cases and mixed fairness case retain real unfiltered global quota discovery. Production
+callers omit dependencies and preserve capacity-before-stream ordering and ordinary ceilings.
+Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
+admission within the test budget; this preserves priority ordering and delayed-job due times.
+The normal worker factory forwards that optional setting without changing production defaults.

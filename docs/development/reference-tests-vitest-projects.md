@@ -162,3 +162,8 @@ cell or `vitest doctor` recommendation is faster on a clean machine.
 
 Do not set `fileParallelism: false` or a literal `maxWorkers` to chase speed; that ban is at the
 top of this page.
+
+The embedding creation capacity project uses the documented rare group-order barrier: group 0
+runs its exact global-accounting contract before the ordinary group 1. Both groups use the same
+normal shard database; no per-file database or worker pin is introduced. The production quota
+reader remains unfiltered, and the fixture guard only coordinates that file's cooperating runs.

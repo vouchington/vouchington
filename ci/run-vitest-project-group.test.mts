@@ -25,6 +25,7 @@ describe('runVitestProjectGroup', () => {
       'backend-email-templates',
     ])
     expect(docker).toEqual([
+      'backend-embedding-creation-capacity',
       'backend/analytics-integration',
       'backend-data-stores',
       'backend-platform-stats-cache',
@@ -33,6 +34,9 @@ describe('runVitestProjectGroup', () => {
     ])
     expect(modules.filter(project => docker.includes(project as never))).toEqual([])
     expect(projectsForVitestGroup('backend-default')).toEqual(['ts-shared', ...modules, ...docker])
+    expect(projectsForVitestGroup('backend-embedding-creation-capacity')).toEqual([
+      'backend-embedding-creation-capacity',
+    ])
   })
 
   it('runs every shared credentialed project in the backend group and alone in its own group', () => {
@@ -82,6 +86,8 @@ describe('runVitestProjectGroup', () => {
           'backend-test-helpers',
           '--project',
           'backend-email-templates',
+          '--project',
+          'backend-embedding-creation-capacity',
           '--project',
           'backend/analytics-integration',
           '--project',

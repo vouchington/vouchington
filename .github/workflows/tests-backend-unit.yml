@@ -198,7 +198,7 @@ jobs:
           start_sampler sample_runner_resources 15
           start_sampler sample_postgres_waits 0.5
           start_sampler sample_runner_pressure 2
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
