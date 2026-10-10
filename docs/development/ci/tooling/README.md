@@ -68,3 +68,14 @@ exhausted.
 - <a id="download-helper-contract"></a>[Download helper contract](reference-download-helper-contract.md)
 - <a id="trivy-database-preparation-contract"></a>[Trivy database preparation contract](reference-trivy-database-preparation-contract.md)
 - <a id="inline-workflow-shell-footguns-actionlint--shellcheck"></a>[Inline-workflow shell footguns (actionlint + shellcheck)](reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
+
+The `with-node-test-options` wrapper validates direct `vitest` / `vitest.mjs` commands and
+`node <path>/vitest.mjs` when the script immediately follows `node`. The project-group runner
+validates its forwarded Vitest options after its existing leading-separator normalization.
+At these boundaries, CLI `testTimeout` and `hookTimeout` overrides must be finite positive numbers
+at most 30,000 ms. Both camelCase and kebab-case spellings accept `=value` or a separate value;
+negated, missing, zero, and oversized values fail before the test child starts. Validation preserves
+all forwarded arguments, respects the CLI `--` separator, and leaves project defaults and ordinary
+wrapper commands intact. The command validator lives in CI tooling, outside source AST analysis.
+Unwrapped invocations, Node loader/flag arrangements before the Vitest script, and per-case or
+runtime timeout settings are outside this command boundary; this is not a global timeout guarantee.
