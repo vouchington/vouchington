@@ -133,8 +133,11 @@ export async function isTestImagePlacementPubliclyProjected(input: {
   const { rows } = await read<{
     projected: boolean
   }>(sql`/* isTestImagePlacementPubliclyProjected */
-    SELECT fn_image_placement_publicly_projected(
-      ${input.placementId}::uuid, ${input.revision}, ${input.imageId}::uuid
+    SELECT EXISTS (
+      SELECT 1 FROM view_publicly_projected_image_placements delivery
+      WHERE delivery.placement_id = ${input.placementId}::uuid
+        AND delivery.placement_revision = ${input.revision}
+        AND delivery.image_id = ${input.imageId}::uuid
     ) AS projected
   `)
   return rows[0]?.projected ?? false

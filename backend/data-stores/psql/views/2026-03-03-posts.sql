@@ -142,9 +142,10 @@ CREATE OR REPLACE VIEW view_posts AS
         AND image_placement.image_id = post_images.image_id
       JOIN media_placements placement ON placement.id = image_placement.placement_id
         AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(
-          placement.id, placement.revision, post_images.image_id
-        )
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = post_images.image_id
       WHERE post_images.post_id = posts.id
     ), '[]'::json) AS images,
 

@@ -39,7 +39,8 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
 registerScenarioContract('mv-top-hashtags-refresh', {
   expectations: [
     { kind: 'maxProcessedRows', relation: 'posts', max: 216 },
-    { kind: 'maxProcessedRows', relation: 'post_topic_alias_sources', max: 72 },
+    // Sixty hashtag-window rows plus fifty post-hydration fixtures, with 20% headroom.
+    { kind: 'maxProcessedRows', relation: 'post_topic_alias_sources', max: 132 },
     { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 87 },
     { kind: 'maxProcessedRows', relation: 'rss_feed_item_categories', max: 87 },
     { kind: 'usesIndexes', indexes: ['idx_rss_feed_item_categories__rss_feed_item_id__mapped'] },

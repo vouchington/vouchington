@@ -417,36 +417,6 @@ CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces
 BEFORE DELETE ON user_profile_links
 FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_image_placement_publicly_projected(
-  p_placement_id uuid,
-  p_revision integer,
-  p_image_id uuid
-)
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM images image
-    WHERE image.id = p_image_id
-      AND image.deleted_at IS NULL
-      AND image.upload_completed_at IS NOT NULL
-      AND image.quarantine_pending_at IS NULL
-      AND image.is_flagged_by_openai_omni_moderation = FALSE
-      AND image.openai_omni_moderation_results IS NOT NULL
-      AND image.openai_omni_moderation_created_at IS NOT NULL
-      AND EXISTS (
-        SELECT 1
-        FROM view_media_delivery_registry_current_records registry
-        WHERE registry.placement_id = p_placement_id AND registry.placement_revision = p_revision AND registry.image_id = p_image_id
-          AND registry.desired_state = 'allow'
-          AND registry.state = 'completed'
-      )
-  );
-$$;
-
-COMMENT ON FUNCTION fn_image_placement_publicly_projected(uuid, integer, uuid)
-IS 'Projects only an exact image placement tuple that has completed its allowed edge delivery state.';
-
 COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.';
 COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';
 COMMENT ON COLUMN image_surface_placements.surface_kind IS 'Typed persisted surface owning this image use; exactly one matching owner branch is required.';
