@@ -63,6 +63,14 @@ const entityTypes = {
   post_deleted: true,
   image: true,
   url: true,
+  community: true,
+  rss_feed_item: true,
+  api_key: true,
+  blocklisted_domain: true,
+  embedding: true,
+  post_slug: true,
+  url_hostname: true,
+  topic_alias: true,
 } as const satisfies Record<ReconcileEntityData['entityType'], true>
 const topicIdKeys = [
   'homepage_url_id',

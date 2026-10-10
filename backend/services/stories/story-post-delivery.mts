@@ -1,5 +1,5 @@
 import onError from '@modules/on-error'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { enqueueOnPostCreated } from '@queues/entity-listeners/enqueues'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
@@ -56,7 +56,7 @@ export async function deliverStoryPost(
   }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
-  void entityCacheBloomFilters.posts.add(bloomKeys)
+  void addEntityBloomKeys('posts', bloomKeys)
   await resolvedDependencies.invalidateStories(postStory.story_id)
   void resolvedDependencies.enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   void resolvedDependencies.enqueueOnPostCreated(post.id)

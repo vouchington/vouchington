@@ -4,7 +4,7 @@ import {
   scopedTestMediaRecoveryDependencies,
   withTestMediaRecoveryBacklog,
 } from '@voucha/test-helpers/media-delivery-recovery'
-import { listRecoverableMediaDeliveryRegistryKeys } from '@services/media-delivery-safety'
+import { listRecoverableMediaDeliveryRegistryIds } from '@services/media-delivery-safety'
 import {
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueContinueMediaDeliveryRegistryReconciliation,
@@ -20,11 +20,11 @@ describe('durable media registry recovery hardening', () => {
   it('keeps its captured page budget when configuration is lowered during repair', async () => {
     const user = await createTestUserDirect()
     overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, { recovery_page_size: 2 })
-    await withTestMediaRecoveryBacklog(user.id, 3, async ({ deliveryKeys, scanBefore }) => {
+    await withTestMediaRecoveryBacklog(user.id, 3, async ({ recordIds, scanBefore }) => {
       const accepted: string[] = []
       const continuations: ReconcileMediaDeliveryRegistryData[] = []
       const dependencies = {
-        ...scopedTestMediaRecoveryDependencies(deliveryKeys),
+        ...scopedTestMediaRecoveryDependencies(recordIds),
         reconcileMediaDeliveryRepairMarkers: async (limit: number) => {
           expect(limit).toBe(2)
           overrideDynamicConfigFieldsForTest(mediaDeliverySafetyWorkConfig, {
@@ -32,7 +32,11 @@ describe('durable media registry recovery hardening', () => {
           })
           return 0
         },
-        stageAllCurrentImagePlacementDeliveryRecords: async () => 0,
+        stageImagePlacementDeliveryRecordPage: async () => ({
+          staged: 0,
+          hasMore: false,
+          scanBefore,
+        }),
         getMediaDeliveryRegistryScanBefore: async () => scanBefore,
         enqueueBulkApplyMediaDeliveryRegistryRecords: async (keys: string[]) => {
           accepted.push(...keys)
@@ -46,58 +50,60 @@ describe('durable media registry recovery hardening', () => {
         },
       }
       expect(await processReconcileMediaDeliveryRegistry({}, dependencies)).toEqual({ enqueued: 2 })
-      expect(accepted).toEqual(deliveryKeys.slice(0, 2))
+      expect(accepted).toEqual(recordIds.slice(0, 2))
       expect(continuations).toHaveLength(1)
       expect(await processReconcileMediaDeliveryRegistry(continuations[0], dependencies)).toEqual({
         enqueued: 1,
       })
-      expect(accepted).toEqual(deliveryKeys)
+      expect(accepted).toEqual(recordIds)
       expect(continuations).toHaveLength(1)
     })
   })
 
   it('adds a recovery page through the default bulk enqueue with per-record dedup ids', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 3, async ({ deliveryKeys, scanBefore }) => {
-      const first = await listRecoverableMediaDeliveryRegistryKeys({
+    await withTestMediaRecoveryBacklog(user.id, 3, async ({ recordIds, scanBefore }) => {
+      const first = await listRecoverableMediaDeliveryRegistryIds({
         limit: 1,
         scanBefore,
-        deliveryKeys,
+        recordIds,
       })
       const data = { scanBefore, after: first.page_info.end_cursor! }
 
       expect(
         await processReconcileMediaDeliveryRegistry(
           data,
-          scopedTestMediaRecoveryDependencies(deliveryKeys),
+          scopedTestMediaRecoveryDependencies(recordIds),
         ),
       ).toEqual({ enqueued: 2 })
 
-      for (const deliveryKey of deliveryKeys.slice(1)) {
+      for (const mediaDeliveryRegistryRecordId of recordIds.slice(1)) {
         const jobs = await notifications.searchJobs({
           name: 'processApplyMediaDeliveryRegistryRecord',
-          data: { deliveryKey },
+          data: { mediaDeliveryRegistryRecordId },
         })
         expect(jobs).toHaveLength(1)
-        expect(jobs[0]?.opts.deduplication?.id).toBe(`media-delivery-registry:${deliveryKey}`)
+        expect(jobs[0]?.opts.deduplication?.id).toBe(
+          `media-delivery-registry:${mediaDeliveryRegistryRecordId}`,
+        )
       }
     })
   })
 
   it('enqueues 101 owned deliveries through persisted distinct continuation jobs', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 102, async ({ deliveryKeys, scanBefore }) => {
-      const first = await listRecoverableMediaDeliveryRegistryKeys({
+    await withTestMediaRecoveryBacklog(user.id, 102, async ({ recordIds, scanBefore }) => {
+      const first = await listRecoverableMediaDeliveryRegistryIds({
         limit: 1,
         scanBefore,
-        deliveryKeys,
+        recordIds,
       })
       const data = { scanBefore, after: first.page_info.end_cursor! }
       const children: EnqueueResult[] = []
       const continuations: EnqueueResult[] = []
       const dependencies = {
-        ...scopedTestMediaRecoveryDependencies(deliveryKeys),
-        stageAllCurrentImagePlacementDeliveryRecords: async () => {
+        ...scopedTestMediaRecoveryDependencies(recordIds),
+        stageImagePlacementDeliveryRecordPage: async () => {
           throw new Error('Continuation must not stage authority')
         },
         reconcileMediaDeliveryRepairMarkers: async () => {
@@ -137,14 +143,25 @@ describe('durable media registry recovery hardening', () => {
       expect(continuations).toHaveLength(1)
       const jobs = await Promise.all(children.map(child => readEnqueuedJob(notifications, child)))
       expect(
-        jobs.map(child => (child.data as { deliveryKey: string }).deliveryKey).toSorted(),
-      ).toEqual(deliveryKeys.slice(1))
+        jobs
+          .map(
+            child =>
+              (child.data as { mediaDeliveryRegistryRecordId: string })
+                .mediaDeliveryRegistryRecordId,
+          )
+          .toSorted(),
+      ).toEqual(recordIds.slice(1))
       // The bulk add keeps each registry record's own dedup id and retry budget.
       for (const child of jobs) {
-        const { deliveryKey } = child.data as { deliveryKey: string }
+        const { mediaDeliveryRegistryRecordId } = child.data as {
+          mediaDeliveryRegistryRecordId: string
+        }
         expect(child.opts).toMatchObject({
           attempts: 5,
-          deduplication: { id: `media-delivery-registry:${deliveryKey}`, mode: 'throttle' },
+          deduplication: {
+            id: `media-delivery-registry:${mediaDeliveryRegistryRecordId}`,
+            mode: 'throttle',
+          },
         })
       }
       expect(
@@ -158,20 +175,20 @@ describe('durable media registry recovery hardening', () => {
   })
   it('retries the same page after enqueue failure without advancing early', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 102, async ({ deliveryKeys, scanBefore }) => {
-      const first = await listRecoverableMediaDeliveryRegistryKeys({
+    await withTestMediaRecoveryBacklog(user.id, 102, async ({ recordIds, scanBefore }) => {
+      const first = await listRecoverableMediaDeliveryRegistryIds({
         limit: 1,
         scanBefore,
-        deliveryKeys,
+        recordIds,
       })
       const data = { scanBefore, after: first.page_info.end_cursor! }
       let failOnce = true
       let failContinuationOnce = true
       const continuationJobs: EnqueueResult[] = []
       const dependencies = {
-        ...scopedTestMediaRecoveryDependencies(deliveryKeys),
+        ...scopedTestMediaRecoveryDependencies(recordIds),
         enqueueBulkApplyMediaDeliveryRegistryRecords: async (keys: string[]) => {
-          if (failOnce && keys.includes(deliveryKeys[1]!)) {
+          if (failOnce && keys.includes(recordIds[1]!)) {
             failOnce = false
             throw new Error('Owned enqueue failure')
           }

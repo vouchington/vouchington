@@ -30,6 +30,7 @@ _none_
 **Indexes:**
 
 - `bedrock_nova_multimodal_v1_embeddings_pkey`: `CREATE UNIQUE INDEX bedrock_nova_multimodal_v1_embeddings_pkey ON public.bedrock_nova_multimodal_v1_embeddings USING btree (content_sha256)`
+- `idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash`: `CREATE INDEX idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash ON public.bedrock_nova_multimodal_v1_embeddings USING btree (updated_at, encode(content_sha256, 'hex'::text))`
 
 **Triggers:**
 

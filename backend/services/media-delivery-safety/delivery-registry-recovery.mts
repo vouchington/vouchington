@@ -10,11 +10,14 @@ export async function repairFailedImageDeliveryMutation(input: {
   imageIds?: string[]
 }): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  const { rows } = await write<{ delivery_key: string; marker_token: string }>(sql`
+  const { rows } = await write<{
+    media_delivery_registry_record_id: string
+    marker_token: string
+  }>(sql`
     /* repairFailedImageDeliveryMutation */
-    SELECT DISTINCT marker.delivery_key, marker.marker_token
+    SELECT DISTINCT marker.media_delivery_registry_record_id, marker.marker_token
     FROM media_delivery_repair_markers marker
-    JOIN media_delivery_registry_records registry USING (delivery_key)
+    JOIN media_delivery_registry_records registry ON registry.id = marker.media_delivery_registry_record_id
     JOIN (
       SELECT placement_id, image_id, post_id FROM image_placements
       UNION ALL SELECT placement_id, image_id, NULL::uuid FROM image_surface_placements
@@ -22,12 +25,12 @@ export async function repairFailedImageDeliveryMutation(input: {
       AND registry.image_id = binding.image_id
     WHERE binding.post_id = ANY(${input.postIds ?? []}::uuid[])
       OR binding.image_id = ANY(${input.imageIds ?? []}::uuid[])
-    ORDER BY marker.delivery_key
+    ORDER BY marker.media_delivery_registry_record_id
   `)
   for (const marker of rows) {
     // oxlint-disable-next-line no-await-in-loop -- one exact placement authority domain per repair.
     await reconcileDeliveryRepairMarker(marker)
     // oxlint-disable-next-line no-await-in-loop -- projection follows committed exact-authority repair.
-    await processMediaDeliveryRegistryRecord(marker.delivery_key)
+    await processMediaDeliveryRegistryRecord(marker.media_delivery_registry_record_id)
   }
 }

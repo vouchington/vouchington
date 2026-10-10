@@ -15,6 +15,7 @@ import {
 } from './delivery-registry-publish.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { publishPersistedDeliveryRecord } from './delivery-registry-acknowledgement.mts'
+import { claimMediaDeliveryProjection } from './delivery-registry-claims.mts'
 
 describe('publication failure and recovery boundaries', () => {
   afterEach(() => {
@@ -39,9 +40,41 @@ describe('publication failure and recovery boundaries', () => {
   it('publishes an exact current allow from the committed outbox', async () => {
     const fixture = await createTestDeliverySurface()
     const edge = installTestMediaDeliveryEdge()
-    await publishStagedMediaDeliveryRecord(fixture.deliveryKey)
+    await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('allow')
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
+      state: 'completed',
+    })
+  })
+
+  it('preserves an owned lease when another publisher or a stale claim attempts publication', async () => {
+    const fixture = await createTestDeliverySurface()
+    const edge = installTestMediaDeliveryEdge()
+    await using transaction = await beginTransaction()
+    await lockImageDeliveryMutation(transaction, {
+      placementIds: [fixture.tuple.placementId],
+      placementOnly: true,
+    })
+    const claim = await claimMediaDeliveryProjection(
+      transaction,
+      fixture.mediaDeliveryRegistryRecordId,
+    )
+    expect(claim).not.toBeNull()
+    await transaction.commit()
+    await expect(
+      publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId),
+    ).rejects.toThrow('already owned')
+    await expect(
+      publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId, {
+        claim: { ...claim!, generation: (BigInt(claim!.generation) + 1n).toString() },
+      }),
+    ).rejects.toThrow('generation changed')
+    expect(edge.put).not.toHaveBeenCalled()
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
+      state: 'claimed',
+    })
+    await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId, { claim: claim! })
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'completed',
     })
   })
@@ -49,10 +82,10 @@ describe('publication failure and recovery boundaries', () => {
   it('repairs an autonomous placement denial and publishes fresh committed authority', async () => {
     const fixture = await createTestDeliverySurface()
     const imageId = fixture.tuple.imageId
-    const key = fixture.deliveryKey
+    const key = fixture.mediaDeliveryRegistryRecordId
     const edge = installTestMediaDeliveryEdge()
     await prepublishImageDeliveryDenials(imageId)
-    const denied = edge.records.get(key)!
+    const denied = edge.records.get(fixture.deliveryKey)!
     expect(denied.state).toBe('withheld')
     expect(await getTestDeliveryRepairMarker(key)).not.toBeNull()
     await reconcileTestDeliveryRepairMarker(key)
@@ -61,8 +94,8 @@ describe('publication failure and recovery boundaries', () => {
       desired_state: 'allow',
       state: 'pending',
     })
-    await publishStagedMediaDeliveryRecord(fixture.deliveryKey)
-    const restored = edge.records.get(key)!
+    await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)
+    const restored = edge.records.get(fixture.deliveryKey)!
     expect(restored.state).toBe('allow')
     expect(BigInt(restored.generation)).toBeGreaterThan(BigInt(denied.generation))
   })
@@ -71,15 +104,15 @@ describe('publication failure and recovery boundaries', () => {
     const fixture = await createTestDeliverySurface()
     const edge = installTestMediaDeliveryEdge()
     edge.put.mockRejectedValueOnce(new Error('edge unavailable'))
-    await expect(publishStagedMediaDeliveryRecord(fixture.deliveryKey)).rejects.toThrow(
-      'edge unavailable',
-    )
+    await expect(
+      publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId),
+    ).rejects.toThrow('edge unavailable')
     expect(edge.invalidatePath).not.toHaveBeenCalled()
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'pending',
     })
-    await publishStagedMediaDeliveryRecord(fixture.deliveryKey)
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    await publishStagedMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'completed',
     })
   })
@@ -96,7 +129,7 @@ describe('publication failure and recovery boundaries', () => {
     await expect(
       publishPersistedDeliveryRecord(
         {
-          delivery_key: fixture.deliveryKey,
+          media_delivery_registry_record_id: fixture.mediaDeliveryRegistryRecordId,
           desired_state: 'allow',
           placement_id: fixture.tuple.placementId,
           placement_revision: fixture.tuple.revision,
@@ -108,7 +141,7 @@ describe('publication failure and recovery boundaries', () => {
       ),
     ).rejects.toThrow('generation changed')
     expect(edge.invalidatePath).not.toHaveBeenCalled()
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'pending',
       desired_state: 'allow',
     })

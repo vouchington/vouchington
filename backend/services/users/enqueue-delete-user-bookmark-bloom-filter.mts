@@ -2,12 +2,27 @@ import { enqueueDeleteUserBookmarkBloomFilter } from '@queues/bloom-filters/enqu
 import onError from '@modules/on-error'
 
 // The queue factory already reports rejected enqueues via its own internal onError call;
-// this only needs to guard the synchronous-throw path before that promise is returned.
-export function enqueueDeleteUserBookmarkBloomFilterBestEffort(userId: string): void {
+// Guard synchronous throws and return a settled promise so callers can finish the enqueue.
+type BookmarkEnqueueDependencies = {
+  enqueue: typeof enqueueDeleteUserBookmarkBloomFilter
+  reportError: typeof onError
+}
+
+export function enqueueDeleteUserBookmarkBloomFilterBestEffort(
+  userId: string,
+  dependencies: Partial<BookmarkEnqueueDependencies> = {},
+): Promise<void> {
+  const enqueue = dependencies.enqueue ?? enqueueDeleteUserBookmarkBloomFilter
+  const reportError = dependencies.reportError ?? onError
   try {
-    void enqueueDeleteUserBookmarkBloomFilter({ userId })
+    return enqueue({ userId }).then(() => undefined, settleReportedBookmarkEnqueue)
   } catch (err) {
-    /* v8 ignore next 2 -- Valkey remains real in tests; forcing the queue's internal add() to throw synchronously would destabilize shared test state. */
-    onError(err instanceof Error ? err : new Error(String(err)))
+    reportError(err instanceof Error ? err : new Error(String(err)))
+    return Promise.resolve()
   }
+}
+
+// The production queue factory reports this rejection before returning its enqueue promise.
+function settleReportedBookmarkEnqueue(): undefined {
+  return undefined
 }

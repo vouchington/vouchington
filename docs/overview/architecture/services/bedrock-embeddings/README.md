@@ -94,7 +94,7 @@ Local development can set `BEDROCK_AWS_ACCESS_KEY_ID`, `BEDROCK_AWS_SECRET_ACCES
 
 ## Bloom Filter
 
-The Bloom filter in Valkey tracks which `content_sha256` values are already in the centralized table. It is populated on startup and rebuilt periodically by the `processRebuildEmbeddingBloomFilter` job in the `bloom-filters` queue. Reads are gated by a deterministic ready marker; missing or partial filters fall back to a direct DB lookup, so correctness is maintained with slightly higher DB load until population or rebuild completes.
+The Bloom filter in Valkey tracks which `content_sha256` values are already in the centralized table. Startup or a missing/failed filter requests a full rebuild in the `bloom-filters` queue; admins can also rebuild it. There is no scheduled full rebuild, and the existing entity-listener reconciliation window repairs missed hash additions. Reads are gated by a deterministic ready marker; missing or partial filters fall back to a direct DB lookup, so correctness is maintained with slightly higher DB load until population or rebuild completes.
 
 ## Bedrock Batch API Limits
 

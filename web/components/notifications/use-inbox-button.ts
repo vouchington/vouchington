@@ -10,6 +10,7 @@ import {
   markAllMyNotificationsRead,
   markMyNotificationRead,
 } from '@/lib/api/client/my'
+import { hasErrorCode } from '@/lib/api/error-helpers'
 import { resolveNotificationTarget } from './utils'
 
 const EMPTY_SUMMARY: NotificationsUnreadSummaryResponseBody = {
@@ -54,19 +55,28 @@ export function useInboxButton() {
   }
 
   async function handleClickNotification(notification: Notification) {
+    let readRecorded = false
     try {
       await markMyNotificationRead(notification.id)
-      invalidateInflightRequests()
-      setInboxSnapshot({ summary: removeNotification(snapshot.summary, notification.id) })
-      const safeTarget = resolveNotificationTarget(notification, snapshot.summary.communities)
-      if (!safeTarget) {
-        toast.error('Invalid notification target.')
+      readRecorded = true
+    } catch (err) {
+      // A suspended account can still open the notification. The server refuses the read.
+      if (!hasErrorCode(err, 'ACCOUNT_SUSPENDED')) {
+        toast.error('Failed to open notification.')
         return
       }
-      router.push(safeTarget)
-    } catch {
-      toast.error('Failed to open notification.')
     }
+
+    if (readRecorded) {
+      invalidateInflightRequests()
+      setInboxSnapshot({ summary: removeNotification(snapshot.summary, notification.id) })
+    }
+    const safeTarget = resolveNotificationTarget(notification, snapshot.summary.communities)
+    if (!safeTarget) {
+      toast.error('Invalid notification target.')
+      return
+    }
+    router.push(safeTarget)
   }
 
   async function handleDeleteNotification(notificationId: string) {

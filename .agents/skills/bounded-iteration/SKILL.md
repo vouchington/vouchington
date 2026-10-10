@@ -54,3 +54,5 @@ repository. Keep its rules authoritative; do not copy them here.
 - **External listings.** SES inbound reconciliation carries S3's continuation token in a bounded continuation job; see [the queue contract](../../../docs/overview/architecture/queues/ses-inbound/README.md).
 - **Bloom-filter failure path.** Follow [API-key Bloom-filter handling](../../../backend/services/api-keys/bloom-filter.mts): a failed `ValkeyBloomFilter` add clears the ready marker so reads fall back to PostgreSQL, then calls `enqueueRebuildBloomFilter` when the marker was removed.
 - **UUIDv7 bounds.** Use `getMinUUIDv7ForDate` and `getMinUUIDv7ForParentHistory` from [ids.mts](../../../backend/modules/utils/ids.mts); an age milestone M uses the primary-key range `[min(previousRun - M), min(now - M))`.
+
+- **Bloom repairs.** No scheduled full rebuilds; repair missed adds through the existing [entity-listener window](../../../docs/overview/architecture/services/entity-listener-reconciliation/README.md).

@@ -1,48 +1,59 @@
 import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
-import { imageDeliveryAuthorityProof, imageDeliveryIsAuthorized } from './delivery-authority.mts'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
-import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
+import { stageImagePlacementDeliveryRecordPage } from './delivery-registry-staging-page.mts'
 
 export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   actorUserId?: string
-  deliveryKeys?: readonly string[]
-}): Promise<number> {
-  if (input?.deliveryKeys?.length === 0) return 0
+  recordIds?: readonly string[]
+  after?: string
+}): Promise<{ replayed: number; after?: string; hasMore: boolean }> {
+  if (input?.recordIds?.length === 0) return { replayed: 0, hasMore: false }
   observeSharedDbScope(
     'replayFailedMediaDeliveryRegistryRecords',
-    sharedDbIdsScope(input?.deliveryKeys),
+    sharedDbIdsScope(input?.recordIds),
   )
-  const deliveryKeys = input?.deliveryKeys ? [...input.deliveryKeys] : null
+  const recordIds = input?.recordIds ? [...input.recordIds] : null
   await using transaction = await beginTransaction()
-  await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
-    SELECT record.delivery_key FROM media_delivery_registry_records record
-    JOIN view_media_delivery_registry_current_records current USING (delivery_key)
-    WHERE current.state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR record.delivery_key = ANY(${deliveryKeys}::text[]))
-    ORDER BY record.delivery_key FOR UPDATE OF record
+  const limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
+  const { rows: locked } = await transaction<{ id: string; delivery_key: string }>(sql`
+    /* replayFailedMediaDeliveryRegistryRecords:lock */
+    /* deadlock-safe: every replay chain locks in the same computed delivery-key order; the unique placement/revision/image tuple makes that order total. */
+    SELECT record.id, ('image-placement:' || record.placement_id::text || ':' || record.placement_revision::text || ':' || record.image_id::text) AS delivery_key FROM media_delivery_registry_records record
+    JOIN LATERAL (SELECT history.change_type, history.generation
+      FROM media_delivery_registry_changes history
+      WHERE history.media_delivery_registry_record_id = record.id
+      ORDER BY history.id DESC LIMIT 1) latest ON true
+    WHERE latest.change_type = 'failed' AND latest.generation = record.generation
+      AND (${recordIds}::uuid[] IS NULL OR record.id = ANY(${recordIds}::uuid[]))
+      AND (${input?.after ?? null}::text IS NULL OR ('image-placement:' || record.placement_id::text || ':' || record.placement_revision::text || ':' || record.image_id::text) > ${input?.after ?? null})
+    ORDER BY delivery_key LIMIT ${limit} FOR UPDATE OF record
   `)
-  const { rows } = await transaction<{ delivery_key: string; placement_id: string }>(sql`
+  const ids = locked.map(record => record.id)
+  const { rows } = await transaction<{
+    media_delivery_registry_record_id: string
+    placement_id: string
+  }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
     WITH inserted AS (
-      INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, changed_by_id, failure_message)
-      SELECT delivery_key, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
+      INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, changed_by_id, failure_message)
+      SELECT media_delivery_registry_record_id, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
       FROM view_media_delivery_registry_current_records
-      WHERE state = 'failed' AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
-      RETURNING delivery_key
-    ) SELECT record.delivery_key, record.placement_id FROM inserted
-      JOIN media_delivery_registry_records record USING (delivery_key)
+      WHERE media_delivery_registry_record_id = ANY(${ids}::uuid[]) AND state = 'failed'
+      ORDER BY media_delivery_registry_record_id
+      RETURNING media_delivery_registry_record_id
+    ) SELECT record.id AS media_delivery_registry_record_id, record.placement_id FROM inserted
+      JOIN media_delivery_registry_records record ON record.id = inserted.media_delivery_registry_record_id
   `)
   if (input?.actorUserId) {
     for (const record of rows) {
       // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
       await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
         INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-          media_delivery_registry_record_delivery_key, replay_reason)
+          media_delivery_registry_record_id, replay_reason)
         SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
-          ${record.delivery_key}, 'operator_replay'
+          ${record.media_delivery_registry_record_id}, 'operator_replay'
         FROM copyright_notice_targets target
         WHERE ${record.placement_id}::uuid IS NOT NULL
           AND target.placement_id = ${record.placement_id}::uuid
@@ -50,7 +61,11 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     }
   }
   await transaction.commit()
-  return rows.length
+  return {
+    replayed: rows.length,
+    hasMore: locked.length === limit,
+    after: locked.at(-1)?.delivery_key,
+  }
 }
 
 /** @public Scoped reconciliation seam exercised against real PostgreSQL delivery records. */
@@ -61,63 +76,12 @@ export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
   return stageAllCurrentImagePlacementDeliveryRecords(imageIds)
 }
 
-/** Snapshot staging is advisory; the publisher repeats this same proof under retained locks. */
+/** Snapshot staging is advisory; the publisher repeats the proof under retained locks. */
 export async function stageAllCurrentImagePlacementDeliveryRecords(
   imageIds?: readonly string[],
 ): Promise<number> {
-  const WORK_PAGE_SIZE = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
-  if (imageIds?.length === 0) return 0
-  observeSharedDbScope('stageAllCurrentImagePlacementDeliveryRecords', sharedDbIdsScope(imageIds))
-  const imageIdScope = imageIds ? [...imageIds] : null
-  const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
-    WITH candidates AS (
-      SELECT delivery_key, placement_id, placement_revision, image_id
-      FROM view_media_delivery_registry_current_records
-      WHERE (${imageIdScope}::uuid[] IS NULL OR image_id = ANY(${imageIdScope}::uuid[]))
-      UNION
-      SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-        placement.id, placement.revision, binding.image_id
-      FROM media_placements placement
-      JOIN (SELECT placement_id, image_id FROM image_placements
-        UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
-        ON binding.placement_id = placement.id
-      WHERE placement.retired_at IS NULL
-        AND (${imageIdScope}::uuid[] IS NULL OR binding.image_id = ANY(${imageIdScope}::uuid[]))
-    ), intended AS (
-      SELECT authority.*, CASE WHEN `
-  statement.append(imageDeliveryAuthorityProof())
-  statement.append(sql` THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END AS desired_state
-      FROM candidates authority
-    ) SELECT intended.* FROM intended
-      LEFT JOIN view_media_delivery_registry_current_records existing USING (delivery_key)
-      WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
-      ORDER BY intended.delivery_key LIMIT ${WORK_PAGE_SIZE}
-  `)
-  const { rows } = await read<Omit<ImageDeliveryRecord, 'generation'>>(statement)
-  for (const record of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- one retained authority/registry domain per transaction.
-    await stageCurrentDeliveryRecord(record)
-  }
-  return rows.length
+  const page = await stageImagePlacementDeliveryRecordPage({ imageIds })
+  return page.staged
 }
 
-async function stageCurrentDeliveryRecord(
-  record: Omit<ImageDeliveryRecord, 'generation'>,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await lockImageDeliveryMutation(transaction, {
-    placementIds: [record.placement_id],
-    placementOnly: true,
-  })
-  const state = (await imageDeliveryIsAuthorized(transaction, record)) ? 'allow' : 'withheld'
-  await stageImagePlacementDeliveryRecord(
-    {
-      placementId: record.placement_id,
-      revision: record.placement_revision,
-      imageId: record.image_id,
-      state,
-    },
-    { query: transaction },
-  )
-  await transaction.commit()
-}
+export { stageImagePlacementDeliveryRecordPage } from './delivery-registry-staging-page.mts'

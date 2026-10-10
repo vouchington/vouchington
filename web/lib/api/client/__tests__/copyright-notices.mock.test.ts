@@ -212,7 +212,7 @@ describe('copyright notices client', () => {
         { resolution_kind: 'dismissed', rationale: 'Dismissed.' },
       ],
     )
-    await expectPost({ replayed: 1 }, () => replayCopyrightMediaDelivery(), [
+    await expectPost({}, () => replayCopyrightMediaDelivery(), [
       '/api/v1/copyright-media-delivery/replays',
       {},
     ])

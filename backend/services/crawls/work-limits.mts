@@ -6,12 +6,14 @@ export const crawlDispatchConfig = new DynamicConfig({
     batch_size: 'number',
     max_rows_per_run: 'number',
     hostname_batch_size: 'number',
+    hostname_max_rows_per_run: 'number',
     weekly_refresh_batch_size: 'number',
   },
   defaultFields: {
     batch_size: 1000,
     max_rows_per_run: 20000,
     hostname_batch_size: 1000,
+    hostname_max_rows_per_run: 20000,
     weekly_refresh_batch_size: 500,
   },
 })
@@ -34,6 +36,16 @@ export function getCrawlHostnameBatchSize() {
     defaultValue: 1000,
     maxValue: 5000,
   })
+}
+
+export function getCrawlHostnameDispatchLimits() {
+  return {
+    batchSize: getCrawlHostnameBatchSize(),
+    maxRows: getBoundedPositiveIntegerField(crawlDispatchConfig, 'hostname_max_rows_per_run', {
+      defaultValue: 20000,
+      maxValue: 100000,
+    }),
+  }
 }
 
 export function getWeeklyHostnameRefreshBatchSize() {

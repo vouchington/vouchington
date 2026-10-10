@@ -4,7 +4,7 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import onError from '@modules/on-error'
 import { enqueueBulkOnUrlCreated, enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { enqueueTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { finalizeCreatedTopic } from '@services/topics/create'
@@ -49,7 +49,7 @@ export async function runApprovedTopicRecommendationSideEffects(
   )
 
   if (transactionResult.aliases.length > 0) {
-    void entityCacheBloomFilters.topics.add(transactionResult.aliases.map(normalizeKey))
+    void addEntityBloomKeys('topics', transactionResult.aliases.map(normalizeKey))
   }
 
   await invalidate.topics(

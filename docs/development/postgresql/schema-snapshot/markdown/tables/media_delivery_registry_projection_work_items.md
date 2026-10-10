@@ -6,17 +6,17 @@ Current edge projection ownership; deleted on terminal publication while immutab
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                        |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------- |
-| `delivery_key`     | `text`                     | no       |                     |          |           |           | Exact delivery authority being projected.                      |
-| `generation`       | `bigint`                   | no       |                     |          |           |           | Current nontransactional edge authority generation.            |
-| `lease_token`      | `uuid`                     | yes      |                     |          |           |           | Opaque worker ownership token, never an entity reference.      |
-| `leased_at`        | `timestamp with time zone` | yes      |                     |          |           |           | Database time the current lease began.                         |
-| `lease_expires_at` | `timestamp with time zone` | yes      |                     |          |           |           | Deadline after which the owner cannot publish or finalize.     |
-| `attempt_count`    | `integer`                  | no       | `0`                 |          |           |           | Claims in this projection generation or explicit replay cycle. |
-| `available_at`     | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Earliest time an idle projection can be claimed.               |
+| Column                              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                        |
+| ----------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------- |
+| `media_delivery_registry_record_id` | `uuid`                     | no       |                     |          |           |           | Retained delivery authority being projected.                   |
+| `generation`                        | `bigint`                   | no       |                     |          |           |           | Current nontransactional edge authority generation.            |
+| `lease_token`                       | `uuid`                     | yes      |                     |          |           |           | Opaque worker ownership token, never an entity reference.      |
+| `leased_at`                         | `timestamp with time zone` | yes      |                     |          |           |           | Database time the current lease began.                         |
+| `lease_expires_at`                  | `timestamp with time zone` | yes      |                     |          |           |           | Deadline after which the owner cannot publish or finalize.     |
+| `attempt_count`                     | `integer`                  | no       | `0`                 |          |           |           | Claims in this projection generation or explicit replay cycle. |
+| `available_at`                      | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Earliest time an idle projection can be claimed.               |
 
-**Primary key:** `PRIMARY KEY (delivery_key)`
+**Primary key:** `PRIMARY KEY (media_delivery_registry_record_id)`
 
 **Unique constraints:**
 _none_
@@ -29,13 +29,13 @@ _none_
 
 **Foreign keys:**
 
-- `media_delivery_registry_projection_work_items_delivery_key_fkey`: `FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE CASCADE`
+- `media_delivery_registry_proje_media_delivery_registry_reco_fkey`: `FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_media_delivery_registry_projection_work_items__available`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)`
-- `idx_media_delivery_registry_projection_work_items__expired`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)`
-- `media_delivery_registry_projection_work_items_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (delivery_key)`
+- `idx_media_delivery_registry_projection_work_items__available`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE (lease_token IS NULL)`
+- `idx_media_delivery_registry_projection_work_items__expired`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE (lease_token IS NOT NULL)`
+- `media_delivery_registry_projection_work_items_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id)`
 
 **Triggers:**
 _none_

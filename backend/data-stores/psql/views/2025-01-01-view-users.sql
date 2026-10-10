@@ -50,10 +50,13 @@ CREATE OR REPLACE VIEW view_embedded_users AS
       )
       FROM image_surface_placements surface
       JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'user-profile-image'
         AND surface.user_id = users.id
         AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC
       LIMIT 1
     ) AS profile_image_placement,
@@ -145,10 +148,13 @@ CREATE OR REPLACE VIEW view_users_private AS
       )
       FROM image_surface_placements surface
       JOIN media_placements placement ON placement.id = surface.placement_id
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = surface.image_id
       WHERE surface.surface_kind = 'user-profile-image'
         AND surface.user_id = users.id
         AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
       ORDER BY placement.id DESC
       LIMIT 1
     ) AS profile_image_placement,

@@ -1,7 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from '../types.mts'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { enqueueOnPostCreated } from '@queues/entity-listeners/enqueues'
 
 type PostCommitSideEffectsDependencies = {
@@ -25,6 +25,6 @@ export async function applyPostCommitSideEffects(
   const resolvedDependencies = { ...defaultPostCommitSideEffectsDependencies, ...dependencies }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
-  void entityCacheBloomFilters.posts.add(bloomKeys)
+  void addEntityBloomKeys('posts', bloomKeys)
   void resolvedDependencies.enqueueOnPostCreated(post.id)
 }

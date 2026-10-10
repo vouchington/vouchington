@@ -17,6 +17,8 @@ processor reference with default priorities. Infrastructure decides the deployed
 local development runs one [`worker-cpu`](../backend/entrypoints/worker-cpu/README.md) process for all
 policy-managed queues.
 
+The [hostname crawl queue](crawl-hostnames/README.md) schedules bounded due-hostname sweeps hourly. Retained jobs preserve their cutoff and index position across capped continuations.
+
 ## Contents
 
 - <a id="active-workers"></a>[Active Workers](reference-active-workers.md)

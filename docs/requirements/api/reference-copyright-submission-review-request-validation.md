@@ -72,8 +72,7 @@ request behaves exactly as before.
 
 ## Related behavior
 
-- `POST /copyright-media-delivery/replays` remains a staff-only replay route. Its existing replay
-  coverage keeps the `403` and `200` outcomes.
+- `POST /copyright-media-delivery/replays` remains a staff-only replay route. It returns `403` for unauthorized callers and `202` without a count after accepting a replay chain.
 - For repeat-infringer routes (the notice accounts read, dispositions, outcomes, and reinstatements),
   see
   [repeat-infringer and staff queue routes](reference-copyright-staff-request-validation.md).

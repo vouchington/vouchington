@@ -1,3 +1,4 @@
+import { repairReconciledBloomKeys } from '@services/entity-listener-reconciliation/bloom-repair'
 import { getEntityReconciliationLimits } from '@services/entity-listener-reconciliation/work-limits'
 import {
   advanceEntityReconciliationCheckpoint,
@@ -153,6 +154,16 @@ export async function reconcileEntity(
       return
     case 'image':
       await dependencies.processImageCreated({ id: data.entityId })
+      return
+    case 'community':
+    case 'rss_feed_item':
+    case 'post_slug':
+    case 'api_key':
+    case 'blocklisted_domain':
+    case 'embedding':
+    case 'topic_alias':
+    case 'url_hostname':
+      await repairReconciledBloomKeys(data)
       return
     case 'url':
       await dependencies.processUrlCreated({ id: data.entityId })

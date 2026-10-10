@@ -11,7 +11,7 @@ See [Crawling Architecture](../../crawling.md) for the dispatcher flow and crawl
 ### Queues
 
 - `crawl_hostnames` - All hostname-level crawl operations
-  - `crawl_hostnames_dispatcher` - Daily 2 AM, enqueues per-hostname URL dispatch
+  - `enqueueCrawlHostnamesDispatcher` - Hourly, requests the coalesced `crawl_hostnames_dispatcher` sweep; it enqueues bounded never-swept/overdue hostname pages with a retained sweep cursor
   - `crawl_urls_per_hostname_dispatcher` - Dispatches individual URL crawls for a hostname
   - `enqueueCrawlTier1Dispatcher` - Daily 2:30 AM, requests the coalesced `crawl_tier1_dispatcher` sweep (7-day cycle)
   - `enqueueCrawlTier2Dispatcher` - Weekly Sunday 3 AM, requests the coalesced `crawl_tier2_dispatcher` sweep (30-day cycle)

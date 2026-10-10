@@ -111,7 +111,22 @@ export type EntityJobsListeners = {
 }
 
 export type ReconcileEntityData = {
-  entityType: 'user' | 'topic' | 'post_created' | 'post_updated' | 'post_deleted' | 'image' | 'url'
+  entityType:
+    | 'user'
+    | 'topic'
+    | 'post_created'
+    | 'post_updated'
+    | 'post_deleted'
+    | 'image'
+    | 'url'
+    | 'community'
+    | 'rss_feed_item'
+    | 'api_key'
+    | 'blocklisted_domain'
+    | 'embedding'
+    | 'post_slug'
+    | 'url_hostname'
+    | 'topic_alias'
   entityId: string
   changedAtEpochUs: string
   changeId?: string

@@ -14,10 +14,12 @@ export async function readTestPlacementDeliveryColumns(): Promise<Record<string,
   return result
 }
 
-export async function insertTestPlacementRepairKey(deliveryKey: string): Promise<void> {
+export async function insertTestPlacementRepairKey(
+  mediaDeliveryRegistryRecordId: string,
+): Promise<void> {
   await write(sql`/* insertTestPlacementRepairKey */
-    INSERT INTO media_delivery_repair_markers (delivery_key, marker_token)
-    VALUES (${deliveryKey}, nextval('media_delivery_registry_generation_sequence'))
+    INSERT INTO media_delivery_repair_markers (media_delivery_registry_record_id, marker_token)
+    VALUES (${mediaDeliveryRegistryRecordId}, nextval('media_delivery_registry_generation_sequence'))
   `)
 }
 

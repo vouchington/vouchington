@@ -1,4 +1,5 @@
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
+import { entityBloomReadyKey } from './bloom-filter-repair.mts'
 import onError from '@modules/on-error'
 import { entityCacheBloomFilters } from './bloom-filter-instances.mts'
 import {
@@ -24,7 +25,9 @@ export async function warmUpEntityCacheBloomFilters(): Promise<void> {
         try {
           return {
             entityType,
-            exists: await entityCacheBloomFilters[entityType].keyExists(),
+            exists: await entityCacheBloomFilters[entityType].isReady(
+              entityBloomReadyKey(entityType),
+            ),
           }
         } catch (err) {
           onError(err instanceof Error ? err : new Error(String(err)))
