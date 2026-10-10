@@ -768,8 +768,10 @@ unfiltered aggregate, observe committed owned-job queue events, and drain before
 and configuration restoration. No test creates a database or raises capacity to hide saturation.
 Quota cases retain the captured dirty-database accounting baseline. Unrelated-work positive controls
 remain in the global aggregate; the temporary count ceiling never exceeds the normal configured
-ceiling. Cleanup verifies that every owned accounting ID is absent; it does not require unrelated
-batches to preserve the captured global aggregate while the test runs.
+ceiling. The count-denial fixture uses one positive-size owned row as both the unrelated-work
+control and the ceiling-crossing reservation, requiring only one spare count slot. Setup verifies
+that owned row's active contribution directly; cleanup verifies every owned accounting ID is
+absent. Neither step requires unrelated batches to preserve the captured global aggregate.
 The six empty/unknown embedding-creation route cases use `emptyEmbeddingCreationDependencies`
 from the existing quota helper. This typed fixture injects controlled admitted capacity through
 the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL
