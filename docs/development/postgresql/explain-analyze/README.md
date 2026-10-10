@@ -449,7 +449,8 @@ and separate recommendation and category-rated review branches. Fixed background
 make those index probes representative; child index names resolve from the fixture's partition
 instead of pinning a calendar month.
 All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
-filter removals, and index rechecks, multiplied by actual loops.
+filter removals, and index rechecks, multiplied by actual loops. Media replay driving-row budgets
+exclude `ModifyTable` output: inserted rows are writes, while its child scans still count as reads.
 
 Universal checks apply to every captured scenario. An executing read of an unbounded partitioned
 parent must use one leaf unless that scenario declares a `crossPartition` reason for the parent.

@@ -34,7 +34,10 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
     'media_delivery_registry_changes',
     'copyright_notice_targets',
   ]) {
-    const scans = nodes.filter(node => baseRelationName(node) === relation)
+    // ModifyTable reports inserted output rows, not another read of its target relation.
+    const scans = nodes.filter(
+      node => baseRelationName(node) === relation && node['Node Type'] !== 'ModifyTable',
+    )
     const budget =
       relation === 'media_delivery_registry_records'
         ? 2 * MEDIA_REPLAY_PAGE_SIZE
