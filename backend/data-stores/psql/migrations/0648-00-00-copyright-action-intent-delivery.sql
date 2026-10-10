@@ -198,9 +198,10 @@ SELECT record.id AS media_delivery_registry_record_id,
   change.delivery_attempt_count, change.claimed_at, change.projected_at, change.invalidated_at,
   change.completed_at, change.failure_message, change.next_attempt_at
 FROM media_delivery_registry_records record
-JOIN media_delivery_registry_changes change
-  ON change.media_delivery_registry_record_id = record.id AND change.id = record.latest_change_id
-    AND change.generation = record.generation;
+-- Keep the exact current-transition probe correlated when eligibility views compose this view.
+JOIN LATERAL (SELECT * FROM media_delivery_registry_changes history
+  WHERE history.media_delivery_registry_record_id = record.id AND history.id = record.latest_change_id
+    AND history.generation = record.generation LIMIT 1) change ON true;
 COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.';
 COMMENT ON VIEW view_media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
 COMMENT ON COLUMN media_delivery_registry_changes.media_delivery_registry_record_id IS 'Retained delivery authority whose transition this records.';
