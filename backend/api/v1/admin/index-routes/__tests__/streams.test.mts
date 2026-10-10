@@ -159,6 +159,10 @@ async function captureAdminStream(
     return { body: chunks.join(''), contentType }
   } finally {
     clearIntervalSpy?.mockRestore()
-    if (options) vi.useRealTimers()
+    if (options) {
+      // Drain retained restorers before restoring real timer globals.
+      vi.restoreAllMocks()
+      vi.useRealTimers()
+    }
   }
 }

@@ -35,6 +35,6 @@
   "devDependencies": {
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/test-helpers": "workspace:^",
-    "valkyries": "^0.8.1"
+    "valkyries": "^0.8.2"
   }
 }
