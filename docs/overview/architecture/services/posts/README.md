@@ -97,6 +97,11 @@ The `posts.ai_summary_markdown` column holds AI-generated summary content, separ
 
 ## Architecture Notes
 
+- Image hydration in `view_posts` first materializes the owning post's image rows by `post_id`
+  in `order_index` order, then checks the exact placement and current delivery eligibility.
+  This keeps public-delivery joins from replacing the post-scoped image driver. The outer view
+  remains flat; [hydration plan contracts](../../../../development/postgresql/explain-analyze/README.md#declarative-plan-contracts)
+  enforce the post-ID index and read budgets in both forced plan modes.
 - Post creation is transactional: post, slug, images, ratings, and community review state are committed atomically
 - Hashtag, explicit-topic, and data-point topic category mutations write their relations and actor/owner votes in the owning post transaction. The response is captured from that transaction, so an exact create replay retains the original category projection even if the post changes later. Election statistics update from the primary in the same transaction; cache invalidation, top-hashtag refresh, and one post-notification reconciliation run after commit. Rollback discards those post-commit effects.
 - Side effects (auto-subscribe, auto-vote, mentions, moderation, fan-out) are handled by entity listener jobs, not inline
