@@ -26,6 +26,13 @@ Core user service — authentication flows, authorization, profile management, s
 | `delete-row-locks`                                 | Ascending-id `users` row locks for a deletion target and its requesting actor         |
 | `delete-oauth-pii`                                 | GDPR erasure: scrub OAuth PII on deletion                                             |
 
+## Canonical system actor
+
+`getSystemUser()` loads the bootstrap-owned `system` username as a private user from the writer,
+filters the persisted system platform classification, and retains the real private-view roles. The config-driven agent seed provisions this actor without
+an email or login. Post-mention processing uses this default actor; its tests do not create or mutate
+a shared email account to make processing run.
+
 Account deletion first tries the same transaction-scoped user-lifecycle advisory lock held by
 active-user writers. A failed try reports real lock contention to the optional synchronous internal
 `onLockContention` observer, then acquires that same lock with the ordinary blocking query before
