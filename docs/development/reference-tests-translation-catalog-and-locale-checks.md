@@ -50,11 +50,15 @@ checks guard that request-selection contract instead of catalog content:
   lookup coverage for the generated selector IDs. The full transitive import-closure proof runs in
   the generated-map check below; repeating graph queries inside web tests contends on the shared
   `no-mistakes` lock.
-- `static-code-analysis/i18n-extract/route-bounds.test.mts` — compiles the real catalog, caches
-  package-runtime responses per selector, checks every generated route's combined copy in English,
-  Spanish, French, and Portuguese against selector, message, and serialized payload limits, and
-  compares representative routes against direct combined requests, including that the moderation
-  transparency panel's routes deliver every staff action label.
+- `node ci/check-live-web-route-localization.mts` — compiles the real catalog and verifies all
+  generated routes in English, Spanish, French and Portuguese, combined chrome bounds, exact
+  serialized bytes, representative required copy, staff labels, and known-empty/unknown selectors.
+  It runs once in static CI after the generated-map check. Explicit catalog-directory, selector-table,
+  label-source and expected-route-count inputs support the same check for other catalogs.
+- `static-code-analysis/i18n-extract/route-bounds.test.mts` retains the twelve route contracts
+  against one-copy, finite-alias real SQLite fixtures; it does not compile the repository catalog.
+  `ci/check-live-web-route-localization.test.mts` covers the actual public compilation/checking
+  entrypoint with accepted and rejected small catalogs. These fixtures do not certify live parity.
 - `playwright/tests/routes/localization-availability.spec.mts` — renders login, admin AI costs,
   and the dynamically loaded growth dashboard in English against the backend, with the browser
   error monitor enabled.

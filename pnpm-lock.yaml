@@ -13461,6 +13461,12 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../ts-shared/utils
+      '@vouchington/localization':
+        specifier: ^0.2.0
+        version: 0.2.0
+      '@vouchington/localization-compiler':
+        specifier: ^0.2.2
+        version: 0.2.2
       auto-harness-client:
         specifier: ^0.8.1
         version: 0.8.1
