@@ -37,7 +37,6 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_media_delivery_registry_records__image`: `CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id)`
-- `idx_media_delivery_registry_records__replay_cursor`: `CREATE INDEX idx_media_delivery_registry_records__replay_cursor ON public.media_delivery_registry_records USING btree ((((((('image-placement:'::text || (placement_id)::text) || ':'::text) || (placement_revision)::text) || ':'::text) || (image_id)::text)))`
 - `media_delivery_registry_recor_placement_id_placement_revisi_key`: `CREATE UNIQUE INDEX media_delivery_registry_recor_placement_id_placement_revisi_key ON public.media_delivery_registry_records USING btree (placement_id, placement_revision, image_id)`
 - `media_delivery_registry_records_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (id)`
 
