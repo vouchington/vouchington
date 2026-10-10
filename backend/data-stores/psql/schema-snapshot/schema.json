@@ -1353,7 +1353,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE latest_change_id uuid;\nBEGIN\n  -- The BEFORE trigger retains the authority lock. Ignore a late lower-ID transition,\n  -- matching the canonical latest-ID/current-generation view rather than insertion order.\n  SELECT history.id INTO latest_change_id FROM media_delivery_registry_changes history\n    WHERE history.media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n      AND history.generation = NEW.generation ORDER BY history.id DESC LIMIT 1;\n  IF latest_change_id IS DISTINCT FROM NEW.id THEN RETURN NEW; END IF;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -48113,6 +48113,40 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_media_registry_changes__record_generation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_generation_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, generation, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -48128,12 +48162,18 @@
         "trigger_media_delivery_registry_changes_generation": "CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority()",
         "trigger_media_delivery_registry_changes_immutable": "CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_media_registry_changes__record_generation_id": {
+          "columns": ["media_delivery_registry_record_id", "generation", "id"],
+          "definition": "UNIQUE (media_delivery_registry_record_id, generation, id)"
+        }
+      }
     },
     "media_delivery_registry_projection_work_items": {
       "checkConstraints": {
         "media_delivery_registry_projection_work_ite_attempt_count_check": "CHECK (((attempt_count >= 0) AND (attempt_count <= 5)))",
-        "media_delivery_registry_projection_work_items_check": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
+        "media_delivery_registry_projection_work_items_check": "CHECK (((failed_change_id IS NULL) OR (lease_token IS NULL)))",
+        "media_delivery_registry_projection_work_items_check1": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
         "media_delivery_registry_projection_work_items_generation_check": "CHECK ((generation >= 0))"
       },
       "columns": {
@@ -48145,7 +48185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "available_at": {
@@ -48156,8 +48196,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
+        },
+        "failed_change_id": {
+          "collation": null,
+          "comment": "Exact authoritative failed transition requiring operator replay; null for active projection work.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
         },
         "generation": {
           "collation": null,
@@ -48178,7 +48229,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -48189,7 +48240,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "leased_at": {
@@ -48200,7 +48251,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "media_delivery_registry_record_id": {
@@ -48215,8 +48266,17 @@
           "type": "uuid"
         }
       },
-      "comment": "Current edge projection ownership; deleted on terminal publication while immutable transitions survive.",
+      "comment": "Derived current-generation projection ownership and failed replay membership; immutable transitions remain authoritative.",
       "foreignKeys": {
+        "fk_media_projection_failed_change": {
+          "columns": ["media_delivery_registry_record_id", "generation", "failed_change_id"],
+          "definition": "FOREIGN KEY (media_delivery_registry_record_id, generation, failed_change_id) REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, generation, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["media_delivery_registry_record_id", "generation", "id"],
+          "referencedTable": "media_delivery_registry_changes",
+          "validated": true
+        },
         "media_delivery_registry_proje_media_delivery_registry_reco_fkey": {
           "columns": ["media_delivery_registry_record_id"],
           "definition": "FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE CASCADE",
@@ -48232,7 +48292,7 @@
         "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE ((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -48250,7 +48310,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(lease_token IS NULL)",
+          "predicate": "((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -48259,7 +48319,7 @@
         "idx_media_delivery_registry_projection_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE ((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -48277,7 +48337,41 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(lease_token IS NOT NULL)",
+          "predicate": "((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_projection_work_items__failed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__failed ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id, generation, failed_change_id) WHERE (failed_change_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            },
+            {
+              "column": "failed_change_id",
+              "descending": false,
+              "expression": "failed_change_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(failed_change_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -48445,26 +48539,6 @@
               "expression": "image_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_media_delivery_registry_records__replay_cursor": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__replay_cursor ON public.media_delivery_registry_records USING btree ((((((('image-placement:'::text || (placement_id)::text) || ':'::text) || (placement_revision)::text) || ':'::text) || (image_id)::text)))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "((((('image-placement:'::text || placement_id::text) || ':'::text) || placement_revision::text) || ':'::text) || image_id::text)",
-              "nullsFirst": false,
-              "opclass": "text_ops"
             }
           ],
           "predicate": null,
