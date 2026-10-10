@@ -3,7 +3,7 @@ import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddin
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
 import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache'
 import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notifications/enqueues'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-item-categories/enqueues'
@@ -54,7 +54,8 @@ export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
     options.existingRowsForFanout ?? existingRows,
     upsertedRows,
   )
-  void entityCacheBloomFilters.rss_feed_items.add(
+  void addEntityBloomKeys(
+    'rss_feed_items',
     fanoutRowsWithGuids.map(row => normalizeKey(row.id)),
   )
   await Promise.all([

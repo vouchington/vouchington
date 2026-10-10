@@ -1,6 +1,8 @@
 import { getEntityCacheWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { normalizeKey } from '@ts-shared/utils/strings'
+import { bloomValkeyClient } from '@data-stores/valkey'
+import { entityBloomReadyKey } from './bloom-filter-repair.mts'
 import { entityCacheBloomFilters } from './bloom-filter-instances.mts'
 
 export async function backfillPostsBloomFilter(): Promise<void> {
@@ -17,6 +19,7 @@ export async function backfillPostsBloomFilter(): Promise<void> {
   const count = (r1[0]?.count ?? 0) + (r2[0]?.count ?? 0)
   const capacity = Math.max(posts.getConfig().capacity, 2 * count)
   await posts.rebuildFromStream(inBatches(postKeysFromDb()), capacity)
+  await bloomValkeyClient.set(entityBloomReadyKey('posts'), '1')
 }
 
 async function* postKeysFromDb(): AsyncGenerator<string> {
@@ -57,6 +60,7 @@ export async function backfillTopicsBloomFilter(): Promise<void> {
   const count = (r1[0]?.count ?? 0) * 2 + (r2[0]?.count ?? 0) + (r3[0]?.count ?? 0)
   const capacity = Math.max(topics.getConfig().capacity, 2 * count)
   await topics.rebuildFromStream(inBatches(topicsKeysFromDb()), capacity)
+  await bloomValkeyClient.set(entityBloomReadyKey('topics'), '1')
 }
 
 async function* topicsKeysFromDb(): AsyncGenerator<string> {
@@ -97,6 +101,7 @@ export async function backfillUsersBloomFilter(): Promise<void> {
   const count = (rows[0]?.count ?? 0) * 2 // id + username per user
   const capacity = Math.max(users.getConfig().capacity, 2 * count)
   await users.rebuildFromStream(inBatches(usersKeysFromDb()), capacity)
+  await bloomValkeyClient.set(entityBloomReadyKey('users'), '1')
 }
 
 async function* usersKeysFromDb(): AsyncGenerator<string> {
@@ -121,6 +126,7 @@ export async function backfillCommunitiesBloomFilter(): Promise<void> {
   const count = (rows[0]?.count ?? 0) * 2 // id + slug per community
   const capacity = Math.max(communities.getConfig().capacity, 2 * count)
   await communities.rebuildFromStream(inBatches(communitiesKeysFromDb()), capacity)
+  await bloomValkeyClient.set(entityBloomReadyKey('communities'), '1')
 }
 
 async function* communitiesKeysFromDb(): AsyncGenerator<string> {
@@ -145,6 +151,7 @@ export async function backfillRssFeedItemsBloomFilter(): Promise<void> {
   const count = rows[0]?.count ?? 0
   const capacity = Math.max(rss_feed_items.getConfig().capacity, 2 * count)
   await rss_feed_items.rebuildFromStream(inBatches(rssFeedItemsKeysFromDb()), capacity)
+  await bloomValkeyClient.set(entityBloomReadyKey('rss_feed_items'), '1')
 }
 
 async function* rssFeedItemsKeysFromDb(): AsyncGenerator<string> {

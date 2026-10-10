@@ -34,7 +34,7 @@ type UrlHostnameCrawlerDetails = {
   hostname: string
   is_blocked: boolean
   is_crawlable: boolean
-  age_threshold_days: number | null
+  age_threshold_days: number
   requests_per_second_limit: number | null
   attempt_threshold_hours: number | null
 }

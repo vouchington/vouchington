@@ -22,16 +22,21 @@ type Fixture = Awaited<ReturnType<typeof createTestDeliverySurface>>
 // A retained edge record that a freshly restored PostgreSQL row has never seen.
 const EDGE_LEAD = 1_000_000n
 
-async function registryGeneration(deliveryKey: string): Promise<bigint> {
-  const snapshot = await getTestMediaDeliveryRecordSnapshot(deliveryKey)
+async function registryGeneration(mediaDeliveryRegistryRecordId: string): Promise<bigint> {
+  const snapshot = await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId)
   return BigInt(String(snapshot?.generation))
 }
 
-async function retainEdgeAhead(edge: Edge, deliveryKey: string, state: 'allow' | 'withheld') {
+async function retainEdgeAhead(
+  edge: Edge,
+  deliveryKey: string,
+  mediaDeliveryRegistryRecordId: string,
+  state: 'allow' | 'withheld',
+) {
   const record = {
     deliveryKey,
     state,
-    generation: String((await registryGeneration(deliveryKey)) + EDGE_LEAD),
+    generation: String((await registryGeneration(mediaDeliveryRegistryRecordId)) + EDGE_LEAD),
   }
   edge.records.set(deliveryKey, record)
   return record
@@ -39,7 +44,7 @@ async function retainEdgeAhead(edge: Edge, deliveryKey: string, state: 'allow' |
 
 async function publishedSurface(): Promise<Fixture> {
   const fixture = await createTestDeliverySurface()
-  await processMediaDeliveryRegistryRecord(fixture.deliveryKey)
+  await processMediaDeliveryRegistryRecord(fixture.mediaDeliveryRegistryRecordId)
   return fixture
 }
 
@@ -51,42 +56,54 @@ describe('coordinated reset and restore generation safety', () => {
 
   it('never lets a restored generation overwrite the retained edge, and replay cannot fix it', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const { deliveryKey } = await createTestDeliverySurface()
-    const retained = await retainEdgeAhead(edge, deliveryKey, 'withheld')
-    const restoredGeneration = await registryGeneration(deliveryKey)
+    const { deliveryKey, mediaDeliveryRegistryRecordId } = await createTestDeliverySurface()
+    const retained = await retainEdgeAhead(
+      edge,
+      deliveryKey,
+      mediaDeliveryRegistryRecordId,
+      'withheld',
+    )
+    const restoredGeneration = await registryGeneration(mediaDeliveryRegistryRecordId)
 
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).rejects.toThrow(
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).rejects.toThrow(
       'Stale edge generation',
     )
     expect(edge.records.get(deliveryKey)).toEqual(retained)
     expect(edge.invalidatePath).not.toHaveBeenCalled()
-    expect(await getTestMediaDeliveryRecordSnapshot(deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'pending',
       failure_message: 'Stale edge generation',
     })
 
-    await markTestMediaDeliveryRecordFailed(deliveryKey)
+    await markTestMediaDeliveryRecordFailed(mediaDeliveryRegistryRecordId)
     await expect(
-      replayFailedMediaDeliveryRegistryRecords({ deliveryKeys: [deliveryKey] }),
-    ).resolves.toBe(1)
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).rejects.toThrow(
+      replayFailedMediaDeliveryRegistryRecords({ recordIds: [mediaDeliveryRegistryRecordId] }),
+    ).resolves.toMatchObject({ replayed: 1 })
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).rejects.toThrow(
       'Stale edge generation',
     )
     expect(edge.records.get(deliveryKey)).toEqual(retained)
-    expect(await registryGeneration(deliveryKey)).toBe(restoredGeneration)
+    expect(await registryGeneration(mediaDeliveryRegistryRecordId)).toBe(restoredGeneration)
   })
 
   it('publishes a tightened state above the retained generation only after the fence', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const { tuple, deliveryKey } = await publishedSurface()
+    const { tuple, deliveryKey, mediaDeliveryRegistryRecordId } = await publishedSurface()
     await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
-    const retained = await retainEdgeAhead(edge, deliveryKey, 'allow')
+    const retained = await retainEdgeAhead(
+      edge,
+      deliveryKey,
+      mediaDeliveryRegistryRecordId,
+      'allow',
+    )
 
     await fenceTestMediaDeliveryRegistry({
       edgeHighWater: retained.generation,
-      reopenDeliveryKeys: [deliveryKey],
+      reopenRecordIds: [mediaDeliveryRegistryRecordId],
     })
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('completed')
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'completed',
+    )
 
     const published = edge.records.get(deliveryKey)
     expect(published?.state).toBe('withheld')
@@ -94,7 +111,7 @@ describe('coordinated reset and restore generation safety', () => {
     expect(edge.invalidatePath).toHaveBeenCalledWith(
       `/images/placements/${tuple.placementId}/${tuple.revision}/${tuple.imageId}`,
     )
-    expect(await getTestMediaDeliveryRecordSnapshot(deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecordSnapshot(mediaDeliveryRegistryRecordId)).toMatchObject({
       state: 'completed',
       desired_state: 'withheld',
       generation: Number(published!.generation),
@@ -106,32 +123,46 @@ describe('coordinated reset and restore generation safety', () => {
   it('holds a withheld edge denial only while paused: a later fresh generation republishes the restored allow', async () => {
     const edge = installTestMediaDeliveryEdge()
     const held = await publishedSurface()
-    const denial = await retainEdgeAhead(edge, held.deliveryKey, 'withheld')
+    const denial = await retainEdgeAhead(
+      edge,
+      held.deliveryKey,
+      held.mediaDeliveryRegistryRecordId,
+      'withheld',
+    )
     await fenceTestMediaDeliveryRegistry({
       edgeHighWater: denial.generation,
-      reopenDeliveryKeys: [],
+      reopenRecordIds: [],
     })
 
     // Restored authority still says allow, yet nothing reopens the completed row while paused.
     await expect(
       stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
     ).resolves.toBe(0)
-    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('not_claimed')
+    await expect(
+      processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
+    ).resolves.toBe('not_claimed')
     expect(edge.records.get(held.deliveryKey)).toEqual(denial)
 
     // Any later fresh generation (repair marker, owner change, republish) now beats the lifted fence.
-    await fenceTestMediaDeliveryRegistry({ reopenDeliveryKeys: [held.deliveryKey] })
-    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+    await fenceTestMediaDeliveryRegistry({ reopenRecordIds: [held.mediaDeliveryRegistryRecordId] })
+    await expect(
+      processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
+    ).resolves.toBe('completed')
     expect(edge.records.get(held.deliveryKey)?.state).toBe('allow')
   })
 
   it('keeps a held key withheld through republish once authority withholds it again', async () => {
     const edge = installTestMediaDeliveryEdge()
     const held = await publishedSurface()
-    const denial = await retainEdgeAhead(edge, held.deliveryKey, 'withheld')
+    const denial = await retainEdgeAhead(
+      edge,
+      held.deliveryKey,
+      held.mediaDeliveryRegistryRecordId,
+      'withheld',
+    )
     await fenceTestMediaDeliveryRegistry({
       edgeHighWater: denial.generation,
-      reopenDeliveryKeys: [],
+      reopenRecordIds: [],
     })
 
     // Re-apply the lost takedown through authority, then let reconciliation stage the result.
@@ -141,34 +172,42 @@ describe('coordinated reset and restore generation safety', () => {
     await expect(
       stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
     ).resolves.toBeGreaterThan(0)
-    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+    await expect(
+      processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
+    ).resolves.toBe('completed')
 
     const published = edge.records.get(held.deliveryKey)
     expect(published?.state).toBe('withheld')
     expect(BigInt(published!.generation)).toBeGreaterThan(BigInt(denial.generation))
 
-    await fenceTestMediaDeliveryRegistry({ reopenDeliveryKeys: [held.deliveryKey] })
-    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+    await fenceTestMediaDeliveryRegistry({ reopenRecordIds: [held.mediaDeliveryRegistryRecordId] })
+    await expect(
+      processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
+    ).resolves.toBe('completed')
     expect(edge.records.get(held.deliveryKey)?.state).toBe('withheld')
   })
 
   it('needs an explicit reopen before a rebuilt empty edge serves a completed row', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const { tuple, deliveryKey } = await publishedSurface()
+    const { tuple, deliveryKey, mediaDeliveryRegistryRecordId } = await publishedSurface()
     edge.records.clear()
 
     await expect(
       stageCurrentImagePlacementDeliveryRecordsForImageIds([tuple.imageId]),
     ).resolves.toBe(0)
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'not_claimed',
+    )
     expect(edge.records.has(deliveryKey)).toBe(false)
 
-    await fenceTestMediaDeliveryRegistry({ reopenDeliveryKeys: [deliveryKey] })
-    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('completed')
+    await fenceTestMediaDeliveryRegistry({ reopenRecordIds: [mediaDeliveryRegistryRecordId] })
+    await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
+      'completed',
+    )
     expect(edge.records.get(deliveryKey)).toEqual({
       deliveryKey,
       state: 'allow',
-      generation: String(await registryGeneration(deliveryKey)),
+      generation: String(await registryGeneration(mediaDeliveryRegistryRecordId)),
     })
   })
 
@@ -183,6 +222,6 @@ describe('coordinated reset and restore generation safety', () => {
     expect(deliveryKey).not.toBe(staleKey)
     expect(edge.records.get(deliveryKey)?.state).toBe('allow')
     expect(edge.records.get(staleKey)).toEqual(stale)
-    expect(await getTestMediaDeliveryRecord(staleKey)).toBeNull()
+    expect(await getTestMediaDeliveryRecord(crypto.randomUUID())).toBeNull()
   })
 })

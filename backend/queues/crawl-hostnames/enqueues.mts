@@ -49,7 +49,9 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
       {},
       {
         priority: defaultPriority,
-        ...(jobName === 'crawl_tier1_dispatcher' || jobName === 'crawl_tier2_dispatcher'
+        ...(jobName === 'crawl_tier1_dispatcher' ||
+        jobName === 'crawl_tier2_dispatcher' ||
+        jobName === 'crawl_hostnames_dispatcher'
           ? {
               deduplication: { id: jobName, mode: 'simple' as const },
             }

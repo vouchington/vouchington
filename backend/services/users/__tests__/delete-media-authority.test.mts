@@ -6,6 +6,7 @@ import {
   insertTestImage,
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { createProfileLink } from '../../my/profile-links.mts'
 import { deleteUser } from '../delete.mts'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
@@ -26,13 +27,16 @@ describe('user deletion media authority', () => {
       image_id: imageId,
     })
     const [placement] = await getTestImageSurfacePlacements({ profileLinkId: link.id })
-    const key = getImagePlacementDeliveryKey({
+    const tuple = {
       placementId: placement!.placement_id,
       revision: placement!.placement_revision,
       imageId,
-    })
+    }
+    const key = getImagePlacementDeliveryKey(tuple)
+    const recordId = await getTestMediaDeliveryRegistryRecordId(tuple)
+    expect(recordId).not.toBeNull()
     const edge = installTestMediaDeliveryEdge()
-    await processMediaDeliveryRegistryRecord(key)
+    await processMediaDeliveryRegistryRecord(recordId!)
     expect(edge.records.get(key)?.state).toBe('allow')
     let observedLiveOwner = false
     edge.put.mockImplementationOnce(async input => {

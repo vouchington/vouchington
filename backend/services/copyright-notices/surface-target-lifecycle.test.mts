@@ -192,13 +192,13 @@ describe('copyright surface target lifecycle', () => {
     async kind => {
       const edge = installTestMediaDeliveryEdge()
       const fixture = await createTestCopyrightImageFixture(kind)
-      const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+      const { mediaDeliveryRegistryRecordId } = await stageImagePlacementDeliveryRecord({
         placementId: fixture.placementId,
         revision: fixture.placementRevision,
         imageId: fixture.imageId,
         state: 'allow',
       })
-      await completeTestMediaDeliveryRecord(deliveryKey)
+      await completeTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
       expect(await publicImageIsProjected(fixture)).toBe(true)
       const caseRecord = await createTestCopyrightRestrictionForImage(fixture)
       const cache = ownerCache(fixture)

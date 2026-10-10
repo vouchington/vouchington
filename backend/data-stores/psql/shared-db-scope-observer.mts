@@ -15,7 +15,7 @@ export const sharedDbScopeTables = {
   searchUnmaterializedDsaStatementRestrictionIds: 'copyright_restrictions',
   searchRecoverableDsaStatementSubmissionIds: 'copyright_dsa_statement_submissions',
   replayFailedMediaDeliveryRegistryRecords: 'media_delivery_registry_records',
-  listRecoverableMediaDeliveryRegistryKeys: 'media_delivery_registry_records',
+  listRecoverableMediaDeliveryRegistryIds: 'media_delivery_registry_records',
   stageAllCurrentImagePlacementDeliveryRecords: 'media_delivery_registry_records',
   reconcileMediaDeliveryRepairMarkers: 'media_delivery_repair_markers',
   cleanupRetainedMediaBindings: 'retained_image_placement_bindings',

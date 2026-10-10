@@ -26,12 +26,37 @@ Core user service — authentication flows, authorization, profile management, s
 | `delete-row-locks`                                 | Ascending-id `users` row locks for a deletion target and its requesting actor         |
 | `delete-oauth-pii`                                 | GDPR erasure: scrub OAuth PII on deletion                                             |
 
+## Canonical system actor
+
+`getSystemUser()` loads the bootstrap-owned `system` username as a private user from the writer,
+filters the persisted system platform classification, and retains the real private-view roles. The config-driven agent seed provisions this actor without
+an email or login. Post-mention processing uses this default actor; its tests do not create or mutate
+a shared email account to make processing run.
+
 Account deletion first tries the same transaction-scoped user-lifecycle advisory lock held by
 active-user writers. A failed try reports real lock contention to the optional synchronous internal
 `onLockContention` observer, then acquires that same lock with the ordinary blocking query before
 the publication and user-row locks. An observer error aborts the transaction. The uncontended path
 uses one lock query; contention uses two, and the gap before the blocking query does not establish
 a PostgreSQL wait-queue position. The active-user check still rejects writes after deletion commits.
+
+## Deletion completion
+
+`deleteUser` commits the account privacy fence and durable deletion request before starting
+cache invalidation and immediate cache eviction. It waits for both follow-ups to settle before
+propagating a failure. A single rejected follow-up retains its original rejection reason; multiple
+rejections are preserved in an `AggregateError` in follow-up order. Immediate cache eviction also
+waits for every started cache receipt write before reporting failures through its existing
+best-effort error boundary, preserving multiple receipt failures together.
+
+On the successful follow-up path, it waits for the best-effort bookmark-filter enqueue to settle,
+then attempts the initial user-deletion enqueue. The queue factory reports asynchronous
+bookmark enqueue failures; the best-effort wrapper reports synchronous failures. An enqueue
+failure does not undo the committed privacy fence or durable request. PostgreSQL recovery
+continues to own deletion correctness.
+
+Returning the deletion attempt establishes completion of these enqueue attempts, while
+[durable deletion processing](../user-deletions/README.md) owns subsequent erasure and finalization.
 
 ## User view row shapes
 

@@ -54,11 +54,11 @@ export async function allowTestPostImageDelivery(input: {
   if (!placement || placement.retired_at !== null) {
     throw new Error(`Expected an active post-image placement for ${input.postId}/${input.imageId}`)
   }
-  const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+  const { mediaDeliveryRegistryRecordId } = await stageImagePlacementDeliveryRecord({
     placementId: placement.placement_id,
     revision: placement.placement_revision,
     imageId: input.imageId,
     state: 'allow',
   })
-  await completeTestMediaDeliveryRecord(deliveryKey)
+  await completeTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
 }

@@ -21,7 +21,7 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { getTopicBySlug } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import { createTestTopic } from '@voucha/test-helpers/entities/create-test-entities'
@@ -60,7 +60,7 @@ async function main() {
   if (existingTopic) {
     // Ensure the topic is findable via the entity cache bloom filter even if it was created
     // via createTestTopic (which bypasses finalizeCreatedTopic and the bloom update).
-    await entityCacheBloomFilters.topics.add([
+    await addEntityBloomKeys('topics', [
       normalizeKey(existingTopic.id),
       normalizeKey(existingTopic.slug),
     ])
@@ -96,7 +96,7 @@ async function main() {
     name: QA_SEED_TITLE,
   })
   // createTestTopic bypasses finalizeCreatedTopic, so populate the bloom filter manually.
-  void entityCacheBloomFilters.topics.add([normalizeKey(topic.id), normalizeKey(topic.slug)])
+  void addEntityBloomKeys('topics', [normalizeKey(topic.id), normalizeKey(topic.slug)])
   const feedId = await insertTestRssFeed({
     topicId: topic.id,
     title: QA_SEED_TITLE,

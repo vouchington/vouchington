@@ -143,8 +143,8 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.56.5
-        version: 0.56.5
+        specifier: ^0.56.6
+        version: 0.56.6
       squawk-cli:
         specifier: ^2.67.0
         version: 2.67.0
@@ -3537,6 +3537,9 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../services/entity-fetch
+      '@services/entity-listener-reconciliation':
+        specifier: workspace:^
+        version: link:../services/entity-listener-reconciliation
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../services/entity-relations
@@ -5626,9 +5629,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6144,6 +6144,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -6281,6 +6284,21 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/api-keys':
+        specifier: workspace:^
+        version: link:../api-keys
+      '@services/bedrock-embeddings':
+        specifier: workspace:^
+        version: link:../bedrock-embeddings
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
+      '@services/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../urls-domains-blacklist
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7213,6 +7231,9 @@ importers:
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -7813,9 +7834,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -22003,8 +22021,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.56.5:
-    resolution: {integrity: sha512-d9C3qfgI4I76sd4kL5TwymtkhIr4UYKqzqUcHB3d1Jx9rjAgOwsM70Y+ixGV9sySNtU6+0p1PcNYFBvLG+zOug==}
+  pr-shepherd@0.56.6:
+    resolution: {integrity: sha512-9JUy5mZT92lu359vEtsAhqL6KlK8PdxJsJcyrL0pZDhVe1GDXagZo7170WR+b3CNcWR563lI9g0qHXjGzdltAw==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -31276,7 +31294,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.56.5:
+  pr-shepherd@0.56.6:
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
       picomatch: 4.0.7

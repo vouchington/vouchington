@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withTestEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-transition'
 import { version as uuidVersion } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -246,10 +246,11 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
       did,
       linkingUserId: user.id,
     })
-    await connectBlueskyAccountToUser(user.id, did, handle, {
-      linkAuthorizationId: linked.link_authorization_id,
-    })
-    await onceEntityListenerCompleted('processUserUpdated', user.id)
+    await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
+      connectBlueskyAccountToUser(user.id, did, handle, {
+        linkAuthorizationId: linked.link_authorization_id,
+      }),
+    )
 
     const after = await request.get('/api/v1/my/identity').expect(200)
     expect(after.body.identity.bluesky_account).toEqual({ did, handle })
@@ -265,15 +266,17 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
       did,
       linkingUserId: user.id,
     })
-    await connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
-      linkAuthorizationId: account.link_authorization_id,
-    })
-    await onceEntityListenerCompleted('processUserUpdated', user.id)
+    await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
+      connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
+        linkAuthorizationId: account.link_authorization_id,
+      }),
+    )
     const linked = await request.get('/api/v1/my/identity').expect(200)
     expect(linked.body.identity.bluesky_account).not.toBeNull()
 
-    await request.delete('/api/v1/auth/bluesky/link').expect(204)
-    await onceEntityListenerCompleted('processUserUpdated', user.id)
+    await withTestEntityListenerCompletion('processUserUpdated', user.id, async () => {
+      await request.delete('/api/v1/auth/bluesky/link').expect(204)
+    })
 
     const after = await request.get('/api/v1/my/identity').expect(200)
     expect(after.body.identity.bluesky_account).toBeNull()

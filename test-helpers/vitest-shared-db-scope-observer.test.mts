@@ -51,13 +51,16 @@ describe('shared database scope observer', () => {
     const events: SharedDbScopeEvent[] = []
     const dispose = installSharedDbScopeObserver(event => events.push(event))
     try {
-      observeSharedDbScope('listRecoverableMediaDeliveryRegistryKeys', sharedDbIdsScope(['key']))
+      observeSharedDbScope(
+        'listRecoverableMediaDeliveryRegistryIds',
+        sharedDbIdsScope(['record-id']),
+      )
       observeSharedDbScope('listCopyrightStaffQueue', sharedDbCursorScope('cursor-id'))
       expect(events).toEqual([
         {
-          operation: 'listRecoverableMediaDeliveryRegistryKeys',
+          operation: 'listRecoverableMediaDeliveryRegistryIds',
           table: 'media_delivery_registry_records',
-          scope: { kind: 'ids', ids: ['key'] },
+          scope: { kind: 'ids', ids: ['record-id'] },
         },
         {
           operation: 'listCopyrightStaffQueue',

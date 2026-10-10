@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   unreliable_status_codes SMALLINT[], -- RSS fetch HTTP status codes that should retry instead of soft-deleting feeds on this hostname
   requests_per_second_limit SMALLINT DEFAULT 1, -- the maximum number of requests per second for this hostname
   attempt_threshold_hours SMALLINT DEFAULT 1, -- if a crawl fails, we do not attempt to crawl again for this many hours
-  age_threshold_days SMALLINT DEFAULT 1, -- days after which a page's successful crawl is considered old and should be crawled again
+  age_threshold_days SMALLINT NOT NULL DEFAULT 1, -- days after which a page's successful crawl is considered old and should be crawled again
+  crawl_swept_at TIMESTAMPTZ,
 
   reversed_hostname TEXT GENERATED ALWAYS AS (fn_reverse_hostname_labels(hostname)) STORED,
 
@@ -138,6 +139,12 @@ COMMENT ON COLUMN url_hostnames.should_follow_link_rel IS 'If TRUE, links to thi
 COMMENT ON COLUMN url_hostnames.requests_per_second_limit IS 'Max crawl requests per second for this hostname.';
 COMMENT ON COLUMN url_hostnames.attempt_threshold_hours IS 'Hours to wait before retrying a failed crawl.';
 COMMENT ON COLUMN url_hostnames.age_threshold_days IS 'Days after which a successful crawl is considered stale and should be re-crawled.';
+COMMENT ON COLUMN url_hostnames.crawl_swept_at IS 'Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.';
+
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__crawl_due
+  ON url_hostnames (age_threshold_days, crawl_swept_at NULLS FIRST, id)
+  INCLUDE (hostname)
+  WHERE is_crawlable AND NOT is_blocked;
 COMMENT ON COLUMN url_hostnames.reversed_hostname IS 'Hostname labels reversed (e.g. com.example.www) for efficient subdomain prefix scans.';
 COMMENT ON COLUMN url_hostnames.consecutive_dns_failures IS 'Number of consecutive DNS lookup failures for this hostname. Resets to 0 on any successful crawl. Resets to 1 (not incremented) when last_dns_failure_at is older than 7 days.';
 COMMENT ON COLUMN url_hostnames.last_dns_failure_at IS 'When the most recent DNS lookup failure occurred for this hostname.';

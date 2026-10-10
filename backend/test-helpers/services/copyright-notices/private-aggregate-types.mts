@@ -49,7 +49,7 @@ export type CopyrightLifecycleEventRecord = {
   copyright_notice_action_intent_id: string | null
   copyright_notice_email_intake_id: string | null
   copyright_notice_delivery_work_item_id: string | null
-  media_delivery_registry_record_delivery_key: string | null
+  media_delivery_registry_record_id: string | null
   copyright_notice_guest_capability_id: string | null
   review_action: CopyrightHumanReviewAction | null
   review_rationale_ciphertext: string | null

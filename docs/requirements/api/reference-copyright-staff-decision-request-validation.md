@@ -90,4 +90,4 @@ before.
 
 ## Replay behavior
 
-`POST /copyright-media-delivery/replays` retains its existing staff-only `403` and `200` behavior.
+`POST /copyright-media-delivery/replays` retains its staff-only `403` behavior and accepts queued replay with `202` and no count.

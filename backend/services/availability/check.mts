@@ -1,10 +1,11 @@
+import {
+  checkEntityBloomKeys,
+  type EntityBloomFilterType,
+} from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import assert from 'http-assert'
 import { isSlug, isUUID, isUsername } from '@modules/utils'
-import {
-  entityCacheBloomFilters,
-  entityCacheBloomFilterEnabled,
-} from '@services/entity-cache/backfill-bloom-filter'
+import { entityCacheBloomFilterEnabled } from '@services/entity-cache/backfill-bloom-filter'
 import { getTopicByAny } from '@services/topics/get'
 import { getTopicByName, topicNameExists, topicSlugExists } from '@services/topics/get-by-name'
 import { getCommunityBySlugOnly } from '@services/communities/get'
@@ -45,14 +46,14 @@ export const MAX_VALUE_LENGTH = 300
 // Mirrors the topics table CHECK constraint char_length(name) <= 255.
 const MAX_TOPIC_NAME_LENGTH = 255
 
-type EntityFilter = keyof typeof entityCacheBloomFilters
+type EntityFilter = EntityBloomFilterType
 
 // Returns true only when the bloom filter is enabled (production) AND reports a definite miss.
 // A bloom `false` has no false negatives, so it is authoritative — skip the DB confirm.
 // When the filter is disabled (tests) or returns true/null, callers must confirm against the DB.
 async function bloomDefinitelyMisses(filter: EntityFilter, normalized: string): Promise<boolean> {
   if (!entityCacheBloomFilterEnabled()) return false
-  return (await entityCacheBloomFilters[filter].exists(normalized)) === false
+  return (await checkEntityBloomKeys(filter, [normalized]))[0] === false
 }
 
 export async function checkAvailability(
