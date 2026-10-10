@@ -4,6 +4,7 @@ import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-m
 import {
   redactCopyrightContactFields,
   redactCopyrightEmailIntake,
+  redactCopyrightParticipantNotice,
   redactCopyrightQueueCase,
 } from './copyright-redaction.mts'
 
@@ -11,6 +12,53 @@ const email = 'claimant@example.test'
 const phone = '415-555-0181'
 
 describe('copyright MCP read redaction', () => {
+  it('strips personal details from an EU complaint explanation and decision rationale', () => {
+    const receivedAt = new Date('2026-01-01T00:00:00.000Z')
+    const decidedAt = new Date('2026-01-02T00:00:00.000Z')
+    const page = { has_next_page: false, end_cursor: null, start_cursor: null }
+    const notice = {
+      id: crypto.randomUUID(),
+      eu: {
+        outcome: 'restrict' as const,
+        decided_at: decidedAt,
+        informed_at: null,
+        reopened_at: null,
+        dispute_settlements_page_info: page,
+        dispute_settlements: [],
+        complaint: {
+          can_submit: false,
+          window_ends_at: null,
+          request: {
+            id: crypto.randomUUID(),
+            received_at: receivedAt,
+            filed_by: 'notifier' as const,
+            explanation: `Email ${email} about the image.`,
+          },
+          decision: {
+            staff_disposition: 'maintain' as const,
+            rationale: `Call ${phone} before closing.`,
+            decided_at: decidedAt,
+          },
+        },
+      },
+    }
+    const result = redactCopyrightParticipantNotice(notice)
+    expect(result.eu?.complaint.request?.explanation).toBe('Email [email removed] about the image.')
+    expect(result.eu?.complaint.decision?.rationale).toBe('Call [phone removed] before closing.')
+    expect(result.eu?.complaint.request?.filed_by).toBe('notifier')
+    expect(result.eu?.outcome).toBe('restrict')
+    expect(notice.eu.complaint.request.explanation).toContain(email)
+    expect(redactCopyrightParticipantNotice({ id: notice.id })).toEqual({ id: notice.id })
+    expect(
+      redactCopyrightParticipantNotice({
+        eu: {
+          ...notice.eu,
+          complaint: { ...notice.eu.complaint, request: null, decision: null },
+        },
+      }).eu?.complaint,
+    ).toMatchObject({ request: null, decision: null })
+  })
+
   it('keeps queue keys and names while masking contact and stripping personal details from narrative fields', () => {
     const staffCase = {
       id: crypto.randomUUID(),
