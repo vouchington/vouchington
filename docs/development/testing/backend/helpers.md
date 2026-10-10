@@ -770,6 +770,13 @@ Quota cases retain the captured dirty-database accounting baseline. Unrelated-wo
 remain in the global aggregate; the temporary count ceiling never exceeds the normal configured
 ceiling. Cleanup verifies that every owned accounting ID is absent; it does not require unrelated
 batches to preserve the captured global aggregate while the test runs.
+The six empty/unknown embedding-creation route cases use `emptyEmbeddingCreationDependencies`
+from the existing quota helper. This typed fixture injects controlled admitted capacity through
+the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL
+empty scans and real SDK worker completion or unknown-route failure, retaining actual `createBatch`
+(which empty scans must not invoke). They do not prove ambient provider admission. The five route
+denial cases and mixed fairness case retain real unfiltered global quota discovery. Production
+callers omit dependencies and preserve capacity-before-stream ordering and ordinary ceilings.
 Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
 admission within the test budget; this preserves priority ordering and delayed-job due times.
 The normal worker factory forwards that optional setting without changing production defaults.

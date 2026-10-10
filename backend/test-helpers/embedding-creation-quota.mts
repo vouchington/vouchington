@@ -1,10 +1,24 @@
 import { randomUUID } from 'node:crypto'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
+import type { BatchCreationDependencies } from '../services/bedrock-embeddings-batch/utils.mts'
+import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
+import { minimumImageBatchSizeMB } from '../services/bedrock-embeddings/batch/input-size-limits.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from './entities/bedrock-embeddings-batches.mts'
+
+/** Controlled admission for empty routing only; submission remains the production function. */
+export const emptyEmbeddingCreationDependencies: BatchCreationDependencies = {
+  getBatchCreationLimits: async () => ({
+    allowed: true,
+    maxRecords: 1,
+    minRecords: 1,
+    maxSizeMB: minimumImageBatchSizeMB(1),
+  }),
+  createBatch,
+}
 
 /** Coordinates these fixtures, not unrelated production writers or a separate provider account. */
 export async function acquireEmbeddingQuotaFixture() {
