@@ -140,4 +140,6 @@ publication takes a fresh nontransactional generation and claims inside the reta
 transaction. Regular publication of an already-completed generation is idempotent. Each AWS
 command has a two-minute abort deadline within the five-minute projection lease.
 
-Operator replay is accepted asynchronously (`202`, no count). Small jobs carry the actor id, reopen one failed page with lifecycle evidence in one transaction, and enqueue cursor-deduplicated continuations in computed delivery-key order. Confirm convergence with the [coverage query](../../../../runbooks/media-delivery-edge-enforcement.md#coverage-query).
+Operator replay is accepted asynchronously (`202`, no count). Small jobs carry the actor id, reopen one failed page with lifecycle evidence in one transaction, and enqueue cursor-deduplicated continuations in immutable registry UUID order. Confirm convergence with the [coverage query](../../../../runbooks/media-delivery-edge-enforcement.md#coverage-query).
+
+Replay selects a capped page of derived failed work-item memberships ordered by registry record UUID, then locks their authority rows and rechecks canonical current-generation failure state in a fresh statement. A full candidate page schedules the next scoped UUID cursor after commit. Failed history remains authoritative; normal projection and recovery never claim retained failed memberships. Retrying a committed page selects the next remaining failed candidates; overlapping chains do not duplicate pending transitions or actor lifecycle records.

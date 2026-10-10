@@ -4,7 +4,6 @@ import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 import { ensureImagePlacementBinding } from '../../services/media-delivery-safety/retained-image-identities.mts'
 export { insertTestImage, insertTestImageWithSha256 } from './images-insert.mts'
-
 export async function updateImageStatus(
   imageId: string,
   status: 'pending' | 'processing' | 'complete' | 'failed',
@@ -137,6 +136,7 @@ export async function setImageCompleteWithData(
 }
 
 export async function insertTestPostImage(data: {
+  placementId?: string
   postId: string
   imageId: string
   orderIndex?: number
@@ -147,7 +147,7 @@ export async function insertTestPostImage(data: {
     WHERE post_id = ${data.postId} AND image_id = ${data.imageId}
   `)
   if (existing[0]) return existing[0].placement_id
-  const placementId = v7()
+  const placementId = data.placementId ?? v7()
   await using query = await beginTransaction()
   await ensureImagePlacementBinding(query, {
     placementId,

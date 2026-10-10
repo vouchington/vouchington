@@ -7241,6 +7241,12 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@aws-sdk/client-cloudfront':
+        specifier: ^3.1147.0
+        version: 3.1147.0
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.1147.0
+        version: 3.1147.0
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -11354,6 +11360,12 @@ importers:
 
   backend/test-helpers:
     dependencies:
+      '@aws-sdk/client-cloudfront':
+        specifier: ^3.1147.0
+        version: 3.1147.0
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.1147.0
+        version: 3.1147.0
       '@aws-sdk/client-s3':
         specifier: ^3.1147.0
         version: 3.1147.0

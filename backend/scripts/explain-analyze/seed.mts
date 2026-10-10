@@ -1,4 +1,5 @@
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
+import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
@@ -152,6 +153,7 @@ async function main() {
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
   await seedBloomReconciliation()
+  await seedMediaDeliveryReplay()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
   await seedClassifierHumanVoteComparison()

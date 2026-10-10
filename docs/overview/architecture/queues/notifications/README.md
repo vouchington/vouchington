@@ -178,3 +178,9 @@ notifications queue and preserves the dispatch payload, retry, priority, and ded
 Admission-failure tests close only a uniquely owned real queue and invoke this same producer; the
 scheduler must release its claimed lease without changing unrelated windows. This checks the SDK's
 closed-resource admission boundary, not a server-side write failure.
+
+## Media delivery replay
+
+`processReplayMediaDeliveryRegistry` receives the authenticated actor and an optional opaque UUID cursor. It locks one configured page of failed registry records in UUID order, rechecks failed state in a fresh statement, and commits transitions and actor-attributed lifecycle events together. A full page awaits a cursor-deduplicated successor; enqueue failures fail the job. Retrying the same cursor safely handles still-failed records. A successful 202 response accepts work and does not report completion or a count.
+
+Replay selects a capped page of derived failed work-item memberships ordered by registry record UUID, then locks their authority rows and rechecks canonical current-generation failure state in a fresh statement. A full candidate page schedules the next scoped UUID cursor after commit. Failed history remains authoritative; normal projection and recovery never claim retained failed memberships. Retrying a committed page selects the next remaining failed candidates; overlapping chains do not duplicate pending transitions or actor lifecycle records.

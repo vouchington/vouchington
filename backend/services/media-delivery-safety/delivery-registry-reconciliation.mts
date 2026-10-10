@@ -1,4 +1,5 @@
 import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
@@ -9,28 +10,42 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   recordIds?: readonly string[]
   after?: string
 }): Promise<{ replayed: number; after?: string; hasMore: boolean }> {
-  if (input?.recordIds?.length === 0) return { replayed: 0, hasMore: false }
+  const recordIds = input?.recordIds
+    ? [...new Set(input.recordIds.map(id => id.toLowerCase()))].toSorted()
+    : null
+  const scope = JSON.stringify({
+    operation: 'media-delivery-registry-replay',
+    order: 'media-delivery-registry-record-id-asc',
+    recordIds,
+    actorUserId: input?.actorUserId?.toLowerCase() ?? null,
+  })
+  const after = input?.after
+    ? decodeScopedUuidCursor(input.after, scope, 'Invalid media replay cursor').id
+    : null
+  if (recordIds?.length === 0) return { replayed: 0, hasMore: false }
   observeSharedDbScope(
     'replayFailedMediaDeliveryRegistryRecords',
     sharedDbIdsScope(input?.recordIds),
   )
-  const recordIds = input?.recordIds ? [...input.recordIds] : null
-  await using transaction = await beginTransaction()
   const limit = getMediaDeliverySafetyWorkLimit('registry_reconciliation_page_size')
-  const { rows: locked } = await transaction<{ id: string; delivery_key: string }>(sql`
-    /* replayFailedMediaDeliveryRegistryRecords:lock */
-    /* deadlock-safe: every replay chain locks in the same computed delivery-key order; the unique placement/revision/image tuple makes that order total. */
-    SELECT record.id, ('image-placement:' || record.placement_id::text || ':' || record.placement_revision::text || ':' || record.image_id::text) AS delivery_key FROM media_delivery_registry_records record
-    JOIN LATERAL (SELECT history.change_type, history.generation
-      FROM media_delivery_registry_changes history
-      WHERE history.media_delivery_registry_record_id = record.id
-      ORDER BY history.id DESC LIMIT 1) latest ON true
-    WHERE latest.change_type = 'failed' AND latest.generation = record.generation
-      AND (${recordIds}::uuid[] IS NULL OR record.id = ANY(${recordIds}::uuid[]))
-      AND (${input?.after ?? null}::text IS NULL OR ('image-placement:' || record.placement_id::text || ':' || record.placement_revision::text || ':' || record.image_id::text) > ${input?.after ?? null})
-    ORDER BY delivery_key LIMIT ${limit} FOR UPDATE OF record
+  await using transaction = await beginTransaction()
+  const candidates = sql`/* replayFailedMediaDeliveryRegistryRecords:lock */
+    /* deadlock-safe: every replay chain locks authority rows in the same total record UUID order. */
+    WITH candidates AS MATERIALIZED (
+      SELECT media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items
+      WHERE failed_change_id IS NOT NULL`
+  if (recordIds)
+    candidates.append(sql` AND media_delivery_registry_record_id = ANY(${recordIds}::uuid[])`)
+  if (after) candidates.append(sql` AND media_delivery_registry_record_id > ${after}::uuid`)
+  candidates.append(sql`
+      ORDER BY media_delivery_registry_record_id LIMIT ${limit}
+    ) SELECT record.id FROM candidates
+      JOIN media_delivery_registry_records record ON record.id = candidates.media_delivery_registry_record_id
+    ORDER BY record.id FOR UPDATE OF record
   `)
+  const { rows: locked } = await transaction<{ id: string }>(candidates)
   const ids = locked.map(record => record.id)
+  // A new statement after row locks refreshes READ COMMITTED visibility for overlapping chains.
   const { rows } = await transaction<{
     media_delivery_registry_record_id: string
     placement_id: string
@@ -46,25 +61,23 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     ) SELECT record.id AS media_delivery_registry_record_id, record.placement_id FROM inserted
       JOIN media_delivery_registry_records record ON record.id = inserted.media_delivery_registry_record_id
   `)
-  if (input?.actorUserId) {
-    for (const record of rows) {
-      // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
-      await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
-        INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
-          media_delivery_registry_record_id, replay_reason)
-        SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
-          ${record.media_delivery_registry_record_id}, 'operator_replay'
-        FROM copyright_notice_targets target
-        WHERE ${record.placement_id}::uuid IS NOT NULL
-          AND target.placement_id = ${record.placement_id}::uuid
-      `)
-    }
+  if (input?.actorUserId && rows.length) {
+    await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
+      INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id,
+        media_delivery_registry_record_id, replay_reason)
+      SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
+        record.id, 'operator_replay'
+      FROM media_delivery_registry_records record
+      JOIN copyright_notice_targets target ON target.placement_id = record.placement_id
+      WHERE record.id = ANY(${rows.map(row => row.media_delivery_registry_record_id)}::uuid[])
+      ORDER BY record.id, target.id
+    `)
   }
   await transaction.commit()
   return {
     replayed: rows.length,
     hasMore: locked.length === limit,
-    after: locked.at(-1)?.delivery_key,
+    after: locked.length ? encodeScopedUuidCursor(locked.at(-1)!.id, scope) : undefined,
   }
 }
 

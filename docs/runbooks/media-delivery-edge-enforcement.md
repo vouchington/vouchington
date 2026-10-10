@@ -38,7 +38,7 @@ its own owner-approved plan. Never combine them into one apply.
    identify gaps to resolve. A stale-generation rejection requires the
    [reset and restore runbook](media-delivery-reset-restore.md#supported-workflows). For a transient
    failure, fix the cause, then queue replay through
-   `POST /api/v1/copyright-media-delivery/replays` (`202`, no count). Small jobs reopen failed
+   `POST /api/v1/copyright-media-delivery/replays` (`202`, no count). Confirm eventual recovery with the coverage query below, rather than treating HTTP acceptance as completion. Small jobs reopen failed
    records in cursor order; confirm completion through the coverage query and return to step 2.
 4. **Compare edge inventory.** Use [workflow B](media-delivery-reset-restore.md#b-edge-registry-rebuild-with-postgresql-intact)
    to classify each edge key against PostgreSQL and resolve every difference.
