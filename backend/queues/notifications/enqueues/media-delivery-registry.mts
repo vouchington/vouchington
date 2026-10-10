@@ -23,7 +23,7 @@ const reconcileOptions = {
   removeOnFail: 100,
   priority: PRIORITY_DEFAULT,
 } satisfies Partial<JobOptions>
-/** One batched add of apply-record jobs, each with its own per-delivery-key dedup id. */
+/** One batched add of apply-record jobs, each with its own per-record dedup id. */
 export const enqueueBulkApplyMediaDeliveryRegistryRecords = createBulkEnqueueFunction<
   string,
   { mediaDeliveryRegistryRecordId: string },

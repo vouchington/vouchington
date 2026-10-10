@@ -115,26 +115,23 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     }
   })
 
-  it('bulk-enqueues registry projections with one dedup id per delivery key', async () => {
-    const deliveryKeys = [
-      `image-placement:${randomUUID()}:0:${randomUUID()}`,
-      `image-placement:${randomUUID()}:1:${randomUUID()}`,
-    ]
-    await enqueueBulkApplyMediaDeliveryRegistryRecords(deliveryKeys)
-    // A replayed page is collapsed by the per-key throttle id rather than queued twice.
-    await enqueueBulkApplyMediaDeliveryRegistryRecords(deliveryKeys)
+  it('bulk-enqueues registry projections with one dedup id per registry record', async () => {
+    const recordIds = [randomUUID(), randomUUID()]
+    await enqueueBulkApplyMediaDeliveryRegistryRecords(recordIds)
+    // A replayed page is collapsed by the per-record throttle id rather than queued twice.
+    await enqueueBulkApplyMediaDeliveryRegistryRecords(recordIds)
 
-    for (const deliveryKey of deliveryKeys) {
+    for (const mediaDeliveryRegistryRecordId of recordIds) {
       const jobs = await notifications.searchJobs({
         name: 'processApplyMediaDeliveryRegistryRecord',
-        data: { deliveryKey },
+        data: { mediaDeliveryRegistryRecordId },
       })
       expect(jobs).toHaveLength(1)
       expect(jobs[0]?.opts).toMatchObject({
         attempts: 5,
         priority: 10,
         deduplication: {
-          id: `media-delivery-registry:${deliveryKey}`,
+          id: `media-delivery-registry:${mediaDeliveryRegistryRecordId}`,
           mode: 'throttle',
           ttl: 300_000,
         },
