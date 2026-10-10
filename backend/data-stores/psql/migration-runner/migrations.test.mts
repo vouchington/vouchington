@@ -1,4 +1,5 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -96,6 +97,34 @@ SELECT id FROM config_driven_session;
         'SELECT id FROM config_driven_session',
       ),
     )
+  })
+
+  it('runs split config-driven statements on one native PostgreSQL transaction and client', async () => {
+    const folder = await makeConfigDrivenDir()
+    const marker = randomUUID().replaceAll('-', '')
+    await writeFile(
+      join(folder, '0010-transaction-affinity.sql'),
+      `
+SELECT set_config(
+  'application_name',
+  concat(pg_backend_pid(), '/', txid_current(), '/${marker}'),
+  true
+);
+SELECT set_config(
+  'application_name',
+  CASE
+    WHEN current_setting('application_name') =
+      concat(pg_backend_pid(), '/', txid_current(), '/${marker}')
+    THEN '1'
+    ELSE format('transaction-mismatch-%s', pg_backend_pid())::integer::text
+  END,
+  true
+);
+SELECT current_setting('application_name')::integer;
+`,
+    )
+
+    await expect(runConfigDriven('/unused-root', { folder })).resolves.toBeUndefined()
   })
 
   it('uses the bounded jittered retry wait by default', async () => {
