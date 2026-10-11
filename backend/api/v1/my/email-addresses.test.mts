@@ -69,7 +69,7 @@ describe('email address list and verification request', () => {
 
   it('checks email availability with one annotated query', async () => {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
-    vi.stubEnv('BACKEND_TEST_REQUEST_QUERY_REPORT', 'all')
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
 
     try {
       const user = await createTestUser()

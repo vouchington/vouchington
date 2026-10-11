@@ -49,8 +49,8 @@ The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts
 request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
 The `onQueryTiming` hook feeds it for every query, including `transaction.query()`, so unlike
 `runWithCapturedQueries` it sees in-transaction statements. Outside a scope (production, workers,
-non-API tests) the hook returns on its first line. When the response finishes or closes early, a request with a
-repeated annotation writes one stderr line:
+non-API tests) the hook returns on its first line. Set `VITEST_DIAGNOSTICS=1` to print one stderr
+line for each request when the response finishes or closes early:
 
 ```text
 [pg-request-profile] route=GET /v1/posts/:id queries=14 serialDepth=6 repeats=getUserById(x5),getPostMedia(x3)
@@ -63,7 +63,7 @@ repeated annotation writes one stderr line:
   minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
   `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
   `docs/requirements/api/**` mean serial depth.
-- `BACKEND_TEST_REQUEST_QUERY_REPORT=all` prints a line for every request, not only those with repeats.
+- With diagnostics disabled, query profiles remain active and unbaselined repeats still fail tests.
 - Queries finishing after the response flushes, and Valkey commands (no command hook exists yet),
   are not covered.
 
@@ -86,9 +86,9 @@ and the number of the open issue that removes it. The baseline is per annotation
   PR never depends on landing order; the entry is still deleted so the repeat cannot return.
 - **Find stale entries.** A data-dependent repeat can be missing from any single run, and one
   process sees only a slice of the routes, so staleness is computed over several complete runs, not
-  in the test run. Save the logs of the 5 most recent completed main merge-group Backend runs
-  (every `test-backend-unit` shard and credentialed job of each, via
-  `gh run view <id> --log --job <job-id>`), concatenate each run's shard logs into one file, and run
+  in the test run. Set the repository variable `VITEST_DIAGNOSTICS` to `1` for 5 complete Backend
+  workflow runs on main, then unset it. Save every `test-backend-unit` shard and credentialed job
+  log from each run, concatenate each run's logs into one file, and run
   `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. An entry is listed
   only when it is absent from every log; delete it only then. The report prints how many logs it
   used and warns that the result is not safe to act on when given fewer than 5. It always exits
