@@ -345,11 +345,6 @@
     "issue": 2605
   },
   {
-    "annotation": "fetchConversationById",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
-  },
-  {
     "annotation": "fetchElectionVoteRowsByUser",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
