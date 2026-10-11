@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatViolation,
   gateMatches,
+  jobFiles,
   jobReferences,
   pathGateViolations,
   stepFiles,
@@ -54,6 +55,49 @@ describe('ci path filters cover files that gated jobs execute', () => {
     ]) {
       expect([...stepFiles([{ run }], new Set(), directory).keys()]).toEqual(['ci/run-bounded.py'])
     }
+  })
+
+  it('collects executable references supplied only by job-level environment', () => {
+    const steps = [{ run: 'node "$SCRIPT"' }]
+    expect([
+      ...jobFiles({ env: { SCRIPT: 'ci/vitest/shard-total.mts' }, steps }, new Set()).keys(),
+    ]).toEqual(['ci/vitest/shard-total.mts'])
+    expect([
+      ...jobFiles({ env: { SCRIPT: 'data-stores/psql/migrate.mts' }, steps }, new Set(), {
+        run: { 'working-directory': 'backend' },
+      }).keys(),
+    ]).toEqual(['backend/data-stores/psql/migrate.mts'])
+    expect([
+      ...jobFiles(
+        {
+          env: { SCRIPT: 'data-stores/psql/migrate.mts' },
+          steps: [{ run: 'node "$SCRIPT"', 'working-directory': 'backend' }],
+        },
+        new Set(),
+      ).keys(),
+    ]).toEqual(['backend/data-stores/psql/migrate.mts'])
+    expect([
+      ...jobFiles(
+        {
+          defaults: { run: { 'working-directory': 'backend' } },
+          env: { SCRIPT: 'ci/vitest/shard-total.mts' },
+          steps: [{ run: 'node "$SCRIPT"', 'working-directory': '.' }],
+        },
+        new Set(),
+      ).keys(),
+    ]).toEqual(['ci/vitest/shard-total.mts'])
+    expect([
+      ...jobFiles({ steps }, new Set(), undefined, { SCRIPT: 'ci/vitest/shard-total.mts' }).keys(),
+    ]).toEqual(['ci/vitest/shard-total.mts'])
+    expect([
+      ...jobFiles(
+        {
+          env: { SCRIPT: 'ci/vitest/shard-total.mts' },
+          steps: [{ run: 'node "$SCRIPT"', env: { SCRIPT: 'ci/run-bounded.py' } }],
+        },
+        new Set(),
+      ).keys(),
+    ]).toEqual(['ci/run-bounded.py'])
   })
 
   it('excludes the main-only image resolver from pull-request image jobs', () => {

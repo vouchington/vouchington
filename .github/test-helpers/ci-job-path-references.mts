@@ -27,10 +27,16 @@ type Job = {
   needs?: string | string[]
   uses?: string
   steps?: Step[]
+  env?: Json
   with?: Json
 }
 type Gate = { step: string; key: string }
-type Doc = { defaults?: Defaults; jobs?: Record<string, Job>; runs?: { steps?: Step[] } }
+type Doc = {
+  env?: Json
+  defaults?: Defaults
+  jobs?: Record<string, Job>
+  runs?: { steps?: Step[] }
+}
 type DetectDoc = { jobs: Record<string, { outputs: Record<string, string>; steps: Step[] }> }
 
 export type Violation = { area: string; job: string; file: string; via: string }
@@ -103,9 +109,9 @@ const chain = (head: string, via: string) => [head, via].filter(Boolean).join(' 
 export function stepFiles(steps: Step[] | undefined, seen: Set<string>, directory = ''): Found {
   const found: Found = new Map()
   for (const step of steps ?? []) {
-    for (const file of trackedFiles(step['working-directory'] ?? directory, step.run))
+    for (const file of trackedFiles(step['working-directory'] ?? directory, step.run, step.env))
       found.set(file, '')
-    for (const file of trackedFiles('', step.with, step.env)) found.set(file, '')
+    for (const file of trackedFiles('', step.with)) found.set(file, '')
     const action = step.uses?.startsWith('./.github/actions/')
       ? `${step.uses.slice(2)}/action.yml`
       : ''
@@ -125,12 +131,11 @@ function enabledByCaller(inner: Job, caller: Job): boolean {
   return value === true || (typeof value === 'string' && value.includes('${{'))
 }
 
-function jobFiles(job: Job, seen: Set<string>, defaults?: Defaults): Found {
-  const found = stepFiles(
-    job.steps,
-    seen,
-    job.defaults?.run?.['working-directory'] ?? defaults?.run?.['working-directory'],
-  )
+export function jobFiles(job: Job, seen: Set<string>, defaults?: Defaults, env?: Json): Found {
+  const directory =
+    job.defaults?.run?.['working-directory'] ?? defaults?.run?.['working-directory'] ?? ''
+  const steps = job.steps?.map(step => ({ ...step, env: { ...env, ...job.env, ...step.env } }))
+  const found = stepFiles(steps, seen, directory)
   for (const file of trackedFiles('', job.with)) found.set(file, '')
   const workflow = job.uses?.startsWith('./.github/workflows/') ? job.uses.slice(2) : ''
   if (!workflow || seen.has(workflow)) return found
@@ -146,7 +151,7 @@ function jobFiles(job: Job, seen: Set<string>, defaults?: Defaults): Found {
       ),
   )
   for (const inner of inners)
-    for (const [file, via] of jobFiles(inner, seen, doc.defaults))
+    for (const [file, via] of jobFiles(inner, seen, doc.defaults, doc.env))
       found.set(file, chain(workflow, via))
   return found
 }
@@ -170,7 +175,7 @@ export function jobReferences(): JobReference[] {
     return Object.entries(jobs).flatMap(([job, def]) => {
       const gates = gatesOf(job)
       if (!gates.length) return []
-      return [...jobFiles(def, new Set(), doc.defaults)].map(([file, via]) => ({
+      return [...jobFiles(def, new Set(), doc.defaults, doc.env)].map(([file, via]) => ({
         area,
         job,
         file,
