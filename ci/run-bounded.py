@@ -14,11 +14,13 @@ import threading
 import termios
 import time
 
+from run_bounded_process import output_sinks, run, signal_group
+
 RELAY_JOIN_SECONDS = 3
 
 
 class Relay(threading.Thread):
-    def __init__(self, source, target: int) -> None:
+    def __init__(self, source, target: int | None) -> None:
         super().__init__()
         self.source = source
         self.target = target
@@ -106,13 +108,6 @@ class Relay(threading.Thread):
                         self.error = failure
 
 
-def signal_group(pid: int, sig: int) -> None:
-    try:
-        os.killpg(pid, sig)
-    except ProcessLookupError:
-        return
-
-
 def main() -> None:
     if len(sys.argv) < 3:
         print('usage: run-bounded.py <seconds> <command> [args...]', file=sys.stderr)
@@ -126,6 +121,11 @@ def main() -> None:
         print('timeout seconds must be positive', file=sys.stderr)
         raise SystemExit(2)
 
+    with output_sinks() as targets:
+        execute(seconds, targets)
+
+
+def execute(seconds: int, targets: list[int | None]) -> None:
     proc = subprocess.Popen(
         sys.argv[2:], stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
     )
@@ -135,7 +135,7 @@ def main() -> None:
     errors: list[BaseException] = []
     status = 1
     try:
-        for stream, fd in ((proc.stdout, 1), (proc.stderr, 2)):
+        for stream, fd in zip((proc.stdout, proc.stderr), targets):
             relays.append(Relay(stream, fd))
         for thread in relays:
             thread.start()
@@ -177,22 +177,6 @@ def main() -> None:
     if errors:
         raise RuntimeError('Command/relay cleanup failed: ' + '; '.join(map(repr, errors))) from errors[0]
     raise SystemExit(status)
-
-
-def run(proc: subprocess.Popen[bytes], seconds: int) -> int:
-    try:
-        return proc.wait(timeout=seconds)
-    except subprocess.TimeoutExpired:
-        signal_group(proc.pid, signal.SIGTERM)
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            pass
-        # The parent can exit on SIGTERM while a descendant keeps running.
-        # Finish cleaning the group even when waiting for the parent succeeded.
-        signal_group(proc.pid, signal.SIGKILL)
-        proc.wait()
-        return 124
 
 
 if __name__ == '__main__':

@@ -177,3 +177,26 @@ describe('run-bounded downstream backpressure', () => {
     })
   })
 })
+
+describe('run-bounded absent downstream descriptors', () => {
+  it.each([
+    ['stdout', '1>&-', '', 'err\n'],
+    ['stderr', '2>&-', 'out\n', ''],
+    ['both', '1>&- 2>&-', '', ''],
+  ])('preserves command status when %s is closed at entry', (_name, redirects, stdout, stderr) => {
+    const command = 'import os; os.write(1, b"out\\n"); os.write(2, b"err\\n"); raise SystemExit(3)'
+    const result = spawnSync(
+      'bash',
+      ['-c', `exec python3 "$1" 5 python3 -c "$2" ${redirects}`, 'fixture', script, command],
+      {
+        encoding: 'utf8',
+        timeout: 7000,
+      },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.signal).toBeNull()
+    expect(result.status).toBe(3)
+    expect(result.stdout).toBe(stdout)
+    expect(result.stderr).toBe(stderr)
+  })
+})

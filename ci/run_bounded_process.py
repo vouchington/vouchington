@@ -1,0 +1,64 @@
+"""Own downstream descriptors and command process-group lifetime."""
+
+from __future__ import annotations
+
+import errno
+import fcntl
+import os
+import signal
+import subprocess
+from contextlib import contextmanager
+
+
+@contextmanager
+def output_sinks():
+    targets: list[int | None] = []
+    primary: BaseException | None = None
+    try:
+        for fd in (1, 2):
+            try:
+                targets.append(fcntl.fcntl(fd, fcntl.F_DUPFD_CLOEXEC, 3))
+            except OSError as err:
+                if err.errno != errno.EBADF:
+                    raise
+                targets.append(None)  # Absent at entry, before Popen allocates source pipes.
+        yield targets
+    except BaseException as err:
+        primary = err
+        raise
+    finally:
+        errors: list[BaseException] = []
+        for fd in targets:
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except BaseException as err:
+                    errors.append(err)
+        if errors:
+            details = ([repr(primary)] if primary is not None else []) + list(map(repr, errors))
+            raise RuntimeError('Output descriptor cleanup failed: ' + '; '.join(details)) from (primary or errors[0])
+
+
+def signal_group(pid: int, sig: int) -> None:
+    try:
+        os.killpg(pid, sig)
+    except ProcessLookupError:
+        return
+
+
+def run(proc: subprocess.Popen[bytes], seconds: int) -> int:
+    try:
+        return proc.wait(timeout=seconds)
+    except subprocess.TimeoutExpired:
+        signal_group(proc.pid, signal.SIGTERM)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            pass
+        # The parent can exit on SIGTERM while a descendant keeps running.
+        # Finish cleaning the group even when waiting for the parent succeeded.
+        signal_group(proc.pid, signal.SIGKILL)
+        proc.wait()
+        return 124
+
+
