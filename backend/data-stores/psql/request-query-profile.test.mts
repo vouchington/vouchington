@@ -158,7 +158,7 @@ describe('request query profile baseline', () => {
     expect(profile.summarize().totalQueries).toBe(1)
   })
 
-  it('records a violation for a new repeat only, through the response finish handler', async () => {
+  it('enforces new repeats without writing routine diagnostics by default', async () => {
     const { profileRequestQueries } =
       await import('../../test-helpers/api/request-query-profile.mts')
     const { takeRequestQueryProfileViolations } =
@@ -174,16 +174,46 @@ describe('request query profile baseline', () => {
     }
     const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as CommittedEntry[]
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     try {
       serve(committed[0]?.annotation ?? '')
+      expect(takeRequestQueryProfileViolations()).toEqual([])
+      serve('notInTheBaseline')
+      expect(takeRequestQueryProfileViolations()).toEqual([
+        expect.stringContaining('GET /v1/x: notInTheBaseline (x2)'),
+      ])
+      expect(stderrSpy).not.toHaveBeenCalled()
     } finally {
       stderrSpy.mockRestore()
+      vi.unstubAllEnvs()
     }
-    expect(takeRequestQueryProfileViolations()).toEqual([])
-    serve('notInTheBaseline')
-    expect(takeRequestQueryProfileViolations()).toEqual([
-      expect.stringContaining('GET /v1/x: notInTheBaseline (x2)'),
-    ])
+  })
+
+  it('prints a profile for every request when diagnostics are enabled', async () => {
+    const { profileRequestQueries } =
+      await import('../../test-helpers/api/request-query-profile.mts')
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+    try {
+      const res = new EventEmitter() as unknown as http.ServerResponse
+      const req = { method: 'GET', url: '/v1/quiet' } as http.IncomingMessage
+      profileRequestQueries(req, res, () => {
+        recordQueryTiming({
+          pool: 'read',
+          durationMs: 0,
+          rowCount: 0,
+          error: false,
+          annotation: 'once',
+        })
+      })
+      res.emit('finish')
+      expect(stderrSpy).toHaveBeenCalledWith(
+        '[pg-request-profile] route=GET /v1/quiet queries=1 serialDepth=1 repeats=none\n',
+      )
+    } finally {
+      stderrSpy.mockRestore()
+      vi.unstubAllEnvs()
+    }
   })
 
   it('records repeats on an aborted response and finalizes only once', async () => {

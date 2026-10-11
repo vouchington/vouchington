@@ -76,7 +76,7 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
       const request = createRequest()
       await request.authenticateAs(user)
       const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
-      vi.stubEnv('BACKEND_TEST_REQUEST_QUERY_REPORT', 'all')
+      vi.stubEnv('VITEST_DIAGNOSTICS', '1')
       try {
         const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
 
@@ -164,7 +164,7 @@ describe('PATCH /api/v1/my/conversations/:conversationId', () => {
     await request.authenticateAs(user)
 
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
-    vi.stubEnv('BACKEND_TEST_REQUEST_QUERY_REPORT', 'all')
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
     try {
       const result = await request
         .patch(`/api/v1/my/conversations/${conversation.id}`)
