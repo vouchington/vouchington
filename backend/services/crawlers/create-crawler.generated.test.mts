@@ -63,15 +63,21 @@ describe('create-crawler.generated', () => {
       crawler_type: 'fetch',
       description: 'Original',
     })
+    const newUrl = await createTestUrlWithNewHostname(
+      `https://crawler-update-new-${random}.example.com/test`,
+    )
     const updated = await updateCrawler(user, crawler.id, {
+      hostname_id: newUrl.hostname.id,
       description: 'Updated',
       priority: 10,
       css_selectors_to_remove: ['.updated'],
     })
 
+    expect(updated.hostname_id).toBe(newUrl.hostname.id)
     expect(updated.description).toBe('Updated')
     expect(updated.priority).toBe(10)
     expect(updated.css_selectors_to_remove).toEqual(['.updated'])
+    expect((await getCrawlerById(crawler.id))?.hostname_id).toBe(newUrl.hostname.id)
   })
 
   it('getOrCreateCrawlerForHostname creates once and reuses', async () => {
