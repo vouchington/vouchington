@@ -23,7 +23,8 @@ const spendCapDisabled = {
 
 describe('ai-agents workers', () => {
   const mockProcessAIAgent = vi.fn<() => Promise<unknown>>()
-  const mockHandleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+  const mockHandleOpenAIRateLimit =
+    vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -74,22 +75,20 @@ describe('ai-agents workers', () => {
     ])
   })
 
-  it('rate-limits on OpenAI 429 and passes the worker instance', async () => {
+  it('hands an OpenAI 429 to the rate-limit handler with the job, not the worker', async () => {
     const rateLimitError = new RateLimitError(429, {}, 'rate limited', new Headers())
-    const worker = {
-      rateLimit: vi.fn<() => Promise<void>>(() => Promise.resolve()),
-    } as unknown as Worker
+    const job = makeJob()
     mockProcessAIAgent.mockRejectedValue(rateLimitError)
 
     await expect(
-      processAIAgentWorkerJob(makeJob(), worker, {
+      processAIAgentWorkerJob(job, {
         ...spendCapDisabled,
         processAIAgent: mockProcessAIAgent as typeof processAIAgent,
         handleOpenAIRateLimit: mockHandleOpenAIRateLimit,
       }),
     ).resolves.toBeUndefined()
 
-    expect(mockHandleOpenAIRateLimit).toHaveBeenCalledWith(rateLimitError, worker)
+    expect(mockHandleOpenAIRateLimit).toHaveBeenCalledWith(rateLimitError, job)
   })
 
   it('rethrows a provider outage unchanged so the backoff strategy sees its Retry-After', async () => {
@@ -97,16 +96,13 @@ describe('ai-agents workers', () => {
       failure: { retryClass: 'transient', retryAfterMs: 5 * 60_000 },
     })
     mockProcessAIAgent.mockRejectedValue(outage)
-    const rateLimit = vi.fn<() => Promise<void>>()
-    const worker = { rateLimit } as unknown as Worker
 
-    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), worker, {
+    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), {
       ...spendCapDisabled,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
     }).catch((err: unknown) => err)
 
     expect(thrown).toBe(outage)
-    expect(rateLimit).not.toHaveBeenCalled()
     expect(classifierRunBackoffMs(1, thrown as Error, () => 0)).toBe(5 * 60_000)
   })
 })

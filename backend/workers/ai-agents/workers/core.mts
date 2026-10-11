@@ -2,7 +2,7 @@ import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { ModelProviderError } from '@modules/model-providers/errors'
-import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
+import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
 import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
@@ -30,7 +30,7 @@ import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 type AIAgentsWorkerDeps = {
   createWorker: typeof createWorker
   processAIAgent: typeof processAIAgent
-  handleOpenAIRateLimit: (error: unknown, worker: Worker) => Promise<unknown>
+  handleOpenAIRateLimit: (error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>
   waitForSpendCapConfig: () => Promise<void>
   getSpendCapFields: typeof getSpendCapFields
   getDailyAiCostTotalMicrounits: typeof getDailyAiCostTotalMicrounits
@@ -47,7 +47,7 @@ type AIAgentsWorkerDeps = {
 const defaultDeps: AIAgentsWorkerDeps = {
   createWorker,
   processAIAgent,
-  handleOpenAIRateLimit,
+  handleOpenAIRateLimit: deferJobForOpenAIRateLimit,
   waitForSpendCapConfig: () => spendCapConfig.waitForInitialization(),
   getSpendCapFields,
   getDailyAiCostTotalMicrounits,
@@ -63,7 +63,6 @@ const defaultDeps: AIAgentsWorkerDeps = {
 
 export async function processAIAgentWorkerJob(
   job: Job<AIAgentJobData>,
-  worker: Worker,
   deps: Partial<AIAgentsWorkerDeps> = {},
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
@@ -113,8 +112,8 @@ export async function processAIAgentWorkerJob(
         dependencies.reportSpendCapRegistrationFailure,
       )
     }
-    if (err instanceof ModelProviderError) return handleModelProviderError(err, worker)
-    return dependencies.handleOpenAIRateLimit(err, worker)
+    if (err instanceof ModelProviderError) return handleModelProviderError(err, job)
+    return dependencies.handleOpenAIRateLimit(err, job)
   }
 }
 
@@ -134,11 +133,9 @@ async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
 
 export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {
   const dependencies = { ...defaultDeps, ...deps }
-  let worker!: Worker
-  worker = dependencies.createWorker(
+  return dependencies.createWorker(
     dependencies.queueName,
-    (job: Job<AIAgentJobData>): Promise<unknown> =>
-      processAIAgentWorkerJob(job, worker, dependencies),
+    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
     {
       dedicatedCommandClient: true,
       concurrency: dependencies.concurrency,
@@ -154,5 +151,4 @@ export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Wo
       backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
     },
   )
-  return worker
 }

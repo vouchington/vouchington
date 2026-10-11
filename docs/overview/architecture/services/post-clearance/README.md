@@ -54,7 +54,12 @@ Resets clearance to `pending` on post edit. Records `change_type='reset_to_pendi
 three coarse lifecycle timestamps. Provider outcomes remain immutable on the prior content version.
 
 Callers durably enqueue the new content hash. PostgreSQL owns three attempts at T+0/T+5/T+20 and a
-T+30 fail-closed transition to staff review.
+T+30 fail-closed transition to staff review. `releasePostModerationAttemptForRateLimit(attempt, retryAfterMs)`
+withdraws an attempt the provider rejected with a 429 (the unresolved row, never a recorded outcome)
+so it does not count toward the three, and holds the work item until the provider's wait has passed.
+The statement first locks the work item that still holds the attempt's lease token, so a claim that
+is reclaiming an expired lease at the same moment serializes with the release: the loser re-reads the
+lease token and withdraws nothing.
 
 **Called by**: post update service whenever post content changes.
 

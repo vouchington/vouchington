@@ -1,0 +1,57 @@
+id: backend-no-worker-ratelimit
+language: Tsx
+severity: error
+message: >-
+  worker.rateLimit(ms) only sets a timestamp in that one process, so other replicas keep calling a
+  rate-limited provider, and an argument-less RateLimitError drops the provider's Retry-After. Throw
+  the signal from @modules/queue-errors (throwRateLimited, createRateLimitError) with the provider's
+  wait, or park one job with deferJobForRateLimit.
+note: >-
+  GlideMQ already idles a worker that has a limiter for the signal's delayMs, so no worker.rateLimit
+  call is needed. @modules/queue-errors/rate-limit.mts is the only place that constructs the signal.
+files:
+  - 'backend/**/*.ts'
+  - 'backend/**/*.mts'
+  - 'backend/**/*.cts'
+ignores:
+  - 'backend/modules/queue-errors/rate-limit.mts'
+rule:
+  any:
+    - pattern: $WORKER.rateLimit($$$ARGS)
+    - pattern: new $NAMESPACE.RateLimitError()
+    - pattern: new RateLimitError()
+examples:
+  - code: await worker.rateLimit(durationMs)
+    isValid: false
+    file: 'backend/modules/openai-utils/rate-limit.mts'
+  - code: await this.worker.rateLimit(60_000)
+    isValid: false
+    file: 'backend/workers/ai-agents/processors/provider-failure.mts'
+  - code: throw new Worker.RateLimitError()
+    isValid: false
+    file: 'backend/modules/queue-errors/index.mts'
+  - code: throw Object.assign(new Worker.RateLimitError(), { delayMs })
+    isValid: false
+    file: 'backend/workers/emails/processors.mts'
+  - code: |-
+      const { RateLimitError } = Worker
+      throw new RateLimitError()
+    isValid: false
+    file: 'backend/workers/emails/processors.mts'
+  - code: throw new Worker.RateLimitError()
+    isValid: true
+    file: 'backend/modules/queue-errors/rate-limit.mts'
+  - code: throwRateLimited(retryAfterMs, error)
+    isValid: true
+    file: 'backend/modules/openai-utils/rate-limit.mts'
+  - code: return deferJobForRateLimit(job, retryAfterMs)
+    isValid: true
+    file: 'backend/workers/ai-agents/processors/provider-failure.mts'
+  - code: |-
+      import { RateLimitError } from 'openai'
+      error = new RateLimitError(429, {}, 'Rate limit exceeded', new Headers())
+    isValid: true
+    file: 'backend/modules/openai-utils/rate-limit.generated.test.mts'
+  - code: expect(worker.rateLimit).not.toHaveBeenCalled()
+    isValid: true
+    file: 'backend/workers/ai-agents/workers/core.spend-cap.test.mts'

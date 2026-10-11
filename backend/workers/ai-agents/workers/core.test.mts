@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { recordAgentResponseUsage } from '@agents/_shared'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { UnrecoverableError } from '@modules/queue-errors'
@@ -37,14 +37,13 @@ describe('processAIAgentWorkerJob', () => {
     } as unknown as Job<AIAgentJobData>
   }
 
-  const worker = {} as Worker
-
   it('reports the summed token count from every recordAgentResponseUsage call the job makes', async () => {
     const job = mockJob()
     const agentSlug = `token-accumulator-test-${randomUUID()}`
-    const handleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+    const handleOpenAIRateLimit =
+      vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
 
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -72,9 +71,10 @@ describe('processAIAgentWorkerJob', () => {
   it('does not call reportTokens when the job consumes no tokens', async () => {
     const job = mockJob()
 
-    await processAIAgentWorkerJob(job, worker, {
+    await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+      handleOpenAIRateLimit:
+        vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
       processAIAgent: async () => 'ok',
     })
 
@@ -86,10 +86,10 @@ describe('processAIAgentWorkerJob', () => {
     const agentSlug = `token-accumulator-test-${randomUUID()}`
     const thrown = new Error('boom')
     const handleOpenAIRateLimit = vi
-      .fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+      .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('handled')
 
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -104,7 +104,7 @@ describe('processAIAgentWorkerJob', () => {
 
     expect(result).toBe('handled')
     expect(job.reportTokens).toHaveBeenCalledExactlyOnceWith(40)
-    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(thrown, worker)
+    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(thrown, job)
   })
 
   it("hands processAIAgent's original error to handleOpenAIRateLimit even when reportTokens rejects", async () => {
@@ -115,13 +115,13 @@ describe('processAIAgentWorkerJob', () => {
       .fn<(count: number) => Promise<void>>()
       .mockRejectedValue(new Error('reportTokens Valkey blip'))
     const handleOpenAIRateLimit = vi
-      .fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+      .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('handled')
 
     // Without the accumulator catching reportTokens' rejection, that rejection would replace
     // thrownByProcessAIAgent, so handleOpenAIRateLimit would never see the real OpenAI error and
-    // the queue would never pause on an actual 429.
-    const result = await processAIAgentWorkerJob(job, worker, {
+    // the job would never be deferred on an actual 429.
+    const result = await processAIAgentWorkerJob(job, {
       ...spendCapDisabled,
       handleOpenAIRateLimit,
       processAIAgent: async () => {
@@ -135,7 +135,7 @@ describe('processAIAgentWorkerJob', () => {
     })
 
     expect(result).toBe('handled')
-    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(thrownByProcessAIAgent, worker)
+    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(thrownByProcessAIAgent, job)
   })
 
   it('isolates concurrent jobs -- one job never sees another job in-flight on the same worker', async () => {
@@ -146,9 +146,10 @@ describe('processAIAgentWorkerJob', () => {
     const releaseFirstJob = Promise.withResolvers<void>()
 
     await Promise.all([
-      processAIAgentWorkerJob(jobA, worker, {
+      processAIAgentWorkerJob(jobA, {
         ...spendCapDisabled,
-        handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+        handleOpenAIRateLimit:
+          vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
         processAIAgent: async () => {
           await recordAgentResponseUsage({
             response: usageResponse(1000, 1000),
@@ -165,9 +166,10 @@ describe('processAIAgentWorkerJob', () => {
           return 'a'
         },
       }),
-      processAIAgentWorkerJob(jobB, worker, {
+      processAIAgentWorkerJob(jobB, {
         ...spendCapDisabled,
-        handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
+        handleOpenAIRateLimit:
+          vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>(),
         processAIAgent: async () => {
           await firstJobRecordedUsage.promise
           try {
@@ -193,14 +195,15 @@ describe('processAIAgentWorkerJob', () => {
 
 describe('processAIAgentWorkerJob model provider failures', () => {
   it('routes a provider failure to the model provider handler, not the OpenAI rate limiter', async () => {
-    const handleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+    const handleOpenAIRateLimit =
+      vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
     const failure = new ModelProviderError('credit-balance-too-low', 'credit balance too low', {
       retryClass: 'permanent',
       status: 400,
     })
 
     await expect(
-      processAIAgentWorkerJob(jobFor(), {} as Worker, {
+      processAIAgentWorkerJob(jobFor(), {
         ...spendCapDisabled,
         handleOpenAIRateLimit,
         processAIAgent: () => Promise.reject(failure),

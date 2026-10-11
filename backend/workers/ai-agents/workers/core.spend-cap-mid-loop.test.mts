@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DelayedError, type Job, type Worker } from 'glide-mq'
+import { DelayedError, type Job } from 'glide-mq'
 import { SpendCapBreachError, type SpendCapBreach } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
@@ -27,10 +27,6 @@ function mockJob(): Job<AIAgentJobData> {
   } as unknown as Job<AIAgentJobData>
 }
 
-function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
-}
-
 describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
   afterEach(() => vi.useRealTimers())
 
@@ -44,16 +40,16 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
       day: '2026-08-16',
     }
     const job = mockJob()
-    const worker = mockWorker()
     const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
-    const handleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+    const handleOpenAIRateLimit =
+      vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockRejectedValue(new SpendCapBreachError(breach))
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
-      processAIAgentWorkerJob(job, worker, {
+      processAIAgentWorkerJob(job, {
         // Below the cap so the pre-dispatch check passes and processAIAgent actually runs.
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 10_000_000 }),
@@ -76,16 +72,15 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
 
   it('falls through to handleOpenAIRateLimit for a plain rate-limit error, not the spend-cap defer path', async () => {
     const job = mockJob()
-    const worker = mockWorker()
     const rateLimitError = new Error('rate limited')
     const handleOpenAIRateLimit = vi
-      .fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+      .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('handled')
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockRejectedValue(rateLimitError)
 
-    const result = await processAIAgentWorkerJob(job, worker, {
+    const result = await processAIAgentWorkerJob(job, {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 10_000_000 }),
       getDailyAiCostTotalMicrounits: () =>
@@ -96,6 +91,6 @@ describe('processAIAgentWorkerJob -- mid-loop spend cap breach', () => {
 
     expect(result).toBe('handled')
     expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(rateLimitError, worker)
+    expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(rateLimitError, job)
   })
 })

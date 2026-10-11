@@ -169,6 +169,18 @@ describe('syncGithubFriends', () => {
     expect(concurrentRows).toHaveLength(1)
   })
 
+  it('requeues for the Retry-After on a 429 instead of rewrapping it as a 502', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      new Response('rate limited', { status: 429, headers: { 'Retry-After': '120' } }),
+    )
+
+    await expect(syncGithubFriends(githubUserId)).rejects.toMatchObject({
+      name: 'RateLimitError',
+      delayMs: 120_000,
+      cause: { status: 429, retryAfterMs: 120_000 },
+    })
+  })
+
   it('does nothing if account has no access token', async () => {
     const noTokenId = String(Math.floor(Math.random() * 1_000_000) + 500_000)
     await insertTestOAuthAccount('github', noTokenId, null)

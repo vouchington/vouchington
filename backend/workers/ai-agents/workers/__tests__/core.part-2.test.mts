@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DelayedError, type Job, type Worker } from 'glide-mq'
+import { DelayedError, type Job } from 'glide-mq'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { getDayBounds } from '@ts-shared/utils/dates'
@@ -29,7 +29,6 @@ describe('processAIAgentWorkerJob accounting uncertainty', () => {
     const day = '2026-08-16'
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(`${day}T12:00:00.000Z`))
-    const worker = {} as Worker
     const delayedJob = job()
     const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<never>>()
     const getAccountingUncertaintySource = vi
@@ -39,7 +38,7 @@ describe('processAIAgentWorkerJob accounting uncertainty', () => {
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
 
     await expect(
-      processAIAgentWorkerJob(delayedJob, worker, {
+      processAIAgentWorkerJob(delayedJob, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getAccountingUncertaintySource,

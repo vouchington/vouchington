@@ -1,5 +1,6 @@
-import { Agent } from '@atproto/api'
+import { Agent, XRPCError } from '@atproto/api'
 import type { OAuthSession } from '@modules/bluesky-oauth'
+import { getRetryAfterMs, throwRateLimited, wrapHttpForRetry } from '@modules/queue-errors'
 
 // Thin wrappers around @atproto/api's Agent, the only place in this service that talks to a
 // user's PDS. `session` must come from restoreBlueskySession(client, did) (@modules/bluesky-oauth)
@@ -19,8 +20,12 @@ export async function createFollowOnBluesky(
   followeeDid: string,
 ): Promise<string> {
   const agent = new Agent(session)
-  const { uri } = await agent.follow(followeeDid)
-  return uri
+  try {
+    const { uri } = await agent.follow(followeeDid)
+    return uri
+  } catch (err) {
+    return classifyBlueskyFailure(err)
+  }
 }
 
 // followUri must be the exact at:// URI returned by createFollowOnBluesky (or previously
@@ -31,5 +36,41 @@ export async function deleteFollowOnBluesky(
   followUri: string,
 ): Promise<void> {
   const agent = new Agent(session)
-  await agent.deleteFollow(followUri)
+  try {
+    await agent.deleteFollow(followUri)
+  } catch (err) {
+    classifyBlueskyFailure(err)
+  }
+}
+
+// A PDS answers a rate limit with HTTP 429 and `ratelimit-reset` (epoch seconds); a proxy may add
+// `Retry-After`, which `wrapHttpForRetry` honors. Either way a 429 requeues the job after the named
+// wait without consuming an attempt, and any other 4xx except 408 is permanent for this job. A
+// network or 5xx failure keeps the queue's bounded attempts.
+function classifyBlueskyFailure(error: unknown): never {
+  if (
+    error instanceof XRPCError &&
+    isTooManyRequests(error.status) &&
+    getRetryAfterMs(error) === null
+  ) {
+    const resetMs = getRateLimitResetMs(error.headers)
+    if (resetMs !== null) throwRateLimited(resetMs, error)
+  }
+  return wrapHttpForRetry(error)
+}
+
+function isTooManyRequests(status: number): boolean {
+  return status === 429
+}
+
+// An epoch timestamp, per the PDS rate-limit headers. A small value is the IETF draft's
+// delta-seconds form instead. A reset that has already passed names no wait, so it keeps the
+// bounded attempt path rather than requeueing at the floor without limit.
+const EPOCH_SECONDS_FLOOR = 1_000_000_000
+
+function getRateLimitResetMs(headers: XRPCError['headers']): number | null {
+  const reset = Number(headers?.['ratelimit-reset'])
+  if (!Number.isFinite(reset) || reset <= 0) return null
+  const waitMs = reset >= EPOCH_SECONDS_FLOOR ? reset * 1000 - Date.now() : reset * 1000
+  return waitMs > 0 ? waitMs : null
 }

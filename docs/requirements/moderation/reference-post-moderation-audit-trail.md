@@ -10,7 +10,7 @@
 | `post_clearance_changes`        | Append-only                          | Types `approve\|reject\|mark_in_review\|reset_to_pending`. Migration: `backend/data-stores/psql/migrations/0270-00-00-post-clearance.sql` (lines 22–32)                                                  |
 | `post_moderation_versions`      | Immutable                            | One content-hash and policy-revision generation, with a 30-minute hard deadline.                                                                                                                         |
 | `post_moderation_work`          | Mutable projection                   | Current per-source availability, lease token, generation, and completion state.                                                                                                                          |
-| `post_moderation_attempts`      | Append-only                          | At most three fenced attempts per content version and automated source.                                                                                                                                  |
+| `post_moderation_attempts`      | Append-only outcomes                 | At most three fenced attempts per content version and automated source. A provider 429 withdraws its unresolved attempt instead of recording an outcome.                                                 |
 | `post_moderation_dispositions`  | Append-only                          | Typed `pass\|review\|reject\|incomplete` outcomes with stable reason codes and bounded private evidence.                                                                                                 |
 | `community_post_reviews`        | One-to-one projection with posts     | Tracks `approved_at`, `rejected_at`, `unpublished_at`, plus the latest platform override. Migration: `backend/data-stores/psql/migrations/0140-00-00-communities-publications.sql`                       |
 | `community_post_review_changes` | Append-only                          | Community decisions and platform overrides, including public-safe reason code and staff-only private note. Migration: `backend/data-stores/psql/migrations/0630-00-00-community-post-review-history.sql` |
@@ -40,6 +40,9 @@ clearance projection; public eligibility reads only `approved_at`.
 
 - OpenAI and spam detection each receive durable attempts at T+0, T+5, and T+20. GlideMQ jobs use
   one attempt; PostgreSQL owns retries and fencing.
+- A provider rate limit (HTTP 429) is not an attempt. The processor withdraws the unresolved
+  attempt, restores the claim count, and holds the work for the provider's `Retry-After`, never past
+  the T+30 deadline, so rate limiting alone cannot spend the three attempts that end in staff review.
 - At T+30 unresolved work appends `incomplete` and moves the post to staff review. It never
   publishes or rejects on provider unavailability.
 - Ordinary OpenAI or spam signals append `review`. Only OpenAI's deterministic `sexual/minors`
