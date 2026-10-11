@@ -99,17 +99,28 @@ SELECT id FROM config_driven_session;
     )
   })
 
-  it('runs split config-driven file statements on one native client and transaction', async () => {
+  it('runs split config-driven statements on one native PostgreSQL transaction and client', async () => {
     const folder = await makeConfigDrivenDir()
-    const marker = randomUUID()
+    const marker = randomUUID().replaceAll('-', '')
     await writeFile(
-      join(folder, '0010-native-session.sql'),
+      join(folder, '0010-transaction-affinity.sql'),
       `
-SELECT set_config('application_name',
-  pg_backend_pid()::text || ':' || txid_current()::text || ':${marker}', true);
-SELECT CASE WHEN current_setting('application_name') =
-  pg_backend_pid()::text || ':' || txid_current()::text || ':${marker}'
-  THEN 1 ELSE (current_setting('application_name') || ':affinity-mismatch')::integer END;
+SELECT set_config(
+  'application_name',
+  concat(pg_backend_pid(), '/', txid_current(), '/${marker}'),
+  true
+);
+SELECT set_config(
+  'application_name',
+  CASE
+    WHEN current_setting('application_name') =
+      concat(pg_backend_pid(), '/', txid_current(), '/${marker}')
+    THEN '1'
+    ELSE format('transaction-mismatch-%s', pg_backend_pid())::integer::text
+  END,
+  true
+);
+SELECT current_setting('application_name')::integer;
 `,
     )
 
@@ -145,6 +156,8 @@ SELECT CASE WHEN current_setting('application_name') =
       await vi.advanceTimersByTimeAsync(delayMs)
       await migration
     } finally {
+      // Drain retained spy restorers before reinstalling real timers: Vitest restores
+      // them again between files, and this spy captured the fake setTimeout.
       vi.restoreAllMocks()
       vi.useRealTimers()
     }

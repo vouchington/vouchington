@@ -26,6 +26,7 @@
     "types": ["node"]
   },
   "include": [
+    "vitest.config.mts",
     "ci/**/*.mts",
     "ci/**/*.ts",
     "ci/**/*.d.ts",

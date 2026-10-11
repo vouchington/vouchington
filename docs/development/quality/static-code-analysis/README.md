@@ -63,6 +63,10 @@ narrowly-scoped allowlist addition if the match is a legitimate false positive.
 
 ## Web route localization map
 
+The normal `node ci/check-live-web-route-localization.mts` command owns whole-catalog route
+bounds and representative-copy verdicts once in static CI. Its small-fixture tests cover the
+same verifier; see [translation checks](../../reference-tests-translation-catalog-and-locale-checks.md).
+
 [`i18n-extract/route-selector-map.mts`](../../../../static-code-analysis/i18n-extract/route-selector-map.mts) makes one
 `no-mistakes` `analyzeProject` call, built in
 [`i18n-extract/route-graph-analysis.mts`](../../../../static-code-analysis/i18n-extract/route-graph-analysis.mts). It requests a
