@@ -42,12 +42,13 @@ export type AwsReplayRequestHandler = {
 export function createAwsReplayRequestHandler(replay: ProviderReplay): AwsReplayRequestHandler {
   return {
     async handle(request, options) {
-      const url = new URL(`${request.protocol}//${request.hostname}${request.path}`)
-      if (request.port) url.port = String(request.port)
-      url.search = serializeAwsReplayQuery(request.query ?? {})
+      const origin = new URL(`${request.protocol}//${request.hostname}`)
+      if (request.port) origin.port = String(request.port)
+      const query = serializeAwsReplayQuery(request.query ?? {})
+      const url = `${origin.origin}${request.path}${query ? `?${query}` : ''}`
       const { signal, detach } = observeAwsReplayAbort(options?.abortSignal)
       try {
-        const response = await replay.fetch(url, {
+        const response = await replay.sendHttpRequest(url, {
           method: request.method,
           headers: request.headers,
           body: request.body,

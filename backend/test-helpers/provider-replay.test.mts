@@ -223,6 +223,41 @@ describe('provider replay transport', () => {
     expect(client.options.apiKey).toBe('k')
     expect(client.options.fetch).toBe(replay.fetch)
   })
+  it('keeps fetch URL normalization while preserving raw HTTP transport paths', async () => {
+    const replay = createProviderReplay()
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\nfetch'), wire('HTTP/1.1 200 OK\n\nhttp'))
+    const url = 'https://provider.example.com/a/%2e%2e/b'
+    await expect((await replay.fetch(url)).text()).resolves.toBe('fetch')
+    await expect((await replay.sendHttpRequest(url)).text()).resolves.toBe('http')
+    expect(replay.requests.map(request => request.url)).toEqual([
+      'https://provider.example.com/b',
+      url,
+    ])
+    replay.assertDrained()
+  })
+
+  it('rejects invalid request construction asynchronously for both transports', async () => {
+    const replay = createProviderReplay()
+    await expect(replay.fetch('invalid-url')).rejects.toBeInstanceOf(TypeError)
+    await expect(replay.sendHttpRequest('invalid-url')).rejects.toBeInstanceOf(TypeError)
+    expect(replay.requests).toEqual([])
+  })
+  it('captures explicit HTTP headers without adding fetch body defaults', async () => {
+    const replay = createProviderReplay()
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\naccepted'))
+    const response = await replay.sendHttpRequest('https://provider.example.com/', {
+      method: 'POST',
+      body: 'payload',
+      headers: { 'x-custom': 'explicit' },
+    })
+    await expect(response.text()).resolves.toBe('accepted')
+    expect(replay.requests[0]).toMatchObject({
+      headers: { 'x-custom': 'explicit' },
+      body: Buffer.from('payload'),
+    })
+    expect(replay.requests[0]?.headers).not.toHaveProperty('content-type')
+    replay.assertDrained()
+  })
 })
 
 function fail(): never {

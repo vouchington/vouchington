@@ -32,18 +32,40 @@ export function observeAwsReplayAbort(value: unknown): {
     source.addEventListener('abort', abort, { once: true })
     detach = () => source.removeEventListener!('abort', abort)
   } else if ('onabort' in source) {
-    const previous = source.onabort
-    const listener = (event?: Event) => {
-      abort()
-      previous?.call(source, event)
-    }
-    source.onabort = listener
-    detach = () => {
-      if (source.onabort === listener) source.onabort = previous
-    }
+    detach = observeLegacyAbort(source, abort)
   } else throw new TypeError('AWS request abort signal has no notification API')
 
   // Cancellation can race with installing the observer.
   if (source.aborted) abort()
   return { signal: controller.signal, detach }
+}
+
+type LegacyAbortObservers = {
+  callbacks: Set<() => void>
+  previous: AwsAbortSignal['onabort']
+  listener: (event?: Event) => void
+}
+const legacyObservers = new WeakMap<AwsAbortSignal, LegacyAbortObservers>()
+
+function observeLegacyAbort(source: AwsAbortSignal, abort: () => void): () => void {
+  let state = legacyObservers.get(source)
+  if (!state || source.onabort !== state.listener) {
+    const previous = source.onabort
+    const callbacks = new Set<() => void>()
+    const listener = (event?: Event) => {
+      for (const callback of callbacks) callback()
+      previous?.call(source, event)
+    }
+    state = { callbacks, previous, listener }
+    legacyObservers.set(source, state)
+    source.onabort = listener
+  }
+  const observed = state
+  observed.callbacks.add(abort)
+  return () => {
+    observed.callbacks.delete(abort)
+    if (observed.callbacks.size > 0) return
+    if (source.onabort === observed.listener) source.onabort = observed.previous
+    if (legacyObservers.get(source) === observed) legacyObservers.delete(source)
+  }
 }

@@ -219,4 +219,22 @@ describe('AWS replay request handler', () => {
     expect(signal.removeEventListener).toHaveBeenCalledWith('abort', expect.any(Function))
     replay.assertDrained()
   })
+  it.each(['/a/../b', '/a/%2e%2e/b', '/a/./b', '/%2E/b'])(
+    'preserves serialized AWS path bytes for %s',
+    async path => {
+      const replay = createProviderReplay()
+      replay.respondWith(wire('HTTP/1.1 200 OK\n\naccepted'))
+      const { response } = await createAwsReplayRequestHandler(replay).handle({
+        method: 'GET',
+        protocol: 'https:',
+        hostname: 'service.example.com',
+        path,
+        headers: {},
+        query: { key: 'a b' },
+      })
+      expect(replay.requests[0]?.url).toBe(`https://service.example.com${path}?key=a%20b`)
+      await expect(text(response.body)).resolves.toBe('accepted')
+      replay.assertDrained()
+    },
+  )
 })
