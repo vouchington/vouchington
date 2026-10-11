@@ -27,7 +27,7 @@ importers:
         version: 1.9.1
       '@opentelemetry/auto-instrumentations-node':
         specifier: ^0.80.0
-        version: 0.80.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))
+        version: 0.80.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
       '@playwright/test':
         specifier: ^1.64.0
         version: 1.64.0
@@ -75,7 +75,7 @@ importers:
         version: 0.2.2
       agent-blackboard:
         specifier: ^0.6.1
-        version: 0.6.1(zod@4.6.5)
+        version: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -84,22 +84,22 @@ importers:
         version: 18.5.0
       eslint-plugin-no-mistakes:
         specifier: ^0.83.0
-        version: 0.83.0(eslint@10.5.0(jiti@2.7.0))
+        version: 0.83.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
-        version: 2.12.1(eslint@10.5.0(jiti@2.7.0))
+        version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-react-you-might-not-need-an-effect:
         specifier: ^1.0.2
-        version: 1.0.2(eslint@10.5.0(jiti@2.7.0))
+        version: 1.0.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-vouchington:
         specifier: ^0.2.0
-        version: 0.2.0(eslint@10.5.0(jiti@2.7.0))
+        version: 0.2.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       gh-pr-attach-screenshots:
         specifier: ^0.2.0
         version: 0.2.0
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -144,7 +144,7 @@ importers:
         version: 1.64.0
       pr-shepherd:
         specifier: ^0.56.6
-        version: 0.56.6
+        version: 0.56.6(supports-color@10.2.2)
       squawk-cli:
         specifier: ^2.67.0
         version: 2.67.0
@@ -159,7 +159,7 @@ importers:
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1295,7 +1295,7 @@ importers:
         version: 0.2.0
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -1438,7 +1438,7 @@ importers:
         version: 2.2.2
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
         specifier: ^0.83.0
@@ -1503,7 +1503,7 @@ importers:
         version: link:../../modules/on-error
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       p-map:
         specifier: ^7.0.8
         version: 7.0.8
@@ -1554,7 +1554,7 @@ importers:
         version: link:../../data-stores/psql
       '@glidemq/dashboard':
         specifier: ^0.4.2
-        version: 0.4.2(express@5.2.1)(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))
+        version: 0.4.2(express@5.2.1(supports-color@10.2.2))(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       '@jongleberry/vurst-runtime':
         specifier: ^0.4.3
         version: 0.4.3
@@ -1626,10 +1626,10 @@ importers:
         version: 2.0.1
       express:
         specifier: ^5.2.1
-        version: 5.2.1
+        version: 5.2.1(supports-color@10.2.2)
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@types/express':
         specifier: ^5.0.6
@@ -2465,8 +2465,8 @@ importers:
         specifier: workspace:^
         version: link:../request-client-info
       '@sentry/node':
-        specifier: ^11.5.0
-        version: 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
+        specifier: ^11.6.0
+        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -2491,7 +2491,7 @@ importers:
         version: link:../utils
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       openai:
         specifier: ^7.30.0
         version: 7.30.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -2529,10 +2529,10 @@ importers:
     dependencies:
       '@vouchington/queue-errors':
         specifier: ^0.1.2
-        version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))
+        version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/modules/request-client-info:
     dependencies:
@@ -2582,7 +2582,7 @@ importers:
         version: link:../../../ts-shared/deploy-environment
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/modules/scopes:
     dependencies:
@@ -2714,7 +2714,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/activitypub-delivery:
     dependencies:
@@ -2726,7 +2726,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -2747,7 +2747,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2763,7 +2763,7 @@ importers:
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/ai-agents:
     dependencies:
@@ -2781,7 +2781,7 @@ importers:
         version: link:../../services/analytics
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2794,7 +2794,7 @@ importers:
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2807,7 +2807,7 @@ importers:
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/bedrock-embeddings:
     dependencies:
@@ -2825,7 +2825,7 @@ importers:
         version: link:../../services/bedrock-embeddings
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2844,7 +2844,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2863,7 +2863,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/bluesky-follow-propagation:
     dependencies:
@@ -2875,7 +2875,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/cache-purge:
     dependencies:
@@ -2890,7 +2890,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawl-boilerplate-removal:
     dependencies:
@@ -2908,7 +2908,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawl-browser:
     dependencies:
@@ -2920,7 +2920,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawl-embeds:
     dependencies:
@@ -2932,7 +2932,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawl-hostnames:
     dependencies:
@@ -2947,7 +2947,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawl-referral-links:
     dependencies:
@@ -2962,7 +2962,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/crawler:
     dependencies:
@@ -2984,7 +2984,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/emails:
     dependencies:
@@ -3002,7 +3002,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3021,7 +3021,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/entity-metrics-cache-refresh:
     dependencies:
@@ -3033,7 +3033,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -3058,7 +3058,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/follower-distributions:
     dependencies:
@@ -3070,7 +3070,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3086,7 +3086,7 @@ importers:
         version: link:../../modules/scheduled-job-manifest
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/images:
     dependencies:
@@ -3101,7 +3101,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/kagi-smallweb:
     dependencies:
@@ -3116,7 +3116,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/language-detection:
     dependencies:
@@ -3125,7 +3125,7 @@ importers:
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/memberships:
     dependencies:
@@ -3143,7 +3143,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@types/node':
         specifier: ^26.6.4
@@ -3162,7 +3162,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/oauth-authorization-exchange:
     dependencies:
@@ -3174,7 +3174,7 @@ importers:
         version: link:../../modules/scheduled-job-manifest
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3190,7 +3190,7 @@ importers:
         version: link:../../modules/scheduled-job-manifest
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/post-mentions:
     dependencies:
@@ -3226,7 +3226,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/report-integrity:
     dependencies:
@@ -3238,7 +3238,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/rss-feed-discoverability:
     dependencies:
@@ -3250,7 +3250,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/rss-feed-item-categories:
     dependencies:
@@ -3277,7 +3277,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/ses-inbound:
     dependencies:
@@ -3295,7 +3295,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/sitemaps:
     dependencies:
@@ -3316,7 +3316,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/spam-detection:
     dependencies:
@@ -3325,7 +3325,7 @@ importers:
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/story-post-related-url-projections:
     dependencies:
@@ -3364,7 +3364,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/unfurl-referral-links:
     dependencies:
@@ -3379,7 +3379,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/urls-domains-blacklist:
     dependencies:
@@ -3397,7 +3397,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/user-deletions:
     dependencies:
@@ -3412,7 +3412,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/user-rss-feed-imports:
     dependencies:
@@ -3424,7 +3424,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/vote-integrity:
     dependencies:
@@ -3436,7 +3436,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/queues/vote-weight:
     dependencies:
@@ -3451,7 +3451,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/rss:
     dependencies:
@@ -3926,7 +3926,7 @@ importers:
         version: link:../../test-helpers
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/services/analytics:
     dependencies:
@@ -7139,7 +7139,7 @@ importers:
         version: link:../../data-stores/psql
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.1
-        version: 1.32.1(zod@4.6.5)
+        version: 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7922,7 +7922,7 @@ importers:
         version: 2.2.2
       web-push:
         specifier: ^3.6.7
-        version: 3.6.7
+        version: 3.6.7(supports-color@10.2.2)
     devDependencies:
       '@types/web-push':
         specifier: ^3.6.4
@@ -9035,7 +9035,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11436,8 +11436,8 @@ importers:
         specifier: workspace:^
         version: link:../queues/sitemaps
       '@sentry/node':
-        specifier: ^11.5.0
-        version: 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
+        specifier: ^11.6.0
+        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../ts-shared/money
@@ -11461,7 +11461,7 @@ importers:
         version: 0.2.2
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -11497,7 +11497,7 @@ importers:
         version: 0.8.1
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -11579,13 +11579,13 @@ importers:
         version: link:../../ts-shared/utils
       '@vouchington/worker-runtime':
         specifier: ^0.1.1
-        version: 0.1.1(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))
+        version: 0.1.1(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/account-data-requests:
     dependencies:
@@ -11615,7 +11615,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/activitypub-delivery:
     dependencies:
@@ -11645,7 +11645,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/http-signatures':
         specifier: workspace:^
@@ -11691,7 +11691,7 @@ importers:
         version: link:../../services/ap-inbox-activities
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/http-signatures':
         specifier: workspace:^
@@ -11731,7 +11731,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -11879,7 +11879,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       openai:
         specifier: ^7.30.0
         version: 7.30.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -11925,7 +11925,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/ban-evasion:
     dependencies:
@@ -11940,7 +11940,7 @@ importers:
         version: link:../../services/communities
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -12011,7 +12011,7 @@ importers:
         version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12045,7 +12045,7 @@ importers:
         version: link:../../services/communities
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/aws':
         specifier: workspace:^
@@ -12088,7 +12088,7 @@ importers:
         version: link:../../services/urls-domains-blacklist
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/bloom-filter-config':
         specifier: workspace:^
@@ -12125,7 +12125,7 @@ importers:
         version: link:../../services/bluesky-follows
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/cache-purge:
     dependencies:
@@ -12146,7 +12146,7 @@ importers:
         version: link:../../services/entity-cache
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/crawl-boilerplate-removal:
     dependencies:
@@ -12173,7 +12173,7 @@ importers:
         version: link:../../services/crawls
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/aws':
         specifier: workspace:^
@@ -12228,7 +12228,7 @@ importers:
         version: link:../../config
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -12259,7 +12259,7 @@ importers:
         version: link:../../services/crawl-embeds
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/crawl-hostnames:
     dependencies:
@@ -12283,7 +12283,7 @@ importers:
         version: link:../../services/crawls
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
@@ -12329,7 +12329,7 @@ importers:
         version: link:../../services/urls
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12357,7 +12357,7 @@ importers:
         version: link:../../services/urls
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12379,7 +12379,7 @@ importers:
         version: link:../../services/elections-votes
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/emails:
     dependencies:
@@ -12430,7 +12430,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12551,7 +12551,7 @@ importers:
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
@@ -12582,7 +12582,7 @@ importers:
         version: link:../../services/entity-fetch
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/find-your-friends:
     dependencies:
@@ -12609,7 +12609,7 @@ importers:
         version: link:../../services/oauth-x
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/follower-distributions:
     dependencies:
@@ -12630,7 +12630,7 @@ importers:
         version: link:../../services/follower-distributions
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/heartbeat:
     dependencies:
@@ -12648,7 +12648,7 @@ importers:
         version: link:../../services/queue-monitoring
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/images:
     dependencies:
@@ -12687,7 +12687,7 @@ importers:
         version: 0.2.0
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12721,7 +12721,7 @@ importers:
         version: link:../../services/kagi-smallweb
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/language-detection:
     dependencies:
@@ -12739,7 +12739,7 @@ importers:
         version: link:../../services/language-detection
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/urls':
         specifier: workspace:^
@@ -12791,7 +12791,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -12843,7 +12843,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/modmail':
         specifier: workspace:^
@@ -12856,7 +12856,7 @@ importers:
         version: link:../../test-helpers
       web-push:
         specifier: ^3.6.7
-        version: 3.6.7
+        version: 3.6.7(supports-color@10.2.2)
 
   backend/workers/oauth-authorization-exchange:
     dependencies:
@@ -12874,7 +12874,7 @@ importers:
         version: link:../../services/oauth
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/openai-moderation:
     dependencies:
@@ -12907,7 +12907,7 @@ importers:
         version: link:../../services/posts
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12929,7 +12929,7 @@ importers:
         version: link:../../services/post-mentions
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/post-publication:
     dependencies:
@@ -12968,7 +12968,7 @@ importers:
         version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12999,7 +12999,7 @@ importers:
         version: link:../../services/elections-votes
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13024,7 +13024,7 @@ importers:
         version: link:../../services/report-integrity
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -13049,7 +13049,7 @@ importers:
         version: link:../../services/rss-feeds
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/rss-feed-item-categories:
     dependencies:
@@ -13070,7 +13070,7 @@ importers:
         version: link:../../services/rss-feeds
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/rss-feeds:
     dependencies:
@@ -13088,7 +13088,7 @@ importers:
         version: link:../../services/rss-feeds
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/ses-bounce-sqs:
     dependencies:
@@ -13155,7 +13155,7 @@ importers:
         version: link:../../../ts-shared/ses-inbound-contract
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       mailparser:
         specifier: ^3.9.36
         version: 3.9.36
@@ -13214,7 +13214,7 @@ importers:
         version: link:../../config
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/spam-detection:
     dependencies:
@@ -13238,7 +13238,7 @@ importers:
         version: link:../../services/vote-integrity
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -13263,7 +13263,7 @@ importers:
         version: link:../../services/stories
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/stripe-events-sqs:
     dependencies:
@@ -13315,7 +13315,7 @@ importers:
         version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13337,7 +13337,7 @@ importers:
         version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/unfurl-referral-links:
     dependencies:
@@ -13358,7 +13358,7 @@ importers:
         version: link:../../services/user-referral-program-links
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13383,7 +13383,7 @@ importers:
         version: link:../../services/urls-domains-blacklist-sync
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13408,7 +13408,7 @@ importers:
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/user-rss-feed-imports:
     dependencies:
@@ -13426,7 +13426,7 @@ importers:
         version: link:../../services/user-import-export
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/vote-integrity:
     dependencies:
@@ -13447,7 +13447,7 @@ importers:
         version: link:../../services/vote-integrity
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   backend/workers/vote-weight:
     dependencies:
@@ -13465,7 +13465,7 @@ importers:
         version: link:../../services/vote-weight
       glide-mq:
         specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13499,10 +13499,10 @@ importers:
         version: 10.0.1
       remark-gfm:
         specifier: ^4.0.1
-        version: 4.0.1
+        version: 4.0.1(supports-color@10.2.2)
       remark-parse:
         specifier: ^11.0.0
-        version: 11.0.0
+        version: 11.0.0(supports-color@10.2.2)
       remark-rehype:
         specifier: ^11.1.2
         version: 11.1.2
@@ -13511,7 +13511,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13535,8 +13535,8 @@ importers:
   cloudflare-worker:
     dependencies:
       '@sentry/cloudflare':
-        specifier: ^11.5.0
-        version: 11.5.0(@cloudflare/workers-types@5.20261009.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))
+        specifier: ^11.6.0
+        version: 11.6.0(@cloudflare/workers-types@5.20261009.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -13607,7 +13607,7 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-email/ui':
         specifier: ^6.11.1
-        version: 6.11.1(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.11.1(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -13694,8 +13694,8 @@ importers:
         specifier: ^3.1148.0
         version: 3.1148.0
       '@sentry/aws-serverless':
-        specifier: ^11.5.0
-        version: 11.5.0
+        specifier: ^11.6.0
+        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -13750,7 +13750,7 @@ importers:
         version: 1.9.0
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -13949,8 +13949,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@sentry/nextjs':
-        specifier: ^11.5.0
-        version: 11.5.0(@babel/core@7.29.7)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2))
+        specifier: ^11.6.0
+        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261009.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -14007,7 +14007,7 @@ importers:
         version: 8.6.0(react@19.3.0)
       geist:
         specifier: ^1.7.2
-        version: 1.7.2(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        version: 1.7.2(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       input-otp:
         specifier: ^1.5.0
         version: 1.5.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -14019,7 +14019,7 @@ importers:
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
       next:
         specifier: ^16.4.0
-        version: 16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       parse5:
         specifier: ^8.0.1
         version: 8.0.1
@@ -14062,7 +14062,7 @@ importers:
         version: 10.6.1(@vitest/browser-playwright@5.0.3)(@vitest/browser@5.0.3)(@vitest/runner@4.1.11)(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vitest@5.0.3)
       '@storybook/nextjs-vite':
         specifier: ^10.6.1
-        version: 10.6.1(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -14110,7 +14110,7 @@ importers:
         version: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
         specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
+        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3)
 
 packages:
 
@@ -17982,20 +17982,20 @@ packages:
     peerDependencies:
       selderee: ~0.12.0
 
-  '@sentry/aws-serverless@11.5.0':
-    resolution: {integrity: sha512-4ivBcKiTnJ38/cAsAm3e1LoVY2pUJVSVEaaMssmAHRuA114TmDT/AjKRAI0ZODB+KgZapCC6peNd+OrJDnh8jQ==}
+  '@sentry/aws-serverless@11.6.0':
+    resolution: {integrity: sha512-4uDQwYze1ohk/uJ3g3zMb9NVEBy1jNLKCwqCxVni8dpEceL3MzFK2VXSkcK/kVb8wKJ1XzdN6IN9d1ATTR54Xg==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser-utils@11.5.0':
-    resolution: {integrity: sha512-R2rro9Hc4jtOprXYwCjyS6WqmdXX/5Rzya6C7X5HWdcW5/osW1ICB4Yk5XndrgVDUeEJ6aqo8mKvmTWJ759ATQ==}
+  '@sentry/browser-utils@11.6.0':
+    resolution: {integrity: sha512-s4zuuE71NORfyNd6ciS27/o97qgfu70qDRdPCkLK8UOcs1REsaAQPgmvNBSADRYm4eeFwWejKBCQKjL5kOzLqw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/browser@11.5.0':
-    resolution: {integrity: sha512-jwky2cRbwdQG4JpU3spKX9h2gc8C57AFnrQrGJc3AC+jCgwpfso/I0MI6Am3f552gVCR9kfuT6ozv1YliV+FoQ==}
+  '@sentry/browser@11.6.0':
+    resolution: {integrity: sha512-zkqUIbRc9HCBMsoL67HOAr6PSfNzJSMw4JhytCHuDZ5O7KuOwwgBENGhVh3mr5lj2D47Bhv01MpwCJMP3yBnZQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/bundler-plugins@11.5.0':
-    resolution: {integrity: sha512-3stxFCNFO2f8GTOsF0rgUOa1UN0if4GYQspZTCdI0MISKinIsts5z3QJUeyZDnGjPkUBBoTo7STuUSqiK88IQg==}
+  '@sentry/bundler-plugins@11.6.0':
+    resolution: {integrity: sha512-qHKQgOQaayRuwDCWWoAkEMkJe13RZwrpAH5Y5edL3d5XD2Gd7uenA6lPdXFw3qP1slezeSYErV0GAdcVYMo8fg==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@babel/core': ^7.18.5
@@ -18009,8 +18009,8 @@ packages:
       webpack:
         optional: true
 
-  '@sentry/cloudflare@11.5.0':
-    resolution: {integrity: sha512-hGaoNxCyOVoZOixDGWl3dA1d5bmKobmoX89fxM8btkbCu6YkxoVuhOqYWAfCXhwGQyVUMKv/UfvcSeP+qGhUJw==}
+  '@sentry/cloudflare@11.6.0':
+    resolution: {integrity: sha512-FOwluoZmgE60JLxQBKUw0smiz3FaVsmtuvslkgLb+9pUbxGsjnLf1RX8F99vPSCB724Q916asImCHTlWRynUSQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@cloudflare/workers-types': ^4.x || ^5.x
@@ -18025,32 +18025,32 @@ packages:
     resolution: {integrity: sha512-ttSRcoLf2kIENDIFzH12aJaVMdxnidMYLvVNwEX/JjXfXaQot8u5M47QmgAFOOhVJ4nQ2uU8wTCh+fwSPrrCfg==}
     engines: {node: '>=14'}
 
-  '@sentry/core@11.5.0':
-    resolution: {integrity: sha512-flEMRAfk8t3JW7w32shN6piuLJESkuryF90WzMn75ZGEiVoXkhStOvLT8qX8SQaLeFll4vLp7nDPdTsdJe1APw==}
+  '@sentry/core@11.6.0':
+    resolution: {integrity: sha512-PbITT1kfJYKJiS9fH4ZtOcwIONKyt+tUsTZSPtcAjPdkUDOzMKT61MkUa1Ze07VzNtLALT24ZdUOc6d9K4YoKA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/feedback@11.5.0':
-    resolution: {integrity: sha512-L/0lq8Pgh7cR12ay3+yx56dOkEWiPSiT0ukkMEdkGrqbDbHurEIHIfXk7JhcxGUL+Ug1ObCtgI6StqwZSB7o2A==}
+  '@sentry/feedback@11.6.0':
+    resolution: {integrity: sha512-V52/+SkMcPdlldExPC9TWS2sZ+CC+8BSzvVbRtkQxvy+jTOXFAJfInaVLPAAVt8W4WbPw9iAxVMzwHGaZ2muBw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/nextjs@11.5.0':
-    resolution: {integrity: sha512-q19N813ixmPUj0tZbhaY7Ak5xB0fjxqNDBrpEAj1qaFP5r/rKsos/MFuO7MKPc/kJZoeQlH9cbNSdCoDLqdlew==}
+  '@sentry/nextjs@11.6.0':
+    resolution: {integrity: sha512-M2dzWC4f/irc1PKVyo/2HRc6cdXiGriHns1HGxWtkwtUmIIhvPEvEuvFTYCyFxNjKZY2fYMtU33rhwvKDUW0AA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       next: ^14.0 || ^15.0.0-rc.0 || ^16.0.0-0
 
-  '@sentry/node@11.5.0':
-    resolution: {integrity: sha512-uNSFtwEjeRzUPnrpnMIW3g8j4sivk+StlvlpEMZ46zKsBF597UZ7XNldKUJDwopURybhai1wZ8xjc46ufsv1jg==}
+  '@sentry/node@11.6.0':
+    resolution: {integrity: sha512-5uHdUSACyodmtar+LxhFl4/MdICJ1/38mrp5lrMpDKfWSV/7tu/KRmr5gD2J9Nm47I/xxbghSz+oinJ4EtJatQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/opentelemetry@11.5.0':
-    resolution: {integrity: sha512-k+YlAjKO9iPOb1w/KXjIPZE2P4PcxhuoafXr1EN0yCCs0BFgkgQNDP/S+nw78GLzb2SLs3MtwWbLHOMLMRJM5Q==}
+  '@sentry/opentelemetry@11.6.0':
+    resolution: {integrity: sha512-W6b+/8TVejHSCSOWMGsU2wVQY+d7FH/kI2zIFYXmIcxJCd7A/ULhOXe29UYeh+VX9wObR23LvEcEUmgsFVqf6A==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       '@opentelemetry/api': ^1.9.0
 
-  '@sentry/react@11.5.0':
-    resolution: {integrity: sha512-dLFH0CsxGzjI2QVQlsahsaJj0i7gKllU8ZPm7CjAb0m94cF7JiBPmp4pBYAEUu3e+lZsCMv7QyVTk8+gaJ47TQ==}
+  '@sentry/react@11.6.0':
+    resolution: {integrity: sha512-z9UScxzkfXjz7dGJW/or1ADiEStFPIsiv7u14vHonOPPFzQS3XClWafcS7AKc4g/9x6LUqGY4mMbHLC6Dfxq8A==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
     peerDependencies:
       react: 17.x || 18.x || 19.x
@@ -18059,24 +18059,24 @@ packages:
       react-router:
         optional: true
 
-  '@sentry/replay-canvas@11.5.0':
-    resolution: {integrity: sha512-V6PNnufdaBoMcj/qpygn9+w7Ug+mHIzfkYo5gUgeikwt2ISSNywRLhRYAadoKN32D3rz8UBuwi+4czap1eqCMQ==}
+  '@sentry/replay-canvas@11.6.0':
+    resolution: {integrity: sha512-cRuiC8N9xXDoaKEDpMPRDtmGAr0G2YMx1m2JrnrmTnMt9z/VcIKNwaiURTTW8W8u96/RyRQfflMHYARX7FG8YQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/replay@11.5.0':
-    resolution: {integrity: sha512-QkS6rGyj+zjzJOKMxmbj9m2dj4cqRzDZouw45iBCXyoW/6QCIFGqjxEPAWO9JS1ZCo9JRUf0wLfIbaO1pF0xRQ==}
+  '@sentry/replay@11.6.0':
+    resolution: {integrity: sha512-cJyPYnF6QJA8ADRfAW06YoU7EVIebtWezBOCU9Vag5+W1VLBkXEvH7C4LbeMUiDmrqw92sumq06NgqipIxA7BA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-runtime-injection@11.5.0':
-    resolution: {integrity: sha512-6hmiiFJanSKDfUNBdrwRm47g8CBgFdDcxFguMh3QaRmIim0c5V0eMUfMRJuWhk+NKuI/rsFyj8B5qdBD+5h4Kg==}
+  '@sentry/server-runtime-injection@11.6.0':
+    resolution: {integrity: sha512-3plQzwQfvz4HJkXLDfr5VuQQL5vyjar7RKn7UwFne3jc+9OSXRkxkZ6S0Z3RdBgbaFO1GkFwf/mFNX4H8nNcuw==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/server-utils@11.5.0':
-    resolution: {integrity: sha512-cUALUPgVW2jND2RGWyNH9v3epsKz5Ce3QujfnpFAdHKFVj4tjjZMU0FYlbFo9SBxosWPTnZzjIuNO6GROQwR1Q==}
+  '@sentry/server-utils@11.6.0':
+    resolution: {integrity: sha512-pVpGqwxBOXDMSngxTVARRlYyEXEfKA3WU1ENCdgLCeJ4xJ4vNRf4ODGXYPvXBk0zkt2NZZFvray2JHXIeYG+tg==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
-  '@sentry/vercel-edge@11.5.0':
-    resolution: {integrity: sha512-6e7un4BMtgjyO/ED7LFBcMgK9f3OoZ9MZVvg765smL1QgpwgQWGCWlfnVT658ZrsmCOLPXZ2pnyhtT8VmZPqmA==}
+  '@sentry/vercel-edge@11.6.0':
+    resolution: {integrity: sha512-+yLRb6lqV7Rdi2zOoUGAk0sO752MDxFOU0eMGCtMkSrJWzJ4yV4wEpOeZb6WipAZb22pTkjyzN6j4sMpZS0SEQ==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@shaderfrog/glsl-parser@7.0.1':
@@ -19177,11 +19177,6 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -23663,16 +23658,16 @@ snapshots:
 
   '@babel/compat-data@7.29.7': {}
 
-  '@babel/core@7.29.7':
+  '@babel/core@7.29.7(supports-color@10.2.2)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
       '@babel/helper-compilation-targets': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
       '@babel/helpers': 7.29.7
       '@babel/parser': 7.29.9
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.8
+      '@babel/traverse': 7.29.8(supports-color@10.2.2)
       '@babel/types': 7.29.8
       '@jridgewell/remapping': 2.3.5
       convert-source-map: 2.0.0
@@ -23701,19 +23696,19 @@ snapshots:
 
   '@babel/helper-globals@7.29.7': {}
 
-  '@babel/helper-module-imports@7.29.7':
+  '@babel/helper-module-imports@7.29.7(supports-color@10.2.2)':
     dependencies:
-      '@babel/traverse': 7.29.8
+      '@babel/traverse': 7.29.8(supports-color@10.2.2)
       '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/core': 7.29.7(supports-color@10.2.2)
+      '@babel/helper-module-imports': 7.29.7(supports-color@10.2.2)
       '@babel/helper-validator-identifier': 7.29.7
-      '@babel/traverse': 7.29.8
+      '@babel/traverse': 7.29.8(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -23756,7 +23751,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/traverse@7.29.8':
+  '@babel/traverse@7.29.8(supports-color@10.2.2)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
@@ -24110,14 +24105,14 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@eslint-community/eslint-utils@4.9.1(eslint@10.5.0(jiti@2.7.0))':
+  '@eslint-community/eslint-utils@4.9.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))':
     dependencies:
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
 
-  '@eslint/config-array@0.23.5':
+  '@eslint/config-array@0.23.5(supports-color@10.2.2)':
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3(supports-color@10.2.2)
@@ -24191,10 +24186,10 @@ snapshots:
     dependencies:
       tldts-experimental: 7.4.11
 
-  '@glidemq/dashboard@0.4.2(express@5.2.1)(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))':
+  '@glidemq/dashboard@0.4.2(express@5.2.1(supports-color@10.2.2))(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:
-      express: 5.2.1
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+      express: 5.2.1(supports-color@10.2.2)
+      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   '@glidemq/speedkey-darwin-arm64@0.4.2':
     optional: true
@@ -24500,7 +24495,7 @@ snapshots:
     dependencies:
       '@pgsql/types': 18.0.0
 
-  '@modelcontextprotocol/sdk@1.32.1(zod@4.6.5)':
+  '@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.9)
       ajv: 8.20.0
@@ -24510,8 +24505,8 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.1
-      express: 5.2.1
-      express-rate-limit: 8.7.0(express@5.2.1)
+      express: 5.2.1(supports-color@10.2.2)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
       hono: 4.13.9
       jose: 6.2.12
       json-schema-typed: 8.0.2
@@ -24614,59 +24609,59 @@ snapshots:
 
   '@opentelemetry/api@1.9.1': {}
 
-  '@opentelemetry/auto-instrumentations-node@0.80.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))':
+  '@opentelemetry/auto-instrumentations-node@0.80.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-amqplib': 0.69.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-aws-lambda': 0.74.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-aws-sdk': 0.77.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-bunyan': 0.67.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-cassandra-driver': 0.67.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-connect': 0.65.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-cucumber': 0.38.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-dataloader': 0.39.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-dns': 0.65.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-express': 0.70.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-fs': 0.41.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-generic-pool': 0.65.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-graphql': 0.70.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-grpc': 0.222.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-hapi': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-host-metrics': 0.5.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-http': 0.222.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-ioredis': 0.70.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-kafkajs': 0.31.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-knex': 0.66.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-koa': 0.70.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-lru-memoizer': 0.66.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-memcached': 0.65.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-mongodb': 0.75.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-mongoose': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-mysql': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-mysql2': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-nestjs-core': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-net': 0.66.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-openai': 0.20.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-oracledb': 0.47.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-pg': 0.74.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-pino': 0.68.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-redis': 0.70.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-restify': 0.67.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-router': 0.66.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-runtime-node': 0.35.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-socket.io': 0.69.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-tedious': 0.41.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-undici': 0.32.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-winston': 0.66.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-amqplib': 0.69.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-aws-lambda': 0.74.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-aws-sdk': 0.77.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-bunyan': 0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-cassandra-driver': 0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-connect': 0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-cucumber': 0.38.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-dataloader': 0.39.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-dns': 0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-express': 0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-fs': 0.41.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-generic-pool': 0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-graphql': 0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-grpc': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-hapi': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-host-metrics': 0.5.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-http': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-ioredis': 0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-kafkajs': 0.31.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-knex': 0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-koa': 0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-lru-memoizer': 0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-memcached': 0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-mongodb': 0.75.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-mongoose': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-mysql': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-mysql2': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-nestjs-core': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-net': 0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-openai': 0.20.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-oracledb': 0.47.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-pg': 0.74.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-pino': 0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-redis': 0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-restify': 0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-router': 0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-runtime-node': 0.35.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-socket.io': 0.69.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-tedious': 0.41.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-undici': 0.32.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
+      '@opentelemetry/instrumentation-winston': 0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/resource-detector-alibaba-cloud': 0.37.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resource-detector-aws': 2.22.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resource-detector-azure': 0.30.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resource-detector-container': 0.8.13(@opentelemetry/api@1.9.1)
-      '@opentelemetry/resource-detector-gcp': 0.57.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/resource-detector-gcp': 0.57.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/resources': 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-node': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -24773,272 +24768,272 @@ snapshots:
       '@opentelemetry/sdk-trace': 2.11.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/semantic-conventions': 1.43.0
 
-  '@opentelemetry/instrumentation-amqplib@0.69.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-amqplib@0.69.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-aws-lambda@0.74.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-aws-lambda@0.74.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/propagator-aws-xray': 2.2.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/semantic-conventions': 1.43.0
       '@types/aws-lambda': 8.10.164
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-aws-sdk@0.77.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-aws-sdk@0.77.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-bunyan@0.67.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-bunyan@0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-cassandra-driver@0.67.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-cassandra-driver@0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-connect@0.65.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-connect@0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
       '@types/connect': 3.4.38
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-cucumber@0.38.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-cucumber@0.38.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-dataloader@0.39.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-dataloader@0.39.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-dns@0.65.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-dns@0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-express@0.70.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-express@0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-fs@0.41.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-fs@0.41.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-generic-pool@0.65.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-generic-pool@0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-graphql@0.70.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-graphql@0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-grpc@0.222.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-grpc@0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-hapi@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-hapi@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-host-metrics@0.5.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-host-metrics@0.5.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       systeminformation: 5.33.8
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-http@0.222.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-http@0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
       forwarded-parse: 2.1.2
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-ioredis@0.70.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-ioredis@0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/redis-common': 0.38.3
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-kafkajs@0.31.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-kafkajs@0.31.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-knex@0.66.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-knex@0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-koa@0.70.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-koa@0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-lru-memoizer@0.66.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-lru-memoizer@0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-memcached@0.65.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-memcached@0.65.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
       '@types/memcached': 2.2.10
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-mongodb@0.75.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-mongodb@0.75.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-mongoose@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-mongoose@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-mysql2@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-mysql2@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
       '@opentelemetry/sql-common': 0.42.0(@opentelemetry/api@1.9.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-mysql@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-mysql@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-nestjs-core@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-nestjs-core@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-net@0.66.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-net@0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-openai@0.20.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-openai@0.20.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-oracledb@0.47.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-oracledb@0.47.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-pg@0.74.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-pg@0.74.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
       '@opentelemetry/sql-common': 0.42.0(@opentelemetry/api@1.9.1)
       '@types/pg': 8.15.6
@@ -25046,89 +25041,89 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-pino@0.68.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-pino@0.68.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-redis@0.70.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-redis@0.70.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/redis-common': 0.38.3
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-restify@0.67.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-restify@0.67.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-router@0.66.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-router@0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-runtime-node@0.35.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-runtime-node@0.35.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-socket.io@0.69.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-socket.io@0.69.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-tedious@0.41.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-tedious@0.41.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-undici@0.32.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-undici@0.32.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/semantic-conventions': 1.43.0
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation-winston@0.66.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation-winston@0.66.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation@0.222.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/instrumentation@0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
       import-in-the-middle: 3.5.1
-      require-in-the-middle: 8.0.1
+      require-in-the-middle: 8.0.1(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -25198,12 +25193,12 @@ snapshots:
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources': 2.11.0(@opentelemetry/api@1.9.1)
 
-  '@opentelemetry/resource-detector-gcp@0.57.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/resource-detector-gcp@0.57.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.12.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources': 2.11.0(@opentelemetry/api@1.9.1)
-      gcp-metadata: 8.1.4
+      gcp-metadata: 8.1.4(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -25227,7 +25222,7 @@ snapshots:
       '@opentelemetry/core': 2.11.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources': 2.11.0(@opentelemetry/api@1.9.1)
 
-  '@opentelemetry/sdk-node@0.222.0(@opentelemetry/api@1.9.1)':
+  '@opentelemetry/sdk-node@0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.222.0
@@ -25245,7 +25240,7 @@ snapshots:
       '@opentelemetry/exporter-trace-otlp-http': 0.222.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/exporter-trace-otlp-proto': 0.222.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/exporter-zipkin': 2.11.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/instrumentation': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/otlp-exporter-base': 0.222.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/otlp-grpc-exporter-base': 0.222.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/propagator-b3': 2.11.0(@opentelemetry/api@1.9.1)
@@ -26552,11 +26547,11 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@react-email/ui@6.11.1(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@react-email/ui@6.11.1(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       esbuild: 0.28.2
       jiti: 2.6.1
-      next: 16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -26749,37 +26744,37 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.5.0':
+  '@sentry/aws-serverless@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))':
     dependencies:
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
-      '@sentry/node': 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
-      '@sentry/server-runtime-injection': 11.5.0
-      '@sentry/server-utils': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/node': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
+      '@sentry/server-runtime-injection': 11.6.0
+      '@sentry/server-utils': 11.6.0
       '@types/aws-lambda': 8.10.164
     transitivePeerDependencies:
       - '@babel/core'
       - rollup
       - webpack
 
-  '@sentry/browser-utils@11.5.0':
+  '@sentry/browser-utils@11.6.0':
     dependencies:
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
       web-vitals: 6.2.3
 
-  '@sentry/browser@11.5.0':
+  '@sentry/browser@11.6.0':
     dependencies:
-      '@sentry/browser-utils': 11.5.0
+      '@sentry/browser-utils': 11.6.0
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
-      '@sentry/feedback': 11.5.0
-      '@sentry/replay': 11.5.0
-      '@sentry/replay-canvas': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/feedback': 11.6.0
+      '@sentry/replay': 11.6.0
+      '@sentry/replay-canvas': 11.6.0
 
-  '@sentry/bundler-plugins@11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))':
+  '@sentry/bundler-plugins@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))':
     dependencies:
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
       dotenv: 17.4.2
       glob: 13.0.6
       magic-string: 1.4.2
@@ -26787,17 +26782,17 @@ snapshots:
       sentry: 0.45.0
       supports-color: 8.1.1
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@10.2.2)
       rollup: 4.63.4
-      webpack: 5.106.2(esbuild@0.28.2)
+      webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)
 
-  '@sentry/cloudflare@11.5.0(@cloudflare/workers-types@5.20261009.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))':
+  '@sentry/cloudflare@11.6.0(@cloudflare/workers-types@5.20261009.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
-      '@sentry/opentelemetry': 11.5.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-utils': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/opentelemetry': 11.6.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-utils': 11.6.0
       magic-string: 0.30.21
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261009.1
@@ -26805,90 +26800,93 @@ snapshots:
 
   '@sentry/conventions@0.26.0': {}
 
-  '@sentry/core@11.5.0':
+  '@sentry/core@11.6.0':
     dependencies:
       '@sentry/conventions': 0.26.0
 
-  '@sentry/feedback@11.5.0':
+  '@sentry/feedback@11.6.0':
     dependencies:
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
 
-  '@sentry/nextjs@11.5.0(@babel/core@7.29.7)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2))':
+  '@sentry/nextjs@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261009.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@rollup/plugin-commonjs': 28.0.1(rollup@4.63.4)
-      '@sentry/browser-utils': 11.5.0
-      '@sentry/bundler-plugins': 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
+      '@sentry/browser-utils': 11.6.0
+      '@sentry/bundler-plugins': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
+      '@sentry/cloudflare': 11.6.0(@cloudflare/workers-types@5.20261009.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261009.1)(@types/node@26.6.4))
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
-      '@sentry/node': 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
-      '@sentry/opentelemetry': 11.5.0(@opentelemetry/api@1.9.1)
-      '@sentry/react': 11.5.0(react@19.3.0)
-      '@sentry/server-runtime-injection': 11.5.0
-      '@sentry/server-utils': 11.5.0
-      '@sentry/vercel-edge': 11.5.0
-      next: 16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@sentry/core': 11.6.0
+      '@sentry/node': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
+      '@sentry/opentelemetry': 11.6.0(@opentelemetry/api@1.9.1)
+      '@sentry/react': 11.6.0(react@19.3.0)
+      '@sentry/server-runtime-injection': 11.6.0
+      '@sentry/server-utils': 11.6.0
+      '@sentry/vercel-edge': 11.6.0
+      next: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       rollup: 4.63.4
       stacktrace-parser: 0.1.11
     transitivePeerDependencies:
       - '@babel/core'
+      - '@cloudflare/workers-types'
       - react
       - react-router
       - webpack
+      - wrangler
 
-  '@sentry/node@11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))':
+  '@sentry/node@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/bundler-plugins': 11.5.0(@babel/core@7.29.7)(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
+      '@sentry/bundler-plugins': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
-      '@sentry/opentelemetry': 11.5.0(@opentelemetry/api@1.9.1)
-      '@sentry/server-runtime-injection': 11.5.0
-      '@sentry/server-utils': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/opentelemetry': 11.6.0(@opentelemetry/api@1.9.1)
+      '@sentry/server-runtime-injection': 11.6.0
+      '@sentry/server-utils': 11.6.0
     transitivePeerDependencies:
       - '@babel/core'
       - rollup
       - webpack
 
-  '@sentry/opentelemetry@11.5.0(@opentelemetry/api@1.9.1)':
+  '@sentry/opentelemetry@11.6.0(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
 
-  '@sentry/react@11.5.0(react@19.3.0)':
+  '@sentry/react@11.6.0(react@19.3.0)':
     dependencies:
-      '@sentry/browser': 11.5.0
+      '@sentry/browser': 11.6.0
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
       react: 19.3.0
 
-  '@sentry/replay-canvas@11.5.0':
+  '@sentry/replay-canvas@11.6.0':
     dependencies:
-      '@sentry/core': 11.5.0
-      '@sentry/replay': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/replay': 11.6.0
 
-  '@sentry/replay@11.5.0':
+  '@sentry/replay@11.6.0':
     dependencies:
-      '@sentry/browser-utils': 11.5.0
-      '@sentry/core': 11.5.0
+      '@sentry/browser-utils': 11.6.0
+      '@sentry/core': 11.6.0
 
-  '@sentry/server-runtime-injection@11.5.0':
+  '@sentry/server-runtime-injection@11.6.0':
     dependencies:
-      '@sentry/core': 11.5.0
-      '@sentry/server-utils': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/server-utils': 11.6.0
 
-  '@sentry/server-utils@11.5.0':
+  '@sentry/server-utils@11.6.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.26.0
-      '@sentry/core': 11.5.0
+      '@sentry/core': 11.6.0
 
-  '@sentry/vercel-edge@11.5.0':
+  '@sentry/vercel-edge@11.6.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
-      '@sentry/core': 11.5.0
-      '@sentry/server-utils': 11.5.0
+      '@sentry/core': 11.6.0
+      '@sentry/server-utils': 11.6.0
 
   '@shaderfrog/glsl-parser@7.0.1': {}
 
@@ -27062,18 +27060,18 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@storybook/nextjs-vite@10.6.1(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/nextjs-vite@10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-      '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))
-      '@storybook/react-vite': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-      next: 16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)
+      '@storybook/react-vite': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      next: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.0)
       vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      vite-plugin-storybook-nextjs: 10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vite-plugin-storybook-nextjs: 10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -27093,16 +27091,16 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
       '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-      '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))
+      '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)
       empathic: 2.0.1
       magic-string: 1.4.2
       react: 19.3.0
-      react-docgen: 8.0.3
+      react-docgen: 8.0.3(supports-color@10.2.2)
       react-dom: 19.3.0(react@19.3.0)
       resolve: 1.22.12
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
@@ -27116,12 +27114,12 @@ snapshots:
       - rollup
       - supports-color
 
-  '@storybook/react@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))':
+  '@storybook/react@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/react-dom-shim': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))
       react: 19.3.0
-      react-docgen: 8.0.3
+      react-docgen: 8.0.3(supports-color@10.2.2)
       react-docgen-typescript: 2.4.0(@typescript/typescript6@6.0.2)
       react-dom: 19.3.0(react@19.3.0)
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
@@ -27505,14 +27503,14 @@ snapshots:
     dependencies:
       '@types/node': 26.6.4
 
-  '@typescript-eslint/parser@8.71.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@10.2.2)':
+  '@typescript-eslint/parser@8.71.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.71.1
       '@typescript-eslint/types': 8.71.1
       '@typescript-eslint/typescript-estree': 8.71.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
       '@typescript-eslint/visitor-keys': 8.71.1
       debug: 4.4.3(supports-color@10.2.2)
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
       - supports-color
@@ -27854,9 +27852,9 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@vouchington/queue-errors@0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))':
+  '@vouchington/queue-errors@0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   '@vouchington/request-contract-validation@0.0.1':
     dependencies:
@@ -27892,9 +27890,9 @@ snapshots:
     dependencies:
       uuid: 14.0.2
 
-  '@vouchington/worker-runtime@0.1.1(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1))':
+  '@vouchington/worker-runtime@0.1.1(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1)
+      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -28036,16 +28034,16 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  agent-blackboard@0.6.1(zod@4.6.5):
+  agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
       - zod
 
-  ajv-formats@2.1.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@2.1.1:
+    dependencies:
       ajv: 8.20.0
     optional: true
 
@@ -28173,7 +28171,7 @@ snapshots:
 
   bn.js@4.12.3: {}
 
-  body-parser@2.2.2:
+  body-parser@2.2.2(supports-color@10.2.2):
     dependencies:
       bytes: 3.1.2
       content-type: 1.0.5
@@ -28773,23 +28771,23 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.83.0(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-no-mistakes@0.83.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
-  eslint-plugin-playwright@2.12.1(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-playwright@2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       globals: 17.12.0
 
-  eslint-plugin-react-you-might-not-need-an-effect@1.0.2(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-react-you-might-not-need-an-effect@1.0.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       globals: 16.5.0
 
-  eslint-plugin-vouchington@0.2.0(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-vouchington@0.2.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
-      eslint: 10.5.0(jiti@2.7.0)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       picomatch: 4.0.7
 
   eslint-scope@5.1.1:
@@ -28809,11 +28807,11 @@ snapshots:
 
   eslint-visitor-keys@5.0.1: {}
 
-  eslint@10.5.0(jiti@2.7.0):
+  eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2):
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@10.5.0(jiti@2.7.0))
+      '@eslint-community/eslint-utils': 4.9.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.23.5
+      '@eslint/config-array': 0.23.5(supports-color@10.2.2)
       '@eslint/config-helpers': 0.6.0
       '@eslint/core': 1.2.1
       '@eslint/plugin-kit': 0.7.2
@@ -28890,18 +28888,18 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.7.0(express@5.2.1):
+  express-rate-limit@8.7.0(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
-      express: 5.2.1
+      express: 5.2.1(supports-color@10.2.2)
       ip-address: 10.7.2
     transitivePeerDependencies:
       - supports-color
 
-  express@5.2.1:
+  express@5.2.1(supports-color@10.2.2):
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.2.2
+      body-parser: 2.2.2(supports-color@10.2.2)
       content-disposition: 1.1.0
       content-type: 1.0.5
       cookie: 0.7.2
@@ -28911,7 +28909,7 @@ snapshots:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
-      finalhandler: 2.1.1
+      finalhandler: 2.1.1(supports-color@10.2.2)
       fresh: 2.0.0
       http-errors: 2.0.1
       merge-descriptors: 2.0.0
@@ -28922,9 +28920,9 @@ snapshots:
       proxy-addr: 2.0.7
       qs: 6.16.0
       range-parser: 1.2.1
-      router: 2.2.0
-      send: 1.2.1
-      serve-static: 2.2.1
+      router: 2.2.0(supports-color@10.2.2)
+      send: 1.2.1(supports-color@10.2.2)
+      serve-static: 2.2.1(supports-color@10.2.2)
       statuses: 2.0.2
       type-is: 2.1.0
       vary: 1.1.2
@@ -28995,7 +28993,7 @@ snapshots:
     dependencies:
       flat-cache: 4.0.1
 
-  finalhandler@2.1.1:
+  finalhandler@2.1.1(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       encodeurl: 2.0.0
@@ -29067,26 +29065,26 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  gaxios@7.1.3:
+  gaxios@7.1.3(supports-color@10.2.2):
     dependencies:
       extend: 3.0.2
-      https-proxy-agent: 7.0.6
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
       node-fetch: 3.3.2
       rimraf: 5.0.10
     transitivePeerDependencies:
       - supports-color
 
-  gcp-metadata@8.1.4:
+  gcp-metadata@8.1.4(supports-color@10.2.2):
     dependencies:
-      gaxios: 7.1.3
+      gaxios: 7.1.3(supports-color@10.2.2)
       google-logging-utils: 1.1.3
       json-bigint: 1.0.0
     transitivePeerDependencies:
       - supports-color
 
-  geist@1.7.2(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
+  geist@1.7.2(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
     dependencies:
-      next: 16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
 
   gensync@1.0.0-beta.2: {}
 
@@ -29120,12 +29118,12 @@ snapshots:
 
   gh-pr-attach-screenshots@0.2.0: {}
 
-  glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1):
+  glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)):
     dependencies:
       '@glidemq/speedkey': 0.4.2
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
-      express: 5.2.1
+      express: 5.2.1(supports-color@10.2.2)
 
   glob-parent@6.0.2:
     dependencies:
@@ -29279,7 +29277,7 @@ snapshots:
 
   http_ece@1.2.0: {}
 
-  https-proxy-agent@7.0.6:
+  https-proxy-agent@7.0.6(supports-color@10.2.2):
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3(supports-color@10.2.2)
@@ -29825,14 +29823,14 @@ snapshots:
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
 
-  mdast-util-from-markdown@2.0.3:
+  mdast-util-from-markdown@2.0.3(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
       decode-named-character-reference: 1.3.0
       devlop: 1.1.0
       mdast-util-to-string: 4.0.0
-      micromark: 4.0.2
+      micromark: 4.0.2(supports-color@10.2.2)
       micromark-util-decode-numeric-character-reference: 2.0.2
       micromark-util-decode-string: 2.0.1
       micromark-util-normalize-identifier: 2.0.1
@@ -29850,51 +29848,51 @@ snapshots:
       mdast-util-find-and-replace: 3.0.2
       micromark-util-character: 2.1.1
 
-  mdast-util-gfm-footnote@2.1.0:
+  mdast-util-gfm-footnote@2.1.0(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       mdast-util-to-markdown: 2.1.2
       micromark-util-normalize-identifier: 2.0.1
     transitivePeerDependencies:
       - supports-color
 
-  mdast-util-gfm-strikethrough@2.0.0:
+  mdast-util-gfm-strikethrough@2.0.0(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       mdast-util-to-markdown: 2.1.2
     transitivePeerDependencies:
       - supports-color
 
-  mdast-util-gfm-table@2.0.0:
+  mdast-util-gfm-table@2.0.0(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       markdown-table: 3.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       mdast-util-to-markdown: 2.1.2
     transitivePeerDependencies:
       - supports-color
 
-  mdast-util-gfm-task-list-item@2.0.0:
+  mdast-util-gfm-task-list-item@2.0.0(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       mdast-util-to-markdown: 2.1.2
     transitivePeerDependencies:
       - supports-color
 
-  mdast-util-gfm@3.1.0:
+  mdast-util-gfm@3.1.0(supports-color@10.2.2):
     dependencies:
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       mdast-util-gfm-autolink-literal: 2.0.1
-      mdast-util-gfm-footnote: 2.1.0
-      mdast-util-gfm-strikethrough: 2.0.0
-      mdast-util-gfm-table: 2.0.0
-      mdast-util-gfm-task-list-item: 2.0.0
+      mdast-util-gfm-footnote: 2.1.0(supports-color@10.2.2)
+      mdast-util-gfm-strikethrough: 2.0.0(supports-color@10.2.2)
+      mdast-util-gfm-table: 2.0.0(supports-color@10.2.2)
+      mdast-util-gfm-task-list-item: 2.0.0(supports-color@10.2.2)
       mdast-util-to-markdown: 2.1.2
     transitivePeerDependencies:
       - supports-color
@@ -30112,7 +30110,7 @@ snapshots:
 
   micromark-util-types@2.0.2: {}
 
-  micromark@4.0.2:
+  micromark@4.0.2(supports-color@10.2.2):
     dependencies:
       '@types/debug': 4.1.13
       debug: 4.4.3(supports-color@10.2.2)
@@ -30233,7 +30231,7 @@ snapshots:
   neo-async@2.6.2:
     optional: true
 
-  next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.3
       '@swc/helpers': 0.5.23
@@ -30242,7 +30240,7 @@ snapshots:
       postcss: 8.5.23
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.3.3
       '@next/swc-darwin-x64': 16.3.3
@@ -30259,7 +30257,7 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.4.0
       '@swc/helpers': 0.5.23
@@ -30268,7 +30266,7 @@ snapshots:
       postcss: 8.5.23
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.4.0
       '@next/swc-darwin-x64': 16.4.0
@@ -30792,9 +30790,9 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.56.6:
+  pr-shepherd@0.56.6(supports-color@10.2.2):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
       yaml: 2.9.1
       zod: 4.6.5
@@ -30882,10 +30880,10 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
-  react-docgen@8.0.3:
+  react-docgen@8.0.3(supports-color@10.2.2):
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/traverse': 7.29.8
+      '@babel/core': 7.29.7(supports-color@10.2.2)
+      '@babel/traverse': 7.29.8(supports-color@10.2.2)
       '@babel/types': 7.29.8
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.28.0
@@ -31038,21 +31036,21 @@ snapshots:
       hast-util-to-html: 9.0.5
       unified: 11.0.5
 
-  remark-gfm@4.0.1:
+  remark-gfm@4.0.1(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-gfm: 3.1.0
+      mdast-util-gfm: 3.1.0(supports-color@10.2.2)
       micromark-extension-gfm: 3.0.0
-      remark-parse: 11.0.0
+      remark-parse: 11.0.0(supports-color@10.2.2)
       remark-stringify: 11.0.0
       unified: 11.0.5
     transitivePeerDependencies:
       - supports-color
 
-  remark-parse@11.0.0:
+  remark-parse@11.0.0(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(supports-color@10.2.2)
       micromark-util-types: 2.0.2
       unified: 11.0.5
     transitivePeerDependencies:
@@ -31072,10 +31070,10 @@ snapshots:
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
 
-  remark@15.0.1:
+  remark@15.0.1(supports-color@10.2.2):
     dependencies:
       '@types/mdast': 4.0.4
-      remark-parse: 11.0.0
+      remark-parse: 11.0.0(supports-color@10.2.2)
       remark-stringify: 11.0.0
       unified: 11.0.5
     transitivePeerDependencies:
@@ -31085,7 +31083,7 @@ snapshots:
 
   require-from-string@2.0.2: {}
 
-  require-in-the-middle@8.0.1:
+  require-in-the-middle@8.0.1(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       module-details-from-path: 1.0.4
@@ -31168,7 +31166,7 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.63.4
       fsevents: 2.3.3
 
-  router@2.2.0:
+  router@2.2.0(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       depd: 2.0.0
@@ -31219,7 +31217,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1(ajv@8.20.0)
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -31240,7 +31238,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  send@1.2.1:
+  send@1.2.1(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       encodeurl: 2.0.0
@@ -31258,12 +31256,12 @@ snapshots:
 
   sentry@0.45.0: {}
 
-  serve-static@2.2.1:
+  serve-static@2.2.1(supports-color@10.2.2):
     dependencies:
       encodeurl: 2.0.0
       escape-html: 1.0.3
       parseurl: 1.3.3
-      send: 1.2.1
+      send: 1.2.1(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -31556,12 +31554,12 @@ snapshots:
 
   stubborn-utils@1.0.2: {}
 
-  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.3.0):
+  styled-jsx@5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.0):
     dependencies:
       client-only: 0.0.1
       react: 19.3.0
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@10.2.2)
 
   superagent@10.4.1(supports-color@10.2.2):
     dependencies:
@@ -31642,15 +31640,17 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  terser-webpack-plugin@5.6.1(esbuild@0.28.2)(webpack@5.106.2(esbuild@0.28.2)):
+  terser-webpack-plugin@5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.49.0
-      webpack: 5.106.2(esbuild@0.28.2)
+      webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)
     optionalDependencies:
       esbuild: 0.28.2
+      lightningcss: 1.33.0
+      postcss: 8.5.29
     optional: true
 
   terser@5.49.0:
@@ -31922,13 +31922,13 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-plugin-storybook-nextjs@10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vite-plugin-storybook-nextjs@10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       '@next/env': 16.3.8
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
       magic-string: 0.30.21
       module-alias: 2.3.4
-      next: 16.4.0(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       pathe: 2.0.3
       probe-image-size: 7.4.0(supports-color@10.2.2)
       semver: 7.8.5
@@ -31993,24 +31993,24 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.40.0(@modelcontextprotocol/sdk@1.32.1(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.83.0)(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
-      '@typescript-eslint/parser': 8.71.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@10.2.2)
+      '@typescript-eslint/parser': 8.71.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       csv-parse: 7.0.3
       csv-stringify: 6.9.0
       dockerfile-ast: 0.7.1
       picomatch: 4.0.7
-      remark: 15.0.1
-      remark-gfm: 4.0.1
+      remark: 15.0.1(supports-color@10.2.2)
+      remark-gfm: 4.0.1(supports-color@10.2.2)
       spdx-expression-parse: 5.0.0
       yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@typescript/typescript6': 6.0.2
-      agent-blackboard: 0.6.1(zod@4.6.5)
+      agent-blackboard: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
       no-mistakes: 0.83.0
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -32035,11 +32035,11 @@ snapshots:
 
   watskeburt@6.0.0: {}
 
-  web-push@3.6.7:
+  web-push@3.6.7(supports-color@10.2.2):
     dependencies:
       asn1.js: 5.4.1
       http_ece: 1.2.0
-      https-proxy-agent: 7.0.6
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
       jws: 4.0.1
       minimist: 1.2.8
     transitivePeerDependencies:
@@ -32056,7 +32056,7 @@ snapshots:
   webpack-sources@3.5.1:
     optional: true
 
-  webpack@5.106.2(esbuild@0.28.2):
+  webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29):
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.9
@@ -32079,7 +32079,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(webpack@5.106.2(esbuild@0.28.2))
+      terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
       watchpack: 2.5.2
       webpack-sources: 3.5.1
     transitivePeerDependencies:
