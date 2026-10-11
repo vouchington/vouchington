@@ -137,7 +137,7 @@ export async function withdrawCopyrightJurisdictionPolicyApproval(
     SELECT approval.id
     FROM copyright_jurisdiction_policy_approvals approval
     WHERE approval.id = ${approvalId}
-    FOR UPDATE
+    FOR NO KEY UPDATE
   `,
     )
     assert(approvals[0], 404, 'Copyright policy approval not found')
