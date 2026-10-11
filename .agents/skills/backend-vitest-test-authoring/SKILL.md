@@ -43,8 +43,8 @@ fixture, and dirty-database patterns.
    `withDominantPostFixtures()` so it is cleaned up even when the test fails. See
    [tests.md § Persistent dominant fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#persistent-dominant-fixtures-require-deterministic-cleanup).
 8. A compiler-backed contract test must reuse the memoized `loadBackendProgram()` or build one
-   `buildVirtualProgramMatrix(import.meta, sources)` per test file, and use the matching
-   constant from `cold-build-budget.mts`, never a new local timeout constant. Do not wrap matrix
+   `buildVirtualProgramMatrix(import.meta, sources)` per test file, and retain its
+   reviewed explicit consuming-hook budget, never a new local timeout constant. Do not wrap matrix
    construction in another API-fixture helper; the consuming test owns its direct `beforeAll`
    build. Every derived cache backed by `loadBackendProgram()` must call it before its own cache
    lookup and scope cached results to the returned opaque generation; this preserves one shared
