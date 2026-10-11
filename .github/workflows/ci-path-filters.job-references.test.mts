@@ -110,6 +110,15 @@ describe('ci path filters cover files that gated jobs execute', () => {
     expect(imageReferences.some(ref => ref.file === 'ci/prepare-trivy-db.sh')).toBe(true)
   })
 
+  it('runs the functional invariant suite when only its helper changes', () => {
+    expect(
+      gateMatches(
+        { step: 'filter', key: 'tooling' },
+        '.github/test-helpers/ci-job-path-references.mts',
+      ),
+    ).toBe(true)
+  })
+
   it('triggers every gated job from each tracked file its steps reference', () => {
     expect(jobReferences().some(ref => ref.file === '.nvmrc')).toBe(true)
     expect(gateMatches({ step: 'filter', key: 'workflow-action-changes' }, '.nvmrc')).toBe(true)

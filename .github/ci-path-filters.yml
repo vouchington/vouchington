@@ -229,6 +229,7 @@ i18n-route-bounds:
   - 'tsconfig*.json'
 tooling:
   - '.github/ci-*.yml'
+  - '.github/test-helpers/**'
   - '.github/ci-path-filters.yml'
   - '.github/workflows/tests-tooling.yml'
   - '.github/workflows/**'
