@@ -168,16 +168,8 @@ describe('same-job embedding continuation', () => {
 
   it('yields an image capacity delay to text work while preserving the global creation cap', async () => {
     const owned = createOwnedEmbeddingQueue(quota, 'mixed', connection)
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      creation_retry_delay_ms: 30000,
-    })
-    quota.beforeRelease(async () => restore())
     const config = getRateLimitConfig()
     const baseline = await requireAdmitted(true)
-    await quota.insertOtherWork(1)
-    const usage = await quota.readGlobalUsage()
-    if (usage.count + 1 >= config.MAX_INFLIGHT_JOBS)
-      throw new Error('Global quota precondition: no count slot for the owned reservation')
     const imageMinimum = minimumImageBatchSizeMB(baseline.minRecords)
     const textMinimum = minimumTextBatchSizeMB(baseline.minRecords)
     const remainingMB = (imageMinimum + textMinimum) / 2
@@ -185,13 +177,20 @@ describe('same-job embedding continuation', () => {
       config.MAX_INFLIGHT_SIZE_MB,
       remainingMB,
     )
+    // This size-fairness case reserves one count slot and leaves one free locally.
+    // The production count-denial cases above retain their independent boundary.
+    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      max_inflight_jobs: reservation.before.count + 2,
+      creation_retry_delay_ms: 30000,
+    })
+    quota.beforeRelease(async () => restore())
     const reserved = await getBatchCreationLimits()
     if (!reserved.allowed) throw new Error(`Global accounting changed: ${reserved.reason}`)
     expect(reserved.maxRecords).toBeGreaterThanOrEqual(reserved.minRecords)
     expect(reserved.maxSizeMB).toBeCloseTo(remainingMB, 6)
     expect(reserved.maxSizeMB).toBeGreaterThanOrEqual(textMinimum)
     expect(reserved.maxSizeMB).toBeLessThan(imageMinimum)
-    expect(reservation.reservationMB).toBeGreaterThanOrEqual(0)
+    expect(reservation.reservationMB).toBeGreaterThan(0)
     const setConcurrency = vi.spyOn(owned.queue, 'setGlobalConcurrency')
     quota.beforeRelease(async () => {
       setConcurrency.mockRestore()
@@ -222,8 +221,9 @@ describe('same-job embedding continuation', () => {
       expect((await owned.queue.getJob(image.id))?.data).toEqual({ cursor })
       expect(await owned.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
     })
+    await reservation.assertPresent()
     expect(await quota.removeOwnedReservations()).toEqual({
-      verifiedAbsentCount: 2,
+      verifiedAbsentCount: 1,
       remainingCount: 0,
     })
   })

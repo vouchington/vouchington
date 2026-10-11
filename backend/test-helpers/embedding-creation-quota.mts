@@ -79,7 +79,11 @@ export async function acquireEmbeddingQuotaFixture() {
         batchData: { metadata: { inputSizeMB: reservationMB } },
       })
       await assertOwnedReservation(id, reservationMB)
-      return { before, reservationMB }
+      return {
+        before,
+        reservationMB,
+        assertPresent: () => assertOwnedReservation(id, reservationMB),
+      }
     },
   }
 
