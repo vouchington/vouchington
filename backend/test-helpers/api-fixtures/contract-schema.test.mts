@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { COLD_VIRTUAL_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
 import { extractResponseContracts } from './contract-schema.mts'
 import { dynamicConfigApiFixtureCases } from './dynamic-config-cases.mts'
 import { buildVirtualProgramMatrix, type VirtualProgramMatrix } from './virtual-program.mts'
@@ -26,9 +25,10 @@ function contracts(sourceId: keyof typeof sources) {
 }
 
 describe('backend API response contract schemas', () => {
+  // One independent cold virtual TypeScript program; retain the existing 15-second budget.
   beforeAll(() => {
     matrix = buildVirtualProgramMatrix(import.meta, sources)
-  }, COLD_VIRTUAL_PROGRAM_TIMEOUT_MS)
+  }, 15_000)
 
   it('publishes Dynamic Config cases with developer authorization', () => {
     const authenticatedCases = dynamicConfigApiFixtureCases.filter(fixture =>
