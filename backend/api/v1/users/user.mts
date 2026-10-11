@@ -24,7 +24,7 @@ import {
   getUserVouchElectionVote,
   upsertUserVouchElectionVotes,
 } from '@services/elections-votes/user-vouch'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { getUserVouchContextResponse } from './get-user-vouch-context-response.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/elections/enqueues'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
@@ -37,7 +37,6 @@ import {
   apiResponse,
 } from '../../response-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
-import type { PrivateUser } from '@services/users/types'
 import { userProfileQueryContract } from './user-profile-query-helpers.mts'
 import {
   getOptionalAuthAndRateLimit,
@@ -189,12 +188,3 @@ app.route('/api/v1/users/:id/vouch-context').get(async (ctx: Context) => {
       : await getUserVouchContextResponse(currentUser, target.id)
   ctx.json(apiResponse('GET:/api/v1/users/:id/vouch-context', response))
 })
-
-async function getUserVouchContextResponse(currentUser: PrivateUser, targetId: string) {
-  const [positive_by_following, negative_by_following, election_vote] = await Promise.all([
-    getFollowedUsersByElectionVote(currentUser, targetId, 'user_vouch_votes', 1),
-    getFollowedUsersByElectionVote(currentUser, targetId, 'user_vouch_votes', -1),
-    getUserVouchElectionVote(currentUser.id, targetId),
-  ])
-  return { positive_by_following, negative_by_following, election_vote }
-}

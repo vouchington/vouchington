@@ -4,7 +4,7 @@ import {
   getRssFeedItemElectionVotesByUserForEntity,
 } from '@services/elections-votes/rss-feed-item'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { isAdminUser } from '@services/users/authorization'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
@@ -64,29 +64,20 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
       if (!isUUID(args.rss_feed_item_id) || !(await getRssFeedItemById(args.rss_feed_item_id))) {
         return { success: false, error: 'RSS feed item not found' }
       }
-      const [positive, negative] = await Promise.all([
-        getFollowedUsersByElectionVote(
-          currentUser,
-          args.rss_feed_item_id,
-          'rss_feed_item_votes',
-          1,
-        ),
-        getFollowedUsersByElectionVote(
-          currentUser,
-          args.rss_feed_item_id,
-          'rss_feed_item_votes',
-          -1,
-        ),
-      ])
+      const followContext = await getVoteFollowContextBatch(
+        currentUser,
+        args.rss_feed_item_id,
+        'rss_feed_item_votes',
+      )
       return {
         success: true,
         positive_by_following: {
-          total: positive.total,
-          users: positive.users.map(user => ({ id: user.id })),
+          total: followContext.positiveByFollowing.total,
+          users: followContext.positiveByFollowing.users.map(user => ({ id: user.id })),
         },
         negative_by_following: {
-          total: negative.total,
-          users: negative.users.map(user => ({ id: user.id })),
+          total: followContext.negativeByFollowing.total,
+          users: followContext.negativeByFollowing.users.map(user => ({ id: user.id })),
         },
       }
     },

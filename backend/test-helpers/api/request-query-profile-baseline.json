@@ -501,7 +501,7 @@
   },
   {
     "annotation": "getPublicUsersByAnyBatch",
-    "reason": "User and profile lookups repeat per request step",
+    "reason": "Batched MCP tool calls can each hydrate users once per tool call",
     "issue": 2611
   },
   {

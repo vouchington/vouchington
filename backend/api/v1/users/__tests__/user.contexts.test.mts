@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -41,27 +41,40 @@ describe('User vouch-context route', () => {
 
     const request = createRequest()
     await request.authenticateAs(viewer)
-    const response = await request.get(`/api/v1/users/${target.id}/vouch-context`).expect(200)
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+    try {
+      const response = await request.get(`/api/v1/users/${target.id}/vouch-context`).expect(200)
+      const profileLines = stderr.mock.calls
+        .map(([chunk]) => String(chunk))
+        .filter(line => line.startsWith('[pg-request-profile]'))
+      expect(profileLines).toHaveLength(1)
+      expect(profileLines[0]).toContain('route=GET /api/v1/users/:id/vouch-context ')
+      expect(profileLines[0]).not.toContain('getPublicUsersByAnyBatch')
 
-    expect(response.body.positive_by_following.total).toBe(2)
-    expect(response.body.positive_by_following.users.map((u: { id: string }) => u.id)).toContain(
-      voucher.id,
-    )
-    expect(
-      response.body.positive_by_following.users.map((u: { id: string }) => u.id),
-    ).not.toContain(stranger.id)
-    expect(response.body.positive_by_following.users.map((u: { id: string }) => u.id)).toContain(
-      liker.id,
-    )
+      expect(response.body.positive_by_following.total).toBe(2)
+      expect(response.body.positive_by_following.users.map((u: { id: string }) => u.id)).toContain(
+        voucher.id,
+      )
+      expect(
+        response.body.positive_by_following.users.map((u: { id: string }) => u.id),
+      ).not.toContain(stranger.id)
+      expect(response.body.positive_by_following.users.map((u: { id: string }) => u.id)).toContain(
+        liker.id,
+      )
 
-    expect(response.body.negative_by_following.total).toBe(2)
-    expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
-      disavower.id,
-    )
-    expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
-      disliker.id,
-    )
-    expect(response.body.election_vote.choice).toBe('like')
+      expect(response.body.negative_by_following.total).toBe(2)
+      expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
+        disavower.id,
+      )
+      expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
+        disliker.id,
+      )
+      expect(response.body.election_vote.choice).toBe('like')
+    } finally {
+      stderr.mockRestore()
+      vi.unstubAllEnvs()
+    }
   }, 30_000)
 
   it('GET /api/v1/users/:id/vouch-context returns empty totals for self-target', async () => {
