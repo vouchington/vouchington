@@ -13,7 +13,7 @@ describe('URL routes - request contract validation', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     freeUser = await createTestUser()
-  }, 60_000)
+  }, 5_000)
 
   it('returns 422 for a malformed hostname UUID before URL search', async () => {
     const request = createRequest()
