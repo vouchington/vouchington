@@ -1,8 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createOutputFixtures } from './test-helpers/run-bounded-output-fixture.mts'
 
 const script = join(process.cwd(), 'ci/run-bounded.py')
 
@@ -99,45 +100,11 @@ describe('run-bounded', () => {
 })
 
 describe('run-bounded output pipes', () => {
-  const dirs: string[] = []
-  const wrappers: ChildProcess[] = []
-  afterEach(() => {
-    for (const wrapper of wrappers.splice(0)) wrapper.kill('SIGKILL')
-    for (const dir of dirs.splice(0)) {
-      const pidFile = join(dir, 'grandchild-pid')
-      if (existsSync(pidFile)) spawnSync('kill', ['-9', readFileSync(pidFile, 'utf8').trim()])
-      rmSync(dir, { recursive: true, force: true })
-    }
-  })
-
-  // The command starts a grandchild in its own session that keeps the inherited stdout pipe
-  // open, so it survives the process-group kill. `close` is the EOF signal a runner waits on.
-  async function runWithDetachedGrandchild(seconds: string, mode: 'exit' | 'hang') {
-    const dir = mkdtempSync(join(tmpdir(), 'run-bounded-'))
-    dirs.push(dir)
-    const command = [
-      'import os, signal, subprocess, sys',
-      'gc = subprocess.Popen([sys.executable, "-c", "import signal; signal.pause()"], start_new_session=True, stderr=subprocess.DEVNULL)',
-      'open(os.environ["GRANDCHILD_PID_FILE"], "w").write(str(gc.pid))',
-      'sys.stdout.write("out\\n"); sys.stdout.flush()',
-      'sys.stderr.write("err\\n"); sys.stderr.flush()',
-      'if os.environ["MODE"] == "hang": signal.pause()',
-    ].join('\n')
-    const wrapper = spawn('python3', [script, seconds, 'python3', '-c', command], {
-      env: { ...process.env, GRANDCHILD_PID_FILE: join(dir, 'grandchild-pid'), MODE: mode },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    wrappers.push(wrapper)
-    let stdout = ''
-    let stderr = ''
-    wrapper.stdout.on('data', chunk => (stdout += chunk))
-    wrapper.stderr.on('data', chunk => (stderr += chunk))
-    const code = await new Promise<number | null>(resolve => wrapper.once('close', resolve))
-    return { code, stdout, stderr }
-  }
+  const fixtures = createOutputFixtures(script)
+  afterEach(() => fixtures.cleanup())
 
   it('reaches EOF after the command exits even if a detached descendant holds stdout', async () => {
-    const { code, stdout, stderr } = await runWithDetachedGrandchild('30', 'exit')
+    const { code, stdout, stderr } = await (await fixtures.launch('30', 'exit')).result
 
     expect(code).toBe(0)
     expect(stdout).toBe('out\n')
@@ -145,10 +112,31 @@ describe('run-bounded output pipes', () => {
   })
 
   it('reaches EOF with status 124 after a deadline even if a detached descendant holds stdout', async () => {
-    const { code, stdout, stderr } = await runWithDetachedGrandchild('1', 'hang')
+    const { code, stdout, stderr } = await (await fixtures.launch('1', 'hang')).result
 
     expect(code).toBe(124)
     expect(stdout).toBe('out\n')
     expect(stderr).toBe('err\n')
+  })
+
+  it('drains the command and detached descendant when cleanup interrupts a hanging case', async () => {
+    const fixture = await fixtures.launch('30', 'hang')
+    await fixture.started
+    expect(fixture.wrapperRunning()).toBe(true)
+    expect(fixture.commandOpen()).toBe(true)
+    expect(fixture.descendantOpen()).toBe(true)
+
+    await fixtures.cleanup()
+    const { code, stdout, stderr } = await fixture.result
+    await fixture.commandClosed
+    await fixture.descendantClosed
+    await fixture.wrapperClosed
+    expect(code).toBe(0)
+    expect(stdout).toBe('out\n')
+    expect(stderr).toBe('err\n')
+    expect(fixture.wrapperRunning()).toBe(false)
+    expect(fixture.commandOpen()).toBe(false)
+    expect(fixture.descendantOpen()).toBe(false)
+    expect(existsSync(fixture.dir)).toBe(false)
   })
 })
