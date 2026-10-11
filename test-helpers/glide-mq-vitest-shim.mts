@@ -1,4 +1,14 @@
 import { TestJob, TestWorker } from 'glide-mq/testing'
+export {
+  BatchError,
+  ConnectionError,
+  DelayedError,
+  GlideMQError,
+  GroupRateLimitError,
+  SuspendError,
+  UnrecoverableError,
+  WaitingChildrenError,
+} from 'glide-mq/testing'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import {
   clampTestWorkerConcurrency,
@@ -110,18 +120,6 @@ export class Queue<D = any, R = any> {
   }
 }
 
-// `glide-mq/testing` does not export the error classes, and importing them from `glide-mq` would
-// loop back through this shim's alias. `TestWorker` matches both by `name`, so these local classes
-// behave like the real ones. Revisit once `glide-mq/testing` re-exports them.
-export class BatchError extends Error {
-  readonly results: unknown[]
-  constructor(results: unknown[]) {
-    super('Batch processing error')
-    this.name = 'BatchError'
-    this.results = results
-  }
-}
-
 export class Worker<D = any, R = any> extends TestWorker<D, R> {
   constructor(
     queueNameOrQueue: string | Queue<D, R>,
@@ -171,10 +169,3 @@ export class FlowProducer {
 }
 
 export class Job extends TestJob {}
-
-export class UnrecoverableError extends Error {
-  constructor(message?: string) {
-    super(message)
-    this.name = 'UnrecoverableError'
-  }
-}

@@ -1,9 +1,9 @@
 # Glide-MQ Testing with TestQueue and TestWorker
 
 The glide-mq vitest shim (`test-helpers/glide-mq-vitest-shim.mts`) wraps glide-mq's own testing mode
-(`glide-mq/testing`: `TestQueue` and `TestWorker`) for in-memory testing without Valkey. Since glide-mq 0.16
-that mode mirrors production for priority, delay, deduplication and retry, so the shim adds only what
-upstream lacks.
+(`glide-mq/testing`: `TestQueue` and `TestWorker`) for in-memory testing without Valkey. It uses
+upstream priority, delay, deduplication, retry and batch behavior, plus the same error classes as
+production. The shim preserves the repository's eager enqueue and reusable queue lifecycle.
 
 ## How It Works
 
@@ -18,17 +18,23 @@ upstream lacks.
 - **A failed flushed job throws.** Native `Job.waitUntilFinished` resolves `'failed'` instead of throwing and polls every 500ms. A `removeOnFail: true` job is deleted before its `failed` event, so the shim records the failure from the event.
 - **Settled by events, not `Worker.drain()`.** `Worker.drain()` closes the worker, and every file in an `isolate: false` fork shares these workers.
 - **Retries are promoted at once.** A retryable failure parks as `delayed` for its backoff; the shim promotes it on the queue's `retrying` event so a test does not wait out the backoff.
-- **Dead-letter queue wiring.** glide-mq's testing mode has no DLQ: `deadLetterQueue`, `getDeadLetter*`, and the obliterate cascade are local.
+- **Dead-letter queue wiring and flows.** These adapters remain local. Native `TestFlowProducer`
+  and DLQ lookup use the upstream open-queue registry, while this harness reuses queues after
+  `close()`. Adopting them requires reconciling that lifecycle first.
 - **`addBulk` keeps a skipped add as `null`.** Production `addBulk` keeps the order and length of its input; the shim adds sequentially so a deduplicated add lands `null` at its own index.
 - **Nested enqueue detection.** An `AsyncLocalStorage` marks processor scope so a nested `add` is not flushed.
 - **Worker-attachment guard.** Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.
 - **Flush timeout diagnostics.** `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.
+- **Parked-job settlement.** Native `waitForJobs()` waits through delayed and suspended jobs and
+  rejects terminal failures. The shim's event-driven flush returns when an owned job parks and
+  accepts an expected failure once its DLQ record exists. It captures failures before adding jobs
+  so `removeOnFail` cannot hide a failure. `moveToDelayed()` wakes it through `delay-changed`.
 
 The worker checks use the public API: `queue.getWorkers()` decides whether a flush has anything to wait for,
 and the worker-attachment guard compares `WorkerInfo.id`s. The shim still reads these internal fields of
-`glide-mq/testing`, verified against 0.16.0: `queue.jobs` (record state) and `job._record` (job identity),
-and, for diagnostics only, `queue.workers`, `queue.waitingQueue` and `worker.concurrency` (`WorkerInfo` has
-no `concurrency` or worker handle). Re-check them on every glide-mq bump; the flush tests
+`glide-mq/testing`: `queue.jobs` (record state) and `job._record` (job identity),
+and, for synchronous diagnostics only, `queue.workers` and `queue.waitingQueue`. Worker concurrency
+and active counts use public `TestWorker` members. Re-check internal reads on every glide-mq bump; the flush tests
 (`test-helpers/glide-mq-vitest-flush*.test.mts`) fail if the non-diagnostic ones change.
 
 ## Job States and Lookups

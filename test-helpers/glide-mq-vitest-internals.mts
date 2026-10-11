@@ -59,17 +59,10 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     super(name)
     this.#installHooks()
   }
-
-  override parkDelayed(...args: Parameters<TestQueue<D, R>['parkDelayed']>): void {
-    super.parkDelayed(...args)
-    this.#notifySettleWaiters()
-  }
-
   override async obliterate(...args: Parameters<TestQueue<D, R>['obliterate']>): Promise<void> {
     await super.obliterate(...args)
     this.#notifySettleWaiters()
   }
-
   override async close(): Promise<void> {
     await super.close()
     this.#installHooks()
@@ -82,7 +75,14 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     this.on('failed', this.#recordFailure)
     this.on('failed', this.#notifySettleWaiters)
     this.on('completed', this.#notifySettleWaiters)
-    for (const event of ['suspended', 'promoted', 'removed', 'revoked', 'drained']) {
+    for (const event of [
+      'delay-changed',
+      'suspended',
+      'promoted',
+      'removed',
+      'revoked',
+      'drained',
+    ]) {
       this.on(event, this.#notifySettleWaiters)
     }
   }

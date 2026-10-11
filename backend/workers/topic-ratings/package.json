@@ -21,7 +21,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/topic-ratings": "workspace:^",
     "@services/topics": "workspace:^",
-    "glide-mq": "^0.17.0"
-  },
-  "devDependencies": {}
+    "glide-mq": "^0.18.0"
+  }
 }

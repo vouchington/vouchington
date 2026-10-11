@@ -76,10 +76,10 @@ async function inspectJobs(
  * burn the timeout (it becomes a bug only when nothing ever attaches a worker). Rejects with the
  * job's failure and, on timeout, with worker/queue diagnostics.
  *
- * glide-mq 0.16's native waiters do not fit here: `addAndWait` refuses `removeOnComplete` /
- * `removeOnFail` (several production enqueues set them), waits on one id, and throws when the add
- * is deduplicated; `Job.waitUntilFinished` polls every 500ms and resolves 'failed' instead of
- * throwing; `Worker.drain()` closes the worker, which tests keep attached.
+ * Native `waitForJobs` waits through delayed and suspended states and rejects expected DLQ
+ * failures. This flush deliberately settles parked jobs, accepts an expected DLQ failure only
+ * after admission, and captures removed failures before the first add. `Worker.drain()` closes
+ * the worker, which tests keep attached.
  */
 export async function flushJobs(
   queue: ShimTestQueue,

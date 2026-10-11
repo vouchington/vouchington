@@ -86,7 +86,8 @@ describe('GlideMQ test flush across job states', () => {
     // The obliterate restarted the id counter, so the fresh job reuses the stale job's id.
     const flush = addAndFlush(queue, 'fresh', {}, { attempts: 1 })
     await freshStarted.promise
-    const staleFailed = once(queue, 'failed')
+    // A removed job only emits the worker event; it must not affect the replacement queue record.
+    const staleFailed = once(workers[0], 'failed')
     releaseStale.resolve()
     await staleFailed
     releaseFresh.resolve()
