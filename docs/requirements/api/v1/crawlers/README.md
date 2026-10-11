@@ -41,12 +41,12 @@ Updates the crawler configuration.
 
 ## Performance
 
-| Endpoint                        | Round Trips | Caching      | Notes                                             |
-| ------------------------------- | ----------- | ------------ | ------------------------------------------------- |
-| GET /api/v1/crawlers (list-all) | 1           | None         | Admin auth check + paginated DB query             |
-| GET /api/v1/crawlers (filtered) | 1           | None         | Admin auth check + filtered DB query              |
-| GET /api/v1/crawlers/:id        | 2           | None         | Auth check, service lookup with permission filter |
-| PATCH /api/v1/crawlers/:id      | 2           | None (write) | Auth check, service update                        |
+| Endpoint                        | Round Trips | Caching      | Notes                                                   |
+| ------------------------------- | ----------- | ------------ | ------------------------------------------------------- |
+| GET /api/v1/crawlers (list-all) | 1           | None         | Admin auth check + paginated DB query                   |
+| GET /api/v1/crawlers (filtered) | 1           | None         | Admin auth check + filtered DB query                    |
+| GET /api/v1/crawlers/:id        | 2           | None         | Auth check, service lookup with permission filter       |
+| PATCH /api/v1/crawlers/:id      | 7           | None (write) | Auth check; one locked preimage read for update history |
 
 ## Related
 

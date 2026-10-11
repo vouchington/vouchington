@@ -410,11 +410,6 @@
     "issue": 2544
   },
   {
-    "annotation": "getCrawlerById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "getCrawlerForHostnameId",
     "reason": "Root URL creation looks up a crawler for each approved hostname",
     "issue": 2612

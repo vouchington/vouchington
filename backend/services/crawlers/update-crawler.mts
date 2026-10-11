@@ -17,19 +17,7 @@ export const updateCrawler = async (
   options: { query?: TransactionQuery } = {},
 ): Promise<Crawler> => {
   assert(crawlerId, 422, 'Crawler ID is required')
-  if (updates.hostname_id && !isUUID(updates.hostname_id)) {
-    throw createError(422, `Invalid hostname ID: ${updates.hostname_id}`)
-  }
-  if (updates.crawler_type) {
-    assert(
-      ['fetch', 'automation'].includes(updates.crawler_type),
-      422,
-      `Invalid crawler type: ${updates.crawler_type}`,
-    )
-  }
-  if (updates.referral_program_id && !isUUID(updates.referral_program_id)) {
-    throw createError(422, `Invalid referral program ID: ${updates.referral_program_id}`)
-  }
+  if (!isUUID(crawlerId)) throw createError(422, `Invalid crawler ID: ${crawlerId}`)
 
   const hostnameId = resolveUpdateHostnameId(updates)
   const hasUpdates =
@@ -55,6 +43,7 @@ export const updateCrawler = async (
     )
     const previous = await getCrawlerById(crawlerId, { query: transaction })
     if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
+    validateCrawlerUpdates(updates)
     const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
     if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
     if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
@@ -139,6 +128,22 @@ export const updateCrawlerCssSelectorsByHostname = async (
   )
 
   return (rowCount ?? 0) > 0
+}
+
+function validateCrawlerUpdates(updates: UpdateCrawlerUpdates): void {
+  if (updates.hostname_id && !isUUID(updates.hostname_id)) {
+    throw createError(422, `Invalid hostname ID: ${updates.hostname_id}`)
+  }
+  if (updates.crawler_type) {
+    assert(
+      ['fetch', 'automation'].includes(updates.crawler_type),
+      422,
+      `Invalid crawler type: ${updates.crawler_type}`,
+    )
+  }
+  if (updates.referral_program_id && !isUUID(updates.referral_program_id)) {
+    throw createError(422, `Invalid referral program ID: ${updates.referral_program_id}`)
+  }
 }
 
 function resolveUpdateHostnameId(updates: UpdateCrawlerUpdates): string | undefined {
