@@ -1,12 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { initSqlAst } from 'vouchington-tooling/sql-ast'
+import { describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 
 describe('config-driven generated DDL insert invariant: UNION branches', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
   it('does not flag a UNION ALL INSERT whose every branch has its own conjunctive NOT EXISTS', async () => {
     expect(
       // libpg-query hangs a UNION's own branch predicates off larg/rarg, not the root

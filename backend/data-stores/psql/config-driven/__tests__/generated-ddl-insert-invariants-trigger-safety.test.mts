@@ -1,8 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { initSqlAst } from 'vouchington-tooling/sql-ast'
+import { describe, expect, it } from 'vitest'
 import { parsePostgresSql, type PostgresSqlTrigger } from 'no-mistakes'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import { replayUnsafeTrigger } from '../../../../test-helpers/data-stores/psql/config-driven/on-conflict-triggers.mts'
 import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 import {
@@ -19,6 +17,16 @@ async function parseTrigger(sql: string): Promise<PostgresSqlTrigger> {
   const statement = parsed.statements[0]
   if (statement?.kind !== 'createTrigger') throw new Error('Expected a CREATE TRIGGER statement')
   return statement.trigger
+}
+
+async function parseInsert(sql: string) {
+  const parsed = await parsePostgresSql({ sql })
+  expect(parsed.diagnostics).toEqual([])
+  const statement = parsed.statements[0]
+  if (statement?.kind !== 'insert' || statement.insert.onConflict === null) {
+    throw new Error('Expected an INSERT with ON CONFLICT')
+  }
+  return { insert: statement.insert, conflict: statement.insert.onConflict }
 }
 
 describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
@@ -39,8 +47,6 @@ describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
 })
 
 describe('generated-ddl-insert-invariants + real schema.json trigger data', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
   it('flags a replay-unsafe topic_aliases DO UPDATE exactly like the real, pre-fix seed bug', async () => {
     expect(
       await findFirstUnguardedInsertViolation(
@@ -59,6 +65,24 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
           'WHERE topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;',
       ),
     ).toBeNull()
+  })
+
+  it('accepts parenthesized conjunctive NULL proofs and rejects a parenthesized OR proof', async () => {
+    expect(
+      await findFirstUnguardedInsertViolation(
+        "INSERT INTO topic_aliases (topic_id, alias) SELECT 1, 'bot' " +
+          'ON CONFLICT (alias) DO UPDATE SET topic_id = EXCLUDED.topic_id ' +
+          'WHERE (topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL);',
+      ),
+    ).toBeNull()
+
+    expect(
+      await findFirstUnguardedInsertViolation(
+        "INSERT INTO topic_aliases (topic_id, alias) SELECT 1, 'bot' " +
+          'ON CONFLICT (alias) DO UPDATE SET topic_id = EXCLUDED.topic_id ' +
+          'WHERE (topic_aliases.topic_id IS NULL OR EXCLUDED.topic_id IS NOT NULL);',
+      ),
+    ).not.toBeNull()
   })
 
   it('still accepts the moderation-lock trigger in isolation', async () => {
@@ -98,12 +122,11 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
   })
 
   it('fails closed for an insert into a table absent from the schema snapshot', async () => {
-    expect(
-      hasReplayUnsafeTrigger(
-        { relation: { relname: 'table_that_does_not_exist_xyz' } },
-        { targetList: [] },
-      ),
-    ).toBe(true)
+    const { insert, conflict } = await parseInsert(
+      'INSERT INTO table_that_does_not_exist_xyz (id) VALUES (1) ' +
+        'ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id',
+    )
+    expect(hasReplayUnsafeTrigger(insert, conflict)).toBe(true)
   })
 
   it('flags an INSERT that assigns topic_aliases.alias, a source of the real search_vector column', async () => {
@@ -125,12 +148,11 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
   })
 
   it('fails closed for a generated-arbiter check on a table absent from the schema snapshot', async () => {
-    expect(
-      hasGeneratedArbiterViolation(
-        { relation: { relname: 'table_that_does_not_exist_xyz' } },
-        { targetList: [] },
-      ),
-    ).toBe(true)
+    const { insert, conflict } = await parseInsert(
+      'INSERT INTO table_that_does_not_exist_xyz (id) VALUES (1) ' +
+        'ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id',
+    )
+    expect(hasGeneratedArbiterViolation(insert, conflict)).toBe(true)
   })
 })
 

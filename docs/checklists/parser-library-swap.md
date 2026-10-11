@@ -9,8 +9,9 @@ The goal is to lock in compatibility quirks before changing implementation inter
   fallback values, ordering, byte/character offset behavior, and any malformed input that is accepted.
 - Write characterization tests against the current implementation before changing it.
 - Prefer an existing parser or platform API over custom parsing. For static-analysis rules, choose in
-  this order: off-the-shelf tool config, AST-grep YAML, `no-mistakes`, then repo-local code only when
-  the higher tiers cannot express the invariant.
+  this order: off-the-shelf tool config, ast-grep YAML, then upstream `no-mistakes` or
+  `vouchington-tooling` facts. Keep domain policy local; request a human architectural decision
+  before building AST parsing, and place the implementation upstream.
 - For security-relevant command parsing, prefer a maintained tokenizer/parser over hand-rolled
   positional token walks. If custom shell handling remains, characterize quoting, heredocs,
   command substitutions, redirections, global options, option values, and nested invocations before
@@ -53,12 +54,13 @@ Prefer replacing or avoiding custom code in this order:
 
 - Markdown parsing in static-analysis docs guards: use `vouchington-tooling/markdown` directly for
   GFM AST operations and `parseMarkdownTables`; do not add local processors, walkers, or table parsers.
-- TypeScript literal extraction in static-analysis guards: use TypeScript AST APIs.
+- TypeScript literal extraction in static-analysis guards: consume `no-mistakes` module facts or
+  `vouchington-tooling` extraction APIs; do not add local TypeScript AST parsers or walkers.
 - SES inbound MIME body extraction: use a MIME parser library such as `postal-mime`, preserving the
   existing route contract.
-- SQL static-analysis scanners: keep `@libpg-query/parser` as primary, consolidate duplicated
-  literal/comment fallbacks, and only keep custom fallback behavior for parser-rejected PL/pgSQL
-  fragments after characterization.
+- SQL static-analysis and replay guards: consume typed PostgreSQL facts from `no-mistakes` or
+  `vouchington-tooling`. Unsupported executable SQL must retain the characterized failure behavior;
+  parser recovery and AST projection belong upstream, rather than in local literal/comment fallbacks.
 - HTML raw-byte decoding: delegate to `@jongleberry/vurst-html` 0.3 or newer `decodeHtml`
   (BOM > Content-Type > first-1024-byte meta prescan > UTF-8 > Windows-1252); do not reintroduce
   local charset sniffing.

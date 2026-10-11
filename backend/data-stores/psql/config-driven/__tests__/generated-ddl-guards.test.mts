@@ -52,7 +52,7 @@ describe('config-driven generated DDL guards', () => {
     const generatedSql = await loadGeneratedConfigDrivenSql(configDrivenDir)
 
     for (const { file, sql } of generatedSql) {
-      expect({ file, violation: await findFirstUnguardedInsertViolation(sql) }).toEqual({
+      expect.soft({ file, violation: await findFirstUnguardedInsertViolation(sql) }).toEqual({
         file,
         violation: null,
       })
