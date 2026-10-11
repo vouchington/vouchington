@@ -57,7 +57,7 @@ export function createAwsReplayRequestHandler(replay: ProviderReplay): AwsReplay
           statusCode: response.status,
           reason: response.statusText,
           headers: Object.fromEntries(response.headers.entries()),
-          body: Readable.from([Buffer.from(await response.arrayBuffer())]),
+          body: response.body ? Readable.fromWeb(response.body) : Readable.from([]),
         },
       }
     },

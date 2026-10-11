@@ -63,4 +63,46 @@ describe('AWS replay request handler', () => {
     expect(() => handler.updateHttpClientConfig()).not.toThrow()
     expect(handler.httpHandlerConfigs()).toEqual({})
   })
+
+  it('preserves recorded fragments across event boundaries', async () => {
+    const replay = createProviderReplay({ chunkBytes: 3 })
+    replay.respondWith(
+      wire('HTTP/1.1 200 OK\ncontent-type: text/event-stream\n\ndata: 1\n\ndata: 2\n\n'),
+    )
+    const { response } = await createAwsReplayRequestHandler(replay).handle({
+      method: 'GET',
+      protocol: 'https:',
+      hostname: 'service.example.com',
+      path: '/',
+      headers: {},
+    })
+    const chunks: string[] = []
+    response.body.on('data', (chunk: Buffer) => chunks.push(chunk.toString('utf8')))
+
+    await expect(text(response.body)).resolves.toBe('data: 1\n\ndata: 2\n\n')
+    expect(chunks).toEqual(['dat', 'a: ', '1\n\n', 'dat', 'a: ', '2\n\n'])
+    replay.assertDrained()
+  })
+
+  it('propagates cancellation while the recorded body is being consumed', async () => {
+    const replay = createProviderReplay({ chunkBytes: 3 })
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\nfragmented response'))
+    const controller = new AbortController()
+    const { response } = await createAwsReplayRequestHandler(replay).handle(
+      {
+        method: 'GET',
+        protocol: 'https:',
+        hostname: 'service.example.com',
+        path: '/',
+        headers: {},
+      },
+      { abortSignal: controller.signal },
+    )
+    const reason = new Error('caller cancelled the response')
+    const reading = text(response.body)
+    controller.abort(reason)
+
+    await expect(reading).rejects.toBe(reason)
+    replay.assertDrained()
+  })
 })

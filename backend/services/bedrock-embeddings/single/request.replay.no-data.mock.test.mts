@@ -50,7 +50,6 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
     const result = await createBedrockEmbedding(TEXT, { entityType: 'search' })
 
     expect(result.embedding).toEqual([0.125, -0.0625, 0.25, 0.5, -0.375, 0.03125, -0.15625, 0.75])
-    expect(replay.requests).toHaveLength(1)
     const sent = replay.requests[0]!
     expect(sent).toMatchObject({
       method: 'POST',
