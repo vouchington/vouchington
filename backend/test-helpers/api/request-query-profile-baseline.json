@@ -1,5 +1,10 @@
 [
   {
+    "annotation": "addUrls",
+    "reason": "Topic recommendation approval creates a root URL for each proposed hostname",
+    "issue": 2612
+  },
+  {
     "annotation": "addUserDeletionExternalWork",
     "reason": "User and profile lookups repeat per request step",
     "issue": 2611
@@ -48,6 +53,16 @@
     "annotation": "assertReportablePost",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
+  },
+  {
+    "annotation": "assertUrlsHaveNoBlockedHostnames",
+    "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
+    "issue": 2612
+  },
+  {
+    "annotation": "assertUrlsHaveNoBlockedHostnames_getUrls",
+    "reason": "Blocked-hostname validation loads each proposed hostname root URL",
+    "issue": 2612
   },
   {
     "annotation": "backfillCategoriesForTopicAliases",
@@ -185,6 +200,11 @@
     "issue": 2607
   },
   {
+    "annotation": "createCrawlerForHostname",
+    "reason": "Root URL creation configures a crawler for each approved hostname",
+    "issue": 2612
+  },
+  {
     "annotation": "createDataRequest",
     "reason": "User and profile lookups repeat per request step",
     "issue": 2611
@@ -238,6 +258,11 @@
     "annotation": "createRssFeedImport",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 2613
+  },
+  {
+    "annotation": "createTopicRecommendationLinkRelation",
+    "reason": "Approval checks existing landing-page relations for each proposed hostname",
+    "issue": 2612
   },
   {
     "annotation": "createTopicRevision",
@@ -395,6 +420,11 @@
     "issue": 2613
   },
   {
+    "annotation": "getCrawlerForHostnameId",
+    "reason": "Root URL creation looks up a crawler for each approved hostname",
+    "issue": 2612
+  },
+  {
     "annotation": "getDataRequestById",
     "reason": "User and profile lookups repeat per request step",
     "issue": 2611
@@ -458,6 +488,11 @@
     "annotation": "getOAuthClient",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
+  },
+  {
+    "annotation": "getOrCreateCrawlerForHostnameInTransaction",
+    "reason": "Root URL creation locks crawler creation for each approved hostname",
+    "issue": 2612
   },
   {
     "annotation": "getPostByAny",
@@ -582,6 +617,11 @@
   {
     "annotation": "getUrlById",
     "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
+  },
+  {
+    "annotation": "getUrlsByIds",
+    "reason": "Root URL creation loads the inserted URL for each approved hostname",
     "issue": 2612
   },
   {
