@@ -22,11 +22,14 @@ describe('statement_timeout firing and attribution', () => {
   // This exercises attribution without sleeping or altering any shared schema object.
   it('fires 57014 and names the query on stderr when a statement exceeds its bound', async () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    try {
+      await expect(runStatementTimeoutAttributionProbe()).rejects.toMatchObject({ code: '57014' })
 
-    await expect(runStatementTimeoutAttributionProbe()).rejects.toMatchObject({ code: '57014' })
-
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[pg-query-failed] annotation=guardStatementTimeoutProbe'),
-    )
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[pg-query-failed] annotation=guardStatementTimeoutProbe'),
+      )
+    } finally {
+      stderrSpy.mockRestore()
+    }
   })
 })
