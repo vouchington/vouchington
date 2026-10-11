@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream'
+import { observeAwsReplayAbort } from './aws-replay-abort-signal.mts'
 import type { ProviderReplay } from './provider-replay.mts'
 
 // Serves a recorded response through an AWS SDK v3 client's `requestHandler`, so the SDK still
@@ -15,7 +16,7 @@ type AwsReplayHttpRequest = {
   path: string
   query?: Record<string, string | string[] | null>
   headers: Record<string, string>
-  body?: string | Uint8Array
+  body?: RequestInit['body']
 }
 
 type AwsReplayHandlerOptions = { abortSignal?: unknown }
@@ -43,28 +44,54 @@ export function createAwsReplayRequestHandler(replay: ProviderReplay): AwsReplay
     async handle(request, options) {
       const url = new URL(`${request.protocol}//${request.hostname}${request.path}`)
       if (request.port) url.port = String(request.port)
-      for (const [name, value] of Object.entries(request.query ?? {})) {
-        for (const part of [value ?? []].flat()) url.searchParams.append(name, part)
-      }
-      const response = await replay.fetch(url, {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-        signal: options?.abortSignal instanceof AbortSignal ? options.abortSignal : undefined,
-      })
-      return {
-        response: {
-          statusCode: response.status,
-          reason: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          body: response.body ? Readable.fromWeb(response.body) : Readable.from([]),
-        },
+      url.search = serializeAwsReplayQuery(request.query ?? {})
+      const { signal, detach } = observeAwsReplayAbort(options?.abortSignal)
+      try {
+        const response = await replay.fetch(url, {
+          method: request.method,
+          headers: request.headers,
+          body: request.body,
+          duplex: 'half',
+          signal,
+        })
+        const body = response.body ? Readable.fromWeb(response.body) : Readable.from([])
+        if (response.body) body.once('close', detach)
+        else detach()
+        return {
+          response: {
+            statusCode: response.status,
+            reason: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            body,
+          },
+        }
+      } catch (err) {
+        detach()
+        throw err
       }
     },
     destroy: () => {},
     updateHttpClientConfig: () => {},
     httpHandlerConfigs: () => ({}),
   }
+}
+
+/** Smithy's wire query order and RFC3986 escaping, including bare null keys. */
+function serializeAwsReplayQuery(query: NonNullable<AwsReplayHttpRequest['query']>): string {
+  const escape = (value: string) =>
+    encodeURIComponent(value).replace(
+      /[!'()*]/g,
+      char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+    )
+  return Object.keys(query)
+    .toSorted()
+    .flatMap(name => {
+      const key = escape(name)
+      const value = query[name]
+      if (value == null) return key
+      return [value].flat().map(part => `${key}=${escape(part)}`)
+    })
+    .join('&')
 }
 
 /**

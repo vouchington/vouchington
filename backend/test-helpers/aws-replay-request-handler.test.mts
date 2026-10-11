@@ -1,5 +1,7 @@
+import { Readable } from 'node:stream'
 import { text } from 'node:stream/consumers'
-import { describe, expect, it } from 'vitest'
+import { ReadableStream } from 'node:stream/web'
+import { describe, expect, it, vi } from 'vitest'
 import { createAwsReplayRequestHandler } from './aws-replay-request-handler.mts'
 import { createProviderReplay, parseRecordedResponse } from './provider-replay.mts'
 
@@ -16,7 +18,7 @@ describe('AWS replay request handler', () => {
       hostname: 'service.example.com',
       port: 8443,
       path: '/model/a%3A0/invoke',
-      query: { list: ['a', 'b'], one: '1', none: null },
+      query: { z: 'a b', list: ['b', 'a'], one: '1', none: null, "punct!'": '(*)' },
       headers: { 'content-type': 'text/plain' },
       body: 'payload',
     })
@@ -24,7 +26,7 @@ describe('AWS replay request handler', () => {
     expect(replay.requests).toHaveLength(1)
     expect(replay.requests[0]).toMatchObject({
       method: 'POST',
-      url: 'https://service.example.com:8443/model/a%3A0/invoke?list=a&list=b&one=1',
+      url: 'https://service.example.com:8443/model/a%3A0/invoke?list=b&list=a&none&one=1&punct%21%27=%28%2A%29&z=a%20b',
       headers: { 'content-type': 'text/plain' },
       body: Buffer.from('payload'),
     })
@@ -103,6 +105,118 @@ describe('AWS replay request handler', () => {
     controller.abort(reason)
 
     await expect(reading).rejects.toBe(reason)
+    replay.assertDrained()
+  })
+
+  it.each([
+    ['Node', () => Readable.from(['streamed ', 'payload'])],
+    [
+      'Web',
+      () =>
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(Buffer.from('streamed '))
+            controller.enqueue(Buffer.from('payload'))
+            controller.close()
+          },
+        }),
+    ],
+  ] as const)('captures a %s streaming request body', async (_kind, createBody) => {
+    const replay = createProviderReplay()
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\naccepted'))
+    const { response } = await createAwsReplayRequestHandler(replay).handle({
+      method: 'POST',
+      protocol: 'https:',
+      hostname: 'service.example.com',
+      path: '/',
+      headers: {},
+      body: createBody(),
+    })
+
+    expect(replay.requests[0]?.body).toEqual(Buffer.from('streamed payload'))
+    await expect(text(response.body)).resolves.toBe('accepted')
+    replay.assertDrained()
+  })
+
+  it('does not send a request when a structural signal was already aborted', async () => {
+    const replay = createProviderReplay()
+    const reason = new Error('structural caller aborted')
+    const signal = { aborted: true, reason, onabort: null }
+
+    await expect(
+      createAwsReplayRequestHandler(replay).handle(
+        {
+          method: 'GET',
+          protocol: 'https:',
+          hostname: 'service.example.com',
+          path: '/',
+          headers: {},
+        },
+        { abortSignal: signal },
+      ),
+    ).rejects.toBe(reason)
+    expect(replay.requests).toEqual([])
+  })
+
+  it('observes a legacy onabort signal and restores its callback after the body closes', async () => {
+    const replay = createProviderReplay({ chunkBytes: 3 })
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\nfragmented response'))
+    const original = vi.fn<() => void>()
+    const signal = { aborted: false, onabort: original }
+    const { response } = await createAwsReplayRequestHandler(replay).handle(
+      {
+        method: 'GET',
+        protocol: 'https:',
+        hostname: 'service.example.com',
+        path: '/',
+        headers: {},
+      },
+      { abortSignal: signal },
+    )
+    const reading = text(response.body)
+    signal.aborted = true
+    signal.onabort()
+
+    await expect(reading).rejects.toMatchObject({ name: 'AbortError' })
+    expect(original).toHaveBeenCalledOnce()
+    expect(signal.onabort).toBe(original)
+    replay.assertDrained()
+  })
+
+  it('observes and detaches a structural EventTarget signal while consuming the response', async () => {
+    const replay = createProviderReplay({ chunkBytes: 3 })
+    replay.respondWith(wire('HTTP/1.1 200 OK\n\nfragmented response'))
+    const controller = new AbortController()
+    const signal = {
+      get aborted() {
+        return controller.signal.aborted
+      },
+      get reason(): unknown {
+        return controller.signal.reason
+      },
+      addEventListener: (...args: Parameters<AbortSignal['addEventListener']>) =>
+        controller.signal.addEventListener(...args),
+      removeEventListener: vi.fn<AbortSignal['removeEventListener']>(
+        (...args: Parameters<AbortSignal['removeEventListener']>) =>
+          controller.signal.removeEventListener(...args),
+      ),
+    }
+    const { response } = await createAwsReplayRequestHandler(replay).handle(
+      {
+        method: 'GET',
+        protocol: 'https:',
+        hostname: 'service.example.com',
+        path: '/',
+        headers: {},
+      },
+      { abortSignal: signal },
+    )
+    const reason = new Error('structural response cancelled')
+    const reading = text(response.body)
+    controller.abort(reason)
+
+    await expect(reading).rejects.toBe(reason)
+    expect(signal.removeEventListener).toHaveBeenCalledWith('abort', expect.any(Function))
     replay.assertDrained()
   })
 })
