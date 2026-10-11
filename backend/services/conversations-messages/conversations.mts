@@ -98,14 +98,25 @@ export async function updateConversationTitle(
   conversationId: string,
   title: string,
   updatedById: string,
-): Promise<void> {
-  await write(sql`/* updateConversationTitle */
+): Promise<Conversation | null> {
+  const { rows } = await write<Conversation>(sql`/* updateConversationTitle */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, title = ${title},
         updated_by_id = ${updatedById}
     WHERE id = ${conversationId}
       AND deleted_at IS NULL
+    RETURNING
+      id,
+      channel_type,
+      title,
+      created_at,
+      created_by_id,
+      updated_at,
+      updated_by_id,
+      deleted_at,
+      deleted_by_id
   `)
+  return rows[0] ?? null
 }
 
 export async function softDeleteConversation(

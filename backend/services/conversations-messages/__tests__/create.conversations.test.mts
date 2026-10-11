@@ -9,6 +9,8 @@ import {
   getConversationById,
   getConversationsByCreatedById,
   getConversationMessagesByConversationId,
+  softDeleteConversation,
+  updateConversationTitle,
 } from '../index.mts'
 
 describe('conversations-messages service (conversations)', () => {
@@ -41,6 +43,24 @@ describe('conversations-messages service (conversations)', () => {
     expect(retrieved).toBeDefined()
     expect(retrieved?.id).toBe(conversation.id)
     expect(retrieved?.title).toBe('Test Conversation')
+  })
+
+  it('updateConversationTitle returns the updated row and null for a deleted conversation', async () => {
+    const random = Math.random().toString(36).slice(2, 10)
+    const user = await createSystemUser(`test-user-${random}`)
+    const conversation = await createConversation(user.id, 'Original title')
+
+    const updated = await updateConversationTitle(conversation.id, 'Updated title', user.id)
+    expect(updated).toMatchObject({
+      id: conversation.id,
+      title: 'Updated title',
+      updated_by_id: user.id,
+    })
+
+    await softDeleteConversation(conversation.id, user.id)
+    await expect(
+      updateConversationTitle(conversation.id, 'Ignored title', user.id),
+    ).resolves.toBeNull()
   })
 
   it('getConversationByCreatedByAndTitle retrieves a conversation', async () => {
