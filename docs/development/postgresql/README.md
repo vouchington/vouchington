@@ -49,7 +49,7 @@ The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts
 request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
 The `onQueryTiming` hook feeds it for every query, including `transaction.query()`, so unlike
 `runWithCapturedQueries` it sees in-transaction statements. Outside a scope (production, workers,
-non-API tests) the hook returns on its first line. When the response finishes, a request with a
+non-API tests) the hook returns on its first line. When the response finishes or closes early, a request with a
 repeated annotation writes one stderr line:
 
 ```text
@@ -72,7 +72,7 @@ repeated annotation writes one stderr line:
 The profile is enforced. A repeated annotation within one API request that is not in
 [`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
 fails the test that made the request, with a message naming the route and the annotation. The
-response `finish` handler records the violation and
+response `finish` or `close` handler records the violation once and
 [`vitest.setup.request-query-profile.mts`](../../../backend/test-helpers/vitest.setup.request-query-profile.mts)
 throws it from `afterEach` (and `afterAll`). Serial depth is reported, not enforced.
 

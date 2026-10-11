@@ -181,6 +181,32 @@ describe('request query profile baseline', () => {
     ])
   })
 
+  it('records repeats on an aborted response and finalizes only once', async () => {
+    const { profileRequestQueries } =
+      await import('../../test-helpers/api/request-query-profile.mts')
+    const { takeRequestQueryProfileViolations } =
+      await import('../../test-helpers/api/request-query-profile-violations.mts')
+    const res = new EventEmitter() as unknown as http.ServerResponse
+    const req = { method: 'GET', url: '/v1/aborted' } as http.IncomingMessage
+    profileRequestQueries(req, res, () => {
+      for (let i = 0; i < 2; i++) {
+        recordQueryTiming({
+          pool: 'read',
+          durationMs: 0,
+          rowCount: 0,
+          error: false,
+          annotation: 'repeatBeforeDisconnect',
+        })
+      }
+    })
+    res.emit('close')
+    expect(takeRequestQueryProfileViolations()).toEqual([
+      expect.stringContaining('GET /v1/aborted: repeatBeforeDisconnect (x2)'),
+    ])
+    res.emit('finish')
+    expect(takeRequestQueryProfileViolations()).toEqual([])
+  })
+
   it('keeps every committed entry justified and unique', () => {
     const entries = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as CommittedEntry[]
     expect(new Set(entries.map(entry => entry.annotation)).size).toBe(entries.length)

@@ -22,7 +22,7 @@ export function requestProfileRoute(req: http.IncomingMessage): string {
 }
 
 /**
- * Runs `handle` inside a per-request PostgreSQL profile scope. When the response finishes it writes
+ * Runs `handle` inside a per-request PostgreSQL profile scope. When the response finishes or closes it writes
  * one `[pg-request-profile]` stderr line if a query annotation repeated (or always, with
  * `BACKEND_TEST_REQUEST_QUERY_REPORT=all`), and records a violation for every repeated annotation
  * missing from `request-query-profile-baseline.json`; the setup file fails the running test with
@@ -35,7 +35,10 @@ export function profileRequestQueries(
   handle: () => void,
 ): void {
   const profile = createRequestQueryProfile()
-  res.once('finish', () => {
+  let finalized = false
+  const finalize = () => {
+    if (finalized) return
+    finalized = true
     try {
       const route = requestProfileRoute(req)
       const summary = profile.summarize()
@@ -50,6 +53,8 @@ export function profileRequestQueries(
     } catch {
       // Profiling must never affect a request.
     }
-  })
+  }
+  res.once('finish', finalize)
+  res.once('close', finalize)
   profile.run(handle)
 }
