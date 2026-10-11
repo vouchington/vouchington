@@ -14,7 +14,11 @@ import {
   listCopyrightGuestCapabilityPage,
 } from '@services/copyright-notices/guest-capability-page'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
-import { redactCopyrightContactFields, redactCopyrightEmailIntake } from './copyright-redaction.mts'
+import {
+  redactCopyrightContactFields,
+  redactCopyrightEmailIntake,
+  redactCopyrightParticipantNotice,
+} from './copyright-redaction.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const emailIntakesApi = {
@@ -161,7 +165,9 @@ const staffCase = createAdminTool<{ id: string }>({
   run: async (user, args) => {
     const copyright_notice = await getCopyrightParticipantNoticeDetail(args.id, user)
     assert(copyright_notice, 403, 'You are not a participant in this copyright notice')
-    return redactCopyrightContactFields({ copyright_notice })
+    return redactCopyrightContactFields({
+      copyright_notice: redactCopyrightParticipantNotice(copyright_notice),
+    })
   },
 })
 

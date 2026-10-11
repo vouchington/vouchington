@@ -5,6 +5,7 @@ const UNTRUSTED_FIELDS = new Set([
   'summary',
   'gap',
   'rationale',
+  'explanation',
   'structured_output',
   'input_data',
   'error_message',

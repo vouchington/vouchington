@@ -7,7 +7,13 @@ const readNames = [
   'list_copyright_guest_capabilities',
   'get_copyright_case',
 ]
-const newUntrustedFields = new Set(['summary', 'gap', 'rationale', 'structured_output'])
+const newUntrustedFields = new Set([
+  'summary',
+  'gap',
+  'rationale',
+  'explanation',
+  'structured_output',
+])
 
 function propertyNames(value: unknown): Set<string> {
   const names = new Set<string>()
