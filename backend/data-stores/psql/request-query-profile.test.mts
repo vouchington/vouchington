@@ -173,7 +173,12 @@ describe('request query profile baseline', () => {
       res.emit('finish')
     }
     const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as CommittedEntry[]
-    serve(committed[0]?.annotation ?? '')
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    try {
+      serve(committed[0]?.annotation ?? '')
+    } finally {
+      stderrSpy.mockRestore()
+    }
     expect(takeRequestQueryProfileViolations()).toEqual([])
     serve('notInTheBaseline')
     expect(takeRequestQueryProfileViolations()).toEqual([
