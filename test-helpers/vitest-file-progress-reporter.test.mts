@@ -63,4 +63,19 @@ describe('backend-unit file progress reporter', () => {
     expect(withProgress.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
     expect(withProgress.length).toBe(baseline.length + 1)
   })
+
+  it.each([undefined, ''])(
+    'adds local file progress with the normal failure reporter for %s CI reporter setting',
+    configured => {
+      vi.stubEnv('VITEST_CI_REPORTERS', configured)
+      vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+
+      const reporters = ciReporters()
+
+      expect(Array.isArray(reporters)).toBe(true)
+      if (!Array.isArray(reporters)) return
+      expect(reporters[0]).toBe('default')
+      expect(reporters.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
+    },
+  )
 })

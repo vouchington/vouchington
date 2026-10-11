@@ -26,7 +26,7 @@ not treated as docs-only.
 
 Reporter policy:
 
-- Local Vitest commands should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent.
+- Local Vitest commands without diagnostics should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent. With `VITEST_DIAGNOSTICS=1`, the local run uses Vitest's default reporter alongside file progress so failures stay visible.
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
 - Routine Vitest diagnostics are silent by default. Set `VITEST_DIAGNOSTICS=1` for local runs or

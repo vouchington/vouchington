@@ -47,7 +47,9 @@ export function ciReporters(): VitestReporters | undefined {
   switch (process.env.VITEST_CI_REPORTERS) {
     case undefined:
     case '':
-      return undefined
+      return process.env.VITEST_DIAGNOSTICS === '1'
+        ? ['default', createVitestFileProgressReporter()]
+        : undefined
     case 'run':
       return [
         'minimal',

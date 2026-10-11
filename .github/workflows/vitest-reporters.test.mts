@@ -115,6 +115,7 @@ describe('Vitest CI reporters', () => {
   it('keeps annotated JUnit and diagnostic reporting without a blob collector', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', undefined)
+    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     vi.stubEnv('GITHUB_REPOSITORY', 'example/repository')
     vi.stubEnv('GITHUB_SHA', 'a'.repeat(40))
     vi.stubEnv('GITHUB_WORKSPACE', '/workspace')
@@ -149,12 +150,14 @@ describe('Vitest CI reporters', () => {
   it('adds browser progress diagnostics for Storybook runs', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', '1')
+    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
 
     expect(ciReporters()).toHaveLength(6)
   })
 
   it.each([undefined, ''])('leaves local reporter selection alone for %s', configured => {
     vi.stubEnv('VITEST_CI_REPORTERS', configured)
+    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
 
     expect(ciReporters()).toBeUndefined()
   })
