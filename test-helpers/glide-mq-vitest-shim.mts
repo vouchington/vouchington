@@ -1,4 +1,4 @@
-import { TestJob, TestWorker } from 'glide-mq/testing'
+import { TestWorker } from 'glide-mq/testing'
 export {
   BatchError,
   ConnectionError,
@@ -8,23 +8,17 @@ export {
   SuspendError,
   UnrecoverableError,
   WaitingChildrenError,
+  TestFlowProducer as FlowProducer,
+  TestJob as Job,
 } from 'glide-mq/testing'
 import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
 import {
   clampTestWorkerConcurrency,
-  configureDeadLetterQueue,
-  getDeadLetterJob,
-  getDeadLetterJobs,
   getOrCreateQueue,
-  removeDeadLetterJob,
-  replayDeadLetterJob,
   type ShimTestQueue,
   wrapTestWorkerProcessor,
 } from './glide-mq-vitest-internals.mts'
 import { obliterateTestQueue } from './glide-mq-vitest-obliterate.mts'
-
-type AnyJob = { name: string; data?: unknown; opts?: Record<string, unknown>; queueName?: string }
-type AnyFlowJob = AnyJob & { children?: AnyFlowJob[] }
 
 export class Queue<D = any, R = any> {
   readonly name: string
@@ -32,8 +26,7 @@ export class Queue<D = any, R = any> {
 
   constructor(name: string, options?: { deadLetterQueue?: { name: string } }) {
     this.name = name
-    this.#inner = getOrCreateQueue(name)
-    configureDeadLetterQueue(name, options?.deadLetterQueue)
+    this.#inner = getOrCreateQueue(name, options)
   }
   add(name: string, data: D, opts?: Record<string, unknown>) {
     return addAndFlush(this.#inner, name, data, opts as any)
@@ -72,8 +65,11 @@ export class Queue<D = any, R = any> {
   resume() {
     return this.#inner.resume()
   }
-  close() {
-    return this.#inner.close()
+  // Closing a producer client leaves server state and independently owned workers intact.
+  async close(): Promise<void> {}
+
+  waitForJobs(...args: Parameters<ShimTestQueue<D, R>['waitForJobs']>) {
+    return this.#inner.waitForJobs(...args)
   }
 
   /** Always forced: test workers hold no locks, so there is no active job worth refusing for. */
@@ -103,20 +99,20 @@ export class Queue<D = any, R = any> {
     return this.#inner.signal(jobId, name, data)
   }
 
-  getDeadLetterJobs(start?: number, end?: number, _opts?: Record<string, unknown>) {
-    return getDeadLetterJobs(this.name, start, end)
+  getDeadLetterJobs(...args: Parameters<ShimTestQueue<D, R>['getDeadLetterJobs']>) {
+    return this.#inner.getDeadLetterJobs(...args)
   }
 
-  getDeadLetterJob(jobId: string, _opts?: Record<string, unknown>) {
-    return getDeadLetterJob(this.name, jobId)
+  getDeadLetterJob(...args: Parameters<ShimTestQueue<D, R>['getDeadLetterJob']>) {
+    return this.#inner.getDeadLetterJob(...args)
   }
 
   removeDeadLetterJob(jobId: string) {
-    return removeDeadLetterJob(this.name, jobId)
+    return this.#inner.removeDeadLetterJob(jobId)
   }
 
   replayDeadLetterJob(jobId: string) {
-    return replayDeadLetterJob(this.name, jobId)
+    return this.#inner.replayDeadLetterJob(jobId)
   }
 }
 
@@ -136,8 +132,9 @@ export class Worker<D = any, R = any> extends TestWorker<D, R> {
   ) {
     const queueName =
       typeof queueNameOrQueue === 'string' ? queueNameOrQueue : queueNameOrQueue.name
-    const queue = getOrCreateQueue(queueName) as ShimTestQueue<D, R>
-    configureDeadLetterQueue(queueName, options?.deadLetterQueue)
+    const queue = getOrCreateQueue(queueName, {
+      deadLetterQueue: options?.deadLetterQueue,
+    }) as ShimTestQueue<D, R>
     // scope is production-only routing TestWorkerOptions.tokenLimiter doesn't accept; intentionally dropped
     const tokenLimiterOpts = options?.tokenLimiter
       ? { maxTokens: options.tokenLimiter.maxTokens, duration: options.tokenLimiter.duration }
@@ -148,24 +145,9 @@ export class Worker<D = any, R = any> extends TestWorker<D, R> {
     const batch = options?.batch ? { size: options.batch.size, timeout: 0 } : undefined
     super(queue, wrapTestWorkerProcessor(processor as (job: any) => Promise<R> | R) as any, {
       concurrency: clampTestWorkerConcurrency(options?.concurrency),
+      deadLetterQueue: options?.deadLetterQueue,
       ...(batch && { batch }),
       ...(tokenLimiterOpts && { tokenLimiter: tokenLimiterOpts }),
     })
   }
 }
-
-export class FlowProducer {
-  async add(flow: AnyFlowJob): Promise<void> {
-    if (flow.children?.length) {
-      await Promise.all(flow.children.map(child => this.add(child)))
-    }
-    if (!flow.queueName) return
-
-    const queue = new Queue(flow.queueName)
-    await queue.add(flow.name, flow.data, flow.opts)
-  }
-
-  async close(): Promise<void> {}
-}
-
-export class Job extends TestJob {}

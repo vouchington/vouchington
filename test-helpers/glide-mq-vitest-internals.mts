@@ -1,5 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { type TestJob, TestQueue } from 'glide-mq/testing'
+import {
+  type TestJob,
+  type TestJobRecord,
+  TestQueue,
+  type TestQueueOptions,
+} from 'glide-mq/testing'
 const testWorkerProcessorContext = new AsyncLocalStorage<true>()
 
 /** Run a shim Worker processor so nested Queue.add can detect in-processor enqueue. */
@@ -17,65 +22,28 @@ export function wrapTestWorkerProcessor<R>(
   return job => runInsideTestWorkerProcessor(() => Promise.resolve(processor(job)))
 }
 
-export const deadLetterQueueNames = new Map<string, string>()
-
-/** Eager retries and actual DLQ admission; reusable queues reinstall hooks after close. */
-export type FlushedJobFailure = { name: string; reason: string }
 /** Record identity distinguishes old running jobs from new jobs reusing an obliterated id. */
-export function recordOf(job: TestJob): object {
+export function recordOf(job: TestJob): TestJobRecord {
   // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
-  return (job as unknown as { _record: object })._record
+  return (job as unknown as { _record: TestJobRecord })._record
 }
 
 export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
-  /** Flush waiters, woken by actual job transitions and admission/promotion settlement. */
+  /** Flush waiters, woken by actual job transitions. */
   readonly settleWaiters = new Set<() => void>()
-  readonly retryPromotions = new Map<object, Promise<void>>()
-  /** Terminal failures by job record, filled for as long as a flush holds its map in this set. */
-  readonly failureWatchers = new Set<Map<object, FlushedJobFailure>>()
-  readonly #recordFailure = (job: TestJob, err: unknown) => {
-    const failure = {
-      name: job.name,
-      reason: job.failedReason ?? (err instanceof Error ? err.message : String(err)),
-    }
-    for (const watcher of this.failureWatchers) watcher.set(recordOf(job), failure)
-  }
   readonly #notifySettleWaiters = () => {
     for (const waiter of [...this.settleWaiters]) waiter()
   }
 
-  readonly #promoteRetriedJob = (job: TestJob) => {
-    const record = recordOf(job)
-    const promotion = job
-      .promote()
-      .catch(() => undefined)
-      .finally(() => {
-        if (this.retryPromotions.get(record) === promotion) this.retryPromotions.delete(record)
-        this.#notifySettleWaiters()
-      })
-    this.retryPromotions.set(record, promotion)
-  }
-  constructor(name: string) {
-    super(name)
-    this.#installHooks()
-  }
-  override async obliterate(...args: Parameters<TestQueue<D, R>['obliterate']>): Promise<void> {
-    await super.obliterate(...args)
-    this.#notifySettleWaiters()
-  }
-  override async close(): Promise<void> {
-    await super.close()
-    this.#installHooks()
-  }
-  #installHooks(): void {
-    this.on('retrying', this.#promoteRetriedJob)
-    this.on('failed', (job: TestJob) => {
-      void forwardToDeadLetterQueue(this.name, job).finally(this.#notifySettleWaiters)
+  constructor(name: string, options?: TestQueueOptions) {
+    super(name, options)
+    this.on('retrying', (job: TestJob) => {
+      // Native promote changes the record synchronously and emits the wake-up event.
+      void job.promote().catch(() => undefined)
     })
-    this.on('failed', this.#recordFailure)
-    this.on('failed', this.#notifySettleWaiters)
-    this.on('completed', this.#notifySettleWaiters)
     for (const event of [
+      'failed',
+      'completed',
       'delay-changed',
       'suspended',
       'promoted',
@@ -85,6 +53,10 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     ]) {
       this.on(event, this.#notifySettleWaiters)
     }
+  }
+  override async obliterate(...args: Parameters<TestQueue<D, R>['obliterate']>): Promise<void> {
+    await super.obliterate(...args)
+    this.#notifySettleWaiters()
   }
 }
 
@@ -114,19 +86,18 @@ export async function getUnexpectedAttachedTestWorkerQueueNames(
   return [...new Set(unexpected.map(({ queueName }) => queueName))].toSorted()
 }
 
-export function getOrCreateQueue(name: string): ShimTestQueue {
-  const existing = queues.get(name)
-  if (existing) return existing
-  const queue = new ShimTestQueue(name)
-  queues.set(name, queue)
+export function getOrCreateQueue(name: string, options?: TestQueueOptions): ShimTestQueue {
+  let queue = queues.get(name)
+  if (!queue) {
+    queue = new ShimTestQueue(name, options)
+    queues.set(name, queue)
+  }
+  if (options?.deadLetterQueue) {
+    queue.deadLetterQueueName = options.deadLetterQueue.name
+    // Register the fork-owned store before native workers or flows resolve it by name.
+    getOrCreateQueue(options.deadLetterQueue.name)
+  }
   return queue
-}
-
-export function configureDeadLetterQueue(
-  queueName: string,
-  deadLetterQueue?: { name: string },
-): void {
-  if (deadLetterQueue?.name) deadLetterQueueNames.set(queueName, deadLetterQueue.name)
 }
 
 const MAX_TEST_WORKER_CONCURRENCY = 15
@@ -136,65 +107,4 @@ export function clampTestWorkerConcurrency(concurrency?: number): number {
   return concurrency != null
     ? Math.min(concurrency, MAX_TEST_WORKER_CONCURRENCY)
     : MAX_TEST_WORKER_CONCURRENCY
-}
-
-async function forwardToDeadLetterQueue(queueName: string, job: TestJob): Promise<void> {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return
-  await getOrCreateQueue(dlqName)
-    .add(job.name, {
-      originalQueue: queueName,
-      originalJobId: job.id,
-      data: job.data,
-      failedReason: job.failedReason,
-      // The job copy was taken at dispatch, before the worker counted the failing attempt.
-      attemptsMade: job.attemptsMade + 1,
-    })
-    .catch(() => undefined)
-}
-
-export async function getDeadLetterJobs(queueName: string, start = 0, end = -1) {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return []
-  const jobs = await getOrCreateQueue(dlqName).searchJobs({})
-  return jobs.slice(start, end === -1 ? undefined : end + 1)
-}
-
-export function getDeadLetterJob(queueName: string, jobId: string) {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return null
-  return getOrCreateQueue(dlqName).getJob(jobId)
-}
-
-export async function removeDeadLetterJob(queueName: string, jobId: string): Promise<boolean> {
-  const job = await getDeadLetterJob(queueName, jobId)
-  if (!job) return false
-  await job.remove()
-  return true
-}
-
-export async function replayDeadLetterJob(queueName: string, jobId: string) {
-  const dlqJob = await getDeadLetterJob(queueName, jobId)
-  if (!dlqJob) return null
-  const envelope = dlqJob.data as { data?: unknown; originalJobId?: string; originalQueue?: string }
-  if (!envelope?.originalQueue) throw new Error('DLQ entry is missing originalQueue metadata')
-  const originalQueue = getOrCreateQueue(envelope.originalQueue)
-  const originalJob = envelope.originalJobId
-    ? await originalQueue.getJob(envelope.originalJobId)
-    : null
-  const opts = originalJob ? omitReplayUnsafeOptions(originalJob.opts) : undefined
-  const replayed = await originalQueue.add(dlqJob.name, envelope.data ?? null, opts)
-  await removeDeadLetterJob(queueName, jobId)
-  return replayed
-}
-
-function omitReplayUnsafeOptions(opts: object): Record<string, unknown> {
-  const {
-    jobId: _jobId,
-    delay: _delay,
-    deduplication: _deduplication,
-    parent: _parent,
-    ...safeOpts
-  } = opts as Record<string, unknown>
-  return safeOpts
 }

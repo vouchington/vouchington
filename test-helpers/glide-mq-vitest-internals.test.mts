@@ -3,9 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { addAndFlush, TestQueueFlushTimeoutError } from './glide-mq-vitest-flush.mts'
 import {
   captureAttachedTestWorkers,
-  configureDeadLetterQueue,
   getUnexpectedAttachedTestWorkerQueueNames,
-  getDeadLetterJobs,
   getOrCreateQueue,
 } from './glide-mq-vitest-internals.mts'
 import { Queue } from './glide-mq-vitest-shim.mts'
@@ -28,50 +26,43 @@ describe('GlideMQ dead-letter and retry', () => {
   it('waits for the DLQ record when expectDeadLetter is set', async () => {
     const queueName = uniqueQueueName('dlq')
     const deadLetterQueue = { name: `${queueName}-dlq` }
-    const queue = getOrCreateQueue(queueName)
-    configureDeadLetterQueue(queueName, deadLetterQueue)
+    const queue = getOrCreateQueue(queueName, { deadLetterQueue })
     workers.push(
-      new TestWorker(queue, async () => {
-        throw new Error('planned failure')
-      }),
+      new TestWorker(
+        queue,
+        async () => {
+          throw new Error('planned failure')
+        },
+        { deadLetterQueue },
+      ),
     )
 
-    const dlq = getOrCreateQueue(deadLetterQueue.name)
-    const admission = Promise.withResolvers<void>()
-    const admissionStarted = Promise.withResolvers<void>()
-    releases.push(admission.resolve)
-    const add = dlq.add
-    vi.spyOn(dlq, 'add').mockImplementationOnce(async (...args) => {
-      admissionStarted.resolve()
-      await admission.promise
-      return add.call(dlq, ...args)
-    })
-    const flushing = addAndFlush(queue, 'fail', { id: 'job-1' }, { expectDeadLetter: true })
-    await admissionStarted.promise
-    expect(await getDeadLetterJobs(queueName)).toHaveLength(0)
-    admission.resolve()
-    const job = await flushing
+    const job = await addAndFlush(queue, 'fail', { id: 'job-1' }, { expectDeadLetter: true })
     expect(job).not.toBeNull()
-    const deadLetterJobs = await getDeadLetterJobs(queueName)
+    const deadLetterJobs = await queue.getDeadLetterJobs()
     expect(deadLetterJobs).toHaveLength(1)
     expect(deadLetterJobs[0]?.data).toMatchObject({
       originalQueue: queueName,
       originalJobId: job!.id,
       data: { id: 'job-1' },
-      attemptsMade: 1,
+      failedReason: 'planned failure',
     })
   })
 
   it('dead-letters a retried job once, after its last attempt', async () => {
     const queueName = uniqueQueueName('dlq-retried')
-    const queue = getOrCreateQueue(queueName)
-    configureDeadLetterQueue(queueName, { name: `${queueName}-dlq` })
+    const deadLetterQueue = { name: `${queueName}-dlq` }
+    const queue = getOrCreateQueue(queueName, { deadLetterQueue })
     let attempts = 0
     workers.push(
-      new TestWorker(queue, async () => {
-        attempts++
-        throw new Error('planned failure')
-      }),
+      new TestWorker(
+        queue,
+        async () => {
+          attempts++
+          throw new Error('planned failure')
+        },
+        { deadLetterQueue },
+      ),
     )
 
     await addAndFlush(
@@ -82,7 +73,7 @@ describe('GlideMQ dead-letter and retry', () => {
     )
 
     expect(attempts).toBe(3)
-    expect(await getDeadLetterJobs(queueName)).toHaveLength(1)
+    expect(await queue.getDeadLetterJobs()).toHaveLength(1)
   })
 
   it('does not sleep through the backoff of a retried job', async () => {
@@ -118,44 +109,30 @@ describe('GlideMQ dead-letter and retry', () => {
   })
 
   it('keeps a failed DLQ admission bounded and removes the flush waiter', async () => {
-    const queue = getOrCreateQueue(uniqueQueueName('dlq-reject'))
-    const dlq = getOrCreateQueue(`${queue.name}-dlq`)
-    configureDeadLetterQueue(queue.name, { name: dlq.name })
-    vi.spyOn(dlq, 'add').mockImplementationOnce(async () => {
+    const name = uniqueQueueName('dlq-reject')
+    const deadLetterQueue = { name: `${name}-dlq` }
+    const queue = getOrCreateQueue(name, { deadLetterQueue })
+    vi.spyOn(queue, 'addDeadLetter').mockImplementationOnce(() => {
       throw new Error('admission failed')
     })
-    workers.push(
-      new TestWorker(queue, async () => {
+    const worker = new TestWorker(
+      queue,
+      async () => {
         throw new Error('planned failure')
-      }),
+      },
+      { deadLetterQueue },
     )
+    const admissionError = vi.fn<(error: Error) => void>()
+    worker.on('error', admissionError)
+    workers.push(worker)
     await expect(
       addAndFlush(queue, 'fail', {}, { expectDeadLetter: true, flushTimeoutMs: 50 }),
     ).rejects.toThrow(TestQueueFlushTimeoutError)
-    expect(await getDeadLetterJobs(queue.name)).toHaveLength(0)
+    expect(admissionError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'admission failed' }),
+    )
+    expect(await queue.getDeadLetterJobs()).toHaveLength(0)
     expect(queue.settleWaiters.size).toBe(0)
-  })
-
-  it('keeps the hooks after the queue is closed', async () => {
-    const queue = getOrCreateQueue(uniqueQueueName('closed'))
-    await queue.close()
-    let attempts = 0
-    workers.push(
-      new TestWorker(queue, async () => {
-        attempts++
-        if (attempts === 1) throw new Error('first attempt fails')
-        return 'ok'
-      }),
-    )
-
-    await addAndFlush(
-      queue,
-      'flaky',
-      {},
-      { attempts: 2, backoff: { type: 'fixed', delay: 60_000 } },
-    )
-
-    expect(attempts).toBe(2)
   })
 
   it('retries a failed job returned by shim Queue.getJobs', async () => {

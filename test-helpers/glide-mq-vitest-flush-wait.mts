@@ -1,32 +1,13 @@
+import type { TestJob } from 'glide-mq/testing'
 import {
   captureFlushDiagnostics,
   TestQueueFlushTimeoutError,
 } from './glide-mq-vitest-flush-diagnostics.mts'
-import {
-  deadLetterQueueNames,
-  type FlushedJobFailure,
-  getOrCreateQueue,
-  recordOf,
-  type ShimTestQueue,
-} from './glide-mq-vitest-internals.mts'
+import { recordOf, type ShimTestQueue } from './glide-mq-vitest-internals.mts'
 
 export const DEFAULT_FLUSH_TIMEOUT_MS = 4_000
 
 type DeadLetterEnvelope = { originalJobId?: string }
-
-/** The terminal failure observed for one of the flushed job ids, if any. */
-export type FailureLookup = (jobId: string) => FlushedJobFailure | undefined
-
-function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return false
-  for (const record of getOrCreateQueue(dlqName).jobs.values()) {
-    if ((record.data as DeadLetterEnvelope | undefined)?.originalJobId === originalJobId) {
-      return true
-    }
-  }
-  return false
-}
 
 /**
  * Ids still owed work. `waiting`, `prioritized` and `active` jobs will be processed, so a flush
@@ -36,34 +17,33 @@ function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
  */
 async function inspectJobs(
   queue: ShimTestQueue,
-  jobIds: string[],
+  jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
-  failureOf: FailureLookup,
 ): Promise<string[]> {
+  // Read admission before scanning mutable records, so a failure during this await is visible.
+  const admitted = new Set(
+    expectedDeadLetterJobIds.size === 0
+      ? []
+      : (await queue.getDeadLetterJobs()).map(
+          job => (job.data as DeadLetterEnvelope | undefined)?.originalJobId,
+        ),
+  )
   const pending: string[] = []
-  for (const jobId of jobIds) {
-    // Native retry dispatch parks then emits retrying synchronously. Awaiting the real lookup
-    // lets that hook register its actual promotion before we inspect a transient delayed state.
-    const job = await queue.getJob(jobId)
-    const promotion = job && queue.retryPromotions.get(recordOf(job))
-    if (promotion) await promotion
-    const state = job ? await job.getState() : 'unknown'
-    const record = queue.jobs.get(jobId)
-    // A `removeOnFail` job leaves no record, so its failure is only known from the watched event.
-    const failure =
-      failureOf(jobId) ??
-      (state === 'failed' && record
-        ? { name: record.name, reason: record.failedReason ?? 'unknown error' }
-        : undefined)
-    if (failure) {
-      if (!expectedDeadLetterJobIds.has(jobId)) {
+  for (const job of jobs) {
+    // The bound record retains terminal failure even after removeOnFail removes it from jobs.
+    const record = recordOf(job)
+    if (record.state === 'failed') {
+      if (!expectedDeadLetterJobIds.has(job.id)) {
         throw new Error(
-          `Test queue job failed in "${queue.name}" (${failure.name}#${jobId}): ${failure.reason}`,
+          `Test queue job failed in "${queue.name}" (${record.name}#${job.id}): ${record.failedReason ?? 'unknown error'}`,
         )
       }
-      if (!hasDeadLetterJob(queue.name, jobId)) pending.push(jobId)
-    } else if (state === 'waiting' || state === 'prioritized' || state === 'active') {
-      pending.push(jobId)
+      if (!admitted.has(job.id)) pending.push(job.id)
+    } else if (
+      queue.jobs.get(job.id) === record &&
+      ['waiting', 'prioritized', 'active', 'waiting-children'].includes(record.state)
+    ) {
+      pending.push(job.id)
     }
   }
   return pending
@@ -78,18 +58,18 @@ async function inspectJobs(
  *
  * Native `waitForJobs` waits through delayed and suspended states and rejects expected DLQ
  * failures. This flush deliberately settles parked jobs, accepts an expected DLQ failure only
- * after admission, and captures removed failures before the first add. `Worker.drain()` closes
+ * after admission, and reads retained failure from each job's bound record. `Worker.drain()` closes
  * the worker, which tests keep attached.
  */
 export async function flushJobs(
   queue: ShimTestQueue,
-  jobIds: string[],
+  jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
-  failureOf: FailureLookup = () => undefined,
 ): Promise<void> {
   const deadline = AbortSignal.timeout(flushTimeoutMs)
   if ((await queue.getWorkers()).length === 0) return
+  const jobIds = jobs.map(job => job.id)
 
   return new Promise((resolve, reject) => {
     let settled = false
@@ -126,7 +106,7 @@ export async function flushJobs(
       try {
         while (!settled && dirty) {
           dirty = false
-          const pending = await inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf)
+          const pending = await inspectJobs(queue, jobs, expectedDeadLetterJobIds)
           if (settled) return
           // A real transition during any awaited read requires a fresh inspection before success.
           if (dirty) continue
