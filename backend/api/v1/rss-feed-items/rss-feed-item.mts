@@ -16,7 +16,7 @@ import { getRssFeedItemEmbedsByItems } from '@services/rss-feed-items/get-rss-fe
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { proxyThumbnailUrls } from '@services/rss-feed-items'
 import { sanitizeRssFeedItemContentHtml } from '@services/rss-feed-items/sanitize-content-html'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
@@ -84,14 +84,11 @@ app.route('/api/v1/rss-feed-items/:id/follow-context').get(async (ctx: Context) 
   const item = await getRssFeedItemById(ctx.params.id!)
   ctx.assert(item, 404, 'RSS feed item not found')
 
-  const [positive_by_following, negative_by_following] = await Promise.all([
-    getFollowedUsersByElectionVote(currentUser, item.id, 'rss_feed_item_votes', 1),
-    getFollowedUsersByElectionVote(currentUser, item.id, 'rss_feed_item_votes', -1),
-  ])
+  const followContext = await getVoteFollowContextBatch(currentUser, item.id, 'rss_feed_item_votes')
 
   ctx.json({
-    positive_by_following,
-    negative_by_following,
+    positive_by_following: followContext.positiveByFollowing,
+    negative_by_following: followContext.negativeByFollowing,
   })
 })
 

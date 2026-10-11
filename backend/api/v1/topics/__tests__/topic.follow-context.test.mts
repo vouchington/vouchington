@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect, afterAll, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -52,16 +52,31 @@ describe('topic', () => {
 
         const request = createRequest()
         await request.authenticateAs(viewer!)
-        const response = await request.get(`/api/v1/topics/${topic.id}/follow-context`).expect(200)
+        const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+        vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+        try {
+          const response = await request
+            .get(`/api/v1/topics/${topic.id}/follow-context`)
+            .expect(200)
+          const profileLines = stderr.mock.calls
+            .map(([chunk]) => String(chunk))
+            .filter(line => line.startsWith('[pg-request-profile]'))
+          expect(profileLines).toHaveLength(1)
+          expect(profileLines[0]).toContain('route=GET /api/v1/topics/:id/follow-context ')
+          expect(profileLines[0]).not.toContain('getPublicUsersByAnyBatch')
 
-        expect(response.body.positive_by_following.total).toBe(1)
-        expect(response.body.positive_by_following.users).toHaveLength(1)
-        expect(response.body.positive_by_following.users[0].id).toBe(followedUser!.id)
-        expect(response.body.negative_by_following.total).toBe(0)
-        expect(response.body.negative_by_following.users).toHaveLength(0)
-        expect(response.body.following_topic_followers.total).toBe(1)
-        expect(response.body.following_topic_followers.users).toHaveLength(1)
-        expect(response.body.following_topic_followers.users[0].id).toBe(followedUser!.id)
+          expect(response.body.positive_by_following.total).toBe(1)
+          expect(response.body.positive_by_following.users).toHaveLength(1)
+          expect(response.body.positive_by_following.users[0].id).toBe(followedUser!.id)
+          expect(response.body.negative_by_following.total).toBe(0)
+          expect(response.body.negative_by_following.users).toHaveLength(0)
+          expect(response.body.following_topic_followers.total).toBe(1)
+          expect(response.body.following_topic_followers.users).toHaveLength(1)
+          expect(response.body.following_topic_followers.users[0].id).toBe(followedUser!.id)
+        } finally {
+          stderr.mockRestore()
+          vi.unstubAllEnvs()
+        }
       })
 
       it('excludes users with topic_follows_visibility nobody from follow-context', async () => {

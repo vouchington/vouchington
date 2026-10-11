@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -111,8 +111,9 @@ describe('post', () => {
       it('returns only followed-user post votes', async () => {
         const isolatedViewer = await createTestUser()
         const likedFollower = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-        const unfollowedDisliker = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+        const dislikedFollower = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
         await followUser(isolatedViewer, likedFollower)
+        await followUser(isolatedViewer, dislikedFollower)
 
         const post = await createTestPost({
           user: creator,
@@ -124,7 +125,7 @@ describe('post', () => {
         await likedRequest.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
 
         const dislikedRequest = createRequest()
-        await dislikedRequest.authenticateAs(unfollowedDisliker)
+        await dislikedRequest.authenticateAs(dislikedFollower)
         await dislikedRequest
           .put(`/api/v1/posts/${post.id}/vote`)
           .send({ choice: 'dislike' })
@@ -132,13 +133,27 @@ describe('post', () => {
 
         const request = createRequest()
         await request.authenticateAs(isolatedViewer)
-        const response = await request.get(`/api/v1/posts/${post.id}/follow-context`).expect(200)
+        const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+        vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+        try {
+          const response = await request.get(`/api/v1/posts/${post.id}/follow-context`).expect(200)
+          const profileLines = stderr.mock.calls
+            .map(([chunk]) => String(chunk))
+            .filter(line => line.startsWith('[pg-request-profile]'))
+          expect(profileLines).toHaveLength(1)
+          expect(profileLines[0]).toContain('route=GET /api/v1/posts/:id/follow-context ')
+          expect(profileLines[0]).not.toContain('getPublicUsersByAnyBatch')
 
-        expect(response.body.positive_by_following.total).toBe(1)
-        expect(response.body.positive_by_following.users).toHaveLength(1)
-        expect(response.body.positive_by_following.users[0].id).toBe(likedFollower.id)
-        expect(response.body.negative_by_following.total).toBe(0)
-        expect(response.body.negative_by_following.users).toHaveLength(0)
+          expect(response.body.positive_by_following.total).toBe(1)
+          expect(response.body.positive_by_following.users).toHaveLength(1)
+          expect(response.body.positive_by_following.users[0].id).toBe(likedFollower.id)
+          expect(response.body.negative_by_following.total).toBe(1)
+          expect(response.body.negative_by_following.users).toHaveLength(1)
+          expect(response.body.negative_by_following.users[0].id).toBe(dislikedFollower.id)
+        } finally {
+          stderr.mockRestore()
+          vi.unstubAllEnvs()
+        }
       })
     })
   })
