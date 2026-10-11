@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTestUser, insertTestRssFeedDirect, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 import type { PrivateUser } from '@services/users/types'
 import {
   getRssFeedImport,
@@ -26,11 +30,17 @@ describe('RSS feed import batches', () => {
       `https://batch-import-b-${Date.now()}.example.com/rss`,
     ]
 
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
-      should_follow_imported_feeds: false,
-    })
-    const status = await getRssFeedImport(user.id, created.import.id)
+    const creation = await withCapturedTestQueries(() =>
+      submitRssFeedImport(user, WEB_PROVENANCE, urls, {
+        should_follow_imported_feeds: false,
+      }),
+    )
+    const created = creation.result
+    const lookup = await withCapturedTestQueries(() => getRssFeedImport(user.id, created.import.id))
+    const status = lookup.result
 
+    expect(countCapturedQueriesByAnnotation(creation.queries, 'createRssFeedImport')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(lookup.queries, 'getRssFeedImport')).toBe(1)
     expect(created.rowIds).toHaveLength(2)
     expect(status?.import).toMatchObject({
       id: created.import.id,

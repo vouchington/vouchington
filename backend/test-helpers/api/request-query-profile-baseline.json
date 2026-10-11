@@ -245,11 +245,6 @@
     "issue": 2605
   },
   {
-    "annotation": "createRssFeedImport",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "createTopicRecommendationLinkRelation",
     "reason": "Approval checks existing landing-page relations for each proposed hostname",
     "issue": 2612
@@ -551,7 +546,7 @@
   },
   {
     "annotation": "getRssFeedImport",
-    "reason": "Post, feed and import steps repeat per item",
+    "reason": "The user RSS import SSE request polls owned progress until completion or disconnect",
     "issue": 2613
   },
   {
