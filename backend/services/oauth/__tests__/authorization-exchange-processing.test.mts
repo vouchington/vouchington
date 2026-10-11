@@ -100,7 +100,7 @@ describe('OAuth authorization provider exchange processing', () => {
     expect(error).toBeInstanceOf(AggregateError)
     if (!(error instanceof AggregateError)) throw new Error('Expected AggregateError')
     expect(error.errors).toEqual([providerFailure, releaseFailure])
-    expect(error.cause).toBe(releaseFailure)
+    expect(error.cause).toBe(providerFailure)
   })
 })
 

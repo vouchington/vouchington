@@ -87,17 +87,30 @@ export async function processOAuthAuthorizationExchange(
       }
     }
   } catch (outerErr) {
-    if (await dependencies.rejectExhausted(authorization.id, authorization.exchange_claim_id)) {
-      return
+    let rejected: boolean
+    try {
+      rejected = await dependencies.rejectExhausted(
+        authorization.id,
+        authorization.exchange_claim_id,
+      )
+    } catch (err) {
+      // Rejection did not establish a durable outcome: do not attempt a second state mutation.
+      const aggregateError = new AggregateError(
+        [outerErr, err],
+        'OAuth exchange failed and its durable rejection could not be established',
+        { cause: outerErr },
+      )
+      throw aggregateError
     }
+    if (rejected) return
     await dependencies
       .releaseClaim(authorization.id, authorization.exchange_claim_id)
       .catch(err => {
         const aggregateError = new AggregateError(
           [outerErr, err],
           'OAuth exchange failed and its durable claim could not be released',
+          { cause: outerErr },
         )
-        aggregateError.cause = err
         throw aggregateError
       })
     throw outerErr

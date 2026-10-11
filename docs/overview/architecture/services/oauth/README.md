@@ -28,6 +28,19 @@ authentication or account connection:
    `view_oauth_authorization_current_records` projects the active `exchanging` state and total attempt
    count without resetting parent lifecycle facts. Recovery measures the latest attempt's start
    time, and exact claim fencing protects its successor from stale completion or release.
+   Claim, release and rejection own READ COMMITTED transactions and acquire the authorization
+   base row with `NOWAIT` before reading attempt history. Native contention remains a job failure
+   for the existing retry policy, never a successful null claim. Recovery selects two bounded
+   provisional buckets, locks their base rows with `SKIP LOCKED`, then re-reads authoritative
+   history in a subsequent statement while holding those locks. Busy rows remain eligible for a
+   later scan; they are neither rejected nor treated as completed. Status, version and exact claim
+   fences remain in each authoritative write. This replaces waiting recovery rather than claiming
+   equivalent same-statement EvalPlanQual coverage. Completion and exact replay keep their existing
+   authorization and durable-result contracts.
+   If durable rejection fails, the worker retains the original exchange failure as cause and the
+   rejection failure as an ordered secondary, without attempting release from an unknown outcome.
+   A failed release likewise retains the original cause; successful exhausted rejection remains
+   terminal.
 4. `completeOAuthAuthorization` validates the initiating device/session, completion token source,
    native proof when applicable, and connection owner. It durably records one authentication,
    MFA, or connection result before a non-MFA session is minted, so a rollback cannot leave an

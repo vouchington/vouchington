@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
+import { recoverableOAuthAuthorizationRowLocksSql } from './authorization-exchange-row-locks-sql.mts'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   MAX_EXCHANGE_ATTEMPTS,
@@ -13,7 +14,27 @@ export async function getRecoverableOAuthAuthorizationIds(
   if (authorizationIds?.length === 0) return []
   observeSharedDbScope('getRecoverableOAuthAuthorizationIds', sharedDbIdsScope(authorizationIds))
   const idScope = authorizationIds ? [...authorizationIds] : null
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  await transaction(
+    '/* getRecoverableOAuthAuthorizationIds:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+  )
+  const parameters = [
+    limit,
+    STALE_EXCHANGE_CLAIM_SECONDS,
+    MAX_EXCHANGE_ATTEMPTS,
+    X_MAX_QUEUE_DELAY_SECONDS,
+    idScope,
+  ]
+  const locked = await transaction<{ id: string }>(
+    recoverableOAuthAuthorizationRowLocksSql,
+    parameters,
+  )
+  const ownedIds = locked.rows.map(row => row.id)
+  if (ownedIds.length === 0) {
+    await transaction.commit()
+    return []
+  }
+  const { rows } = await transaction(
     `/* getRecoverableOAuthAuthorizationIds */
      WITH terminal_candidates AS (
        SELECT
@@ -96,9 +117,10 @@ export async function getRecoverableOAuthAuthorizationIds(
       STALE_EXCHANGE_CLAIM_SECONDS,
       MAX_EXCHANGE_ATTEMPTS,
       X_MAX_QUEUE_DELAY_SECONDS,
-      idScope,
+      ownedIds,
     ],
   )
+  await transaction.commit()
   return rows.map(row => String(row.id))
 }
 
