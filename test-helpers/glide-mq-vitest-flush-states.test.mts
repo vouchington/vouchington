@@ -224,17 +224,45 @@ describe('GlideMQ test flush across job states', () => {
     },
   )
 
-  it('keeps a deduplicated add at its own index in addBulkAndFlush', async () => {
+  it('returns only the second input when the first bulk input is deduplicated', async () => {
     const queue = getOrCreateQueue(uniqueQueueName('bulk-dedup'))
     workers.push(new TestWorker(queue, async () => 'ok'))
     const deduplication = { id: 'same', mode: 'simple' as const }
 
-    const jobs = await addBulkAndFlush(queue, [
-      { name: 'first', data: {}, opts: { deduplication, delay: 60_000 } },
-      { name: 'second', data: {}, opts: { deduplication } },
-      { name: 'third', data: {} },
+    await queue.enqueue('existing', {}, { deduplication, delay: 60_000 })
+    const jobs = await queue.addBulk([
+      { name: 'first', data: { input: 'first' }, opts: { deduplication } },
+      { name: 'second', data: { input: 'second' } },
     ])
 
-    expect(jobs.map(job => job?.name ?? null)).toEqual(['first', null, 'third'])
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]).toMatchObject({ name: 'second', data: { input: 'second' } })
+    expect(await queue.getJob(jobs[0].id)).toMatchObject({ returnvalue: 'ok' })
+  })
+
+  it('keeps expected DLQ admission associated with its input after bulk compaction', async () => {
+    const name = uniqueQueueName('bulk-dlq')
+    const deadLetterQueue = { name: `${name}-dlq` }
+    const queue = getOrCreateQueue(name, { deadLetterQueue })
+    workers.push(
+      new TestWorker(
+        queue,
+        () => {
+          throw new Error('planned failure')
+        },
+        { deadLetterQueue },
+      ),
+    )
+    const deduplication = { id: 'same', mode: 'simple' as const }
+    await queue.enqueue('existing', {}, { deduplication, delay: 60_000 })
+
+    const jobs = await addBulkAndFlush(queue, [
+      { name: 'skipped', data: {}, opts: { deduplication } },
+      { name: 'failed', data: { input: 'second' }, opts: { expectDeadLetter: true } },
+    ])
+
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]).toMatchObject({ name: 'failed', data: { input: 'second' } })
+    expect((await queue.getDeadLetterJobs())[0].data).toMatchObject({ originalJobId: jobs[0].id })
   })
 })

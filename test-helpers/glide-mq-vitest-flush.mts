@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { JobOptions } from 'glide-mq'
+import type { TestJob } from 'glide-mq/testing'
 import { TestQueueFlushTimeoutError } from './glide-mq-vitest-flush-diagnostics.mts'
 import { type FlushQueue, flushJobs } from './glide-mq-vitest-flush-wait.mts'
 export { TestQueueFlushTimeoutError }
@@ -55,26 +56,22 @@ export async function addBulkAndFlush<D, R>(
   queue: FlushQueue<D, R>,
   jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
 ) {
-  // Sequential native admission rather than `queue.addBulk()`, which drops a deduplicated add's `null`
-  // instead of keeping its position: production's addBulk preserves the order and length of its
-  // input, so a skipped add lands `null` at its own index.
-  const result: Array<Awaited<ReturnType<typeof queue.enqueue>>> = []
+  // Keep per-input test options attached to admitted ids while returning the SDK's compact list.
+  const result: TestJob<D, R>[] = []
+  const expectedDeadLetterJobIds = new Set<string>()
   for (const job of jobs) {
-    result.push(await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts)))
+    const added = await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts))
+    if (!added) continue
+    result.push(added)
+    if (job.opts?.expectDeadLetter === true) expectedDeadLetterJobIds.add(added.id)
   }
-  const addedJobs = result.flatMap(job => (job ? [job] : []))
-  const expectedDeadLetterJobIds = new Set(
-    result.flatMap((job, index) =>
-      job && jobs[index].opts?.expectDeadLetter === true ? [job.id] : [],
-    ),
-  )
   const timeouts = jobs.flatMap(job =>
     typeof job.opts?.flushTimeoutMs === 'number' ? [job.opts.flushTimeoutMs] : [],
   )
-  if (addedJobs.length > 0 && !isInsideTestWorkerProcessor()) {
+  if (result.length > 0 && !isInsideTestWorkerProcessor()) {
     await flushJobs(
       queue,
-      addedJobs,
+      result,
       expectedDeadLetterJobIds,
       timeouts.length > 0 ? Math.max(...timeouts) : undefined,
     )

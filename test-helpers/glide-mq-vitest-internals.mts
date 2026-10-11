@@ -57,12 +57,9 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     return addAndFlush(this, name, data, opts)
   }
 
-  // Production preserves null positions, although upstream's bulk declaration omits them.
   override addBulk(
     jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
-  ): Promise<Array<TestJob<D, R> | null>>
-  override addBulk(...args: Parameters<TestQueue<D, R>['addBulk']>): Promise<TestJob<D, R>[]>
-  override addBulk(jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>) {
+  ): Promise<TestJob<D, R>[]> {
     return addBulkAndFlush(this, jobs)
   }
 

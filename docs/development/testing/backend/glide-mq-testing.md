@@ -25,7 +25,7 @@ for native admission without automatic flushing.
   owned workers alive, just as closing a production producer leaves server state intact. Close
   workers explicitly; use `obliterate()` to clear jobs. Keeping stores registered lets native
   `TestFlowProducer` and dead-letter APIs resolve the same queues by name.
-- **`addBulk` keeps a skipped add as `null`.** Production `addBulk` keeps the order and length of its input; the shim adds sequentially so a deduplicated add lands `null` at its own index.
+- **`addBulk` returns a compact list.** Like the released SDK, it omits deduplicated adds. Per-input test options are associated with admitted IDs before compaction, so an expected DLQ failure belongs to the correct job. Returned indices are not input indices.
 - **Nested enqueue detection.** An `AsyncLocalStorage` marks processor scope so a nested `add` is not flushed.
 - **Worker-attachment guard.** Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.
 - **Flush timeout diagnostics.** `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.
