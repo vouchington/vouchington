@@ -561,6 +561,9 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `no-mistakes` enforces `postgres-require-query-annotation` for backend TypeScript runtime
 code, excluding tests, test helpers, seed scripts, and the migration runner, with a separate
 entry for the five development-runtime helpers. Other backend scripts remain covered.
+The annotation, pagination, lock-ordering, and protected-column-write entries explicitly set
+`unanalyzableSql: ignore` to preserve their existing handling of unrecoverable statements.
+Recovered SQL still undergoes the ordinary annotation, OFFSET, ordering, and column-write checks.
 `postgres-no-offset` excludes all backend scripts and applies to tracked migrations, views,
 and config-driven SQL. The
 `postgres-generated-column-predicates` runtime entry excludes tests plus only seed scripts and

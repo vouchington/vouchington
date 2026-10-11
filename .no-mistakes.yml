@@ -2130,6 +2130,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2184,6 +2185,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2220,6 +2222,7 @@ rules:
     rule: postgres-no-generated-column-writes
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2422,6 +2425,7 @@ rules:
     rule: postgres-no-offset
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2441,6 +2445,7 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2457,6 +2462,7 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2789,6 +2795,7 @@ rules:
     scope: repository
     exclude: ['**/test-helpers/**']
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
