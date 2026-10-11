@@ -1,4 +1,5 @@
 import type { CopyrightStaffEmailIntake } from '@services/copyright-notices/read-models'
+import type { CopyrightEuParticipantCase } from '@services/copyright-notices/read-models-notice-types'
 import type { CopyrightStaffQueueCase } from '@services/copyright-notices/read-models-staff-types'
 import { stripPersonalDetails } from '@services/copyright-notices/contact-redaction'
 
@@ -52,6 +53,29 @@ function redactStatement(statement: Record<string, unknown>): Record<string, unk
       return [key, typeof value === 'string' ? stripPersonalDetails(value) : value]
     }),
   )
+}
+
+export function redactCopyrightParticipantNotice<T extends { eu?: CopyrightEuParticipantCase }>(
+  notice: T,
+): T {
+  const eu = notice.eu
+  if (!eu) return notice
+  const { request, decision } = eu.complaint
+  return {
+    ...notice,
+    eu: {
+      ...eu,
+      complaint: {
+        ...eu.complaint,
+        request: request
+          ? { ...request, explanation: stripPersonalDetails(request.explanation) }
+          : null,
+        decision: decision
+          ? { ...decision, rationale: stripPersonalDetails(decision.rationale) }
+          : null,
+      },
+    },
+  }
 }
 
 export function redactCopyrightQueueCase(

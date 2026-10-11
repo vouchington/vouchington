@@ -30552,7 +30552,7 @@
                                   ]
                                 },
                                 "explanation": {
-                                  "type": "string"
+                                  "$ref": "#/$defs/S2"
                                 },
                                 "filed_by": {
                                   "enum": ["notifier", "poster", "reviewer"],
@@ -31587,7 +31587,7 @@
                                   "additionalProperties": false,
                                   "properties": {
                                     "explanation": {
-                                      "type": "string"
+                                      "$ref": "#/$defs/S2"
                                     },
                                     "filed_by": {
                                       "enum": ["notifier", "poster", "reviewer"],
