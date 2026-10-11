@@ -14,19 +14,26 @@ async function assertEmailAddressAvailableForUser(
   userId: string,
   normalizedEmail: string,
 ): Promise<void> {
-  const existing = await read(
-    sql`/* assertEmailAddressAvailableForUser */ SELECT user_id FROM user_email_addresses WHERE email_address = ${normalizedEmail} LIMIT 1`,
-  )
+  const { rows } = await read<{
+    existing_user_id: string | null
+    already_added: boolean
+  }>(sql`/* assertEmailAddressAvailableForUser */
+    SELECT
+      (SELECT user_id FROM user_email_addresses
+       WHERE email_address = ${normalizedEmail} LIMIT 1) AS existing_user_id,
+      EXISTS (
+        SELECT 1 FROM user_email_addresses
+        WHERE user_id = ${userId} AND email_address = ${normalizedEmail}
+      ) AS already_added
+  `)
+  const row = rows[0]!
   assert(
-    existing.rows.length === 0 || existing.rows[0].user_id === userId,
+    row.existing_user_id === null || row.existing_user_id === userId,
     422,
     'Email address is already in use',
   )
 
-  const alreadyAdded = await read(
-    sql`/* assertEmailAddressAvailableForUser */ SELECT 1 FROM user_email_addresses WHERE user_id = ${userId} AND email_address = ${normalizedEmail} LIMIT 1`,
-  )
-  assert(alreadyAdded.rows.length === 0, 422, 'Email address already added to your account')
+  assert(!row.already_added, 422, 'Email address already added to your account')
 }
 
 export async function createEmailVerificationToken(

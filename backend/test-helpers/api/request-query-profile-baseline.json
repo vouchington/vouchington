@@ -25,11 +25,6 @@
     "issue": 2608
   },
   {
-    "annotation": "assertEmailAddressAvailableForUser",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
-  },
-  {
     "annotation": "assertImagesReadyForSurface",
     "reason": "Image delivery and placement locks run once per image or surface",
     "issue": 2606
