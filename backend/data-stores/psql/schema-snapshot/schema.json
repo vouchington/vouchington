@@ -1671,7 +1671,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_moderation_report_transparency_scope": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    IF NEW.community_id IS NOT NULL THEN\n      NEW.moderation_transparency_community_id := NEW.community_id;\n    ELSIF NEW.post_id IS NOT NULL THEN\n      SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_update_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -62266,6 +62266,17 @@
           "ordinalPosition": 11,
           "type": "uuid"
         },
+        "community_id": {
+          "collation": null,
+          "comment": "Community that owns this report. NULL when the report is not community-scoped. Deleting the community clears this reference and leaves the transparency snapshot intact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "uuid"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -62307,7 +62318,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "escalated_by_id": {
@@ -62318,7 +62329,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "uuid"
         },
         "hostname_id": {
@@ -62345,13 +62356,13 @@
         },
         "moderation_transparency_community_id": {
           "collation": null,
-          "comment": "Immutable community scope stamped from the reported post for global-transparency exclusion.",
+          "comment": "Immutable community scope stamped for global-transparency exclusion. Not a foreign key, so the snapshot survives community deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "note": {
@@ -62362,7 +62373,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "original_reason": {
@@ -62428,7 +62439,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "moderation_report_resolution_actions"
         },
         "resolved_by_id": {
@@ -62439,7 +62450,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "reviewed_at": {
@@ -62474,6 +62485,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "moderation_cases",
+          "validated": true
+        },
+        "moderation_reports_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
           "validated": true
         },
         "moderation_reports_created_via_oauth_client_id_fkey": {
@@ -62554,7 +62574,7 @@
         "idx_moderation_reports__active_community_user_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_community_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id, moderation_transparency_community_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NOT NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_community_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id, community_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -62572,14 +62592,14 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "moderation_transparency_community_id",
+              "column": "community_id",
               "descending": false,
-              "expression": "moderation_transparency_community_id",
+              "expression": "community_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NOT NULL))",
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -62669,7 +62689,7 @@
         "idx_moderation_reports__active_user_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NULL) AND (moderation_transparency_community_id IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -62687,7 +62707,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (moderation_transparency_community_id IS NULL))",
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NULL) AND (moderation_transparency_community_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -62708,6 +62728,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__community_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__community_id ON public.moderation_reports USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(community_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

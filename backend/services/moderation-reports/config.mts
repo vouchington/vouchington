@@ -69,4 +69,9 @@ export interface ModerationReport {
   resolved_by_id: string | null
   /** True when this report was created by the system rather than a user. */
   is_system_generated?: boolean
+  /**
+   * Operational community owner. List queries leave this unset and resolve it from the
+   * report row so the public report payload stays unchanged.
+   */
+  community_id?: string | null
 }

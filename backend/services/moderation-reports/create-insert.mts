@@ -32,7 +32,7 @@ export async function insertModerationReport(
   query.append(fkColumn)
   query.append(
     input.entityType === 'user'
-      ? sql` IS NOT NULL AND moderation_transparency_community_id IS NULL`
+      ? sql` IS NOT NULL AND community_id IS NULL AND moderation_transparency_community_id IS NULL`
       : sql` IS NOT NULL`,
   )
   query.append(

@@ -46,6 +46,8 @@ describe('community moderation report redaction', () => {
       'user',
       suspect.id,
       'Suspected ban evasion',
+      undefined,
+      community.id,
     )
 
     const moderatorRequest = createRequest()
