@@ -564,7 +564,8 @@ excluded. Keep the builder under its direct value import name: value-import alia
 and property/destructuring extraction are banned because AST-grep cannot trace an extracted
 function value to its eventual call site. Type-only aliases remain allowed.
 
-`backend/test-helpers/api-fixtures/cold-build-budget.mts` retains
-`COLD_VIRTUAL_PROGRAM_TIMEOUT_MS` for one independent virtual schema-extraction program.
+The schema-extraction test retains its explicit 15,000 ms `beforeAll` budget for one independent
+virtual program. Keep that budget visible at the consuming hook so the timeout-cap analyzer can
+verify it without resolving an imported constant.
 The full API discovery and OpenAPI timeout tiers are removed with their producers. Do not
 reintroduce compiler discovery as a fixture or runtime-request acceptance gate.
