@@ -1,9 +1,9 @@
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { updateCrawler } from './update-crawler.mts'
-import { getCrawlerById } from './get.mts'
 import { currentUserCanEditCrawler } from './authorization.mts'
 import type { UpdateCrawlerUpdates } from './types.mts'
+import createError from 'http-errors'
 
 export async function updateCrawlerForUser(
   currentUser: PrivateUser | null,
@@ -11,9 +11,18 @@ export async function updateCrawlerForUser(
   updates: UpdateCrawlerUpdates,
 ) {
   assert(currentUserCanEditCrawler(currentUser), 403, 'Admin access required')
-
-  const crawler = await getCrawlerById(crawlerId)
-  assert(crawler, 404, 'Crawler not found')
-
-  return updateCrawler(currentUser!, crawlerId, updates)
+  if (!crawlerId) throw createError(422, `Invalid crawler ID: ${crawlerId}`)
+  try {
+    return await updateCrawler(currentUser!, crawlerId, updates)
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      'status' in err &&
+      err.status === 404 &&
+      err.message === `Crawler not found: ${crawlerId}`
+    ) {
+      throw createError(404, 'Crawler not found', { cause: err })
+    }
+    throw err
+  }
 }
