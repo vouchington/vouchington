@@ -193,7 +193,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
   })
 
-  it('streams each file start and a background memory and disk sample on the test step log', () => {
+  it('runs backend diagnostics only when explicitly enabled', () => {
     const runStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
       step => step.name === 'Run backend tests',
     )
@@ -202,7 +202,15 @@ describe('backend uncredentialed Docker test workflow', () => {
     const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
 
     expect(runStep?.env?.VITEST_CI_REPORTERS).toBe('run')
-    expect(runStep?.env?.VITEST_FILE_PROGRESS).toBe('1')
+    expect(runStep?.env?.VITEST_DIAGNOSTICS).toBe(
+      "${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}",
+    )
+    expect(runStep?.env).not.toHaveProperty('VITEST_FILE_PROGRESS')
+    expect(script).toContain('if [ "$VITEST_DIAGNOSTICS" = 1 ]; then')
+    expect(script).toContain(
+      'start_sampler sample_runner_resources 15\n  start_sampler sample_postgres_waits 0.5',
+    )
+    expect(script).toContain('start_sampler sample_runner_pressure 2\nfi')
     expect(script).toContain("resource_prefix='[backend-unit-resources]'")
     expect(script).toContain('printf \'%s %s\\n\' "$1" "$line"')
     expect(script).toContain('} 2>&1 | prefix_lines "$resource_prefix"')

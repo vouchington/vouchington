@@ -9,10 +9,11 @@ merge-group diff, and a selected area runs its full suites; CI never selects ind
 [`ci/vitest/project-ownership-registry.mts`](../../../../ci/vitest/project-ownership-registry.mts) derives
 the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../ci.md#area-test-suites).
 
-Backend data-store setup emits synchronous phase start, completion, and failure records when
-`VITEST_CI_REPORTERS=run`. The records identify imports, seeding, each dynamic configuration, and
-bloom warmups before a test file is assigned. Inspect the last open phase when file-progress logs
-have not started. Setup drains every started parallel operation before reporting distinct failures;
+With `VITEST_DIAGNOSTICS=1`, backend data-store setup emits synchronous phase start and completion
+records. Failures emit a phase record even when diagnostics are off. The records identify imports,
+seeding, each dynamic configuration, and bloom warmups before a test file is assigned. With
+diagnostics enabled, inspect the last open phase when file-progress logs have not started. Setup
+drains every started parallel operation before reporting distinct failures;
 subscription-client connection bounds belong to the installed Valkey dependency. The setup owner is
 [`vitest.setup.data-stores.mts`](../../../../test-helpers/vitest.setup.data-stores.mts).
 
@@ -28,13 +29,17 @@ Reporter policy:
 - Local Vitest commands should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent.
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
+- Routine Vitest diagnostics are silent by default. Set `VITEST_DIAGNOSTICS=1` for local runs or
+  the `VITEST_DIAGNOSTICS` repository variable for backend-unit CI runs. That workflow also accepts a
+  `diagnostics` boolean for a manual dispatch or reusable workflow call. This enables file progress,
+  setup and teardown timings, and backend runner samples. Failures, JUnit output, summaries, timeout
+  diagnostics, and Storybook browser progress markers remain active.
 - `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
   `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
   active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
-  `tests-backend-unit.yml` also sets `VITEST_FILE_PROGRESS=1`, which appends a reporter that
-  prints each test file when a worker starts it and when it finishes. The `minimal` reporter
-  prints nothing per file, so a shard that dies would otherwise leave no file in the log.
-- The same step streams three background samples to the shard log. `[backend-unit-resources]`
+  With diagnostics enabled, the backend-unit reporter prints each test file when a worker starts it
+  and when it finishes.
+- With diagnostics enabled, the backend-unit step streams three background samples to the shard log. `[backend-unit-resources]`
   records memory, disk and the largest processes every 15 seconds. `[backend-unit-pg-waits]` runs
   [`ci/backend-unit-pg-waits.sql`](../../../../ci/backend-unit-pg-waits.sql) every half second and
   prints a row only for a blocked or blocking backend, or one statement that has run for 1.5 seconds

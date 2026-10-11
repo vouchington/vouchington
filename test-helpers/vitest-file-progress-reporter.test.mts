@@ -38,20 +38,28 @@ describe('backend-unit file progress reporter', () => {
     expect(lines.join('')).not.toContain('AssertionError')
   })
 
-  it('appends the reporter only when the backend-unit progress env is set', () => {
+  it('appends the reporter only when diagnostics are enabled', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', '')
-    vi.stubEnv('VITEST_FILE_PROGRESS', '')
+    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     const baseline = ciReporters()
-    vi.stubEnv('VITEST_FILE_PROGRESS', '1')
+    vi.stubEnv('VITEST_DIAGNOSTICS', '0')
+    const explicitlyDisabled = ciReporters()
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
     const withProgress = ciReporters()
 
     expect(Array.isArray(baseline)).toBe(true)
+    expect(Array.isArray(explicitlyDisabled)).toBe(true)
     expect(Array.isArray(withProgress)).toBe(true)
-    if (!Array.isArray(baseline) || !Array.isArray(withProgress)) {
+    if (
+      !Array.isArray(baseline) ||
+      !Array.isArray(explicitlyDisabled) ||
+      !Array.isArray(withProgress)
+    ) {
       return
     }
     expect(baseline.filter(isBackendUnitFileProgressReporter)).toHaveLength(0)
+    expect(explicitlyDisabled.filter(isBackendUnitFileProgressReporter)).toHaveLength(0)
     expect(withProgress.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
     expect(withProgress.length).toBe(baseline.length + 1)
   })

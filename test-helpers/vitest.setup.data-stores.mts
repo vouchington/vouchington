@@ -32,15 +32,18 @@ process.env.VOUCHA_OTP_TOKEN_HASH_SECRET ??= 'this is a fake test OTP HMAC secre
 process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
   'fake-test-key:raw32:this fake test key is not secret'
 
-const emitSetupTiming = process.env.VITEST_CI_REPORTERS === 'run'
+const emitSetupTiming = process.env.VITEST_DIAGNOSTICS === '1'
 
 async function timedSetupPhase<T>(phase: string, run: () => Promise<T>): Promise<T> {
-  if (!emitSetupTiming) return run()
-  writeSync(2, `[vitest-setup] phase=${phase} start\n`)
+  if (emitSetupTiming) writeSync(2, `[vitest-setup] phase=${phase} start\n`)
   const start = performance.now()
   try {
     const result = await run()
-    writeSync(2, `[vitest-setup] phase=${phase} done ms=${Math.round(performance.now() - start)}\n`)
+    if (emitSetupTiming)
+      writeSync(
+        2,
+        `[vitest-setup] phase=${phase} done ms=${Math.round(performance.now() - start)}\n`,
+      )
     return result
   } catch (err) {
     writeSync(
@@ -109,10 +112,7 @@ export async function setup() {
   )
 }
 
-// Mirrors the condition that wires the CI reporters (test-helpers/vitest-ci-reporters.mts) —
-// same signal that turns on the teardown-overrun reporter also turns on this timing, so the
-// two stay silent or visible together. Keeps plain local `vitest run` output quiet.
-const emitTeardownTiming = process.env.VITEST_CI_REPORTERS === 'run'
+const emitTeardownTiming = process.env.VITEST_DIAGNOSTICS === '1'
 
 // Diagnoses the #8259 teardownTimeout race: on a force-kill, the last "start" line with no
 // matching "done" line names which teardown phase was still in flight. Each phase gets its
