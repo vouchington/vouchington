@@ -160,11 +160,6 @@
     "issue": 2614
   },
   {
-    "annotation": "createCommunityAgentPrompt",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "createCommunityLifecycleNotification",
     "reason": "Community lookups repeat after the route preamble",
     "issue": 2614

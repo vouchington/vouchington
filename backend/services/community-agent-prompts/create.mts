@@ -45,45 +45,34 @@ export async function createCommunityAgentPrompt(
   const { id: userId } = await createAgentSystemUser(username, { query })
   const { id: agentId } = await createSystemAgent(userId, 'moderator', currentUserId, { query })
 
-  const { rows: apRows } = await query(sql`/* createCommunityAgentPrompt */
-    INSERT INTO agent_prompts (id, agent_id, prompt, model_name, model_provider, created_by_id)
-    VALUES (
-      ${promptId},
-      ${agentId},
-      ${prompt},
-      ${modelName}::agent_models,
-      ${modelProvider}::agent_model_providers,
-      ${currentUserId}
+  const { rows } = await query<CommunityAgentPrompt>(sql`/* createCommunityAgentPrompt */
+    WITH inserted_agent_prompt AS (
+      INSERT INTO agent_prompts (id, agent_id, prompt, model_name, model_provider, created_by_id)
+      VALUES (
+        ${promptId},
+        ${agentId},
+        ${prompt},
+        ${modelName}::agent_models,
+        ${modelProvider}::agent_model_providers,
+        ${currentUserId}
+      )
+      RETURNING id, agent_id, prompt, model_name, model_provider, created_at, updated_at
+    ), inserted_community_agent_prompt AS (
+      INSERT INTO community_agent_prompts (id, community_id, created_by_id)
+      SELECT id, ${communityId}, ${currentUserId}
+      FROM inserted_agent_prompt
+      RETURNING id, community_id, created_by_id, is_slot_allocated, activated_at, deactivated_at,
+        deleted_at, deleted_by_id
     )
-    RETURNING id, agent_id, prompt, model_name, model_provider, created_at, updated_at
+    SELECT cap.id, cap.community_id, cap.created_by_id, cap.is_slot_allocated, cap.activated_at,
+      cap.deactivated_at, cap.deleted_at, cap.deleted_by_id, ap.agent_id, ap.prompt,
+      ap.model_name, ap.model_provider, ap.created_at, ap.updated_at
+    FROM inserted_community_agent_prompt cap
+    JOIN inserted_agent_prompt ap USING (id)
   `)
 
-  const { rows: capRows } = await query(sql`/* createCommunityAgentPrompt */
-    INSERT INTO community_agent_prompts (id, community_id, created_by_id)
-    VALUES (${promptId}, ${communityId}, ${currentUserId})
-    RETURNING id, community_id, created_by_id, is_slot_allocated, activated_at, deactivated_at, deleted_at, deleted_by_id
-  `)
-
-  const ap = apRows[0]
-  const cap = capRows[0]
-  assert(ap && cap, 500, 'Failed to create agent prompt')
-
-  const result = {
-    id: cap.id,
-    community_id: cap.community_id,
-    created_by_id: cap.created_by_id,
-    is_slot_allocated: cap.is_slot_allocated,
-    activated_at: cap.activated_at,
-    deactivated_at: cap.deactivated_at,
-    deleted_at: cap.deleted_at,
-    deleted_by_id: cap.deleted_by_id,
-    agent_id: ap.agent_id,
-    prompt: ap.prompt,
-    model_name: ap.model_name,
-    model_provider: ap.model_provider,
-    created_at: ap.created_at,
-    updated_at: ap.updated_at,
-  } as CommunityAgentPrompt
+  const result = rows[0]
+  assert(result, 500, 'Failed to create agent prompt')
 
   await query.commit()
 
