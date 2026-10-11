@@ -80,7 +80,9 @@ export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedIm
   }
 }
 
-export function toImportRowResult(row: UserRssFeedImportRow): UserRssFeedImportRowResult {
+export function toImportRowResult(
+  row: Pick<UserRssFeedImportRow, 'id' | 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'>,
+): UserRssFeedImportRowResult {
   return {
     id: row.id,
     input: row.input_url,

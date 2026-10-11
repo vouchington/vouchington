@@ -1,6 +1,22 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+export async function insertRssFeedImportBatchWithoutRowsForTest(userId: string): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* insertRssFeedImportBatchWithoutRowsForTest */
+    INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows)
+    VALUES (${userId}, 'web', 1)
+    RETURNING id
+  `)
+  return rows[0]!.id
+}
+
+export async function deleteRssFeedImportBatchWithoutRowsForTest(importId: string): Promise<void> {
+  await write(sql`/* deleteRssFeedImportBatchWithoutRowsForTest */
+    DELETE FROM user_rss_feed_import_batches
+    WHERE id = ${importId}
+  `)
+}
+
 export async function getRssFeedImportFollowForTest(importId: string): Promise<boolean> {
   const { rows } = await read<{ follow: boolean }>(sql`/* getRssFeedImportFollowForTest */
     SELECT should_follow_imported_feeds
