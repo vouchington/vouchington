@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import {
   postSubject,
   rssItemSubject,
@@ -173,12 +174,14 @@ describe('getClassifierHumanVoteComparison cells', () => {
 
   it('does not count a batch that is not complete', async () => {
     const fixture = await activatedFixture()
-    const now = Date.now()
-    const window = { from: new Date(now - 3_600_000), to: new Date(now + 3_600_000) }
-    await fixture.createTopicBatch()
+    const at = seedMoment(0)
+    const window = { from: seedMoment(-1), to: seedMoment(1) }
+    const { batchId } = await fixture.createTopicBatch({ at })
+    expect(batchId.localeCompare(getMinUUIDv7ForDate(window.from))).toBeGreaterThanOrEqual(0)
+    expect(batchId.localeCompare(getMinUUIDv7ForDate(window.to))).toBeLessThan(0)
     await expect(reportOf(fixture, window)).resolves.toMatchObject({ batches_examined: 0 })
 
-    await seedGlobalDecision(fixture, { probability: 0.9, at: new Date(now - 60_000) })
+    await seedGlobalDecision(fixture, { probability: 0.9, at })
 
     await expect(reportOf(fixture, window)).resolves.toMatchObject({ batches_examined: 1 })
   })

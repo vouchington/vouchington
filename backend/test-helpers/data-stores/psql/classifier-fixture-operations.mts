@@ -1,8 +1,9 @@
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
-type BatchOptions = { communityId?: string; shardOrdinal?: number }
+type BatchOptions = { communityId?: string; shardOrdinal?: number; at?: Date }
 
 /** Another decision call (shard) under an existing batch. */
 export async function createClassifierDecisionCall(
@@ -68,10 +69,10 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     const { rows } = await transaction<{ id: string }>(sql`
       /* createClassifierFixtureTopicBatch */
       INSERT INTO classifier_decision_batches (
-        classifier_id, prompt_version_id, post_id, scope_category, scope_community_id
+        id, classifier_id, prompt_version_id, post_id, scope_category, scope_community_id
       ) VALUES (
-        ${data.classifierId}, ${data.promptVersionId}, ${data.postId}, ${scopeCategory},
-        ${options.communityId ?? null}
+        COALESCE(${options.at ? uuidv7({ msecs: options.at.getTime() }) : null}::uuid, uuidv7()),
+        ${data.classifierId}, ${data.promptVersionId}, ${data.postId}, ${scopeCategory}, ${options.communityId ?? null}
       ) RETURNING id
     `)
     const batchId = rows[0]!.id
