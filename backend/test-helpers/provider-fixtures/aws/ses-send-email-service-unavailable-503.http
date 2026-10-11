@@ -1,0 +1,12 @@
+HTTP/1.1 503 Service Unavailable
+content-type: text/xml
+x-amzn-requestid: f7c8d9e0-c866-11e0-9beb-01a62d68c57f
+
+<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <Error>
+    <Type>Receiver</Type>
+    <Code>ServiceUnavailable</Code>
+    <Message>Service Unavailable</Message>
+  </Error>
+  <RequestId>f7c8d9e0-c866-11e0-9beb-01a62d68c57f</RequestId>
+</ErrorResponse>

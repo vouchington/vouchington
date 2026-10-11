@@ -25,6 +25,8 @@ export type ReplayedRequest = {
 export type ProviderReplay = {
   /** Pass this as the SDK's `fetch` option. It answers each request with the next queued response. */
   fetch: ReturnType<typeof getExternalFetch>
+  /** Raw HTTP transport: preserve serialized URL bytes instead of fetch URL normalization. */
+  sendHttpRequest: (url: string, init?: RequestInit) => Promise<Response>
   /** Every request the SDK sent, in order. */
   requests: ReplayedRequest[]
   /** Queue responses; the SDK receives them in request order. */
@@ -126,16 +128,19 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
   // `new Request(...)` applies fetch semantics to the SDK's arguments: the effective URL, method,
   // and headers (a form body brings its own `content-type`), the body bytes, and an abort signal
   // that follows `init.signal`.
-  const replayFetch: ProviderReplay['fetch'] = async (input, init) => {
-    const request = new Request(input, init)
+  const replayRequest = async (
+    request: Request,
+    url = request.url,
+    headers = request.headers,
+  ): Promise<Response> => {
     const { signal } = request
     signal.throwIfAborted()
     // Reserve the request's position and its response before awaiting the body, so concurrent
     // calls keep the order in which they started.
     const sent: ReplayedRequest = {
       method: request.method,
-      url: request.url,
-      headers: Object.fromEntries(request.headers.entries()),
+      url,
+      headers: Object.fromEntries(headers.entries()),
       body: undefined,
       json: <T,>() => JSON.parse(sent.body?.toString('utf8') ?? 'null') as T,
     }
@@ -152,7 +157,9 @@ export function createProviderReplay(options: { chunkBytes?: number } = {}): Pro
   }
 
   return {
-    fetch: replayFetch,
+    fetch: async (input, init) => replayRequest(new Request(input, init)),
+    sendHttpRequest: async (url, init) =>
+      replayRequest(new Request(url, init), url, new Headers(init?.headers)),
     requests,
     respondWith: (...responses) => void queue.push(...responses),
     assertDrained: () => {
