@@ -31,37 +31,34 @@ export async function checkUuidv7CreatedAtDdl(
     for (const table of facts.statements) {
       if (table.kind !== 'createTable') continue
       const tableName = table.table.parts.at(-1)?.value
-      const idColumn = table.columns.find(column => column.name.value.toLowerCase() === 'id')
+      const idColumn = table.columns.find(column => column.name.identity === 'id')
       if (!idColumn) continue
       const isPrimaryKey = [...table.constraints, ...idColumn.constraints].some(
         constraint =>
           constraint.kind === 'primaryKey' &&
           (constraint.columns.length === 0 ||
-            constraint.columns.some(column => column.value === idColumn.name.value)),
+            constraint.columns.some(column => column.identity === idColumn.name.identity)),
       )
       if (
         !isPrimaryKey ||
-        ddlFunction(idColumn.default?.root)?.name.parts.at(-1)?.value.toLowerCase() !== 'uuidv7'
+        ddlFunction(idColumn.default?.root)?.name.parts.at(-1)?.identity !== 'uuidv7'
       )
         continue
 
-      const createdAtColumn = table.columns.find(
-        column => column.name.value.toLowerCase() === 'created_at',
-      )
+      const createdAtColumn = table.columns.find(column => column.name.identity === 'created_at')
       if (!createdAtColumn) continue
       const generated = ddlFunction(createdAtColumn.generated?.expression.root)
-      const generatedFunction = generated?.name.parts.at(-1)?.value.toLowerCase()
-      const defaultFunction = ddlFunction(createdAtColumn.default?.root)
-        ?.name.parts.at(-1)
-        ?.value.toLowerCase()
+      const generatedFunction = generated?.name.parts.at(-1)?.identity
+      const defaultFunction = ddlFunction(createdAtColumn.default?.root)?.name.parts.at(
+        -1,
+      )?.identity
       const isGeneratedFromId =
         generatedFunction === 'uuid_extract_timestamp' &&
         generated?.argumentsComplete &&
         generated.arguments.some(
           argument =>
             argument.root.kind === 'columnReference' &&
-            argument.root.name.parts.at(-1)?.value.toLowerCase() ===
-              idColumn.name.value.toLowerCase(),
+            argument.root.name.parts.at(-1)?.identity === idColumn.name.identity,
         )
       if (isGeneratedFromId) continue
 
@@ -87,7 +84,7 @@ function ddlFunction(
   if (!root) return null
   if (root.kind === 'cast' || root.kind === 'parenthesized') return ddlFunction(root.expression)
   if (root.kind !== 'functionCall') return null
-  const name = root.name.parts.at(-1)?.value.toLowerCase()
+  const name = root.name.parts.at(-1)?.identity
   // Preserve the existing diagnostic classification of SQL value/special expressions.
   if (root.syntax === 'value' && name !== 'current_timestamp') return null
   if (
