@@ -143,6 +143,17 @@ async function withLockedOAuthAuthorization<Result>(
   run: (transaction: OwnedTransaction) => Promise<Result>,
 ): Promise<Result> {
   await using transaction = await beginTransaction()
+  await lockOAuthAuthorizationForMutation(transaction, flowId)
+  const result = await run(transaction)
+  await transaction.commit()
+  return result
+}
+
+/** Establish isolation and acquire the authorization row before authoritative reads. */
+async function lockOAuthAuthorizationForMutation(
+  transaction: OwnedTransaction,
+  flowId: string,
+): Promise<void> {
   await transaction(
     '/* withLockedOAuthAuthorization:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
   )
@@ -150,7 +161,4 @@ async function withLockedOAuthAuthorization<Result>(
     '/* withLockedOAuthAuthorization:lock */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
     [flowId],
   )
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
 }
