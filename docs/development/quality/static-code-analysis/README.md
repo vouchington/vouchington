@@ -107,6 +107,9 @@ for the detailed check and test reference.
 `pnpm run no-mistakes`; required static-analysis CI and the required CI static-analysis
 matrix run the same check. See [CI static analysis](../../ci.md#static-analysis-static-code-analysisyml)
 and [local static analysis](../../tests.md#linters-and-static-analysis).
+The monorepo check selects each importer’s owning TypeScript config. Do not force the root
+`--tsconfig`: it lacks package aliases such as the web `@/*` mapping and would hide reachable
+imports from graph checks. Use an explicit package config only for an intentionally scoped query.
 
 - **Reachability**: every included Markdown document must be discoverable from a tracked
   `AGENTS.md` link, directly or through `README.md` indexes, at a maximum graph depth of three
@@ -657,6 +660,9 @@ multiple lifecycle timestamps, while generated status remains valid.
 Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness checks: [`no-mistakes-config.test.mts`](../../../../ci/no-mistakes-config.test.mts) derives ignored Playwright routes from the analyzer report, while [`no-mistakes-config-freshness.test.mts`](../../../../ci/no-mistakes-config-freshness.test.mts) verifies provider/environment globs and filesystem exceptions against current repository state. Do not add a baseline or parallel exception registry. Provider annotation placement is documented in [Tests and Checks](../../tests.md#vitest-mock-typing).
 
 Tests for static-analysis tooling should be covered by semantic Vitest projects in `vitest.config.mts`, not by a catch-all repo bucket.
+
+The Vitest Web project declares its real Web-only setup through `setup_files` in
+`.no-mistakes.yml`, so shared unit-test mocks do not apply to API or integration projects.
 
 The publication writer inventory uses `vouchington-tooling/post-publication-inventory` for source
 analysis. Product configuration supplies the approved capture modules and symbols, eligibility tables,

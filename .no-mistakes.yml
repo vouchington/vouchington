@@ -248,6 +248,8 @@ tests:
         include:
           - web/**/*.test.ts
           - web/**/*.test.tsx
+        setup_files:
+          - web/test-helpers/vitest.setup.web.mts
         exclude:
           - '**/node_modules/**'
           - '**/.git/**'

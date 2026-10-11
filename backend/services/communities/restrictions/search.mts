@@ -34,7 +34,12 @@ export async function searchCommunityRestrictions(
     SELECT *
     FROM (
       SELECT
-        community_restrictions.*,
+        community_restrictions.id, community_restrictions.community_id,
+        community_restrictions.restriction_type, community_restrictions.activated_by_id,
+        community_restrictions.activated_at, community_restrictions.expires_at,
+        community_restrictions.created_at, community_restrictions.updated_at,
+        community_restrictions.lifted_at, community_restrictions.lifted_by_id,
+        community_restrictions.reason,
         CASE
           WHEN lifted_at IS NULL AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
             THEN 1

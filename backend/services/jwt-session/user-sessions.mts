@@ -118,6 +118,7 @@ export async function listActiveUserSessions(
     SELECT s.id, s.device_id, s.device_name, ua.user_agent, s.ip_address, s.created_at,
       s.last_seen_at, s.expires_at,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
+    -- no-mistakes-disable-next-line postgres-required-predicates: a session ID can be minted before its owning user and refreshed later, so active-session pagination must search all ID partitions
     FROM user_sessions s
     JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
     WHERE s.user_id = ${currentUserId}
