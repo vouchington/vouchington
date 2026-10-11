@@ -6,6 +6,11 @@ Drains durable, generation-fenced projections from active story RSS items to a s
 `post -> related -> url` relations. The single ordered reconciliation job is prompted after a
 membership transaction commits and recovers every five minutes.
 
+The best-effort recovery enqueue forwards the internal deduplication identity option used by the
+regular recovery enqueue and returns its completion promise. Production callers keep the shared
+default recovery identity and may fire without awaiting; tests allocate their own identities and
+await completion before reading persisted jobs, without clearing the shared queue.
+
 The worker owns bounded source and prune pages. It renews the exact generation lease while a source
 page is being screened and applied, then settles the renewal before releasing the claim. Each
 generation captures RSS-item, relation-ID,
