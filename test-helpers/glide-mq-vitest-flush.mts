@@ -1,109 +1,80 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
+import type { JobOptions } from 'glide-mq'
 import type { TestJob } from 'glide-mq/testing'
 import { TestQueueFlushTimeoutError } from './glide-mq-vitest-flush-diagnostics.mts'
-import { type FailureLookup, flushJobs } from './glide-mq-vitest-flush-wait.mts'
-import {
-  type FlushedJobFailure,
-  isInsideTestWorkerProcessor,
-  recordOf,
-  type ShimTestQueue,
-} from './glide-mq-vitest-internals.mts'
+import { type FlushQueue, flushJobs } from './glide-mq-vitest-flush-wait.mts'
 export { TestQueueFlushTimeoutError }
 export { DEFAULT_FLUSH_TIMEOUT_MS } from './glide-mq-vitest-flush-wait.mts'
 
-type TestJobOptions = Record<string, unknown> & {
+const testWorkerProcessorContext = new AsyncLocalStorage<true>()
+
+/** Suppress automatic flushing for nested processors and native explicit-wait/replay APIs. */
+export function runInsideTestWorkerProcessor<T>(fn: () => T): T {
+  return testWorkerProcessorContext.run(true, fn)
+}
+
+export function isInsideTestWorkerProcessor(): boolean {
+  return testWorkerProcessorContext.getStore() === true
+}
+
+export function wrapTestWorkerProcessor<R>(
+  processor: (job: any) => Promise<R> | R,
+): (job: any) => Promise<R> {
+  return job => runInsideTestWorkerProcessor(() => Promise.resolve(processor(job)))
+}
+
+export type TestJobOptions = JobOptions & {
   expectDeadLetter?: boolean
   flushTimeoutMs?: number
 }
 
-function stripTestJobOptions(opts?: TestJobOptions): Record<string, unknown> | undefined {
+function stripTestJobOptions(opts?: TestJobOptions): JobOptions | undefined {
   if (!opts) return undefined
   const { expectDeadLetter: _expectDeadLetter, flushTimeoutMs: _flushTimeoutMs, ...jobOpts } = opts
   return jobOpts
 }
 
-/**
- * Hold a failure watcher open across the adds and the wait. It has to exist before the first add:
- * a processor that throws can fail the job before `add` returns to its caller.
- */
-async function withFailureWatcher<T>(
-  queue: ShimTestQueue,
-  run: (failures: Map<object, FlushedJobFailure>) => Promise<T>,
-): Promise<T> {
-  const failures = new Map<object, FlushedJobFailure>()
-  queue.failureWatchers.add(failures)
-  try {
-    return await run(failures)
-  } finally {
-    queue.failureWatchers.delete(failures)
-  }
-}
-
-/** Only a failure of one of these very jobs counts; a stale job reusing an id does not. */
-function failureLookup(
-  failures: ReadonlyMap<object, FlushedJobFailure>,
-  jobs: TestJob[],
-): FailureLookup {
-  const byId = new Map(jobs.map(job => [job.id, job]))
-  return jobId => {
-    const job = byId.get(jobId)
-    return job && failures.get(recordOf(job))
-  }
-}
-
-export function addAndFlush<D, R>(
-  queue: ShimTestQueue<D, R>,
+export async function addAndFlush<D, R>(
+  queue: FlushQueue<D, R>,
   name: string,
   data: D,
   opts?: TestJobOptions,
 ) {
-  return withFailureWatcher(queue, async failures => {
-    const job = await queue.add(name, data, stripTestJobOptions(opts) as any)
-    if (job && !isInsideTestWorkerProcessor()) {
-      await flushJobs(
-        queue,
-        [job.id],
-        opts?.expectDeadLetter === true ? new Set([job.id]) : new Set(),
-        opts?.flushTimeoutMs,
-        failureLookup(failures, [job]),
-      )
-    }
-    return job
-  })
+  const job = await queue.enqueue(name, data, stripTestJobOptions(opts))
+  if (job && !isInsideTestWorkerProcessor()) {
+    await flushJobs(
+      queue,
+      [job],
+      opts?.expectDeadLetter === true ? new Set([job.id]) : new Set(),
+      opts?.flushTimeoutMs,
+    )
+  }
+  return job
 }
 
-export function addBulkAndFlush<D, R>(
-  queue: ShimTestQueue<D, R>,
+export async function addBulkAndFlush<D, R>(
+  queue: FlushQueue<D, R>,
   jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
 ) {
-  return withFailureWatcher(queue, async failures => {
-    // Sequential `queue.add` rather than `queue.addBulk()`, which drops a deduplicated add's `null`
-    // instead of keeping its position: production's addBulk preserves the order and length of its
-    // input, so a skipped add lands `null` at its own index.
-    const result: Array<Awaited<ReturnType<typeof queue.add>>> = []
-    for (const job of jobs) {
-      result.push(await queue.add(job.name, job.data, stripTestJobOptions(job.opts) as any))
-    }
-    const jobIds = result.flatMap(job => (job ? [job.id] : []))
-    const expectedDeadLetterJobIds = new Set(
-      result.flatMap((job, index) =>
-        job && jobs[index].opts?.expectDeadLetter === true ? [job.id] : [],
-      ),
+  // Keep per-input test options attached to admitted ids while returning the SDK's compact list.
+  const result: TestJob<D, R>[] = []
+  const expectedDeadLetterJobIds = new Set<string>()
+  for (const job of jobs) {
+    const added = await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts))
+    if (!added) continue
+    result.push(added)
+    if (job.opts?.expectDeadLetter === true) expectedDeadLetterJobIds.add(added.id)
+  }
+  const timeouts = jobs.flatMap(job =>
+    typeof job.opts?.flushTimeoutMs === 'number' ? [job.opts.flushTimeoutMs] : [],
+  )
+  if (result.length > 0 && !isInsideTestWorkerProcessor()) {
+    await flushJobs(
+      queue,
+      result,
+      expectedDeadLetterJobIds,
+      timeouts.length > 0 ? Math.max(...timeouts) : undefined,
     )
-    const timeouts = jobs.flatMap(job =>
-      typeof job.opts?.flushTimeoutMs === 'number' ? [job.opts.flushTimeoutMs] : [],
-    )
-    if (jobIds.length > 0 && !isInsideTestWorkerProcessor()) {
-      await flushJobs(
-        queue,
-        jobIds,
-        expectedDeadLetterJobIds,
-        timeouts.length > 0 ? Math.max(...timeouts) : undefined,
-        failureLookup(
-          failures,
-          result.flatMap(job => (job ? [job] : [])),
-        ),
-      )
-    }
-    return result
-  })
+  }
+  return result
 }

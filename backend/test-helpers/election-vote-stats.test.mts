@@ -23,14 +23,14 @@ async function flushMicrotasks(): Promise<void> {
 
 async function addCompletedJob(electionId: string): Promise<void> {
   const queue = getOrCreateQueue(QUEUE_NAME)
-  const job = await queue.add(JOB_NAME, electionTarget(electionId))
+  const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
   const record = queue.jobs.get(job!.id)
   record!.state = 'completed'
 }
 
 async function addFailedJob(electionId: string, failedReason: string): Promise<void> {
   const queue = getOrCreateQueue(QUEUE_NAME)
-  const job = await queue.add(JOB_NAME, electionTarget(electionId))
+  const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
   const record = queue.jobs.get(job!.id)
   record!.state = 'failed'
   record!.failedReason = failedReason

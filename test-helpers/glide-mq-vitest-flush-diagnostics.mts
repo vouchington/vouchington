@@ -27,13 +27,8 @@ export type TestQueueFlushDiagnostics = {
  * (#10722, #10782, #10817) hit the same wall: `TestQueueFlushTimeoutError` reported only job IDs,
  * so none of them could tell whether the pending job was ever picked up.
  *
- * `concurrency` has no public accessor on `TestWorker` (only `getActiveCount()` does — see
- * glide-mq's testing.d.ts), and `TestQueue.getWorkers()` returns `WorkerInfo`, which carries
- * neither it nor a worker handle. So this reads the `@internal` `queue.workers` set and each
- * worker's TypeScript-private `concurrency` (both still present in 0.16): diagnostic-only reads,
- * not a correctness dependency, that could silently stop working on a future glide-mq bump. This
- * is the only place left that reads `queue.workers`; move to `getWorkers()` once `WorkerInfo`
- * exposes `concurrency` (upstream PR pending).
+ * Worker counts and concurrency use TestWorker's public API. The synchronous timeout snapshot
+ * reads the `@internal` `queue.workers` set to reach those workers without an asynchronous lookup.
  *
  * `queue.jobs` and `queue.waitingQueue` are `@internal` but public fields; a `prioritized` job
  * also sits in `waitingQueue` until a worker's promotion pass moves it to `waiting`. If any read
@@ -45,7 +40,7 @@ export function captureFlushDiagnostics(
   pendingJobIds: readonly string[],
 ): TestQueueFlushDiagnostics {
   try {
-    const workers: TestQueueWorkerDiagnostic[] = [...(queue.workers as Set<any>)].map(worker => ({
+    const workers: TestQueueWorkerDiagnostic[] = [...queue.workers].map(worker => ({
       activeCount: worker.getActiveCount(),
       concurrency: worker.concurrency,
     }))

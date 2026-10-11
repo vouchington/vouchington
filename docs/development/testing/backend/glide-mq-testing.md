@@ -1,34 +1,58 @@
 # Glide-MQ Testing with TestQueue and TestWorker
 
-The glide-mq vitest shim (`test-helpers/glide-mq-vitest-shim.mts`) wraps glide-mq's own testing mode
-(`glide-mq/testing`: `TestQueue` and `TestWorker`) for in-memory testing without Valkey. Since glide-mq 0.16
-that mode mirrors production for priority, delay, deduplication and retry, so the shim adds only what
-upstream lacks.
+The glide-mq vitest shim (`test-helpers/glide-mq-vitest-shim.mts`) inherits glide-mq's own testing mode
+(`glide-mq/testing`: `TestQueue` and `TestWorker`) for in-memory testing without Valkey. It uses
+upstream priority, delay, deduplication, retry, batch, flow and dead-letter behavior, plus the same
+error classes as production. The shim preserves the repository's eager enqueue and shared queue lifecycle.
+`Queue` is the cached native subclass itself, so native APIs such as job logs are available without
+a forwarding facade. Fixtures that manually stage records use `getOrCreateQueue(name).enqueue()`
+for native admission without automatic flushing.
 
 ## How It Works
 
 1. **Automatic Replacement**: vitest.config.mts aliases `glide-mq` imports to the shim
 2. **In-Memory Processing**: TestQueue and TestWorker use Maps instead of Redis
 3. **Terminal-state drain**: `add`/`addBulk` wait until flushed job IDs complete, fail, or land on the expected DLQ, with a bounded wall-clock timeout. A failed job makes `add` throw. Nested `Queue.add` from inside a shim `Worker` processor does not wait for child completion (production `Queue.add` also returns after enqueue).
-4. **Native behavior, not reimplemented**: priority, delay, deduplication (`simple`, `throttle`, `debounce`), retry backoff, `obliterate({ force: true })`, `job.retry()` and `job.promote()` are glide-mq's own.
+4. **Native behavior, not reimplemented**: priority, delay, deduplication (`simple`, `throttle`, `debounce`), retry backoff, flows, dead-letter admission and replay, `obliterate({ force: true })`, `job.retry()` and `job.promote()` are glide-mq's own.
 
 ## What the Shim Adds
 
 - **`add`/`addBulk` wait for the job to settle.** Production `add` returns on accept; tests need the worker's side effects. Native `addAndWait` is not used: it rejects `removeOnComplete`/`removeOnFail`, waits on one id and throws on a deduplicated add.
-- **A failed flushed job throws.** Native `Job.waitUntilFinished` resolves `'failed'` instead of throwing and polls every 500ms. A `removeOnFail: true` job is deleted before its `failed` event, so the shim records the failure from the event.
+- **A failed flushed job throws.** A `removeOnFail: true` job is deleted before its `failed` event, but its bound native job record retains the failure. The shim reads that record without a separate failure-watcher registry.
 - **Settled by events, not `Worker.drain()`.** `Worker.drain()` closes the worker, and every file in an `isolate: false` fork shares these workers.
 - **Retries are promoted at once.** A retryable failure parks as `delayed` for its backoff; the shim promotes it on the queue's `retrying` event so a test does not wait out the backoff.
-- **Dead-letter queue wiring.** glide-mq's testing mode has no DLQ: `deadLetterQueue`, `getDeadLetter*`, and the obliterate cascade are local.
-- **`addBulk` keeps a skipped add as `null`.** Production `addBulk` keeps the order and length of its input; the shim adds sequentially so a deduplicated add lands `null` at its own index.
+- **Shared store lifecycle.** `Queue.close()` leaves the fork's in-memory store and independently
+  owned workers alive, just as closing a production producer leaves server state intact. Close
+  workers explicitly; use `obliterate()` to clear jobs. Keeping stores registered lets native
+  `TestFlowProducer` and dead-letter APIs resolve the same queues by name.
+- **`addBulk` returns a compact list.** Like the released SDK, it omits deduplicated adds. Per-input test options are associated with admitted IDs before compaction, so an expected DLQ failure belongs to the correct job. Returned indices are not input indices.
 - **Nested enqueue detection.** An `AsyncLocalStorage` marks processor scope so a nested `add` is not flushed.
 - **Worker-attachment guard.** Fails a file that leaves an unexpected live worker attached on an `isolate: false` fork.
 - **Flush timeout diagnostics.** `TestQueueFlushTimeoutError` reports worker concurrency, active counts and the stuck job's state.
+- **Parked-job settlement.** Native `waitForJobs()` waits through delayed and suspended jobs and
+  rejects terminal failures. The shim's event-driven flush returns when an owned job parks and
+  accepts an expected failure once its native DLQ record exists. It checks bound record identity
+  so removed jobs and reused IDs cannot hide a failure or inherit another job's state.
+  `moveToDelayed()` wakes it through `delay-changed`.
+
+`FlowProducer` is the native `TestFlowProducer`: `add()` returns the flow tree and parents wait for
+their child dependencies. It does not apply the shim's automatic enqueue flush. For flows, replayed
+jobs, or explicit terminal waits, use `queue.waitForJobs(jobs, { timeout })`; this native API waits
+through delayed and suspended states and rejects failed jobs. Dead-letter reads and replay delegate
+to the native queue, including source-queue ownership and `excludeData` read options.
+
+Native `addAndWait()` owns its result wait and deadline, and replay returns after admission. Both
+bypass automatic flushing when the native implementation calls `add()` internally.
+
+Create a `Queue` or `Worker` for every referenced queue before adding a native flow;
+the producer requires those stores to be registered.
 
 The worker checks use the public API: `queue.getWorkers()` decides whether a flush has anything to wait for,
 and the worker-attachment guard compares `WorkerInfo.id`s. The shim still reads these internal fields of
-`glide-mq/testing`, verified against 0.16.0: `queue.jobs` (record state) and `job._record` (job identity),
-and, for diagnostics only, `queue.workers`, `queue.waitingQueue` and `worker.concurrency` (`WorkerInfo` has
-no `concurrency` or worker handle). Re-check them on every glide-mq bump; the flush tests
+`glide-mq/testing`: `queue.jobs` (current record identity), `job._record` (bound state and identity),
+and `queue.deadLetterQueueName` (configuration shared with the native worker),
+and, for synchronous diagnostics only, `queue.workers` and `queue.waitingQueue`. Worker concurrency
+and active counts use public `TestWorker` members. Re-check internal reads on every glide-mq bump; the flush tests
 (`test-helpers/glide-mq-vitest-flush*.test.mts`) fail if the non-diagnostic ones change.
 
 ## Job States and Lookups

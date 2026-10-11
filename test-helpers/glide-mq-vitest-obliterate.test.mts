@@ -1,7 +1,7 @@
 import { TestWorker } from 'glide-mq/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { addAndFlush } from './glide-mq-vitest-flush.mts'
-import { configureDeadLetterQueue, getOrCreateQueue } from './glide-mq-vitest-internals.mts'
+import { getOrCreateQueue } from './glide-mq-vitest-internals.mts'
 import { Queue } from './glide-mq-vitest-shim.mts'
 
 function uniqueQueueName(label: string): string {
@@ -26,7 +26,7 @@ describe('GlideMQ test obliterate', () => {
     await queue.upsertJobScheduler('sched-1', { every: 60_000 }, { name: 'scheduled', data: {} })
     // A job the worker never gets to consume proves the queue is cleared rather than drained.
     await queue.pause()
-    await queue.add('stuck', { n: 2 })
+    await queue.enqueue('stuck', { n: 2 })
 
     const shimQueue = new Queue(name)
     await shimQueue.obliterate()
@@ -34,7 +34,7 @@ describe('GlideMQ test obliterate', () => {
     expect(await shimQueue.getJobs('completed')).toHaveLength(0)
     expect(await shimQueue.getJobs('waiting')).toHaveLength(0)
     expect(await shimQueue.getRepeatableJobs()).toHaveLength(0)
-    expect(await shimQueue.isPaused()).toBe(false)
+    expect(shimQueue.isPaused()).toBe(false)
     const again = await addAndFlush(queue, 'again', { n: 3 })
     expect((await shimQueue.getJob(again!.id))?.returnvalue).toEqual({ n: 3 })
   })
@@ -55,7 +55,7 @@ describe('GlideMQ test obliterate', () => {
         await hang
       }),
     )
-    await queue.add('hang', { n: 1 })
+    await queue.enqueue('hang', { n: 1 })
     await started
 
     await new Queue(name).obliterate()
@@ -66,12 +66,16 @@ describe('GlideMQ test obliterate', () => {
   it('cascades into the configured dead-letter queue', async () => {
     const name = uniqueQueueName('dlq')
     const dlqName = `${name}-dlq`
-    const queue = getOrCreateQueue(name)
-    configureDeadLetterQueue(name, { name: dlqName })
+    const deadLetterQueue = { name: dlqName }
+    const queue = getOrCreateQueue(name, { deadLetterQueue })
     workers.push(
-      new TestWorker(queue, () => {
-        throw new Error('planned failure')
-      }),
+      new TestWorker(
+        queue,
+        () => {
+          throw new Error('planned failure')
+        },
+        { deadLetterQueue },
+      ),
     )
 
     await addAndFlush(queue, 'fail', { id: 'x' }, { expectDeadLetter: true })

@@ -24,7 +24,6 @@
     "@services/oauth-facebook": "workspace:^",
     "@services/oauth-github": "workspace:^",
     "@services/oauth-x": "workspace:^",
-    "glide-mq": "^0.17.0"
-  },
-  "devDependencies": {}
+    "glide-mq": "^0.18.0"
+  }
 }
