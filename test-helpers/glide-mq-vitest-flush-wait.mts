@@ -1,9 +1,9 @@
-import type { TestJob } from 'glide-mq/testing'
+import type { TestJob, TestJobRecord } from 'glide-mq/testing'
 import {
   captureFlushDiagnostics,
   TestQueueFlushTimeoutError,
 } from './glide-mq-vitest-flush-diagnostics.mts'
-import { recordOf, type ShimTestQueue } from './glide-mq-vitest-internals.mts'
+import type { ShimTestQueue } from './glide-mq-vitest-internals.mts'
 
 export const DEFAULT_FLUSH_TIMEOUT_MS = 4_000
 
@@ -31,7 +31,8 @@ async function inspectJobs(
   const pending: string[] = []
   for (const job of jobs) {
     // The bound record retains terminal failure even after removeOnFail removes it from jobs.
-    const record = recordOf(job)
+    // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
+    const record = (job as unknown as { _record: TestJobRecord })._record
     if (record.state === 'failed') {
       if (!expectedDeadLetterJobIds.has(job.id)) {
         throw new Error(
@@ -71,57 +72,46 @@ export async function flushJobs(
   if ((await queue.getWorkers()).length === 0) return
   const jobIds = jobs.map(job => job.id)
 
-  return new Promise((resolve, reject) => {
-    let settled = false
-    let inspecting = false
-    let dirty = false
-    let pendingJobIds = [...jobIds]
-    function finish(error?: unknown) {
-      if (settled) return
-      settled = true
-      queue.settleWaiters.delete(notify)
-      deadline.removeEventListener('abort', timedOut)
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- preserves the original queue-inspection failure for test diagnostics
-      if (error !== undefined) reject(error)
-      else resolve()
+  let pendingJobIds = [...jobIds]
+  let transition = Promise.withResolvers<void>()
+  let notified = false
+  const expiration = Promise.withResolvers<never>()
+  function notify() {
+    notified = true
+    transition.resolve()
+  }
+  function timedOut() {
+    expiration.reject(
+      new TestQueueFlushTimeoutError(
+        queue.name,
+        [...jobIds],
+        pendingJobIds,
+        flushTimeoutMs,
+        captureFlushDiagnostics(queue, pendingJobIds),
+      ),
+    )
+    notify()
+  }
+  async function inspect() {
+    while (!deadline.aborted) {
+      transition = Promise.withResolvers<void>()
+      notified = false
+      const pending = await inspectJobs(queue, jobs, expectedDeadLetterJobIds)
+      // A transition during an awaited read requires a fresh inspection before success.
+      if (notified) continue
+      pendingJobIds = pending
+      if (pending.length === 0) return
+      await transition.promise
     }
-    function timedOut() {
-      finish(
-        new TestQueueFlushTimeoutError(
-          queue.name,
-          [...jobIds],
-          pendingJobIds,
-          flushTimeoutMs,
-          captureFlushDiagnostics(queue, pendingJobIds),
-        ),
-      )
-    }
-    function notify() {
-      if (settled) return
-      dirty = true
-      if (!inspecting) void inspect()
-    }
-    async function inspect() {
-      inspecting = true
-      try {
-        while (!settled && dirty) {
-          dirty = false
-          const pending = await inspectJobs(queue, jobs, expectedDeadLetterJobIds)
-          if (settled) return
-          // A real transition during any awaited read requires a fresh inspection before success.
-          if (dirty) continue
-          pendingJobIds = pending
-          if (pending.length === 0) finish()
-        }
-      } catch (err) {
-        finish(err)
-      } finally {
-        inspecting = false
-      }
-    }
-    queue.settleWaiters.add(notify)
-    deadline.addEventListener('abort', timedOut, { once: true })
+  }
+  queue.settleWaiters.add(notify)
+  deadline.addEventListener('abort', timedOut, { once: true })
+  try {
     if (deadline.aborted) timedOut()
-    else notify()
-  })
+    // The deadline also bounds an inspection whose native getter never returns.
+    await Promise.race([expiration.promise, inspect()])
+  } finally {
+    queue.settleWaiters.delete(notify)
+    deadline.removeEventListener('abort', timedOut)
+  }
 }

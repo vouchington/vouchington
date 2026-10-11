@@ -14,6 +14,56 @@ describe('GlideMQ native testing adapters', () => {
     await Promise.all(workers.splice(0).map(worker => worker.close()))
   })
 
+  it('exposes native job logs on the automatically flushed queue', async () => {
+    const queue = new Queue(queueName('logs'))
+    workers.push(
+      new Worker(queue.name, async (job: TestJob) => {
+        await job.log('processed')
+      }),
+    )
+
+    const job = await queue.add('logged', {})
+
+    expect(await queue.getJobLogs(job!.id)).toEqual({ logs: ['processed'], count: 1 })
+  })
+
+  it('lets native addAndWait own its deadline instead of the automatic flush', async () => {
+    const queue = new Queue(queueName('explicit-wait'))
+    const held = Promise.withResolvers<void>()
+    workers.push(new Worker(queue.name, () => held.promise))
+
+    try {
+      await expect(queue.addAndWait('held', {}, { waitTimeout: 20 })).rejects.toThrow(
+        'did not finish within 20ms',
+      )
+    } finally {
+      held.resolve()
+    }
+  })
+
+  it('replays on native admission even if the replayed job fails again', async () => {
+    const deadLetterQueue = { name: queueName('replay-dlq') }
+    const queue = new Queue(queueName('replay'), { deadLetterQueue })
+    workers.push(
+      new Worker(
+        queue.name,
+        () => {
+          throw new Error('planned failure')
+        },
+        { deadLetterQueue },
+      ),
+    )
+    await queue.add('fail', {}, { expectDeadLetter: true })
+    const [originalLetter] = await queue.getDeadLetterJobs()
+
+    const replayed = await queue.replayDeadLetterJob(originalLetter.id)
+
+    await expect(queue.waitForJobs([replayed], { timeout: 200 })).rejects.toThrow('planned failure')
+    const letters = await queue.getDeadLetterJobs()
+    expect(letters).toHaveLength(1)
+    expect(letters[0].id).not.toBe(originalLetter.id)
+  })
+
   it('keeps independent workers and shared state when a queue client closes', async () => {
     const queue = new Queue(queueName('close'))
     const store = getOrCreateQueue(queue.name)

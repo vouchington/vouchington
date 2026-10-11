@@ -224,7 +224,7 @@ describe('GlideMQ test drain', () => {
     // Reproduces the mechanism behind #10722/#10782/#10817: a processor promise that never
     // settles never reaches TestWorker's `.finally()`, so it permanently pins a concurrency
     // slot (see glide-mq's testing.js `processJob`) with no relationship to `queue.jobs` state —
-    // `obliterateTestQueue` cannot reclaim it, by design (see glide-mq-vitest-obliterate.mts).
+    // Native obliterate cannot reclaim a hung processor's concurrency slot.
     // A later job on the same queue is then starved: it never dispatches and stays 'waiting'
     // forever, which a flush timeout could not previously distinguish from a job that dispatched
     // and is merely slow ('active'). This test asserts the new diagnostics make that call.
@@ -246,7 +246,7 @@ describe('GlideMQ test drain', () => {
     )
     workers.push(worker)
 
-    void queue.add('leak', { n: 0 })
+    void queue.enqueue('leak', { n: 0 })
     await leakGate
 
     const error = await addAndFlush(queue, 'starved', { n: 1 }, { flushTimeoutMs: 50 }).then(

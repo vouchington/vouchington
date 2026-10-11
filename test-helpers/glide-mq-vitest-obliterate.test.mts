@@ -26,7 +26,7 @@ describe('GlideMQ test obliterate', () => {
     await queue.upsertJobScheduler('sched-1', { every: 60_000 }, { name: 'scheduled', data: {} })
     // A job the worker never gets to consume proves the queue is cleared rather than drained.
     await queue.pause()
-    await queue.add('stuck', { n: 2 })
+    await queue.enqueue('stuck', { n: 2 })
 
     const shimQueue = new Queue(name)
     await shimQueue.obliterate()
@@ -34,7 +34,7 @@ describe('GlideMQ test obliterate', () => {
     expect(await shimQueue.getJobs('completed')).toHaveLength(0)
     expect(await shimQueue.getJobs('waiting')).toHaveLength(0)
     expect(await shimQueue.getRepeatableJobs()).toHaveLength(0)
-    expect(await shimQueue.isPaused()).toBe(false)
+    expect(shimQueue.isPaused()).toBe(false)
     const again = await addAndFlush(queue, 'again', { n: 3 })
     expect((await shimQueue.getJob(again!.id))?.returnvalue).toEqual({ n: 3 })
   })
@@ -55,7 +55,7 @@ describe('GlideMQ test obliterate', () => {
         await hang
       }),
     )
-    await queue.add('hang', { n: 1 })
+    await queue.enqueue('hang', { n: 1 })
     await started
 
     await new Queue(name).obliterate()

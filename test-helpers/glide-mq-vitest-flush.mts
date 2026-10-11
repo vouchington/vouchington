@@ -1,15 +1,34 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
+import type { JobOptions } from 'glide-mq'
 import { TestQueueFlushTimeoutError } from './glide-mq-vitest-flush-diagnostics.mts'
 import { flushJobs } from './glide-mq-vitest-flush-wait.mts'
-import { isInsideTestWorkerProcessor, type ShimTestQueue } from './glide-mq-vitest-internals.mts'
+import type { ShimTestQueue } from './glide-mq-vitest-internals.mts'
 export { TestQueueFlushTimeoutError }
 export { DEFAULT_FLUSH_TIMEOUT_MS } from './glide-mq-vitest-flush-wait.mts'
 
-type TestJobOptions = Record<string, unknown> & {
+const testWorkerProcessorContext = new AsyncLocalStorage<true>()
+
+/** Suppress automatic flushing for nested processors and native explicit-wait/replay APIs. */
+export function runInsideTestWorkerProcessor<T>(fn: () => T): T {
+  return testWorkerProcessorContext.run(true, fn)
+}
+
+export function isInsideTestWorkerProcessor(): boolean {
+  return testWorkerProcessorContext.getStore() === true
+}
+
+export function wrapTestWorkerProcessor<R>(
+  processor: (job: any) => Promise<R> | R,
+): (job: any) => Promise<R> {
+  return job => runInsideTestWorkerProcessor(() => Promise.resolve(processor(job)))
+}
+
+export type TestJobOptions = JobOptions & {
   expectDeadLetter?: boolean
   flushTimeoutMs?: number
 }
 
-function stripTestJobOptions(opts?: TestJobOptions): Record<string, unknown> | undefined {
+function stripTestJobOptions(opts?: TestJobOptions): JobOptions | undefined {
   if (!opts) return undefined
   const { expectDeadLetter: _expectDeadLetter, flushTimeoutMs: _flushTimeoutMs, ...jobOpts } = opts
   return jobOpts
@@ -21,7 +40,7 @@ export async function addAndFlush<D, R>(
   data: D,
   opts?: TestJobOptions,
 ) {
-  const job = await queue.add(name, data, stripTestJobOptions(opts) as any)
+  const job = await queue.enqueue(name, data, stripTestJobOptions(opts))
   if (job && !isInsideTestWorkerProcessor()) {
     await flushJobs(
       queue,
@@ -37,12 +56,12 @@ export async function addBulkAndFlush<D, R>(
   queue: ShimTestQueue<D, R>,
   jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
 ) {
-  // Sequential `queue.add` rather than `queue.addBulk()`, which drops a deduplicated add's `null`
+  // Sequential native admission rather than `queue.addBulk()`, which drops a deduplicated add's `null`
   // instead of keeping its position: production's addBulk preserves the order and length of its
   // input, so a skipped add lands `null` at its own index.
-  const result: Array<Awaited<ReturnType<typeof queue.add>>> = []
+  const result: Array<Awaited<ReturnType<typeof queue.enqueue>>> = []
   for (const job of jobs) {
-    result.push(await queue.add(job.name, job.data, stripTestJobOptions(job.opts) as any))
+    result.push(await queue.enqueue(job.name, job.data, stripTestJobOptions(job.opts)))
   }
   const addedJobs = result.flatMap(job => (job ? [job] : []))
   const expectedDeadLetterJobIds = new Set(

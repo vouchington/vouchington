@@ -78,7 +78,7 @@ describe('GlideMQ test flush across job states', () => {
         { concurrency: 2 },
       ),
     )
-    await queue.add('stale', {}, { attempts: 1 })
+    await queue.enqueue('stale', {}, { attempts: 1 })
     await staleStarted.promise
     await queue.obliterate({ force: true })
 
@@ -112,7 +112,7 @@ describe('GlideMQ test flush across job states', () => {
         { concurrency: 2 },
       ),
     )
-    const held = await queue.add('held', {})
+    const held = await queue.enqueue('held', {})
     await started.promise
     const parked = await addAndFlush(queue, 'parked', {})
     expect(await parked!.getState()).toBe('delayed')
@@ -138,7 +138,7 @@ describe('GlideMQ test flush across job states', () => {
         { concurrency: 2 },
       ),
     )
-    const held = await queue.add('held', {})
+    const held = await queue.enqueue('held', {})
     await started.promise
     const parked = await addAndFlush(queue, 'paused', {})
     expect(await parked!.getState()).toBe('suspended')

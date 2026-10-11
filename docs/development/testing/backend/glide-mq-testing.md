@@ -1,9 +1,12 @@
 # Glide-MQ Testing with TestQueue and TestWorker
 
-The glide-mq vitest shim (`test-helpers/glide-mq-vitest-shim.mts`) wraps glide-mq's own testing mode
+The glide-mq vitest shim (`test-helpers/glide-mq-vitest-shim.mts`) inherits glide-mq's own testing mode
 (`glide-mq/testing`: `TestQueue` and `TestWorker`) for in-memory testing without Valkey. It uses
 upstream priority, delay, deduplication, retry, batch, flow and dead-letter behavior, plus the same
 error classes as production. The shim preserves the repository's eager enqueue and shared queue lifecycle.
+`Queue` is the cached native subclass itself, so native APIs such as job logs are available without
+a forwarding facade. Fixtures that manually stage records use `getOrCreateQueue(name).enqueue()`
+for native admission without automatic flushing.
 
 ## How It Works
 
@@ -38,7 +41,10 @@ jobs, or explicit terminal waits, use `queue.waitForJobs(jobs, { timeout })`; th
 through delayed and suspended states and rejects failed jobs. Dead-letter reads and replay delegate
 to the native queue, including source-queue ownership and `excludeData` read options.
 
-Create a `Queue` or `Worker` facade for every referenced queue before adding a native flow;
+Native `addAndWait()` owns its result wait and deadline, and replay returns after admission. Both
+bypass automatic flushing when the native implementation calls `add()` internally.
+
+Create a `Queue` or `Worker` for every referenced queue before adding a native flow;
 the producer requires those stores to be registered.
 
 The worker checks use the public API: `queue.getWorkers()` decides whether a flush has anything to wait for,

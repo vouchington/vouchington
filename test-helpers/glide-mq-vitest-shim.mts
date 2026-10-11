@@ -11,114 +11,17 @@ export {
   TestFlowProducer as FlowProducer,
   TestJob as Job,
 } from 'glide-mq/testing'
-import { addAndFlush, addBulkAndFlush } from './glide-mq-vitest-flush.mts'
+import { wrapTestWorkerProcessor } from './glide-mq-vitest-flush.mts'
 import {
   clampTestWorkerConcurrency,
   getOrCreateQueue,
   type ShimTestQueue,
-  wrapTestWorkerProcessor,
 } from './glide-mq-vitest-internals.mts'
-import { obliterateTestQueue } from './glide-mq-vitest-obliterate.mts'
-
-export class Queue<D = any, R = any> {
-  readonly name: string
-  #inner: ShimTestQueue<D, R>
-
-  constructor(name: string, options?: { deadLetterQueue?: { name: string } }) {
-    this.name = name
-    this.#inner = getOrCreateQueue(name, options)
-  }
-  add(name: string, data: D, opts?: Record<string, unknown>) {
-    return addAndFlush(this.#inner, name, data, opts as any)
-  }
-  addBulk(
-    jobs: Array<{
-      name: string
-      data: D
-      opts?: Record<string, unknown>
-    }>,
-  ) {
-    return addBulkAndFlush(this.#inner, jobs as any)
-  }
-  getJob(id: string) {
-    return this.#inner.getJob(id)
-  }
-  getJobs(
-    type: 'waiting' | 'active' | 'delayed' | 'completed' | 'failed',
-    start?: number,
-    end?: number,
-  ) {
-    return this.#inner.getJobs(type, start, end)
-  }
-  getJobCounts() {
-    return this.#inner.getJobCounts()
-  }
-  searchJobs(opts: { name?: string; data?: Record<string, unknown>; state?: string }) {
-    return this.#inner.searchJobs(opts as any)
-  }
-  isPaused() {
-    return Promise.resolve(this.#inner.isPaused())
-  }
-  pause() {
-    return this.#inner.pause()
-  }
-  resume() {
-    return this.#inner.resume()
-  }
-  // Closing a producer client leaves server state and independently owned workers intact.
-  async close(): Promise<void> {}
-
-  waitForJobs(...args: Parameters<ShimTestQueue<D, R>['waitForJobs']>) {
-    return this.#inner.waitForJobs(...args)
-  }
-
-  /** Always forced: test workers hold no locks, so there is no active job worth refusing for. */
-  obliterate(_opts?: { force?: boolean }) {
-    return obliterateTestQueue(this.#inner)
-  }
-
-  upsertJobScheduler(id: string, repeat: unknown, template?: unknown) {
-    return this.#inner.upsertJobScheduler(id, repeat as any, template as any)
-  }
-
-  removeJobScheduler(id: string) {
-    return this.#inner.removeJobScheduler(id)
-  }
-
-  getJobScheduler(id: string) {
-    return this.#inner.getJobScheduler(id)
-  }
-  getRepeatableJobs() {
-    return this.#inner.getRepeatableJobs()
-  }
-  readStream(jobId: string, opts?: Record<string, unknown>) {
-    return this.#inner.readStream(jobId, opts as any)
-  }
-
-  signal(jobId: string, name: string, data?: unknown) {
-    return this.#inner.signal(jobId, name, data)
-  }
-
-  getDeadLetterJobs(...args: Parameters<ShimTestQueue<D, R>['getDeadLetterJobs']>) {
-    return this.#inner.getDeadLetterJobs(...args)
-  }
-
-  getDeadLetterJob(...args: Parameters<ShimTestQueue<D, R>['getDeadLetterJob']>) {
-    return this.#inner.getDeadLetterJob(...args)
-  }
-
-  removeDeadLetterJob(jobId: string) {
-    return this.#inner.removeDeadLetterJob(jobId)
-  }
-
-  replayDeadLetterJob(jobId: string) {
-    return this.#inner.replayDeadLetterJob(jobId)
-  }
-}
+export { ShimTestQueue as Queue } from './glide-mq-vitest-internals.mts'
 
 export class Worker<D = any, R = any> extends TestWorker<D, R> {
   constructor(
-    queueNameOrQueue: string | Queue<D, R>,
+    queueNameOrQueue: string | ShimTestQueue<D, R>,
     processor: ((job: any) => Promise<R> | R) | ((jobs: any[]) => Promise<R[]>),
     options?: {
       concurrency?: number

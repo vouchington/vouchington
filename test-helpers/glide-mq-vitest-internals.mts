@@ -1,32 +1,11 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
+import { type TestJob, TestQueue, type TestQueueOptions } from 'glide-mq/testing'
 import {
-  type TestJob,
-  type TestJobRecord,
-  TestQueue,
-  type TestQueueOptions,
-} from 'glide-mq/testing'
-const testWorkerProcessorContext = new AsyncLocalStorage<true>()
-
-/** Run a shim Worker processor so nested Queue.add can detect in-processor enqueue. */
-export function runInsideTestWorkerProcessor<T>(fn: () => T): T {
-  return testWorkerProcessorContext.run(true, fn)
-}
-
-export function isInsideTestWorkerProcessor(): boolean {
-  return testWorkerProcessorContext.getStore() === true
-}
-
-export function wrapTestWorkerProcessor<R>(
-  processor: (job: any) => Promise<R> | R,
-): (job: any) => Promise<R> {
-  return job => runInsideTestWorkerProcessor(() => Promise.resolve(processor(job)))
-}
-
-/** Record identity distinguishes old running jobs from new jobs reusing an obliterated id. */
-export function recordOf(job: TestJob): TestJobRecord {
-  // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
-  return (job as unknown as { _record: TestJobRecord })._record
-}
+  addAndFlush,
+  addBulkAndFlush,
+  runInsideTestWorkerProcessor,
+  type TestJobOptions,
+} from './glide-mq-vitest-flush.mts'
+const queues = new Map<string, ShimTestQueue>()
 
 export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
   /** Flush waiters, woken by actual job transitions. */
@@ -36,7 +15,15 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
   }
 
   constructor(name: string, options?: TestQueueOptions) {
+    const existing = queues.get(name)
+    if (existing) {
+      existing.#configureDeadLetterQueue(options)
+      // oxlint-disable-next-line no-constructor-return -- every producer and native lookup must share the fork-owned store
+      return existing
+    }
     super(name, options)
+    queues.set(name, this)
+    this.#configureDeadLetterQueue(options)
     this.on('retrying', (job: TestJob) => {
       // Native promote changes the record synchronously and emits the wake-up event.
       void job.promote().catch(() => undefined)
@@ -54,13 +41,56 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
       this.on(event, this.#notifySettleWaiters)
     }
   }
-  override async obliterate(...args: Parameters<TestQueue<D, R>['obliterate']>): Promise<void> {
-    await super.obliterate(...args)
+  #configureDeadLetterQueue(options?: TestQueueOptions) {
+    if (!options?.deadLetterQueue) return
+    this.deadLetterQueueName = options.deadLetterQueue.name
+    // Native workers and flows must resolve the same fork-owned store by name.
+    getOrCreateQueue(options.deadLetterQueue.name)
+  }
+
+  /** Unflushed native admission for fixtures and the automatic-flush implementation. */
+  enqueue(name: string, data: D, opts?: TestJobOptions) {
+    return super.add(name, data, opts)
+  }
+
+  override add(name: string, data: D, opts?: TestJobOptions) {
+    return addAndFlush(this, name, data, opts)
+  }
+
+  // Production preserves null positions, although upstream's bulk declaration omits them.
+  override addBulk(
+    jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
+  ): Promise<Array<TestJob<D, R> | null>>
+  override addBulk(...args: Parameters<TestQueue<D, R>['addBulk']>): Promise<TestJob<D, R>[]>
+  override addBulk(jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>) {
+    return addBulkAndFlush(this, jobs)
+  }
+
+  override addAndWait(...args: Parameters<TestQueue<D, R>['addAndWait']>) {
+    return runInsideTestWorkerProcessor(() => super.addAndWait(...args))
+  }
+
+  override replayDeadLetterJob(jobId: string) {
+    return runInsideTestWorkerProcessor(() => super.replayDeadLetterJob(jobId))
+  }
+
+  // Producer close leaves server state and independently owned workers alive.
+  override async close(): Promise<void> {}
+
+  override async obliterate(
+    _opts?: { force?: boolean },
+    visited = new Set<string>(),
+  ): Promise<void> {
+    if (visited.has(this.name)) return
+    visited.add(this.name)
+    await super.obliterate({ force: true })
+    await this.resume()
     this.#notifySettleWaiters()
+    if (this.deadLetterQueueName) {
+      await getOrCreateQueue(this.deadLetterQueueName).obliterate(undefined, visited)
+    }
   }
 }
-
-const queues = new Map<string, ShimTestQueue>()
 
 async function listAttachedWorkers(): Promise<Array<{ queueName: string; workerId: string }>> {
   const infos = [...queues].map(async ([queueName, queue]) =>
@@ -87,17 +117,7 @@ export async function getUnexpectedAttachedTestWorkerQueueNames(
 }
 
 export function getOrCreateQueue(name: string, options?: TestQueueOptions): ShimTestQueue {
-  let queue = queues.get(name)
-  if (!queue) {
-    queue = new ShimTestQueue(name, options)
-    queues.set(name, queue)
-  }
-  if (options?.deadLetterQueue) {
-    queue.deadLetterQueueName = options.deadLetterQueue.name
-    // Register the fork-owned store before native workers or flows resolve it by name.
-    getOrCreateQueue(options.deadLetterQueue.name)
-  }
-  return queue
+  return new ShimTestQueue(name, options)
 }
 
 const MAX_TEST_WORKER_CONCURRENCY = 15
