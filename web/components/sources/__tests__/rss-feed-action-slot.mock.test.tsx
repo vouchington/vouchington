@@ -25,6 +25,9 @@ vi.mock(
   import('next/dynamic'),
   () => ({ default: (_: unknown) => MockFollowButton }) as unknown as typeof import('next/dynamic'),
 )
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: MockFollowButton,
+}))
 
 vi.mock(import('@/components/users/relation-management-action'), () => ({
   RelationManagementAction: () => <div data-testid='relation-management-action' />,

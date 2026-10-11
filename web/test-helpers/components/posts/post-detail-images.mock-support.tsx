@@ -91,6 +91,10 @@ vi.mock(import('@/components/shared/report-menu-item'), () => ({
   ReportMenuKebab: () => <Button type='button'>Report</Button>,
 }))
 
+vi.mock(import('@/components/posts/post-detail-overflow-menu'), () => ({
+  PostDetailOverflowMenu: () => <span hidden />,
+}))
+
 vi.mock(
   import('embla-carousel-react'),
   () =>

@@ -62,6 +62,10 @@ vi.mock(import('@/components/home/top-referral-programs-streaming'), () => ({
   TopReferralProgramsStreaming: () => <div data-testid='top-referral-programs-streaming' />,
 }))
 
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: () => <span hidden />,
+}))
+
 vi.mock(
   import('@/components/seo/anonymous-structured-data-script'),
   () =>

@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { Post } from '@/types/posts'
 import { CommentNodeContent } from '../comment-node-content'
+
+// These tests assert language attributes; code-block enhancement is a separate boundary.
+vi.mock(import('@/components/shared/markdown-code-block-highlighter'), () => ({
+  highlightCodeBlocks: vi
+    .fn<typeof import('@/components/shared/markdown-code-block-highlighter').highlightCodeBlocks>()
+    .mockResolvedValue(undefined),
+}))
 
 function makeCommentPost(overrides: Partial<Post> = {}): Post {
   return {

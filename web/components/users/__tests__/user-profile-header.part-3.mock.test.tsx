@@ -13,33 +13,24 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(
-  import('next/dynamic'),
-  () =>
-    ({
-      default: (_loader: () => Promise<unknown>) => {
-        function DynamicComponent({ onChange }: { onChange?: (isActive: boolean) => void }) {
-          return (
-            <div data-testid='follow-button'>
-              <button
-                type='button'
-                onClick={() => onChange?.(true)}
-              >
-                Complete follow
-              </button>
-              <button
-                type='button'
-                onClick={() => onChange?.(false)}
-              >
-                Complete unfollow
-              </button>
-            </div>
-          )
-        }
-        return DynamicComponent
-      },
-    }) as unknown as typeof import('next/dynamic'),
-)
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: ({ onChange }: { onChange?: (isActive: boolean) => void }) => (
+    <div data-testid='follow-button'>
+      <button
+        type='button'
+        onClick={() => onChange?.(true)}
+      >
+        Complete follow
+      </button>
+      <button
+        type='button'
+        onClick={() => onChange?.(false)}
+      >
+        Complete unfollow
+      </button>
+    </div>
+  ),
+}))
 
 vi.mock(
   import('@/lib/auth/context'),

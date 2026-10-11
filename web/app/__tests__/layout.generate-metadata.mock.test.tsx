@@ -1,5 +1,12 @@
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { generateMetadata } from '../layout'
+
+// This suite uses the English fixture catalog and preserves the real translator.
+vi.mock(import('@/lib/i18n/get-translations'), () => ({
+  getTranslations: async () => createTranslator('en', enMessages),
+}))
 
 interface HeaderBag {
   get: (key: string) => string | null
@@ -9,8 +16,8 @@ type MonoFontModule = typeof import('geist/font/mono')
 type SansFontModule = typeof import('geist/font/sans')
 
 // generateMetadata is a narrow, mostly-pure export off ../layout.tsx — it never invokes
-// RootLayout, so it needs none of that component tree's rendering mocks (sidebar, auth provider,
-// GTM, etc.). Split into its own file rather than sharing layout.mock.test.tsx's ~170-line mock
+// RootLayout. Mock its statically imported sidebar and navbar because this test does not exercise
+// their lazy child imports. Split into its own file rather than sharing layout.mock.test.tsx's ~170-line mock
 // preamble, which is already at the 300-line test-file cap. Lives in __tests__/ (rather than
 // beside ../layout.tsx like layout.mock.test.tsx) because two test files now share the layout.tsx
 // stem — see the repo-file-policy duplicate-stem placement rule.
@@ -20,6 +27,8 @@ const getTraceDataMock = vi.hoisted(() =>
 )
 
 vi.mock(import('next/headers'), () => ({ headers: headersMock }) as unknown as HeadersModule)
+vi.mock(import('@/components/app-sidebar'), () => ({ AppSidebar: () => <aside /> }))
+vi.mock(import('@/components/navbar'), () => ({ Navbar: () => <nav /> }))
 vi.mock(import('@sentry/nextjs'), () => ({ getTraceData: getTraceDataMock }))
 vi.mock(import('@/lib/seo/metadata'), () => ({
   createRootMetadata: vi.fn<() => Record<string, string>>(() => ({ title: 'Voucha' })),

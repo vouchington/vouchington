@@ -1,10 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { mockMetrics, mockTopic } from '@/test-helpers/components/topics/topic-card.mock-support'
 
 import { render, screen } from '@testing-library/react'
 
 import { TopicCard } from '../topic-card'
+
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: () => null,
+}))
+vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
+  EntityBookmarkButton: () => <span hidden />,
+}))
 
 const staffClient = {
   client_id: 'voucha_fixture_agent',

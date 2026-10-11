@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getWebLocalizationBatchClient } from '../localization'
 import { WEB_LOCALIZATION_PATH, webLocalizationSearchParams } from '@/lib/i18n/localization-query'
 
+// Exercise the real API wrapper; only its HTTP transport is replaced in this suite.
+vi.unmock(import('../localization'))
+
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),
 }))

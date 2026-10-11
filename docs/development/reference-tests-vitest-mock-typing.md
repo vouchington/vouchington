@@ -83,6 +83,12 @@ vi.mock(
 Do not add file-level suppressions for `vitest/prefer-import-in-mock` or
 `jest/no-untyped-mock-factory`.
 
+Web unit setup seeds the English localization catalog and rejects unseeded localization API
+requests. A test of an uncached load must provide its own response fixture. The localization client
+wrapper suite removes that setup mock and replaces only its HTTP transport, so the real wrapper
+remains covered. Mock a lazy child explicitly when its behavior is outside the test contract; a
+broad `next/dynamic` double alone does not declare which imported module the test replaces.
+
 ### Direct Server Component tests and request-scoped Next.js APIs
 
 Directly invoking an async Server Component does not create Next.js request-store machinery. Shared server helpers reached by that component can therefore throw when they call request-scoped APIs such as `headers()`, `cookies()`, or `draftMode()`.
