@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { posix } from 'node:path'
 
 import picomatch from 'picomatch'
 import { parse as load } from 'yaml'
@@ -11,10 +12,25 @@ import { parse as load } from 'yaml'
 // in ci-detect-changes.yml ORs it into each area output).
 
 type Json = Record<string, unknown>
-type Step = { id?: string; uses?: string; run?: string; with?: Json; env?: Json }
-type Job = { if?: string; needs?: string | string[]; uses?: string; steps?: Step[]; with?: Json }
+type Step = {
+  id?: string
+  uses?: string
+  run?: string
+  with?: Json
+  env?: Json
+  'working-directory'?: string
+}
+type Defaults = { run?: { 'working-directory'?: string } }
+type Job = {
+  defaults?: Defaults
+  if?: string
+  needs?: string | string[]
+  uses?: string
+  steps?: Step[]
+  with?: Json
+}
 type Gate = { step: string; key: string }
-type Doc = { jobs?: Record<string, Job>; runs?: { steps?: Step[] } }
+type Doc = { defaults?: Defaults; jobs?: Record<string, Job>; runs?: { steps?: Step[] } }
 type DetectDoc = { jobs: Record<string, { outputs: Record<string, string>; steps: Step[] }> }
 
 export type Violation = { area: string; job: string; file: string; via: string }
@@ -69,20 +85,27 @@ const strings = (value: unknown): string[] =>
       ? Object.values(value).flatMap(strings)
       : []
 
+// Keep fragments in the token: diagnostic links are not prefixes of tracked filenames.
 const pathToken =
-  /(?:\$GITHUB_WORKSPACE\/|\$\{\{\s*github\.workspace\s*\}\}\/|\.\/)?((?:[\w.-]+\/)+[\w.*-]+)/g
-const trackedFiles = (...values: unknown[]) =>
+  /(?<![\w./-])(?:\$GITHUB_WORKSPACE\/|\$\{\{\s*github\.workspace\s*\}\}\/|\.\/)?((?:[\w.-]+\/)*[\w.*#-]+)/g
+const trackedFiles = (directory: string, ...values: unknown[]) =>
   strings(values).flatMap(text =>
-    [...text.matchAll(pathToken)].flatMap(m => (tracked.has(m[1]) ? [m[1]] : [])),
+    [...text.matchAll(pathToken)].flatMap(m => {
+      const root = m[0].startsWith('$')
+      const file = posix.normalize(root ? m[1] : posix.join(directory, m[1]))
+      return tracked.has(file) ? [file] : []
+    }),
   )
 
 type Found = Map<string, string>
 const chain = (head: string, via: string) => [head, via].filter(Boolean).join(' > ')
 
-function stepFiles(steps: Step[] | undefined, seen: Set<string>): Found {
+export function stepFiles(steps: Step[] | undefined, seen: Set<string>, directory = ''): Found {
   const found: Found = new Map()
   for (const step of steps ?? []) {
-    for (const file of trackedFiles(step.run, step.with, step.env)) found.set(file, '')
+    for (const file of trackedFiles(step['working-directory'] ?? directory, step.run))
+      found.set(file, '')
+    for (const file of trackedFiles('', step.with, step.env)) found.set(file, '')
     const action = step.uses?.startsWith('./.github/actions/')
       ? `${step.uses.slice(2)}/action.yml`
       : ''
@@ -102,21 +125,36 @@ function enabledByCaller(inner: Job, caller: Job): boolean {
   return value === true || (typeof value === 'string' && value.includes('${{'))
 }
 
-function jobFiles(job: Job, seen: Set<string>): Found {
-  const found = stepFiles(job.steps, seen)
-  for (const file of trackedFiles(job.with)) found.set(file, '')
+function jobFiles(job: Job, seen: Set<string>, defaults?: Defaults): Found {
+  const found = stepFiles(
+    job.steps,
+    seen,
+    job.defaults?.run?.['working-directory'] ?? defaults?.run?.['working-directory'],
+  )
+  for (const file of trackedFiles('', job.with)) found.set(file, '')
   const workflow = job.uses?.startsWith('./.github/workflows/') ? job.uses.slice(2) : ''
   if (!workflow || seen.has(workflow)) return found
   seen.add(workflow)
-  const inners = Object.values(readDoc(workflow).jobs ?? {}).filter(j => enabledByCaller(j, job))
+  const doc = readDoc(workflow)
+  const inners = Object.values(doc.jobs ?? {}).filter(
+    j =>
+      enabledByCaller(j, job) &&
+      !(
+        !j.if?.includes('||') &&
+        /github\.event_name\s*==\s*['"]push['"]/.test(j.if ?? '') &&
+        /github\.ref\s*==\s*['"]refs\/heads\/main['"]/.test(j.if ?? '')
+      ),
+  )
   for (const inner of inners)
-    for (const [file, via] of jobFiles(inner, seen)) found.set(file, chain(workflow, via))
+    for (const [file, via] of jobFiles(inner, seen, doc.defaults))
+      found.set(file, chain(workflow, via))
   return found
 }
 
 export function jobReferences(): JobReference[] {
   return areas.flatMap(area => {
-    const jobs = readDoc(`.github/workflows/${area}.yml`).jobs ?? {}
+    const doc = readDoc(`.github/workflows/${area}.yml`)
+    const jobs = doc.jobs ?? {}
     const gateCache = new Map<string, Gate[]>()
     const gatesOf = (name: string): Gate[] => {
       const cached = gateCache.get(name)
@@ -132,7 +170,13 @@ export function jobReferences(): JobReference[] {
     return Object.entries(jobs).flatMap(([job, def]) => {
       const gates = gatesOf(job)
       if (!gates.length) return []
-      return [...jobFiles(def, new Set())].map(([file, via]) => ({ area, job, file, via, gates }))
+      return [...jobFiles(def, new Set(), doc.defaults)].map(([file, via]) => ({
+        area,
+        job,
+        file,
+        via,
+        gates,
+      }))
     })
   })
 }

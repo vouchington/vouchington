@@ -204,6 +204,7 @@ ts-shared:
   - 'backend/test-helpers/**'
 # Workflow, action, and shared CI step-script changes select every area.
 workflow-action-changes:
+  - '.nvmrc'
   - '.github/workflows/**'
   - '.github/actions/**'
   - 'ci/with-node-test-options'
@@ -365,7 +366,6 @@ build-backend-infra:
   - 'static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts'
   - 'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts'
   - 'ci/allocate-browser-safe-ports.py'
-  - 'ci/resolve-published-images.sh'
   - 'ci/curl-to.sh'
   - 'ci/check-deployed-worker-native-addons.mjs'
   - 'ci/prepare-trivy-db.sh'
@@ -382,7 +382,6 @@ build-web-infra:
   - 'backend/types/package.json'
   - 'ts-shared/*/package.json'
   - 'ci/allocate-browser-safe-ports.py'
-  - 'ci/resolve-published-images.sh'
   - 'ci/curl-to.sh'
   - 'web/test-helpers/localization-smoke-backend.mts'
   - 'web/test-helpers/compile-localization-smoke-catalog.mts'
