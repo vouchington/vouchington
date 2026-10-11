@@ -226,6 +226,24 @@ describe('create-crawler.generated', () => {
       }),
     ).rejects.toThrow('Invalid hostname ID')
   })
+
+  it('updateCrawler rejects an invalid referral program ID without changing the crawler', async () => {
+    const url = await createTestUrlWithNewHostname(
+      `https://crawler-referral-${crypto.randomUUID()}.example.com/test`,
+    )
+    const crawler = await createCrawler(user, {
+      hostname_id: url.hostname.id,
+      crawler_type: 'fetch',
+    })
+
+    await expect(
+      updateCrawler(user, crawler.id, { referral_program_id: 'not-a-uuid' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Invalid referral program ID: not-a-uuid',
+    })
+    await expect(getCrawlerById(crawler.id)).resolves.toEqual(crawler)
+  })
 })
 
 async function createCrawlerTestCrawl(
