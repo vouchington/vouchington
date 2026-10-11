@@ -120,6 +120,26 @@ describe('syncFacebookFriends', () => {
     expect(concurrentRows).toHaveLength(1)
   })
 
+  it('requeues for the Retry-After on a 429 instead of rewrapping it as a 502', async () => {
+    const limitedId = `fb-limited-${createRandomString(8)}`
+    await insertTestOAuthAccount('facebook', limitedId, null)
+    const user = await createTestUserDirect()
+    await connectTestOAuthAccount('facebook', user.id, limitedId)
+    await setTestOAuthAccountAccessToken('facebook', limitedId, 'fake-access-token')
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      headers: new Headers({ 'retry-after': '90' }),
+    })
+
+    await expect(syncFacebookFriends(limitedId)).rejects.toMatchObject({
+      name: 'RateLimitError',
+      delayMs: 90_000,
+      cause: { status: 429, retryAfterMs: 90_000 },
+    })
+    await expect(getTestOAuthAccountFriendsSyncedAt('facebook', limitedId)).resolves.toBeNull()
+  })
+
   it('does nothing if account has no access token', async () => {
     const noTokenId = `fb-no-token-${createRandomString(8)}`
     await insertTestOAuthAccount('facebook', noTokenId, null)

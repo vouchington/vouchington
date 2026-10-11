@@ -23,6 +23,14 @@ Worker package for reconciling Voucha follow relationships onto linked Bluesky a
 - `backfillBlueskyDisconnectRequests` - cursor-streams all pending unlink intents and bulk-enqueues
   exact-generation disconnect jobs.
 
+The PDS calls in `@services/bluesky-follows/agent.mts` classify their failures for the queue. A 429
+requeues the job after the PDS's `ratelimit-reset` (epoch seconds) or a `Retry-After`, clamped to 1
+second through 15 minutes, without consuming an attempt. The follower chooses the PDS, so
+`processBlueskyFollowPropagationJob` runs every job through `boundRateLimitDeferral`: once a job is
+24 hours old, the next 429 spends the queue's attempts instead of requeuing. Any other 4xx except 408 ends the job as
+unrecoverable, because retrying a rejected follow cannot succeed (the idempotent reconcile and its
+backfill re-derive the work later). A network failure or 5xx keeps the queue's three attempts.
+
 ## Related
 
 - Queue: [../../queues/bluesky-follow-propagation/README.md](../../bluesky-follow-propagation/README.md)

@@ -10,9 +10,20 @@ Worker package for OpenAI moderation jobs.
 
 The default instance uses
 [`createOpenAIModerationOmniSingleWorker`](../../../../../../backend/workers/openai-moderation/processors/create-omni-single-worker.mts).
-Each instance supplies itself to the existing processor's rate-limit handling. The native queue
+The native queue
 [test](../../../../../../backend/workers/openai-moderation/workers/openai_moderation_omni_single.real-glide.mock.test.mts)
 uses an owned prefix and verifies the persisted failure for an image job without an id.
+
+## Provider rate limits
+
+An OpenAI 429 requeues the job after the provider's `Retry-After` (a minute when it sent none,
+clamped to 1 second through 15 minutes) without consuming a queue attempt. The delay rides on
+GlideMQ's `RateLimitError` (`handleOpenAIRateLimit`), so every replica that receives a 429 honors it;
+the worker no longer calls `worker.rateLimit()`, which only paused one process. The queue's
+`limiter` also idles the replica that received the 429 for that delay, which includes the
+`reconcile_*` and backfill jobs sharing the worker. They are scheduled sweeps and resume afterwards.
+Without the delay the signal fell back to the 1-second limiter duration, so a 429 was retried about
+once a second.
 
 ## CSAM quarantine transfer
 
@@ -40,12 +51,20 @@ and the one-minute `reconcile_post_moderation` job re-enqueues work at T+5 and T
 attempt has a lease token; late completions cannot write through a newer lease or content version.
 At T+30 the reconciler appends `incomplete` and projects the post into staff review.
 
-| Failure point                        | Durable state                                 | Recovery                                  | Terminal behavior                  |
-| ------------------------------------ | --------------------------------------------- | ----------------------------------------- | ---------------------------------- |
-| Initial dispatch or provider failure | Failed attempt and next `available_at`        | Reconciler re-enqueues at T+5/T+20        | Third failure appends `incomplete` |
-| Worker loss while leased             | Expiring lease token                          | Reconciler re-enqueues after lease expiry | T+30 moves to review               |
-| Content edit during provider call    | Prior immutable version and new content hash  | Entity listener starts the new version    | Late old-version result is ignored |
-| Reconciler reply loss                | PostgreSQL work/disposition already committed | Next minute re-derives remaining work     | Completed work is not re-enqueued  |
+A provider 429 is not an attempt: it says nothing about the post, and spending one of the three
+attempts on it would send a post to staff review because OpenAI was busy. The processor calls
+`releasePostModerationAttemptForRateLimit`, which in one lease-fenced statement deletes the open
+attempt row, clears the lease, restores `attempt_count`, and holds `available_at` for the
+provider's wait (never past the version's hard deadline) so the reconciler does not enqueue a
+competing job. The requeued job then claims the same attempt number again.
+
+| Failure point                        | Durable state                                               | Recovery                                  | Terminal behavior                       |
+| ------------------------------------ | ----------------------------------------------------------- | ----------------------------------------- | --------------------------------------- |
+| Initial dispatch or provider failure | Failed attempt and next `available_at`                      | Reconciler re-enqueues at T+5/T+20        | Third failure appends `incomplete`      |
+| Provider 429                         | Attempt withdrawn, `available_at` held to the `Retry-After` | Job requeued after the same wait          | Not counted; T+30 still moves to review |
+| Worker loss while leased             | Expiring lease token                                        | Reconciler re-enqueues after lease expiry | T+30 moves to review                    |
+| Content edit during provider call    | Prior immutable version and new content hash                | Entity listener starts the new version    | Late old-version result is ignored      |
+| Reconciler reply loss                | PostgreSQL work/disposition already committed               | Next minute re-derives remaining work     | Completed work is not re-enqueued       |
 
 ## Related
 

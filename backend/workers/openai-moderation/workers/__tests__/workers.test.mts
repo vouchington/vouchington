@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import {
   createTestUser,
   expireTestPostModerationVersion,
@@ -45,9 +45,9 @@ describe('openai moderation single worker', () => {
     await setPostModerationContentSha256(postId, content_sha256)
     await updatePostModerationData(postId, content_sha256, [{ flagged: false }], false)
 
-    await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('post', postId), {} as Worker),
-    ).resolves.toEqual({ success: true })
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob('post', postId))).resolves.toEqual({
+      success: true,
+    })
 
     const moderation = (await getPostModerationData(postId)) as {
       openai_omni_moderation_created_at: Date | null
@@ -68,7 +68,7 @@ describe('openai moderation single worker', () => {
 
   it('returns null for post jobs whose row no longer exists', async () => {
     await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('post', randomUUID()), {} as Worker),
+      handleOpenAIModerationOmniSingleJob(makeJob('post', randomUUID())),
     ).resolves.toBeNull()
   })
 
@@ -79,7 +79,7 @@ describe('openai moderation single worker', () => {
     await setImageOpenAIModerationResults(imageId, [{ flagged: false }], false)
 
     await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('image', imageId), {} as Worker),
+      handleOpenAIModerationOmniSingleJob(makeJob('image', imageId)),
     ).resolves.toMatchObject({
       success: true,
       skipped: true,
@@ -102,11 +102,9 @@ describe('openai moderation single worker', () => {
 
     const postResult = (await handleOpenAIModerationOmniSingleJob(
       makeJob('backfill_posts', randomUUID()),
-      {} as Worker,
     )) as { enqueued: number }
     const imageResult = (await handleOpenAIModerationOmniSingleJob(
       makeJob('backfill_images', randomUUID()),
-      {} as Worker,
     )) as { enqueued: number }
 
     expect(postResult.enqueued).toBeGreaterThanOrEqual(1)
@@ -153,7 +151,6 @@ describe('openai moderation single worker', () => {
 
     const result = (await handleOpenAIModerationOmniSingleJob(
       makeJob('reconcile_post_moderation', randomUUID()),
-      {} as Worker,
       { postIds: [duePostId, expiredPostId] },
     )) as { enqueued: number; moved_to_review: number }
 
@@ -180,11 +177,9 @@ describe('openai moderation single worker', () => {
     await markImageQuarantinePending(foreignImageId)
 
     await expect(
-      handleOpenAIModerationOmniSingleJob(
-        makeJob('reconcile_image_quarantines', randomUUID()),
-        {} as Worker,
-        { imageIds: [randomUUID()] },
-      ),
+      handleOpenAIModerationOmniSingleJob(makeJob('reconcile_image_quarantines', randomUUID()), {
+        imageIds: [randomUUID()],
+      }),
     ).resolves.toEqual({ reconciled: 0 })
     await expect(getImageModerationState(foreignImageId)).resolves.toMatchObject({
       deleted_at: null,
@@ -203,9 +198,9 @@ describe('openai moderation single worker', () => {
     })
     vi.stubEnv('OPENAI_API_KEY', '')
 
-    await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('post', postId), {} as Worker),
-    ).rejects.toThrow('OPENAI_API_KEY is not set')
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob('post', postId))).rejects.toThrow(
+      'OPENAI_API_KEY is not set',
+    )
     await expect(getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).resolves.toBe(5)
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       is_flagged_by_openai_omni_moderation: null,
@@ -214,14 +209,11 @@ describe('openai moderation single worker', () => {
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
     await expect(
-      handleOpenAIModerationOmniSingleJob(
-        { data: {}, name: 'image' } as Job<{ id: string }>,
-        {} as Worker,
-      ),
+      handleOpenAIModerationOmniSingleJob({ data: {}, name: 'image' } as Job<{ id: string }>),
     ).rejects.toThrow('Image job requires id in job.data')
 
     await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('unexpected', randomUUID()), {} as Worker),
+      handleOpenAIModerationOmniSingleJob(makeJob('unexpected', randomUUID())),
     ).rejects.toThrow('Unknown job type: unexpected')
   })
 })
