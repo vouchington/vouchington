@@ -910,6 +910,11 @@
     "issue": 2611
   },
   {
+    "annotation": "repairEntityBloomKeys",
+    "reason": "Topic listener work repairs Bloom keys once per affected topic",
+    "issue": 2612
+  },
+  {
     "annotation": "replaceMyLandingPageItems",
     "reason": "User and profile lookups repeat per request step",
     "issue": 2611
