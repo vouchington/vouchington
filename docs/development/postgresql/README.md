@@ -86,9 +86,9 @@ and the number of the open issue that removes it. The baseline is per annotation
   PR never depends on landing order; the entry is still deleted so the repeat cannot return.
 - **Find stale entries.** A data-dependent repeat can be missing from any single run, and one
   process sees only a slice of the routes, so staleness is computed over several complete runs, not
-  in the test run. Save logs from 5 complete Backend runs with `VITEST_DIAGNOSTICS=1`
-  (every `test-backend-unit` shard and credentialed job of each), concatenate each run's
-  shard logs into one file, and run
+  in the test run. Set the repository variable `VITEST_DIAGNOSTICS` to `1` for 5 complete Backend
+  workflow runs on main, then unset it. Save every `test-backend-unit` shard and credentialed job
+  log from each run, concatenate each run's logs into one file, and run
   `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. An entry is listed
   only when it is absent from every log; delete it only then. The report prints how many logs it
   used and warns that the result is not safe to act on when given fewer than 5. It always exits

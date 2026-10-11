@@ -56,6 +56,25 @@ describe('backend credentialed test workflow', () => {
     expect(projectFlags.toSorted()).toEqual([...backendCredentialedProjectNames].toSorted())
   })
 
+  it('passes the repository diagnostics opt-in to both credentialed test steps', () => {
+    const parsed = load(workflow) as {
+      jobs: Record<
+        string,
+        {
+          env?: Record<string, string>
+          steps: Array<{ name?: string; env?: Record<string, string> }>
+        }
+      >
+    }
+    const job = parsed.jobs['backend-credentialed-tests']!
+    expect(job.env?.VITEST_DIAGNOSTICS).toBe("${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}")
+    for (const name of ['Run backend credentialed tests', 'Run Anthropic credentialed tests']) {
+      const step = job.steps.find(candidate => candidate.name === name)
+      expect(step).toBeDefined()
+      expect(step?.env).not.toHaveProperty('VITEST_DIAGNOSTICS')
+    }
+  })
+
   it('does not shard the credentialed job', () => {
     expect(workflow).not.toContain('--shard')
   })
