@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetPost, mockNotFound, mockRedirect } = vi.hoisted(() => ({

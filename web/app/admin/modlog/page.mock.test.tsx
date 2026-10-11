@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import AdminModlogPage from './page'

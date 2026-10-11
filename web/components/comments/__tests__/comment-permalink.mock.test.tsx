@@ -5,6 +5,7 @@ import { CommentPermalink } from '../comment-permalink'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
 import type { getTranslations } from '@/lib/i18n/get-translations'
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 
 const { mockFetchPostDescendants } = vi.hoisted(() => ({
   mockFetchPostDescendants: vi.fn<VitestLooseMock>(),

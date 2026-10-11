@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

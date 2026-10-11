@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post, TopicRecommendationStatus } from '@/types/posts'
 import type { User } from '@/types/user'

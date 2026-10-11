@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
