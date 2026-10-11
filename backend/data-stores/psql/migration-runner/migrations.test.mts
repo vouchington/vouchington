@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -98,6 +99,23 @@ SELECT id FROM config_driven_session;
     )
   })
 
+  it('runs split config-driven file statements on one native client and transaction', async () => {
+    const folder = await makeConfigDrivenDir()
+    const marker = randomUUID()
+    await writeFile(
+      join(folder, '0010-native-session.sql'),
+      `
+SELECT set_config('application_name',
+  pg_backend_pid()::text || ':' || txid_current()::text || ':${marker}', true);
+SELECT CASE WHEN current_setting('application_name') =
+  pg_backend_pid()::text || ':' || txid_current()::text || ':${marker}'
+  THEN 1 ELSE (current_setting('application_name') || ':affinity-mismatch')::integer END;
+`,
+    )
+
+    await expect(runConfigDriven('/unused-root', { folder })).resolves.toBeUndefined()
+  })
+
   it('uses the bounded jittered retry wait by default', async () => {
     const folder = await makeConfigDrivenDir()
     await writeFile(join(folder, '0010-retry.sql'), 'ALTER TABLE active_table ADD COLUMN x INT;')
@@ -105,14 +123,13 @@ SELECT id FROM config_driven_session;
     const retryDelay = makeDeferred<number>()
     let attempts = 0
 
+    const realSetTimeout = globalThis.setTimeout
     vi.useFakeTimers()
     const originalSetTimeout = globalThis.setTimeout
-    const setTimeoutSpy = vi
-      .spyOn(globalThis, 'setTimeout')
-      .mockImplementation((callback, delay, ...args) => {
-        retryDelay.resolve(Number(delay))
-        return originalSetTimeout(callback, delay, ...args)
-      })
+    vi.spyOn(globalThis, 'setTimeout').mockImplementation((callback, delay, ...args) => {
+      retryDelay.resolve(Number(delay))
+      return originalSetTimeout(callback, delay, ...args)
+    })
     try {
       const migration = runConfigDriven('/unused-root', {
         folder,
@@ -128,10 +145,13 @@ SELECT id FROM config_driven_session;
       await vi.advanceTimersByTimeAsync(delayMs)
       await migration
     } finally {
-      setTimeoutSpy.mockRestore()
+      vi.restoreAllMocks()
       vi.useRealTimers()
     }
 
+    vi.restoreAllMocks()
+    expect(globalThis.setTimeout).toBe(realSetTimeout)
+    expect(vi.isFakeTimers()).toBe(false)
     expect(attempts).toBe(2)
   })
 
