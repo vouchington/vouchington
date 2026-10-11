@@ -20,6 +20,7 @@ import {
 } from '@queues/notifications/enqueues'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
 import type { CreatedNotification } from '@services/notifications/reconcile-batches'
+import { getNotificationsWorkLimit } from '@services/notifications/work-limits'
 
 type NotificationProcessorDependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
@@ -100,10 +101,11 @@ export async function processReconcileNotificationPushIntents(
   const enqueueContinuation =
     dependencies.enqueueContinueNotificationPushIntentReconciliation ??
     enqueueContinueNotificationPushIntentReconciliation
-  const intents = await listIntents(100, data)
+  const pageSize = getNotificationsWorkLimit('push_intent_recovery_page_size')
+  const intents = await listIntents(pageSize, data)
   await Promise.all(intents.map(intent => enqueueIntent(intent.user_id, intent.notification_id)))
   const lastIntent = intents.at(-1)
-  if (intents.length === 100 && lastIntent) {
+  if (intents.length === pageSize && lastIntent) {
     await enqueueContinuation({
       scanBefore: lastIntent.scan_before,
       after: {

@@ -129,6 +129,11 @@ Durable browser push delivery lives in
 [`@services/notifications-push`](../notifications-push/README.md), which depends on this package
 for subscription storage and follows `web-push` as its sole delivery mechanism.
 
+Push-intent recovery reads `push_intent_recovery_page_size` from the
+[`notifications-work-config`](../../../../../backend/services/notifications/work-limits.mts)
+namespace. Each full page queues a continuation with the same timestamp snapshot and the last
+intent's complete cursor, so changing the work limit preserves recovery ordering.
+
 RSS feed item notifications store the external article URL in PostgreSQL, but the web app and push payloads expose only an internal `/notification-redirect?notification_id=...` route. The redirect page looks up the destination server-side so the client never trusts a raw external URL query parameter.
 
 ## Related
