@@ -104,6 +104,19 @@ jobs:
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
+      - name: Verify retained relation bootstrap
+        working-directory: backend
+        timeout-minutes: 1
+        run: node scripts/data-retention/check-retained-relation-bootstrap.mts
+      - name: Upload retained relation bootstrap receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: retained-relation-bootstrap-${{ matrix.shard }}
+          path: artifacts/retained-relation-bootstrap.json
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: error
       # File-progress lines and resource samples share this step's streamed log. A runner
       # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
       - name: Run backend tests
