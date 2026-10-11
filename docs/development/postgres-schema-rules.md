@@ -298,7 +298,10 @@ examples describe the review baseline, rather than the current generated snapsho
     - `media_delivery_registry_records`: each desired-state change or republish advances
       `generation` and puts a completed row back to `pending`. Instead, each change becomes an
       append-only `_changes` row that keeps its sequence-assigned `generation` and has its own
-      projection lifecycle. The current desired state is the latest change.
+      projection lifecycle. The current desired state comes from the trigger-maintained
+      `latest_change_id` pointer, advanced while the authority row is locked and constrained to
+      that record's history. History UUID order is not cross-backend transition order; the view
+      also requires the pointed change's generation to match current authority.
   - Not lifecycle status: `oauth_authorization_requests.state` is the opaque OAuth client value
     (RFC 6749), and it becomes `client_state`. The protocol parameter keeps its name.
     `users.verification_status` is not named `status`/`state`.

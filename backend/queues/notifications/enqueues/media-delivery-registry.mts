@@ -113,7 +113,7 @@ export function enqueueReplayMediaDeliveryRegistry(
   return enqueueReplay(data, {
     ...reconcileOptions,
     deduplication: {
-      id: `media-delivery-registry-replay:${data.after ?? 'start'}`,
+      id: `media-delivery-registry-replay:${data.actorUserId}:${data.after ?? 'start'}`,
       mode: 'throttle',
       ttl: FIVE_MINUTES_MS,
     },

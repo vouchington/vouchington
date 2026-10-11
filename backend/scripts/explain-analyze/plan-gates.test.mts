@@ -187,3 +187,37 @@ describe('plan expectation registry', () => {
     expect(() => assertRequiredPlanShape(empty)).not.toThrow()
   })
 })
+
+describe('media replay read budgets', () => {
+  afterEach(resetScenarioContracts)
+
+  it('excludes inserted rows while rejecting excess history reads', () => {
+    registerScenarioContract('media-delivery-replay-first', {
+      expectations: [{ kind: 'custom', name: 'mediaDeliveryReplay' }],
+      seededRows: { media_delivery_registry_changes: 24000 },
+    })
+    const history = {
+      'Node Type': 'Index Scan',
+      'Relation Name': 'media_delivery_registry_changes',
+      'Actual Rows': 1,
+      'Actual Loops': 1000,
+    }
+    const captured = result(
+      'media-delivery-replay-first',
+      {
+        'Node Type': 'ModifyTable',
+        Operation: 'Insert',
+        'Relation Name': 'media_delivery_registry_changes',
+        'Actual Rows': 1000,
+        'Actual Loops': 1,
+        Plans: [history],
+      },
+      '/* replayFailedMediaDeliveryRegistryRecords */ INSERT INTO media_delivery_registry_changes SELECT id WHERE id = ANY($1::uuid[])',
+    )
+    expect(() => assertRequiredPlanShape(captured)).not.toThrow()
+    history['Actual Loops'] = 1001
+    expect(() => assertRequiredPlanShape(captured)).toThrow(
+      'media_delivery_registry_changes driving-row budget',
+    )
+  })
+})

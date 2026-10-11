@@ -1,3 +1,4 @@
+import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
 import type { ExplainResult } from '@data-stores/psql'
 import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
 import { assertClassifierHumanVoteComparisonPlanIfApplicable } from './plan-custom/classifier-human-vote-comparison.mts'
@@ -18,6 +19,7 @@ import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trend
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
 
 const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = {
+  mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
   adminEmail: assertAdminEmailIndexPlan,
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,
   copyrightFacts: assertCopyrightStatementFactsIsTargetBounded,

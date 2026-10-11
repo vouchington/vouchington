@@ -22,7 +22,13 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   const contract = getScenarioContract(scenarioId)
   const nodes = collectPlanNodes(result.plan)
   const root = nodes[0]
-  if (typeof root?.['Actual Rows'] !== 'number' || root['Actual Rows'] <= 0)
+  const replayEventInsert =
+    scenarioId.startsWith('media-delivery-replay-') &&
+    result.query_text.includes('replayFailedMediaDeliveryRegistryRecords:event') &&
+    root?.['Node Type'] === 'ModifyTable' &&
+    root['Operation'] === 'Insert' &&
+    nodes.slice(1).some(node => Number(node['Actual Rows']) > 0)
+  if (!replayEventInsert && (typeof root?.['Actual Rows'] !== 'number' || root['Actual Rows'] <= 0))
     throw new Error(`${result.name} (${scenarioId}) produced no analyzable plan with real rows`)
   for (const expectation of contract.expectations) evaluateExpectation(result, nodes, expectation)
   if (result.query_text.includes('view_rss_feed_current_states'))

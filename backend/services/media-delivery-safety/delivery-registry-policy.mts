@@ -6,7 +6,7 @@ export const MEDIA_DELIVERY_RETRY_MS = 60 * 1000
 
 /** Shared by discovery and the atomic claim; expired exhausted claims require terminal repair. */
 export function mediaDeliveryClaimable(now: Date | string) {
-  return sql`attempt_count < ${MEDIA_DELIVERY_MAX_ATTEMPTS}
+  return sql`failed_change_id IS NULL AND attempt_count < ${MEDIA_DELIVERY_MAX_ATTEMPTS}
     AND ((lease_token IS NULL AND available_at <= GREATEST(${now}::timestamptz, clock_timestamp()))
       OR (lease_token IS NOT NULL AND lease_expires_at <= GREATEST(${now}::timestamptz, clock_timestamp())))`
 }

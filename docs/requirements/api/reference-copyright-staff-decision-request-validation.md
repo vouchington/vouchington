@@ -91,3 +91,5 @@ before.
 ## Replay behavior
 
 `POST /copyright-media-delivery/replays` retains its staff-only `403` behavior and accepts queued replay with `202` and no count.
+
+Replay jobs carry the authenticated actor through each page and lifecycle event. Continuations use an opaque scope-bound record UUID cursor; the endpoint does not return a synchronous replay total.

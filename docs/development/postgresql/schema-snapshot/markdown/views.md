@@ -663,8 +663,7 @@ Current authority record joined to its latest immutable delivery transition; no 
             history.next_attempt_at,
             history.created_at
            FROM media_delivery_registry_changes history
-          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.generation = record.generation))
-          ORDER BY history.id DESC
+          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.id = record.latest_change_id) AND (history.generation = record.generation))
          LIMIT 1) change ON (true));
 ```
 
@@ -885,8 +884,17 @@ Current post response projection; callers enforce publication, deletion and audi
                     source.authored_token AS category_label
                    FROM post_topic_alias_sources source
                   WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,
-    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
-           FROM (((post_images
+    COALESCE(( WITH selected_post_images AS MATERIALIZED (
+                 SELECT post_images_1.post_id,
+                    post_images_1.image_id,
+                    post_images_1.order_index,
+                    post_images_1.caption
+                   FROM post_images post_images_1
+                  WHERE (post_images_1.post_id = posts.id)
+                  ORDER BY post_images_1.order_index
+                )
+         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
+           FROM (((selected_post_images post_images
              JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))
              JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))
              JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))
