@@ -1,8 +1,8 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
 import { createOutputFixtures } from './test-helpers/run-bounded-output-fixture.mts'
 
 const script = join(process.cwd(), 'ci/run-bounded.py')
@@ -138,5 +138,42 @@ describe('run-bounded output pipes', () => {
     expect(fixture.commandOpen()).toBe(false)
     expect(fixture.descendantOpen()).toBe(false)
     expect(existsSync(fixture.dir)).toBe(false)
+  })
+})
+
+describe('run-bounded downstream backpressure', () => {
+  it('drains buffered output after source closure before returning the command status', async () => {
+    const child = spawn('python3', ['ci/test-helpers/run-bounded-backpressure.py', script])
+    let stdout = ''
+    let stderr = ''
+    let observedError: Error | undefined
+    const recordError = (err: Error) => {
+      observedError ??= err
+    }
+    child.stdin.on('error', recordError)
+    child.stdout.on('data', data => {
+      stdout += data
+    })
+    child.stderr.on('data', data => {
+      stderr += data
+    })
+    const closed = new Promise<number | null>((resolve, reject) => {
+      child.once('error', reject)
+      child.once('close', resolve)
+    })
+    void closed.catch(recordError)
+    onTestFinished(async () => {
+      child.stdin.end()
+      await closed
+      if (observedError) throw observedError
+    })
+    expect(await closed).toBe(0)
+    expect(stderr).toBe('')
+    expect(JSON.parse(stdout)).toEqual({
+      status: 3,
+      stdout: `${'a'.repeat(8191)}z${'b'.repeat(4095)}y`,
+      sourceHolderStatus: 0,
+      wrapperDrained: true,
+    })
   })
 })
