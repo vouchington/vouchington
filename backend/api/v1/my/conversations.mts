@@ -119,9 +119,7 @@ app.route('/api/v1/my/conversations/:conversationId').patch(async (ctx: Context)
     body,
   })
 
-  await updateConversationTitle(conversationId, body.title, currentUser.id)
-
-  const updated = await getConversationById(conversationId)
+  const updated = await updateConversationTitle(conversationId, body.title, currentUser.id)
   ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })
 
@@ -180,8 +178,6 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
     )
   }
 
-  const updated = await updateConversationTitle(conversationId, title, currentUser.id).then(() =>
-    getConversationById(conversationId),
-  )
+  const updated = await updateConversationTitle(conversationId, title, currentUser.id)
   ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })
