@@ -40,13 +40,11 @@ function findViolation(statements: readonly PostgresSqlStatement[]): string | nu
 function tableViolation(
   statement: Extract<PostgresSqlStatement, { kind: 'createTable' }>,
 ): string | null {
-  const id = statement.columns.find(column => column.name.value.toLowerCase() === 'id')
+  const id = statement.columns.find(column => column.name.identity === 'id')
   if (!id || !isIdPrimaryKey(id, statement.constraints)) return null
-  if (rootFunctionName(id.default?.root)?.toLowerCase() !== 'uuidv7') return null
+  if (rootFunctionName(id.default?.root) !== 'uuidv7') return null
 
-  const createdAt = statement.columns.find(
-    column => column.name.value.toLowerCase() === 'created_at',
-  )
+  const createdAt = statement.columns.find(column => column.name.identity === 'created_at')
   if (!createdAt || isGeneratedFromId(createdAt, id)) return null
 
   const tableName = statement.table.parts.at(-1)?.value ?? statement.table.sql
@@ -71,19 +69,18 @@ function isIdPrimaryKey(
 function isGeneratedFromId(createdAt: PostgresSqlColumn, id: PostgresSqlColumn): boolean {
   const root = unwrapExpression(createdAt.generated?.expression.root)
   if (root?.kind !== 'functionCall') return false
-  if (root.name.parts.at(-1)?.value.toLowerCase() !== 'uuid_extract_timestamp') return false
+  if (root.name.parts.at(-1)?.identity !== 'uuid_extract_timestamp') return false
   return root.arguments.some(argument => {
     const column = unwrapParentheses(argument.root)
     return (
-      column?.kind === 'columnReference' &&
-      column.name.parts.at(-1)?.value.toLowerCase() === id.name.value.toLowerCase()
+      column?.kind === 'columnReference' && column.name.parts.at(-1)?.identity === id.name.identity
     )
   })
 }
 
 function rootFunctionName(root: PostgresSqlExpressionRoot | undefined): string | undefined {
   const unwrapped = unwrapExpression(root)
-  return unwrapped?.kind === 'functionCall' ? unwrapped.name.parts.at(-1)?.value : undefined
+  return unwrapped?.kind === 'functionCall' ? unwrapped.name.parts.at(-1)?.identity : undefined
 }
 
 function unwrapExpression(

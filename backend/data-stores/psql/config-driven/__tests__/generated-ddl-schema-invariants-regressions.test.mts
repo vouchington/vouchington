@@ -127,6 +127,55 @@ END $$;`),
     ).toBeNull()
   })
 
+  it('distinguishes quoted shadow columns and functions from unquoted identities', async () => {
+    const violation =
+      'vote_edges.created_at must be GENERATED ALWAYS AS (uuid_extract_timestamp(id)) ' +
+      'because vote_edges.id is a UUIDv7 primary key'
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges ("ID" uuid, id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          '"CREATED_AT" timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED, ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT "UUIDV7"(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz GENERATED ALWAYS AS ("UUID_EXTRACT_TIMESTAMP"(id)) STORED);',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges ("id" uuid PRIMARY KEY DEFAULT "uuidv7"(), ' +
+          '"created_at" timestamptz GENERATED ALWAYS AS ("uuid_extract_timestamp"("id")) STORED);',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT pg_catalog.uuidv7(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id bigint PRIMARY KEY DEFAULT 1, ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBeNull()
+  })
+
   it('fails closed on dynamic EXECUTE while ignoring a trigger function reference', async () => {
     expect(await findFirstUuidv7CreatedAtViolation('DO $$ BEGIN EXECUTE ddl; END $$;')).toBe(
       'EXECUTE statements must use literal SQL payloads',
