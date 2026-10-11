@@ -1,9 +1,13 @@
-import type { TestJob, TestJobRecord } from 'glide-mq/testing'
+import type { TestJob, TestJobRecord, TestQueue } from 'glide-mq/testing'
 import {
   captureFlushDiagnostics,
   TestQueueFlushTimeoutError,
 } from './glide-mq-vitest-flush-diagnostics.mts'
-import type { ShimTestQueue } from './glide-mq-vitest-internals.mts'
+
+export type FlushQueue<D = any, R = any> = TestQueue<D, R> & {
+  settleWaiters: Set<() => void>
+  enqueue: TestQueue<D, R>['add']
+}
 
 export const DEFAULT_FLUSH_TIMEOUT_MS = 4_000
 
@@ -16,7 +20,7 @@ type DeadLetterEnvelope = { originalJobId?: string }
  * job never stays `delayed`: the shim promotes it as soon as the worker parks it for its backoff.
  */
 async function inspectJobs(
-  queue: ShimTestQueue,
+  queue: FlushQueue,
   jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
 ): Promise<string[]> {
@@ -63,7 +67,7 @@ async function inspectJobs(
  * the worker, which tests keep attached.
  */
 export async function flushJobs(
-  queue: ShimTestQueue,
+  queue: FlushQueue,
   jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,

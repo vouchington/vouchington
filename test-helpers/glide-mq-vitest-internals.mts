@@ -53,7 +53,7 @@ export class ShimTestQueue<D = any, R = any> extends TestQueue<D, R> {
     return super.add(name, data, opts)
   }
 
-  override add(name: string, data: D, opts?: TestJobOptions) {
+  override add(name: string, data: D, opts?: TestJobOptions): Promise<TestJob<D, R> | null> {
     return addAndFlush(this, name, data, opts)
   }
 

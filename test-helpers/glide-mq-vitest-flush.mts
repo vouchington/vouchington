@@ -1,8 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { JobOptions } from 'glide-mq'
 import { TestQueueFlushTimeoutError } from './glide-mq-vitest-flush-diagnostics.mts'
-import { flushJobs } from './glide-mq-vitest-flush-wait.mts'
-import type { ShimTestQueue } from './glide-mq-vitest-internals.mts'
+import { type FlushQueue, flushJobs } from './glide-mq-vitest-flush-wait.mts'
 export { TestQueueFlushTimeoutError }
 export { DEFAULT_FLUSH_TIMEOUT_MS } from './glide-mq-vitest-flush-wait.mts'
 
@@ -35,7 +34,7 @@ function stripTestJobOptions(opts?: TestJobOptions): JobOptions | undefined {
 }
 
 export async function addAndFlush<D, R>(
-  queue: ShimTestQueue<D, R>,
+  queue: FlushQueue<D, R>,
   name: string,
   data: D,
   opts?: TestJobOptions,
@@ -53,7 +52,7 @@ export async function addAndFlush<D, R>(
 }
 
 export async function addBulkAndFlush<D, R>(
-  queue: ShimTestQueue<D, R>,
+  queue: FlushQueue<D, R>,
   jobs: Array<{ name: string; data: D; opts?: TestJobOptions }>,
 ) {
   // Sequential native admission rather than `queue.addBulk()`, which drops a deduplicated add's `null`
