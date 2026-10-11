@@ -46,9 +46,7 @@ describe('no-mistakes config', () => {
 
     expectNoMistakesCurrentRange(pkg.devDependencies['no-mistakes'])
     expectNoMistakesCurrentRange(pkg.devDependencies['eslint-plugin-no-mistakes'])
-    expect(pkg.scripts['no-mistakes']).toBe(
-      'no-mistakes --timeout 60 --lock-timeout 55 check --tsconfig tsconfig.json',
-    )
+    expect(pkg.scripts['no-mistakes']).toBe('no-mistakes --timeout 60 --lock-timeout 55 check')
 
     const ciPkg = JSON.parse(readRepoFile('ci/package.json')) as {
       dependencies: Record<string, string>

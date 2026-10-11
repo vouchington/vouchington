@@ -75,7 +75,7 @@ const KNOWN_ALIASES = new Set([
 let derivedResolveFiles: string[][] = []
 function requestedFiles(report: AnalyzeProjectReportRequest): string[] {
   if (!('files' in report) || !Array.isArray(report.files)) return []
-  return report.files.filter((file): file is string => typeof file === 'string')
+  return report.files.map(file => (typeof file === 'string' ? file : file.file))
 }
 function dependencyResult(paths: readonly string[]): DependencyResult {
   return {

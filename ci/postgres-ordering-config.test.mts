@@ -65,7 +65,7 @@ describe('PostgreSQL ordering guard config', () => {
         name: 'production PostgreSQL locks use catalog key prefixes',
         rule: 'postgres-lock-ordering',
         scope: 'repository',
-        options: { ...expectedOptions, ...executorOptions },
+        options: { ...expectedOptions, ...executorOptions, unanalyzableSql: 'ignore' },
       },
     ])
 

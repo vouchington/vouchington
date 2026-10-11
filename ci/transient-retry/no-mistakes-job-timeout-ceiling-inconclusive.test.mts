@@ -51,7 +51,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 describe('no-mistakes-job-timeout-ceiling-inconclusive (forward guard, no rule yet)', () => {
   it('falls through to dispatch when the static-analysis no-mistakes step is killed at the job timeout ceiling', async () => {
     const log = jobTimeoutCeilingLog(
-      'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+      'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
       jobTimeout('.github/workflows/static-code-analysis.yml', 'no-mistakes'),
     )
     const result = await decide(
