@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { crawlerEditNav } from '@/test-helpers/app/crawlers/crawler-edit-form.mock-support'
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
