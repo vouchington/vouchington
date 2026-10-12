@@ -2471,14 +2471,26 @@ rules:
         - backend/test-helpers/entities/urls.mts
         - backend/test-helpers/entities/users-direct.mts
 
-  - name: do not wrap set operations in correlated EXISTS
+  - name: reject unsafe PostgreSQL query shapes
     rule: postgres-sql-shape-policy
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
-      bannedShapes: [correlated-exists-set-operation, not-in-subquery, count-for-existence]
+      bannedShapes:
+        [
+          correlated-exists-set-operation,
+          not-in-subquery,
+          count-for-existence,
+          banned-function-call,
+        ]
+      shapeOptions:
+        bannedFunctionCall:
+          functions:
+            - name: uuidv7
+              clauses: [where, join-on, having]
+              hint: 'bound ids with fn_min_uuidv7(...) or getMinUUIDv7ForDate'
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
         - backend/data-stores/psql/views/**/*.sql

@@ -671,6 +671,7 @@ History details (decision 15):
 - **Never bound ids in SQL with `uuidv7(...)`.** It is volatile, so a predicate that calls it is
   only a filter: it can't use an index or skip partitions. Pass a bound computed in TypeScript
   (`getMinUUIDv7ForDate`) as a parameter, or use a STABLE SQL helper that PostgreSQL can inline.
+  `postgres-sql-shape-policy` enforces this in `WHERE`, `JOIN … ON`, and `HAVING` clauses.
   Existing code that breaks this rule is being fixed under
   [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
   unrelated PRs.
