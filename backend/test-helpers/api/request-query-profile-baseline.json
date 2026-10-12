@@ -80,11 +80,6 @@
     "issue": 2611
   },
   {
-    "annotation": "beginTransaction",
-    "reason": "The request opens several transactions",
-    "issue": 2616
-  },
-  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612

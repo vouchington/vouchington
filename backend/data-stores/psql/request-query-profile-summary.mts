@@ -3,7 +3,10 @@ export interface RequestQuery {
   annotation: string | null
   startMs: number
   endMs: number
-  /** Cursor-batch iteration and pipelined batches are one logical statement, not a repeat. */
+  /**
+   * Cursor-batch iteration and pipelined batches are one logical statement, not a repeat; so is
+   * transaction control (`beginTransaction`), which is not a lookup.
+   */
   excludedFromRepeats: boolean
 }
 
