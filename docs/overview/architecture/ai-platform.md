@@ -38,8 +38,11 @@ from its captured candidates), so it has no Jev model, probability or threshold.
 
 [Classifier runs](services/classifier-runs/README.md) owns one receipt identity:
 `(classifier, subject, content hash, configuration hash)`, with community scope included where
-applicable. Candidate sets are captured once at reservation and are not part of identity. New
-search results cannot mint a second receipt for unchanged content and configuration.
+applicable. C5 and C8 pin their candidates in that configuration, so a changed question set or
+community prompt set changes the configuration hash and can mint a new receipt for unchanged
+content. C6, C7, and C9 capture search results once at reservation; those captured sets stay
+outside identity, so a later search result cannot mint a second receipt for unchanged content
+and configuration.
 
 ```mermaid
 flowchart LR
@@ -73,7 +76,10 @@ coverage, batch replay, immutable threshold revisions and atomic call/result wri
 
 ## Thresholds and failure behavior
 
-Each decision retains its prompt version, threshold revision and effective lower/upper bounds.
+Each decision retains its prompt version and effective lower/upper bounds. A stored candidate
+also retains its threshold revision. Community-moderation results have no threshold revision, and
+runtime-prefiltered topic and story results leave that revision unset while snapshotting the
+prompt defaults.
 Later configuration edits cannot reinterpret historical results. Topic application maps values
 strictly outside those bounds to downvotes or upvotes; the inclusive interval is neutral. Story
 membership and community flags have their own outcome rules, described in their owning pages.
