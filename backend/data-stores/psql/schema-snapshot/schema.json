@@ -1694,6 +1694,9 @@
     "fn_update_updated_at": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_update_url_hostname_crawl_policy_changed_at": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE user_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow__topics_count = (\n      SELECT COUNT(*) FROM relation__user__follow__topic\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__posts_count = (\n      SELECT COUNT(*) FROM relation__user__follow__post\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__users_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarkers__follow_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE object_id = target_user_id AND deleted_at IS NULL\n    )\n  WHERE id = target_user_id;\n$function$\n"
     },
@@ -118913,8 +118916,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "smallint"
+        },
+        "crawl_policy_changed_at": {
+          "collation": null,
+          "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
         },
         "crawl_swept_at": {
           "collation": null,
@@ -118935,7 +118949,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -118946,7 +118960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "dns_disabled_at": {
@@ -118957,7 +118971,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "hostname": {
@@ -119023,7 +119037,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "requests_per_second_limit": {
@@ -119045,7 +119059,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "should_follow_link_rel": {
@@ -119078,7 +119092,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "boolean"
         },
         "topic_id": {
@@ -119089,7 +119103,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "unreliable_status_codes": {
@@ -119111,7 +119125,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -119122,7 +119136,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "integer"
         },
         "votes_count_none": {
@@ -119133,7 +119147,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "integer"
         },
         "votes_count_up": {
@@ -119144,7 +119158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "integer"
         },
         "votes_score_down": {
@@ -119155,7 +119169,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -119166,7 +119180,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -119177,7 +119191,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -119188,7 +119202,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -119199,7 +119213,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -119210,7 +119224,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -119221,7 +119235,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "xid8"
         },
         "web_risk_checked_url": {
@@ -119232,7 +119246,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "web_risk_expire_at": {
@@ -119243,7 +119257,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "web_risk_threat_types": {
@@ -119254,7 +119268,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text[]"
         }
       },
@@ -119693,6 +119707,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_url_hostnames_crawl_policy_changed_at": "CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()",
         "trigger_url_hostnames_updated_at": "CREATE TRIGGER trigger_url_hostnames_updated_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
