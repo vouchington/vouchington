@@ -132,7 +132,7 @@ jobs:
         timeout-minutes: 3
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
-        timeout-minutes: 3
+        timeout-minutes: 4
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
         timeout-minutes: 1
