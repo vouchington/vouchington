@@ -171,7 +171,9 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       hostname: `refresh-${randomUUID()}.example.com`,
       is_crawlable: true,
     })
-    onTestFinished(() => updateUrlHostname(hostnameId, { is_crawlable: false }))
+    onTestFinished(async () => {
+      await updateUrlHostname(hostnameId, { is_crawlable: false })
+    })
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
     expect(await searchHostnameIdsNeedingCrawlerRefresh(500)).toContain(hostnameId)
     const result = await runJob('refresh_hostname_crawler_dispatcher')
