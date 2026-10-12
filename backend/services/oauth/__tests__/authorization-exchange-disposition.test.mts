@@ -5,9 +5,35 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAuthorization,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
+import { claimOAuthAuthorizationExchange } from '../authorization-exchange-state.mts'
 import { settleOAuthAuthorizationExchangeClaim } from '../authorization-exchange-disposition.mts'
 
 describe('OAuth recorded claim temporal disposition', () => {
+  it('expires an ID-only retry with an unrecorded committed claim instead of reporting unresolved ownership', async () => {
+    const claimId = randomUUID()
+    const ids: string[] = []
+    onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: ids }))
+    const id = await insertTestOAuthAuthorization({
+      provider: 'github',
+      status: 'exchanging',
+      exchangeClaimId: claimId,
+      exchangeAttempts: 1,
+      callbackReceivedAt: new Date(),
+      callbackCodeCiphertext: 'owned-expired-code',
+      completionToken: 'owned-expired-completion',
+      completionTokenCiphertext: 'owned-expired-completion-ciphertext',
+      expiresAt: new Date(Date.now() - 60_000),
+    })
+    ids.push(id)
+    await expect(claimOAuthAuthorizationExchange(id)).resolves.toBeNull()
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'expired',
+      exchange_claim_id: null,
+      callback_code_ciphertext: null,
+      completion_token_ciphertext: null,
+    })
+  })
+
   it.each([
     {
       label: 'authorization expiry before exhaustion',

@@ -5,6 +5,59 @@ import type { BrokerOAuthProvider } from '../broker-config.mts'
 type ExchangeDependencies = NonNullable<Parameters<typeof processOAuthAuthorizationExchange>[1]>
 
 describe('OAuth authorization provider exchange processing', () => {
+  it.each(['facebook', 'x', 'github'] as const)(
+    'persists the armed marker before admitting the %s provider and clears it only after success',
+    async provider => {
+      const dependencies = exchangeDependencies(provider)
+      const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
+      const providerCall =
+        provider === 'facebook'
+          ? dependencies.upsertFacebook
+          : provider === 'x'
+            ? dependencies.upsertX
+            : dependencies.upsertGithub
+      vi.mocked(providerCall).mockImplementation(async () => {
+        expect(writes.at(-1)).toEqual({ claimId: 'claim-id', armed: true })
+        return {
+          user_id: null,
+          provider_user_id: 'provider-user',
+          provider_user_email_address: null,
+          provider_user_data: {},
+        }
+      })
+      await processOAuthAuthorizationExchange('flow-id', dependencies, {
+        async persist(claimId, armed) {
+          writes.push({ claimId, armed })
+        },
+      })
+      expect(writes).toEqual([
+        { claimId: 'claim-id', armed: undefined },
+        { claimId: 'claim-id', armed: true },
+        { claimId: null, armed: undefined },
+      ])
+      expect(providerCall).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it.each(['facebook', 'x', 'github'] as const)(
+    'does not admit the %s provider when the armed ownership write fails',
+    async provider => {
+      const dependencies = exchangeDependencies(provider)
+      const failure = new Error('owned provider admission storage failure')
+      await expect(
+        processOAuthAuthorizationExchange('flow-id', dependencies, {
+          async persist(_claimId, armed) {
+            if (armed) throw failure
+          },
+        }),
+      ).rejects.toBe(failure)
+      expect(dependencies.upsertFacebook).not.toHaveBeenCalled()
+      expect(dependencies.upsertX).not.toHaveBeenCalled()
+      expect(dependencies.upsertGithub).not.toHaveBeenCalled()
+      expect(dependencies.releaseClaim).toHaveBeenCalledWith('flow-id', 'claim-id')
+    },
+  )
+
   it('releases the claim when authorization-code decryption fails', async () => {
     const failure = new Error('authorization code decryption failed')
     const dependencies = exchangeDependencies('x')

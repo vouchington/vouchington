@@ -16,10 +16,12 @@ export async function processOAuthAuthorizationExchangeJob(
     const data: OAuthAuthorizationExchangeJobData = job.data
     await exchange(data.authorizationId, undefined, {
       claimId: data.exchangeClaimId,
-      async persist(claimId) {
+      providerRequestArmed: data.exchangeProviderRequestArmed,
+      async persist(claimId, providerRequestArmed) {
         await job.updateData({
           authorizationId: data.authorizationId,
           ...(claimId ? { exchangeClaimId: claimId } : {}),
+          ...(claimId && providerRequestArmed ? { exchangeProviderRequestArmed: true } : {}),
         })
       },
     })

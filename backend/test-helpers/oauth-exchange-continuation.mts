@@ -1,3 +1,5 @@
+import { expireTestOAuthAuthorization } from './entities/oauth-authorizations.mts'
+import { closeOwnedOAuthContinuation } from './oauth-exchange-continuation-resources.mts'
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { beginTransaction } from '@data-stores/psql'
@@ -22,12 +24,19 @@ import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebo
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
 import { upsertXAccount } from '../services/oauth-x/index.mts'
 
-export type OAuthContinuationFault = 'rejection' | 'release' | 'ownership-write' | 'clear-write'
+export type OAuthContinuationFault =
+  | 'rejection'
+  | 'release'
+  | 'ownership-write'
+  | 'clear-write'
+  | 'provider-outcome'
 
 /** Real queue attempts, real claim/decrypt/mutations, and an actual second PostgreSQL connection. */
 export async function runTestOAuthExchangeContinuation(
   authorizationId: string,
   fault: OAuthContinuationFault,
+  recordedClaimId?: string,
+  expireOnWriteFailure = false,
 ) {
   const name = `oauth_continuation_${randomUUID()}`
   const jobId = randomUUID()
@@ -61,6 +70,7 @@ export async function runTestOAuthExchangeContinuation(
         }
         attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
         try {
+          if (fault === 'provider-outcome' && attempts.length === 1) await lock()
           await processOAuthAuthorizationExchangeJob(
             job,
             undefined,
@@ -108,16 +118,18 @@ export async function runTestOAuthExchangeContinuation(
                 },
                 {
                   claimId: ownership.claimId,
-                  async persist(claimId) {
+                  providerRequestArmed: ownership.providerRequestArmed,
+                  async persist(claimId, providerRequestArmed) {
                     if (
                       !faultUsed &&
                       ((fault === 'ownership-write' && claimId) ||
                         (fault === 'clear-write' && !claimId))
                     ) {
                       faultUsed = true
+                      if (expireOnWriteFailure) await expireTestOAuthAuthorization(authorizationId)
                       throw injectedError
                     }
-                    await ownership.persist(claimId)
+                    await ownership.persist(claimId, providerRequestArmed)
                   },
                 },
               )
@@ -138,8 +150,17 @@ export async function runTestOAuthExchangeContinuation(
     await worker.waitUntilReady()
     const job = await queue.add(
       'exchangeOAuthAuthorization',
-      { authorizationId },
-      { jobId, attempts: 2, backoff: { type: 'exponential', delay: 250 } },
+      {
+        authorizationId,
+        ...(recordedClaimId
+          ? { exchangeClaimId: recordedClaimId, exchangeProviderRequestArmed: true as const }
+          : {}),
+      },
+      {
+        jobId,
+        attempts: fault === 'provider-outcome' ? 5 : 2,
+        backoff: { type: 'exponential', delay: 250 },
+      },
     )
     if (!job || job.id !== jobId) throw new Error('Expected exact owned continuation job')
     const receipt = await terminal.promise
@@ -155,31 +176,7 @@ export async function runTestOAuthExchangeContinuation(
   } catch (err) {
     errors.push(err)
   }
-  // Every acquired handle is settled independently; never throw from finally or force-close.
-  if (worker) {
-    try {
-      await worker.close()
-    } catch (err) {
-      errors.push(err)
-    }
-  }
-  if (events) {
-    try {
-      await events.close()
-    } catch (err) {
-      errors.push(err)
-    }
-  }
-  try {
-    await queue.obliterate()
-  } catch (err) {
-    errors.push(err)
-  }
-  try {
-    await queue.close()
-  } catch (err) {
-    errors.push(err)
-  }
+  await closeOwnedOAuthContinuation(queue, events, worker, errors)
   if (errors.length)
     throw new AggregateError(errors, 'Owned continuation actors failed to drain', {
       cause: errors[0],

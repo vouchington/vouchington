@@ -144,8 +144,8 @@ This service orchestrates OAuth flows across seven providers (Facebook, Apple, G
 
 ## Queue-owned exchange continuation
 
-Exchange jobs persist only the authorization ID and claim ID before decrypting or calling a
-provider. A retry carrying that claim resumes the owned rejection/release, rather than acquiring
+Exchange jobs persist the authorization ID and claim ID before decrypting. Immediately before
+provider admission they persist a secret-free `exchangeProviderRequestArmed` marker. A retry carrying that claim resumes the owned rejection/release, rather than acquiring
 a new claim or repeating the provider. The disposition reads current history after acquiring the
 base row in a READ COMMITTED transaction; it protects completed authorizations and successor
 claims and requires exactly one affected row for an owned mutation. A live claim without persisted
@@ -153,7 +153,12 @@ job ownership is an explicit failure, never a successful no-op.
 
 PostgreSQL claim commit and Valkey ownership persistence are not atomic. If ownership persistence
 fails, the provider has not been called, but recovery may still be needed for the committed claim.
-After persistence, a crash during the provider call leaves an unknown external outcome; continuation
-disposes the interrupted claim without replaying that provider call or claiming it completed.
+After the armed marker is stored, interruption leaves an unknown external outcome, including
+a crash before the call actually starts. Continuation rejects that owned claim as
+`provider_exchange_outcome_unknown` rather than releasing it into a later provider retry.
+Authorization expiry and X code expiry take precedence. This conservative outcome is not a
+claim that the provider was called or completed. The marker also prevents a third queue attempt
+from re-admitting the provider after a continuation. Unrecorded claims are expired before an
+unresolved-ownership error is reported.
 Actual durable completion is preserved. Live provider/decrypt failures retain their raw primary cause
 and ordered secondary mutation/storage errors; queue payloads never contain those errors or secrets.

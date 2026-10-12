@@ -15,7 +15,10 @@ import {
   connectTestOAuthAccount,
 } from '@voucha/test-helpers/entities/oauth-accounts'
 import { settleOAuthAuthorizationExchangeClaim } from '../authorization-exchange-disposition.mts'
-import { releaseOAuthAuthorizationExchangeClaim } from '../authorization-exchange-state.mts'
+import {
+  claimOAuthAuthorizationExchange,
+  releaseOAuthAuthorizationExchangeClaim,
+} from '../authorization-exchange-state.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -47,6 +50,35 @@ describe('OAuth authorization exchange durable queue continuation', () => {
     },
   )
 
+  it('settles an armed provider outcome after native contention without admitting a third attempt', async () => {
+    const id = await fixture(0)
+    const claim = await claimOAuthAuthorizationExchange(id)
+    if (!claim) throw new Error('Expected the actual committed claim')
+    const result = await runTestOAuthExchangeContinuation(
+      id,
+      'provider-outcome',
+      claim.exchange_claim_id,
+    )
+    expect(result.attempts).toHaveLength(2)
+    expect(result.firstFailure).toMatchObject({ code: '55P03' })
+    expect(result.attempts[1]?.data).toEqual({
+      authorizationId: id,
+      exchangeClaimId: claim.exchange_claim_id,
+      exchangeProviderRequestArmed: true,
+    })
+    expect(result.decryptCalls).toBe(0)
+    expect(result.providerCalls).toBe(0)
+    expect(result.state).toBe('completed')
+    expect(result.data).toEqual({ authorizationId: id })
+    expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(1)
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'rejected',
+      callback_error: 'provider_exchange_outcome_unknown',
+      callback_code_ciphertext: null,
+      exchange_claim_id: null,
+    })
+  })
+
   it('does not decrypt or falsely succeed on an ID-only retry after ownership storage fails', async () => {
     const id = await fixture(0)
     const result = await runTestOAuthExchangeContinuation(id, 'ownership-write')
@@ -59,6 +91,24 @@ describe('OAuth authorization exchange durable queue continuation', () => {
       message: expect.stringContaining('unresolved exchange claim'),
     })
     expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(1)
+  })
+
+  it('expires the ID-only second attempt after actual ownership storage failure and clears its secrets', async () => {
+    const id = await fixture(0)
+    const result = await runTestOAuthExchangeContinuation(id, 'ownership-write', undefined, true)
+    expect(result.attempts).toHaveLength(2)
+    expect(result.firstFailure).toBe(result.injectedError)
+    expect(result.attempts[1]?.data).toEqual({ authorizationId: id })
+    expect(result.decryptCalls).toBe(0)
+    expect(result.providerCalls).toBe(0)
+    expect(result.state).toBe('completed')
+    expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(1)
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'expired',
+      exchange_claim_id: null,
+      callback_code_ciphertext: null,
+      completion_token_ciphertext: null,
+    })
   })
 
   it.each([0, 4])(

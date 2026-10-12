@@ -44,7 +44,8 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
 
 export type OAuthExchangeOwnership = {
   claimId?: string
-  persist(claimId: string | null): Promise<void>
+  providerRequestArmed?: boolean
+  persist(claimId: string | null, providerRequestArmed?: boolean): Promise<void>
 }
 
 export async function processOAuthAuthorizationExchange(
@@ -53,9 +54,14 @@ export async function processOAuthAuthorizationExchange(
   ownership?: OAuthExchangeOwnership,
 ): Promise<void> {
   if (ownership?.claimId) {
-    const disposition = await settleOAuthAuthorizationExchangeClaim(flowId, ownership.claimId)
+    const disposition = await settleOAuthAuthorizationExchangeClaim(
+      flowId,
+      ownership.claimId,
+      ownership.providerRequestArmed,
+    )
     await ownership.persist(null)
-    if (disposition === 'terminal' || disposition === 'missing') return
+    if (disposition === 'terminal' || disposition === 'missing' || ownership.providerRequestArmed)
+      return
     throw new Error(
       `OAuth exchange continuation disposed as ${disposition}; provider was not replayed`,
     )
@@ -77,6 +83,7 @@ export async function processOAuthAuthorizationExchange(
 
     switch (authorization.provider) {
       case 'facebook':
+        await ownership?.persist(authorization.exchange_claim_id, true)
         await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
         break
       case 'x': {
@@ -84,6 +91,7 @@ export async function processOAuthAuthorizationExchange(
           authorization.id,
           authorization.pkce_verifier_ciphertext,
         )
+        await ownership?.persist(authorization.exchange_claim_id, true)
         await dependencies.upsertX(
           code,
           authorization.redirect_uri,
@@ -97,6 +105,7 @@ export async function processOAuthAuthorizationExchange(
           authorization.id,
           authorization.pkce_verifier_ciphertext,
         )
+        await ownership?.persist(authorization.exchange_claim_id, true)
         await dependencies.upsertGithub(code, authorization.redirect_uri, {
           codeVerifier,
           ...completionOptions,

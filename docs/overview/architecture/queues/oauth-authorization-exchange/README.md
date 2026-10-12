@@ -4,7 +4,8 @@ Source entrypoint: [backend/queues/oauth-authorization-exchange/README.md](../..
 
 Exchanges server-held Facebook, X, and GitHub authorization codes after the public callback has
 persisted them in PostgreSQL. Initial payloads contain the durable authorization UUID. Before provider execution, the worker
-adds only the fenced claim UUID as `exchangeClaimId` through the public job-data API. Active and
+adds the fenced claim UUID as `exchangeClaimId` through the public job-data API, then a
+secret-free `exchangeProviderRequestArmed` marker immediately before provider admission. Active and
 retained retry jobs can therefore carry both UUIDs; no provider code, token, or raw error enters Valkey.
 
 ## Jobs
