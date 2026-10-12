@@ -27,17 +27,28 @@ describe('OAuth authorization exchange history', () => {
     })
     onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: [flowId] }))
 
+    await releaseOAuthAuthorizationExchangeClaim(flowId, oldClaimId)
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'callback_received',
+      exchange_claim_id: null,
+    })
     const successor = await claimOAuthAuthorizationExchange(flowId)
     expect(successor).not.toBeNull()
-    expect(successor!.exchange_claim_id).not.toBe(oldClaimId)
+    if (!successor) throw new Error('Expected the successor after explicit safe release')
+    expect(successor.exchange_claim_id).not.toBe(oldClaimId)
     await releaseOAuthAuthorizationExchangeClaim(flowId, oldClaimId)
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
       status: 'exchanging',
-      exchange_claim_id: successor!.exchange_claim_id,
+      exchange_claim_id: successor.exchange_claim_id,
     })
     expect(await getTestOAuthExchangeAttempts(flowId)).toMatchObject([
-      { attempt_number: 1, exchange_claim_id: oldClaimId, abandoned_at: expect.any(Date) },
-      { attempt_number: 2, exchange_claim_id: successor!.exchange_claim_id, abandoned_at: null },
+      {
+        attempt_number: 1,
+        exchange_claim_id: oldClaimId,
+        failed_at: expect.any(Date),
+        abandoned_at: null,
+      },
+      { attempt_number: 2, exchange_claim_id: successor.exchange_claim_id, abandoned_at: null },
     ])
     await expect(rewriteTestOAuthExchangeAttempt(flowId)).rejects.toThrow(
       'oauth_authorization_exchange_attempts rows are append-only',

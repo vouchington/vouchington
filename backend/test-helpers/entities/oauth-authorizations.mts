@@ -179,3 +179,12 @@ async function deleteRowsByIds(
     [ids],
   )
 }
+
+/** Expire only the named owned flow after an observed queue ownership storage failure. */
+export async function expireTestOAuthAuthorization(id: string): Promise<void> {
+  const { rowCount } = await write(
+    "UPDATE oauth_authorizations SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = $1",
+    [id],
+  )
+  if (rowCount !== 1) throw new Error('Expected the exact owned authorization to expire')
+}

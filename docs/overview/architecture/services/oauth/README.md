@@ -28,6 +28,19 @@ authentication or account connection:
    `view_oauth_authorization_current_records` projects the active `exchanging` state and total attempt
    count without resetting parent lifecycle facts. Recovery measures the latest attempt's start
    time, and exact claim fencing protects its successor from stale completion or release.
+   Claim, release and rejection own READ COMMITTED transactions and acquire the authorization
+   base row with `NOWAIT` before reading attempt history. Native contention remains a job failure
+   for the existing retry policy, never a successful null claim. Recovery selects two bounded
+   provisional buckets, locks their base rows with `SKIP LOCKED`, then re-reads authoritative
+   history in a subsequent statement while holding those locks. Busy rows remain eligible for a
+   later scan; they are neither rejected nor treated as completed. Status, version and exact claim
+   fences remain in each authoritative write. This replaces waiting recovery rather than claiming
+   equivalent same-statement EvalPlanQual coverage. Completion and exact replay keep their existing
+   authorization and durable-result contracts.
+   If durable rejection fails, the worker retains the original exchange failure as cause and the
+   rejection failure as an ordered secondary, without attempting release from an unknown outcome.
+   A failed release likewise retains the original cause; successful exhausted rejection remains
+   terminal.
 4. `completeOAuthAuthorization` validates the initiating device/session, completion token source,
    native proof when applicable, and connection owner. It durably records one authentication,
    MFA, or connection result before a non-MFA session is minted, so a rollback cannot leave an
@@ -57,12 +70,12 @@ orphan-account cleanup preserves provider accounts referenced by an unexpired au
 completion-ready result remains consumable. See the
 [rollout runbook](../../../../operations/oauth-authorization-broker-rollout.md).
 
-The broker closes the callback-before-enqueue, Valkey-loss, pre-exchange crash, database rollback,
-and post-commit response-loss windows. It cannot make an upstream one-time authorization code
-idempotent: Facebook, X, and GitHub expose no exchange idempotency key. A process failure after the
-provider consumes the code but before the provider-account transaction commits is therefore the
-queue's explicit accepted-loss case. Recovery retries are bounded and end in `rejected`; the client
-starts a fresh authorization. See the exchange queue transition table for the exact boundary.
+The broker re-derives callback work after missed enqueues and retains durable account/client
+completion after committed response loss. External authorization codes are one-shot and providers
+expose no exchange idempotency key. An interrupted armed request or a lost stale claim has an
+unknown outcome and is rejected without another provider call; the member starts a fresh flow.
+See [queue-owned exchange continuation](#queue-owned-exchange-continuation) for the canonical
+admission, expiry and retained-job recovery contract.
 
 ## Provider transport
 
@@ -128,3 +141,45 @@ This service orchestrates OAuth flows across seven providers (Facebook, Apple, G
 - Friend sync jobs: [docs/overview/architecture/queues/find-your-friends/README.md](../../queues/find-your-friends/README.md)
 - JWT sessions: [docs/overview/architecture/services/jwt-session/README.md](../jwt-session/README.md)
 - Auth overview: [docs/overview/architecture/auth-overview.md](../../auth-overview.md)
+
+## Queue-owned exchange continuation
+
+Exchange jobs persist the authorization ID and claim ID before decrypting. Immediately before
+provider admission they persist a secret-free `exchangeProviderRequestArmed` marker. A retry carrying that claim resumes the owned rejection/release, rather than acquiring
+a new claim or repeating the provider. The disposition reads current history after acquiring the
+base row in a READ COMMITTED transaction; it protects completed authorizations and successor
+claims and requires exactly one affected row for an owned mutation. A live claim without persisted
+job ownership is an explicit failure, never a successful no-op.
+
+PostgreSQL claim commit and Valkey ownership persistence are not atomic. If the initial
+ownership write fails before provider admission, cleanup first rejects an exhausted exact claim
+or otherwise releases that unused claim, then propagates the storage error. A response failure
+after a committed queue write is also safe: its continuation observes the committed disposition.
+Failed rejection/release retains the storage error as primary and the native error as secondary.
+
+Provider admission stores the secret-free armed marker, then revalidates the exact current claim
+under READ COMMITTED/NOWAIT before calling the provider. The abort deadline begins before the
+initial ownership write and is not restarted after either persistence boundary. Native contention,
+stale/expired/superseded authority, or an elapsed deadline cannot admit a provider through that path.
+This is a fresh admission check, not an atomic transaction across PostgreSQL, Valkey and the provider.
+
+Authorization expiry precedes all unconsumed dispositions, including `completion_ready`; it clears
+callback/completion ciphertext without altering an already consumed `completed` result. X code expiry
+comes next. A retained armed marker or an otherwise indeterminate stale claim is then rejected as
+`provider_exchange_outcome_unknown`, even at the attempt limit. Only a known unarmed exhausted
+claim is rejected as `provider_exchange_failed`.
+
+The dispatcher checks the bounded locked page against actual retained queue jobs before stale
+terminalization. Only an exact authorization/job/claim identity with no armed marker in a live or
+failed job preserves an unarmed continuation. The failed job is reactivated with its recorded data;
+its next attempt disposes only that claim and does not call the provider. A missing job, mismatched
+claim, completed job or armed job supplies no such proof, so recovery fails closed rather than
+superseding an unknown one-shot exchange. Queue lookup failure rolls back recovery rather than
+being interpreted as absence. Known unused claims remain retryable after explicit release; a
+crash that loses that proof can conservatively reject an unused code.
+
+Completed authorizations and successors retain exact fencing. Append-only attempt history records
+safe release as `failed_at`; a later claim appends a new attempt. The historical successor-fencing
+case now uses that explicit safe release rather than silently superseding an unknown stale claim.
+No provider result or universal exactly-once guarantee is inferred. All live provider/decrypt failures
+retain their raw primary and ordered secondary errors; queue payloads contain no errors or secrets.
