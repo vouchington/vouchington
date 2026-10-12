@@ -31,7 +31,7 @@ const enqueueSyncJob = createEnqueueFunction<SyncMembershipPauseCollectionData, 
   },
 })
 
-export function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {
+function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {
   const bucket = Math.floor(Date.now() / INTERVAL_MS)
   return enqueueDispatchJob({}, {
     jobId: `membership-pause-collection-dispatch__${bucket}`,

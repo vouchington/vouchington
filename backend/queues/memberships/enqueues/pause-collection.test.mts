@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readEnqueuedJob } from '../../../test-helpers/queue-jobs.mts'
 import { memberships } from '../queues.mts'
 import {
-  enqueueDispatchMembershipPauseCollection,
   enqueueSyncMembershipPauseCollection,
+  pauseCollectionSchedule,
 } from './pause-collection.mts'
 
 describe('pause collection enqueues', () => {
@@ -39,7 +39,7 @@ describe('pause collection enqueues', () => {
       },
     })
 
-    const dispatch = await enqueueDispatchMembershipPauseCollection()
+    const dispatch = await pauseCollectionSchedule.operatorSurfaces[0].trigger()
     const dispatcher = await readEnqueuedJob(memberships, dispatch)
     expect(dispatcher).toMatchObject({
       id: `membership-pause-collection-dispatch__${Math.floor(Date.now() / 60_000)}`,
