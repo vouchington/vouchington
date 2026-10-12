@@ -387,8 +387,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1306,8 +1306,8 @@ importers:
         specifier: ^9.5.2
         version: 9.5.2
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -1505,8 +1505,8 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       valkyries:
         specifier: ^0.8.2
         version: 0.8.2
@@ -3931,8 +3931,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -4861,8 +4861,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6121,8 +6121,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7490,8 +7490,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7937,8 +7937,8 @@ importers:
         specifier: workspace:^
         version: link:../notifications
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9941,8 +9941,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10068,8 +10068,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11912,8 +11912,8 @@ importers:
         specifier: ^7.30.0
         version: 7.30.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
       p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
+        specifier: ^7.1.0
+        version: 7.1.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -21542,8 +21542,8 @@ packages:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
 
-  p-map@7.0.8:
-    resolution: {integrity: sha512-MitaVsCuCFIvOLLPIU7NnfrZvS9H9h7kwMUkDo+T2pEISaJD48IV9S8iIdXB7PsvvdxyYcsSTTrr90XKsbulNw==}
+  p-map@7.1.0:
+    resolution: {integrity: sha512-HaSJ9hNZOxTUSATfB48Qi7U2+GF1eECjI39nkeLmCWQrSOYr1z4NepR0rpWiZO77pYwUWU2cJ5NIgsmoFCsYDQ==}
     engines: {node: '>=18'}
 
   p-reflect@3.1.0:
@@ -30652,7 +30652,7 @@ snapshots:
     dependencies:
       p-limit: 3.1.0
 
-  p-map@7.0.8: {}
+  p-map@7.1.0: {}
 
   p-reflect@3.1.0: {}
 
