@@ -285,6 +285,11 @@ requires that owner to import the real registrar and call
 exercise actual registration and connection-close behavior; the graph and syntax guards preserve
 entrypoint wiring without reloading shared runtime modules or shutting down shared clients.
 
+The `query-reached-per-item` no-mistakes rule selects the PostgreSQL and Valkey effect families
+in [`.no-mistakes.yml`](../../../../.no-mistakes.yml). Its existing-call baseline uses `{file, callee}`
+without line pins; remove entries as the owning area's set-based follow-up lands. Batch helpers
+are declared separately in each family's `batchFunctions`.
+
 The local `valkey-no-consecutive-unbatched-reads` AST-grep rule flags consecutive unbatched Valkey reads that can share one batch.
 
 The scope-aware Oxlint `no-mistakes/postgres-cursor-call-contract` rule protects the two PostgreSQL
