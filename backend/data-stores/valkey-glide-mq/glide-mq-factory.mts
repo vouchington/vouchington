@@ -54,6 +54,7 @@ export function createQueue<T = unknown>(
   const originalAdd = queue.add
   const originalAddBulk = queue.addBulk
   const originalAddAndWait = queue.addAndWait
+  // ast-grep-ignore: backend-no-direct-scheduler-upsert -- intercept the queue's scheduler API to enforce priority before the manifest runtime calls it
   const originalUpsertJobScheduler = queue.upsertJobScheduler
   queue.add = (jobName, data, opts) =>
     originalAdd.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
@@ -67,6 +68,7 @@ export function createQueue<T = unknown>(
     )
   queue.addAndWait = (jobName, data, opts) =>
     originalAddAndWait.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
+  // ast-grep-ignore: backend-no-direct-scheduler-upsert -- this guard wraps, rather than creates, scheduled jobs
   queue.upsertJobScheduler = (schedulerName, schedule, template) =>
     originalUpsertJobScheduler.call(queue, schedulerName, schedule, {
       ...template,
