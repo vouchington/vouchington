@@ -1,6 +1,7 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
 
 type TokenTable = 'oauth_access_tokens' | 'oauth_refresh_tokens'
+type TokenSelection = 'all' | 'family' | 'independent-nonfamily'
 const TOKEN_TABLES: ReadonlySet<string> = new Set(['oauth_access_tokens', 'oauth_refresh_tokens'])
 
 export async function deleteExpiredOAuthRetentionTokens(
@@ -8,6 +9,7 @@ export async function deleteExpiredOAuthRetentionTokens(
   table: TokenTable,
   window: { lowerBoundDate?: Date; now: Date },
   limit: number,
+  selection: TokenSelection = 'all',
 ): Promise<number> {
   const tokenTable = assertWhitelistedSqlIdentifier(
     table,
@@ -21,8 +23,11 @@ export async function deleteExpiredOAuthRetentionTokens(
       ? `AND NOT EXISTS (SELECT 1 FROM oauth_refresh_tokens AS predecessor
          WHERE predecessor.replaced_by_token_id = artifact.id)`
       : ''
-  const families = await query<{ id: string }>(
-    `/* lockOAuthRetentionTokenFamilies */
+  const families =
+    selection === 'independent-nonfamily'
+      ? { rows: [] }
+      : await query<{ id: string }>(
+          `/* lockOAuthRetentionTokenFamilies */
      /* deadlock-safe: family candidates use ordered SKIP LOCKED; child probes acquire no locks. */
      SELECT family.id
      FROM oauth_refresh_token_families AS family
@@ -32,10 +37,13 @@ export async function deleteExpiredOAuthRetentionTokens(
          WHERE artifact.${familyColumn} = family.id ${noPredecessor})
      ORDER BY family.expires_at, family.id
      LIMIT 1 FOR UPDATE OF family SKIP LOCKED`,
-    [window.now, window.lowerBoundDate ?? null],
-  )
-  const fromFamilies = await query(
-    `/* deleteOAuthRetentionFamilyTokens */
+          [window.now, window.lowerBoundDate ?? null],
+        )
+  const fromFamilies =
+    selection === 'independent-nonfamily'
+      ? { rowCount: 0 }
+      : await query(
+          `/* deleteOAuthRetentionFamilyTokens */
      /* deadlock-safe: family locks and token locks skip held rows; refresh replacements
         with any surviving predecessor are excluded, so SET NULL cannot wait on that predecessor. */
      WITH candidates AS MATERIALIZED (
@@ -48,10 +56,17 @@ export async function deleteExpiredOAuthRetentionTokens(
        ) AS artifact
        ORDER BY artifact.id LIMIT $2
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,
-    [families.rows.map(row => row.id), limit],
-  )
+          [families.rows.map(row => row.id), limit],
+        )
   const deleted = fromFamilies.rowCount ?? 0
-  if (deleted === limit) return deleted
+  if (selection === 'family' || deleted === limit) return deleted
+  const excludeEligibleFamilies =
+    selection === 'independent-nonfamily'
+      ? `AND NOT EXISTS (SELECT 1 FROM oauth_refresh_token_families AS family
+         WHERE family.id = artifact.${familyColumn}
+           AND family.expires_at <= $1
+           AND ($2::timestamptz IS NULL OR family.expires_at >= $2))`
+      : ''
   const independentlyExpired = await query(
     `/* deleteOAuthRetentionExpiredTokens */
      /* deadlock-safe: ordered token locks skip held rows; surviving predecessors exclude replacements. */
@@ -60,6 +75,7 @@ export async function deleteExpiredOAuthRetentionTokens(
        WHERE artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2)
          ${noPredecessor}
+         ${excludeEligibleFamilies}
        ORDER BY artifact.expires_at, artifact.id LIMIT $3
        FOR UPDATE OF artifact SKIP LOCKED
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,

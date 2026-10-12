@@ -71,22 +71,47 @@ async function deletePhase(
     // oxlint-disable-next-line no-await-in-loop -- commit each bounded physical-row batch independently
     await using query = await beginTransaction()
     // oxlint-disable-next-line no-await-in-loop -- each statement remains capped within the phase allowance
-    const count = await deleteExpiredRows(
-      query,
-      table === 'oauth_refresh_token_families' ? 'oauth_refresh_tokens' : table,
-      window,
-      limit,
-    )
-    let families = 0
-    if (table === 'oauth_refresh_token_families' && count < limit) {
-      // oxlint-disable-next-line no-await-in-loop -- counted children precede locked empty families within this batch
-      families = await deleteEmptyFamilies(query, window, limit - count)
-    }
+    const count = await (table === 'oauth_refresh_token_families'
+      ? deleteExpiredFamilyPhaseRows(query, window, limit)
+      : deleteExpiredRows(query, table, window, limit))
     // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before another bounded batch
     await query.commit()
-    deleted += count + families
-    if (count + families < limit) break
+    deleted += count
+    if (count < limit) break
   }
+  return deleted
+}
+
+async function deleteExpiredFamilyPhaseRows(
+  query: TransactionQuery,
+  window: RetentionWindow,
+  limit: number,
+): Promise<number> {
+  // Expired-family access children precede refresh children in FK order, then empty families.
+  let deleted = await deleteExpiredOAuthRetentionTokens(
+    query,
+    'oauth_access_tokens',
+    window,
+    limit,
+    'family',
+  )
+  if (deleted < limit)
+    deleted += await deleteExpiredOAuthRetentionTokens(
+      query,
+      'oauth_refresh_tokens',
+      window,
+      limit - deleted,
+      'family',
+    )
+  if (deleted < limit) deleted += await deleteEmptyFamilies(query, window, limit - deleted)
+  if (deleted < limit)
+    deleted += await deleteExpiredOAuthRetentionTokens(
+      query,
+      'oauth_refresh_tokens',
+      window,
+      limit - deleted,
+      'independent-nonfamily',
+    )
   return deleted
 }
 

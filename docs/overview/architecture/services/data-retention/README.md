@@ -112,8 +112,9 @@ authorization-server cleanup shares one run budget across its artifact phases, f
 initial share for each phase, then redistributing unused shares in the same child-first order.
 Every delete statement remains bounded by the configured page size. Token children are eligible
 when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
-counts against the run budget; empty families use only the allowance left after child tokens in
-their phase. Families are removed only after their access and refresh tokens are gone, so a large
+counts against the run budget. The family phase drains eligible access children, then refresh
+children, then empty families; independently expired refresh tokens use any allowance left after
+those steps. Families are removed only after their access and refresh tokens are gone, so a large
 family drains across runs without uncounted cascading deletes. Each bounded physical-row batch
 commits independently, releasing its locks before the next batch while preserving the shared run
 allowance. Family-expiry and child-family indexes select eligible-family children
