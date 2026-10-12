@@ -162,7 +162,7 @@ export async function explainActivityPubInboxCleanupForTest(query: SQLStatement)
     await using transaction = await beginTransaction()
     await transaction(allowUnannotatedQuery(sql`SET LOCAL enable_seqscan = off`))
     const { rows } = await transaction<{ 'QUERY PLAN': unknown }>(
-      `EXPLAIN (FORMAT JSON) ${query.text}`,
+      `/* explainActivityPubInboxCleanupForTest */ EXPLAIN (FORMAT JSON) ${query.text}`,
       query.values,
     )
     const result = JSON.stringify(rows)

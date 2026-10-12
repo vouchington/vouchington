@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 
@@ -42,7 +43,9 @@ export async function getMembershipLedgerPartialIndexes(
 
 export async function getMembershipLineageImmutableTrigger(): Promise<{ enabled: string }[]> {
   const { rows } = await read<{ enabled: string }>(
-    `SELECT tgenabled AS enabled FROM pg_trigger WHERE tgname = 'trigger_membership_provider_lineages_immutable'`,
+    allowUnannotatedQuery(
+      `SELECT tgenabled AS enabled FROM pg_trigger WHERE tgname = 'trigger_membership_provider_lineages_immutable'`,
+    ),
   )
   return rows
 }
