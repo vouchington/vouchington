@@ -85,7 +85,7 @@ async function createTestMembershipOperation(
       ${applicationId}, ${operationKind}, ${idempotencyKey}, ${collisionAt},
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
-      CASE WHEN ${operationKind} = 'automatic_refund' THEN 'usd' END,
+      CASE WHEN ${operationKind} = 'automatic_refund' THEN 'usd'::currency_codes END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN CURRENT_TIMESTAMP END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN CURRENT_TIMESTAMP END
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id RETURNING id`)
