@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { activitypub } from '@queues/activitypub/queues'
 import { enqueueReconcilePostPublication } from '@queues/post-publication/enqueues'
 import { postPublication as postPublicationQueue } from '@queues/post-publication/queues'
 import { cachePurge } from '@workers/cache-purge/workers'
@@ -154,11 +155,16 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
 
   it('activitypub definition load resolves to its worker', async () => {
     const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub')!
-    const worker = await definition.load()
+    await activitypub.pause()
     try {
-      expect(worker).toBeDefined()
+      const worker = await definition.load()
+      try {
+        expect(worker).toBeDefined()
+      } finally {
+        await worker.close()
+      }
     } finally {
-      await worker.close()
+      await activitypub.resume()
     }
   })
 })
