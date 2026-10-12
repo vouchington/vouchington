@@ -1,11 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestRetentionWindow,
   createTestUserDirect,
   insertReferralAttributionAt,
   referralAttributionExistsById,
 } from '@voucha/test-helpers'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  createDynamicConfigTestKey,
+  overrideDynamicConfigFieldsForTest,
+} from '@voucha/test-helpers/dynamic-config'
+import {
+  DynamicConfig,
+  dynamicConfigValkeyClient,
+  getBoundedPositiveIntegerField,
+} from '@data-stores/valkey'
+import {
+  insertTestRetainedIdentityRoot,
+  insertTestRetainedRelationIdentity,
+} from '@voucha/test-helpers/entities/retained-identities'
+import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retained-media'
+import * as retainedRoots from '../cleanup-retained-identities.mts'
+import * as retainedMedia from '../cleanup-retained-media-bindings.mts'
+import * as retainedRelations from '../cleanup-retained-relation-identities.mts'
 import {
   cleanupExpiredOAuthAuthorizationServerArtifacts,
   cleanupOldReferralAttributions,
@@ -13,7 +30,12 @@ import {
   cleanupSoftDeletedUsers,
   runDataRetentionCleanup,
 } from '../cleanup.mts'
-import { dataRetentionConfig, getDataRetentionLimits } from '../config.mts'
+import {
+  DATA_RETENTION_MAX_VALUES,
+  DEFAULT_DATA_RETENTION_CONFIG,
+  dataRetentionConfig,
+  getDataRetentionLimits,
+} from '../config.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -39,6 +61,89 @@ function emptyScopedOptions(now: Date) {
 }
 
 describe('data retention per-run caps', () => {
+  it.each([
+    [1, 1],
+    [DATA_RETENTION_MAX_VALUES.batch_size, 1_000],
+  ])('uses a bounded retained page for batch size %i', async (batchSize, pageSize) => {
+    const roots = vi.spyOn(retainedRoots, 'cleanupRetainedIdentityRoots')
+    const media = vi.spyOn(retainedMedia, 'cleanupRetainedMediaBindings')
+    const relations = vi.spyOn(retainedRelations, 'cleanupRetainedRelationIdentities')
+    onTestFinished(() => {
+      roots.mockRestore()
+      media.mockRestore()
+      relations.mockRestore()
+    })
+    const postId = randomUUID()
+    const relationId = randomUUID()
+    const imageId = randomUUID()
+    const placementId = randomUUID()
+    const relationTable = 'relation__post__category__topic'
+    await insertTestRetainedIdentityRoot('post', postId)
+    await insertTestRetainedRelationIdentity(relationTable, postId, relationId)
+    await seedTestRetainedMediaOrphan({ imageId, placementId, bindingFamily: 'post' })
+    const now = new Date()
+    const options = {
+      ...emptyScopedOptions(now),
+      oldReferralAttributions: { now, lowerBoundDate: new Date(now.getTime() + DAY_MS) },
+      retainedIdentityRootIds: { post: [postId], image: [imageId] },
+      retainedRelationIdentityKeys: {
+        [relationTable]: [{ subjectId: postId, relationId }],
+      },
+      retainedMediaBindingIds: [placementId],
+    }
+
+    const result = await runDataRetentionCleanup({ batchSize, maxBatches: 1 }, options)
+
+    expect(relations).toHaveBeenCalledExactlyOnceWith(
+      pageSize,
+      options.retainedRelationIdentityKeys,
+    )
+    expect(media).toHaveBeenCalledExactlyOnceWith(pageSize, options.retainedMediaBindingIds)
+    expect(roots).toHaveBeenCalledExactlyOnceWith(pageSize, options.retainedIdentityRootIds)
+    expect(result.retainedRelationIdentities).toEqual([
+      { relationTable, scanned: 1, deleted: 1, hasMore: false },
+    ])
+    expect(result.retainedMediaBindings).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+    expect(result.retainedIdentityRoots).toEqual([
+      { family: 'post', scanned: 1, deleted: 1, hasMore: false },
+      { family: 'image', scanned: 1, deleted: 1, hasMore: false },
+    ])
+  })
+
+  it('loads persisted limits into a fresh config before its first read', async () => {
+    const configOptions = {
+      key: createDynamicConfigTestKey('retention-cold-start'),
+      fieldTypes: dataRetentionConfig.fieldTypes,
+      defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
+    }
+    const writer = new DynamicConfig(configOptions)
+    try {
+      await writer.waitForInitialization()
+      await writer.setFields({ batch_size: 7, max_batches_per_run: 3 })
+      const coldReader = new DynamicConfig(configOptions)
+      try {
+        await coldReader.waitForInitialization()
+        expect(
+          getBoundedPositiveIntegerField(coldReader, 'batch_size', {
+            defaultValue: configOptions.defaultFields.batch_size,
+            maxValue: DATA_RETENTION_MAX_VALUES.batch_size,
+          }),
+        ).toBe(7)
+        expect(
+          getBoundedPositiveIntegerField(coldReader, 'max_batches_per_run', {
+            defaultValue: configOptions.defaultFields.max_batches_per_run,
+            maxValue: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
+          }),
+        ).toBe(3)
+      } finally {
+        await coldReader.close()
+      }
+    } finally {
+      await writer.close()
+      await dynamicConfigValkeyClient.del([writer.key])
+    }
+  })
+
   it('stops after max_batches_per_run batches and reports hasMore while rows remain', async () => {
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()

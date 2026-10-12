@@ -90,21 +90,25 @@ completion cleanup creates a JavaScript time for each batch, and abandoned Blues
 capture one JavaScript time per cleanup run.
 
 The `data-retention-config` DynamicConfig namespace sets the scheduled run's limits.
-`batch_size` (default 500, hard maximum 5,000) is the rows one cleanup deletes per batch, and
-`max_batches_per_run` (default 200, hard maximum 2,000) is the batches each cleanup may run per
-daily job. A missing, non-integer, non-positive, or above-maximum stored value falls back to the
-default, so a bad edit cannot raise a bound past its maximum. At the defaults one cleanup deletes at
-most 100,000 rows per run and the run issues at most 11 x 200 batches. A cleanup that hits its cap
-reports `hasMore: true`; its eligible rows stay in place, so the next daily run resumes without a
-cursor. Topic-import attempts keep their own 25-row batch because each retained response may be
-4 MiB, and the shared `batch_size` can only lower it.
+`batch_size` bounds rows deleted per batch, and `max_batches_per_run` bounds the batches each
+cleanup may run per daily job. Missing, non-integer, non-positive, or above-maximum stored values
+fall back to defaults, so a bad edit cannot raise a bound past its hard maximum. A cleanup that hits
+its cap reports `hasMore: true`; eligible rows stay in place for a later run. Topic-import attempts
+keep a separately configured smaller batch because retained responses can be large, and the shared
+`batch_size` can only lower it.
+
+Retained relation, media-binding, and root-identity phases use the configured batch size clamped
+to their existing per-statement page ceiling. Lowering the run limit lowers these pages; raising it
+beyond that ceiling does not widen a retained-identity statement.
 
 Cleanups whose batch delete returns a row count share `runBoundedBatches()`: it validates
 `batchSize` and the required `maxBatches`, keeps deleting while each batch is full, and reports
 `hasMore` when the last batch was full, including when `maxBatches` stopped the run. Orphaned OAuth
 account cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's
 batch returns its own `hasMore`, so neither uses it; both validate `maxBatches` with
-`assertPositiveInteger()`.
+`assertPositiveInteger()`. The orphaned-account sweep rotates its first provider by UTC day, so a
+capped daily run can reach later providers despite an earlier provider's backlog. One OAuth
+authorization-server artifact batch shares its row budget across all four artifact tables.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

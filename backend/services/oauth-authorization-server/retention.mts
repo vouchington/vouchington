@@ -26,16 +26,21 @@ export async function deleteExpiredOAuthAuthorizationServerArtifactsBatch(
 ): Promise<OAuthAuthorizationServerRetentionResult> {
   const now = options.now ?? new Date()
   await using query = await beginTransaction()
-  const counts: number[] = []
+  let deleted = 0
+  let hasMore = false
   for (const table of OAUTH_RETENTION_DELETE_ORDER) {
+    const remaining = batchSize - deleted
+    if (remaining === 0) {
+      hasMore = true
+      break
+    }
     // oxlint-disable-next-line no-await-in-loop -- child-table deletes must commit in FK order
-    counts.push(await deleteExpiredRows(query, table, now, options.lowerBoundDate, batchSize))
+    const count = await deleteExpiredRows(query, table, now, options.lowerBoundDate, remaining)
+    deleted += count
+    hasMore ||= count === remaining
   }
   await query.commit()
-  return {
-    deleted: counts.reduce((total, count) => total + count, 0),
-    hasMore: counts.some(count => count === batchSize),
-  }
+  return { deleted, hasMore }
 }
 
 async function deleteExpiredRows(

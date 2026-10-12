@@ -127,6 +127,7 @@ export async function runDataRetentionCleanup(
     ...limits,
     batchSize: Math.min(limits.batchSize, getTopicImportAttemptDeletionBatchSize()),
   }
+  const retainedPageSize = Math.min(limits.batchSize, 1_000)
   // Ephemeral broker rows reference users and provider accounts. Remove expired rows first so a
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
   const expiredOAuthAuthorizations = await cleanupExpiredOAuthAuthorizations(
@@ -162,15 +163,15 @@ export async function runDataRetentionCleanup(
     withLimits(options.terminalNotificationPushIntents),
   )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
-    1_000,
+    retainedPageSize,
     options.retainedRelationIdentityKeys,
   )
   const retainedMediaBindings = await cleanupRetainedMediaBindings(
-    1_000,
+    retainedPageSize,
     options.retainedMediaBindingIds,
   )
   const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
-    1_000,
+    retainedPageSize,
     options.retainedIdentityRootIds,
   )
   await cleanupAnalyticsLocalFiles()
@@ -261,8 +262,13 @@ export async function cleanupOrphanedOAuthAccounts(
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
-  const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  const providerConfigs = Object.values(providerTableConfigs)
+  const now = options.now ?? new Date()
+  const cutoffDate = getRetentionCutoffDate(retentionDays, now)
+  const configs = Object.values(providerTableConfigs)
+  // Daily rotation lets a capped run reach every provider even when an earlier one stays backlogged.
+  const utcDay = Math.floor(now.getTime() / (24 * 60 * 60 * 1_000))
+  const start = ((utcDay % configs.length) + configs.length) % configs.length
+  const providerConfigs = [...configs.slice(start), ...configs.slice(0, start)]
   let batchesRun = 0
   let deleted = 0
   let hasMore = false

@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { createTestExpiryWindow } from '@voucha/test-helpers/data'
 import {
   getTestOAuthClientStorage,
   getTestOAuthCredentialStorage,
@@ -113,13 +114,12 @@ describe('OAuth token revocation and retention', () => {
       codeVerifier: flow.verifier,
       redirectUri: flow.redirectUri,
     })
-    const lowerBoundDate = new Date(Date.now() + 10_000)
-    const expiresAt = new Date(lowerBoundDate.getTime() + 10_000)
-    await setTestOAuthArtifactExpiry(flow.client.client_id, expiresAt)
+    const window = createTestExpiryWindow()
+    await setTestOAuthArtifactExpiry(flow.client.client_id, window.firstEligibleDate)
 
     const retention = await deleteExpiredOAuthAuthorizationServerArtifactsBatch(100, {
-      lowerBoundDate,
-      now: new Date(expiresAt.getTime() + 10_000),
+      lowerBoundDate: window.lowerBoundDate,
+      now: window.now,
     })
     expect(retention.deleted).toBeGreaterThanOrEqual(4)
     expect(retention.hasMore).toBe(false)
@@ -140,6 +140,26 @@ describe('OAuth token revocation and retention', () => {
       refreshFamilyRevoked: null,
       refreshReuseDetected: null,
     })
+  })
+
+  it('shares one artifact row budget across the four tables', async () => {
+    const flow = await createTestApprovedOAuthAuthorization(owner)
+    await exchangeOAuthAuthorizationCode({
+      clientId: flow.client.client_id,
+      code: flow.code,
+      codeVerifier: flow.verifier,
+      redirectUri: flow.redirectUri,
+    })
+    const window = createTestExpiryWindow()
+    const options = { lowerBoundDate: window.lowerBoundDate, now: window.now }
+    await setTestOAuthArtifactExpiry(flow.client.client_id, window.firstEligibleDate)
+
+    const first = await deleteExpiredOAuthAuthorizationServerArtifactsBatch(2, options)
+    expect(first).toEqual({ deleted: 2, hasMore: true })
+    const second = await deleteExpiredOAuthAuthorizationServerArtifactsBatch(2, options)
+    expect(second.deleted).toBeGreaterThan(0)
+    expect(second.deleted).toBeLessThanOrEqual(2)
+    expect(await getTestOAuthClientStorage(flow.client.client_id)).not.toBeNull()
   })
 
   it('rejects tokens after their grant is revoked', async () => {

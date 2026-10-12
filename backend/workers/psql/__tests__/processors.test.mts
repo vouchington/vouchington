@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  overrideDynamicConfigFieldsForTest,
+  snapshotDynamicConfigFieldsForTest,
+} from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
 
 const cleanupPartitions = vi.fn<() => Promise<void>>()
@@ -50,6 +53,37 @@ describe('processPsql', () => {
     })
 
     expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
+  })
+
+  it('waits for stored retention limits to load on a cold start', async () => {
+    await dataRetentionConfig.waitForInitialization()
+    const restoreFields = snapshotDynamicConfigFieldsForTest([dataRetentionConfig])
+    onTestFinished(() => {
+      restoreFields()
+      vi.restoreAllMocks()
+    })
+    dataRetentionConfig.fields.clear()
+    const initialized = Promise.withResolvers<void>()
+    vi.spyOn(dataRetentionConfig, 'waitForInitialization').mockReturnValue(initialized.promise)
+    dataRetentionCleanup.mockReset()
+    dataRetentionCleanup.mockResolvedValue()
+
+    const processing = processPsql('dataRetentionCleanup', undefined, {
+      dataRetentionCleanup: dataRetentionCleanup as never,
+    })
+    try {
+      expect(dataRetentionCleanup).not.toHaveBeenCalled()
+      overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+        batch_size: 7,
+        max_batches_per_run: 3,
+      })
+      initialized.resolve()
+      await processing
+      expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
+    } finally {
+      initialized.resolve()
+      await processing
+    }
   })
 
   it('calls runConfigDriven when the job name is runConfigDriven', async () => {
