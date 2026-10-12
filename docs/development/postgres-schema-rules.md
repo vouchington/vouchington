@@ -341,12 +341,14 @@ This extends the prelaunch relational-storage rule.
 - **Join on ids, never on text.** A string that comes from outside is a unique or generated column,
   never a primary or foreign key: a vendor or external-account id, an edge or cache key, a slug, an
   email address. Turn it into an id once, where it enters, and reference and join by that id from
-  then on. Keys are uuid ids, or enums for fixed value sets. Hashtag and category text matching is
-  the only exception, because the text itself is what is being matched. Looking up outside input by
+  then on. Keys are uuid ids, bigint lookup ids, or enums for fixed value sets. Hashtag text matching
+  is an exception because the text itself is what is being matched. Looking up outside input by
   its unique text (a slug, a hostname, a login token) is fine; joining tables on that text is not.
   Existing code that breaks this rule is being fixed under
   [milestone 21](https://github.com/vouchington/vouchington/milestone/21); don't fix it ad hoc in
   unrelated PRs.
+  `postgres-key-column-types` in [`.no-mistakes.yml`](../../.no-mistakes.yml) rejects text primary
+  and foreign keys; each temporary exception names the issue that replaces it.
 - **A `uuid` column ending in `_id` belongs to a foreign key.** A single-column or a composite FK
   both count. Today (before the vote-table split) 72 columns have none. 69 of them don't point at a row that must exist, and
   each keeps its reason as a pattern exemption or an allow entry (NM-3 `postgres-column-naming` (jonathanong/no-mistakes#1057) `requireForeignKey`):
