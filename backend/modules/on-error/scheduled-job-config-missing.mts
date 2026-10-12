@@ -1,12 +1,5 @@
 import Sentry from './sentry.mts'
-
-// Same console rule as sqs-consumer-config-missing.mts: log when Sentry is disabled
-// (development, CI) but not in test mode. Kept local to avoid widening on-error/index.mts.
-function shouldLogToConsole(): boolean {
-  const env = process.env.NODE_ENV || 'development'
-  if (env === 'test') return false
-  return env === 'development' || !!process.env.CI
-}
+import { shouldLogToConsole } from './should-log-to-console.mts'
 
 /**
  * Record that a scheduled or reconcile job skipped its run because required configuration (e.g. a

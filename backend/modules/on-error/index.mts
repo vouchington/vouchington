@@ -1,5 +1,6 @@
 import Sentry from './sentry.mts'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
+import { shouldLogToConsole } from './should-log-to-console.mts'
 import {
   getOptionalRequestClientInfo,
   getOptionalRequestOrigin,
@@ -31,13 +32,6 @@ interface ExtendedError extends Error {
   statusCode?: number
   tags?: Record<string, string | number | boolean> | null
   extra?: Record<string, unknown> | null
-}
-
-// Log to console when Sentry is disabled (development, CI) but not in test mode
-function shouldLogToConsole(): boolean {
-  const env = process.env.NODE_ENV || 'development'
-  if (env === 'test') return false
-  return env === 'development' || !!process.env.CI
 }
 
 // Sentry SDK v11 instruments fetch and http natively and ignores OpenTelemetry's suppressTracing

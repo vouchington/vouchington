@@ -1,11 +1,5 @@
 import Sentry from './sentry.mts'
-
-// Log to console when Sentry is disabled (development, CI) but not in test mode.
-function shouldLogToConsole(): boolean {
-  const env = process.env.NODE_ENV || 'development'
-  if (env === 'test') return false
-  return env === 'development' || !!process.env.CI
-}
+import { shouldLogToConsole } from './should-log-to-console.mts'
 
 const throttleMs = 60 * 60 * 1000
 const lastReportedAt = new Map<string, number>()
