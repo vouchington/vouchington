@@ -2,7 +2,7 @@ import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vite
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
 import { activitypub } from '@queues/activitypub/queues'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -31,11 +31,11 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -56,7 +56,6 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypub.obliterate({ force: true })
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee], {
       origin: 'remote',
@@ -71,7 +70,6 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypub.obliterate({ force: true })
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 

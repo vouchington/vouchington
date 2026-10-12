@@ -1,7 +1,7 @@
 import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
 import { activitypub } from '@queues/activitypub/queues'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
@@ -32,11 +32,11 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await notifications.obliterate()
-    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 

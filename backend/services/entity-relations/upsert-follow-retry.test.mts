@@ -7,6 +7,7 @@ import {
   createTestPost,
   createTestUser,
   readAllQueueJobs,
+  removeEnqueuedJobs,
 } from '@voucha/test-helpers'
 import { activitypub } from '@queues/activitypub/queues'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
@@ -33,10 +34,10 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
-    await activitypub.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -98,16 +99,15 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     ).data.activityId
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypub.obliterate({ force: true })
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
     const jobs = await readAllQueueJobs(activitypub)
-    expect(followDistributeJobsFor(jobs, follower.id, followee.id)).toHaveLength(1)
+    expect(followDistributeJobsFor(jobs, follower.id, followee.id)).toHaveLength(2)
     expect(
       (
-        followDistributeJobsFor(jobs, follower.id, followee.id)[0] as {
+        followDistributeJobsFor(jobs, follower.id, followee.id)[1] as {
           data: DistributeActivityData
         }
       ).data.activityId,

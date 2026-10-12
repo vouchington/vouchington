@@ -14,9 +14,10 @@ import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enq
 
 describe('user vouch follow side effects', () => {
   let settleSideEffects = () => Promise.resolve()
+  let ownedVoterId: string | undefined
 
   beforeEach(async () => {
-    await activitypub.obliterate({ force: true })
+    ownedVoterId = undefined
     await blueskyFollowPropagation.obliterate({ force: true })
     const pending: Promise<unknown>[] = []
     for (const queue of [activitypub, blueskyFollowPropagation]) {
@@ -30,13 +31,21 @@ describe('user vouch follow side effects', () => {
     settleSideEffects = () => Promise.all(pending).then(() => undefined)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.mocked(activitypub.addBulk).mockRestore()
     vi.mocked(blueskyFollowPropagation.addBulk).mockRestore()
+    await settleSideEffects()
+    const jobs = await readAllQueueJobs(activitypub)
+    await Promise.all(
+      jobs
+        .filter(job => (job.data as DistributeActivityData).sourceUserId === ownedVoterId)
+        .map(job => job.remove()),
+    )
   })
 
   it('emits UndoFollow and Bluesky reconciliation for the follow deleted by a disavow', async () => {
     const voter = await createTestUser()
+    ownedVoterId = voter.id
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
     const relations = (await getEntityRelation(
@@ -73,6 +82,7 @@ describe('user vouch follow side effects', () => {
 
   it('reconciles Bluesky without emitting UndoFollow when disavowing a legacy Follow', async () => {
     const voter = await createTestUser()
+    ownedVoterId = voter.id
     const target = await createTestUser()
     await insertTestLegacyLocalFollow(voter.id, target.id)
 

@@ -87,6 +87,17 @@ export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
   return rows[0]?.exists ?? false
 }
 
+export async function getActivityPubInboxDeliveryIdForTest(
+  claimedActivityId: string,
+): Promise<string | undefined> {
+  const { rows } = await write<{ id: string }>(sql`/* getActivityPubInboxDeliveryIdForTest */
+    SELECT id
+    FROM activitypub_inbox_delivery_work_items
+    WHERE claimed_activity_id = ${claimedActivityId}
+  `)
+  return rows[0]?.id
+}
+
 export async function softDeleteRemoteActorForInboxTest(remoteActorId: string): Promise<void> {
   await write(sql`/* softDeleteRemoteActorForInboxTest */
     UPDATE remote_actors

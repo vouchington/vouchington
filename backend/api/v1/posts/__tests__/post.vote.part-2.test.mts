@@ -26,7 +26,6 @@ describe('post.vote', () => {
       let settleDelivery = () => Promise.resolve()
 
       beforeEach(async () => {
-        await activitypub.obliterate({ force: true })
         const pending: Promise<unknown>[] = []
         const add = activitypub.add
         vi.spyOn(activitypub, 'add').mockImplementation((...args: Parameters<typeof add>) => {
@@ -38,13 +37,22 @@ describe('post.vote', () => {
         voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       })
 
-      afterEach(() => {
+      afterEach(async () => {
         vi.mocked(activitypub.add).mockRestore()
+        await settleDelivery()
+        const jobs = await readAllQueueJobs(activitypub)
+        await Promise.all(
+          jobs
+            .filter(job => (job.data as DistributeActivityData).sourceUserId === voter.id)
+            .map(job => job.remove()),
+        )
       })
 
       async function settledJobs() {
         await settleDelivery()
-        return readAllQueueJobs(activitypub)
+        return (await readAllQueueJobs(activitypub)).filter(
+          job => (job.data as DistributeActivityData).sourceUserId === voter.id,
+        )
       }
 
       function hasDistributeJobFor(
