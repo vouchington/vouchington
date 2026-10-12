@@ -51,7 +51,6 @@ Respond with a JSON object containing:
 - Default to "dismiss" when uncertain and the claim does not meet the policy bar.
 - Your response will be reviewed and edited by a human moderator before anything is communicated.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callDisputeModel: DisputeModelCaller = (
   input,
   safetyIdentifier,
@@ -76,4 +75,3 @@ export const callDisputeModel: DisputeModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

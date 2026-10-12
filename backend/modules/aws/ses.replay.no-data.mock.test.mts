@@ -136,6 +136,27 @@ describe('sendEmail against recorded SES responses', () => {
     replay.assertDrained()
   })
 
+  it('sends a SendRawEmail request with the default sender and no configuration set', async () => {
+    replay.respondWith(loadRecordedResponse('aws/ses-send-raw-email-ok.http'))
+
+    await sendEmail({
+      to: ['a@simulator.amazonses.com', 'b@simulator.amazonses.com'],
+      subject: 'Raw defaults',
+      text: 'Raw text',
+      headers: { 'X-Replay': 'one' },
+    })
+
+    expect(sentForm()).toMatchObject({
+      Action: 'SendRawEmail',
+      Source: 'no-reply@voucha.ai',
+      'Destinations.member.1': 'a@simulator.amazonses.com',
+      'Destinations.member.2': 'b@simulator.amazonses.com',
+      'Destinations.member.3': 'tests+bcc@voucha.ai',
+    })
+    expect(sentForm()).not.toHaveProperty(['ConfigurationSetName'])
+    replay.assertDrained()
+  })
+
   it('does not retry a send the provider failed, because a retry could deliver the email twice', async () => {
     replay.respondWith(loadRecordedResponse('aws/ses-send-email-service-unavailable-503.http'))
 
