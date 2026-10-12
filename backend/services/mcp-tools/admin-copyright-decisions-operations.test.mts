@@ -108,14 +108,20 @@ describe('registered copyright operations write tools', () => {
       intentId: delivery.id,
       rationale: 'The failed delivery is eligible for retry.',
     }
-    const first = await callTestCopyrightWriteTool(admin, 'replay_copyright_delivery_intent', args)
+    const first = await callTestCopyrightWriteTool(admin, 'replay_copyright_intent', {
+      option: 'delivery',
+      arguments: args,
+    })
     expect(first.isError).not.toBe(true)
     expect(first.structuredContent).toMatchObject({ replayed: true })
     const state = (
       await getCopyrightNoticePrivateAggregate(restricted.noticeId)
     )?.deliveryIntents.find(row => row.id === delivery.id)
     expect(state?.state).toBe('pending')
-    const second = await callTestCopyrightWriteTool(admin, 'replay_copyright_delivery_intent', args)
+    const second = await callTestCopyrightWriteTool(admin, 'replay_copyright_intent', {
+      option: 'delivery',
+      arguments: args,
+    })
     expect(second.structuredContent).toMatchObject({ replayed: false })
   })
 
@@ -126,7 +132,10 @@ describe('registered copyright operations write tools', () => {
     const path = { id: fixture.noticeId, intentId: fixture.intentId }
 
     await expect(
-      callTestCopyrightWriteTool(admin, 'replay_copyright_action_intent', path),
+      callTestCopyrightWriteTool(admin, 'replay_copyright_intent', {
+        option: 'action',
+        arguments: path,
+      }),
     ).rejects.toMatchObject({ code: ErrorCode.InvalidParams })
     expect(await readTestCopyrightActionIntentState(fixture.intentId)).toBe('failed')
 
@@ -134,7 +143,10 @@ describe('registered copyright operations write tools', () => {
       ...path,
       rationale: 'The earlier delivery failure has been reviewed.',
     }
-    const replay = await callTestCopyrightWriteTool(admin, 'replay_copyright_action_intent', args)
+    const replay = await callTestCopyrightWriteTool(admin, 'replay_copyright_intent', {
+      option: 'action',
+      arguments: args,
+    })
     expect(replay.isError).not.toBe(true)
     expect(replay.structuredContent).toEqual({ replayed: true })
     expect(await readTestCopyrightActionIntentState(fixture.intentId)).toBe('pending')
@@ -146,7 +158,10 @@ describe('registered copyright operations write tools', () => {
       }),
     ).toBe(1)
 
-    const repeat = await callTestCopyrightWriteTool(admin, 'replay_copyright_action_intent', args)
+    const repeat = await callTestCopyrightWriteTool(admin, 'replay_copyright_intent', {
+      option: 'action',
+      arguments: args,
+    })
     expect(repeat.structuredContent).toEqual({ replayed: false })
     expect(
       await countTestCopyrightLifecycleEvents({

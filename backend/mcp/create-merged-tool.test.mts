@@ -109,12 +109,15 @@ describe('createMergedTool', () => {
     ).toThrow(McpToolOutputMismatchError)
   })
 
-  it.each(['plan', 'scopes', 'roles', 'annotations'] as const)(
+  it.each(['plan', 'scopes', 'admin scopes', 'roles', 'annotations', 'switch'] as const)(
     'rejects incompatible declared %s metadata',
     field => {
       const different = source('list')
       if (field === 'plan') different.meta.plan = 'plus'
       if (field === 'scopes') different.meta.requiredScopes = { mcp: ['posts:read'] }
+      if (field === 'admin scopes') {
+        different.meta.requiredScopes = { mcp: ['topics:read'], admin_mcp: ['moderation:read'] }
+      }
       if (field === 'roles') different.roles = { administrator: true }
       if (field === 'annotations')
         different.meta.annotations = {
@@ -122,6 +125,7 @@ describe('createMergedTool', () => {
           destructiveHint: false,
           idempotentHint: false,
         }
+      if (field === 'switch') different.meta.switch = 'copyright.mcpDecisionTools'
       expect(() =>
         createMergedTool('read_example', 'Read Example', [
           { option: 'get', source: source('get') },

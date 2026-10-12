@@ -52,12 +52,15 @@ export function createMergedTool(
   const commonMeta = first.meta
   const identity = (tool: MergedToolSource) =>
     JSON.stringify({
-      scopes: tool.meta?.requiredScopes?.mcp,
+      scopes: tool.meta?.requiredScopes?.mcp ?? null,
+      adminScopes: tool.meta?.requiredScopes?.admin_mcp ?? null,
       plan: tool.meta?.plan ?? 'free',
       suspendedAccess: tool.meta?.suspendedAccess === true,
       // ast-grep-ignore: no-roles-outside-services -- Declared tool gates, not user roles; authorization stays in mcp-tools services.
       roles: tool.roles ?? null,
-      annotations: tool.meta?.annotations,
+      annotations: tool.meta?.annotations ?? null,
+      switch: tool.meta?.switch ?? null,
+      auditRationale: tool.meta?.auditRationale === true,
     })
   for (const { source: tool } of options) {
     if (!tool.meta?.outputSchema || identity(tool) !== identity(first)) {

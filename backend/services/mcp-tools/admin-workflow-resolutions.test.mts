@@ -34,22 +34,23 @@ function error(result: Awaited<ReturnType<typeof invoke>>, status: number) {
 }
 
 describe.each(['appeal', 'dispute'] as const)('registered %s workflows', kind => {
-  const draft = `draft_${kind}_response`
-  const approve = `approve_${kind}_response`
-  const deliver = `deliver_${kind}_response`
-  const resolve = kind === 'appeal' ? 'resolve_moderation_appeal' : 'resolve_review_dispute'
   const action = kind === 'appeal' ? 'deny' : 'dismiss'
+  const call = (args: Record<string, unknown>) => ({ option: kind, arguments: args })
 
   it('drafts, approves, delivers and resolves with attributed history and no agent training', async () => {
     const admin = await createTestUser({ administrator: true })
     const { id } = await createStaffResolutionFixture(kind, false)
-    await success(admin, draft, {
-      id,
-      public_response: 'Reviewed response',
-      internal_notes: 'Private review',
-    })
-    await success(admin, approve, { id })
-    await success(admin, deliver, { id })
+    await success(
+      admin,
+      'draft_review_response',
+      call({
+        id,
+        public_response: 'Reviewed response',
+        internal_notes: 'Private review',
+      }),
+    )
+    await success(admin, 'approve_review_response', call({ id }))
+    await success(admin, 'deliver_review_response', call({ id }))
     const lifecycle = await readAdminWorkflowLifecycle(kind, id)
     for (const change of ['edit', 'approve', 'send']) {
       expect(lifecycle).toEqual(
@@ -58,7 +59,7 @@ describe.each(['appeal', 'dispute'] as const)('registered %s workflows', kind =>
         ]),
       )
     }
-    await success(admin, resolve, { id, action })
+    await success(admin, 'resolve_review_case', call({ id, action }))
     expect((await readStaffResolutionState(kind, id)).resolved_at).not.toBeNull()
     expect(await readStaffActionHistory(admin.id)).toEqual(
       expect.arrayContaining([
@@ -77,9 +78,9 @@ describe.each(['appeal', 'dispute'] as const)('registered %s workflows', kind =>
     const { id } = await createStaffResolutionFixture(kind, false)
     const state = await readStaffResolutionState(kind, id)
     const lifecycle = await readAdminWorkflowLifecycle(kind, id)
-    error(await invoke(admin, approve, { id }), 404)
-    error(await invoke(admin, deliver, { id }), 422)
-    error(await invoke(admin, resolve, { id, action }), 422)
+    error(await invoke(admin, 'approve_review_response', call({ id })), 404)
+    error(await invoke(admin, 'deliver_review_response', call({ id })), 422)
+    error(await invoke(admin, 'resolve_review_case', call({ id, action })), 422)
     expect(await readStaffResolutionState(kind, id)).toEqual(state)
     expect(await readAdminWorkflowLifecycle(kind, id)).toEqual(lifecycle)
     expect(await readStaffActionHistory(admin.id)).toEqual([])
@@ -91,10 +92,13 @@ describe.each(['appeal', 'dispute'] as const)('registered %s workflows', kind =>
     const { id } = await createStaffResolutionFixture(kind)
     const state = await readStaffResolutionState(kind, id)
     const lifecycle = await readAdminWorkflowLifecycle(kind, id)
-    error(await invoke(admin, draft, { id, public_response: 'Replacement' }), 404)
-    error(await invoke(admin, approve, { id }), 404)
-    error(await invoke(admin, deliver, { id }), 422)
-    error(await invoke(admin, `rerun_${kind}_resolution_draft`, { id }), 422)
+    error(
+      await invoke(admin, 'draft_review_response', call({ id, public_response: 'Replacement' })),
+      404,
+    )
+    error(await invoke(admin, 'approve_review_response', call({ id })), 404)
+    error(await invoke(admin, 'deliver_review_response', call({ id })), 422)
+    error(await invoke(admin, 'rerun_review_resolution_draft', call({ id })), 422)
     expect(await readStaffResolutionState(kind, id)).toEqual(state)
     expect(await readAdminWorkflowLifecycle(kind, id)).toEqual(lifecycle)
     expect(await readStaffActionHistory(admin.id)).toEqual([])
@@ -103,10 +107,10 @@ describe.each(['appeal', 'dispute'] as const)('registered %s workflows', kind =>
   it('rejects repeated resolution without adding history or training', async () => {
     const admin = await createTestUser({ administrator: true })
     const { id } = await createStaffResolutionFixture(kind)
-    await success(admin, resolve, { id, action })
+    await success(admin, 'resolve_review_case', call({ id, action }))
     const state = await readStaffResolutionState(kind, id)
     const history = await readStaffActionHistory(admin.id)
-    error(await invoke(admin, resolve, { id, action }), 404)
+    error(await invoke(admin, 'resolve_review_case', call({ id, action })), 404)
     expect(await readStaffResolutionState(kind, id)).toEqual(state)
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
     expect(await readAdminWorkflowTraining(admin.id)).toEqual([])

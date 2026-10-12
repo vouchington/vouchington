@@ -45,7 +45,12 @@ describe('registered account and integrity writes', () => {
     const author = await createTestUser()
     const id = await insertTestVoteIntegrityFlag({ postId: await makeFlagPost(author.id) })
     expect(
-      (await invoke(admin, 'review_vote_integrity_flag', { id, resolution: 'dismissed' })).isError,
+      (
+        await invoke(admin, 'review_integrity_flag', {
+          option: 'vote',
+          arguments: { id, resolution: 'dismissed' },
+        })
+      ).isError,
     ).not.toBe(true)
     const state = await readStaffActionTarget('vote_flag', id)
     expect(state).toMatchObject({ resolution: 'dismissed', resolved_by_id: admin.id })
@@ -54,7 +59,10 @@ describe('registered account and integrity writes', () => {
       expect.objectContaining({ action_type: 'vote_integrity_flag_review' }),
     ])
     expectError(
-      await invoke(admin, 'review_vote_integrity_flag', { id, resolution: 'dismissed' }),
+      await invoke(admin, 'review_integrity_flag', {
+        option: 'vote',
+        arguments: { id, resolution: 'dismissed' },
+      }),
       404,
     )
     expect(await readStaffActionTarget('vote_flag', id)).toEqual(state)
@@ -69,7 +77,14 @@ describe('registered account and integrity writes', () => {
       reportedUserId: author.id,
       reporterUserIds: [reporter.id],
     })
-    expect((await invoke(admin, 'apply_report_abuse_penalty', { id })).isError).not.toBe(true)
+    expect(
+      (
+        await invoke(admin, 'apply_integrity_penalty', {
+          option: 'report_abuse',
+          arguments: { id },
+        })
+      ).isError,
+    ).not.toBe(true)
     expect(await readStaffActionTarget('report_flag', id)).toMatchObject({
       resolution: 'penalized',
       resolved_by_id: admin.id,
@@ -85,7 +100,10 @@ describe('registered account and integrity writes', () => {
     expect(history).toEqual([
       expect.objectContaining({ action_type: 'report_integrity_penalty_apply' }),
     ])
-    expectError(await invoke(admin, 'apply_report_abuse_penalty', { id }), 409)
+    expectError(
+      await invoke(admin, 'apply_integrity_penalty', { option: 'report_abuse', arguments: { id } }),
+      409,
+    )
     expect(await getTestReportAbusePenaltiesByUserId(reporter.id)).toEqual(penalties)
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
   })
@@ -97,7 +115,10 @@ describe('registered account and integrity writes', () => {
     const postId = await makeFlagPost(author.id)
     await insertTestPostVote(postId, voter.id, '127.0.0.1', 1)
     const id = await insertTestVoteIntegrityFlag({ postId })
-    const result = await invoke(admin, 'apply_vote_ring_penalty', { id })
+    const result = await invoke(admin, 'apply_integrity_penalty', {
+      option: 'vote_ring',
+      arguments: { id },
+    })
     expect(result.isError).not.toBe(true)
     expect(result.structuredContent).toMatchObject({
       penalized_user_count: 1,
@@ -109,7 +130,10 @@ describe('registered account and integrity writes', () => {
     expect(history).toEqual([
       expect.objectContaining({ action_type: 'vote_integrity_penalty_apply' }),
     ])
-    expectError(await invoke(admin, 'apply_vote_ring_penalty', { id }), 409)
+    expectError(
+      await invoke(admin, 'apply_integrity_penalty', { option: 'vote_ring', arguments: { id } }),
+      409,
+    )
     expect(await getTestPenaltiesByFlagId(id)).toEqual(penalties)
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
   })
@@ -123,8 +147,10 @@ describe('registered account and integrity writes', () => {
         kind === 'report'
           ? await insertTestReportAbusePenalty({ userId: target.id, createdById: admin.id })
           : await insertTestVoteWeightPenalty(target.id, admin.id)
-      const name = kind === 'report' ? 'lift_report_abuse_penalty' : 'lift_vote_ring_penalty'
-      expect((await invoke(admin, name, { id })).isError).not.toBe(true)
+      const option = kind === 'report' ? 'report_abuse' : 'vote_ring'
+      expect(
+        (await invoke(admin, 'lift_integrity_penalty', { option, arguments: { id } })).isError,
+      ).not.toBe(true)
       const state = await readStaffActionTarget(
         kind === 'report' ? 'report_penalty' : 'vote_penalty',
         id,
@@ -134,7 +160,7 @@ describe('registered account and integrity writes', () => {
       expect(history).toEqual([
         expect.objectContaining({ action_type: `${kind}_integrity_penalty_revoke` }),
       ])
-      expectError(await invoke(admin, name, { id }), 404)
+      expectError(await invoke(admin, 'lift_integrity_penalty', { option, arguments: { id } }), 404)
       expect(await readStaffActionHistory(admin.id)).toEqual(history)
     },
   )

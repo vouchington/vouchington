@@ -79,11 +79,21 @@ describe('registered editorial writes', () => {
     const admin = await createTestUser({ administrator: true })
     const category = `category-${randomUUID()}`
     expect(
-      (await invoke(admin, 'reject_rss_category', { category_text: category })).isError,
+      (
+        await invoke(admin, 'set_rss_category_rejection', {
+          option: 'reject',
+          arguments: { category_text: category },
+        })
+      ).isError,
     ).not.toBe(true)
     expect(await readStaffCategoryState(category)).toMatchObject({ rejected: true })
     expect(
-      (await invoke(admin, 'restore_rss_category', { category_text: category })).isError,
+      (
+        await invoke(admin, 'set_rss_category_rejection', {
+          option: 'restore',
+          arguments: { category_text: category },
+        })
+      ).isError,
     ).not.toBe(true)
     expect(await readStaffCategoryState(category)).toMatchObject({ rejected: false })
     const history = await readStaffActionHistory(admin.id)
@@ -91,8 +101,14 @@ describe('registered editorial writes', () => {
       'rss_category_reject',
       'rss_category_unreject',
     ])
-    for (const name of ['reject_rss_category', 'restore_rss_category'])
-      expectError(await invoke(admin, name, { category_text: ' ' }), 422)
+    for (const option of ['reject', 'restore'] as const)
+      expectError(
+        await invoke(admin, 'set_rss_category_rejection', {
+          option,
+          arguments: { category_text: ' ' },
+        }),
+        422,
+      )
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
     expect(await readStaffCategoryState(category)).toMatchObject({ rejected: false })
   })

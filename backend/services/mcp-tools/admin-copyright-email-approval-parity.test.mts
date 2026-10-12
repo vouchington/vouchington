@@ -43,8 +43,8 @@ async function mcpSurface(): Promise<Approve> {
   const admin = await createTestUser({ administrator: true })
   return async (intakeId, body) => {
     const result = await callMcpTool(
-      'approve_copyright_email_intake',
-      { intake_id: intakeId, ...body },
+      'review_copyright_email_intake',
+      { option: 'approve', arguments: { intake_id: intakeId, ...body } },
       { ...admin, membership_plan: null },
       ['copyright-notices:read', 'copyright-notices:write'],
       ADMIN_MCP_SERVER_CONFIG,
@@ -190,8 +190,8 @@ describe('copyright email approval parity between REST and MCP', () => {
 
     await expect(
       callMcpTool(
-        'approve_copyright_email_intake',
-        { intake_id: intake.id, ...body },
+        'review_copyright_email_intake',
+        { option: 'approve', arguments: { intake_id: intake.id, ...body } },
         { ...admin, membership_plan: null },
         ['copyright-notices:read', 'copyright-notices:write'],
         ADMIN_MCP_SERVER_CONFIG,

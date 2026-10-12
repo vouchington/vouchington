@@ -10,11 +10,14 @@ The [module inventory](module-inventory.md) maps each source file to its respons
 
 ## Merged tools
 
-Related user operations share a tool through `createMergedTool`. Every call uses a closed
-`{ option, arguments }` envelope: the option selects exactly one input schema, and unknown options,
-extra envelope fields, missing arguments, or fields from another option are rejected before dispatch.
-The registry compares declared MCP scopes, roles, plan and annotations across group members.
-Each option retains its source handler's runtime authorization and REST behavior.
+Related user and admin operations share a tool through `createMergedTool`. Every call uses a
+closed `{ option, arguments }` envelope: the option selects exactly one input schema, and unknown
+options, extra envelope fields, missing arguments, or fields from another option are rejected before
+dispatch. The registry compares declared MCP scopes, admin MCP scopes, roles, plan, annotation
+flags, the copyright decision switch, and the rationale audit flag across group members. Runtime
+checks stay on the selected option. Each option retains its source handler's runtime authorization
+and REST behavior. A merged copyright decision reads `arguments.rationale`; a kept copyright
+decision still reads the top-level `rationale`.
 
 The selected option alone determines the REST routes charged to the caller. Its result must satisfy
 its own output schema before validation against the advertised union of all option outputs.

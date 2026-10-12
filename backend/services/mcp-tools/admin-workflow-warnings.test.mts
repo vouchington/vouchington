@@ -23,12 +23,15 @@ async function fixture() {
   return { admin, target, reportId }
 }
 
-describe('registered issue_user_warning tool', () => {
+describe('registered record_user_moderation warning option', () => {
   it('issues a linked warning and resolves its report with actor history but no agent training', async () => {
     const { admin, target, reportId } = await fixture()
     const result = await callMcpTool(
-      'issue_user_warning',
-      { userId: target.id, reason: 'Fixture warning', reportId, resolveReport: true },
+      'record_user_moderation',
+      {
+        option: 'warning',
+        arguments: { userId: target.id, reason: 'Fixture warning', reportId, resolveReport: true },
+      },
       { ...admin, membership_plan: null },
       ['moderation:read', 'moderation:write'],
       ADMIN_MCP_SERVER_CONFIG,
@@ -55,8 +58,11 @@ describe('registered issue_user_warning tool', () => {
     const other = await createTestUser()
     const before = await readStaffActionTarget('report', reportId)
     const result = await callMcpTool(
-      'issue_user_warning',
-      { userId: other.id, reason: 'Fixture warning', reportId, resolveReport: true },
+      'record_user_moderation',
+      {
+        option: 'warning',
+        arguments: { userId: other.id, reason: 'Fixture warning', reportId, resolveReport: true },
+      },
       { ...admin, membership_plan: null },
       ['moderation:read', 'moderation:write'],
       ADMIN_MCP_SERVER_CONFIG,

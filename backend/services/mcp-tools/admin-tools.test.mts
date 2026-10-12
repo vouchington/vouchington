@@ -31,10 +31,10 @@ describe('admin tool authorization contract', () => {
     }
   })
   it.each([
-    ['approve_appeal_response', 'moderation:approve', 'moderation:write'],
+    ['approve_review_response', 'moderation:approve', 'moderation:write'],
     ['pause_queue', 'site-operations:queues', 'site-operations:read'],
-    ['suspend_user', 'account-enforcement:suspend', 'account-enforcement:write'],
-    ['get_ai_costs', 'analytics:read', 'mcp.admin:read'],
+    ['set_user_suspension', 'account-enforcement:suspend', 'account-enforcement:write'],
+    ['read_admin_metrics', 'analytics:read', 'mcp.admin:read'],
   ] as const)('hides and denies %s until its exact grant is present', (name, exact, broad) => {
     expect(resolveMcpToolCall(name, admin, [broad], ADMIN_MCP_SERVER_CONFIG).status).toBe(
       'insufficient_scope',

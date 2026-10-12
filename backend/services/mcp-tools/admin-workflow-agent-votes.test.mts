@@ -37,7 +37,12 @@ describe('registered agent moderation vote writes', () => {
     })
     const id = await insertTestAgentModeration({ postId, promptId, agentId: agent.id })
     expect(
-      (await invoke(admin, 'set_agent_moderation_vote', { id, choice: 'accurate' })).isError,
+      (
+        await invoke(admin, 'configure_agent_moderation_vote', {
+          option: 'set',
+          arguments: { id, choice: 'accurate' },
+        })
+      ).isError,
     ).not.toBe(true)
     expect(await getAgentModerationElectionVote(admin.id, id)).toMatchObject({ choice: 'accurate' })
     expect(await readStaffActionHistory(admin.id)).toEqual(
@@ -48,7 +53,14 @@ describe('registered agent moderation vote writes', () => {
         }),
       ]),
     )
-    expect((await invoke(admin, 'clear_agent_moderation_vote', { id })).isError).not.toBe(true)
+    expect(
+      (
+        await invoke(admin, 'configure_agent_moderation_vote', {
+          option: 'clear',
+          arguments: { id },
+        })
+      ).isError,
+    ).not.toBe(true)
     expect(await getAgentModerationElectionVote(admin.id, id)).toBeNull()
     expect(await readStaffActionHistory(admin.id)).toEqual(
       expect.arrayContaining([
@@ -61,16 +73,15 @@ describe('registered agent moderation vote writes', () => {
     expect(await readAdminWorkflowTraining(admin.id)).toEqual([])
   })
 
-  it.each(['set_agent_moderation_vote', 'clear_agent_moderation_vote'])(
-    '%s refuses an unknown moderation with no vote history or training',
-    async name => {
+  it.each(['set', 'clear'] as const)(
+    'configure_agent_moderation_vote %s refuses an unknown moderation with no vote history or training',
+    async option => {
       const admin = await createTestUser({ administrator: true })
       const id = randomUUID()
-      const result = await invoke(
-        admin,
-        name,
-        name === 'set_agent_moderation_vote' ? { id, choice: 'accurate' } : { id },
-      )
+      const result = await invoke(admin, 'configure_agent_moderation_vote', {
+        option,
+        arguments: option === 'set' ? { id, choice: 'accurate' } : { id },
+      })
       expect(result.isError).toBe(true)
       const block = result.content[0]!
       if (block.type !== 'text') throw new Error('Expected typed error')

@@ -49,6 +49,8 @@ For growth metrics details, see [growth-metrics/README.md](./growth-metrics/READ
 
 The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. No repository file registers it; add it per user, without a static credential. It is OAuth-only: the credential is an OAuth access token bound to the admin resource, which only administrators can authorize, carrying the scopes each tool requires. Ordinary admin tools accept matching `mcp.admin:*` grants; sensitive tools, including copyright decisions, require their exact resource grants. API keys are not accepted and get `401`. OAuth clients discover the resource from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge, so register the URL without a static credential and complete the client's OAuth sign-in.
 
+The server exposes 74 tools. Operations that share declared scopes, roles, plan, and annotation flags are one tool with a closed `{ option, arguments }` envelope; the generated [MCP catalog](../../../../overview/architecture/mcp/catalog.md) is the name and option list. Unknown options and arguments from another option are rejected before dispatch. Each option keeps its REST authorization, charge, and audit outcome, and the audit row records the option.
+
 Claude Code (authenticate afterwards from `/mcp`):
 
 ```bash

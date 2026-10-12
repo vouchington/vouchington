@@ -27,8 +27,22 @@ describe('registered account recovery and vote weight tools', () => {
   it('unsuspends an account with attributed history and refuses an already active account', async () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser()
-    expect((await invoke(admin, 'suspend_user', { userId: target.id })).isError).not.toBe(true)
-    expect((await invoke(admin, 'unsuspend_user', { userId: target.id })).isError).not.toBe(true)
+    expect(
+      (
+        await invoke(admin, 'set_user_suspension', {
+          option: 'suspend',
+          arguments: { userId: target.id },
+        })
+      ).isError,
+    ).not.toBe(true)
+    expect(
+      (
+        await invoke(admin, 'set_user_suspension', {
+          option: 'unsuspend',
+          arguments: { userId: target.id },
+        })
+      ).isError,
+    ).not.toBe(true)
     expect((await getPrivateUserByAny(target.id))?.suspended_at).toBeNull()
     const history = await readStaffActionHistory(admin.id)
     expect(history).toEqual(
@@ -36,7 +50,13 @@ describe('registered account recovery and vote weight tools', () => {
         expect.objectContaining({ action_type: 'unsuspend', target_user_id: target.id }),
       ]),
     )
-    error(await invoke(admin, 'unsuspend_user', { userId: target.id }), 409)
+    error(
+      await invoke(admin, 'set_user_suspension', {
+        option: 'unsuspend',
+        arguments: { userId: target.id },
+      }),
+      409,
+    )
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
   })
 
@@ -44,15 +64,25 @@ describe('registered account recovery and vote weight tools', () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser()
     expect(
-      (await invoke(admin, 'set_user_vote_weight', { userId: target.id, weight: 7 })).isError,
+      (
+        await invoke(admin, 'configure_user_vote_weight', {
+          option: 'set',
+          arguments: { userId: target.id, weight: 7 },
+        })
+      ).isError,
     ).not.toBe(true)
     expect(await readAdminWorkflowVoteWeight(target.id)).toMatchObject({
       vote_weight: 7,
       vote_weight_admin_set_at: expect.any(Date),
     })
-    expect((await invoke(admin, 'clear_user_vote_weight', { userId: target.id })).isError).not.toBe(
-      true,
-    )
+    expect(
+      (
+        await invoke(admin, 'configure_user_vote_weight', {
+          option: 'clear',
+          arguments: { userId: target.id },
+        })
+      ).isError,
+    ).not.toBe(true)
     expect(await readAdminWorkflowVoteWeight(target.id)).toMatchObject({
       vote_weight_admin_set_at: null,
     })
@@ -64,17 +94,16 @@ describe('registered account recovery and vote weight tools', () => {
     )
   })
 
-  it.each(['set_user_vote_weight', 'clear_user_vote_weight'])(
-    '%s rejects an unknown account without history',
-    async name => {
+  it.each(['set', 'clear'] as const)(
+    'configure_user_vote_weight %s rejects an unknown account without history',
+    async option => {
       const admin = await createTestUser({ administrator: true })
       const userId = randomUUID()
       error(
-        await invoke(
-          admin,
-          name,
-          name === 'set_user_vote_weight' ? { userId, weight: 7 } : { userId },
-        ),
+        await invoke(admin, 'configure_user_vote_weight', {
+          option,
+          arguments: option === 'set' ? { userId, weight: 7 } : { userId },
+        }),
         404,
       )
       expect(await readStaffActionHistory(admin.id)).toEqual([])
