@@ -7,7 +7,8 @@ function sourceExpressions(
   insert: PostgresSqlInsert,
   column: string,
 ): readonly PostgresSqlExpression[] | undefined {
-  if (!insert.columns.some(name => name.parts.at(-1)?.identity === column)) return []
+  // Positional VALUES and omitted columns can supply a default; their source is unknown here.
+  if (!insert.columns.some(name => name.parts.at(-1)?.identity === column)) return undefined
   const sources = insert.columnSources
   if (sources.kind !== 'mapped' || !sources.complete) return undefined
   const expressions: PostgresSqlExpression[] = []
