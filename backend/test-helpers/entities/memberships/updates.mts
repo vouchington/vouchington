@@ -56,11 +56,14 @@ export async function updateTestMembershipCancelAtPeriodEnd(
   `)
 }
 
-export async function rejectTestMembershipProviderEvidence(membershipId: string): Promise<void> {
+export async function rejectTestMembershipProviderEvidence(
+  membershipId: string,
+  rejectedAt?: Date,
+): Promise<void> {
   await write(sql`/* rejectTestMembershipProviderEvidence */
     UPDATE membership_provider_evidence_records evidence
     SET verified_at = NULL,
-        rejected_at = CURRENT_TIMESTAMP,
+        rejected_at = COALESCE(${rejectedAt ?? null}::timestamptz, CURRENT_TIMESTAMP),
         rejection_reason = 'test evidence rejected'
     FROM memberships membership
     INNER JOIN membership_source_states source_state
