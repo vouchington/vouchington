@@ -295,6 +295,11 @@
     "issue": 2609
   },
   {
+    "annotation": "detectMassReportCampaign",
+    "reason": "A batch of admitted report tools starts one report-integrity check per distinct target; the shared vote worker can complete those checks inside the request profile",
+    "issue": 2609
+  },
+  {
     "annotation": "disconnectOAuthAccount",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
