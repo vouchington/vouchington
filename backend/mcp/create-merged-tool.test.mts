@@ -113,6 +113,7 @@ describe('createMergedTool', () => {
     'rejects incompatible declared %s metadata',
     field => {
       const different = source('list')
+      if (!different.meta) throw new Error('missing source meta')
       if (field === 'plan') different.meta.plan = 'plus'
       if (field === 'scopes') different.meta.requiredScopes = { mcp: ['posts:read'] }
       if (field === 'admin scopes') {
