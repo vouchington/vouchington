@@ -32,7 +32,6 @@ export async function createTestDeliverySavepoint(query: TransactionQuery): Prom
 }
 
 export async function rollbackTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- verifies savepoint-local guard rewind inside the real transaction owner, not manual transaction lifecycle.
   await query(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`)
 }
 
