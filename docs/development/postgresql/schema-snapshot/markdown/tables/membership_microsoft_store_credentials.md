@@ -54,4 +54,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_membership_microsoft_store_credentials_context`: `CREATE TRIGGER trigger_membership_microsoft_store_credentials_context BEFORE INSERT OR UPDATE ON public.membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('microsoft_store')`
 - `trigger_membership_microsoft_store_credentials_updated_at`: `CREATE TRIGGER trigger_membership_microsoft_store_credentials_updated_at BEFORE UPDATE ON public.membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

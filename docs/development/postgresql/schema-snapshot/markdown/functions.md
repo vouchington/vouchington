@@ -859,6 +859,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_requ
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_membership_context_provider_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_context_provider_mismatch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_grant_activation_period_mutation`
 
 ```sql
@@ -943,14 +951,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_reject_non_google_play_membership_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_non_google_play_membership_context()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
