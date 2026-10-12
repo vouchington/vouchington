@@ -11,7 +11,7 @@ export async function createMonthlyPartitionRetirementFixture() {
   await using setup = await beginTransaction()
   await setup(`/* createMonthlyPartitionRetirementFixture */ CREATE SCHEMA ${schema}`)
   await setup(`/* createMonthlyPartitionRetirementFixture */ SET LOCAL search_path TO ${schema}`)
-  await setup(MONTHLY_RETIREMENT_SCHEMA)
+  await setup(`/* createMonthlyPartitionRetirementFixture:schema */ ${MONTHLY_RETIREMENT_SCHEMA}`)
   await setup.commit()
 
   async function startTransaction() {
