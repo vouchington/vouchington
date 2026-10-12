@@ -2,25 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
 import type { PoolClient } from '@data-stores/psql/types'
-import type { BatchCreationDependencies } from '../services/bedrock-embeddings-batch/utils.mts'
-import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
-import { minimumImageBatchSizeMB } from '../services/bedrock-embeddings/batch/input-size-limits.mts'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from './entities/bedrock-embeddings-batches.mts'
-
-/** Controlled admission for empty routing only; submission remains the production function. */
-export const emptyEmbeddingCreationDependencies: BatchCreationDependencies = {
-  getBatchCreationLimits: async () => ({
-    allowed: true,
-    maxRecords: 1,
-    minRecords: 1,
-    maxSizeMB: minimumImageBatchSizeMB(1),
-  }),
-  createBatch,
-}
 
 /** Coordinates these fixtures, not unrelated production writers or a separate provider account. */
 export async function acquireEmbeddingQuotaFixture() {
@@ -73,7 +59,6 @@ export async function acquireEmbeddingQuotaFixture() {
       assertOpen()
       drains.push({ run, safeAfterFailure })
     },
-    readGlobalUsage,
     removeOwnedReservations: async () => {
       const ownedIds = [...ids]
       await cleanupTestEmbeddingsBatches(ownedIds)
@@ -81,19 +66,20 @@ export async function acquireEmbeddingQuotaFixture() {
       ids.length = 0
       return { verifiedAbsentCount: ownedIds.length, remainingCount: 0 }
     },
-    insertOtherWork: (inputSizeMB: number) => {
+    insertCompletedControl: () => {
       assertOpen()
+      const id = `embedding-completed-control-${randomUUID()}`
+      ids.push(id)
       const write = Promise.resolve().then(async () => {
-        const before = await readGlobalUsage()
-        const id = `embedding-other-work-${randomUUID()}`
-        ids.push(id)
+        assertOpen()
         await insertTestEmbeddingsBatch({
           id,
-          bedrockStatus: 'Submitted',
-          batchData: { metadata: { inputSizeMB } },
+          bedrockStatus: 'Completed',
+          records: 1,
+          batchData: { metadata: { inputSizeMB: 0 } },
         })
-        await assertOwnedReservation(id, inputSizeMB)
-        return { before, id, inputSizeMB }
+        await assertOwnedCompletedControl(id)
+        return { id, records: 1 }
       })
       writes.push(write)
       void write.catch(() => {})
@@ -142,7 +128,9 @@ export async function acquireEmbeddingQuotaFixture() {
     await attempt(() => client?.query('RESET statement_timeout'))
     await attempt(() =>
       client?.release(
-        errors.length ? new AggregateError(errors, 'Quota disposal failed') : undefined,
+        errors.length
+          ? new AggregateError(errors, 'Quota disposal failed', { cause: errors[0] })
+          : undefined,
       ),
     )
     if (errors.length)
@@ -151,21 +139,9 @@ export async function acquireEmbeddingQuotaFixture() {
         safeToRestore
           ? 'Quota fixture teardown failed'
           : 'Quota fixture teardown failed; config/accounting restoration withheld after unsafe drain',
+        { cause: errors[0] },
       )
   }
-}
-
-/** Full global accounting; no owned-ID, model, date, account or queue exclusion. */
-async function readGlobalUsage() {
-  const { rows } = await read<{ count: string; input_size_mb: number }>(
-    `/* embeddingQuotaFixture:globalUsage */
-    SELECT COUNT(*)::text AS count,
-      COALESCE(SUM((data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION), 0) AS input_size_mb
-    FROM bedrock_embedding_batches
-    WHERE submitted_at IS NOT NULL AND completed_at IS NULL
-      AND failed_at IS NULL AND cancelled_at IS NULL`,
-  )
-  return { count: Number(rows[0]!.count), inputSizeMB: rows[0]!.input_size_mb }
 }
 
 /** Teardown observes only owned identity; unrelated global accounting may keep changing. */
@@ -179,18 +155,17 @@ async function assertOwnedAccountingRemoved(ids: string[]) {
   expect(rows).toEqual([])
 }
 
-/** Setup checks the owned contribution while unrelated global accounting may change. */
-async function assertOwnedReservation(id: string, inputSizeMB: number) {
-  const { rows } = await read<{ id: string; input_size_mb: number }>(
-    `/* embeddingQuotaFixture:ownedInsertion */
-    SELECT id,
-      COALESCE((data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION, 0) AS input_size_mb
+/** Verify a real completed hourly contribution, with no active count or size contribution. */
+async function assertOwnedCompletedControl(id: string) {
+  const { rows } = await read<{ id: string; records: number; input_size_mb: number }>(
+    `/* embeddingQuotaFixture:completedControl */
+    SELECT id, records,
+      (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
     FROM bedrock_embedding_batches
-    WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NULL
-      AND failed_at IS NULL AND cancelled_at IS NULL`,
+    WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NOT NULL
+      AND failed_at IS NULL AND cancelled_at IS NULL
+      AND created_at > NOW() - INTERVAL '1 hour'`,
     [id],
   )
-  expect(rows).toHaveLength(1)
-  expect(rows[0]!.id).toBe(id)
-  expect(rows[0]!.input_size_mb).toBeCloseTo(inputSizeMB, 6)
+  expect(rows).toEqual([{ id, records: 1, input_size_mb: 0 }])
 }

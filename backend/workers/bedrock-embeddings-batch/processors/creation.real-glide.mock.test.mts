@@ -3,7 +3,6 @@ import { Worker, type Job } from 'glide-mq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
 import {
   minimumImageBatchSizeMB,
   minimumTextBatchSizeMB,
@@ -14,10 +13,12 @@ import {
 } from '@services/bedrock-embeddings/batch/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
-  acquireEmbeddingQuotaFixture,
-  emptyEmbeddingCreationDependencies,
-} from '@voucha/test-helpers/embedding-creation-quota'
+  createEmptyEmbeddingCreationWorker,
+  createEmptyEmbeddingCursor,
+} from '@voucha/test-helpers/embedding-creation-empty'
+import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
+import { createEmbeddingCountSnapshot } from '@voucha/test-helpers/embedding-creation-count-snapshot'
 import { createEmbeddingFairnessSnapshot } from '@voucha/test-helpers/embedding-creation-fairness'
 import { createEmbeddingCreationWorker } from '../workers/bedrock-embeddings-batch-creation.mts'
 import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
@@ -29,13 +30,6 @@ const connection = { connection: workerQueueConnection, prefix: workerQueuePrefi
 let quota: Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
 async function setupQuota() {
   quota = await acquireEmbeddingQuotaFixture()
-}
-
-function fixedEmptyCursor() {
-  return {
-    sweepStartedAt: '2024-01-01T00:00:00.000Z',
-    afterId: '00000000-0000-0000-0000-000000000000',
-  }
 }
 
 describe('same-job embedding continuation', () => {
@@ -103,7 +97,8 @@ describe('same-job embedding continuation', () => {
     'parks production %s on the original job when provider capacity is full',
     async type => {
       const owned = createOwnedEmbeddingQueue(quota, 'routes', connection)
-      const baseline = await quota.readGlobalUsage()
+      const snapshot = await createEmbeddingCountSnapshot(quota)
+      const baseline = snapshot.before
       const countLimit = baseline.count + 1
       expect(countLimit).toBeLessThanOrEqual(getRateLimitConfig().MAX_INFLIGHT_JOBS)
       const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
@@ -111,9 +106,9 @@ describe('same-job embedding continuation', () => {
         creation_retry_delay_ms: 30000,
       })
       quota.beforeRelease(async () => restore())
-      expect(await getBatchCreationLimits()).toMatchObject({ allowed: true })
-      await quota.insertOtherWork(1)
-      expect(await getBatchCreationLimits()).toEqual({
+      expect(await snapshot.limits()).toMatchObject({ allowed: true })
+      await snapshot.insertReservation()
+      expect(await snapshot.limits()).toEqual({
         allowed: false,
         reason: 'inflight_job_limit_exceeded',
       })
@@ -122,10 +117,11 @@ describe('same-job embedding continuation', () => {
       await owned.run(async () => {
         await owned.ready()
         const worker = await owned.createWorker(() =>
-          createEmbeddingCreationWorker(owned.queue, {
-            blockTimeout: 100,
-            promotionInterval: 100,
-          }),
+          createEmbeddingCreationWorker(
+            owned.queue,
+            { blockTimeout: 100, promotionInterval: 100 },
+            snapshot.dependencies,
+          ),
         )
         worker.on('active', active => seen.add(active.name))
         await worker.waitUntilReady()
@@ -137,7 +133,7 @@ describe('same-job embedding continuation', () => {
         expect(await owned.add(type, {}, creationJobOptions(type))).toBeNull()
         expect([...seen]).toEqual([type])
       })
-      expect(await quota.removeOwnedReservations()).toEqual({
+      expect(await snapshot.removeOwnedReservations()).toEqual({
         verifiedAbsentCount: 1,
         remainingCount: 0,
       })
@@ -151,14 +147,14 @@ describe('same-job embedding continuation', () => {
       const owned = createOwnedEmbeddingQueue(quota, 'empty', connection)
       await owned.run(async () => {
         await owned.ready()
-        const job = await owned.add(type, { cursor: fixedEmptyCursor() }, creationJobOptions(type))
+        const job = await owned.add(
+          type,
+          { cursor: createEmptyEmbeddingCursor() },
+          creationJobOptions(type),
+        )
         if (!job) throw new Error('Expected empty creation sweep job')
         const worker = await owned.createWorker(() =>
-          createEmbeddingCreationWorker(
-            owned.queue,
-            { blockTimeout: 100, promotionInterval: 100 },
-            emptyEmbeddingCreationDependencies,
-          ),
+          createEmptyEmbeddingCreationWorker(owned.queue),
         )
         await worker.waitUntilReady()
         await owned.waitFor(job.id, type === 'unknown' ? 'failed' : 'completed')
@@ -183,11 +179,12 @@ describe('same-job embedding continuation', () => {
       config.MAX_INFLIGHT_SIZE_MB,
       remainingMB,
     )
-    // This size-fairness case reserves one count slot and leaves one free locally.
-    // The production count-denial cases above retain their independent boundary.
-    expect(reservation.before.count + 2).toBeLessThanOrEqual(config.MAX_INFLIGHT_JOBS)
+    // A positive remainder needs one reservation slot and one admission slot; zero needs only admission.
+    expect(reservation.countLimit).toBeLessThanOrEqual(config.MAX_INFLIGHT_JOBS)
+    expect(reservation.localGiB * 1024).toBeLessThanOrEqual(config.MAX_INFLIGHT_SIZE_MB)
     const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: reservation.before.count + 2,
+      max_inflight_jobs: reservation.countLimit,
+      max_job_size_gb: reservation.localGiB,
       creation_retry_delay_ms: 30000,
     })
     quota.beforeRelease(async () => restore())
@@ -197,10 +194,12 @@ describe('same-job embedding continuation', () => {
     expect(reserved.maxSizeMB).toBeCloseTo(remainingMB, 6)
     expect(reserved.maxSizeMB).toBeGreaterThanOrEqual(textMinimum)
     expect(reserved.maxSizeMB).toBeLessThan(imageMinimum)
-    expect(reservation.reservationMB).toBeGreaterThan(0)
-    // Commit unrelated owned work after snapshot establishment. A READ COMMITTED
-    // regression would change the exact fairness boundary used by these real workers.
-    await quota.insertOtherWork(1)
+    expect(reservation.reservationMB).toBeGreaterThanOrEqual(0)
+    expect(reservation.reservationMB).toBeLessThan(1024)
+    // A completed row contributes to the real hourly query without consuming another active slot.
+    expect(await reservation.hourlyRecords()).toBe(reservation.hourlyBefore)
+    expect(await quota.insertCompletedControl()).toMatchObject({ records: 1 })
+    expect(await reservation.hourlyRecords()).toBe(reservation.hourlyBefore)
     expect(await reservation.limits()).toEqual(reserved)
     const setConcurrency = vi.spyOn(owned.queue, 'setGlobalConcurrency')
     quota.beforeRelease(async () => {
@@ -223,7 +222,7 @@ describe('same-job embedding continuation', () => {
       await Promise.all(owned.workers.map(worker => worker.waitUntilReady()))
       expect(setConcurrency).toHaveBeenCalledTimes(2)
       expect(setConcurrency).toHaveBeenCalledWith(1)
-      const cursor = fixedEmptyCursor()
+      const cursor = createEmptyEmbeddingCursor()
       const image = await owned.add('images', { cursor }, creationJobOptions('mixed_images'))
       if (!image) throw new Error('Expected image chain')
       await owned.waitFor(image.id, 'delay-changed')
@@ -239,7 +238,7 @@ describe('same-job embedding continuation', () => {
     })
     await reservation.assertPresent()
     expect(await reservation.removeOwnedReservations()).toEqual({
-      verifiedAbsentCount: 1,
+      verifiedAbsentCount: reservation.reservationCount,
       remainingCount: 0,
     })
     expect(await quota.removeOwnedReservations()).toEqual({

@@ -14,7 +14,7 @@ export function registerEmbeddingCreationDiagnostics(
   queue: Queue,
   snapshot: () => DiagnosticSnapshot,
 ): () => Promise<void> {
-  const reads: Promise<void>[] = []
+  const reads: Array<() => Promise<void>> = []
   onTestFinished(({ task }) => {
     if (task.result?.state !== 'fail') return
     const diagnostic = {
@@ -29,7 +29,7 @@ export function registerEmbeddingCreationDiagnostics(
     ])
     for (const id of ids) {
       // Queue reads do not borrow the worker's blocking connection or PostgreSQL pool.
-      reads.push(
+      reads.push(() =>
         Promise.resolve()
           .then(() => queue.getJob(id))
           .then(job => job?.getState())
@@ -48,6 +48,6 @@ export function registerEmbeddingCreationDiagnostics(
     }
   })
   return async () => {
-    for (const read of reads) await Promise.allSettled([read])
+    for (const read of reads) await Promise.allSettled([Promise.resolve().then(read)])
   }
 }
