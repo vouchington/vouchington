@@ -17,10 +17,10 @@ const sqlPaths = [
 const runtimePath = 'backend/services/queries.mts'
 
 type Rule = { rule?: string }
-type Diagnostic = { file: string; rule: string }
+type Diagnostic = { file: string; message: string; rule: string }
 
 // Run the released analyzer with the checked-in rules. The fixture proves the
-// schema-SQL globs and both newly enabled shape branches, not a local parser.
+// schema-SQL globs and the configured shape branches, not a local parser.
 describe('SQL offset and shape no-mistakes configuration', () => {
   const dirs: string[] = []
 
@@ -28,7 +28,7 @@ describe('SQL offset and shape no-mistakes configuration', () => {
     await Promise.all(dirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('rejects OFFSET, NOT IN, and COUNT existence checks in runtime and every schema SQL scope', async () => {
+  it('rejects OFFSET, NOT IN, COUNT existence checks, and uuidv7 predicates in every SQL scope', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'sql-shape-'))
     dirs.push(directory)
     await writeFixture(directory, badSql())
@@ -39,10 +39,15 @@ describe('SQL offset and shape no-mistakes configuration', () => {
     expect(ownedFiles(ruleFindings(rejected, 'postgres-no-offset'))).toEqual(
       [...sqlPaths, runtimePath].toSorted(),
     )
-    expect(ruleFindings(rejected, 'postgres-sql-shape-policy')).toHaveLength(8)
+    expect(ruleFindings(rejected, 'postgres-sql-shape-policy')).toHaveLength(20)
     expect(ownedFiles(ruleFindings(rejected, 'postgres-sql-shape-policy'))).toEqual(
       [...sqlPaths, runtimePath].toSorted(),
     )
+    expect(
+      ruleFindings(rejected, 'postgres-sql-shape-policy').filter(finding =>
+        finding.message.includes('uuidv7'),
+      ),
+    ).toHaveLength(12)
 
     await writeFixture(directory, goodSql())
     const corrected = check(directory)
@@ -77,13 +82,18 @@ async function fixtureRules(): Promise<Rule[]> {
 function badSql(): string {
   return `SELECT id FROM records OFFSET 1;
 SELECT id FROM records WHERE id NOT IN (SELECT id FROM blocked_records);
-SELECT COUNT(*) > 0 FROM records;\n`
+SELECT COUNT(*) > 0 FROM records;
+SELECT id FROM records WHERE id >= uuidv7();
+SELECT records.id FROM records JOIN blocked_records ON blocked_records.id = uuidv7();
+SELECT records.id FROM records GROUP BY records.id HAVING records.id >= uuidv7();\n`
 }
 
 function goodSql(): string {
   return `SELECT id FROM records LIMIT 10;
 SELECT id FROM records WHERE NOT EXISTS (SELECT 1 FROM blocked_records WHERE blocked_records.id = records.id);
-SELECT EXISTS (SELECT 1 FROM records);\n`
+SELECT EXISTS (SELECT 1 FROM records);
+SELECT uuidv7() FROM records LIMIT 10;
+INSERT INTO records (id) VALUES (uuidv7());\n`
 }
 
 async function track(root: string, path: string, content: string): Promise<void> {

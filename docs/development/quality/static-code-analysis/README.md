@@ -686,7 +686,7 @@ COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schem
 its original pre-launch `CREATE TABLE`.
 
 Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation shapes,
-`NOT IN` subqueries, `COUNT` for existence, and the
+`NOT IN` subqueries, `COUNT` for existence, `uuidv7(...)` in predicates, and the
 active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) live in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) as `postgres-idempotent-insert`,
 `postgres-sql-shape-policy`, and `postgres-required-predicates`. Suppress with
