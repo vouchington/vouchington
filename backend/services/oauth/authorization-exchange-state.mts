@@ -1,4 +1,7 @@
-import { rejectStaleOAuthAuthorizationExchangeSql } from './authorization-exchange-stale-sql.mts'
+import {
+  prepareOAuthAuthorizationClaim,
+  settleOAuthAuthorizationExpiry,
+} from './authorization-exchange-lifecycle.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import type { BrokerOAuthProvider } from './broker-config.mts'
@@ -21,12 +24,12 @@ export async function claimOAuthAuthorizationExchange(
 ): Promise<ClaimedOAuthAuthorization | null> {
   const claimId = uuidv7()
   return withLockedOAuthAuthorization(flowId, async transaction => {
-    await expireOAuthAuthorization(transaction, flowId)
-    await transaction(rejectStaleOAuthAuthorizationExchangeSql, [
+    await prepareOAuthAuthorizationClaim(
+      transaction,
       flowId,
       STALE_EXCHANGE_CLAIM_SECONDS,
       X_MAX_QUEUE_DELAY_SECONDS,
-    ])
+    )
     const { rows } = await transaction(
       `/* claimOAuthAuthorizationExchange */ WITH candidate AS (
        SELECT id, exchange_claim_id, updated_at
@@ -50,8 +53,12 @@ export async function claimOAuthAuthorizationExchange(
     const authorization = rows[0] as ClaimedOAuthAuthorization | undefined
     if (!authorization) {
       // Expiry must settle even a claim whose queue ownership write never succeeded.
-      await expireOAuthAuthorization(transaction, flowId)
-      await rejectExpiredXAuthorizationCode(transaction, flowId)
+      await settleOAuthAuthorizationExpiry(
+        transaction,
+        flowId,
+        X_MAX_QUEUE_DELAY_SECONDS,
+        STALE_EXCHANGE_CLAIM_SECONDS,
+      )
       const { rows: current } = await transaction<{ status: string }>(
         '/* claimOAuthAuthorizationExchange:unclaimed */ SELECT status FROM view_oauth_authorization_current_records WHERE id = $1',
         [flowId],
@@ -71,8 +78,12 @@ export async function validateOAuthAuthorizationExchangeClaim(
   claimId: string,
 ): Promise<void> {
   const valid = await withLockedOAuthAuthorization(flowId, async transaction => {
-    await expireOAuthAuthorization(transaction, flowId)
-    await rejectExpiredXAuthorizationCode(transaction, flowId)
+    await settleOAuthAuthorizationExpiry(
+      transaction,
+      flowId,
+      X_MAX_QUEUE_DELAY_SECONDS,
+      STALE_EXCHANGE_CLAIM_SECONDS,
+    )
     const { rows } = await transaction<{ id: string }>(
       `/* validateOAuthAuthorizationExchangeClaim */ SELECT id
        FROM view_oauth_authorization_current_records
@@ -123,48 +134,6 @@ export async function releaseOAuthAuthorizationExchangeClaim(
       [flowId, claimId],
     )
   })
-}
-
-async function rejectExpiredXAuthorizationCode(
-  transaction: OwnedTransaction,
-  flowId: string,
-): Promise<void> {
-  await transaction(
-    `/* rejectExpiredXAuthorizationCode */ UPDATE oauth_authorizations
-     SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
-         callback_error = 'provider_code_expired',
-         callback_code_ciphertext = NULL,
-         exchange_claim_id = NULL
-     WHERE id = $1
-       AND provider = 'x'
-       AND status = 'callback_received'
-       AND (exchange_claim_id IS NULL OR EXISTS (
-         SELECT 1 FROM oauth_authorization_exchange_attempts attempt
-         WHERE attempt.oauth_authorization_id = oauth_authorizations.id
-           AND attempt.exchange_claim_id = oauth_authorizations.exchange_claim_id
-           AND attempt.started_at < clock_timestamp() - make_interval(secs => $3)
-       ))
-       AND callback_received_at <=
-         CURRENT_TIMESTAMP - make_interval(secs => $2)`,
-    [flowId, X_MAX_QUEUE_DELAY_SECONDS, STALE_EXCHANGE_CLAIM_SECONDS],
-  )
-}
-
-async function expireOAuthAuthorization(
-  transaction: OwnedTransaction,
-  flowId: string,
-): Promise<void> {
-  await transaction(
-    `/* expireOAuthAuthorization */ UPDATE oauth_authorizations
-     SET expired_at = CASE WHEN rejected_at IS NULL THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
-         callback_code_ciphertext = NULL,
-         completion_token_ciphertext = NULL,
-         exchange_claim_id = NULL
-     WHERE id = $1
-       AND expires_at <= CURRENT_TIMESTAMP
-       AND status IN ('pending', 'callback_received', 'exchanging', 'completion_ready')`,
-    [flowId],
-  )
 }
 
 /** Own row identity before reading projected attempt history; never borrow a caller executor. */
