@@ -803,6 +803,16 @@ snapshot isolation using the real hourly query directly; it consumes no active c
 All transaction setup and later operations are registered before effects and settle before
 rollback. Completed-row writes are owned and registered before insertion. Queue drain and
 successful rollback precede config restoration; unsafe cleanup withholds restoration.
+After acquiring the advisory lock, the fixture claims an atomic same-host lease before
+configuration initialization or worker admission. The nonce-owned witness lives outside Git in
+the ordinary user's local state and includes the actual server/database identity and database
+OID. Only proven physical drain, snapshot rollback, configuration restoration, and owned
+accounting removal permit its deletion. A failure retains it across owner exit, so the next
+fork refuses admission even when PostgreSQL releases the disconnected owner's advisory lock.
+There is no PID-age expiry or automatic stale removal. Recovery requires an explicit coordinator
+decision with exact witness ownership and actual process/PostgreSQL/Valkey idle evidence.
+This boundary covers the normal same-host, same-user non-main fixture, not remote databases.
+Database recreation changes the OID; an OID collision conservatively refuses admission.
 The six empty/unknown embedding-creation route cases use `createEmptyEmbeddingCreationWorker`
 from the first-layer empty-routing helper, with its controlled `emptyEmbeddingCreationDependencies`. This typed fixture injects controlled admitted capacity through
 the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL

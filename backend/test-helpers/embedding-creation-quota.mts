@@ -3,6 +3,7 @@ import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
+import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -18,6 +19,7 @@ export async function acquireEmbeddingQuotaFixture() {
   const drains: Array<{ run(): Promise<void>; safeAfterFailure?: () => boolean }> = []
   let acquired = false
   let restoreConfig: (() => void) | undefined
+  let lease: Awaited<ReturnType<typeof claimEmbeddingQuotaLease>> | undefined
   let disposal: Promise<void> | undefined
   let closing = false
   const assertOpen = () => {
@@ -31,14 +33,16 @@ export async function acquireEmbeddingQuotaFixture() {
   try {
     client = await advisoryLockPool.connect()
     assertOpen()
-    restoreConfig = await initializeEmbeddingCreationConfig()
-    assertOpen()
     // A different valid invocation can hold the reservation for its whole test budget.
     // Acquisition has its own bounded hook budget; subsequent fixture queries remain short.
     await client.query("SET statement_timeout = '20s'")
     assertOpen()
     await client.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [key])
     acquired = true
+    assertOpen()
+    lease = await claimEmbeddingQuotaLease(client, key)
+    assertOpen()
+    restoreConfig = await initializeEmbeddingCreationConfig()
     assertOpen()
     await client.query("SET statement_timeout = '5s'")
     assertOpen()
@@ -112,10 +116,12 @@ export async function acquireEmbeddingQuotaFixture() {
       }
     }
     for (const write of writes) await attempt(() => write)
-    if (safeToRestore) {
+    if (safeToRestore && restoreConfig) {
+      const beforeRestoration = errors.length
       await attempt(() => restoreConfig?.())
       await attempt(() => cleanupTestEmbeddingsBatches(ids))
       await attempt(() => assertOwnedAccountingRemoved(ids))
+      if (errors.length === beforeRestoration) await attempt(() => lease?.removeAfterRestoration())
     }
     if (acquired)
       await attempt(async () => {
