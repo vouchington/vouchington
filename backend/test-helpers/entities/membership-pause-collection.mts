@@ -46,3 +46,28 @@ export async function expireTestMembershipPauseCollectionLease(userId: string): 
     WHERE user_id = ${userId} AND lease_token IS NOT NULL
   `)
 }
+
+/** Installs a long-expired lease so recovery sorts ahead of newer expired rows. */
+export async function installExpiredTestMembershipPauseCollectionLease(
+  userId: string,
+): Promise<void> {
+  await write(sql`/* installExpiredTestMembershipPauseCollectionLease */
+    INSERT INTO membership_pause_collection_work_items (
+      user_id, requested_at, lease_token, leased_at, lease_expires_at
+    )
+    VALUES (
+      ${userId},
+      date_trunc('milliseconds', clock_timestamp()),
+      uuidv7(),
+      timestamptz '1970-01-01',
+      timestamptz '1970-01-02'
+    )
+    ON CONFLICT (user_id) DO UPDATE SET
+      requested_at = date_trunc('milliseconds', clock_timestamp()),
+      available_at = clock_timestamp(),
+      lease_token = uuidv7(),
+      leased_at = timestamptz '1970-01-01',
+      lease_expires_at = timestamptz '1970-01-02',
+      attempt_count = 0
+  `)
+}

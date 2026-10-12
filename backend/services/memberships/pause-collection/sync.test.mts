@@ -7,8 +7,10 @@ import { getUserActivePlan } from '@services/memberships'
 import {
   createTestMembership,
   createTestUser,
+  deleteTestMembershipPauseCollectionWork,
   expireTestMembershipPauseCollectionLease,
   getTestMembershipRaw,
+  installExpiredTestMembershipPauseCollectionLease,
   readAllQueueJobs,
   recordTestMembershipPauseCollectionWork,
   suspendTestUser,
@@ -202,6 +204,19 @@ describe('membership pause collection', () => {
 
     expect(second?.leaseToken).not.toBe(first?.leaseToken)
     expect(update).toHaveBeenCalledTimes(1)
+  })
+
+  it('reclaims an expired lease when unleased work fills the page', async () => {
+    const expired = await createTestUser()
+    const queued = await createTestUser()
+    await installExpiredTestMembershipPauseCollectionLease(expired.id)
+    await recordTestMembershipPauseCollectionWork(queued.id)
+
+    const claimed = await dispatchDuePauseCollectionWork(1)
+
+    expect(claimed.map(row => row.userId)).toContain(expired.id)
+    await deleteTestMembershipPauseCollectionWork(expired.id)
+    await deleteTestMembershipPauseCollectionWork(queued.id)
   })
 
   it('treats a missing Stripe subscription as a no-op', async () => {

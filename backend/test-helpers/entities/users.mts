@@ -36,11 +36,6 @@ export {
   lockTestUserSuspension,
   unsuspendTestUser,
 } from './users-lifecycle.mts'
-export {
-  deleteTestMembershipPauseCollectionWork,
-  getTestMembershipPauseCollectionRequestedAt,
-  recordTestMembershipPauseCollectionWork,
-} from './memberships/pause-collection.mts'
 
 export { lockTestUserMutation, lockTestUserRowForUpdate } from './users-mutation-locks.mts'
 

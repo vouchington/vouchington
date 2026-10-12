@@ -11,18 +11,18 @@ export type PauseCollectionDispatch = {
 type ClaimRow = { userId: string; requestedAt: Date; leaseToken: string }
 
 /**
- * Claims due pause-collection work. Unleased rows and expired leases are separate
- * index-served claims so one signal cannot hide the other. The run cap is the
- * memberships pending-operations page size.
+ * Claims due pause-collection work. Expired leases take half the page first so a
+ * full unleased page cannot hide a crashed lease. Unused expired slots go to
+ * unleased rows. The run cap is the memberships pending-operations page size.
  */
 export async function dispatchDuePauseCollectionWork(
   limit = getMembershipWorkLimit('pending_operations_page_size'),
 ): Promise<PauseCollectionDispatch[]> {
   const cap = limit
-  const unleased = await claimUnleasedPauseCollection(cap)
-  const remaining = cap - unleased.length
-  const expired = remaining > 0 ? await claimExpiredPauseCollection(remaining) : []
-  return [...unleased, ...expired].map(publish)
+  const expired = await claimExpiredPauseCollection(Math.ceil(cap / 2))
+  const unleasedCap = cap - expired.length
+  const unleased = unleasedCap > 0 ? await claimUnleasedPauseCollection(unleasedCap) : []
+  return [...expired, ...unleased].map(publish)
 }
 
 function publish(row: ClaimRow): PauseCollectionDispatch {

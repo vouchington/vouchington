@@ -37,7 +37,6 @@ export {
   runTestActionWhileMembershipUserLocked,
   withTestMembershipUserLocked,
 } from './memberships/locks.mts'
-export { expireTestMembershipPauseCollectionLease } from './memberships/pause-collection.mts'
 export {
   getTestGrantQueue,
   getTestMembershipGrant,
