@@ -1,12 +1,12 @@
 # Account Data Requests Worker
 
-Source entrypoint: [backend/workers/account-data-requests/README.md](../../../../../../backend/workers/account-data-requests/README.md)
+Source entrypoint: [backend/workers/account-lifecycle/processors/account-data-requests.mts](../../../../../../backend/workers/account-lifecycle/processors/account-data-requests.mts)
 
 Worker package for account data export and expired export cleanup jobs.
 
 ## Exports
 
-- `accountDataRequests` - worker instance for the `account-data-requests` queue.
+- `accountLifecycle` - shared worker instance for the `account-lifecycle` queue.
 - Processing is fenced by the persisted attempt UUID and the active-user lifecycle lock; the
   recovery dispatcher reclaims only active users' stale work.
 - Recovery keeps an unstarted attempt's token and removes any completed or failed queue record under

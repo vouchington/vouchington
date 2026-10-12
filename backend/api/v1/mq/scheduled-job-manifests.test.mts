@@ -18,8 +18,8 @@ import {
 } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
-  'account-data-requests/account-data-requests-cleanup',
-  'account-data-requests/accountDataRequestRecovery',
+  'account-lifecycle/account-data-requests-cleanup',
+  'account-lifecycle/accountDataRequestRecovery',
   'activitypub-inbox/activitypub-inbox-recovery',
   'activitypub-inbox/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
@@ -90,15 +90,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'story-post-related-url-projections/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
-  'user-deletions/userDeletionRecovery',
+  'account-lifecycle/userDeletionRecovery',
   'vote-aggregation/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 83 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
+  it('imports the exact 29 manifests and 83 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(29)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

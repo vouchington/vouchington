@@ -1,5 +1,5 @@
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
-import { scheduledJobManifest as accountDataRequests } from '@queues/account-data-requests/enqueues/schedules'
+import { scheduledJobManifest as accountLifecycle } from '@queues/account-lifecycle/enqueues/schedules'
 import { scheduledJobManifest as activitypubInbox } from '@queues/activitypub-inbox/enqueues/schedules'
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
 import { scheduledJobManifest as bedrockEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
@@ -27,11 +27,10 @@ import { scheduledJobManifest as storyPostRelatedUrlProjections } from '@queues/
 import { scheduledJobManifest as topicAliases } from '@queues/topic-aliases/enqueues/schedules'
 import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
-import { scheduledJobManifest as userDeletions } from '@queues/user-deletions/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 
 export const SCHEDULED_JOB_MANIFESTS = [
-  accountDataRequests,
+  accountLifecycle,
   activitypubInbox,
   aiAgents,
   bedrockEmbeddingsBatch,
@@ -59,6 +58,5 @@ export const SCHEDULED_JOB_MANIFESTS = [
   topicAliases,
   unfurlReferralLinks,
   urlsDomainsBlacklist,
-  userDeletions,
   voteWeight,
 ] satisfies readonly ScheduledJobManifest[]

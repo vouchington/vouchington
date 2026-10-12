@@ -26,7 +26,7 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/account-data-requests": "workspace:^",
+    "@queues/account-lifecycle": "workspace:^",
     "@queues/activitypub-inbox": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@queues/emails": "workspace:^",
@@ -46,9 +46,8 @@
     "@queues/story-post-related-url-projections": "workspace:^",
     "@queues/topic-aliases": "workspace:^",
     "@queues/urls-domains-blacklist": "workspace:^",
-    "@queues/user-deletions": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
-    "@workers/account-data-requests": "workspace:^",
+    "@workers/account-lifecycle": "workspace:^",
     "@workers/activitypub-delivery": "workspace:^",
     "@workers/activitypub-inbox": "workspace:^",
     "@workers/admin-imports": "workspace:^",
@@ -83,7 +82,6 @@
     "@workers/stripe-events-sqs": "workspace:^",
     "@workers/topic-aliases": "workspace:^",
     "@workers/urls-domains-blacklist": "workspace:^",
-    "@workers/user-deletions": "workspace:^",
     "@workers/user-rss-feed-imports": "workspace:^",
     "@workers/vote-aggregation": "workspace:^"
   }

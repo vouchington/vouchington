@@ -54,8 +54,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['openai_moderation_omni_single', 'openai-moderation', 'openai_moderation_omni_single'],
       ['post-mentions', 'post-mentions', 'postMentions'],
       ['psql', 'psql', 'psql'],
-      ['account-data-requests', 'account-data-requests', 'accountDataRequests'],
-      ['user-deletions', 'user-deletions', 'userDeletions'],
+      ['account-lifecycle', 'account-lifecycle', 'accountLifecycle'],
       [
         'oauth-authorization-exchange',
         'oauth-authorization-exchange',

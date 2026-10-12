@@ -73,13 +73,9 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {
-    queueName: 'account-data-requests',
+    queueName: 'account-lifecycle',
     load: () =>
-      import('@workers/account-data-requests/workers').then(module => module.accountDataRequests),
-  },
-  {
-    queueName: 'user-deletions',
-    load: () => import('@workers/user-deletions/workers').then(module => module.userDeletions),
+      import('@workers/account-lifecycle/workers').then(module => module.accountLifecycle),
   },
   {
     queueName: 'oauth-authorization-exchange',

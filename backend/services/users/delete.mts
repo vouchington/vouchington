@@ -3,7 +3,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
-import { enqueueUserDeletion } from '@queues/user-deletions/enqueues'
+import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import {

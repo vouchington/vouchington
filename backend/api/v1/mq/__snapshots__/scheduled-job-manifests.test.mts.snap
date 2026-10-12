@@ -13,7 +13,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "account-data-requests",
+    "queueName": "account-lifecycle",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 * * * *",
@@ -43,7 +43,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "account-data-requests",
+    "queueName": "account-lifecycle",
     "registration": "parallel",
     "repeat": {
       "every": 300000,
@@ -52,6 +52,36 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "template": {
       "data": {},
       "name": "recoverExportRequests",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "user-deletion-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "account-lifecycle",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "userDeletionRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverUserDeletions",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -2503,36 +2533,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "backfillId": "user-deletion-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "user-deletions",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "userDeletionRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverUserDeletions",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recalculate vote weights",
         "id": "dailyVoteWeightRecalculation",
         "kind": "scheduled-jobs",
@@ -2710,7 +2710,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Clean up expired data export files",
     "id": "account-data-requests-cleanup",
     "job_name": "processCleanupExpiredExports",
-    "queue_name": "account-data-requests",
+    "queue_name": "account-lifecycle",
     "schedule": "0 * * * *",
     "triggerName": "enqueueCleanupExpiredExports",
   },

@@ -16,7 +16,7 @@ import {
   getExportDownloadUrl,
   type UserDataRequest,
 } from '@services/account-data-requests'
-import { enqueueExportRequest } from '@queues/account-data-requests/enqueues'
+import { enqueueExportRequest } from '@queues/account-lifecycle/enqueues/account-data-requests'
 import { dataRequestPubSub, type DataRequestStreamStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
 

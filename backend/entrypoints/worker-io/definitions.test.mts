@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { upsertSchedules as upsertActivityPubInboxSchedules } from '@queues/activitypub-inbox/enqueues/schedules'
-import { upsertSchedules as upsertAccountDataRequestSchedules } from '@queues/account-data-requests/enqueues/schedules'
-import { upsertSchedules as upsertUserDeletionSchedules } from '@queues/user-deletions/enqueues/schedules'
+import { upsertSchedules as upsertAccountLifecycleSchedules } from '@queues/account-lifecycle/enqueues/schedules'
 import { upsertSchedules as upsertBloomFilterSchedules } from '@queues/bloom-filters/enqueues/schedules'
 import { upsertSchedules as upsertFindYourFriendsSchedules } from '@queues/find-your-friends/enqueues/schedules'
 import { upsertSchedules as upsertKagiSmallwebSchedules } from '@queues/kagi-smallweb/enqueues/schedules'
@@ -42,10 +41,7 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('topic-aliases').load()).resolves.toBe(upsertTopicAliasSchedules)
     await expect(byQueue('emails').load()).resolves.toBe(upsertEmailSchedules)
     await expect(byQueue('psql').load()).resolves.toBe(upsertPsqlSchedules)
-    await expect(byQueue('account-data-requests').load()).resolves.toBe(
-      upsertAccountDataRequestSchedules,
-    )
-    await expect(byQueue('user-deletions').load()).resolves.toBe(upsertUserDeletionSchedules)
+    await expect(byQueue('account-lifecycle').load()).resolves.toBe(upsertAccountLifecycleSchedules)
     await expect(byQueue('oauth-authorization-exchange').load()).resolves.toBe(
       upsertOAuthAuthorizationExchangeSchedules,
     )
@@ -64,7 +60,7 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
   it('registers the account, entity, and Stripe recovery schedules', async () => {
     await expect(
       Promise.all([
-        upsertAccountDataRequestSchedules(),
+        upsertAccountLifecycleSchedules(),
         upsertEntityListenerSchedules(),
         upsertMembershipSchedules(),
       ]),

@@ -53,6 +53,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
+- [`../queues/account-lifecycle/README.md`](../../queues/account-lifecycle/README.md)
 - [`../queues/account-data-requests/README.md`](../../queues/account-data-requests/README.md)
 - [`../queues/activitypub-delivery/README.md`](../../queues/activitypub-delivery/README.md)
 - [`../queues/activitypub-inbox/README.md`](../../queues/activitypub-inbox/README.md)
@@ -275,6 +276,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../worker-runtime/README.md`](../../queues/worker-runtime/README.md)
+- [`../workers/account-lifecycle/README.md`](../../queues/workers/account-lifecycle/README.md)
 - [`../workers/account-data-requests/README.md`](../../queues/workers/account-data-requests/README.md)
 - [`../workers/account-data-requests/VALKEY_REQUESTS.md`](../../queues/workers/account-data-requests/VALKEY_REQUESTS.md)
 - [`../workers/activitypub-delivery/README.md`](../../queues/workers/activitypub-delivery/README.md)

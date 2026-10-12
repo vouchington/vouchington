@@ -14,8 +14,8 @@ import { expireDataRequests, markDataRequestProcessing, markDataRequestReady } f
 import {
   recoverExportRequests,
   processCleanupExpiredExports,
-} from '../../workers/account-data-requests/processors.mts'
-import { enqueueBulkExportRequests } from '../../queues/account-data-requests/enqueues.mts'
+} from '../../workers/account-lifecycle/processors/account-data-requests.mts'
+import { enqueueBulkExportRequests } from '../../queues/account-lifecycle/enqueues/account-data-requests.mts'
 
 describe('account export work caps', () => {
   it('commits one recovery page at the cap and the next run claims the remaining attempt', async () => {

@@ -72,7 +72,7 @@
     "@modules/stripe": "workspace:^",
     "@modules/utils": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
-    "@queues/account-data-requests": "workspace:^",
+    "@queues/account-lifecycle": "workspace:^",
     "@queues/activitypub-delivery": "workspace:^",
     "@queues/activitypub-inbox": "workspace:^",
     "@queues/ai-agents": "workspace:^",

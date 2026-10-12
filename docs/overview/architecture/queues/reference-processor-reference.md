@@ -7,12 +7,12 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | Queue                                        | Processor                                      | Group Keys                               | Default Priority |
 | -------------------------------------------- | ---------------------------------------------- | ---------------------------------------- | ---------------- |
 | crawl_browser                                | crawl_browser                                  | —                                        | 10               |
-| account-data-requests                        | processExportRequest                           | —                                        | 10               |
-| account-data-requests                        | processCleanupExpiredExports                   | —                                        | 10               |
-| account-data-requests                        | recoverExportRequests                          | —                                        | 100              |
+| account-lifecycle                            | processExportRequest                           | —                                        | 10               |
+| account-lifecycle                            | processCleanupExpiredExports                   | —                                        | 10               |
+| account-lifecycle                            | recoverExportRequests                          | —                                        | 100              |
 | story-post-related-url-projections           | processReconcileStoryPostRelatedUrlProjections | story-post-related-url-projections       | 100              |
-| user-deletions                               | processUserDeletion                            | —                                        | 10               |
-| user-deletions                               | recoverUserDeletions                           | —                                        | 100              |
+| account-lifecycle                            | processUserDeletion                            | —                                        | 10               |
+| account-lifecycle                            | recoverUserDeletions                           | —                                        | 100              |
 | activitypub-inbox                            | processDelivery                                | —                                        | 10               |
 | activitypub-inbox                            | cleanupExpiredDeliveries                       | —                                        | 100              |
 | activitypub-inbox                            | recoverDeliveries                              | —                                        | 100              |

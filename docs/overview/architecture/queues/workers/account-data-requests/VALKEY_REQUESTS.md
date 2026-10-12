@@ -1,4 +1,4 @@
-# Valkey Requests — account-data-requests
+# Valkey Requests — account-lifecycle export jobs
 
 Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own
