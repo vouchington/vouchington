@@ -141,8 +141,10 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | psql                                         | cleanupPartitions                              | —                                        | 10               |
 | psql                                         | dataRetentionCleanup                           | —                                        | 10               |
 | post-publication                             | processReconcilePostPublication                | publication-reconciliation               | 100              |
-| rss-feed-item-categories                     | processReconcileRssFeedItemCategorySnapshots   | snapshot-reconciliation                  | 100              |
-| rss-feed-item-categories                     | processBackfillCategoriesForTopicAliases       | —                                        | 10               |
+| rss-feed-maintenance                         | processReconcileRssFeedItemCategorySnapshots   | snapshot-reconciliation                  | 100              |
+| rss-feed-maintenance                         | processBackfillCategoriesForTopicAliases       | —                                        | 10               |
+| rss-feed-maintenance                         | processBackfillRssFeedCategoriesForTopicAlias  | —                                        | 10               |
+| rss-feed-maintenance                         | processEvaluateRssFeedDiscoverability          | —                                        | 10               |
 | rss-feeds                                    | dispatchRssFeeds                               | dispatcher                               | 100              |
 | rss-feeds                                    | fetchRssFeed                                   | fetch                                    | 10               |
 | sitemaps                                     | processUpdatePostDaySitemap                    | post_day_today                           | 10               |
@@ -154,9 +156,9 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | sitemaps                                     | processWeeklyBackfillMonthDispatcher           | dispatcher                               | 100              |
 | sitemaps                                     | processMonthlyBackfillArchiveDispatcher        | dispatcher                               | 100              |
 | spam_detection                               | post                                           | —                                        | 10               |
-| topic-aliases                                | processTopicAliasesUpdate                      | —                                        | 10               |
-| topic-aliases                                | processReconcileTopicAliasCategoryMappings     | reconciliation                           | 100              |
-| topic-aliases                                | processInvalidatePostsForTopicAliases          | post-invalidation                        | 100              |
+| rss-feed-maintenance                         | processTopicAliasesUpdate                      | —                                        | 10               |
+| rss-feed-maintenance                         | processReconcileTopicAliasCategoryMappings     | category-mapping-reconciliation          | 100              |
+| rss-feed-maintenance                         | processInvalidatePostsForTopicAliases          | post-invalidation                        | 10               |
 | vote-aggregation                             | processUpdateTopicRatingStats                  | —                                        | 10               |
 | urls-domains-blacklist                       | processBlacklistDispatcher                     | dispatcher                               | 100              |
 | urls-domains-blacklist                       | processBlacklistSourceSync                     | sync                                     | 10               |

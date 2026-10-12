@@ -20,7 +20,7 @@ const enqueueBackfillCategoriesForTopicAliasesJob = createEnqueueFunction<
 })
 
 const enqueueReconcileRssFeedItemCategorySnapshotsJob = createEnqueueFunction<
-  Record<string, never>,
+  { rssFeedItemIds?: string[] },
   'processReconcileRssFeedItemCategorySnapshots'
 >({
   queue: rssFeedMaintenance,
@@ -45,9 +45,11 @@ export const enqueueReconcileRssFeedItemCategorySnapshots = (
   )
 
 /** Chains another bounded page without throttle deduplication; queue ordering keeps one active. */
-export const enqueueContinueRssFeedItemCategorySnapshotReconciliation = (): EnqueueReturnType =>
+export const enqueueContinueRssFeedItemCategorySnapshotReconciliation = (
+  rssFeedItemIds?: string[],
+): EnqueueReturnType =>
   enqueueReconcileRssFeedItemCategorySnapshotsJob(
-    {},
+    { rssFeedItemIds },
     {
       priority: PRIORITY_RECOVERY,
       ordering: RSS_FEED_ITEM_CATEGORY_ORDERING.snapshot_reconciliation,

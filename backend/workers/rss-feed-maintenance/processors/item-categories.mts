@@ -13,7 +13,7 @@ type RssFeedItemCategoryDependencies = {
 
 /** Applies and exact-generation acknowledges bounded durable category snapshots. */
 export const processReconcileRssFeedItemCategorySnapshots = async (
-  _data: Record<string, never>,
+  data: { rssFeedItemIds?: string[] },
   dependencies?: Partial<RssFeedItemCategoryDependencies>,
 ) => {
   const reconcile =
@@ -24,9 +24,9 @@ export const processReconcileRssFeedItemCategorySnapshots = async (
   const CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'category_snapshot_reconciliation_batch_size',
   )
-  const result = await reconcile(CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE)
+  const result = await reconcile(CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE, data.rssFeedItemIds)
   if (result.reconciled === CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE) {
-    await enqueueContinuation()
+    await enqueueContinuation(data.rssFeedItemIds)
   }
   return result
 }

@@ -79,8 +79,10 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     ])
     expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeDefined()
 
-    const result = await runJob('processReconcileRssFeedItemCategorySnapshots', {})
-    expect(result).toMatchObject({ reconciled: expect.any(Number) })
+    const result = await runJob('processReconcileRssFeedItemCategorySnapshots', {
+      rssFeedItemIds: [item!.id],
+    })
+    expect(result).toMatchObject({ reconciled: 1 })
     expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeUndefined()
     expect(await getRssFeedItemCategories(item!.id)).toEqual([
       expect.objectContaining({ category_text: category }),
