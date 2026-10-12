@@ -30,7 +30,8 @@ Reporter policy:
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
 - Routine Vitest diagnostics are silent by default. Set `VITEST_DIAGNOSTICS=1` for local runs or
-  the `VITEST_DIAGNOSTICS` repository variable for backend-unit CI runs. That workflow also accepts a
+  the `VITEST_DIAGNOSTICS` repository variable for backend-unit, credentialed backend, web-api,
+  web-integration, and PostgreSQL schema CI runs. The backend-unit workflow also accepts a
   `diagnostics` boolean for a manual dispatch or reusable workflow call. This enables file progress,
   setup and teardown timings, and backend runner samples. Failures, JUnit output, summaries, timeout
   diagnostics, and Storybook browser progress markers remain active.
