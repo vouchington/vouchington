@@ -1,10 +1,10 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 
 type QueueCatalogCells = {
   detail: string
@@ -108,7 +108,10 @@ export function QueueCatalogTable<Row extends { id: string }>({
                         >
                           {busy ? (
                             <span className='flex items-center gap-2'>
-                              <Loader2 className='h-3 w-3 animate-spin' />
+                              <Spinner
+                                className='size-3'
+                                aria-hidden
+                              />
                               {labels.loading}
                             </span>
                           ) : (

@@ -60,6 +60,7 @@ import { Label } from '../label'
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '../menubar'
 import { Separator } from '../separator'
 import { Skeleton } from '../skeleton'
+import { Spinner } from '../spinner'
 import { Switch } from '../switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs'
 import { Textarea } from '../textarea'
@@ -135,6 +136,26 @@ describe('pure ui primitive data-pw contracts', () => {
     expect(group).not.toHaveClass('inline-flex')
     expect(key).toHaveClass('hidden', 'sm:inline-flex')
     expect(key).not.toHaveClass('inline-flex')
+  })
+
+  it('renders Spinner data-pw, the status label, and size overrides', () => {
+    const { container } = render(
+      <>
+        <Spinner />
+        <Spinner className='size-8 text-primary' />
+        <Spinner aria-hidden />
+      </>,
+    )
+    const [status, sized] = screen.getAllByRole('status', { name: 'Loading' })
+    const decorative = container.querySelectorAll('[data-pw="spinner"]')
+
+    expect(status).toHaveAttribute('data-pw', 'spinner')
+    expect(status).toHaveClass('size-4', 'animate-spin')
+    expect(sized).toHaveClass('size-8', 'text-primary', 'animate-spin')
+    expect(sized).not.toHaveClass('size-4')
+    expect(decorative).toHaveLength(3)
+    expect(decorative[2]).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getAllByRole('status')).toHaveLength(2)
   })
 
   it('renders Input and Skeleton data-pw', () => {

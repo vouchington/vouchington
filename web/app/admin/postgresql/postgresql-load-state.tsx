@@ -1,6 +1,7 @@
 'use client'
 
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function PostgreSQLLoadingState() {
@@ -11,7 +12,10 @@ export function PostgreSQLLoadingState() {
         {t('extracted.postgresql.postgresqlLoadState.postgresql_cc52d032')}
       </h1>
       <div className='flex flex-col items-center gap-4'>
-        <Loader2 className='animate-spin w-8 h-8 text-primary' />
+        <Spinner
+          className='size-8 text-primary'
+          aria-hidden
+        />
         <p className='text-muted-foreground'>
           {t('extracted.postgresql.postgresqlLoadState.loadingPostgresqlStatus_81848c38')}
         </p>
