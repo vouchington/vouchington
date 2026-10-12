@@ -36,6 +36,11 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     candidates.append(sql`requested_record_ids AS MATERIALIZED (
       SELECT ${recordIds}::uuid[] AS record_ids
     ), `)
+  // Keep continuation bounds runtime values when costing the ordered candidate scan.
+  if (after)
+    candidates.append(sql`replay_cursor AS MATERIALIZED (
+      SELECT ${after}::uuid AS record_id, ${limit}::integer AS page_size
+    ), `)
   candidates.append(sql`candidates AS MATERIALIZED (
       SELECT media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items
       WHERE failed_change_id IS NOT NULL`)
@@ -43,9 +48,13 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     candidates.append(
       ` AND media_delivery_registry_record_id = ANY((SELECT record_ids FROM requested_record_ids)::uuid[])`,
     )
-  if (after) candidates.append(sql` AND media_delivery_registry_record_id > ${after}::uuid`)
+  if (after)
+    candidates.append(
+      ` AND media_delivery_registry_record_id > (SELECT record_id FROM replay_cursor)`,
+    )
+  candidates.append(` ORDER BY media_delivery_registry_record_id LIMIT `)
+  candidates.append(after ? sql`(SELECT page_size FROM replay_cursor)` : sql`${limit}`)
   candidates.append(sql`
-      ORDER BY media_delivery_registry_record_id LIMIT ${limit}
     ) SELECT record.id FROM candidates
       JOIN media_delivery_registry_records record ON record.id = candidates.media_delivery_registry_record_id
     ORDER BY record.id FOR UPDATE OF record
