@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestTopic } from './insert-test-topic.mts'
 
@@ -39,63 +40,63 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
   )
 
   await write(
-    `INSERT INTO referral_program_topics (topic_id, enabled_at)
+    allowUnannotatedQuery(`INSERT INTO referral_program_topics (topic_id, enabled_at)
      VALUES ($1, CURRENT_TIMESTAMP)
      ON CONFLICT (topic_id) DO UPDATE
-     SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`,
+     SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`),
     [topic.id],
   )
 
   const validationSlug = `pw_validation_${suffix.replaceAll('-', '_')}`
   const validationResult = await write(
-    `INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
+    allowUnannotatedQuery(`INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
      VALUES ($1, $2)
-     RETURNING id`,
+     RETURNING id`),
     [validationSlug, 'playwright referral validation'],
   )
   const validationId = validationResult.rows[0].id as string
 
   const ruleResult = await write(
-    `INSERT INTO referral_program_link_validation_rules (
+    allowUnannotatedQuery(`INSERT INTO referral_program_link_validation_rules (
        referral_program_link_validation_rule_set_id, hostname, pathname, is_referral_link_url
      ) VALUES ($1, $2, $3, TRUE)
-     RETURNING id`,
+     RETURNING id`),
     [validationId, hostname, pathname],
   )
   const ruleId = ruleResult.rows[0].id as string
 
   await write(
-    `INSERT INTO referral_program_topic_link_validation_rule_sets (
+    allowUnannotatedQuery(`INSERT INTO referral_program_topic_link_validation_rule_sets (
        referral_program_topic_id, referral_program_link_validation_rule_set_id
      ) VALUES ($1, $2)
-     ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING`,
+     ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING`),
     [topic.id, validationId],
   )
 
   // Second validation set — NOT linked to the referral program (used for link/unlink flow tests)
   const validationSlug2 = `pw_validation2_${suffix.replaceAll('-', '_')}`
   const validationResult2 = await write(
-    `INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
+    allowUnannotatedQuery(`INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
      VALUES ($1, $2)
-     RETURNING id`,
+     RETURNING id`),
     [validationSlug2, 'playwright referral validation 2'],
   )
   const validationId2 = validationResult2.rows[0].id as string
 
   const hostnameResult = await write(
-    `INSERT INTO url_hostnames (hostname)
+    allowUnannotatedQuery(`INSERT INTO url_hostnames (hostname)
      VALUES ($1)
      ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
-     RETURNING id`,
+     RETURNING id`),
     [hostname],
   )
   const hostnameId = hostnameResult.rows[0].id as string
 
   const urlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+    allowUnannotatedQuery(`INSERT INTO urls (url, hostname_id, pathname, search_params)
      VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-     RETURNING id`,
+     RETURNING id`),
     [url, hostnameId, urlPath],
   )
   const urlId = urlResult.rows[0].id as string
@@ -130,10 +131,10 @@ export async function insertTestEmptyReferralProgram(suffix: string): Promise<{ 
     'referral_program',
   )
   await write(
-    `INSERT INTO referral_program_topics (topic_id, enabled_at)
+    allowUnannotatedQuery(`INSERT INTO referral_program_topics (topic_id, enabled_at)
      VALUES ($1, CURRENT_TIMESTAMP)
      ON CONFLICT (topic_id) DO UPDATE
-     SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`,
+     SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`),
     [topic.id],
   )
   return { topicId: topic.id }

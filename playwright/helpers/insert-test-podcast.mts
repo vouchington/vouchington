@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { setRssFeedItemMediaDetails } from '../../backend/test-helpers/entities/rss-feed-items-media.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
@@ -35,9 +36,9 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // Hostname
   const hostname = `podcast-${suffix}.example.com`
   const hostnameResult = await write(
-    `INSERT INTO url_hostnames (hostname)
+    allowUnannotatedQuery(`INSERT INTO url_hostnames (hostname)
      VALUES ($1)
-     RETURNING id`,
+     RETURNING id`),
     [hostname],
   )
   const hostnameId = hostnameResult.rows[0].id as string
@@ -46,10 +47,10 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   const topicSlug = `podcast-show-${suffix}`
   const topicName = `Test Podcast Show ${suffix}`
   const topicResult = await write(
-    `INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
+    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
      VALUES ('system', $1, $2, 'rss_feed', '019f0000-0000-7000-8000-000000000000', $3)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
-     RETURNING id`,
+     RETURNING id`),
     [topicName, topicSlug, ZERO_SHA],
   )
   const topicId = topicResult.rows[0].id as string
@@ -59,40 +60,40 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
 
   // RSS feed URLs
   const feedUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+    allowUnannotatedQuery(`INSERT INTO urls (url, hostname_id, pathname, search_params)
      VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-     RETURNING id`,
+     RETURNING id`),
     [`https://${hostname}/podcast.xml`, hostnameId, '/podcast.xml'],
   )
   const rssFeedUrlId = feedUrlResult.rows[0].id as string
 
   // RSS feed
   const feedResult = await write(
-    `INSERT INTO rss_feeds (created_via, rss_feed_url_id, topic_id, title, feed_type)
+    allowUnannotatedQuery(`INSERT INTO rss_feeds (created_via, rss_feed_url_id, topic_id, title, feed_type)
      VALUES ('system', $1, $2, $3, 'podcast')
-     RETURNING id`,
+     RETURNING id`),
     [rssFeedUrlId, topicId, topicName],
   )
   const rssFeedId = feedResult.rows[0].id as string
 
   // Enable the feed
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
-     VALUES ('enablement', $1, TRUE, 'playwright test fixture')`,
+    allowUnannotatedQuery(`INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+     VALUES ('enablement', $1, TRUE, 'playwright test fixture')`),
     [rssFeedId],
   )
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
-     VALUES ('discoverability', $1, TRUE, 'playwright test fixture')`,
+    allowUnannotatedQuery(`INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+     VALUES ('discoverability', $1, TRUE, 'playwright test fixture')`),
     [rssFeedId],
   )
 
   // Podcast show metadata — cover_art_url, is_explicit, and description are set so Playwright
   // tests can assert podcast-show-cover-art, podcast-explicit-badge, and podcast-source-description.
   await write(
-    `INSERT INTO podcast_shows (rss_feed_id, itunes_author, cover_art_url, is_explicit, itunes_type, description)
-     VALUES ($1, $2, $3, TRUE, 'episodic', $4)`,
+    allowUnannotatedQuery(`INSERT INTO podcast_shows (rss_feed_id, itunes_author, cover_art_url, is_explicit, itunes_type, description)
+     VALUES ($1, $2, $3, TRUE, 'episodic', $4)`),
     [
       rssFeedId,
       'Test Podcast Author',
@@ -108,19 +109,19 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // With a per-run suffix the slug has never been seen before, so the lookup always hits the DB.
   const categorySlug = `business-${suffix}`
   const bizTopicResult = await write(
-    `INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
+    allowUnannotatedQuery(`INSERT INTO topics (created_via, name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
      VALUES ('system', $1, $2, 'topic', '019f0000-0000-7000-8000-000000000000', $3)
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
-     RETURNING id`,
+     RETURNING id`),
     [`Business ${suffix}`, categorySlug, ZERO_SHA],
   )
   const bizTopicId = bizTopicResult.rows[0].id as string
 
   // Feed categories with topic_id linked (so the rss_feed_categories EXISTS filter works).
   await write(
-    `INSERT INTO rss_feed_categories (rss_feed_id, category_text, topic_id)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_categories (rss_feed_id, category_text, topic_id)
      VALUES ($1, $2, $3), ($1, 'news', NULL)
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT DO NOTHING`),
     [rssFeedId, categorySlug, bizTopicId],
   )
 
@@ -131,10 +132,10 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // set for correctness (schema constraints, future direct-column reads).
   const enclosureUrl = `https://${hostname}/episode-1.mp3`
   const episodeUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+    allowUnannotatedQuery(`INSERT INTO urls (url, hostname_id, pathname, search_params)
      VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-     RETURNING id`,
+     RETURNING id`),
     [`https://${hostname}/episode-1`, hostnameId, '/episode-1'],
   )
   const episodeUrlId = episodeUrlResult.rows[0].id as string
@@ -170,9 +171,9 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   //   EXISTS (SELECT 1 FROM rss_feed_item_categories WHERE topic_id = topicId)
   // So the episode must have an rss_feed_item_categories row with topic_id = testPodcastTopicId.
   await write(
-    `INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
      VALUES ($1, $2, $3)
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT DO NOTHING`),
     [episodeId, topicSlug, topicId],
   )
 

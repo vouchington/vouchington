@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -37,7 +38,9 @@ test.describe('Community Detail Page', () => {
       slug: COMMUNITY_SLUG,
     })
     await write(
-      `UPDATE communities SET markdown = 'A test community for Playwright.' WHERE id = $1`,
+      allowUnannotatedQuery(
+        `UPDATE communities SET markdown = 'A test community for Playwright.' WHERE id = $1`,
+      ),
       [community.id],
     )
     await insertTestCommunityMember({

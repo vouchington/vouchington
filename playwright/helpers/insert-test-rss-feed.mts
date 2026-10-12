@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { linkHostnameToSourceTopic } from '../../backend/services/topics/hostname-link.mts'
 
@@ -18,28 +19,28 @@ interface TestRssFeed {
 export async function insertTestRssFeed(topicId: string, suffix: string): Promise<TestRssFeed> {
   const hostname = `${suffix}.example.com`
   const hostnameResult = await write(
-    `INSERT INTO url_hostnames (hostname)
+    allowUnannotatedQuery(`INSERT INTO url_hostnames (hostname)
      VALUES ($1)
-     RETURNING id`,
+     RETURNING id`),
     [hostname],
   )
   const hostnameId = hostnameResult.rows[0].id as string
 
   // Insert URLs for the feed
   const rssFeedUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+    allowUnannotatedQuery(`INSERT INTO urls (url, hostname_id, pathname, search_params)
      VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-     RETURNING id`,
+     RETURNING id`),
     [`https://${hostname}/feed.xml`, hostnameId, '/feed.xml'],
   )
   const rssFeedUrlId = rssFeedUrlResult.rows[0].id as string
 
   const homePageUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+    allowUnannotatedQuery(`INSERT INTO urls (url, hostname_id, pathname, search_params)
      VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-     RETURNING id`,
+     RETURNING id`),
     [`https://${hostname}/`, hostnameId, '/'],
   )
   const homePageUrlId = homePageUrlResult.rows[0].id as string
@@ -47,21 +48,21 @@ export async function insertTestRssFeed(topicId: string, suffix: string): Promis
   await linkHostnameToSourceTopic(topicId, hostnameId)
 
   const feedResult = await write(
-    `INSERT INTO rss_feeds (created_via, rss_feed_url_id, topic_id, title)
+    allowUnannotatedQuery(`INSERT INTO rss_feeds (created_via, rss_feed_url_id, topic_id, title)
      VALUES ('system', $1, $2, $3)
-     RETURNING id`,
+     RETURNING id`),
     [rssFeedUrlId, topicId, `Test Feed ${suffix}`],
   )
   const id = feedResult.rows[0].id as string
 
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
-     VALUES ('enablement', $1, TRUE, $2)`,
+    allowUnannotatedQuery(`INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+     VALUES ('enablement', $1, TRUE, $2)`),
     [id, 'playwright test fixture'],
   )
   await write(
-    `INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
-     VALUES ('discoverability', $1, TRUE, $2)`,
+    allowUnannotatedQuery(`INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+     VALUES ('discoverability', $1, TRUE, $2)`),
     [id, 'playwright test fixture'],
   )
 
