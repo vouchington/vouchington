@@ -9,10 +9,11 @@ export async function getClaimedRefundReconciliationLease(
 ): Promise<RefundReconciliationLease | null> {
   const { rows } = await write(sql`/* getClaimedRefundReconciliationLease */
     SELECT operation.id, work.lease_token AS "leaseToken", reconciliation_attempt_ordinal AS "attemptOrdinal",
-      provider, environment AS "providerEnvironment", application_id AS "providerApplicationId",
+      context.provider, context.environment AS "providerEnvironment", context.application_id AS "providerApplicationId",
       provider_refund_id AS "providerRefundId", remaining_refundable_minor_units::TEXT AS "amountMinorUnits",
       currency_code AS currency
     FROM membership_operations operation
+    JOIN membership_provider_contexts context ON context.id = operation.membership_provider_context_id
     JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     WHERE operation.id = ${dispatch.id} AND completed_at IS NULL
       AND work.lease_token = ${dispatch.leaseToken} AND work.lease_expires_at > clock_timestamp()

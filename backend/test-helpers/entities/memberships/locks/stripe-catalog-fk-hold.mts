@@ -34,8 +34,8 @@ async function holdReferencingInsert(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* runTestStripeCatalogReconciliationWhileProductReferenced: insert */
-    INSERT INTO membership_provider_products (membership_product_id, provider, environment, application_id, provider_product_id)
-    SELECT id, 'stripe', 'test', ${`stripe-catalog-fk-hold-${randomUUID()}`}, ${`price_fk_hold_${randomUUID()}`}
+    INSERT INTO membership_provider_products (membership_product_id, membership_provider_context_id, provider_product_id)
+    SELECT id, fn_upsert_membership_provider_context_id('stripe', 'test', ${`stripe-catalog-fk-hold-${randomUUID()}`}), ${`price_fk_hold_${randomUUID()}`}
     FROM membership_products
     WHERE retired_at IS NULL ORDER BY plan, billing_interval LIMIT 1`)
   referenced.resolve()

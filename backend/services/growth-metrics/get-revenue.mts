@@ -69,9 +69,11 @@ export async function getRevenue(
         AND source_state.membership_product_id = m.membership_product_id
       JOIN membership_provider_observations observation
         ON observation.id = source_state.membership_provider_observation_id
-        AND observation.provider = 'stripe'
-        AND observation.environment = 'production'
-        AND observation.application_id = ${context.applicationId}
+      JOIN membership_provider_contexts provider_context
+        ON provider_context.id = observation.membership_provider_context_id
+        AND provider_context.provider = 'stripe'
+        AND provider_context.environment = 'production'
+        AND provider_context.application_id = ${context.applicationId}
       JOIN currencies currency ON currency.code = observation.observed_price_currency_code
       WHERE m.projection_ended_at IS NULL
         AND m.cancelled_at IS NULL
@@ -149,7 +151,6 @@ export async function getRevenue(
         : 0,
   }
 }
-
 export function calculateMembershipRevenue(membershipRows: readonly MembershipRevenueRow[]): {
   activeMemberships: number
   membershipsByTier: MembershipsByTier
@@ -178,7 +179,6 @@ export function calculateMembershipRevenue(membershipRows: readonly MembershipRe
     mrrByCurrency: calculateMrrByCurrency(amountsByCurrency),
   }
 }
-
 export function calculateMrrByCurrency(
   amountsByCurrency: ReadonlyMap<
     CurrencyCode,

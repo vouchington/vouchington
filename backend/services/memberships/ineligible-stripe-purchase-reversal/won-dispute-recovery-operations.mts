@@ -21,8 +21,10 @@ export async function getWonDisputeRecoveryAllocatedMinorUnits(
   const { rows } = await query(sql`/* getWonDisputeRecoveryAllocatedMinorUnits */
     SELECT COALESCE(SUM(operation.qualifying_allocation_minor_units), 0)::TEXT AS "allocatedMinorUnits"
     FROM membership_operations operation
-    WHERE operation.provider = 'stripe' AND operation.environment = ${reversalCase.providerEnvironment}
-      AND operation.application_id = ${reversalCase.providerApplicationId}
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = operation.membership_provider_context_id
+    WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${reversalCase.providerEnvironment}
+      AND provider_context.application_id = ${reversalCase.providerApplicationId}
       AND operation.membership_source_id = ${reversalCase.membershipSourceId}
       AND operation.membership_provider_lineage_id = ${reversalCase.membershipProviderLineageId}
       AND operation.membership_lineage_binding_id = ${reversalCase.membershipLineageBindingId}
@@ -48,8 +50,10 @@ export async function getWonDisputeRecoveryOperation(
       operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits",
       operation.remaining_refundable_minor_units::TEXT AS "remainingRefundableMinorUnits"
     FROM membership_operations operation
-    WHERE operation.provider = 'stripe' AND operation.environment = ${reversalCase.providerEnvironment}
-      AND operation.application_id = ${reversalCase.providerApplicationId}
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = operation.membership_provider_context_id
+    WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${reversalCase.providerEnvironment}
+      AND provider_context.application_id = ${reversalCase.providerApplicationId}
       AND operation.membership_source_id = ${reversalCase.membershipSourceId}
       AND operation.membership_provider_lineage_id = ${reversalCase.membershipProviderLineageId}
       AND operation.membership_lineage_binding_id = ${reversalCase.membershipLineageBindingId}

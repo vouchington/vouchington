@@ -8,6 +8,7 @@ import {
 } from './get-catalog.mts'
 import { withStripeCatalogReconciliationLock } from './stripe-catalog-lock.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
+import { getOrCreateProviderContextId } from './provider-context.mts'
 const CATALOG = [
   {
     plan: 'plus',
@@ -78,6 +79,10 @@ async function reconcileLockedStripeMembershipCatalog(
     ),
   )
   await using transaction = await beginTransaction()
+  const contextId = await getOrCreateProviderContextId(
+    { provider: 'stripe', ...context },
+    transaction,
+  )
   const { rows } = await write(
     sql`/* reconcileStripeMembershipCatalog: lock canonical products */
       SELECT id, plan, billing_interval FROM membership_products
@@ -110,8 +115,7 @@ async function reconcileLockedStripeMembershipCatalog(
   await write(
     sql`/* reconcileStripeMembershipCatalog: retire superseded mappings */
       UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
-      WHERE provider = 'stripe' AND environment = ${context.environment}
-        AND application_id = ${context.applicationId} AND retired_at IS NULL
+      WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL
         AND provider_product_id NOT IN (${prices[0]!.id}, ${prices[1]!.id}, ${prices[2]!.id}, ${prices[3]!.id})`,
     { query: transaction },
   )
@@ -126,11 +130,14 @@ async function retireStripeCatalogMappings(
 ): Promise<void> {
   try {
     await using transaction = await beginTransaction()
+    const contextId = await getOrCreateProviderContextId(
+      { provider: 'stripe', ...context },
+      transaction,
+    )
     await write(
       sql`/* reconcileStripeMembershipCatalog: fail closed */
         UPDATE membership_provider_products SET retired_at = CURRENT_TIMESTAMP
-        WHERE provider = 'stripe' AND environment = ${context.environment}
-          AND application_id = ${context.applicationId} AND retired_at IS NULL`,
+        WHERE membership_provider_context_id = ${contextId}::UUID AND retired_at IS NULL`,
       { query: transaction },
     )
     await transaction.commit()
@@ -155,8 +162,9 @@ export async function isStripeMembershipCatalogReady(
       SELECT product.plan, product.billing_interval, mapping.sku_id, mapping.price_minor_units, mapping.currency_code
       FROM membership_provider_products mapping
       INNER JOIN membership_products product ON product.id = mapping.membership_product_id
-      WHERE mapping.provider = 'stripe' AND mapping.environment = ${context.environment}
-        AND mapping.application_id = ${context.applicationId} AND mapping.retired_at IS NULL
+      INNER JOIN membership_provider_contexts provider_context ON provider_context.id = mapping.membership_provider_context_id
+      WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${context.environment}
+        AND provider_context.application_id = ${context.applicationId} AND mapping.retired_at IS NULL
         AND product.retired_at IS NULL`,
   )
   return (

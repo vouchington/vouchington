@@ -29,7 +29,10 @@ import {
 import { deleteUser } from './delete.mts'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import { processUserDeletionExternalWork } from './delete-phase-external-work.mts'
-import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
+import {
+  addTestStripeDeletionWork,
+  drainUserDeletionForTest,
+} from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {
   it('drains 201 authored posts in three committed batches of at most 100', async () => {
@@ -189,7 +192,7 @@ describe('user deletion batches', () => {
   it('completes Stripe work when the customer is already missing', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 'stripe-customer', 'cus_already_deleted')
+    await addTestStripeDeletionWork(request.id, 'cus_already_deleted')
     await claimUserDeletionAttempt(request.id, request.processingAttemptId)
     const sanitizeCustomer = vi
       .fn<(stripeCustomerId: string) => Promise<unknown>>()
@@ -210,7 +213,7 @@ describe('user deletion batches', () => {
   it('keeps Stripe work retryable for errors other than a missing customer', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 'stripe-customer', 'cus_retryable')
+    await addTestStripeDeletionWork(request.id, 'cus_retryable')
     await claimUserDeletionAttempt(request.id, request.processingAttemptId)
     const stripeError = Object.assign(new Error('Invalid customer update'), {
       code: 'parameter_invalid_empty',
@@ -268,7 +271,7 @@ describe('user deletion batches', () => {
   it('does not complete missing-customer Stripe work after the attempt loses ownership', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 'stripe-customer', 'cus_rotated')
+    await addTestStripeDeletionWork(request.id, 'cus_rotated')
     await claimUserDeletionAttempt(request.id, request.processingAttemptId)
     const successorAttemptId = randomUUID()
     const sanitizeCustomer = vi

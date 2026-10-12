@@ -28,9 +28,9 @@ type GrantActivationTransition =
 export async function createTestNotificationFirstLineage(): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createNotificationFirstLineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id
+      membership_provider_context_id, provider_lineage_id
     ) VALUES (
-      'apple_app_store', 'test', ${`lineage-immutability-${randomUUID()}`},
+      fn_upsert_membership_provider_context_id('apple_app_store', 'test', ${`lineage-immutability-${randomUUID()}`}),
       ${`transaction-${randomUUID()}`}
     ) RETURNING id`)
   return rows[0]!.id
@@ -63,8 +63,8 @@ export async function createTestImmutableLifecycleLineageBinding(
     bound_at: Date
     id: string
   }>(sql`/* createImmutableTestLineageBinding */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-      VALUES ('stripe', 'test', 'binding-immutability', ${`lineage-${randomUUID()}`}) RETURNING id)
+    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', 'binding-immutability'), ${`lineage-${randomUUID()}`}) RETURNING id)
     INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
     SELECT id, ${userId} FROM lineage RETURNING id, bound_at`)
   return { boundAt: rows[0]!.bound_at, id: rows[0]!.id }

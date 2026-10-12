@@ -25,8 +25,10 @@ export async function getStripeSubscriptionIdByMembershipSourceId(
     FROM membership_sources source
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
     WHERE source.id = ${membershipSourceId}
-      AND lineage.provider = 'stripe'
+      AND provider_context.provider = 'stripe'
     LIMIT 1
   `)
   const row = rows[0] as { stripe_subscription_id: string } | undefined
@@ -63,6 +65,8 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
           origin_binding.released_at - clock_timestamp() + INTERVAL '1 second'
         ) END AS upper_change_id
       FROM membership_provider_lineages lineage
+      INNER JOIN membership_provider_contexts provider_context
+        ON provider_context.id = lineage.membership_provider_context_id
       INNER JOIN membership_sources source
         ON source.membership_provider_lineage_id = lineage.id
         AND source.source_kind = 'direct'
@@ -88,9 +92,9 @@ export async function getMembershipRefundTargetByStripeSubscriptionId(
           binding.id DESC
         LIMIT 1
       ) origin_binding ON true
-      WHERE lineage.provider = 'stripe'
-        AND lineage.environment = ${providerEnvironment}
-        AND lineage.application_id = ${applicationContext.applicationId}
+      WHERE provider_context.provider = 'stripe'
+        AND provider_context.environment = ${providerEnvironment}
+        AND provider_context.application_id = ${applicationContext.applicationId}
         AND lineage.provider_lineage_id = ${subscriptionId}
     )
     SELECT membership_change.membership_id, membership_change.user_id,

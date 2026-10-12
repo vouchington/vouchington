@@ -41,14 +41,15 @@ type CatalogRow = {
 export async function getActiveMembershipCatalogFromPrimary(): Promise<MembershipCatalogProduct[]> {
   const { rows } = await write<CatalogRow>(sql`/* getActiveMembershipCatalogFromPrimary */
     SELECT product.id, product.plan, product.billing_interval AS interval,
-      mapping.provider, mapping.environment, mapping.application_id,
+      context.provider, context.environment, context.application_id,
       mapping.provider_product_id, mapping.base_plan_id, mapping.offer_id, mapping.sku_id,
       mapping.price_minor_units, mapping.currency_code
     FROM membership_products product
     LEFT JOIN membership_provider_products mapping
       ON mapping.membership_product_id = product.id AND mapping.retired_at IS NULL
+    LEFT JOIN membership_provider_contexts context ON context.id = mapping.membership_provider_context_id
     WHERE product.retired_at IS NULL
-    ORDER BY product.plan, product.billing_interval, mapping.provider, mapping.application_id,
+    ORDER BY product.plan, product.billing_interval, context.provider, context.application_id,
       mapping.id DESC`)
   const products = new Map<string, MembershipCatalogProduct>()
   for (const row of rows) {

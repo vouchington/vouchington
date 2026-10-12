@@ -152,6 +152,8 @@ async function getHighestPriorityFallbackSource(
     INNER JOIN membership_products product ON product.id = source_state.membership_product_id
     LEFT JOIN membership_provider_observations observation
       ON observation.id = source_state.membership_provider_observation_id
+    LEFT JOIN membership_provider_contexts observation_context
+      ON observation_context.id = observation.membership_provider_context_id
     LEFT JOIN membership_provider_evidence_records evidence
       ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_grants grant_row ON grant_row.membership_source_id = source.id
@@ -164,7 +166,7 @@ async function getHighestPriorityFallbackSource(
         (source.source_kind = 'direct'
           AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
           AND source_state.paused_at IS NULL
-          AND (observation.provider = 'stripe' OR source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
+          AND (observation_context.provider = 'stripe' OR source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
           AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL)
         OR (
           source.source_kind = 'family'

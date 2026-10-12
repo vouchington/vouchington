@@ -13,9 +13,7 @@ async function seedPlaywrightMembershipsAndCommunities(
        AND product.plan IN ('plus', 'pro')
        AND product.billing_interval IN ('monthly', 'yearly')
        AND product.retired_at IS NULL
-       AND provider_product.provider = 'stripe'
-       AND provider_product.environment = $1::membership_provider_environments
-       AND provider_product.application_id = 'voucha-web'
+       AND provider_product.membership_provider_context_id = fn_upsert_membership_provider_context_id('stripe', $1::membership_provider_environments, 'voucha-web')
        AND provider_product.retired_at IS NULL`,
     [STRIPE_PROVIDER_ENVIRONMENT],
   )
@@ -37,17 +35,15 @@ async function seedPlaywrightMembershipsAndCommunities(
        ON product.plan::text = fixture.plan
        AND product.billing_interval::text = fixture.billing_interval
        AND product.retired_at IS NULL
-     WHERE provider_product.provider = 'stripe'
-       AND provider_product.environment = $1::membership_provider_environments
-       AND provider_product.application_id = 'voucha-web'
+     WHERE provider_product.membership_provider_context_id = fn_upsert_membership_provider_context_id('stripe', $1::membership_provider_environments, 'voucha-web')
        AND provider_product.provider_product_id = fixture.provider_product_id
        AND provider_product.base_plan_id IS NULL
        AND provider_product.offer_id IS NULL`,
     [STRIPE_PROVIDER_ENVIRONMENT],
   )
   await query(
-    `/* seedPlaywrightMembershipsAndCommunities */ INSERT INTO membership_provider_products (id, membership_product_id, provider, environment, application_id, provider_product_id, sku_id, price_minor_units, currency_code)
-     SELECT fixture.id::uuid, product.id, 'stripe', $1::membership_provider_environments, 'voucha-web', fixture.provider_product_id, fixture.sku_id, fixture.price_minor_units, 'usd'
+    `/* seedPlaywrightMembershipsAndCommunities */ INSERT INTO membership_provider_products (id, membership_product_id, membership_provider_context_id, provider_product_id, sku_id, price_minor_units, currency_code)
+     SELECT fixture.id::uuid, product.id, fn_upsert_membership_provider_context_id('stripe', $1::membership_provider_environments, 'voucha-web'), fixture.provider_product_id, fixture.sku_id, fixture.price_minor_units, 'usd'
      FROM (
        VALUES
          ('019c0000-0000-7000-8000-000000000004', 'plus', 'monthly', 'price_playwright_plus_monthly', 'voucha_membership_v1_plus_monthly_usd', 500),
@@ -62,9 +58,7 @@ async function seedPlaywrightMembershipsAndCommunities(
      WHERE NOT EXISTS (
        SELECT 1
        FROM membership_provider_products provider_product
-       WHERE provider_product.provider = 'stripe'
-         AND provider_product.environment = $1::membership_provider_environments
-         AND provider_product.application_id = 'voucha-web'
+       WHERE provider_product.membership_provider_context_id = fn_upsert_membership_provider_context_id('stripe', $1::membership_provider_environments, 'voucha-web')
          AND provider_product.provider_product_id = fixture.provider_product_id
          AND provider_product.base_plan_id IS NULL
          AND provider_product.offer_id IS NULL
@@ -72,9 +66,7 @@ async function seedPlaywrightMembershipsAndCommunities(
      )
      ON CONFLICT (id) DO UPDATE SET
        membership_product_id = EXCLUDED.membership_product_id,
-       provider = EXCLUDED.provider,
-       environment = EXCLUDED.environment,
-       application_id = EXCLUDED.application_id,
+       membership_provider_context_id = EXCLUDED.membership_provider_context_id,
        provider_product_id = EXCLUDED.provider_product_id,
        base_plan_id = NULL,
        offer_id = NULL,

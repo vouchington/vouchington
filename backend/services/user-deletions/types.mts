@@ -8,7 +8,7 @@ export type UserDeletionExternalWorkKind =
 
 export type UserDeletionProviderWorkKind = Exclude<
   UserDeletionExternalWorkKind,
-  'entity-relation-effects'
+  'entity-relation-effects' | 'stripe-customer'
 >
 
 export type UserDeletionRequest = {

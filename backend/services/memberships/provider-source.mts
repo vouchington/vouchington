@@ -4,6 +4,7 @@ import type {
   CreateProviderMembershipSourceOptions,
   MembershipProviderSourceKind,
 } from './create-types.mts'
+import { getOrCreateProviderContextId } from './provider-context.mts'
 
 export class ProviderMembershipSourceConflictError extends Error {
   constructor(message: string) {
@@ -50,22 +51,27 @@ async function createOrLockProviderLineage(
   query: QueryExecutor,
 ): Promise<{ id: string; provider_account_id: string | null }> {
   const { sourceIdentity } = options
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: sourceIdentity.provider,
+      environment: sourceIdentity.environment,
+      applicationId: sourceIdentity.applicationId,
+    },
+    query,
+  )
   const { rows: insertedRows } = await query(sql`/* createMembership: provider lineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id, provider_account_id
+      membership_provider_context_id, provider_lineage_id, provider_account_id
     ) VALUES (
-      ${sourceIdentity.provider}, ${sourceIdentity.environment}, ${sourceIdentity.applicationId},
-      ${sourceIdentity.providerLineageId}, ${sourceIdentity.providerAccountId ?? null}
-    ) ON CONFLICT (provider, environment, application_id, provider_lineage_id)
+      ${contextId}, ${sourceIdentity.providerLineageId}, ${sourceIdentity.providerAccountId ?? null}
+    ) ON CONFLICT (membership_provider_context_id, provider_lineage_id)
     DO NOTHING
     RETURNING id, provider_account_id`)
   const inserted = insertedRows[0] as { id: string; provider_account_id: string | null } | undefined
   if (inserted) return inserted
   const { rows } = await query(sql`/* createMembership: lock provider lineage */
     SELECT id, provider_account_id FROM membership_provider_lineages
-    WHERE provider = ${sourceIdentity.provider}
-      AND environment = ${sourceIdentity.environment}
-      AND application_id = ${sourceIdentity.applicationId}
+    WHERE membership_provider_context_id = ${contextId}
       AND provider_lineage_id = ${sourceIdentity.providerLineageId}
     FOR KEY SHARE`)
   return rows[0] as { id: string; provider_account_id: string | null }

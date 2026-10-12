@@ -8,7 +8,6 @@ export async function getTestIneligiblePurchaseReversal(
   const { rows } = await read<{
     amount_minor_units: string
     receipt_amount_minor_units: string | null
-    receipt_remaining_refundable_minor_units: string | null
     qualifying_amount_minor_units: string
     completed_at: Date | null
     operation_kind: 'ineligible_purchase_reversal'
@@ -16,7 +15,6 @@ export async function getTestIneligiblePurchaseReversal(
   }>(sql`/* getTestIneligiblePurchaseReversal */
     SELECT operation.remaining_refundable_minor_units AS amount_minor_units,
       receipt.amount_minor_units::TEXT AS receipt_amount_minor_units,
-      receipt.remaining_refundable_minor_units::TEXT AS receipt_remaining_refundable_minor_units,
       operation.qualifying_allocation_minor_units AS qualifying_amount_minor_units,
       operation.completed_at, operation.operation_kind,
       COALESCE(receipt.provider_refund_id, operation.provider_refund_id) AS provider_refund_id
@@ -24,10 +22,12 @@ export async function getTestIneligiblePurchaseReversal(
     INNER JOIN membership_sources source ON source.id = operation.membership_source_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
     LEFT JOIN membership_automatic_refund_receipts receipt
       ON receipt.membership_operation_id = operation.id
-    WHERE lineage.provider = 'stripe'
-      AND lineage.environment = ${environment}
+    WHERE context.provider = 'stripe'
+      AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
       AND operation.operation_kind = 'ineligible_purchase_reversal'
     ORDER BY operation.id DESC
@@ -53,10 +53,12 @@ export async function getTestWonDisputeRecovery(
     LEFT JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = operation.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
     LEFT JOIN membership_automatic_refund_receipts receipt
       ON receipt.membership_operation_id = operation.id
-    WHERE lineage.provider = 'stripe'
-      AND lineage.environment = ${environment}
+    WHERE context.provider = 'stripe'
+      AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
       AND operation.operation_kind = 'collision_resolution'
     ORDER BY operation.id DESC
@@ -78,8 +80,10 @@ export async function getTestIneligiblePurchaseReversalExecutionClaimCount(
     INNER JOIN membership_sources source ON source.id = operation.membership_source_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
-    WHERE lineage.provider = 'stripe'
-      AND lineage.environment = ${environment}
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE context.provider = 'stripe'
+      AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
       AND operation.operation_kind IN ('ineligible_purchase_reversal', 'cancel_source')
       AND work.lease_token IS NOT NULL
@@ -102,7 +106,9 @@ export async function getTestIneligiblePurchaseReversalCase(
     FROM membership_ineligible_purchase_reversal_cases reversal_case
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = reversal_case.membership_provider_lineage_id
-    WHERE lineage.provider = 'stripe' AND lineage.environment = ${environment}
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE context.provider = 'stripe' AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
   `)
   return rows[0] ?? null
@@ -121,7 +127,9 @@ export async function getTestIneligiblePurchaseReversalCaseOperationCount(
       ON reversal_case.id = case_operation.membership_ineligible_purchase_reversal_case_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = reversal_case.membership_provider_lineage_id
-    WHERE lineage.provider = 'stripe' AND lineage.environment = ${environment}
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE context.provider = 'stripe' AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
   `)
   return Number(rows[0]!.count)
@@ -139,7 +147,9 @@ export async function getTestIneligiblePurchaseReversalCaseContext(
     FROM membership_ineligible_purchase_reversal_cases reversal_case
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = reversal_case.membership_provider_lineage_id
-    WHERE lineage.provider = 'stripe' AND lineage.environment = ${environment}
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE context.provider = 'stripe' AND context.environment = ${environment}
       AND lineage.provider_lineage_id = ${subscriptionId}
   `)
   return rows[0] ?? null
@@ -152,12 +162,9 @@ export async function recordTestIneligiblePurchaseReversalReceipt(
 ): Promise<void> {
   await write(sql`/* recordTestIneligiblePurchaseReversalReceipt */
     INSERT INTO membership_automatic_refund_receipts (
-      membership_operation_id, provider, environment, application_id, operation_kind,
-      provider_refund_id, amount_minor_units, remaining_refundable_minor_units, currency_code
+      membership_operation_id, membership_provider_context_id, provider_refund_id, amount_minor_units, currency_code
     ) SELECT
-      operation.id, operation.provider, operation.environment, operation.application_id,
-      operation.operation_kind, ${providerRefundId}, ${amountMinorUnits},
-      operation.remaining_refundable_minor_units, operation.currency_code
+      operation.id, operation.membership_provider_context_id, ${providerRefundId}, ${amountMinorUnits}, operation.currency_code
     FROM membership_operations operation
     WHERE operation.id = ${operationId}
     ON CONFLICT (membership_operation_id) DO NOTHING

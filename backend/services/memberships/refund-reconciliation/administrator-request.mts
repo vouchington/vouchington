@@ -24,12 +24,12 @@ export async function claimAdministratorRefundRequest(
   await query(sql`/* claimAdministratorRefundRequest:operation */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at
     )
     SELECT source.id, lineage.id, binding.id,
-      lineage.provider, lineage.environment, lineage.application_id,
+      lineage.membership_provider_context_id,
       'administrator_refund', ${request.idempotencyKey}::text AS idempotency_key,
       ${request.amount.amount}, ${request.amount.amount}, ${request.amount.currency},
       ${request.periodStartedAt}, ${request.periodEndsAt}
@@ -40,8 +40,8 @@ export async function claimAdministratorRefundRequest(
     INNER JOIN membership_lineage_bindings binding
       ON binding.membership_provider_lineage_id = lineage.id AND binding.released_at IS NULL
     WHERE membership.id = ${request.membershipId}
-    ORDER BY lineage.provider, lineage.environment, lineage.application_id, idempotency_key
-    ON CONFLICT (provider, environment, application_id, idempotency_key) DO NOTHING
+    ORDER BY lineage.membership_provider_context_id, idempotency_key
+    ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
   `)
   const operation = await getLockedAdministratorRefundOperation(
     request.idempotencyKey,
@@ -105,9 +105,7 @@ async function getLockedAdministratorRefundOperation(
       AND operation.operation_kind = 'administrator_refund'
       AND operation.idempotency_key = ${idempotencyKey}
       AND source.membership_provider_lineage_id = lineage.id
-      AND operation.provider = lineage.provider
-      AND operation.environment = lineage.environment
-      AND operation.application_id = lineage.application_id
+      AND operation.membership_provider_lineage_id = lineage.id
     FOR UPDATE OF operation
   `)
   return (rows[0] as AdministratorRefundOperation | undefined) ?? null
@@ -133,10 +131,12 @@ export async function getAdministratorRefundRequestByKey(
     FROM membership_administrator_refund_operation_requests request
     INNER JOIN membership_operations operation
       ON operation.id = request.membership_operation_id
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = operation.membership_provider_context_id
     WHERE request.administrator_request_key = ${idempotencyKey}
-      AND operation.provider = ${scope.provider}
-      AND operation.environment = ${scope.providerEnvironment}
-      AND operation.application_id = ${scope.providerApplicationId}
+      AND provider_context.provider = ${scope.provider}
+      AND provider_context.environment = ${scope.providerEnvironment}
+      AND provider_context.application_id = ${scope.providerApplicationId}
   `)
   return (rows[0] as AdministratorRefundRequestRow | undefined) ?? null
 }
@@ -159,9 +159,7 @@ async function getAdministratorRefundRequestForMembershipKey(
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
     INNER JOIN membership_operations operation
-      ON operation.provider = lineage.provider
-      AND operation.environment = lineage.environment
-      AND operation.application_id = lineage.application_id
+      ON operation.membership_provider_lineage_id = lineage.id
     INNER JOIN membership_administrator_refund_operation_requests request
       ON request.membership_operation_id = operation.id
     WHERE membership.id = ${membershipId}

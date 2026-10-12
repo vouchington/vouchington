@@ -86,14 +86,16 @@ async function getAppleNotificationEvidence(
   data: ProcessAppleNotificationData,
 ): Promise<AppleNotificationEvidence | null> {
   const { rows } = await read(sql`/* reconcileAppleNotification.evidence */
-    SELECT evidence.application_id AS "applicationId", evidence.encrypted_evidence,
+    SELECT provider_context.application_id AS "applicationId", evidence.encrypted_evidence,
       evidence.evidence_lookup_sha256, evidence.membership_provider_lineage_id,
-      evidence.environment, evidence.verified_at, evidence.rejected_at,
+      provider_context.environment, evidence.verified_at, evidence.rejected_at,
       lineage.provider_lineage_id AS "providerLineageId"
     FROM membership_provider_evidence_records evidence
     INNER JOIN membership_provider_lineages lineage ON lineage.id = evidence.membership_provider_lineage_id
-    WHERE evidence.id = ${data.evidenceId} AND evidence.provider = 'apple_app_store'
-      AND evidence.environment = ${data.environment}`)
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = evidence.membership_provider_context_id
+    WHERE evidence.id = ${data.evidenceId} AND provider_context.provider = 'apple_app_store'
+      AND provider_context.environment = ${data.environment}`)
   return (rows[0] as AppleNotificationEvidence | undefined) ?? null
 }
 
@@ -113,7 +115,6 @@ async function rejectAppleNotificationEvidence(
       rejection_reason = 'invalid_evidence'
     WHERE id = ${evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
 }
-
 async function persistAppleNotificationObservation(
   evidenceId: string,
   signedTransactionInfo: string,

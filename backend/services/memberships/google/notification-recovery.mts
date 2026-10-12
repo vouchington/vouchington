@@ -96,12 +96,14 @@ async function findPendingNotificationRows(
     encrypted_evidence: Buffer
     evidence_lookup_sha256: string
   }>(sql`/* findRecoverableGooglePlayNotificationJobs */
-    SELECT id, environment, application_id, encrypted_evidence, evidence_lookup_sha256
-    FROM membership_provider_evidence_records WHERE provider = 'google_play' AND provider_event_id IS NOT NULL
-      AND verified_at IS NULL AND rejected_at IS NULL
-      AND (${cursor}::UUID IS NULL OR id > ${cursor}::UUID)
-      AND (${upperBound}::UUID IS NULL OR id <= ${upperBound}::UUID)
-    ORDER BY id LIMIT ${WORK_PAGE_SIZE + 1}`)
+    SELECT evidence.id, context.environment, context.application_id, evidence.encrypted_evidence, evidence.evidence_lookup_sha256
+    FROM membership_provider_evidence_records evidence
+    INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id
+    WHERE context.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
+      AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
+      AND (${cursor}::UUID IS NULL OR evidence.id > ${cursor}::UUID)
+      AND (${upperBound}::UUID IS NULL OR evidence.id <= ${upperBound}::UUID)
+    ORDER BY evidence.id LIMIT ${WORK_PAGE_SIZE + 1}`)
   return rows
 }
 
@@ -109,10 +111,11 @@ async function findNotificationSweepUpperBound(): Promise<string | null> {
   const { rows } = await write<{
     id: string | null
   }>(sql`/* findGooglePlayNotificationSweepUpperBound */
-    SELECT id FROM membership_provider_evidence_records
-    WHERE provider = 'google_play' AND provider_event_id IS NOT NULL
-      AND verified_at IS NULL AND rejected_at IS NULL
-    ORDER BY id DESC LIMIT 1`)
+    SELECT evidence.id FROM membership_provider_evidence_records evidence
+    INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id
+    WHERE context.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
+      AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
+    ORDER BY evidence.id DESC LIMIT 1`)
   return rows[0]?.id ?? null
 }
 

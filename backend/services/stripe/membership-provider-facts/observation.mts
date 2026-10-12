@@ -26,14 +26,14 @@ export async function insertStripeMembershipObservation(
       FOR UPDATE OF source_state
     ), inserted AS (
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_record_id,
+        membership_provider_context_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
         observed_price_minor_units, observed_price_currency_code,
         renewal_membership_provider_product_id, renewal_membership_product_id,
         renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at,
         provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at,
         expired_at, past_due_at, paused_at, should_auto_renew
-      ) SELECT 'stripe', ${fact.is_live_mode ? 'production' : 'test'}, ${fact.application_id}, ${evidenceId},
+      ) SELECT fn_upsert_membership_provider_context_id('stripe', ${fact.is_live_mode ? 'production' : 'test'}, ${fact.application_id}), ${evidenceId},
         ${fact.membership_provider_lineage_id}, ${snapshot.membershipProviderProductId}, ${snapshot.membershipProductId},
         ${snapshot.observedPriceMinorUnits}, ${snapshot.observedPriceCurrencyCode},
         ${snapshot.renewal?.id ?? null}, ${snapshot.renewal?.membership_product_id ?? null},

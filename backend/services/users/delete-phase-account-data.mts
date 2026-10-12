@@ -101,26 +101,33 @@ export async function processUserDeletionAccountDataBatch(
     }
 
     const stripeWork = await query(sql`/* processUserDeletionAccountData:stripe */
-      INSERT INTO user_deletion_external_works (request_id, work_kind, work_key)
+      WITH customer_lineages AS MATERIALIZED (
+        SELECT DISTINCT ON (lineage.provider_account_id)
+          lineage.id, lineage.provider_account_id
+        FROM membership_sources source
+        JOIN membership_provider_lineages lineage
+          ON lineage.id = source.membership_provider_lineage_id
+        JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
+        WHERE source.user_id = ${userId}
+          AND source.source_kind = 'direct'
+          AND context.provider = 'stripe'
+          AND lineage.provider_account_id IS NOT NULL
+        ORDER BY lineage.provider_account_id, lineage.id
+      )
+      INSERT INTO user_deletion_external_works (request_id, work_kind, membership_provider_lineage_id)
       SELECT ${requestId}::uuid AS request_id,
         'stripe-customer'::user_deletion_external_work_kinds AS work_kind,
-        lineage.provider_account_id AS work_key
-      FROM membership_sources source
-      JOIN membership_provider_lineages lineage
-        ON lineage.id = source.membership_provider_lineage_id
-      WHERE source.user_id = ${userId}
-        AND source.source_kind = 'direct'
-        AND lineage.provider = 'stripe'
-        AND lineage.provider_account_id IS NOT NULL
-        AND NOT EXISTS (
+        lineage.id AS membership_provider_lineage_id
+      FROM customer_lineages lineage
+      WHERE NOT EXISTS (
           SELECT 1 FROM user_deletion_external_works work
           WHERE work.request_id = ${requestId}
             AND work.work_kind = 'stripe-customer'
-            AND work.work_key = lineage.provider_account_id
+            AND work.membership_provider_lineage_id = lineage.id
         )
-      ORDER BY request_id ASC NULLS LAST, work_kind ASC NULLS LAST, work_key ASC NULLS LAST
+      ORDER BY lineage.provider_account_id, lineage.id
       LIMIT ${batchSize}
-      ON CONFLICT (request_id, work_kind, work_key) DO NOTHING
+      ON CONFLICT (request_id, work_kind, membership_provider_lineage_id) DO NOTHING
     `)
     return { hasMore: (stripeWork.rowCount ?? 0) > 0 }
   })

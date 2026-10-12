@@ -12,6 +12,37 @@ DO $$ BEGIN CREATE TYPE membership_refund_sources AS ENUM ('admin', 'stripe_dash
 DO $$ BEGIN CREATE TYPE membership_operation_kinds AS ENUM ('cancel_source', 'automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE membership_verification_result_codes AS ENUM ('verified', 'competing_direct_source', 'invalid_evidence', 'wrong_account', 'wrong_application', 'wrong_environment', 'wrong_product', 'revoked', 'expired', 'purchase_pending', 'missing_account_token', 'stale_evidence'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Provider identities are finite at deployment time, but configured application ids may vary.
+-- Keep their identity once and reference it from membership records by id.
+CREATE TABLE IF NOT EXISTS membership_provider_contexts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  provider membership_provider_kinds NOT NULL CHECK (provider <> 'admin'),
+  environment membership_provider_environments NOT NULL,
+  application_id TEXT NOT NULL CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT uq_membership_provider_contexts__identity UNIQUE (provider, environment, application_id)
+);
+-- Resolve provider-supplied or configured identities atomically for both application writers and
+-- single-statement fixture inserts. Concurrent insertions reuse the same durable row.
+CREATE FUNCTION fn_upsert_membership_provider_context_id(
+  context_provider membership_provider_kinds,
+  context_environment membership_provider_environments,
+  context_application_id TEXT
+) RETURNS UUID LANGUAGE plpgsql AS $$
+DECLARE context_id UUID;
+BEGIN
+  INSERT INTO membership_provider_contexts (provider, environment, application_id)
+  VALUES (context_provider, context_environment, context_application_id)
+  ON CONFLICT (provider, environment, application_id) DO NOTHING
+  RETURNING id INTO context_id;
+  IF context_id IS NULL THEN
+    SELECT id INTO STRICT context_id FROM membership_provider_contexts
+    WHERE provider = context_provider AND environment = context_environment
+      AND application_id = context_application_id;
+  END IF;
+  RETURN context_id;
+END $$;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_products (
   id UUID PRIMARY KEY DEFAULT uuidv7(), plan membership_plan_slugs NOT NULL,
@@ -27,14 +58,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_products__active_plan_interval 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_products (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_product_id UUID NOT NULL REFERENCES membership_products(id) ON DELETE RESTRICT,
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL,
-  application_id TEXT NOT NULL, provider_product_id TEXT NOT NULL, base_plan_id TEXT, offer_id TEXT, sku_id TEXT,
+  membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
+  provider_product_id TEXT NOT NULL, base_plan_id TEXT, offer_id TEXT, sku_id TEXT,
   price_minor_units BIGINT CHECK (price_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes REFERENCES currencies(code) ON DELETE RESTRICT, retired_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (provider <> 'admin'),
   CHECK (num_nonnulls(price_minor_units, currency_code) IN (0, 2)),
-  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (char_length(provider_product_id) BETWEEN 1 AND 255 AND provider_product_id = TRIM(provider_product_id)),
   CHECK (base_plan_id IS NULL OR (char_length(base_plan_id) BETWEEN 1 AND 255 AND base_plan_id = TRIM(base_plan_id))),
   CHECK (offer_id IS NULL OR (char_length(offer_id) BETWEEN 1 AND 255 AND offer_id = TRIM(offer_id))),
@@ -43,9 +72,9 @@ CREATE TABLE IF NOT EXISTS membership_provider_products (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_provider_products_updated_at BEFORE UPDATE ON membership_provider_products FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__provider_identity ON membership_provider_products (provider, environment, application_id, provider_product_id, base_plan_id, offer_id, sku_id) NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__provider_identity ON membership_provider_products (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id) NULLS NOT DISTINCT;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__id_context ON membership_provider_products (id, membership_product_id, provider, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_products__id_context ON membership_provider_products (id, membership_product_id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_products__membership_product_id ON membership_provider_products (membership_product_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -53,16 +82,15 @@ CREATE INDEX IF NOT EXISTS idx_membership_provider_products__currency_code ON me
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_lineages (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL, provider_lineage_id TEXT NOT NULL, provider_account_id TEXT,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT, provider_lineage_id TEXT NOT NULL, provider_account_id TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (char_length(provider_lineage_id) BETWEEN 1 AND 255 AND provider_lineage_id = TRIM(provider_lineage_id)),
   CHECK (provider_account_id IS NULL OR (char_length(provider_account_id) BETWEEN 1 AND 255 AND provider_account_id = TRIM(provider_account_id)))
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__provider_lineage ON membership_provider_lineages (provider, environment, application_id, provider_lineage_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__provider_lineage ON membership_provider_lineages (membership_provider_context_id, provider_lineage_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__id_context ON membership_provider_lineages (id, provider, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_lineages__id_context ON membership_provider_lineages (id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_membership_provider_lineage_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -70,9 +98,9 @@ BEGIN
     AND OLD.provider_account_id IS NULL
     AND NEW.provider_account_id IS NOT NULL
     AND ROW(
-      NEW.id, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_lineage_id
+      NEW.id, NEW.membership_provider_context_id, NEW.provider_lineage_id
     ) IS NOT DISTINCT FROM ROW(
-      OLD.id, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_lineage_id
+      OLD.id, OLD.membership_provider_context_id, OLD.provider_lineage_id
     )
   THEN
     RETURN NEW;
@@ -108,30 +136,29 @@ COMMENT ON COLUMN membership_lineage_bindings.originating_invoice_id IS 'Stripe 
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
   membership_provider_lineage_id UUID, provider_event_id TEXT, evidence_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_membershi_provider_evidence_records__evidence_lookup_sha256 CHECK (evidence_lookup_sha256 ~ '^[a-f0-9]{64}$'), encrypted_evidence BYTEA NOT NULL,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, verified_at TIMESTAMPTZ, rejected_at TIMESTAMPTZ, rejection_reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (octet_length(encrypted_evidence) BETWEEN 1 AND 65536), CHECK (num_nonnulls(verified_at, rejected_at) <= 1),
   CHECK (rejection_reason IS NULL OR (rejected_at IS NOT NULL AND char_length(rejection_reason) BETWEEN 1 AND 1000 AND rejection_reason = TRIM(rejection_reason))),
   CHECK (provider_event_id IS NULL OR (char_length(provider_event_id) BETWEEN 1 AND 255 AND provider_event_id = TRIM(provider_event_id))),
-  CONSTRAINT fk_membership_provider_evidence_records__lineage_context FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_provider_evidence_records__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_context ON membership_provider_evidence_records (id, provider, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_context ON membership_provider_evidence_records (id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_lineage_context ON membership_provider_evidence_records (id, membership_provider_lineage_id, provider, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_lineage_context ON membership_provider_evidence_records (id, membership_provider_lineage_id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_event ON membership_provider_evidence_records (provider, environment, application_id, provider_event_id) WHERE provider_event_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_event ON membership_provider_evidence_records (membership_provider_context_id, provider_event_id) WHERE provider_event_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_lookup ON membership_provider_evidence_records (provider, environment, application_id, evidence_lookup_sha256);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__context_lookup ON membership_provider_evidence_records (membership_provider_context_id, evidence_lookup_sha256);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__lineage_id ON membership_provider_evidence_records (membership_provider_lineage_id, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_observations (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL,
   membership_provider_evidence_record_id UUID NOT NULL, membership_provider_lineage_id UUID NOT NULL,
   membership_provider_product_id UUID NOT NULL, membership_product_id UUID NOT NULL,
   observed_price_minor_units BIGINT CONSTRAINT chk_membership_provider_observation__observed_price_minor_units CHECK (observed_price_minor_units BETWEEN 0 AND 9007199254740991),
@@ -145,7 +172,6 @@ CREATE TABLE IF NOT EXISTS membership_provider_observations (
   expired_at TIMESTAMPTZ, past_due_at TIMESTAMPTZ, paused_at TIMESTAMPTZ,
   should_auto_renew BOOLEAN NOT NULL DEFAULT false, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   terminal_at TIMESTAMPTZ,
-  CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (num_nonnulls(observed_price_minor_units, observed_price_currency_code) IN (0, 2)),
   CHECK (char_length(provider_revision) BETWEEN 1 AND 255 AND provider_revision = TRIM(provider_revision)), CHECK (provider_order >= 0),
   CHECK (source_kind <> 'admin_grant'), CHECK (expires_at IS NULL OR expires_at >= effective_at), CHECK (cancelled_at IS NULL OR cancelled_at >= effective_at),
@@ -154,10 +180,10 @@ CREATE TABLE IF NOT EXISTS membership_provider_observations (
   CHECK (num_nonnulls(renewal_membership_provider_product_id, renewal_membership_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at) IN (0, 5)),
   CHECK (renewal_membership_provider_product_id IS NULL OR (should_auto_renew AND source_kind = 'direct')),
   CHECK (renewal_effective_at IS NULL OR renewal_effective_at >= effective_at),
-  CONSTRAINT fk_membership_provider_observations__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, provider, environment, application_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_provider_observations__lineage_context FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_provider_observations__product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_provider_observations__renewal_product_context FOREIGN KEY (renewal_membership_provider_product_id, renewal_membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_provider_observations__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_provider_observations__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_provider_observations__product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_provider_observations__renewal_product_context FOREIGN KEY (renewal_membership_provider_product_id, renewal_membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__evidence_id ON membership_provider_observations (membership_provider_evidence_record_id);
@@ -166,7 +192,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__lineage_
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__id_lineage_product_kind ON membership_provider_observations (id, membership_provider_lineage_id, membership_product_id, source_kind);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_observations__id_renewal_snapshot ON membership_provider_observations (id, renewal_membership_provider_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_provider_observations__lineage_effective ON membership_provider_observations (membership_provider_lineage_id, effective_at DESC, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -200,28 +225,42 @@ CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key UUID NOT NULL, request_fingerprint TEXT NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
   membership_provider_product_id UUID NOT NULL, membership_product_id UUID NOT NULL,
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   provider_checkout_id TEXT, provider_checkout_url TEXT,
   expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '30 minutes',
   launched_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_code TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK ((provider_checkout_id IS NULL) = (provider_checkout_url IS NULL)),
   CHECK (expires_at > uuid_extract_timestamp(id)),
-  CHECK (provider_checkout_id IS NULL OR (provider = 'stripe' AND char_length(provider_checkout_id) BETWEEN 1 AND 255 AND provider_checkout_id = TRIM(provider_checkout_id))),
+  CHECK (provider_checkout_id IS NULL OR (char_length(provider_checkout_id) BETWEEN 1 AND 255 AND provider_checkout_id = TRIM(provider_checkout_id))),
   CHECK (provider_checkout_url IS NULL OR char_length(provider_checkout_url) BETWEEN 1 AND 2048),
   CHECK (num_nonnulls(launched_at, failed_at) <= 1),
   CHECK ((failed_at IS NULL) = (failure_code IS NULL)),
   CHECK (failure_code IS NULL OR (char_length(failure_code) BETWEEN 1 AND 255 AND failure_code = TRIM(failure_code))),
-  CONSTRAINT fk_membership_purchase_intents__provider_product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, provider, environment, application_id) REFERENCES membership_provider_products(id, membership_product_id, provider, environment, application_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_purchase_intents__provider_product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_purchase_intents_updated_at BEFORE UPDATE ON membership_purchase_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+-- Checkout session ids are Stripe-only; context now lives behind an FK, so enforce this
+-- provider-specific invariant against that row instead of keeping a copied provider enum.
+CREATE FUNCTION fn_reject_non_stripe_membership_purchase_intent_checkout() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM membership_provider_contexts context
+    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'
+  ) THEN
+    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_purchase_intents_stripe_checkout
+BEFORE INSERT OR UPDATE ON membership_purchase_intents
+FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_membership_purchase_intent_checkout();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_idempotency ON membership_purchase_intents (user_id, idempotency_key);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_purchase_intents__id_user_context ON membership_purchase_intents (id, user_id, provider, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_purchase_intents__id_user_context ON membership_purchase_intents (id, user_id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_id ON membership_purchase_intents (user_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -234,15 +273,14 @@ CREATE TABLE IF NOT EXISTS membership_verifications (
   id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key UUID NOT NULL, request_fingerprint TEXT NOT NULL CHECK (request_fingerprint ~ '^[a-f0-9]{64}$'),
   membership_purchase_intent_id UUID, membership_provider_evidence_record_id UUID NOT NULL,
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   verified_at TIMESTAMPTZ, conflicted_at TIMESTAMPTZ, rejected_at TIMESTAMPTZ, result_code membership_verification_result_codes,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (provider <> 'admin'), CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (num_nonnulls(verified_at, conflicted_at, rejected_at) <= 1),
   CHECK ((num_nonnulls(verified_at, conflicted_at, rejected_at) = 0) = (result_code IS NULL)),
-  CONSTRAINT fk_membership_verifications__purchase_intent_context FOREIGN KEY (membership_purchase_intent_id, user_id, provider, environment, application_id) REFERENCES membership_purchase_intents(id, user_id, provider, environment, application_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_verifications__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, provider, environment, application_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_verifications__purchase_intent_context FOREIGN KEY (membership_purchase_intent_id, user_id, membership_provider_context_id) REFERENCES membership_purchase_intents(id, user_id, membership_provider_context_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_verifications__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_context_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_verification_processing_work_items (
@@ -480,15 +518,28 @@ DO $$ BEGIN ALTER TABLE memberships ADD CONSTRAINT fk_memberships_latest_change_
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__latest_change_id ON memberships (latest_change_id) WHERE latest_change_id IS NOT NULL;
 
+-- Compare immutable renewal facts through their observation IDs; work rows do not copy them.
+CREATE FUNCTION fn_membership_renewal_snapshot_changed(old_observation_id UUID, new_observation_id UUID)
+RETURNS BOOLEAN LANGUAGE SQL STABLE AS $$
+  SELECT ROW(old_observation.renewal_membership_provider_product_id,
+             old_observation.renewal_price_minor_units,
+             old_observation.renewal_price_currency_code,
+             old_observation.renewal_effective_at)
+    IS DISTINCT FROM
+         ROW(new_observation.renewal_membership_provider_product_id,
+             new_observation.renewal_price_minor_units,
+             new_observation.renewal_price_currency_code,
+             new_observation.renewal_effective_at)
+  FROM membership_provider_observations old_observation
+  CROSS JOIN membership_provider_observations new_observation
+  WHERE old_observation.id = old_observation_id AND new_observation.id = new_observation_id
+$$;
+
 -- A membership change owns exactly one replayable handoff to its derived entitlement consumers.
 CREATE TABLE membership_renewal_price_increase_notification_work_items (
   membership_id UUID PRIMARY KEY REFERENCES memberships ON DELETE CASCADE,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation >= 1),
-  membership_provider_observation_id UUID NOT NULL,
-  membership_provider_product_id UUID NOT NULL,
-  price_minor_units BIGINT NOT NULL CHECK (price_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
-  effective_at TIMESTAMPTZ NOT NULL,
+  membership_provider_observation_id UUID NOT NULL REFERENCES membership_provider_observations(id) ON DELETE RESTRICT,
   lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
   attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
   available_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
@@ -496,24 +547,12 @@ CREATE TABLE membership_renewal_price_increase_notification_work_items (
   CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at),
   CHECK (completed_at IS NULL OR delivery_attempted_at IS NOT NULL),
-  CHECK (completed_at IS NULL OR lease_token IS NULL),
-  CONSTRAINT fk_membership_renewal_notification_work__observation_snapshot FOREIGN KEY (
-    membership_provider_observation_id, membership_provider_product_id,
-    price_minor_units, currency_code, effective_at
-  ) REFERENCES membership_provider_observations (
-    id, renewal_membership_provider_product_id, renewal_price_minor_units,
-    renewal_price_currency_code, renewal_effective_at
-  ) ON DELETE RESTRICT
+  CHECK (completed_at IS NULL OR lease_token IS NULL)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation
 ON membership_renewal_price_increase_notification_work_items (membership_provider_observation_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product
-ON membership_renewal_price_increase_notification_work_items (membership_provider_product_id);
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency
-ON membership_renewal_price_increase_notification_work_items (currency_code);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token
 ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE lease_token IS NOT NULL;
@@ -525,10 +564,6 @@ COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'G
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_id IS 'Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.generation IS 'Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_observation_id IS 'Immutable authoritative observation that supplied this notice snapshot.';
-COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_product_id IS 'Provider product in the exact renewal observation snapshot.';
-COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.price_minor_units IS 'Future renewal price in the currency minor unit.';
-COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.currency_code IS 'Currency of the future renewal price.';
-COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.effective_at IS 'When the observed future price takes effect.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.lease_token IS 'Opaque UUID fence for the current notice delivery owner.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.leased_at IS 'When the current notice delivery lease began.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.lease_expires_at IS 'Deadline after which an unattempted notice may be reclaimed.';
@@ -565,7 +600,7 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   membership_provider_lineage_id UUID NOT NULL,
   membership_lineage_binding_id UUID NOT NULL,
   provider_refund_id TEXT CONSTRAINT membership_operations__provider_refund_id_valid CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   operation_kind membership_operation_kinds NOT NULL, idempotency_key TEXT NOT NULL,
   qualifying_allocation_minor_units BIGINT CHECK (qualifying_allocation_minor_units BETWEEN 0 AND 9007199254740991),
   remaining_refundable_minor_units BIGINT CHECK (remaining_refundable_minor_units BETWEEN 0 AND 9007199254740991),
@@ -574,9 +609,7 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   reconciliation_attempt_ordinal INTEGER NOT NULL DEFAULT 0,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_message TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (char_length(idempotency_key) BETWEEN 1 AND 255 AND idempotency_key = TRIM(idempotency_key)),
-  CHECK (provider <> 'admin'),
   CHECK (period_ends_at IS NULL OR period_started_at IS NOT NULL),
   CHECK (period_ends_at IS NULL OR period_ends_at >= period_started_at),
   CHECK (remaining_refundable_minor_units IS NULL OR qualifying_allocation_minor_units IS NOT NULL),
@@ -602,15 +635,16 @@ CREATE TABLE IF NOT EXISTS membership_operations (
     membership_source_id, membership_provider_lineage_id
   ) REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_operations__lineage_context FOREIGN KEY (
-    membership_provider_lineage_id, provider, environment, application_id
-  ) REFERENCES membership_provider_lineages (id, provider, environment, application_id) ON DELETE RESTRICT,
+    membership_provider_lineage_id, membership_provider_context_id
+  ) REFERENCES membership_provider_lineages (id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_operations__binding_lineage FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
     REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (provider, environment, application_id, idempotency_key);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (membership_provider_context_id, idempotency_key);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__receipt_snapshot ON membership_operations (id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) NULLS NOT DISTINCT;
+-- The context pair enforces same-provider refund attempts without copying text identity.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_context ON membership_operations (id, membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_source ON membership_operations (id, membership_source_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -620,7 +654,7 @@ CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_o
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 COMMENT ON COLUMN membership_operations.provider_refund_id IS 'Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying.';
 COMMENT ON COLUMN membership_operations.membership_lineage_binding_id IS 'Binding and owner captured when the provider operation was requested.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -710,32 +744,42 @@ COMMENT ON FUNCTION fn_reject_invalid_membership_operation_work_lease() IS 'Pres
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID NOT NULL CONSTRAINT fk_membership_automatic_refund_receipts__operation REFERENCES membership_operations(id) ON DELETE RESTRICT,
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
-  operation_kind membership_operation_kinds NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   provider_refund_id TEXT, amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
-  remaining_refundable_minor_units BIGINT NOT NULL CONSTRAINT chk_membe_autom_refund_receip__remaining_refundable_minor_units CHECK (remaining_refundable_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
   CHECK ((amount_minor_units = 0) = (provider_refund_id IS NULL)),
-  CHECK (operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')),
-  CHECK (amount_minor_units <= remaining_refundable_minor_units),
-  CONSTRAINT fk_membership_automatic_refund_receipts__operation_snapshot FOREIGN KEY (
-    membership_operation_id, provider, environment, application_id,
-    operation_kind, remaining_refundable_minor_units, currency_code
-  ) REFERENCES membership_operations (
-    id, provider, environment, application_id,
-    operation_kind, remaining_refundable_minor_units, currency_code
-  ) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_automatic_refund_receipts__operation_context FOREIGN KEY (membership_operation_id, membership_provider_context_id)
+    REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT
 );
+CREATE FUNCTION fn_reject_invalid_automatic_refund_receipt() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM membership_operations operation
+    WHERE operation.id = NEW.membership_operation_id
+      AND operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')
+      AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units
+      AND NEW.currency_code = operation.currency_code
+    FOR SHARE
+  ) THEN
+    RAISE EXCEPTION 'automatic refund receipt does not match its operation' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_automatic_refund_receipts_valid
+BEFORE INSERT ON membership_automatic_refund_receipts
+FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_automatic_refund_receipt();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__provider_refund ON membership_automatic_refund_receipts (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__provider_refund
+ON membership_automatic_refund_receipts (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__operation_id ON membership_automatic_refund_receipts (membership_operation_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__currency_code ON membership_automatic_refund_receipts (currency_code);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- The receipt owns its refunded amount and currency; refundable balance is read from the operation.
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
@@ -776,7 +820,7 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
   stripe_event_id TEXT, note TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT membership_refunds_source_identity_check CHECK ((source = 'admin' AND issued_by_id IS NOT NULL AND stripe_idempotency_key IS NOT NULL AND admin_request_fingerprint IS NOT NULL) OR (source = 'stripe_dashboard' AND issued_by_id IS NULL AND stripe_idempotency_key IS NULL AND admin_request_fingerprint IS NULL)),
   CONSTRAINT fk_membership_refunds__operation_source FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__membership_id ON membership_refunds (membership_id);
@@ -836,20 +880,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refunds__operation_receipt ON m
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  membership_operation_id UUID NOT NULL CONSTRAINT fk_membership_refund_operation_attempts__operation REFERENCES membership_operations(id) ON DELETE RESTRICT,
-  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  membership_operation_id UUID NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   attempt_ordinal INTEGER NOT NULL CHECK (attempt_ordinal >= 1), provider_idempotency_key TEXT NOT NULL, provider_refund_id TEXT,
   amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CONSTRAINT chk_membersh_refund_operatio_attempts__provider_idempotency_key CHECK (char_length(provider_idempotency_key) BETWEEN 1 AND 255 AND provider_idempotency_key = TRIM(provider_idempotency_key)),
   CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
+  CONSTRAINT fk_membership_refund_operation_attempts__operation_context FOREIGN KEY (membership_operation_id, membership_provider_context_id)
+    REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT uq_membership_refund_operation_attempts__operation_ordinal UNIQUE (membership_operation_id, attempt_ordinal),
-  CONSTRAINT uq_membership_refund_operation_attempts__provider_idempotency UNIQUE (provider, environment, application_id, provider_idempotency_key)
+  CONSTRAINT uq_membership_refund_operation_attempts__provider_idempotency UNIQUE (membership_provider_context_id, provider_idempotency_key)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (membership_provider_context_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__currency_code ON membership_refund_operation_attempts (currency_code);
 
@@ -868,20 +913,20 @@ CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_r
 CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_context() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE valid_context BOOLEAN;
+CREATE OR REPLACE FUNCTION fn_reject_invalid_membership_refund_operation_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE valid_attempt BOOLEAN;
 BEGIN
-  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.provider = NEW.provider AND operation.environment = NEW.environment AND operation.application_id = NEW.application_id AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
-  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation context' USING ERRCODE = '23514'; END IF;
+  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
+  IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;
   RETURN NEW;
 END $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_operation_attempt_context();
+CREATE TRIGGER trigger_membership_refund_operation_attempts_valid BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_refund_operation_attempt();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;
-  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
+  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
   RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
 END $$;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -974,9 +1019,7 @@ COMMENT ON COLUMN membership_products.retired_at IS 'When this product stopped b
 
 COMMENT ON TABLE membership_provider_products IS 'Provider-specific product identities mapped to canonical membership products.';
 COMMENT ON COLUMN membership_provider_products.membership_product_id IS 'Canonical product delivered by this provider product identity.';
-COMMENT ON COLUMN membership_provider_products.provider IS 'Store or payment provider that owns this product identity.';
-COMMENT ON COLUMN membership_provider_products.environment IS 'Provider environment in which this product identity is valid.';
-COMMENT ON COLUMN membership_provider_products.application_id IS 'Provider application, bundle, or tenant identifier.';
+COMMENT ON COLUMN membership_provider_products.membership_provider_context_id IS 'Provider, environment, and application that own this product identity.';
 COMMENT ON COLUMN membership_provider_products.provider_product_id IS 'Provider product identifier.';
 COMMENT ON COLUMN membership_provider_products.base_plan_id IS 'Optional provider base-plan identity.';
 COMMENT ON COLUMN membership_provider_products.offer_id IS 'Optional provider offer identity.';
@@ -986,9 +1029,7 @@ COMMENT ON COLUMN membership_provider_products.currency_code IS 'ISO currency co
 COMMENT ON COLUMN membership_provider_products.retired_at IS 'When this mapping stopped accepting new provider purchases.';
 
 COMMENT ON TABLE membership_provider_lineages IS 'Stable provider purchase or entitlement lineages used for account binding.';
-COMMENT ON COLUMN membership_provider_lineages.provider IS 'Provider that issued the lineage.';
-COMMENT ON COLUMN membership_provider_lineages.environment IS 'Provider environment in which the lineage exists.';
-COMMENT ON COLUMN membership_provider_lineages.application_id IS 'Provider application, bundle, or tenant identifier.';
+COMMENT ON COLUMN membership_provider_lineages.membership_provider_context_id IS 'Provider, environment, and application that issued the lineage.';
 COMMENT ON COLUMN membership_provider_lineages.provider_lineage_id IS 'Stable provider-defined purchase or entitlement lineage identity.';
 COMMENT ON COLUMN membership_provider_lineages.provider_account_id IS 'Optional provider account identity observed with the lineage.';
 
@@ -1001,9 +1042,7 @@ COMMENT ON COLUMN membership_lineage_bindings.released_at IS 'When final account
 COMMENT ON COLUMN membership_lineage_bindings.release_reason IS 'Auditable reason the lineage binding was released.';
 
 COMMENT ON TABLE membership_provider_evidence_records IS 'Encrypted provider evidence retained for verification, replay protection, and audit.';
-COMMENT ON COLUMN membership_provider_evidence_records.provider IS 'Provider that produced the evidence.';
-COMMENT ON COLUMN membership_provider_evidence_records.environment IS 'Provider environment that produced the evidence.';
-COMMENT ON COLUMN membership_provider_evidence_records.application_id IS 'Provider application, bundle, or tenant identifier.';
+COMMENT ON COLUMN membership_provider_evidence_records.membership_provider_context_id IS 'Provider, environment, and application that produced the evidence.';
 COMMENT ON COLUMN membership_provider_evidence_records.membership_provider_lineage_id IS 'Provider lineage asserted by the evidence, when known.';
 COMMENT ON COLUMN membership_provider_evidence_records.provider_event_id IS 'Optional provider event identity used for replay protection.';
 COMMENT ON COLUMN membership_provider_evidence_records.evidence_lookup_sha256 IS 'SHA-256 lookup digest for deduplicating encrypted evidence.';
@@ -1014,9 +1053,7 @@ COMMENT ON COLUMN membership_provider_evidence_records.rejected_at IS 'When prov
 COMMENT ON COLUMN membership_provider_evidence_records.rejection_reason IS 'Bounded reason for rejecting the evidence.';
 
 COMMENT ON TABLE membership_provider_observations IS 'Immutable normalized entitlement observations derived from verified provider evidence.';
-COMMENT ON COLUMN membership_provider_observations.provider IS 'Provider observed in the normalized entitlement.';
-COMMENT ON COLUMN membership_provider_observations.environment IS 'Provider environment observed in the entitlement.';
-COMMENT ON COLUMN membership_provider_observations.application_id IS 'Provider application, bundle, or tenant identifier.';
+COMMENT ON COLUMN membership_provider_observations.membership_provider_context_id IS 'Provider context constrained to match the evidence, lineage, and mapped products.';
 COMMENT ON COLUMN membership_provider_observations.membership_provider_evidence_record_id IS 'Evidence record from which this observation was normalized.';
 COMMENT ON COLUMN membership_provider_observations.membership_provider_lineage_id IS 'Provider lineage observed in the entitlement.';
 COMMENT ON COLUMN membership_provider_observations.membership_provider_product_id IS 'Provider product identity observed in the entitlement.';
@@ -1046,9 +1083,7 @@ COMMENT ON COLUMN membership_purchase_intents.idempotency_key IS 'Client-supplie
 COMMENT ON COLUMN membership_purchase_intents.request_fingerprint IS 'SHA-256 digest of the canonical launch request for exact replay validation.';
 COMMENT ON COLUMN membership_purchase_intents.membership_provider_product_id IS 'Provider mapping selected for the launch.';
 COMMENT ON COLUMN membership_purchase_intents.membership_product_id IS 'Canonical product constrained to the selected provider mapping.';
-COMMENT ON COLUMN membership_purchase_intents.provider IS 'Store or payment provider selected for this launch.';
-COMMENT ON COLUMN membership_purchase_intents.environment IS 'Provider environment selected for this launch.';
-COMMENT ON COLUMN membership_purchase_intents.application_id IS 'Provider application, bundle, or tenant selected for this launch.';
+COMMENT ON COLUMN membership_purchase_intents.membership_provider_context_id IS 'Provider context constrained to the selected product mapping.';
 COMMENT ON COLUMN membership_purchase_intents.provider_checkout_id IS 'Provider checkout identity retained for an exact launch replay.';
 COMMENT ON COLUMN membership_purchase_intents.provider_checkout_url IS 'Provider checkout URL retained for an exact launch replay.';
 COMMENT ON COLUMN membership_purchase_intents.expires_at IS 'End of the bounded launch-admission window that prevents concurrent provider purchase starts.';
@@ -1062,9 +1097,7 @@ COMMENT ON COLUMN membership_verifications.idempotency_key IS 'Client-supplied U
 COMMENT ON COLUMN membership_verifications.request_fingerprint IS 'SHA-256 digest of the canonical verification request for exact replay validation.';
 COMMENT ON COLUMN membership_verifications.membership_purchase_intent_id IS 'Optional owner-matched launch that originated this verification.';
 COMMENT ON COLUMN membership_verifications.membership_provider_evidence_record_id IS 'Bounded encrypted evidence persisted before verification processing.';
-COMMENT ON COLUMN membership_verifications.provider IS 'Store or payment provider that issued the submitted evidence.';
-COMMENT ON COLUMN membership_verifications.environment IS 'Provider environment in which the submitted evidence must verify.';
-COMMENT ON COLUMN membership_verifications.application_id IS 'Provider application, bundle, or tenant in which the submitted evidence must verify.';
+COMMENT ON COLUMN membership_verifications.membership_provider_context_id IS 'Provider context constrained to the submitted evidence and purchase intent.';
 COMMENT ON COLUMN membership_verifications.verified_at IS 'When verification completed successfully.';
 COMMENT ON COLUMN membership_verifications.conflicted_at IS 'When verification completed with an automatically managed conflict.';
 COMMENT ON COLUMN membership_verifications.rejected_at IS 'When verification completed with a rejection.';
@@ -1149,9 +1182,7 @@ COMMENT ON COLUMN membership_changes.should_cancel_at_period_end IS 'Cancellatio
 COMMENT ON TABLE membership_operations IS 'Idempotent provider-operation ledger, including refund allocation snapshots.';
 COMMENT ON COLUMN membership_operations.membership_source_id IS 'Source against which the provider operation runs.';
 COMMENT ON COLUMN membership_operations.membership_provider_lineage_id IS 'Provider lineage that owns the operated source.';
-COMMENT ON COLUMN membership_operations.provider IS 'Provider asked to perform the operation.';
-COMMENT ON COLUMN membership_operations.environment IS 'Provider environment containing the operated resource.';
-COMMENT ON COLUMN membership_operations.application_id IS 'Provider application, bundle, or tenant containing the operated resource.';
+COMMENT ON COLUMN membership_operations.membership_provider_context_id IS 'Provider context constrained to the operated lineage.';
 COMMENT ON COLUMN membership_operations.operation_kind IS 'Kind of cancellation or automatic refund operation.';
 COMMENT ON COLUMN membership_operations.idempotency_key IS 'Provider-context-scoped idempotency key for this operation.';
 COMMENT ON COLUMN membership_operations.qualifying_allocation_minor_units IS 'Eligible allocation amount captured for refund operations.';
@@ -1167,15 +1198,11 @@ COMMENT ON COLUMN membership_operations.failure_message IS 'Bounded failure deta
 COMMENT ON COLUMN membership_operations.reconciliation_attempt_ordinal IS 'Monotonic ordinal allocated when a reconciliation lease is acquired.';
 
 COMMENT ON TABLE membership_automatic_refund_receipts IS 'Immutable receipts for automatic or collision-resolution provider refunds.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.membership_operation_id IS 'Operation that authorized this receipt.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.provider IS 'Provider that issued the refund.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.environment IS 'Provider environment containing the refund.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.application_id IS 'Provider application, bundle, or tenant containing the refund.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.operation_kind IS 'Copied refund-capable operation kind.';
+COMMENT ON COLUMN membership_automatic_refund_receipts.membership_operation_id IS 'Operation that owns provider context and refundable-balance facts for this receipt.';
+COMMENT ON COLUMN membership_automatic_refund_receipts.membership_provider_context_id IS 'Provider context constrained to match the operation and scope the immutable refund identity.';
 COMMENT ON COLUMN membership_automatic_refund_receipts.provider_refund_id IS 'Provider-context-scoped refund identity, absent only for zero-amount receipts.';
 COMMENT ON COLUMN membership_automatic_refund_receipts.amount_minor_units IS 'Amount refunded by this receipt in the currency minor unit.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.remaining_refundable_minor_units IS 'Captured operation remainder that bounds this receipt amount.';
-COMMENT ON COLUMN membership_automatic_refund_receipts.currency_code IS 'Currency of the receipt amount and operation snapshot.';
+COMMENT ON COLUMN membership_automatic_refund_receipts.currency_code IS 'Currency of the immutable refunded amount, constrained to match its operation.';
 
 COMMENT ON TABLE membership_refunds IS 'Append-only financial ledger of Stripe refunds issued or reconciled.';
 COMMENT ON COLUMN membership_refunds.membership_operation_id IS 'Operation that reconciled this refund.';
@@ -1212,9 +1239,7 @@ COMMENT ON COLUMN membership_administrator_refund_operation_requests.note IS 'Op
 
 COMMENT ON TABLE membership_refund_operation_attempts IS 'Append-only provider refund attempts; only a missing provider refund ID may be enriched after insertion.';
 COMMENT ON COLUMN membership_refund_operation_attempts.membership_operation_id IS 'Refund operation whose provider attempt this records.';
-COMMENT ON COLUMN membership_refund_operation_attempts.provider IS 'Provider context copied from the immutable refund operation.';
-COMMENT ON COLUMN membership_refund_operation_attempts.environment IS 'Provider environment copied from the immutable refund operation.';
-COMMENT ON COLUMN membership_refund_operation_attempts.application_id IS 'Provider application copied from the immutable refund operation.';
+COMMENT ON COLUMN membership_refund_operation_attempts.membership_provider_context_id IS 'Provider context constrained to match the refund operation.';
 COMMENT ON COLUMN membership_refund_operation_attempts.attempt_ordinal IS 'Operation-local reconciliation lease ordinal that created this provider attempt.';
 COMMENT ON COLUMN membership_refund_operation_attempts.provider_idempotency_key IS 'Provider-scoped idempotency key used for this immutable attempt.';
 COMMENT ON COLUMN membership_refund_operation_attempts.provider_refund_id IS 'Provider refund identity, initially unknown and enriched at most once.';

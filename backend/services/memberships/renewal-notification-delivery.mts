@@ -60,10 +60,6 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
-      AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
-      AND work.price_minor_units = observation.renewal_price_minor_units
-      AND work.currency_code = observation.renewal_price_currency_code
-      AND work.effective_at = observation.renewal_effective_at
       AND work.completed_at IS NULL
       AND work.delivery_attempted_at IS NULL
     RETURNING work.membership_id AS id

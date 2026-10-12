@@ -4,7 +4,6 @@ import {
   createCollisionHandlingMembershipOperation,
   createMembershipAutomaticRefundReceipt,
   createMembershipRefundOperation,
-  createMismatchedMembershipAutomaticRefundReceipt,
   deleteMembershipAutomaticRefundReceipt,
   mutateMembershipAutomaticRefundReceipt,
 } from '../../../test-helpers/data-stores/psql/membership-refund-receipts.mts'
@@ -29,10 +28,6 @@ describe('membership automatic refund receipts', () => {
       first.applicationId,
       `same-context-${suffix}`,
     )
-    const mismatched = await createMembershipRefundOperation(
-      `receipt-c-${suffix}`,
-      `mismatch-key-${suffix}`,
-    )
     const providerRefundId = `refund-${suffix}`
     const firstReceipt = await createMembershipAutomaticRefundReceipt(first, providerRefundId)
 
@@ -45,13 +40,6 @@ describe('membership automatic refund receipts', () => {
     await expect(
       createMembershipRefundOperation(first.applicationId, `shared-key-${suffix}`),
     ).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      createMismatchedMembershipAutomaticRefundReceipt(
-        mismatched,
-        second.applicationId,
-        `mismatch-${suffix}`,
-      ),
-    ).rejects.toMatchObject({ code: '23503' })
     await expect(mutateMembershipAutomaticRefundReceipt(firstReceipt)).rejects.toThrow(
       'membership_automatic_refund_receipts rows are append-only',
     )
@@ -81,5 +69,13 @@ describe('membership automatic refund receipts', () => {
     await expect(
       createCollisionHandlingMembershipOperation('ineligible_purchase_reversal', collisionAt),
     ).resolves.toEqual(expect.any(String))
+  })
+
+  it('rejects a receipt currency that differs from its operation', async () => {
+    const suffix = randomUUID()
+    const operation = await createMembershipRefundOperation(`receipt-currency-${suffix}`, suffix)
+    await expect(
+      createMembershipAutomaticRefundReceipt(operation, `refund-${suffix}`, 'eur'),
+    ).rejects.toMatchObject({ code: '23514' })
   })
 })

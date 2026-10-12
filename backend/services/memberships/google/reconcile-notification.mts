@@ -140,7 +140,7 @@ type NotificationContext = {
 }
 async function loadNotification(evidenceId: string): Promise<NotificationContext | null> {
   const { rows } = await write<NotificationContext>(
-    sql`/* loadGooglePlayRtdnNotification */ SELECT id AS "evidenceId", environment, application_id AS "applicationId", encrypted_evidence AS "encryptedEvidence", evidence_lookup_sha256 AS lookup FROM membership_provider_evidence_records WHERE id = ${evidenceId} AND provider = 'google_play' AND provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL LIMIT 1`,
+    sql`/* loadGooglePlayRtdnNotification */ SELECT evidence.id AS "evidenceId", context.environment, context.application_id AS "applicationId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS lookup FROM membership_provider_evidence_records evidence INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id WHERE evidence.id = ${evidenceId} AND context.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL LIMIT 1`,
   )
   return rows[0] ?? null
 }

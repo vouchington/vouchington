@@ -23,18 +23,18 @@ export async function createTestUnprojectedStripeProductionProviderObservation({
   const { rows: lineageRows } =
     await query(sql`/* createTestUnprojectedStripeProductionProviderObservation: lineage */
       INSERT INTO membership_provider_lineages (
-        provider, environment, application_id, provider_lineage_id
-      ) VALUES ('stripe', 'production', ${applicationId}, ${providerLineageId})
+        membership_provider_context_id, provider_lineage_id
+      ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'production', ${applicationId}), ${providerLineageId})
       RETURNING id`)
   const lineage = lineageRows[0] as { id: string }
   const evidenceLookupSha256 = randomBytes(32).toString('hex')
   const { rows: evidenceRows } =
     await query(sql`/* createTestUnprojectedStripeProductionProviderObservation: evidence */
       INSERT INTO membership_provider_evidence_records (
-        provider, environment, application_id, membership_provider_lineage_id,
+        membership_provider_context_id, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
       ) VALUES (
-        'stripe', 'production', ${applicationId}, ${lineage.id},
+        fn_upsert_membership_provider_context_id('stripe', 'production', ${applicationId}), ${lineage.id},
         ${evidenceLookupSha256}, ${randomBytes(32)}, CURRENT_TIMESTAMP
       )
       RETURNING id`)
@@ -42,22 +42,20 @@ export async function createTestUnprojectedStripeProductionProviderObservation({
   const { rows: observationRows } =
     await query(sql`/* createTestUnprojectedStripeProductionProviderObservation: observation */
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_record_id,
+        membership_provider_context_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
         provider_revision, provider_order, source_kind, effective_at, should_auto_renew
       )
       SELECT
-        'stripe', 'production', ${applicationId}, ${evidence.id}, ${lineage.id},
+        provider_product.membership_provider_context_id, ${evidence.id}, ${lineage.id},
         provider_product.id, provider_product.membership_product_id,
         provider_product.price_minor_units, provider_product.currency_code,
         ${`test-${randomUUID()}`}, 0, 'direct', CURRENT_TIMESTAMP, false
       FROM membership_provider_products provider_product
       WHERE provider_product.id = ${membershipProviderProductId}
         AND provider_product.membership_product_id = ${membershipProductId}
-        AND provider_product.provider = 'stripe'
-        AND provider_product.environment = 'production'
-        AND provider_product.application_id = ${applicationId}
+        AND provider_product.membership_provider_context_id = fn_upsert_membership_provider_context_id('stripe', 'production', ${applicationId})
       RETURNING id`)
   const observation = observationRows[0] as { id: string } | undefined
   if (!observation) throw new Error('Test Stripe provider product context was not found')

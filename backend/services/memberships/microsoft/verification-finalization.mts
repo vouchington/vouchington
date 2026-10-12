@@ -3,6 +3,7 @@ import type { QueryExecutor } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import type { MicrosoftStoreObservation } from './types.mts'
 import type { Context, Evidence, Mapping } from './verification-persistence.mts'
 
@@ -24,9 +25,17 @@ export async function acceptObservation(
         'Microsoft Store evidence claim was superseded',
       )
   }
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'microsoft_store',
+      environment: context.environment,
+      applicationId: context.applicationId,
+    },
+    query,
+  )
   const { rows } = await query<{ id: string }>(sql`/* insertMicrosoftStoreVerificationObservation */
-    INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, should_auto_renew)
-    VALUES ('microsoft_store', ${context.environment}, ${context.applicationId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${observation.effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.autoRenews})
+    INSERT INTO membership_provider_observations (membership_provider_context_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, should_auto_renew)
+    VALUES (${contextId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${observation.effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.autoRenews})
     ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`)
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{ id: string }>(
@@ -44,6 +53,14 @@ export async function persistCredentials(
   observation: MicrosoftStoreObservation,
   query: QueryExecutor,
 ): Promise<void> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'microsoft_store',
+      environment: context.environment,
+      applicationId: context.applicationId,
+    },
+    query,
+  )
   const { rows: current } = await query<{
     current: boolean
   }>(sql`/* isCurrentMicrosoftStoreObservation */
@@ -65,9 +82,9 @@ export async function persistCredentials(
     encryptSecret(evidence.purchaseKey, `membership-microsoft-store-purchase:${purchaseDigest}`),
   )
   await query(sql`/* persistMicrosoftStoreCredentials */
-    INSERT INTO membership_microsoft_store_credentials (user_id, environment, application_id, publisher_user_id, collections_key_lookup_sha256, encrypted_collections_key, collections_issued_at, collections_expires_at, purchase_key_lookup_sha256, encrypted_purchase_key, purchase_issued_at, purchase_expires_at, collection_item_id, last_verified_end_at, last_verified_at, next_reconciliation_at)
-    VALUES (${context.userId}, ${context.environment}, ${context.applicationId}, ${evidence.publisherUserId}, ${collectionsDigest}, ${encryptedCollectionsKey}, ${evidence.collectionsIssuedAt}, ${collectionsExpiresAt}, ${purchaseDigest}, ${encryptedPurchaseKey}, ${evidence.purchaseIssuedAt}, ${purchaseExpiresAt}, ${observation.collectionItemId}, ${observation.expiresAt}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    ON CONFLICT (user_id, environment, application_id) DO UPDATE SET
+    INSERT INTO membership_microsoft_store_credentials (user_id, membership_provider_context_id, publisher_user_id, collections_key_lookup_sha256, encrypted_collections_key, collections_issued_at, collections_expires_at, purchase_key_lookup_sha256, encrypted_purchase_key, purchase_issued_at, purchase_expires_at, collection_item_id, last_verified_end_at, last_verified_at, next_reconciliation_at)
+    VALUES (${context.userId}, ${contextId}, ${evidence.publisherUserId}, ${collectionsDigest}, ${encryptedCollectionsKey}, ${evidence.collectionsIssuedAt}, ${collectionsExpiresAt}, ${purchaseDigest}, ${encryptedPurchaseKey}, ${evidence.purchaseIssuedAt}, ${purchaseExpiresAt}, ${observation.collectionItemId}, ${observation.expiresAt}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT (user_id, membership_provider_context_id) DO UPDATE SET
       publisher_user_id = CASE WHEN ${isCurrent} THEN EXCLUDED.publisher_user_id ELSE membership_microsoft_store_credentials.publisher_user_id END,
       collection_item_id = CASE WHEN ${isCurrent} THEN EXCLUDED.collection_item_id ELSE membership_microsoft_store_credentials.collection_item_id END,
       last_verified_end_at = CASE WHEN ${isCurrent} THEN EXCLUDED.last_verified_end_at ELSE membership_microsoft_store_credentials.last_verified_end_at END,

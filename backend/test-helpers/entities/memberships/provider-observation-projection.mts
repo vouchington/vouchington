@@ -48,14 +48,19 @@ export async function createTestUnprojectedProviderObservation(options: {
         : new Date(effectiveAt.getTime() + 30 * 86_400_000)
   const lifecycle = getLifecycle(status, terminalAt)
   await using query = await beginTransaction()
+  const { rows: contextRows } = await query<{
+    id: string
+  }>(sql`/* createTestUnprojectedProviderObservation: context */
+    SELECT fn_upsert_membership_provider_context_id(${options.provider}, ${environment}, ${options.applicationId}) AS id`)
+  const contextId = contextRows[0]!.id
   const { rows: insertedLineageRows } =
     await query(sql`/* createTestUnprojectedProviderObservation: lineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id, provider_account_id
+      membership_provider_context_id, provider_lineage_id, provider_account_id
     ) VALUES (
-      ${options.provider}, ${environment}, ${options.applicationId}, ${providerLineageId},
+      ${contextId}, ${providerLineageId},
       ${providerAccountId}
-    ) ON CONFLICT (provider, environment, application_id, provider_lineage_id)
+    ) ON CONFLICT (membership_provider_context_id, provider_lineage_id)
     DO NOTHING
     RETURNING id`)
   let lineage = insertedLineageRows[0] as { id: string } | undefined
@@ -63,30 +68,29 @@ export async function createTestUnprojectedProviderObservation(options: {
     const { rows } =
       await query(sql`/* createTestUnprojectedProviderObservation: existing lineage */
       SELECT id FROM membership_provider_lineages
-      WHERE provider = ${options.provider} AND environment = ${environment}
-        AND application_id = ${options.applicationId} AND provider_lineage_id = ${providerLineageId}
+      WHERE membership_provider_context_id = ${contextId} AND provider_lineage_id = ${providerLineageId}
       FOR KEY SHARE`)
     lineage = rows[0] as { id: string }
   }
   const { rows: evidenceRows } =
     await query(sql`/* createTestUnprojectedProviderObservation: evidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, membership_provider_lineage_id,
+      membership_provider_context_id, membership_provider_lineage_id,
       evidence_lookup_sha256, encrypted_evidence, verified_at
     ) VALUES (
-      ${options.provider}, ${environment}, ${options.applicationId}, ${lineage.id},
+      ${contextId}, ${lineage.id},
       ${randomBytes(32).toString('hex')}, ${randomBytes(32)}, CURRENT_TIMESTAMP
     ) RETURNING id`)
   const evidence = evidenceRows[0] as { id: string }
   const { rows: observationRows } =
     await query(sql`/* createTestUnprojectedProviderObservation: observation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_record_id,
+      membership_provider_context_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       observed_price_minor_units, observed_price_currency_code, provider_revision, provider_order,
       source_kind, effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
     ) SELECT
-      ${options.provider}, ${environment}, ${options.applicationId}, ${evidence.id}, ${lineage.id},
+      ${contextId}, ${evidence.id}, ${lineage.id},
       provider_product.id, provider_product.membership_product_id, provider_product.price_minor_units,
       provider_product.currency_code, ${options.providerRevision ?? `revision-${randomUUID()}`},
       ${options.providerOrder ?? 0}, ${options.sourceKind},
@@ -95,9 +99,7 @@ export async function createTestUnprojectedProviderObservation(options: {
     FROM membership_provider_products provider_product
     WHERE provider_product.id = ${options.membershipProviderProductId}
       AND provider_product.membership_product_id = ${options.membershipProductId}
-      AND provider_product.provider = ${options.provider}
-      AND provider_product.environment = ${environment}
-      AND provider_product.application_id = ${options.applicationId}
+      AND provider_product.membership_provider_context_id = ${contextId}
     RETURNING id`)
   const observation = observationRows[0] as { id: string } | undefined
   if (!observation) throw new Error('Test provider product context was not found')

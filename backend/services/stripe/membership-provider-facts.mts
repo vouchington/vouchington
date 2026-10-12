@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import type Stripe from 'stripe'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '@services/memberships/provider-context'
 import { encryptStripeMembershipEvidence } from './membership-provider-evidence.mts'
 import {
   getAuthoritativeStripeMembershipSnapshot,
@@ -149,14 +150,17 @@ async function upsertVerifiedEvidence(
     .update(`stripe:membership-event:${environment}:${eventId}`)
     .digest('hex')
   const encryptedEvidence = encryptStripeMembershipEvidence(subscription, eventId)
+  const contextId = await getOrCreateProviderContextId(
+    { provider: 'stripe', environment, applicationId: fact.application_id },
+    query,
+  )
   const { rows } = await query(sql`/* upsertVerifiedStripeMembershipEvidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, membership_provider_lineage_id,
+      membership_provider_context_id, membership_provider_lineage_id,
       provider_event_id, evidence_lookup_sha256, encrypted_evidence, received_at, verified_at
-    ) VALUES ('stripe', ${environment}, ${fact.application_id},
-      ${fact.membership_provider_lineage_id}, ${eventId}, ${evidenceLookupSha256},
+    ) VALUES (${contextId}, ${fact.membership_provider_lineage_id}, ${eventId}, ${evidenceLookupSha256},
       ${encryptedEvidence}, ${fact.received_at}, CURRENT_TIMESTAMP)
-    ON CONFLICT (provider, environment, application_id, provider_event_id)
+    ON CONFLICT (membership_provider_context_id, provider_event_id)
       WHERE provider_event_id IS NOT NULL DO NOTHING
     RETURNING id
   `)
@@ -168,8 +172,8 @@ async function upsertVerifiedEvidence(
     FROM membership_provider_evidence_records evidence
     LEFT JOIN membership_provider_observations observation
       ON observation.membership_provider_evidence_record_id = evidence.id
-    WHERE evidence.provider = 'stripe' AND evidence.environment = ${environment}
-      AND evidence.application_id = ${fact.application_id} AND evidence.provider_event_id = ${eventId}
+    WHERE evidence.membership_provider_context_id = ${contextId}
+      AND evidence.provider_event_id = ${eventId}
       AND evidence.membership_provider_lineage_id = ${fact.membership_provider_lineage_id}
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL
     FOR KEY SHARE OF evidence

@@ -73,16 +73,15 @@ async function createTestMembershipOperation(
   const user = await createLocalTestUser()
   const applicationId = `${operationKind === 'automatic_refund' ? 'ledger-lease' : 'ledger-immutable'}-${randomUUID()}`
   const { rows } = await write<{ id: string }>(sql`/* createTestMembershipOperation */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-      VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id),
+    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id),
     binding AS (INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id) SELECT id, ${user.id} FROM lineage RETURNING id, membership_provider_lineage_id),
     source AS (INSERT INTO membership_sources (source_kind, membership_provider_lineage_id) SELECT 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id)
     INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
-      membership_lineage_binding_id, provider, environment, application_id, operation_kind,
+      membership_lineage_binding_id, membership_provider_context_id, operation_kind,
       idempotency_key, collision_at, qualifying_allocation_minor_units,
       remaining_refundable_minor_units, currency_code, period_started_at, period_ends_at)
-    SELECT source.id, source.membership_provider_lineage_id, binding.id, 'stripe', 'test',
-      ${applicationId}, ${operationKind}, ${idempotencyKey}, ${collisionAt},
+    SELECT source.id, source.membership_provider_lineage_id, binding.id, fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${operationKind}, ${idempotencyKey}, ${collisionAt},
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 'usd'::currency_codes END,
@@ -166,7 +165,7 @@ export async function createTestImmutableLineageBinding(): Promise<string> {
   const user = await createLocalTestUser()
   const applicationId = `binding-immutable-${randomUUID()}`
   const { rows } = await write<{ id: string }>(sql`/* createImmutableTestBinding */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id) VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id)
+    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id)
     INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id) SELECT id, ${user.id} FROM lineage RETURNING id`)
   return rows[0]!.id
 }

@@ -28,8 +28,8 @@ export async function createStaleProviderMembershipSource(
 ): Promise<void> {
   const providerLineageId = `view-current-paid-${randomUUID()}`
   await write(sql`/* createStaleProviderMembershipSource */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id, provider_account_id)
-      VALUES ('stripe', 'test', 'view-current-paid-test', ${providerLineageId}, ${`account-${randomUUID()}`}) RETURNING id),
+    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id, provider_account_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', 'view-current-paid-test'), ${providerLineageId}, ${`account-${randomUUID()}`}) RETURNING id),
     binding AS (INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id) SELECT id, ${userId} FROM lineage),
     source AS (INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id) SELECT ${userId}, ${sourceKind}, id FROM lineage RETURNING id, membership_provider_lineage_id),
     state AS (INSERT INTO membership_source_states (membership_source_id, source_kind, membership_provider_lineage_id, membership_product_id, effective_at, expires_at, past_due_at)

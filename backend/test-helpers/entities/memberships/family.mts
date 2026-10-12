@@ -39,28 +39,27 @@ export async function createTestFamilyMembership({
         COALESCE(${sourceEffectiveAt ?? null}::timestamptz,
           ${effectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP) AS source_effective_at,
         COALESCE(${sourceUpdatedAt ?? null}::timestamptz, CURRENT_TIMESTAMP) AS source_updated_at
+    ), provider_context AS (
+      SELECT fn_upsert_membership_provider_context_id('stripe', 'production', ${applicationId}) AS id
     ), lineage AS (
       INSERT INTO membership_provider_lineages (
-        provider, environment, application_id, provider_lineage_id, provider_account_id
-      ) VALUES (
-        'stripe', 'production', ${applicationId}, ${`family-${fixtureId}`},
-        ${providerAccountId ?? null}
-      )
+        membership_provider_context_id, provider_lineage_id, provider_account_id
+      ) SELECT id, ${`family-${fixtureId}`}, ${providerAccountId ?? null} FROM provider_context
       RETURNING id
     ), evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        provider, environment, application_id, membership_provider_lineage_id,
+        membership_provider_context_id, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
-      ) SELECT 'stripe', 'production', ${applicationId}, id,
+      ) SELECT provider_context.id, lineage.id,
         ${evidenceLookupSha256}, '\x01'::bytea, CURRENT_TIMESTAMP
-      FROM lineage RETURNING id, membership_provider_lineage_id
+      FROM lineage CROSS JOIN provider_context RETURNING id, membership_provider_lineage_id
     ), observation AS (
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_record_id,
+        membership_provider_context_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
         provider_revision, provider_order, source_kind, effective_at, expires_at, should_auto_renew
-      ) SELECT 'stripe', 'production', ${applicationId}, evidence.id,
+      ) SELECT provider_product.membership_provider_context_id, evidence.id,
         evidence.membership_provider_lineage_id, provider_product.id,
         provider_product.membership_product_id, provider_product.price_minor_units,
         provider_product.currency_code, ${fixtureId}, 1, 'family',
@@ -69,9 +68,7 @@ export async function createTestFamilyMembership({
       INNER JOIN membership_provider_products provider_product
         ON provider_product.id = ${membershipProviderProductId}
         AND provider_product.membership_product_id = ${membershipProductId}
-        AND provider_product.provider = 'stripe'
-        AND provider_product.environment = 'production'
-        AND provider_product.application_id = ${applicationId}
+        AND provider_product.membership_provider_context_id = (SELECT id FROM provider_context)
       RETURNING id, membership_provider_lineage_id
     ), source AS (
       INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
