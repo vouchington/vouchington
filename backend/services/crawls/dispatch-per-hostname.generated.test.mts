@@ -11,9 +11,11 @@ import {
   insertTestRssFeedDirect,
   insertTestUrlDirect,
   insertTestUserReferralProgramLink,
+  setTestRobotsTxtCache,
   setUrlHostnameAttemptThresholdHoursForTest,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
+import { getTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import type { PrivateUser } from '@services/users/types'
 import { getUrlById } from '@services/urls/get'
 import { deactivateUserReferralLink } from '@services/user-referral-program-links/activate'
@@ -52,6 +54,50 @@ describe('dispatch-per-hostname.generated', () => {
     const result = await dispatchCrawlUrlsPerHostname(fakeId)
 
     expect(result).toEqual({ count: 0, hasMore: false })
+  })
+
+  it('completes a sweep after an unrelated hostname update between dispatch and completion', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const hostnameValue = `dispatch-unrelated-write-${random}.localhost`
+    await setTestRobotsTxtCache(hostnameValue, 'User-agent: *\nAllow: /')
+    const url = await addUrl(user.id, `https://${hostnameValue}/only`)
+    expect(url).toBeTruthy()
+    let sweepStartedAt: string | undefined
+
+    const result = await dispatchCrawlUrlsPerHostname(
+      url!.hostname.id,
+      undefined,
+      async progress => {
+        if (!progress.afterId) return
+        sweepStartedAt = progress.sweepStartedAt
+        await updateUrlHostname(url!.hostname.id, { should_skip_web_risk: true })
+      },
+    )
+
+    expect(result).toEqual({ count: 1, hasMore: false })
+    expect(sweepStartedAt).toBeDefined()
+    expect(await getTestHostnameCrawlSweep(url!.hostname.id)).toBe(sweepStartedAt)
+  })
+
+  it('does not complete a sweep after a crawl-policy change is reverted', async () => {
+    const random = Math.random().toString(36).slice(2, 15)
+    const hostnameValue = `dispatch-policy-reverted-${random}.localhost`
+    await setTestRobotsTxtCache(hostnameValue, 'User-agent: *\nAllow: /')
+    const url = await addUrl(user.id, `https://${hostnameValue}/only`)
+    expect(url).toBeTruthy()
+
+    const result = await dispatchCrawlUrlsPerHostname(
+      url!.hostname.id,
+      undefined,
+      async progress => {
+        if (!progress.afterId) return
+        await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
+        await updateUrlHostname(url!.hostname.id, { is_crawlable: true })
+      },
+    )
+
+    expect(result).toEqual({ count: 1, hasMore: false })
+    expect(await getTestHostnameCrawlSweep(url!.hostname.id)).toBeNull()
   })
 
   it('uses custom attempt threshold hours when filtering recent crawl attempts', async () => {
