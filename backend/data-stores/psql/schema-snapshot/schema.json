@@ -5183,18 +5183,40 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
-        "response_id": {
+        "created_at": {
           "collation": null,
-          "comment": "Provider response or decision id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.",
+          "comment": null,
           "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "response_id": {
+          "collation": null,
+          "comment": "Unique provider response or decision id; it prevents duplicate ledger rows across UUIDv7 ledger partitions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -5235,7 +5257,27 @@
         "ai_usage_provider_response_keys_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX ai_usage_provider_response_keys_pkey ON public.ai_usage_provider_response_keys USING btree (response_id)",
+          "definition": "CREATE UNIQUE INDEX ai_usage_provider_response_keys_pkey ON public.ai_usage_provider_response_keys USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_usage_provider_response_keys_response_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_provider_response_keys_response_id_key ON public.ai_usage_provider_response_keys USING btree (response_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -5247,7 +5289,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -5256,8 +5298,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["response_id"],
-        "definition": "PRIMARY KEY (response_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {},
@@ -5265,6 +5307,10 @@
         "ai_usage_provider_response_keys_ai_usage_record_id_key": {
           "columns": ["ai_usage_record_id"],
           "definition": "UNIQUE (ai_usage_record_id)"
+        },
+        "ai_usage_provider_response_keys_response_id_key": {
+          "columns": ["response_id"],
+          "definition": "UNIQUE (response_id)"
         }
       }
     },
@@ -7827,12 +7873,12 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "domain": {
@@ -7843,8 +7889,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "source_id": {
           "collation": null,
@@ -7854,7 +7911,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "bigint"
         },
         "updated_at": {
@@ -7865,7 +7922,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "url_hostname_id": {
@@ -7876,7 +7933,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         }
       },
@@ -7903,10 +7960,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "blocklisted_domains_pkey": {
+        "blocklisted_domains_domain_source_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (domain, source_id)",
+          "definition": "CREATE UNIQUE INDEX blocklisted_domains_domain_source_id_key ON public.blocklisted_domains USING btree (domain, source_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -7922,6 +7979,26 @@
               "expression": "source_id",
               "nullsFirst": false,
               "opclass": "int8_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "blocklisted_domains_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -8022,8 +8099,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["domain", "source_id"],
-        "definition": "PRIMARY KEY (domain, source_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
@@ -8032,6 +8109,10 @@
         "trigger_project_domain_blocklist_hostname_block_lifts": "CREATE TRIGGER trigger_project_domain_blocklist_hostname_block_lifts AFTER DELETE ON public.blocklisted_domains REFERENCING OLD TABLE AS deleted_domains FOR EACH STATEMENT EXECUTE FUNCTION fn_project_domain_blocklist_hostname_block_lifts()"
       },
       "uniqueConstraints": {
+        "blocklisted_domains_domain_source_id_key": {
+          "columns": ["domain", "source_id"],
+          "definition": "UNIQUE (domain, source_id)"
+        },
         "uq_blocklisted_domains__hostname_source": {
           "columns": ["url_hostname_id", "source_id"],
           "definition": "UNIQUE (url_hostname_id, source_id)"
@@ -41509,12 +41590,12 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
+          "nullable": true,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "email_address": {
@@ -41525,8 +41606,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "logged_in_at": {
           "collation": null,
@@ -41536,7 +41628,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "token": {
@@ -41547,7 +41639,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "updated_at": {
@@ -41558,7 +41650,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -41569,7 +41661,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         }
       },
@@ -41587,10 +41679,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "email_address_login_tokens_pkey": {
+        "email_address_login_tokens_email_address_token_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX email_address_login_tokens_pkey ON public.email_address_login_tokens USING btree (email_address, token)",
+          "definition": "CREATE UNIQUE INDEX email_address_login_tokens_email_address_token_key ON public.email_address_login_tokens USING btree (email_address, token)",
           "includedColumns": [],
           "keys": [
             {
@@ -41606,6 +41698,26 @@
               "expression": "token",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "email_address_login_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX email_address_login_tokens_pkey ON public.email_address_login_tokens USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -41661,16 +41773,16 @@
           "unique": true,
           "valid": true
         },
-        "idx_email_address_login_tokens__created_at": {
+        "idx_email_address_login_tokens__id_timestamp": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_email_address_login_tokens__created_at ON public.email_address_login_tokens USING btree (created_at)",
+          "definition": "CREATE INDEX idx_email_address_login_tokens__id_timestamp ON public.email_address_login_tokens USING btree (uuid_extract_timestamp(id))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "created_at",
+              "column": null,
               "descending": false,
-              "expression": "created_at",
+              "expression": "uuid_extract_timestamp(id)",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
             }
@@ -41732,14 +41844,18 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["email_address", "token"],
-        "definition": "PRIMARY KEY (email_address, token)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_email_address_login_tokens_updated_at": "CREATE TRIGGER trigger_email_address_login_tokens_updated_at BEFORE UPDATE ON public.email_address_login_tokens FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "email_address_login_tokens_email_address_token_key": {
+          "columns": ["email_address", "token"],
+          "definition": "UNIQUE (email_address, token)"
+        },
         "email_address_login_tokens_token_key": {
           "columns": ["token"],
           "definition": "UNIQUE (token)"
@@ -52952,8 +53068,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "bigint"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
         },
         "currency_code": {
           "collation": null,
@@ -52963,8 +53090,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "currency_codes"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "membership_ineligible_purchase_reversal_refund_scan_id": {
           "collation": null,
@@ -52974,7 +53112,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "observed_at": {
@@ -52985,7 +53123,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "stripe_refund_id": {
@@ -52996,7 +53134,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         }
       },
@@ -53043,10 +53181,30 @@
           "unique": false,
           "valid": true
         },
-        "pk_mipr_succeeded_refund_observations": {
+        "membership_ineligible_purchase_reversal_refund_observation_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX pk_mipr_succeeded_refund_observations ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)",
+          "definition": "CREATE UNIQUE INDEX membership_ineligible_purchase_reversal_refund_observation_pkey ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_mipr_succeeded_refund_observations__scan_refund": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_mipr_succeeded_refund_observations__scan_refund ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -53065,7 +53223,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -53074,15 +53232,20 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["membership_ineligible_purchase_reversal_refund_scan_id", "stripe_refund_id"],
-        "definition": "PRIMARY KEY (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_purchase_reversal_refund_observation_currency": "CREATE TRIGGER trigger_purchase_reversal_refund_observation_currency BEFORE INSERT ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_purchase_reversal_refund_observation_currency()",
         "trigger_purchase_reversal_refund_observations_immutable": "CREATE TRIGGER trigger_purchase_reversal_refund_observations_immutable BEFORE DELETE OR UPDATE ON public.membership_ineligible_purchase_reversal_refund_observations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_mipr_succeeded_refund_observations__scan_refund": {
+          "columns": ["membership_ineligible_purchase_reversal_refund_scan_id", "stripe_refund_id"],
+          "definition": "UNIQUE (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)"
+        }
+      }
     },
     "membership_ineligible_purchase_reversal_refund_scan_cycles": {
       "checkConstraints": {
@@ -71168,7 +71331,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "community_id": {
@@ -71179,19 +71342,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "created_at": {
           "collation": null,
           "comment": "When this response was first registered; retained for audit, not liveness.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "lease_expires_at": {
           "collation": null,
@@ -71201,7 +71375,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -71212,7 +71386,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "post_id": {
@@ -71223,18 +71397,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "response_id": {
           "collation": null,
-          "comment": "OpenAI response id from response.created; the primary key identifies one current lease while ai_usage_provider_response_keys separately gates accounting.",
+          "comment": "Unique OpenAI response id from response.created; identifies one current lease while ai_usage_provider_response_keys separately gates accounting.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -71331,7 +71505,27 @@
         "openai_background_responses_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX openai_background_responses_pkey ON public.openai_background_responses USING btree (response_id)",
+          "definition": "CREATE UNIQUE INDEX openai_background_responses_pkey ON public.openai_background_responses USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "openai_background_responses_response_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX openai_background_responses_response_id_key ON public.openai_background_responses USING btree (response_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -71343,7 +71537,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -71352,12 +71546,17 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["response_id"],
-        "definition": "PRIMARY KEY (response_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "openai_background_responses_response_id_key": {
+          "columns": ["response_id"],
+          "definition": "UNIQUE (response_id)"
+        }
+      }
     },
     "phone_number_login_tokens": {
       "checkConstraints": {
@@ -71372,13 +71571,24 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "logged_in_at": {
           "collation": null,
@@ -71388,7 +71598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "phone_number": {
@@ -71399,7 +71609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "text"
         },
         "token": {
@@ -71410,7 +71620,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "updated_at": {
@@ -71421,7 +71631,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
@@ -71456,16 +71666,16 @@
           "unique": true,
           "valid": true
         },
-        "idx_phone_number_login_tokens__created_at": {
+        "idx_phone_number_login_tokens__id_timestamp": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_phone_number_login_tokens__created_at ON public.phone_number_login_tokens USING btree (created_at)",
+          "definition": "CREATE INDEX idx_phone_number_login_tokens__id_timestamp ON public.phone_number_login_tokens USING btree (uuid_extract_timestamp(id))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "created_at",
+              "column": null,
               "descending": false,
-              "expression": "created_at",
+              "expression": "uuid_extract_timestamp(id)",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
             }
@@ -71476,10 +71686,10 @@
           "unique": false,
           "valid": true
         },
-        "phone_number_login_tokens_pkey": {
+        "phone_number_login_tokens_phone_number_token_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (phone_number, token)",
+          "definition": "CREATE UNIQUE INDEX phone_number_login_tokens_phone_number_token_key ON public.phone_number_login_tokens USING btree (phone_number, token)",
           "includedColumns": [],
           "keys": [
             {
@@ -71495,6 +71705,26 @@
               "expression": "token",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "phone_number_login_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -71527,14 +71757,18 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["phone_number", "token"],
-        "definition": "PRIMARY KEY (phone_number, token)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_phone_number_login_tokens_updated_at": "CREATE TRIGGER trigger_phone_number_login_tokens_updated_at BEFORE UPDATE ON public.phone_number_login_tokens FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "phone_number_login_tokens_phone_number_token_key": {
+          "columns": ["phone_number", "token"],
+          "definition": "UNIQUE (phone_number, token)"
+        },
         "phone_number_login_tokens_token_key": {
           "columns": ["token"],
           "definition": "UNIQUE (token)"
@@ -79148,13 +79382,24 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "post_id": {
           "collation": null,
@@ -79164,18 +79409,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "slug": {
           "collation": null,
-          "comment": "URL-safe lowercase slug (primary key). Unique across all posts.",
+          "comment": "URL-safe lowercase slug, unique across all posts.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "updated_at": {
@@ -79186,7 +79431,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
@@ -79204,10 +79449,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_post_slugs__post_id__created_at_desc": {
+        "idx_post_slugs__post_id__id_desc": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_slugs__post_id__created_at_desc ON public.post_slugs USING btree (post_id, created_at DESC) INCLUDE (slug)",
+          "definition": "CREATE INDEX idx_post_slugs__post_id__id_desc ON public.post_slugs USING btree (post_id, id DESC) INCLUDE (slug)",
           "includedColumns": ["slug"],
           "keys": [
             {
@@ -79218,11 +79463,11 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "created_at",
+              "column": "id",
               "descending": true,
-              "expression": "created_at",
+              "expression": "id",
               "nullsFirst": true,
-              "opclass": "timestamptz_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -79295,7 +79540,27 @@
         "post_slugs_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_slugs_pkey ON public.post_slugs USING btree (slug)",
+          "definition": "CREATE UNIQUE INDEX post_slugs_pkey ON public.post_slugs USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_slugs_slug_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_slugs_slug_key ON public.post_slugs USING btree (slug)",
           "includedColumns": [],
           "keys": [
             {
@@ -79307,7 +79572,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -79316,14 +79581,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["slug"],
-        "definition": "PRIMARY KEY (slug)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_post_slugs_updated_at": "CREATE TRIGGER trigger_post_slugs_updated_at BEFORE UPDATE ON public.post_slugs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "post_slugs_slug_key": {
+          "columns": ["slug"],
+          "definition": "UNIQUE (slug)"
+        }
+      }
     },
     "post_topic_alias_sources": {
       "checkConstraints": {
@@ -123702,12 +123972,12 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "email_address": {
@@ -123718,7 +123988,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "email_domain_hostname_id": {
@@ -123729,7 +123999,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
           "type": "uuid"
         },
         "is_primary": {
@@ -123740,7 +124021,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "boolean"
         },
         "updated_at": {
@@ -123751,7 +124032,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -123762,11 +124043,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
-      "comment": "Email addresses associated with user accounts. Composite PK on (user_id, email_address).",
+      "comment": "Email addresses associated with user accounts. Each user and email address pair is unique.",
       "foreignKeys": {
         "fk_user_email_addresses__email_domain_hostname": {
           "columns": ["email_domain_hostname_id"],
@@ -123869,10 +124150,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_user_email_addresses__user_primary_created_email": {
+        "idx_user_email_addresses__user_primary_id_timestamp_email": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_email_addresses__user_primary_created_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, created_at, email_address)",
+          "definition": "CREATE INDEX idx_user_email_addresses__user_primary_id_timestamp_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, uuid_extract_timestamp(id), email_address)",
           "includedColumns": [],
           "keys": [
             {
@@ -123890,9 +124171,9 @@
               "opclass": "int4_ops"
             },
             {
-              "column": "created_at",
+              "column": null,
               "descending": false,
-              "expression": "created_at",
+              "expression": "uuid_extract_timestamp(id)",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
             },
@@ -123913,7 +124194,27 @@
         "user_email_addresses_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_email_addresses_pkey ON public.user_email_addresses USING btree (user_id, email_address)",
+          "definition": "CREATE UNIQUE INDEX user_email_addresses_pkey ON public.user_email_addresses USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_email_addresses_user_id_email_address_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_email_addresses_user_id_email_address_key ON public.user_email_addresses USING btree (user_id, email_address)",
           "includedColumns": [],
           "keys": [
             {
@@ -123932,7 +124233,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -123941,14 +124242,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["user_id", "email_address"],
-        "definition": "PRIMARY KEY (user_id, email_address)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_user_email_addresses_updated_at": "CREATE TRIGGER trigger_user_email_addresses_updated_at BEFORE UPDATE ON public.user_email_addresses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "user_email_addresses_user_id_email_address_key": {
+          "columns": ["user_id", "email_address"],
+          "definition": "UNIQUE (user_id, email_address)"
+        }
+      }
     },
     "user_engagement_email_sends": {
       "checkConstraints": {},
@@ -126331,8 +126637,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "send_key": {
           "collation": null,
@@ -126342,7 +126670,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "sent_at": {
@@ -126353,7 +126681,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -126364,7 +126692,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -126375,7 +126703,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -126396,7 +126724,27 @@
         "user_moderation_email_sends_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_moderation_email_sends_pkey ON public.user_moderation_email_sends USING btree (user_id, send_key)",
+          "definition": "CREATE UNIQUE INDEX user_moderation_email_sends_pkey ON public.user_moderation_email_sends USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_moderation_email_sends_user_id_send_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_moderation_email_sends_user_id_send_key_key ON public.user_moderation_email_sends USING btree (user_id, send_key)",
           "includedColumns": [],
           "keys": [
             {
@@ -126415,7 +126763,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -126424,14 +126772,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["user_id", "send_key"],
-        "definition": "PRIMARY KEY (user_id, send_key)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_user_moderation_email_sends_updated_at": "CREATE TRIGGER trigger_user_moderation_email_sends_updated_at BEFORE UPDATE ON public.user_moderation_email_sends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "user_moderation_email_sends_user_id_send_key_key": {
+          "columns": ["user_id", "send_key"],
+          "definition": "UNIQUE (user_id, send_key)"
+        }
+      }
     },
     "user_moderator_notes": {
       "checkConstraints": {
@@ -127178,13 +127531,24 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "is_primary": {
           "collation": null,
@@ -127194,7 +127558,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "boolean"
         },
         "phone_number": {
@@ -127205,7 +127569,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "updated_at": {
@@ -127216,7 +127580,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -127227,11 +127591,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
-      "comment": "Phone numbers associated with user accounts. Composite PK on (user_id, phone_number).",
+      "comment": "Phone numbers associated with user accounts. Each user and phone number pair is unique.",
       "foreignKeys": {
         "user_phone_numbers_user_id_fkey": {
           "columns": ["user_id"],
@@ -127308,7 +127672,27 @@
         "user_phone_numbers_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_phone_numbers_pkey ON public.user_phone_numbers USING btree (user_id, phone_number)",
+          "definition": "CREATE UNIQUE INDEX user_phone_numbers_pkey ON public.user_phone_numbers USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_phone_numbers_user_id_phone_number_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_phone_numbers_user_id_phone_number_key ON public.user_phone_numbers USING btree (user_id, phone_number)",
           "includedColumns": [],
           "keys": [
             {
@@ -127327,7 +127711,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -127336,14 +127720,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["user_id", "phone_number"],
-        "definition": "PRIMARY KEY (user_id, phone_number)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_user_phone_numbers_updated_at": "CREATE TRIGGER trigger_user_phone_numbers_updated_at BEFORE UPDATE ON public.user_phone_numbers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "user_phone_numbers_user_id_phone_number_key": {
+          "columns": ["user_id", "phone_number"],
+          "definition": "UNIQUE (user_id, phone_number)"
+        }
+      }
     },
     "user_profile_links": {
       "checkConstraints": {
@@ -135242,7 +135631,7 @@
     },
     "view_posts": {
       "comment": "Current post response projection; callers enforce publication, deletion and audience access.",
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.id DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {

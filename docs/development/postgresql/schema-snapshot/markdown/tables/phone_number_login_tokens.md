@@ -6,18 +6,20 @@ Short-lived tokens for phone-number-based login via SMS/voice.
 
 Not partitioned — growth: unbounded.
 
-| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                    |
-| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
-| `phone_number` | `text`                     | no       |                     |          |           |           | The phone number this token was sent to.                                                   |
-| `token`        | `text`                     | no       |                     |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user. |
-| `created_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
-| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
-| `logged_in_at` | `timestamp with time zone` | yes      |                     |          |           |           | When the token was used to log in. NULL means the token is still pending.                  |
+| Column         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                    |
+| -------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
+| `id`           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                            |
+| `phone_number` | `text`                     | no       |                              |          |           |           | The phone number this token was sent to.                                                   |
+| `token`        | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user. |
+| `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                            |
+| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                            |
+| `logged_in_at` | `timestamp with time zone` | yes      |                              |          |           |           | When the token was used to log in. NULL means the token is still pending.                  |
 
-**Primary key:** `PRIMARY KEY (phone_number, token)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `phone_number_login_tokens_phone_number_token_key`: `UNIQUE (phone_number, token)`
 - `phone_number_login_tokens_token_key`: `UNIQUE (token)`
 
 **Check constraints:**
@@ -35,8 +37,9 @@ _none_
 **Indexes:**
 
 - `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)`
-- `idx_phone_number_login_tokens__created_at`: `CREATE INDEX idx_phone_number_login_tokens__created_at ON public.phone_number_login_tokens USING btree (created_at)`
-- `phone_number_login_tokens_pkey`: `CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (phone_number, token)`
+- `idx_phone_number_login_tokens__id_timestamp`: `CREATE INDEX idx_phone_number_login_tokens__id_timestamp ON public.phone_number_login_tokens USING btree (uuid_extract_timestamp(id))`
+- `phone_number_login_tokens_phone_number_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_phone_number_token_key ON public.phone_number_login_tokens USING btree (phone_number, token)`
+- `phone_number_login_tokens_pkey`: `CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (id)`
 - `phone_number_login_tokens_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_token_key ON public.phone_number_login_tokens USING btree (token)`
 
 **Triggers:**

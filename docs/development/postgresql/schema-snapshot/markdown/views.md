@@ -836,7 +836,7 @@ Current post response projection; callers enforce publication, deletion and audi
     ( SELECT post_slugs.slug
            FROM post_slugs
           WHERE (post_slugs.post_id = posts.id)
-          ORDER BY post_slugs.created_at DESC
+          ORDER BY post_slugs.id DESC
          LIMIT 1) AS slug,
         CASE
             WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg

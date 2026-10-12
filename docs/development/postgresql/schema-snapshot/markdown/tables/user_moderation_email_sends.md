@@ -6,18 +6,21 @@ One row per user and moderation email send key, used to prevent duplicate recurr
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                  |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------- |
-| `user_id`    | `uuid`                     | no       |                     |          |           |           | The recipient user.                                      |
-| `send_key`   | `text`                     | no       |                     |          |           |           | Recurring cadence key for the moderation summary window. |
-| `claimed_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When the send was first claimed by the dispatcher.       |
-| `sent_at`    | `timestamp with time zone` | yes      |                     |          |           |           | When the email processor marked the send as delivered.   |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                          |
+| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                  |
+| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------- |
+| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                          |
+| `user_id`    | `uuid`                     | no       |                              |          |           |           | The recipient user.                                      |
+| `send_key`   | `text`                     | no       |                              |          |           |           | Recurring cadence key for the moderation summary window. |
+| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                          |
+| `claimed_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the send was first claimed by the dispatcher.       |
+| `sent_at`    | `timestamp with time zone` | yes      |                              |          |           |           | When the email processor marked the send as delivered.   |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                          |
 
-**Primary key:** `PRIMARY KEY (user_id, send_key)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `user_moderation_email_sends_user_id_send_key_key`: `UNIQUE (user_id, send_key)`
 
 **Check constraints:**
 _none_
@@ -28,7 +31,8 @@ _none_
 
 **Indexes:**
 
-- `user_moderation_email_sends_pkey`: `CREATE UNIQUE INDEX user_moderation_email_sends_pkey ON public.user_moderation_email_sends USING btree (user_id, send_key)`
+- `user_moderation_email_sends_pkey`: `CREATE UNIQUE INDEX user_moderation_email_sends_pkey ON public.user_moderation_email_sends USING btree (id)`
+- `user_moderation_email_sends_user_id_send_key_key`: `CREATE UNIQUE INDEX user_moderation_email_sends_user_id_send_key_key ON public.user_moderation_email_sends USING btree (user_id, send_key)`
 
 **Triggers:**
 

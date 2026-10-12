@@ -6,18 +6,21 @@ Immutable succeeded Stripe refunds observed while reconciling one reversal case 
 
 Not partitioned — growth: unbounded.
 
-| Column                                                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                               |
-| -------------------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
-| `membership_ineligible_purchase_reversal_refund_scan_id` | `uuid`                     | no       |                     |          |           |           | Case-target scan that observed this succeeded Stripe refund.          |
-| `stripe_refund_id`                                       | `text`                     | no       |                     |          |           |           | Immutable Stripe refund identifier.                                   |
-| `amount_minor_units`                                     | `bigint`                   | no       |                     |          |           |           | Succeeded Stripe refund amount in the smallest currency unit.         |
-| `currency_code`                                          | `currency_codes`           | no       |                     |          |           |           | Stripe refund currency, required by trigger to match the owning scan. |
-| `observed_at`                                            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this succeeded refund was first committed locally.               |
+| Column                                                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                               |
+| -------------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
+| `id`                                                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                       |
+| `membership_ineligible_purchase_reversal_refund_scan_id` | `uuid`                     | no       |                              |          |           |           | Case-target scan that observed this succeeded Stripe refund.          |
+| `stripe_refund_id`                                       | `text`                     | no       |                              |          |           |           | Immutable Stripe refund identifier.                                   |
+| `amount_minor_units`                                     | `bigint`                   | no       |                              |          |           |           | Succeeded Stripe refund amount in the smallest currency unit.         |
+| `currency_code`                                          | `currency_codes`           | no       |                              |          |           |           | Stripe refund currency, required by trigger to match the owning scan. |
+| `observed_at`                                            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time this succeeded refund was first committed locally.               |
+| `created_at`                                             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                       |
 
-**Primary key:** `PRIMARY KEY (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `uq_mipr_succeeded_refund_observations__scan_refund`: `UNIQUE (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
 
 **Check constraints:**
 
@@ -32,7 +35,8 @@ _none_
 **Indexes:**
 
 - `idx_members_ineligi_purchase_reversal_refund_observat__currency`: `CREATE INDEX idx_members_ineligi_purchase_reversal_refund_observat__currency ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (currency_code)`
-- `pk_mipr_succeeded_refund_observations`: `CREATE UNIQUE INDEX pk_mipr_succeeded_refund_observations ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
+- `membership_ineligible_purchase_reversal_refund_observation_pkey`: `CREATE UNIQUE INDEX membership_ineligible_purchase_reversal_refund_observation_pkey ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (id)`
+- `uq_mipr_succeeded_refund_observations__scan_refund`: `CREATE UNIQUE INDEX uq_mipr_succeeded_refund_observations__scan_refund ON public.membership_ineligible_purchase_reversal_refund_observations USING btree (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
 
 **Triggers:**
 

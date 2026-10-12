@@ -6,18 +6,20 @@ Individual blacklisted domains from external sources.
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                           |
-| ----------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `source_id`       | `bigint`                   | no       |                     |          |           |           | The blacklist source this domain came from.                       |
-| `domain`          | `text`                     | no       |                     |          |           |           | The blacklisted domain name (lowercase).                          |
-| `url_hostname_id` | `uuid`                     | no       |                     |          |           |           | Resolved hostname identity used by block projections and readers. |
-| `created_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                   |
-| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                   |
+| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                           |
+| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
+| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                   |
+| `source_id`       | `bigint`                   | no       |                              |          |           |           | The blacklist source this domain came from.                       |
+| `domain`          | `text`                     | no       |                              |          |           |           | The blacklisted domain name (lowercase).                          |
+| `url_hostname_id` | `uuid`                     | no       |                              |          |           |           | Resolved hostname identity used by block projections and readers. |
+| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
+| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                   |
 
-**Primary key:** `PRIMARY KEY (domain, source_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `blocklisted_domains_domain_source_id_key`: `UNIQUE (domain, source_id)`
 - `uq_blocklisted_domains__hostname_source`: `UNIQUE (url_hostname_id, source_id)`
 
 **Check constraints:**
@@ -32,7 +34,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `blocklisted_domains_pkey`: `CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (domain, source_id)`
+- `blocklisted_domains_domain_source_id_key`: `CREATE UNIQUE INDEX blocklisted_domains_domain_source_id_key ON public.blocklisted_domains USING btree (domain, source_id)`
+- `blocklisted_domains_pkey`: `CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (id)`
 - `idx_blocklisted_domains__source_id__domain`: `CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain)`
 - `idx_blocklisted_domains__updated_at_domain_source_id`: `CREATE INDEX idx_blocklisted_domains__updated_at_domain_source_id ON public.blocklisted_domains USING btree (updated_at, domain, ((source_id)::text))`
 - `uq_blocklisted_domains__hostname_source`: `CREATE UNIQUE INDEX uq_blocklisted_domains__hostname_source ON public.blocklisted_domains USING btree (url_hostname_id, source_id)`
