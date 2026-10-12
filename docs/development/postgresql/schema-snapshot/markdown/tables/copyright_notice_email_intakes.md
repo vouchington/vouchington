@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                                                                   |
 | `amazon_ses_message_id` | `text`                     | no       |                              |          |           |           | Stable SES delivery identifier used for replay-safe admission.                                                                                                                                                                    |
 | `received_at`           | `timestamp with time zone` | no       |                              |          |           |           | Timestamp assigned by the inbound email delivery.                                                                                                                                                                                 |
-| `raw_storage_key`       | `text`                     | no       |                              |          |           |           | Private immutable original RFC 5322 object. The original preserves every attachment and is retained before the SES source object can be deleted.                                                                                  |
+| `raw_storage_object_id` | `uuid`                     | yes      |                              |          |           |           | Registry identity of the immutable original RFC 5322 object; cleared only by retention erasure after the object is no longer shared.                                                                                              |
 | `raw_sha256`            | `bytea`                    | no       |                              |          |           |           | SHA-256 digest of the preserved original RFC 5322 message.                                                                                                                                                                        |
 | `raw_media_type_id`     | `bigint`                   | no       |                              |          |           |           | Media type of the preserved original message.                                                                                                                                                                                     |
 | `raw_byte_size`         | `integer`                  | no       |                              |          |           |           | Byte size of the preserved original message.                                                                                                                                                                                      |
@@ -35,7 +35,6 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intakes_dmarc_verdict_check`: `CHECK ((dmarc_verdict = ANY (ARRAY['pass'::email_security_verdicts, 'fail'::email_security_verdicts, 'gray'::email_security_verdicts, 'processing_failed'::email_security_verdicts, 'unknown'::email_security_verdicts])))`
 - `copyright_notice_email_intakes_raw_byte_size_check`: `CHECK ((raw_byte_size >= 0))`
 - `copyright_notice_email_intakes_raw_sha256_check`: `CHECK ((octet_length(raw_sha256) = 32))`
-- `copyright_notice_email_intakes_raw_storage_key_check`: `CHECK (((char_length(raw_storage_key) >= 1) AND (char_length(raw_storage_key) <= 1024)))`
 - `copyright_notice_email_intakes_spam_verdict_check`: `CHECK ((spam_verdict = ANY (ARRAY['pass'::email_security_verdicts, 'fail'::email_security_verdicts, 'gray'::email_security_verdicts, 'processing_failed'::email_security_verdicts, 'unknown'::email_security_verdicts])))`
 - `copyright_notice_email_intakes_spf_verdict_check`: `CHECK ((spf_verdict = ANY (ARRAY['pass'::email_security_verdicts, 'fail'::email_security_verdicts, 'gray'::email_security_verdicts, 'processing_failed'::email_security_verdicts, 'unknown'::email_security_verdicts])))`
 - `copyright_notice_email_intakes_virus_verdict_check`: `CHECK ((virus_verdict = ANY (ARRAY['pass'::email_security_verdicts, 'fail'::email_security_verdicts, 'gray'::email_security_verdicts, 'processing_failed'::email_security_verdicts, 'unknown'::email_security_verdicts])))`
@@ -43,12 +42,14 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_email_intakes_raw_media_type_id_fkey`: `FOREIGN KEY (raw_media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intakes__raw_storage_object`: `FOREIGN KEY (raw_storage_object_id) REFERENCES copyright_notice_storage_objects(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intakes_amazon_ses_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_amazon_ses_message_id_key ON public.copyright_notice_email_intakes USING btree (amazon_ses_message_id)`
 - `copyright_notice_email_intakes_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_pkey ON public.copyright_notice_email_intakes USING btree (id)`
 - `idx_copyright_notice_email_intakes__raw_media_type_id`: `CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON public.copyright_notice_email_intakes USING btree (raw_media_type_id)`
+- `idx_copyright_notice_email_intakes__raw_storage_object_id`: `CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id ON public.copyright_notice_email_intakes USING btree (raw_storage_object_id) WHERE (raw_storage_object_id IS NOT NULL)`
 - `idx_copyright_notice_email_intakes__received_id`: `CREATE INDEX idx_copyright_notice_email_intakes__received_id ON public.copyright_notice_email_intakes USING btree (received_at, id)`
 
 **Triggers:**

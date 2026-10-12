@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                   | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
 | `google_user_id`            | `text`                     | no       |                     |          |           |           | Google's unique user identifier (primary key).                      |
 | `google_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Google profile.                              |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
 | `google_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Google OAuth.                           |
 | `created_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
 | `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
@@ -25,12 +26,14 @@ _none_
 
 **Foreign keys:**
 
+- `fk_google_accounts__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 - `google_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `google_accounts_pkey`: `CREATE UNIQUE INDEX google_accounts_pkey ON public.google_accounts USING btree (google_user_id)`
 - `idx_google_accounts__email`: `CREATE INDEX idx_google_accounts__email ON public.google_accounts USING btree (google_user_email_address) WHERE (google_user_email_address IS NOT NULL)`
+- `idx_google_accounts__email_domain_hostname_id`: `CREATE INDEX idx_google_accounts__email_domain_hostname_id ON public.google_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_google_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_google_accounts__orphan_retention_cleanup ON public.google_accounts USING btree (created_at, google_user_id) WHERE (user_id IS NULL)`
 - `idx_google_accounts__user_id`: `CREATE UNIQUE INDEX idx_google_accounts__user_id ON public.google_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 

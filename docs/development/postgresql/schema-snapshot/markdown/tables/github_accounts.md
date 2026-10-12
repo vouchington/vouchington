@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                   | `uuid`                     | yes      |                     |          |           |           | The Voucha user linked to this GitHub account.                          |
 | `github_user_id`            | `text`                     | no       |                     |          |           |           | GitHub's unique user ID (primary key).                                  |
 | `github_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the GitHub profile.                                  |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.      |
 | `github_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from the GitHub API.                             |
 | `access_token_ciphertext`   | `text`                     | yes      |                     |          |           |           | Encrypted OAuth access token ciphertext for GitHub API calls.           |
 | `refresh_token_ciphertext`  | `text`                     | yes      |                     |          |           |           | Encrypted OAuth refresh token ciphertext for renewing the access token. |
@@ -29,12 +30,14 @@ _none_
 
 **Foreign keys:**
 
+- `fk_github_accounts__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 - `github_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `github_accounts_pkey`: `CREATE UNIQUE INDEX github_accounts_pkey ON public.github_accounts USING btree (github_user_id)`
 - `idx_github_accounts__email`: `CREATE INDEX idx_github_accounts__email ON public.github_accounts USING btree (github_user_email_address) WHERE (github_user_email_address IS NOT NULL)`
+- `idx_github_accounts__email_domain_hostname_id`: `CREATE INDEX idx_github_accounts__email_domain_hostname_id ON public.github_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_github_accounts__friends_synced_at`: `CREATE INDEX idx_github_accounts__friends_synced_at ON public.github_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
 - `idx_github_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_github_accounts__orphan_retention_cleanup ON public.github_accounts USING btree (created_at, github_user_id) WHERE (user_id IS NULL)`
 - `idx_github_accounts__token_expires_at`: `CREATE INDEX idx_github_accounts__token_expires_at ON public.github_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`

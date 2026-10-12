@@ -6,13 +6,13 @@ Append-only record that a case's personal data and stored evidence were erased a
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                           |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                   |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The erased case; one row per case, so the sweep is idempotent.                                                                                    |
-| `retention_days`      | `integer`                  | no       |                              |          |           |           | Owner-approved retention period, in days, that was in force when the case was erased.                                                             |
-| `erased_object_count` | `integer`                  | no       |                              |          |           |           | Count of stored evidence object keys the case referenced; every version of each was removed from the evidence bucket before this row was written. |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the case was erased, derived from the UUIDv7 id; the row is append-only.                                                                     |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                 |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                         |
+| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The erased case; one row per case, so the sweep is idempotent.                                                          |
+| `retention_days`      | `integer`                  | no       |                              |          |           |           | Owner-approved retention period, in days, that was in force when the case was erased.                                   |
+| `erased_object_count` | `integer`                  | no       |                              |          |           |           | Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written. |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the case was erased, derived from the UUIDv7 id; the row is append-only.                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

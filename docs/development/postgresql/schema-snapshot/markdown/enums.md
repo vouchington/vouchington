@@ -1565,6 +1565,8 @@
 - `admin`
 - `google_web_risk`
 - `parent_hostname`
+- `url_blocklist`
+- `email_blocklist`
 
 ## `user_deletion_external_work_kinds`
 

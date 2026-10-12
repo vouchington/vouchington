@@ -6,23 +6,23 @@ Private immutable evidence, including original inbound email MIME and attachment
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `copyright_notice_id`            | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion. |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission whose preserved source or attachment this artifact represents.                                   |
-| `storage_key`                    | `text`                     | no       |                              |          |           |           | Private object-storage key; never included in member projections.                                           |
-| `sha256`                         | `bytea`                    | no       |                              |          |           |           | SHA-256 digest used to verify immutable evidence bytes.                                                     |
-| `media_type_id`                  | `bigint`                   | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                             |
-| `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                                             |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                        |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_id`            | `uuid`                     | no       |                              |          |           |           | Parent notice scope used by concrete composite foreign keys; populated from the owning parent on insertion.    |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                |
+| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission whose preserved source or attachment this artifact represents.                                      |
+| `storage_object_id`              | `uuid`                     | yes      |                              |          |           |           | Registry identity of private evidence bytes; cleared only by retention erasure after unshared object deletion. |
+| `sha256`                         | `bytea`                    | no       |                              |          |           |           | SHA-256 digest used to verify immutable evidence bytes.                                                        |
+| `media_type_id`                  | `bigint`                   | no       |                              |          |           |           | Untrusted declared or detected media type used only for quarantined processing.                                |
+| `byte_size`                      | `integer`                  | no       |                              |          |           |           | Preserved artifact byte length for bounds and integrity checks.                                                |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `UNIQUE (copyright_notice_id, id)`
-- `uq_copyrig_notice_evidence_artifact__submission_id__storage_key`: `UNIQUE (copyright_notice_submission_id, storage_key)`
+- `uq_copyright_evidence_artifacts__submission_object`: `UNIQUE (copyright_notice_submission_id, storage_object_id)`
 
 **Check constraints:**
 
@@ -32,6 +32,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_evidence_artifacts_media_type_id_fkey`: `FOREIGN KEY (media_type_id) REFERENCES media_types(id) ON DELETE RESTRICT`
+- `copyright_notice_evidence_artifacts_storage_object_id_fkey`: `FOREIGN KEY (storage_object_id) REFERENCES copyright_notice_storage_objects(id) ON DELETE RESTRICT`
 - `fk_copyright_artifacts__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
@@ -39,7 +40,8 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_evidence_artifacts_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_copyright_notice_id_id_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_id, id)`
 - `copyright_notice_evidence_artifacts_pkey`: `CREATE UNIQUE INDEX copyright_notice_evidence_artifacts_pkey ON public.copyright_notice_evidence_artifacts USING btree (id)`
 - `idx_copyright_notice_evidence_artifacts__media_type_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON public.copyright_notice_evidence_artifacts USING btree (media_type_id)`
-- `uq_copyrig_notice_evidence_artifact__submission_id__storage_key`: `CREATE UNIQUE INDEX uq_copyrig_notice_evidence_artifact__submission_id__storage_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)`
+- `idx_copyright_notice_evidence_artifacts__storage_object_id`: `CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id ON public.copyright_notice_evidence_artifacts USING btree (storage_object_id) WHERE (storage_object_id IS NOT NULL)`
+- `uq_copyright_evidence_artifacts__submission_object`: `CREATE UNIQUE INDEX uq_copyright_evidence_artifacts__submission_object ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_object_id)`
 
 **Triggers:**
 

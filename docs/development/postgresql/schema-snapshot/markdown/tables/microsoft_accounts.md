@@ -12,6 +12,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                      | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.      |
 | `microsoft_user_id`            | `text`                     | no       |                              |          |           |           | Microsoft's unique external user identifier.                             |
 | `microsoft_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Microsoft profile.                                |
+| `email_domain_hostname_id`     | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.   |
 | `microsoft_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Microsoft OAuth.                             |
 | `access_token_ciphertext`      | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for Microsoft API calls.     |
 | `refresh_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.        |
@@ -30,11 +31,13 @@ _none_
 
 **Foreign keys:**
 
+- `fk_microsoft_accounts__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 - `microsoft_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_microsoft_accounts__email`: `CREATE INDEX idx_microsoft_accounts__email ON public.microsoft_accounts USING btree (microsoft_user_email_address) WHERE (microsoft_user_email_address IS NOT NULL)`
+- `idx_microsoft_accounts__email_domain_hostname_id`: `CREATE INDEX idx_microsoft_accounts__email_domain_hostname_id ON public.microsoft_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_microsoft_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_microsoft_accounts__orphan_retention_cleanup ON public.microsoft_accounts USING btree (created_at, microsoft_user_id) WHERE (user_id IS NULL)`
 - `idx_microsoft_accounts__token_expires_at`: `CREATE INDEX idx_microsoft_accounts__token_expires_at ON public.microsoft_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_microsoft_accounts__user_id`: `CREATE UNIQUE INDEX idx_microsoft_accounts__user_id ON public.microsoft_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`

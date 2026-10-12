@@ -52,6 +52,14 @@ CREATE OR REPLACE FUNCTION public.fn_create_copyright_delivery_attempt()
  LANGUAGE plpgsql
 ```
 
+## `fn_create_domain_blocklist_hostname_blocks`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_domain_blocklist_hostname_blocks()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_google_play_acknowledgment_work`
 
 ```sql
@@ -295,6 +303,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_domain_blocklist_hostname_block_lifts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

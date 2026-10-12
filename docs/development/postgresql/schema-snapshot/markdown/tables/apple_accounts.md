@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                  | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
 | `apple_user_id`            | `text`                     | no       |                     |          |           |           | Apple's unique user identifier (primary key).                       |
 | `apple_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Apple profile.                               |
+| `email_domain_hostname_id` | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
 | `apple_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Apple Sign In.                          |
 | `created_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
 | `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
@@ -26,11 +27,13 @@ _none_
 **Foreign keys:**
 
 - `apple_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_apple_accounts__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `apple_accounts_pkey`: `CREATE UNIQUE INDEX apple_accounts_pkey ON public.apple_accounts USING btree (apple_user_id)`
 - `idx_apple_accounts__email`: `CREATE INDEX idx_apple_accounts__email ON public.apple_accounts USING btree (apple_user_email_address) WHERE (apple_user_email_address IS NOT NULL)`
+- `idx_apple_accounts__email_domain_hostname_id`: `CREATE INDEX idx_apple_accounts__email_domain_hostname_id ON public.apple_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_apple_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_apple_accounts__orphan_retention_cleanup ON public.apple_accounts USING btree (created_at, apple_user_id) WHERE (user_id IS NULL)`
 - `idx_apple_accounts__user_id`: `CREATE UNIQUE INDEX idx_apple_accounts__user_id ON public.apple_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
