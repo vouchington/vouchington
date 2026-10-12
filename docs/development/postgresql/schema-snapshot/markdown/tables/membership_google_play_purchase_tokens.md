@@ -6,43 +6,42 @@ Encrypted Google Play token aliases mapped to one canonical provider lineage; tr
 
 Not partitioned — growth: unbounded.
 
-| Column                                | Type                               | Nullable | Default                                    | Identity | Generated | Collation | Comment                                                                                   |
-| ------------------------------------- | ---------------------------------- | -------- | ------------------------------------------ | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `id`                                  | `uuid`                             | no       | `uuidv7()`                                 |          |           |           |                                                                                           |
-| `environment`                         | `membership_provider_environments` | no       |                                            |          |           |           | Google Play environment in which this token alias is valid.                               |
-| `application_id`                      | `text`                             | no       |                                            |          |           |           | Google Play package name in which this token alias is valid.                              |
-| `purchase_token_lookup_sha256`        | `text`                             | no       |                                            |          |           |           | SHA-256 lookup digest for the encrypted token alias; raw tokens are never stored.         |
-| `encrypted_purchase_token`            | `bytea`                            | no       |                                            |          |           |           | Encrypted Google Play purchase token retained only to traverse its authoritative lineage. |
-| `membership_provider_lineage_id`      | `uuid`                             | no       |                                            |          |           |           | Canonical provider lineage to which this immutable token alias belongs.                   |
-| `provider`                            | `membership_provider_kinds`        | no       | `'google_play'::membership_provider_kinds` |          |           |           | Context discriminator constrained to Google Play.                                         |
-| `linked_purchase_token_lookup_sha256` | `text`                             | yes      |                                            |          |           |           | SHA-256 lookup digest of the predecessor token reported by Google Play, when present.     |
-| `created_at`                          | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)`               |          | virtual   |           |                                                                                           |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                   |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                           |
+| `membership_provider_context_id` | `uuid`                     | no       |                              |          |           |           | Google Play environment and package identity in which this token alias is valid.                                                                          |
+| `purchase_token_lookup_sha256`   | `text`                     | no       |                              |          |           |           | SHA-256 lookup digest for the encrypted token alias; raw tokens are never stored.                                                                         |
+| `encrypted_purchase_token`       | `bytea`                    | no       |                              |          |           |           | Encrypted Google Play purchase token retained only to traverse its authoritative lineage.                                                                 |
+| `membership_provider_lineage_id` | `uuid`                     | no       |                              |          |           |           | Canonical provider lineage to which this immutable token alias belongs.                                                                                   |
+| `linked_purchase_token_id`       | `uuid`                     | yes      |                              |          |           |           | Persisted predecessor alias reported by Google Play, including predecessors that could not be fetched.                                                    |
+| `fetched_at`                     | `timestamp with time zone` | yes      |                              |          |           |           | First successful authoritative fetch of this token; NULL means the token was only reported as a predecessor and must not grant access or be acknowledged. |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `uq_membership_google_play_purchase_tokens__id_lineage_context`: `UNIQUE (id, membership_provider_lineage_id, membership_provider_context_id)`
 
 **Check constraints:**
 
-- `chk_mem_goo_play_purc_toke__linked_purchase_token_lookup_sha256`: `CHECK (((linked_purchase_token_lookup_sha256 IS NULL) OR (linked_purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text)))`
 - `chk_membe_googl_play_purch_tokens__purchase_token_lookup_sha256`: `CHECK ((purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
 - `chk_member_google_play_purchas_tokens__encrypted_purchase_token`: `CHECK (((octet_length(encrypted_purchase_token) >= 1) AND (octet_length(encrypted_purchase_token) <= 65536)))`
-- `membership_google_play_purchase_tokens_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
-- `membership_google_play_purchase_tokens_check`: `CHECK (((linked_purchase_token_lookup_sha256 IS NULL) OR (linked_purchase_token_lookup_sha256 <> purchase_token_lookup_sha256)))`
-- `membership_google_play_purchase_tokens_provider_check`: `CHECK ((provider = 'google_play'::membership_provider_kinds))`
+- `membership_google_play_purchase_tokens_check`: `CHECK (((linked_purchase_token_id IS NULL) OR (linked_purchase_token_id <> id)))`
 
 **Foreign keys:**
 
-- `fk_membership_google_play_purchase_tokens__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT`
+- `fk_membership_google_play_purchase_tokens__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT`
+- `fk_membership_google_play_purchase_tokens__predecessor`: `FOREIGN KEY (linked_purchase_token_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_google_play_purchase_tokens(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT`
+- `membership_google_play_purcha_membership_provider_context__fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_membership_google_play_purchase_tokens__context_token`: `CREATE UNIQUE INDEX idx_membership_google_play_purchase_tokens__context_token ON public.membership_google_play_purchase_tokens USING btree (environment, application_id, purchase_token_lookup_sha256)`
+- `idx_membership_google_play_purchase_tokens__context_token`: `CREATE UNIQUE INDEX idx_membership_google_play_purchase_tokens__context_token ON public.membership_google_play_purchase_tokens USING btree (membership_provider_context_id, purchase_token_lookup_sha256)`
 - `idx_membership_google_play_purchase_tokens__lineage`: `CREATE INDEX idx_membership_google_play_purchase_tokens__lineage ON public.membership_google_play_purchase_tokens USING btree (membership_provider_lineage_id, id DESC)`
-- `idx_membership_google_play_purchase_tokens__lineage_context`: `CREATE INDEX idx_membership_google_play_purchase_tokens__lineage_context ON public.membership_google_play_purchase_tokens USING btree (membership_provider_lineage_id, provider, environment, application_id)`
-- `idx_membership_google_play_purchase_tokens__successor`: `CREATE INDEX idx_membership_google_play_purchase_tokens__successor ON public.membership_google_play_purchase_tokens USING btree (membership_provider_lineage_id, linked_purchase_token_lookup_sha256) WHERE (linked_purchase_token_lookup_sha256 IS NOT NULL)`
+- `idx_membership_google_play_purchase_tokens__successor`: `CREATE INDEX idx_membership_google_play_purchase_tokens__successor ON public.membership_google_play_purchase_tokens USING btree (linked_purchase_token_id) WHERE (linked_purchase_token_id IS NOT NULL)`
 - `membership_google_play_purchase_tokens_pkey`: `CREATE UNIQUE INDEX membership_google_play_purchase_tokens_pkey ON public.membership_google_play_purchase_tokens USING btree (id)`
+- `uq_membership_google_play_purchase_tokens__id_lineage_context`: `CREATE UNIQUE INDEX uq_membership_google_play_purchase_tokens__id_lineage_context ON public.membership_google_play_purchase_tokens USING btree (id, membership_provider_lineage_id, membership_provider_context_id)`
 
 **Triggers:**
 _none_

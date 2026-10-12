@@ -6,27 +6,26 @@ Encrypted account-scoped Microsoft Store ID keys, usable to reconcile every Micr
 
 Not partitioned — growth: unbounded.
 
-| Column                          | Type                               | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                               |
-| ------------------------------- | ---------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
-| `id`                            | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                                                       |
-| `user_id`                       | `uuid`                             | no       |                              |          |           |           | Voucha account owning the Store ID credentials.                                       |
-| `environment`                   | `membership_provider_environments` | no       |                              |          |           |           | Microsoft Store test or production environment for the credential.                    |
-| `application_id`                | `text`                             | no       |                              |          |           |           | Publisher application identity used for Store queries.                                |
-| `publisher_user_id`             | `text`                             | no       |                              |          |           |           | Account-bound publisher user identifier in the Store ID ticket.                       |
-| `collections_key_lookup_sha256` | `text`                             | no       |                              |          |           |           | Digest used to recognize an unchanged Collections ID key without retaining plaintext. |
-| `encrypted_collections_key`     | `bytea`                            | no       |                              |          |           |           | Encrypted Collections ID key used only for authoritative Store API queries.           |
-| `purchase_key_lookup_sha256`    | `text`                             | no       |                              |          |           |           | Digest used to recognize an unchanged Purchase ID key without retaining plaintext.    |
-| `encrypted_purchase_key`        | `bytea`                            | no       |                              |          |           |           | Encrypted Purchase ID key used only for authoritative Store API queries.              |
-| `collections_issued_at`         | `timestamp with time zone`         | no       |                              |          |           |           | Issued-at claim of the last authoritatively validated Collections ID key.             |
-| `collections_expires_at`        | `timestamp with time zone`         | no       |                              |          |           |           | Expiration of the refreshable Collections ID key.                                     |
-| `purchase_issued_at`            | `timestamp with time zone`         | no       |                              |          |           |           | Issued-at claim of the last authoritatively validated Purchase ID key.                |
-| `purchase_expires_at`           | `timestamp with time zone`         | no       |                              |          |           |           | Expiration of the refreshable Purchase ID key.                                        |
-| `collection_item_id`            | `text`                             | yes      |                              |          |           |           | Last authoritative Collections item identifier observed for this account.             |
-| `last_verified_end_at`          | `timestamp with time zone`         | yes      |                              |          |           |           | Last authoritative paid-through time observed from Store recurrence state.            |
-| `last_verified_at`              | `timestamp with time zone`         | yes      |                              |          |           |           | Time of the most recent successful authoritative Store query.                         |
-| `next_reconciliation_at`        | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time this credential becomes due for reconciliation.                         |
-| `created_at`                    | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                       |
-| `updated_at`                    | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                       |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                           |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                   |
+| `user_id`                        | `uuid`                     | no       |                              |          |           |           | Voucha account owning the Store ID credentials.                                                   |
+| `membership_provider_context_id` | `uuid`                     | no       |                              |          |           |           | Microsoft Store provider, environment, and publisher application identity used for Store queries. |
+| `publisher_user_id`              | `text`                     | no       |                              |          |           |           | Account-bound publisher user identifier in the Store ID ticket.                                   |
+| `collections_key_lookup_sha256`  | `text`                     | no       |                              |          |           |           | Digest used to recognize an unchanged Collections ID key without retaining plaintext.             |
+| `encrypted_collections_key`      | `bytea`                    | no       |                              |          |           |           | Encrypted Collections ID key used only for authoritative Store API queries.                       |
+| `purchase_key_lookup_sha256`     | `text`                     | no       |                              |          |           |           | Digest used to recognize an unchanged Purchase ID key without retaining plaintext.                |
+| `encrypted_purchase_key`         | `bytea`                    | no       |                              |          |           |           | Encrypted Purchase ID key used only for authoritative Store API queries.                          |
+| `collections_issued_at`          | `timestamp with time zone` | no       |                              |          |           |           | Issued-at claim of the last authoritatively validated Collections ID key.                         |
+| `collections_expires_at`         | `timestamp with time zone` | no       |                              |          |           |           | Expiration of the refreshable Collections ID key.                                                 |
+| `purchase_issued_at`             | `timestamp with time zone` | no       |                              |          |           |           | Issued-at claim of the last authoritatively validated Purchase ID key.                            |
+| `purchase_expires_at`            | `timestamp with time zone` | no       |                              |          |           |           | Expiration of the refreshable Purchase ID key.                                                    |
+| `collection_item_id`             | `text`                     | yes      |                              |          |           |           | Last authoritative Collections item identifier observed for this account.                         |
+| `last_verified_end_at`           | `timestamp with time zone` | yes      |                              |          |           |           | Last authoritative paid-through time observed from Store recurrence state.                        |
+| `last_verified_at`               | `timestamp with time zone` | yes      |                              |          |           |           | Time of the most recent successful authoritative Store query.                                     |
+| `next_reconciliation_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Earliest time this credential becomes due for reconciliation.                                     |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
+| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -39,17 +38,18 @@ _none_
 - `chk_members_microsof_store_credenti__purchase_key_lookup_sha256`: `CHECK ((purchase_key_lookup_sha256 ~ '^[a-f0-9]{64}$'::text))`
 - `chk_membersh_microsof_store_credenti__encrypted_collections_key`: `CHECK (((octet_length(encrypted_collections_key) >= 1) AND (octet_length(encrypted_collections_key) <= 65536)))`
 - `chk_membershi_microsoft_store_credentia__encrypted_purchase_key`: `CHECK (((octet_length(encrypted_purchase_key) >= 1) AND (octet_length(encrypted_purchase_key) <= 65536)))`
-- `membership_microsoft_store_credentials_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_microsoft_store_credentials_check`: `CHECK ((publisher_user_id = (user_id)::text))`
 
 **Foreign keys:**
 
+- `membership_microsoft_store_cr_membership_provider_context__fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 - `membership_microsoft_store_credentials_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_membership_microsoft_store_credentials__due`: `CREATE INDEX idx_membership_microsoft_store_credentials__due ON public.membership_microsoft_store_credentials USING btree (next_reconciliation_at, id)`
-- `idx_membership_microsoft_store_credentials__user_context`: `CREATE UNIQUE INDEX idx_membership_microsoft_store_credentials__user_context ON public.membership_microsoft_store_credentials USING btree (user_id, environment, application_id)`
+- `idx_membership_microsoft_store_credentials__provider_context`: `CREATE INDEX idx_membership_microsoft_store_credentials__provider_context ON public.membership_microsoft_store_credentials USING btree (membership_provider_context_id)`
+- `idx_membership_microsoft_store_credentials__user_context`: `CREATE UNIQUE INDEX idx_membership_microsoft_store_credentials__user_context ON public.membership_microsoft_store_credentials USING btree (user_id, membership_provider_context_id)`
 - `membership_microsoft_store_credentials_pkey`: `CREATE UNIQUE INDEX membership_microsoft_store_credentials_pkey ON public.membership_microsoft_store_credentials USING btree (id)`
 
 **Triggers:**
