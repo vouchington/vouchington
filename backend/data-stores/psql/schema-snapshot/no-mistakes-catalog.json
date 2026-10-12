@@ -57140,7 +57140,7 @@
       },
       "columns": {
         "application_id": {
-          "comment": null,
+          "comment": "Configured provider application identity within the provider environment.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -57160,7 +57160,7 @@
           "ordinalPosition": 5
         },
         "environment": {
-          "comment": null,
+          "comment": "Provider environment for this membership context.",
           "dataType": "membership_provider_environments",
           "defaultExpression": null,
           "generated": null,
@@ -57180,7 +57180,7 @@
           "ordinalPosition": 1
         },
         "provider": {
-          "comment": null,
+          "comment": "Provider that owns this membership context.",
           "dataType": "membership_provider_kinds",
           "defaultExpression": null,
           "generated": null,
@@ -57190,7 +57190,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": null,
+      "comment": "Canonical identity for a configured membership provider, environment, and application.",
       "foreignKeys": {},
       "indexes": {
         "membership_provider_contexts_pkey": {

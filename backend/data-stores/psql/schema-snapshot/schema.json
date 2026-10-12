@@ -54435,7 +54435,7 @@
       "columns": {
         "application_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Configured provider application identity within the provider environment.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54457,7 +54457,7 @@
         },
         "environment": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider environment for this membership context.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54479,7 +54479,7 @@
         },
         "provider": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider that owns this membership context.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54489,7 +54489,7 @@
           "type": "membership_provider_kinds"
         }
       },
-      "comment": null,
+      "comment": "Canonical identity for a configured membership provider, environment, and application.",
       "foreignKeys": {},
       "growth": "unbounded",
       "indexes": {
