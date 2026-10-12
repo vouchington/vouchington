@@ -88,6 +88,9 @@ export type ToolMeta = {
   selectOutputSchema?: (args: Record<string, unknown>) => ToolOutputSchema | undefined
   // Only registered literal options from a merged tool may enter the durable call audit.
   auditOption?: (args: Record<string, unknown>) => string | null
+  // A suspended Plus or Pro member on the user server may list and call this tool. Set it only
+  // when every REST route in `api` admits a suspended caller. Absent on every other tool.
+  suspendedAccess?: true
   // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
   // result as `structuredContent`, validated against it. A tool that returns its REST twin's
   // body unchanged derives it from the generated response contract

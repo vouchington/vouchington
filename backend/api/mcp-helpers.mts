@@ -98,7 +98,7 @@ export async function dispatchMcpRequest(
       const parsedBody = await readBody(ctx, audit)
       // The HTTP carrier is open; the MCP SDK still owns JSON-RPC and tool validation.
       validateRequestContract(ctx, `POST:${config.routePath}`, { body: parsedBody })
-      const user = buildMcpContextUser(owner)
+      const user = buildMcpContextUser(owner, authentication.suspended)
       const copyrightDecisionToolsEnabled =
         config.audience === 'admin' ? await isCopyrightMcpDecisionToolsEnabled() : false
       // Bounds the audit rows and the route charges one request can spend.

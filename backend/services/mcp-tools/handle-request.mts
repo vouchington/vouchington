@@ -16,6 +16,7 @@ type McpRequestContext = {
   copyrightDecisionToolsEnabled?: boolean
   user: BasicUser & {
     membership_plan: 'plus' | 'pro' | null
+    suspended?: boolean
   }
   permissions: readonly ApiScope[]
   request: Request
