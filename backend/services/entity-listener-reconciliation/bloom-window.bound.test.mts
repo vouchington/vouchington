@@ -14,6 +14,10 @@ describe('Bloom source window continuation', () => {
     const msecs = randomInt(Date.UTC(2001, 0, 1), Date.UTC(2019, 0, 1))
     const fixture = await insertTestBloomRepairSources(user.id, post.id, msecs)
     const window = { start: new Date(msecs), end: new Date(msecs + 1) }
+    // Blocklist projection moves its own hostname's clock to now; a separate
+    // untouched hostname remains in the historical reconciliation window.
+    expect(fixture.blockedHostname.isBlocked).toBe(true)
+    expect(fixture.blockedHostname.updatedAt.getTime()).toBeGreaterThan(window.end.getTime())
     const candidates: EntityReconciliationCandidate[] = []
     let after: EntityReconciliationCandidate | undefined
     let hasMore = true

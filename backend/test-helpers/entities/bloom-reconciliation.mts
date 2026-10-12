@@ -11,6 +11,7 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
   const apiKeyId = v7()
   const aliasId = v7()
   const hostnameId = v7()
+  const blockedHostnameId = v7()
   const domain = `repair-${suffix}.example.com`
   const slug = `repair-${suffix}`
   await using transaction = await beginTransaction()
@@ -38,8 +39,9 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
   )
   await transaction(
     `/* insertTestBloomRepairSources */
-    INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at) VALUES ($1, $2, false, $3)`,
-    [hostnameId, domain, inside],
+    INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at)
+    VALUES ($1, $2, false, $3), ($4, $5, false, $3)`,
+    [hostnameId, `unblocked-${domain}`, inside, blockedHostnameId, domain],
   )
   const { rows: sources } = await transaction<{ id: number }>(
     `/* insertTestBloomRepairSources */
@@ -51,7 +53,12 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
     `/* insertTestBloomRepairSources */
     INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id, updated_at)
     SELECT id, $2, $3, $4 FROM unnest($1::bigint[]) id`,
-    [sources.map(row => row.id), domain, hostnameId, inside],
+    [sources.map(row => row.id), domain, blockedHostnameId, inside],
+  )
+  const { rows: blockedHostnames } = await transaction<{ is_blocked: boolean; updated_at: Date }>(
+    `/* insertTestBloomRepairSources */
+    SELECT is_blocked, updated_at FROM url_hostnames WHERE id = $1`,
+    [blockedHostnameId],
   )
   const { rows: embeddings } = await transaction<{ hash: string }>(
     `/* insertTestBloomRepairSources */
@@ -66,6 +73,10 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
     apiKeyId,
     aliasId,
     hostnameId,
+    blockedHostname: {
+      isBlocked: blockedHostnames[0]!.is_blocked,
+      updatedAt: blockedHostnames[0]!.updated_at,
+    },
     domain,
     slug,
     embeddingHash: embeddings[0]!.hash,
