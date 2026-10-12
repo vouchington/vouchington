@@ -811,7 +811,8 @@ accounting removal permit its deletion. A failure retains it across owner exit, 
 fork refuses admission even when PostgreSQL releases the disconnected owner's advisory lock.
 There is no PID-age expiry or automatic stale removal. Recovery requires an explicit coordinator
 decision with exact witness ownership and actual process/PostgreSQL/Valkey idle evidence.
-This boundary covers the normal same-host, same-user non-main fixture, not remote databases.
+This boundary covers the normal same-host, same-user non-main fixture and the GitHub Actions
+local ephemeral `postgres` service database, not remote databases.
 Database recreation changes the OID; an OID collision conservatively refuses admission.
 The six empty/unknown embedding-creation route cases use `createEmptyEmbeddingCreationWorker`
 from the first-layer empty-routing helper, with its controlled `emptyEmbeddingCreationDependencies`. This typed fixture injects controlled admitted capacity through
