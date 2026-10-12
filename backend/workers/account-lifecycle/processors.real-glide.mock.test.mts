@@ -58,6 +58,12 @@ async function runJob(name: string, data: Record<string, unknown>, priority = 10
 }
 
 describe('account-lifecycle real worker', () => {
+  it('rejects an unknown retained job before invoking either account handler', async () => {
+    await expect(runJob('unknownAccountLifecycleJob', {})).rejects.toThrow(
+      'Unknown job name: unknownAccountLifecycleJob',
+    )
+  })
+
   it('exports an account and cleans up its expired archive through durable state', async () => {
     const subject = await createTestUser()
     const administrator = await createTestUser({ administrator: true })
