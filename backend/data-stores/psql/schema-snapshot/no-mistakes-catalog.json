@@ -1676,6 +1676,9 @@
     "fn_update_updated_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_update_url_hostname_crawl_policy_changed_at()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE user_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow__topics_count = (\n      SELECT COUNT(*) FROM relation__user__follow__topic\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__posts_count = (\n      SELECT COUNT(*) FROM relation__user__follow__post\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__users_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarkers__follow_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE object_id = target_user_id AND deleted_at IS NULL\n    )\n  WHERE id = target_user_id;\n$function$\n"
     },
@@ -124786,7 +124789,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
+        },
+        "crawl_policy_changed_at": {
+          "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
         },
         "crawl_swept_at": {
           "comment": "Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.",
@@ -124806,7 +124819,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "created_by_id": {
           "comment": null,
@@ -124816,7 +124829,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -124826,7 +124839,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "hostname": {
           "comment": "Lowercase, unique hostname (e.g. example.com).",
@@ -124886,7 +124899,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
@@ -124906,7 +124919,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "should_follow_link_rel": {
           "comment": "If TRUE, links to this hostname use rel=follow. Only for trusted sites.",
@@ -124936,7 +124949,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -124946,7 +124959,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -124966,7 +124979,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "votes_count_down": {
           "comment": null,
@@ -124976,7 +124989,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_count_none": {
           "comment": null,
@@ -124986,7 +124999,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "votes_count_up": {
           "comment": null,
@@ -124996,7 +125009,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "votes_score_down": {
           "comment": null,
@@ -125006,7 +125019,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "votes_score_net": {
           "comment": null,
@@ -125016,7 +125029,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_score_none": {
           "comment": null,
@@ -125026,7 +125039,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "votes_score_sort": {
           "comment": null,
@@ -125036,7 +125049,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_score_up": {
           "comment": null,
@@ -125046,7 +125059,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -125056,7 +125069,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -125066,7 +125079,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -125076,7 +125089,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -125086,7 +125099,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -125096,7 +125109,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -125598,6 +125611,9 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_url_hostnames_crawl_policy_changed_at": {
+          "definition": "CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()"
+        },
         "trigger_url_hostnames_updated_at": {
           "definition": "CREATE TRIGGER trigger_url_hostnames_updated_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
