@@ -59,3 +59,24 @@ export async function rejectTestGoogleRowsOnStripeContext(contextId: string): Pr
     },
   }
 }
+
+export async function rejectTestMicrosoftCredentialOnStripeContext(
+  contextId: string,
+  userId: string,
+): Promise<void> {
+  const digest = randomUUID().replaceAll('-', '').repeat(2)
+  await write(sql`/* rejectTestMicrosoftCredentialOnStripeContext */
+    INSERT INTO membership_microsoft_store_credentials (
+      user_id, membership_provider_context_id, publisher_user_id,
+      collections_key_lookup_sha256, encrypted_collections_key,
+      purchase_key_lookup_sha256, encrypted_purchase_key,
+      collections_issued_at, collections_expires_at,
+      purchase_issued_at, purchase_expires_at
+    ) VALUES (
+      ${userId}, ${contextId}, ${userId},
+      ${digest}, '\x01'::bytea,
+      ${digest}, '\x01'::bytea,
+      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 day',
+      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 day'
+    )`)
+}

@@ -3,8 +3,10 @@ import {
   createTestMembershipProviderContext,
   deleteTestMembershipProviderContext,
   rejectTestGoogleRowsOnStripeContext,
+  rejectTestMicrosoftCredentialOnStripeContext,
   updateTestMembershipProviderContext,
 } from '../../../test-helpers/entities/membership-provider-context-integrity.mts'
+import { createTestUser } from '@voucha/test-helpers'
 import { onGracefulShutdown } from '../index.mts'
 
 describe('membership provider context integrity', () => {
@@ -27,5 +29,17 @@ describe('membership provider context integrity', () => {
     const invalidWrites = await rejectTestGoogleRowsOnStripeContext(contextId)
     await expect(invalidWrites.token()).rejects.toMatchObject({ code: '23514' })
     await expect(invalidWrites.acknowledgment()).rejects.toMatchObject({ code: '23514' })
+  })
+
+  it('rejects Microsoft Store credentials on a Stripe context', async () => {
+    const [contextId, user] = await Promise.all([
+      createTestMembershipProviderContext(),
+      createTestUser(),
+    ])
+    await expect(
+      rejectTestMicrosoftCredentialOnStripeContext(contextId, user.id),
+    ).rejects.toMatchObject({
+      code: '23514',
+    })
   })
 })

@@ -1,13 +1,14 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- This shared guard keeps Google-only evidence on a Google provider context without copying
--- provider text into token or acknowledgement rows.
-CREATE FUNCTION fn_reject_non_google_play_membership_context() RETURNS trigger LANGUAGE plpgsql AS $$
+-- Provider-specific rows keep their original owner family without copying provider text.
+CREATE FUNCTION fn_reject_membership_context_provider_mismatch() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM membership_provider_contexts context
-    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'google_play'
+    WHERE context.id = NEW.membership_provider_context_id
+      AND context.provider = TG_ARGV[0]::membership_provider_kinds
   ) THEN
-    RAISE EXCEPTION 'Google Play records require a Google Play provider context' USING ERRCODE = '23514';
+    RAISE EXCEPTION '% records require a matching provider context', TG_TABLE_NAME
+      USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END $$;
@@ -30,7 +31,7 @@ CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgments (
 );
 CREATE TRIGGER trigger_membership_google_play_acknowledgments_context
   BEFORE INSERT OR UPDATE ON membership_google_play_acknowledgments
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context();
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('google_play');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgment_work_items (
   membership_google_play_acknowledgment_id UUID PRIMARY KEY REFERENCES membership_google_play_acknowledgments(id) ON DELETE CASCADE,
