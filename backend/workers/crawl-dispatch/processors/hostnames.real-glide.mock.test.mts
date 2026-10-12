@@ -56,6 +56,14 @@ async function crawlableUrl(path: string) {
   const url = await addUrl(user.id, `https://${hostname}/${path}`)
   if (!url) throw new Error('Expected crawl URL')
   await updateUrlHostname(url.hostname.id, { is_crawlable: true })
+  onTestFinished(async () => {
+    try {
+      await updateUrlHostname(url.hostname.id, { is_crawlable: false })
+    } finally {
+      const ownedJobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } })
+      await Promise.all(ownedJobs.map(job => job.remove()))
+    }
+  })
   await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
   onTestFinished(() => deleteTestRobotsTxtCache(hostname))
   return { user, url, hostname }
@@ -122,6 +130,17 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       hostname: `sweep-${randomUUID()}.example.com`,
       is_crawlable: true,
     })
+    onTestFinished(async () => {
+      try {
+        await updateUrlHostname(hostnameId, { is_crawlable: false })
+      } finally {
+        const ownedChildren = await crawlDispatchQueue.searchJobs({
+          name: 'crawl_urls_per_hostname_dispatcher',
+          data: { hostname_id: hostnameId },
+        })
+        await Promise.all(ownedChildren.map(job => job.remove()))
+      }
+    })
     const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     const cursor = {
@@ -186,11 +205,27 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       is_crawlable: true,
     })
     onTestFinished(async () => {
-      await updateUrlHostname(hostnameId, { is_crawlable: false })
+      try {
+        await updateUrlHostname(hostnameId, { is_crawlable: false })
+      } finally {
+        const ownedChildren = await crawlDispatchQueue.searchJobs({
+          name: 'refresh_hostname_crawler',
+          data: { hostname_id: hostnameId },
+        })
+        await Promise.all(ownedChildren.map(job => job.remove()))
+      }
     })
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
-    expect(await searchHostnameIdsNeedingCrawlerRefresh(500)).toContain(hostnameId)
-    const result = await runJob('refresh_hostname_crawler_dispatcher')
+    expect(await searchHostnameIdsNeedingCrawlerRefresh(500, {}, hostnameId)).toContain(hostnameId)
+    const result = await runJob('refresh_hostname_crawler_dispatcher', {}, current =>
+      processCrawlDispatchJob(current, {
+        processCrawlHostnamesJob: job =>
+          processCrawlHostnamesJob(job, {
+            searchHostnameIdsNeedingCrawlerRefresh: limit =>
+              searchHostnameIdsNeedingCrawlerRefresh(limit, {}, hostnameId),
+          }),
+      }),
+    )
     expect(result).toBeGreaterThan(0)
     expect(
       await childCount('refresh_hostname_crawler', { hostname_id: hostnameId }),
@@ -205,6 +240,16 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
         insertTestUrl({ url: `https://${hostname}/page-${index}`, hostnameId }),
       ),
     )
+    onTestFinished(async () => {
+      try {
+        await updateUrlHostname(hostnameId, { is_crawlable: false })
+      } finally {
+        const ownedJobs = await Promise.all(
+          ids.map(urlId => crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })),
+        )
+        await Promise.all(ownedJobs.flat().map(job => job.remove()))
+      }
+    })
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     onTestFinished(() => deleteTestRobotsTxtCache(hostname))
     const result = await runJob('refresh_hostname_crawler', { hostname_id: hostnameId })
@@ -216,8 +261,17 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
 
   it('deletes an old invalid crawl from PostgreSQL', async () => {
     const { url } = await crawlableUrl('old-invalid')
+    const { url: otherUrl } = await crawlableUrl('old-invalid-neighbor')
     const oldCrawlId = await insertOldInvalidCrawlForTest(url.id)
+    onTestFinished(async () => {
+      await deleteOldInvalidCrawls(30, oldCrawlId)
+    })
+    const otherCrawlId = await insertOldInvalidCrawlForTest(otherUrl.id)
+    onTestFinished(async () => {
+      await deleteOldInvalidCrawls(30, otherCrawlId)
+    })
     expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
+    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
     const result = await runJob('crawl_cleanup', {}, current =>
       processCrawlDispatchJob(current, {
         processCrawlHostnamesJob: job =>
@@ -229,5 +283,6 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     expect(result).toMatchObject({ crawls_deleted_invalid: expect.any(Number) })
     expect(await getCrawlData(url.id, oldCrawlId)).toBeUndefined()
     expect(await countCrawlsForUrl(url.id)).toBe(0)
+    expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
   })
 })

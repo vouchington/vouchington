@@ -76,11 +76,15 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     ])
     const hostnameId = urls[0]!.hostname.id
     onTestFinished(async () => {
-      const ownedJobs = await crawlDispatchQueue.searchJobs({
-        name: 'boilerplate_removal',
-        data: { hostname_id: hostnameId, parent_path: '/blog' },
-      })
-      await Promise.all(ownedJobs.map(job => job.remove()))
+      try {
+        await updateUrlHostname(hostnameId, { is_crawlable: false })
+      } finally {
+        const ownedJobs = await crawlDispatchQueue.searchJobs({
+          name: 'boilerplate_removal',
+          data: { hostname_id: hostnameId, parent_path: '/blog' },
+        })
+        await Promise.all(ownedJobs.map(job => job.remove()))
+      }
     })
     await updateUrlHostname(hostnameId, { is_crawlable: true })
     const crawler = await createCrawler(user, { hostname_id: hostnameId, crawler_type: 'fetch' })
