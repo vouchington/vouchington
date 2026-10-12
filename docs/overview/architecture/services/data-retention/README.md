@@ -116,8 +116,8 @@ for each phase, then redistributing unused shares in the same child-first order.
 and every delete statement remains bounded by that page size. Token children are eligible
 when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
 counts against the run budget. The family phase drains eligible access children, then refresh
-children, then empty families; independently expired refresh tokens use any allowance left after
-those steps. Families are removed only after their access and refresh tokens are gone, so a large
+children, then empty families; own-expired refresh tokens use any allowance left after
+those steps, even when an expired family was locked or still has children. Families are removed only after their access and refresh tokens are gone, so a large
 family drains across runs without uncounted cascading deletes. Each bounded physical-row batch
 commits independently, releasing its locks before the next batch while preserving the shared run
 allowance. Family-expiry and child-family indexes select eligible-family children

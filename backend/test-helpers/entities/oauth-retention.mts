@@ -121,3 +121,17 @@ export async function lockTestOAuthRetentionPredecessor(
     [clientId],
   )
 }
+
+export async function lockTestOAuthRetentionFamily(
+  clientId: string,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(
+    `/* lockTestOAuthRetentionFamily */ SELECT family.id
+     FROM oauth_refresh_token_families AS family
+     JOIN oauth_grants AS grant_row ON grant_row.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = grant_row.client_id
+     WHERE client.client_id = $1 FOR UPDATE OF family`,
+    [clientId],
+  )
+}

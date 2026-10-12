@@ -1,9 +1,13 @@
 import {
   assertWhitelistedSqlIdentifier,
   beginTransaction,
+  read,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { deleteExpiredOAuthRetentionTokens } from './retention-tokens.mts'
+import {
+  deleteExpiredOAuthRetentionTokens,
+  lockExpiredOAuthRetentionFamilies,
+} from './retention-tokens.mts'
 
 export type OAuthAuthorizationServerRetentionResult = {
   deleted: number
@@ -83,7 +87,10 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
     }
     if (remaining === batchSize) break
   }
-  return { deleted, hasMore: deleted === budget || lastBatchFull }
+  return {
+    deleted,
+    hasMore: deleted === budget || lastBatchFull || (await hasRemainingExpiredArtifacts(window)),
+  }
 }
 
 async function deleteExpiredFamilyPhaseRows(
@@ -91,13 +98,15 @@ async function deleteExpiredFamilyPhaseRows(
   window: RetentionWindow,
   limit: number,
 ): Promise<number> {
+  const familyIds = await lockExpiredOAuthRetentionFamilies(query, window, limit)
   // Expired-family access children precede refresh children in FK order, then empty families.
   let deleted = await deleteExpiredOAuthRetentionTokens(
     query,
     'oauth_access_tokens',
     window,
     limit,
-    'family',
+    familyIds,
+    false,
   )
   if (deleted < limit)
     deleted += await deleteExpiredOAuthRetentionTokens(
@@ -105,16 +114,17 @@ async function deleteExpiredFamilyPhaseRows(
       'oauth_refresh_tokens',
       window,
       limit - deleted,
-      'family',
+      familyIds,
+      false,
     )
-  if (deleted < limit) deleted += await deleteEmptyFamilies(query, window, limit - deleted)
+  if (deleted < limit) deleted += await deleteEmptyFamilies(query, familyIds, limit - deleted)
   if (deleted < limit)
     deleted += await deleteExpiredOAuthRetentionTokens(
       query,
       'oauth_refresh_tokens',
       window,
       limit - deleted,
-      'independent-nonfamily',
+      [],
     )
   return deleted
 }
@@ -131,7 +141,13 @@ async function deleteExpiredRows(
     'OAuth authorization-server retention table',
   )
   if (table === 'oauth_access_tokens' || table === 'oauth_refresh_tokens')
-    return deleteExpiredOAuthRetentionTokens(query, table, window, limit)
+    return deleteExpiredOAuthRetentionTokens(
+      query,
+      table,
+      window,
+      limit,
+      await lockExpiredOAuthRetentionFamilies(query, window, limit),
+    )
   const result = await query(
     `/* deleteExpiredOAuthAuthorizationServerArtifacts:${validatedTable} */
      /* deadlock-safe: ordered token/request/code rows use SKIP LOCKED; empty-family
@@ -152,28 +168,31 @@ async function deleteExpiredRows(
 
 async function deleteEmptyFamilies(
   query: TransactionQuery,
-  window: RetentionWindow,
+  familyIds: readonly string[],
   limit: number,
 ): Promise<number> {
+  if (familyIds.length === 0) return 0
   // Lock first, then check children in a fresh statement snapshot. FK inserts cannot race the delete.
-  const candidates = await query<{ id: string }>(
-    `/* deleteEmptyOAuthFamilies lock */ SELECT family.id
-     FROM oauth_refresh_token_families AS family
-     WHERE family.expires_at <= $1
-       AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
-       AND NOT EXISTS (SELECT 1 FROM oauth_access_tokens WHERE refresh_family_id = family.id)
-       AND NOT EXISTS (SELECT 1 FROM oauth_refresh_tokens WHERE family_id = family.id)
-     ORDER BY family.expires_at ASC, family.id ASC
-     LIMIT $3 FOR UPDATE OF family SKIP LOCKED`,
-    [window.now, window.lowerBoundDate ?? null, limit],
-  )
-  if (candidates.rows.length === 0) return 0
   const result = await query(
     `/* deleteEmptyOAuthFamilies */ DELETE FROM oauth_refresh_token_families AS family
-     WHERE family.id = ANY($1::uuid[])
+     WHERE family.id IN (SELECT id FROM unnest($1::uuid[]) AS candidate(id) LIMIT $2)
        AND NOT EXISTS (SELECT 1 FROM oauth_access_tokens WHERE refresh_family_id = family.id)
        AND NOT EXISTS (SELECT 1 FROM oauth_refresh_tokens WHERE family_id = family.id)`,
-    [candidates.rows.map(row => row.id)],
+    [familyIds, limit],
   )
   return result.rowCount ?? 0
+}
+
+async function hasRemainingExpiredArtifacts(window: RetentionWindow): Promise<boolean> {
+  const result = await read<{ has_more: boolean }>(
+    `/* hasRemainingExpiredOAuthArtifacts */
+     SELECT EXISTS (SELECT 1 FROM oauth_authorization_requests WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
+       OR EXISTS (SELECT 1 FROM oauth_authorization_codes WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
+       OR EXISTS (SELECT 1 FROM oauth_access_tokens WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
+       OR EXISTS (SELECT 1 FROM oauth_refresh_token_families WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
+       OR EXISTS (SELECT 1 FROM oauth_refresh_tokens WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
+       AS has_more`,
+    [window.now, window.lowerBoundDate ?? null],
+  )
+  return result.rows[0]?.has_more ?? false
 }

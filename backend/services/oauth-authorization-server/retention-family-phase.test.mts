@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { beginTransaction } from '@voucha/test-helpers'
 import { createTestExpiryWindow } from '@voucha/test-helpers/data'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   getTestOAuthRetentionRowCounts,
+  lockTestOAuthRetentionFamily,
   prepareTestOAuthRetentionRows,
 } from '@voucha/test-helpers/entities/oauth-retention'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
@@ -154,6 +156,99 @@ describe('OAuth retention family phase', () => {
       expect(before.total - after.total).toBe(deleted)
       expect(after).toMatchObject(expected)
       before = after
+    }
+  })
+
+  it('reaches an independently expired live-family token while an expired family is locked', async () => {
+    const user = await createTestUserDirect()
+    const expired = await createTestApprovedOAuthAuthorization(user)
+    const live = await createTestApprovedOAuthAuthorization(user)
+    for (const flow of [expired, live]) {
+      await exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      })
+    }
+    const window = createTestExpiryWindow()
+    await prepareTestOAuthRetentionRows(expired.client.client_id, {
+      expiresAt: window.firstEligibleDate,
+      childExpiresAt: window.afterUpperBoundDate,
+      only: 'family',
+    })
+    await prepareTestOAuthRetentionRows(live.client.client_id, {
+      expiresAt: window.afterUpperBoundDate,
+      childExpiresAt: window.firstEligibleDate,
+      only: 'requests',
+    })
+    await using held = await beginTransaction()
+    let released = false
+    onTestFinished(async () => {
+      if (!released) await held.rollback()
+    })
+    await lockTestOAuthRetentionFamily(expired.client.client_id, held)
+
+    const first = await deleteExpiredOAuthAuthorizationServerArtifacts(4, {
+      ...window,
+      maxBatches: 1,
+    })
+    expect(first).toEqual({ deleted: 1, hasMore: true })
+    await expect(getTestOAuthRetentionRowCounts(live.client.client_id)).resolves.toMatchObject({
+      refresh: 0,
+      families: 1,
+    })
+    await expect(getTestOAuthRetentionRowCounts(expired.client.client_id)).resolves.toMatchObject({
+      access: 1,
+      refresh: 1,
+      families: 1,
+    })
+
+    await held.rollback()
+    released = true
+    const second = await deleteExpiredOAuthAuthorizationServerArtifacts(4, {
+      ...window,
+      maxBatches: 1,
+    })
+    expect(second).toEqual({ deleted: 3, hasMore: false })
+    await expect(getTestOAuthRetentionRowCounts(expired.client.client_id)).resolves.toMatchObject({
+      access: 0,
+      refresh: 0,
+      families: 0,
+    })
+  })
+
+  it('pages multiple short expired families before the physical batch cap reports completion', async () => {
+    const user = await createTestUserDirect()
+    const window = createTestExpiryWindow()
+    const clients: string[] = []
+    for (let index = 0; index < 3; index++) {
+      const flow = await createTestApprovedOAuthAuthorization(user)
+      clients.push(flow.client.client_id)
+      await exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      })
+      await prepareTestOAuthRetentionRows(flow.client.client_id, {
+        expiresAt: window.firstEligibleDate,
+        childExpiresAt: window.afterUpperBoundDate,
+        only: 'family',
+      })
+    }
+
+    const result = await deleteExpiredOAuthAuthorizationServerArtifacts(12, {
+      ...window,
+      maxBatches: 1,
+    })
+    expect(result).toEqual({ deleted: 9, hasMore: false })
+    for (const clientId of clients) {
+      await expect(getTestOAuthRetentionRowCounts(clientId)).resolves.toMatchObject({
+        access: 0,
+        refresh: 0,
+        families: 0,
+      })
     }
   })
 })

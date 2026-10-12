@@ -1,15 +1,34 @@
 import { assertWhitelistedSqlIdentifier, type TransactionQuery } from '@data-stores/psql'
 
 type TokenTable = 'oauth_access_tokens' | 'oauth_refresh_tokens'
-type TokenSelection = 'all' | 'family' | 'independent-nonfamily'
 const TOKEN_TABLES: ReadonlySet<string> = new Set(['oauth_access_tokens', 'oauth_refresh_tokens'])
+
+export async function lockExpiredOAuthRetentionFamilies(
+  query: TransactionQuery,
+  window: { lowerBoundDate?: Date; now: Date },
+  limit: number,
+): Promise<string[]> {
+  // Page the expiry index before inspecting children. An EXISTS filter here would rescan
+  // arbitrarily many earlier empty families to find one with a child.
+  const families = await query<{ id: string }>(
+    `/* lockExpiredOAuthRetentionFamilies */
+     SELECT family.id FROM oauth_refresh_token_families AS family
+     WHERE family.expires_at <= $1
+       AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
+     ORDER BY family.expires_at, family.id
+     LIMIT $3 FOR UPDATE OF family SKIP LOCKED`,
+    [window.now, window.lowerBoundDate ?? null, limit],
+  )
+  return families.rows.map(row => row.id)
+}
 
 export async function deleteExpiredOAuthRetentionTokens(
   query: TransactionQuery,
   table: TokenTable,
   window: { lowerBoundDate?: Date; now: Date },
   limit: number,
-  selection: TokenSelection = 'all',
+  familyIds: readonly string[],
+  includeOwnExpiry = true,
 ): Promise<number> {
   const tokenTable = assertWhitelistedSqlIdentifier(
     table,
@@ -23,24 +42,8 @@ export async function deleteExpiredOAuthRetentionTokens(
       ? `AND NOT EXISTS (SELECT 1 FROM oauth_refresh_tokens AS predecessor
          WHERE predecessor.replaced_by_token_id = artifact.id)`
       : ''
-  const families =
-    selection === 'independent-nonfamily'
-      ? { rows: [] }
-      : await query<{ id: string }>(
-          `/* lockOAuthRetentionTokenFamilies */
-     /* deadlock-safe: family candidates use ordered SKIP LOCKED; child probes acquire no locks. */
-     SELECT family.id
-     FROM oauth_refresh_token_families AS family
-     WHERE family.expires_at <= $1
-       AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
-       AND EXISTS (SELECT 1 FROM ${tokenTable} AS artifact
-         WHERE artifact.${familyColumn} = family.id ${noPredecessor})
-     ORDER BY family.expires_at, family.id
-     LIMIT 1 FOR UPDATE OF family SKIP LOCKED`,
-          [window.now, window.lowerBoundDate ?? null],
-        )
   const fromFamilies =
-    selection === 'independent-nonfamily'
+    familyIds.length === 0
       ? { rowCount: 0 }
       : await query(
           `/* deleteOAuthRetentionFamilyTokens */
@@ -56,26 +59,20 @@ export async function deleteExpiredOAuthRetentionTokens(
        ) AS artifact
        ORDER BY artifact.id LIMIT $2
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,
-          [families.rows.map(row => row.id), limit],
+          [familyIds, limit],
         )
   const deleted = fromFamilies.rowCount ?? 0
-  if (selection === 'family' || deleted === limit) return deleted
-  const excludeEligibleFamilies =
-    selection === 'independent-nonfamily'
-      ? `AND NOT EXISTS (SELECT 1 FROM oauth_refresh_token_families AS family
-         WHERE family.id = artifact.${familyColumn}
-           AND family.expires_at <= $1
-           AND ($2::timestamptz IS NULL OR family.expires_at >= $2))`
-      : ''
+  if (!includeOwnExpiry || deleted === limit) return deleted
   const independentlyExpired = await query(
     `/* deleteOAuthRetentionExpiredTokens */
-     /* deadlock-safe: ordered token locks skip held rows; surviving predecessors exclude replacements. */
+     /* deadlock-safe: ordered token locks skip held rows, while surviving predecessors
+        exclude replacements. Own expiry ignores family age, so locked families cannot
+        hide later tokens. */
      WITH candidates AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact
        WHERE artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2)
          ${noPredecessor}
-         ${excludeEligibleFamilies}
        ORDER BY artifact.expires_at, artifact.id LIMIT $3
        FOR UPDATE OF artifact SKIP LOCKED
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,

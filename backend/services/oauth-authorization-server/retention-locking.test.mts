@@ -9,7 +9,10 @@ import {
 } from '@voucha/test-helpers/entities/oauth-retention'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { exchangeOAuthAuthorizationCode, exchangeOAuthRefreshToken } from './index.mts'
-import { deleteExpiredOAuthRetentionTokens } from './retention-tokens.mts'
+import {
+  deleteExpiredOAuthRetentionTokens,
+  lockExpiredOAuthRetentionFamilies,
+} from './retention-tokens.mts'
 
 describe('OAuth retention replacement-chain locking', () => {
   it('retains a replacement while its predecessor is locked, then drains the chain after release', async () => {
@@ -40,7 +43,13 @@ describe('OAuth retention replacement-chain locking', () => {
     await lockTestOAuthRetentionPredecessor(flow.client.client_id, predecessor)
     await using skipped = await beginTransaction()
     expect(
-      await deleteExpiredOAuthRetentionTokens(skipped, 'oauth_refresh_tokens', window, 2),
+      await deleteExpiredOAuthRetentionTokens(
+        skipped,
+        'oauth_refresh_tokens',
+        window,
+        2,
+        await lockExpiredOAuthRetentionFamilies(skipped, window, 2),
+      ),
     ).toBe(0)
     await skipped.commit()
     expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(2)
@@ -48,7 +57,13 @@ describe('OAuth retention replacement-chain locking', () => {
     released = true
     await using resumed = await beginTransaction()
     expect(
-      await deleteExpiredOAuthRetentionTokens(resumed, 'oauth_refresh_tokens', window, 2),
+      await deleteExpiredOAuthRetentionTokens(
+        resumed,
+        'oauth_refresh_tokens',
+        window,
+        2,
+        await lockExpiredOAuthRetentionFamilies(resumed, window, 2),
+      ),
     ).toBe(2)
     await resumed.commit()
     expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(0)
