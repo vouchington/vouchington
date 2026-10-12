@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `individual_id`              | `uuid`                     | no       |                              |          |           |           | The individual who set this valuation.                |
 | `rewards_program_topic_id`   | `uuid`                     | no       |                              |          |           |           | The rewards program being valued.                     |
 | `value_microunits_per_point` | `bigint`                   | no       |                              |          |           |           | Point value in millionths of the major currency unit. |
-| `currency_code`              | `text`                     | no       |                              |          |           |           | Currency used to value each point.                    |
+| `currency_code`              | `currency_codes`           | no       |                              |          |           |           | Currency used to value each point.                    |
 | `note`                       | `text`                     | yes      |                              |          |           |           | Free-text note about this valuation.                  |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                       |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                       |

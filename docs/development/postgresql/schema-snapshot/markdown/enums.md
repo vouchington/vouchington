@@ -659,6 +659,15 @@
 - `source`
 - `community`
 
+## `currency_codes`
+
+- `aud`
+- `cad`
+- `eur`
+- `gbp`
+- `jpy`
+- `usd`
+
 ## `digest_frequencies`
 
 - `none`
