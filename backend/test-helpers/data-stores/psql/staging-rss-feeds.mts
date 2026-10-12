@@ -50,7 +50,9 @@ export async function beginRolledBackSeedTransaction(): Promise<OwnedTransaction
 }
 
 export async function applySeedSql(tx: OwnedTransaction, seedSql: string): Promise<void> {
-  for (const statement of splitSqlStatements(seedSql)) await tx(statement)
+  for (const statement of splitSqlStatements(seedSql))
+    await tx(`/* applySeedSql */
+${statement}`)
 }
 
 // Another topic that already owns the URL's active feed, like a feed an operator created through
