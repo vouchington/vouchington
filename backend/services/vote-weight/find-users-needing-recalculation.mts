@@ -1,26 +1,12 @@
 import assert from 'http-assert'
-import { isUUID } from '@modules/utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function findUsersNeedingVoteWeightRecalculation(
   afterId: string | null,
   limit: number,
-  options: { now?: Date; userIds?: readonly string[] } = {},
+  options: { now?: Date } = {},
 ): Promise<{ userIds: string[]; nextCursor: string | null }> {
-  const ids = options.userIds
-  assert(
-    ids === undefined || (Array.isArray(ids) && ids.length <= 100),
-    422,
-    'Select at most 100 valid user IDs',
-  )
-  assert(
-    ids === undefined || ids.every(id => typeof id === 'string' && isUUID(id)),
-    422,
-    'Select at most 100 valid user IDs',
-  )
-  if (ids?.length === 0) return { userIds: [], nextCursor: null }
-  const selectedIds = ids === undefined ? null : [...new Set(ids.map(id => id.toLowerCase()))]
   const now = options.now ?? null
   assert(
     now === null || (now instanceof Date && Number.isFinite(now.getTime())),
@@ -30,7 +16,6 @@ export async function findUsersNeedingVoteWeightRecalculation(
   const query = sql`/* findUsersNeedingVoteWeightRecalculation */
     SELECT id FROM users
     WHERE deleted_at IS NULL
-      AND (${selectedIds}::uuid[] IS NULL OR id = ANY(${selectedIds}::uuid[]))
       AND vote_weight_admin_set_at IS NULL
       AND (
         vote_weight_recalculated_at IS NULL
