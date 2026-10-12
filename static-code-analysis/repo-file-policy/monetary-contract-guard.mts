@@ -103,9 +103,10 @@ export function checkMonetarySnapshot(
       column.endsWith('currency_code'),
     )
     for (const columnName of currencyColumns) {
-      if (table.columns[columnName]?.type.toLowerCase() === 'text') continue
+      const expectedType = tableName === 'membership_refunds' ? 'text' : 'currency_codes'
+      if (table.columns[columnName]?.type.toLowerCase() === expectedType) continue
       errors.push(
-        `::error file=backend/data-stores/psql/schema-snapshot/schema.json::${tableName}.${columnName} must be TEXT`,
+        `::error file=backend/data-stores/psql/schema-snapshot/schema.json::${tableName}.${columnName} must be ${expectedType.toUpperCase()}`,
       )
     }
     for (const [columnName, column] of Object.entries(table.columns)) {

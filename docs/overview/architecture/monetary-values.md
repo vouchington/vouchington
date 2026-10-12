@@ -12,13 +12,15 @@ floating-point or a decimal major-unit string for money.
 
 ```sql
 CREATE TABLE currencies (
-  code TEXT PRIMARY KEY CHECK (code ~ '^[a-z]{3}$'),
+  code currency_codes PRIMARY KEY,
   minor_unit_exponent SMALLINT NOT NULL CHECK (minor_unit_exponent BETWEEN 0 AND 4)
 );
 ```
 
 The exponent converts a major-unit amount to its ordinary minor unit. For example, USD has exponent
 2, so USD 12.34 is 1,234 minor units. JPY has exponent 0, so JPY 1,234 is 1,234 minor units.
+`currency_codes` is generated from [`CURRENCIES`](../../../ts-shared/money/index.mts); its labels are alphabetical
+so enum order preserves the catalog's cursor order.
 `GET /api/v1/currencies` exposes the catalog as a cursor-paginated list of
 `{ code, minor_unit_exponent }`. Clients use their locale libraries for names, symbols, grouping,
 and display; those presentation values are not stored.
@@ -97,7 +99,7 @@ Persisted first-party monetary values use:
 
 - `BIGINT` columns named `*_minor_units` for ordinary money;
 - `BIGINT` columns named `*_microunits` for scale-six money;
-- a lowercase `currency_code` foreign key to `currencies(code)`;
+- a lowercase `currency_code currency_codes` foreign key to `currencies(code)`;
 - constraints that keep amounts within their business range and the JSON-safe integer maximum.
 
 Tables may use one record-wide currency or a field-specific `*_currency_code` when independent
@@ -131,6 +133,8 @@ unbounded aggregate. Do not expose database unit names in public contracts; seri
 Raw external-provider payloads remain faithful to the provider. In particular, Stripe event and
 SDK fields may use provider-defined names and currency codes that are not in Voucha's catalog.
 Event ingestion must not retry forever merely because a new provider currency is unknown.
+`membership_refunds.currency_code` therefore keeps the provider's raw text; comparisons to
+first-party enum columns cast the enum to text rather than the provider value to the enum.
 
 The exception ends at the provider boundary. First-party tables, API responses, tools, fixtures,
 and client models normalize provider amounts to the integer money contracts. Any persisted raw

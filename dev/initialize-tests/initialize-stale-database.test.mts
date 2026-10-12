@@ -73,7 +73,7 @@ describe('initialize stale database checks', () => {
   })
 
   it('detects a mismatched TypeScript migration checksum', async () => {
-    const migrationId = '0000-00-00a-finite-values.mts'
+    const migrationId = '0000-00-00-0-finite-values.mts'
     const sql = await readMigrationFile(migrationsDirectory, migrationId)
     const matchingChecksum = createHash('sha256').update(sql, 'utf8').digest('hex')
 

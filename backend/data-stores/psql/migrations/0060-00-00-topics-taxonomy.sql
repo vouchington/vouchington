@@ -441,7 +441,7 @@ CREATE TABLE IF NOT EXISTS card_topics (
 
   annual_fee_minor_units BIGINT,
   CHECK (annual_fee_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes REFERENCES currencies(code) ON DELETE RESTRICT,
   CHECK ((annual_fee_minor_units IS NULL) = (currency_code IS NULL))
 );
 

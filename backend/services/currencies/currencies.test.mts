@@ -1,8 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { read } from '@data-stores/psql'
 import { encodeCursor } from '@modules/pagination'
+import { CURRENCIES } from '@ts-shared/money'
+import sql from 'sql-template-strings'
 import { listCurrencies } from './currencies.mts'
 
 describe('currency catalog', () => {
+  it('keeps database enum labels in shared catalog order', async () => {
+    const { rows } = await read<{ code: string }>(sql`/* currencyCodesMatchSharedCatalog */
+      SELECT value.enumlabel AS code
+      FROM pg_type type
+      JOIN pg_enum value ON value.enumtypid = type.oid
+      WHERE type.typname = 'currency_codes'
+      ORDER BY value.enumsortorder
+    `)
+    expect(rows.map(row => row.code)).toEqual(CURRENCIES.map(currency => currency.code).toSorted())
+  })
+
   it('returns the seeded Stripe-style currency codes and minor-unit exponents', async () => {
     const page = await listCurrencies({ limit: 25 })
     expect(page.results).toEqual([

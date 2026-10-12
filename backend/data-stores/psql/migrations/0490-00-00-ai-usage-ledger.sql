@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   pricing_status ai_usage_record_pricing_statuses NOT NULL CHECK (pricing_status IN ('priced', 'unpriced')),
   cost_microunits BIGINT,
   CHECK (cost_microunits BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes REFERENCES currencies(code) ON DELETE RESTRICT,
   CHECK (
     (
       pricing_status = 'priced'
