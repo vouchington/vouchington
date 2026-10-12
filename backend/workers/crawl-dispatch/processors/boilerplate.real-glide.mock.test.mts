@@ -50,6 +50,13 @@ async function runJob(name: string, data: Record<string, unknown> = {}): Promise
 }
 
 describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
+  it('fails malformed and unknown jobs without acknowledging them', async () => {
+    await expect(runJob('boilerplate_removal')).rejects.toThrow(
+      'Boilerplate removal job requires .hostname_id and .parent_path',
+    )
+    await expect(runJob('missingJob')).rejects.toThrow('Crawl dispatch job missingJob not found')
+  })
+
   it('dispatches a parent path and persists its HTML removal result', async () => {
     const html = '<html><body><header>Nav</header><p>Unique content</p></body></html>'
     const gzipped = await gzipBytes(Buffer.from(html))
