@@ -75,7 +75,7 @@ describe('ActivityPub inbox enqueues', () => {
     })
   })
 
-  it('enqueues cleanup ahead of ordinary deliveries with interval-scoped deduplication', async () => {
+  it('enqueues cleanup at dispatcher priority with interval-scoped deduplication', async () => {
     await enqueueCleanupExpiredActivityPubInboxDeliveries()
     const jobs = await readAllQueueJobs(activitypubInbox)
     expect(jobs.find(job => job.name === 'cleanupExpiredDeliveries')).toMatchObject({
@@ -89,6 +89,6 @@ describe('ActivityPub inbox enqueues', () => {
         },
       },
     })
-    expect(CLEANUP_PRIORITY).toBeLessThan(PROCESS_PRIORITY)
+    expect(CLEANUP_PRIORITY).toBeGreaterThan(PROCESS_PRIORITY)
   })
 })

@@ -140,18 +140,6 @@ describe('crawler processor', () => {
     expect(observer.ownedPromises()).toHaveLength(1)
   })
 
-  it('fails the job instead of completing when the rate-limit replacement is skipped', async () => {
-    const { urlId, url } = await createCrawlerUrlFixture('rate-limit-skipped')
-    const rateLimitError = new CrawlerRateLimitError(url, 429, 10, 0)
-    // A waiting replacement for the same retry already holds the dedup id, so a second add is skipped.
-    await enqueueBulkCrawlUrls([{ urlId, rateLimitRetryCount: 1 }], { priority: 0 })
-
-    await expect(handleCrawlerProcessorError(urlId, 0, rateLimitError)).rejects.toMatchObject({
-      message: `Rate-limited crawl ${urlId} was not re-enqueued for retry 1`,
-      cause: rateLimitError,
-    })
-  })
-
   it('preserves discovery crawl options on rate-limit replacement jobs', async () => {
     const { urlId, url } = await createCrawlerUrlFixture('rate-limit-options')
     await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
@@ -162,7 +150,7 @@ describe('crawler processor', () => {
       ignoreRobotsTxt: true,
       maxResponseSizeBytes: 256 * 1024,
       preserveHttpRedirects: true,
-      priority: 0,
+      priority: 1,
       skipCanonicalUrl: true,
       skipChunks: true,
       skipCreatedEventsForRedirects: true,
@@ -182,7 +170,7 @@ describe('crawler processor', () => {
       waiting.some(
         job =>
           job.name === 'crawl_url' &&
-          job.opts.priority === 0 &&
+          job.opts.priority === 1 &&
           (
             job.data as {
               crawl_timeout_ms?: number

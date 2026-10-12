@@ -43,7 +43,7 @@ Every `queue.add()`, `queue.addBulk()`, and `queue.upsertJobScheduler()` must in
   recipient redeems (the `emails` queue's `SECRET_BEARING_EMAIL_JOBS`), so no copy outlives the job.
 - `removeOnFail` — at least `100`. Both exceptions above apply.
 - `priority` — `PRIORITY_DEFAULT = 10` for regular jobs, `PRIORITY_DISPATCHER = 100` for dispatchers.
-  Security-critical ActivityPub inbox retention cleanup is priority `1`, ahead of ordinary
-  delivery work, so expired capacity cannot be starved by a saturated inbox.
+  ActivityPub inbox retention cleanup uses dispatcher priority `100`; ordinary delivery work at
+  priority `10` runs first when both are ready.
 
 See [AGENTS.md](../../../../backend/queues/AGENTS.md) for enforcement rules and deduplication mode details.
