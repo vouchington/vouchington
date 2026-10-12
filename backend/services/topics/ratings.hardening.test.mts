@@ -7,6 +7,7 @@ import {
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { updateTopicRatingStats } from './ratings.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('topic rating refresh concurrency', () => {
   it('serializes concurrent refreshes for the same topic', async () => {
@@ -34,9 +35,11 @@ describe('topic rating refresh concurrency', () => {
     }
     try {
       await using probe = await beginTransaction()
-      await probe(`SET LOCAL lock_timeout = '50ms'`)
+      await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
       await expect(
-        probe(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [`topic-rating:${topicId}`]),
+        probe(allowFixtureQuery(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`), [
+          `topic-rating:${topicId}`,
+        ]),
       ).rejects.toMatchObject({ code: '55P03' })
       expect(refreshCompleted).toBe(false)
     } finally {

@@ -21,6 +21,7 @@ import {
   getTestPublicationProjectionIdentity,
 } from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('topic alias publication reconciliation', () => {
   it('pages a topic alias source set and retains both current and prior topic owners', async () => {
@@ -160,7 +161,9 @@ describe('topic alias publication reconciliation', () => {
     const replacementPost = await createTestPost({ user })
     await using sourceDeletionQuery = await beginTransaction()
     await sourceDeletionQuery(
-      `DELETE FROM post_topic_alias_sources WHERE post_id = $1 AND topic_alias_id = $2`,
+      allowFixtureQuery(
+        `DELETE FROM post_topic_alias_sources WHERE post_id = $1 AND topic_alias_id = $2`,
+      ),
       [selectedPost.id, aliasId],
     )
     await sourceDeletionQuery.commit()

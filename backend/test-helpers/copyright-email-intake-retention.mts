@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from '../services/copyright-notices/retention-erasure-spec.mts'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from '../services/copyright-notices/erased-ciphertext.mts'
 

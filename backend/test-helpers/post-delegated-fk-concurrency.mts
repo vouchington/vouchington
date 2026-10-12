@@ -1,6 +1,6 @@
 import { lockImageDeliveryMutation } from '../services/media-delivery-safety/delivery-lock.mts'
 import { lockPostPublication } from '../services/post-publication/lock.mts'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,

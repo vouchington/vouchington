@@ -1,7 +1,8 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 
 /** Seeds the durable post-review crash boundary without invoking its downstream effects. */
 export async function createTestCopyrightFormIntakeReview(

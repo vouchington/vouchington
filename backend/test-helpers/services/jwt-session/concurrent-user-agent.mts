@@ -1,6 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { beginTransaction, write, type QueryOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction, type QueryOptions } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   firstAction: (queryOptions: QueryOptions) => Promise<TFirst>,

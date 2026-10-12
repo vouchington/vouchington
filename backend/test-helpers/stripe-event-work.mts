@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { insertStripeEvent } from '../services/stripe/insert-event.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 
 export function createTestStripeDeletionEvent(): Parameters<typeof insertStripeEvent>[0] {
   return {

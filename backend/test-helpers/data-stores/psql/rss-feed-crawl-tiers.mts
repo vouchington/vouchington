@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 import { refreshMaterializedViewForTest } from '../../refresh-materialized-view.mts'
 
 const CRAWL_TIERS_VIEW = 'mv_rss_feed_crawl_tiers'

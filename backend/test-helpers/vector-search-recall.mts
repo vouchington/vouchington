@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 
 export { TEST_HNSW_EF_SEARCH } from './vector-search-recall-constant.mts'
 

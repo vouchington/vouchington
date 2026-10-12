@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_SECRET_PURPOSES } from '../../services/oauth-authorization-server/constants.mts'
 

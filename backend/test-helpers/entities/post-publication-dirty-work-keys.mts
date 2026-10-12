@@ -1,5 +1,5 @@
 import { retainedKeyPayloadSql } from '../../services/post-publication/concrete-key-columns.mts'
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 
 export async function listTestPostPublicationImpactRssFeedItemIds(
   dirtyWorkId: string,

@@ -1,6 +1,7 @@
-import { read, beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 import { insertTestUrlDirect } from '../urls.mts'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { createRandomString } from '../../data.mts'
 

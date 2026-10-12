@@ -1,6 +1,7 @@
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 type BatchOptions = { communityId?: string; shardOrdinal?: number; at?: Date }
@@ -17,7 +18,6 @@ export async function createClassifierDecisionCall(
   `)
   return rows[0]!.id
 }
-
 export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
   async function captureBatchCandidate(
     query: TransactionQuery,

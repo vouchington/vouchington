@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../../fixture-executor.mts'
+import sql from '../../../fixture-sql.mts'
 import { createRssFeedItemEmbeddingContent } from '../../../../services/rss-feed-items/content.mts'
 
 /** Moves the item to new content, so any receipt keyed on its previous content is stale. */

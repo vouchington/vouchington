@@ -1,5 +1,6 @@
-import { read, write, writePool, withTransactionOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { writePool, withTransactionOptions } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { reconcileDeliveryRepairMarker } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
 import { syncImageSurfacePlacement } from '../../services/media-delivery-safety/surface-placement-sync.mts'
@@ -32,7 +33,6 @@ export async function createTestDeliverySavepoint(query: TransactionQuery): Prom
 }
 
 export async function rollbackTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- verifies savepoint-local guard rewind inside the real transaction owner, not manual transaction lifecycle.
   await query(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`)
 }
 

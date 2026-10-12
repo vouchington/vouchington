@@ -1,6 +1,6 @@
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { afterEach, beforeEach } from 'vitest'
-import { write } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import { copyrightConfig } from '../../../services/copyright-notices/config.mts'
 import { overrideDynamicConfigFieldsForTest } from '../../dynamic-config.mts'
 

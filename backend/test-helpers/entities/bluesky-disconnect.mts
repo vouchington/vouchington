@@ -1,7 +1,8 @@
 import type pg from 'pg'
 
-import { advisoryLockPool, write, writePool, type PoolClient } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 const originalAdvisoryLockConnect = advisoryLockPool.connect
 

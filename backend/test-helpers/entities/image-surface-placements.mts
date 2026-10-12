@@ -1,8 +1,9 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { restoreImagePlacementsAfterImageDeletion } from '../../services/images/placements.mts'
 import { retireImageSurfacePlacementsForDeletedImage } from '../../services/images/surface-placements.mts'
 import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export type TestImageSurfacePlacement = {
   placement_id: string

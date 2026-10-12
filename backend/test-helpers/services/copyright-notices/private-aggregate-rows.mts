@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import type {
   CopyrightLegalHoldAssessmentRecord,
   CopyrightLegalHoldResolutionRecord,

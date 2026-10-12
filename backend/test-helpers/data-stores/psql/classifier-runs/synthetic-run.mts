@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import {
   claimClassifierRun,
   completeClassifierRun,

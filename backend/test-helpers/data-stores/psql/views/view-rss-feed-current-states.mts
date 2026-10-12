@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../../fixture-executor.mts'
 
 export async function queryRssFeedCurrentState(feedId: string): Promise<{
   is_enabled: boolean

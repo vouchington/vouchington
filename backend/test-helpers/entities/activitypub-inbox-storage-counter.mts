@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export type ActivityPubInboxStorageCounterSnapshot = {
   retainedRows: number
@@ -64,7 +64,6 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
       DELETE FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds})
     `)
   } else {
-    // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- rewinds a savepoint inside the real transaction owner; it does not end the transaction.
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
       ROLLBACK TO SAVEPOINT activitypub_owned_storage_counter
     `)

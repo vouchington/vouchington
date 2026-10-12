@@ -1,6 +1,6 @@
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /** Returns the rollup mutator definition for structural cascade-lock regressions. */
 export async function getTestModerationTransparencyRollupFunctionDefinition(): Promise<string> {

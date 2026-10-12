@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { seedTestOAuthExchangeAttempts } from './oauth-exchange-attempts.mts'

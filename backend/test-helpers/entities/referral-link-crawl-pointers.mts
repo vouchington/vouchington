@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { v7 } from 'uuid'
 import { insertTestReferralProgram } from './cards.mts'
 import { insertTestCrawl } from './crawls.mts'

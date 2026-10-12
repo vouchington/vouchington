@@ -3,7 +3,7 @@ import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { getEntityRelationTableNameOrThrow } from '@voucha/types/entities/entity-relations-metadata'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@voucha/types/entities/entity-relation-tables'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const NAMESPACE = 0x54545731

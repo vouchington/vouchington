@@ -2,8 +2,9 @@
  * Post vote entity helpers
  */
 
-import { type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { type TransactionQuery, beginTransaction } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /**
  * Insert post vote

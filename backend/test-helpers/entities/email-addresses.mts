@@ -2,10 +2,11 @@
  * Email address entity helpers
  */
 
-import { read, write, beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { hashToken } from '@modules/token-secrets'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 /**
  * Insert a verified email address for a user into user_email_addresses.

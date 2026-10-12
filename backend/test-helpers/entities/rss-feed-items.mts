@@ -1,6 +1,7 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
-import sql from 'sql-template-strings'
 import pgvector from 'pgvector/pg'
 import { v7 as uuidv7 } from 'uuid'
 import { makeRandomEmbedding } from './embeddings.mts'
@@ -16,7 +17,6 @@ export async function getTestRssFeedUrlHostnameId(rssFeedId: string): Promise<st
   if (!rows[0]) throw new Error(`insertTestRssFeedItem: RSS feed not found: ${rssFeedId}`)
   return rows[0].url_hostname_id as string
 }
-
 export async function insertTestRssFeedItem(data: {
   id?: string
   rssFeedId: string

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
-import { write } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { write } from '../../fixture-executor.mts'
 import { insertTestCommunityAgentPrompt } from '../../entities/communities.mts'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 

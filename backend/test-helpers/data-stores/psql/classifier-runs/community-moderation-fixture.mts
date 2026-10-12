@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../../fixture-executor.mts'
 import type { CommunityAutomodAction } from '@voucha/types'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 import {
   reserveClassifierRun,
   requestClassifierRuns,

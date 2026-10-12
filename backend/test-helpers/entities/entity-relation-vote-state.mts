@@ -1,7 +1,8 @@
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { write, type QueryOptions } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 const relationTables = new Set(entityRelationMetadatum.map(relation => relation.table_name))
 

@@ -1,5 +1,6 @@
-import { beginTransaction, write, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { write, read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import type { Story } from '@voucha/types/entities/story'
 
 export async function insertTestStory(

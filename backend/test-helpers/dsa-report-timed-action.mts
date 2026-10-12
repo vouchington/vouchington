@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 import { createTestUser } from './entities/users.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'

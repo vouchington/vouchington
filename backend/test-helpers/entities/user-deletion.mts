@@ -1,5 +1,6 @@
-import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { hardDeleteTestPost } from './posts-deletion.mts'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { withRolledBackTerritorialTransaction } from './copyright-eu-uk-contracts.mts'
 
 type Jurisdiction = 'eu_dsa' | 'uk'

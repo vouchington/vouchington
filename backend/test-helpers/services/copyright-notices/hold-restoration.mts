@@ -1,5 +1,6 @@
-import { beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import { resolveCopyrightLegalHoldInTransaction } from '../../../services/copyright-notices/hold-resolution.mts'
 import { lockCopyrightNoticeHoldPlacements } from '../../../services/copyright-notices/hold-placement-locks.mts'

@@ -364,6 +364,8 @@ export only typed operations and results that describe the tested behavior. Keep
 These helpers preserve direct database-constraint coverage while keeping SQL out of test files. A
 helper should identify the operation it performs, such as rejecting a refund-intent mutation or
 reading a current membership projection; do not replace raw SQL with a generic execute wrapper.
+Fixture statements from the test-helper SQL tag opt out of the leading-annotation check when the
+text has none. Production statements stay checked.
 
 ### Lock-wait actions
 

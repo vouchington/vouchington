@@ -1,6 +1,6 @@
 import { upsertMediaTypes } from '../../services/urls/media-types.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 export async function setRssFeedItemMediaDetails(
   itemId: string,

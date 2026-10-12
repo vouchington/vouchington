@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import { AUTOTAGGER_AGENT_SLUG } from '@voucha/types/entities/autotagger-agent'
 import type { MembershipPlanSlug, MembershipStatus } from '@voucha/types/entities/membership'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 import {
   createAutotaggerAgentRunAdapter,
   createAutotaggerRunAdapter,

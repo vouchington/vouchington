@@ -1,6 +1,6 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { copyrightSubmissionPurpose } from '../../../services/copyright-notices/submissions.mts'
 

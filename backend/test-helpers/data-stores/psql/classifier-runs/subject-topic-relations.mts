@@ -1,9 +1,10 @@
-import { write, type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import {
   getEntityRelationMetadataOrThrow,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { refreshEntityRelationVoteStatsById } from '../../../../services/elections-votes/entity-relation/refresh-stats.mts'
 import { upsertEntityRelationElectionVotes } from '../../../../services/elections-votes/entity-relation/votes-upsert.mts'

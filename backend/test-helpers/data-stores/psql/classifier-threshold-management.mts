@@ -1,5 +1,6 @@
-import sql from 'sql-template-strings'
-import { beginTransaction, write } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { beginTransaction } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import type { ClassifierThresholdChangeResult } from '../../../services/classifiers/threshold-management-types.mts'
 import { createTestTopic } from '../../entities/create-test-entities.mts'
 import { createTestUser } from '../../entities/users.mts'

@@ -1,7 +1,7 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
 import pgvector from 'pgvector/pg'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function insertTestCrawlChunk(data: {
   urlId: string

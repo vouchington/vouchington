@@ -1,7 +1,7 @@
 import { createTestRetainedMembershipIdentity } from './retained-identities.mts'
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import {
   leaseDueRefundReconciliation,
   scheduleRefundReconciliationRetry,

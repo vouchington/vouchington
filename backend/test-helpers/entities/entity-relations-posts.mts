@@ -1,7 +1,7 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { getEntityRelationTableNameOrThrow } from '@voucha/types/entities/entity-relations-metadata'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@voucha/types/entities/entity-relation-tables'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { getEntityRelation } from './entity-relations.mts'
 
 const POST_RELATED_URL_TABLE = getEntityRelationTableNameOrThrow({

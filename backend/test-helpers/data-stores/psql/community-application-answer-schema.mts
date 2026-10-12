@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import { insertTestCommunity } from '../../entities/communities.mts'
 import { createTestUser } from '../../entities/users.mts'
 

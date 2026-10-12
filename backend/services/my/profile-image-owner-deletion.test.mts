@@ -19,6 +19,7 @@ import {
   reactivateTestImageSurfaceInTransaction,
 } from '@voucha/test-helpers/entities/image-surface-owner-deletion'
 import { createProfileLink } from './profile-links.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 async function createSurface() {
   const [user, imageOwner] = await Promise.all([createTestUserDirect(), createTestUserDirect()])
@@ -124,7 +125,9 @@ describe('terminal image surface owner deletion', () => {
 
 async function probePlacementRow(placementId: string): Promise<void> {
   await using probe = await beginTransaction()
-  await probe(`SET LOCAL lock_timeout = '50ms'`)
-  await probe(`SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`, [placementId])
+  await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
+  await probe(allowFixtureQuery(`SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`), [
+    placementId,
+  ])
   await probe.commit()
 }

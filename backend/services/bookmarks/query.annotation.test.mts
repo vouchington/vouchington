@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { withCapturedTestQueries } from '../../test-helpers/query-capture.mts'
 import { bookmarkEntity } from './upsert.mts'
@@ -6,13 +6,8 @@ import { getUserBookmarkRelationsForEntityType } from './bloom-filter.mts'
 import { queryBookmarksForAllRelations, queryBookmarksForRelation } from './query.mts'
 
 describe('bookmark query root annotation', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
   it('preserves one annotated multi-relation statement with parameterized IDs and actual bookmarks', async () => {
     const { user, topicId, relations } = await createFixture()
-    enableProductionAnnotationContract()
     const { result, queries: captured } = await withCapturedTestQueries(() =>
       queryBookmarksForAllRelations(user.id, 'topic', relations, [topicId]),
     )
@@ -26,7 +21,6 @@ describe('bookmark query root annotation', () => {
   it('uses the same annotated root for a narrowed single-relation read', async () => {
     const { user, topicId, relations } = await createFixture()
     const relation = relations.find(item => item.predicate === 'follow')!
-    enableProductionAnnotationContract()
     const { result, queries: captured } = await withCapturedTestQueries(() =>
       queryBookmarksForRelation(user.id, 'topic', relation, [topicId]),
     )
@@ -48,9 +42,4 @@ async function createFixture() {
   })
   await bookmarkEntity(user, 'topic', { id: topicId }, 'follow')
   return { user, topicId, relations: getUserBookmarkRelationsForEntityType('topic') }
-}
-
-function enableProductionAnnotationContract() {
-  vi.stubEnv('NODE_ENV', 'development')
-  vi.stubEnv('VITEST', 'false')
 }

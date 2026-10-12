@@ -1,6 +1,7 @@
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import { setTimeout as delay } from 'node:timers/promises'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 
 export async function runConcurrentTestMembershipProductValidation<T>(
   validate: (query: QueryExecutor) => Promise<T>,

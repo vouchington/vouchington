@@ -1,5 +1,6 @@
 import { registerRetainedRelationCleanupReservation } from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { electedRelationMetadata } from '../../services/users/relation-impact-targets.mts'
 import {
   cleanupRetainedRelationIdentities,

@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function lockTestUserMutation(query: TransactionQuery, userId: string): Promise<void> {
   await query(sql`/* lockTestUserMutation */ SELECT fn_lock_active_user_for_mutation(${userId})`)

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 /** Inserts a real authored child row inside an admission transaction to acquire its actor FK lock. */
 export async function insertContributionAdmissionFkLockedTopicForTest(

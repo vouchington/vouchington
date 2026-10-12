@@ -33,6 +33,7 @@ import {
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import { createRssFeed } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('delete', () => {
   let adminUser: PrivateUser
@@ -225,7 +226,7 @@ describe('delete', () => {
 
     async function contendForTopicAliasPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
-      await query(`SET LOCAL lock_timeout = '50ms'`)
+      await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
       await lockAliases(query, [aliasId])
       await query.commit()
     }

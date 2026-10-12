@@ -1,5 +1,7 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql, { allowFixtureQuery } from '../fixture-sql.mts'
+import type { SQLStatement } from 'sql-template-strings'
 
 export async function cleanupActivityPubInboxStorageFixturesForTest(
   claimedActivityIds: readonly string[],
@@ -161,7 +163,7 @@ export async function explainActivityPubInboxCleanupForTest(query: SQLStatement)
     await using transaction = await beginTransaction()
     await transaction(sql`SET LOCAL enable_seqscan = off`)
     const { rows } = await transaction<{ 'QUERY PLAN': unknown }>(
-      `EXPLAIN (FORMAT JSON) ${query.text}`,
+      allowFixtureQuery(`EXPLAIN (FORMAT JSON) ${query.text}`),
       query.values,
     )
     const result = JSON.stringify(rows)

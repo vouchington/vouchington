@@ -1,4 +1,5 @@
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from './fixture-sql.mts'
+import type { SQLStatement } from 'sql-template-strings'
 
 export function createTestSqlStatement(): SQLStatement {
   return sql`SELECT 1 WHERE true`

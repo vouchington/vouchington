@@ -30,6 +30,7 @@ import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/c
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { createStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
+import { allowFixtureQuery } from '../../../test-helpers/fixture-sql.mts'
 
 let feedId: string
 let urlId: string
@@ -234,7 +235,7 @@ describe('RSS category story-post publication', () => {
       try {
         await entered.promise
         await using probe = await beginTransaction()
-        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
         await expect(lockStories(probe, [story.id])).rejects.toMatchObject({ code: '55P03' })
       } finally {
         lifecycleSpy.mockRestore()

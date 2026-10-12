@@ -1,9 +1,9 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 import {
   observeTestPostgresQueryPools,
   type ObservedPostgresQueryPool,
 } from '../postgres-query-pool-observer.mts'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export interface TestBlueskyLinkAuthorizationRow {
   id: string

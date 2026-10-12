@@ -1,6 +1,6 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import { POST_CLASSIFIER_REMOTE_QUESTIONS } from '@voucha/types/entities/post-classifier'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 
 type CandidateRow = {
   candidate_id: string

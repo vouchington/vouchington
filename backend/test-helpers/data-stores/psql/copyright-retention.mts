@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 import { COPYRIGHT_RETENTION_ERASURE } from '../../../services/copyright-notices/retention-erasure-spec.mts'
 
 export type CopyrightRetentionRows = Record<string, Record<string, unknown>[]>

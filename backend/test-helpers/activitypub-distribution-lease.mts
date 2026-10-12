@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 
 /** Expire only the owned claim so a test can exercise takeover without wall-clock sleeps. */
 export async function expireActivityDistributionLeaseForTest(

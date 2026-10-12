@@ -1,4 +1,4 @@
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export function createUserFollowRelationUpdateStatementForTest(): ReturnType<typeof sql> {
   return sql`UPDATE relation__user__follow__user SET deleted_at = NOW()`

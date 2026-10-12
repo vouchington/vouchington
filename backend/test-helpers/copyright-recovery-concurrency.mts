@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import {
   appendCopyrightSubmissionAssessmentInTransaction,
   type AssessmentInput,

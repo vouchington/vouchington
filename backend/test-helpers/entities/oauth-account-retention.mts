@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { providerTableConfigs, type OAuthProvider } from './_oauth-config-support.mts'
 
 export async function setOAuthAccountCreatedAt(

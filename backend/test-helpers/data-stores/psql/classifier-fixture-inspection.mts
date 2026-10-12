@@ -1,5 +1,5 @@
-import sql from 'sql-template-strings'
-import { read } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { read } from '../../fixture-executor.mts'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {

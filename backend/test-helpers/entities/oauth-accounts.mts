@@ -1,4 +1,4 @@
-import { write, read } from '@data-stores/psql'
+import { write, read } from '../fixture-executor.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import {
   getOAuthTokenPurpose,

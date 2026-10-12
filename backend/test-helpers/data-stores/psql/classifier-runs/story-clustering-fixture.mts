@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../../fixture-executor.mts'
 import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-clustering-classifier'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 import {
   claimClassifierRun,
   requestClassifierRuns,

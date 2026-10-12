@@ -1,4 +1,6 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
+import { allowFixtureQuery } from '../fixture-sql.mts'
 
 /** Seeds an unreferenced pair to exercise bounded orphan cleanup without a live owner. */
 export async function seedTestRetainedMediaOrphan(input: {
@@ -15,7 +17,9 @@ export async function seedTestRetainedMediaOrphan(input: {
     [input.imageId, uploaders[0]!.id],
   )
   await query(
-    'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
+    allowFixtureQuery(
+      'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
+    ),
     [input.placementId, input.imageId, input.bindingFamily],
   )
   await query.commit()

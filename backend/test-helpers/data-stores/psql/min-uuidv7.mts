@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 export async function readMinimumUuidv7(at: Date): Promise<string> {
   const { rows } = await read<{ id: string }>(

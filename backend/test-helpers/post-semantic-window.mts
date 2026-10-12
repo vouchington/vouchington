@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import pgvector from 'pgvector'
 import { beginTransaction } from '@data-stores/psql'
 

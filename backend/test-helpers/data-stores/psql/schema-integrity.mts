@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 export type NamedConstraint = { table_name: string; constraint_name: string }
 export type DuplicateIndex = { table_name: string; index_names: string }

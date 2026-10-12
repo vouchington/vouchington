@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import { captureAutotaggerAgentCandidateTopicIds } from '../../../../services/autotagger/agent/candidates.mts'
 import { createAutotaggerAgentRunAdapter } from '../../../../services/autotagger/index.mts'
 import {

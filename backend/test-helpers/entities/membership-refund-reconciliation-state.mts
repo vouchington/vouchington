@@ -1,5 +1,6 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { claimMembershipOperationExecutionWork } from '../../services/memberships/operation-execution-work.mts'
 
 export async function getRefundOperationLeaseTokenForTest(operationId: string): Promise<string> {

@@ -1,9 +1,9 @@
 import { createHash, createSign, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { write } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { TimeUnit } from '@valkey/valkey-glide'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import type {
   AppAttestChallengeType,
   AppAttestEnvironment,

@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { insertTestRssFeedItemSourceBatch } from './post-publication-dirty-work-batches.mts'
 import { insertTestStoryRssFeedItemsBatch } from './stories.mts'
 

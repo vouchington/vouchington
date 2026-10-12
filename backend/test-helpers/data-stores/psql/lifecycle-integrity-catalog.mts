@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 export async function getLifecycleConstraintNames(tableNames: string[]): Promise<string[]> {
   const { rows } = await read<{ qualified_name: string }>(

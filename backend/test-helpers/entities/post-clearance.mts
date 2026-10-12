@@ -1,7 +1,7 @@
 /* oxlint-disable max-lines -- Clearance fixtures include ledger-backed completion setup. */
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { v7 as uuidv7 } from 'uuid'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { recordTestPostModerationDisposition } from './post-moderation.mts'
 
 // Duplicates the post-clearance domain's setPostClearanceStatus SQL so test-helpers does not

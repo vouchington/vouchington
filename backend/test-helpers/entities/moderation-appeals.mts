@@ -1,5 +1,5 @@
-import { write, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write, read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import type { ModerationAppeal } from '@voucha/types/entities/moderation-appeal'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
 

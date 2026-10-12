@@ -1,4 +1,5 @@
-import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 
 type CredentialKind = 'client' | 'grant' | 'family' | 'access' | 'refresh'
 

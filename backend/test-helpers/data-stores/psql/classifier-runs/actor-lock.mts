@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 
 export async function holdClassifierRunActorDeletionLock(actorId: string) {
   const transaction = await beginTransaction()

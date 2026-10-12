@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 
 export type ForcedViewGraph = {
   baseTable: string

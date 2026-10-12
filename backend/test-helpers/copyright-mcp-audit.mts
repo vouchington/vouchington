@@ -1,6 +1,6 @@
 import { read } from '../data-stores/psql/index.mts'
 import { decryptSecret } from '../modules/token-secrets/index.mts'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 export type TestCopyrightMcpAuditRow = {
   id: string

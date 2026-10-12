@@ -1,5 +1,5 @@
 import { v7 } from 'uuid'
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 
 /** Creates immutable revision clocks at insertion, including two revisions at the same instant. */
 export async function insertTestReconciliationRevisionClocks(

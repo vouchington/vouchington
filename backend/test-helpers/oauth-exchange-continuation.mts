@@ -12,6 +12,7 @@ import {
 } from '../data-stores/valkey-core/glide-mq-client.mts'
 import type { OAuthAuthorizationExchangeJobData } from '../queues/oauth-authorization-exchange/types.mts'
 import { processOAuthAuthorizationExchangeJob } from '../workers/oauth-authorization-exchange/processors/process-job.mts'
+import { allowFixtureQuery } from './fixture-sql.mts'
 import { processOAuthAuthorizationExchange } from '../services/oauth/authorization-exchange.mts'
 import {
   createTestOAuthContinuationDependencies,
@@ -61,9 +62,12 @@ export async function runTestOAuthExchangeContinuation(
               owner.assertOpen()
               const lock = async () => {
                 await owner.run(() =>
-                  holder('SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT', [
-                    authorizationId,
-                  ]),
+                  holder(
+                    allowFixtureQuery(
+                      'SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
+                    ),
+                    [authorizationId],
+                  ),
                 )
               }
               attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })

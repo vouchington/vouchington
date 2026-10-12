@@ -1,4 +1,4 @@
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { maybeCaptureQuery } from '@data-stores/psql/query-capture'
 import type { QueryInput } from '@data-stores/psql/types'
 

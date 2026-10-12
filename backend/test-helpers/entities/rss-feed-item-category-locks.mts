@@ -1,5 +1,6 @@
-import { write, type QueryOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { QueryOptions } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 export async function lockTestRssFeedItemCategory(
   rssFeedItemId: string,

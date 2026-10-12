@@ -1,5 +1,6 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { imageDeliveryIsAuthorized } from '../../services/media-delivery-safety/delivery-authority.mts'
 import { lockImageDeliveryMutation } from '../../services/media-delivery-safety/delivery-lock.mts'

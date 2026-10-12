@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { decodeScopedTierPreciseUuidCursor } from '@modules/pagination'
 import { copyrightStaffQueueCursorScope } from '../services/copyright-notices/read-models-staff.mts'
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'

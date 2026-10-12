@@ -1,4 +1,6 @@
-import { beginTransaction, read, type OwnedTransaction, write } from '@data-stores/psql'
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import { allowFixtureQuery } from '../fixture-sql.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import {
   getOAuthTokenPurpose,
@@ -136,9 +138,9 @@ export async function acquireTestFriendRowLock(
   const transaction = await beginTransaction()
   try {
     const result = await transaction(
-      `SELECT 1 FROM ${config.table}
+      allowFixtureQuery(`SELECT 1 FROM ${config.table}
        WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2
-       FOR UPDATE`,
+       FOR UPDATE`),
       [providerUserId, friendProviderUserId],
     )
     if (result.rows.length === 0) throw new Error('Friend row to lock does not exist')

@@ -1,5 +1,6 @@
-import { read, beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 
 export async function holdTestEntityRelationVoteLock(
   userId: string,

@@ -1,7 +1,7 @@
 import { v7 as uuidv7 } from 'uuid'
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import { runWithTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 export function createOwnedIntegrityFlagQuery(
   resource: 'report-integrity-flags' | 'vote-integrity-flags',

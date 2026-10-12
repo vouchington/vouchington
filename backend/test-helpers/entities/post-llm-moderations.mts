@@ -14,8 +14,8 @@ export const mockAiGeneratedModerationResults = {
 
 import crypto from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /**
  * Insert a test agent moderation record for a post

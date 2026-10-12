@@ -1,5 +1,6 @@
-import { write, type QueryExecutor } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { QueryExecutor } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 import { getEntityRelationMetadataOrThrow } from '../services/entity-relations/metadata.mts'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 import { rejectQuery } from './injected-failures.mts'

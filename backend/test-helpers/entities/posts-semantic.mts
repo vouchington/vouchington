@@ -2,7 +2,7 @@
  * Posts semantic search test helpers
  */
 
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { makeRandomEmbedding } from './embedding-vectors.mts'
 
 /**

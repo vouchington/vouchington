@@ -4,9 +4,9 @@
  * moderation-reports.mts so `@voucha/test-helpers` consumers resolve unchanged.
  */
 
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { v7 as uuidv7 } from 'uuid'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@voucha/types/entities/user-constants'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
 import { createSystemUser } from './users.mts'

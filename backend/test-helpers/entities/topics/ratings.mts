@@ -1,6 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 import { setTestPostClearanceStatus } from '../post-clearance.mts'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 
 export async function getTopicRatingStats(topicId: string) {

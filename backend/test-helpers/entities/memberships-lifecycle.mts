@@ -6,8 +6,9 @@
  */
 
 import { setTimeout as delay } from 'node:timers/promises'
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import type { MembershipStatus } from '@voucha/types/entities/membership'
 
 // The owning service's change-recording helper is genuine business logic that this package must

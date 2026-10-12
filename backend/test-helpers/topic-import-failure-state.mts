@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 
 /** Read only one actor's own replay claim after an import fails before its response exists. */
 export async function getTopicImportFailureStateForTest(userId: string, idempotencyKey: string) {

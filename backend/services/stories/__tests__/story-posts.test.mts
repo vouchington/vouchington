@@ -20,6 +20,7 @@ import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import * as publicationLock from '@services/post-publication/lock'
 import { canViewPost } from '@services/posts/check-privacy-access'
 import { getPostStoryByStoryId } from '../get-post-stories.mts'
+import { allowFixtureQuery } from '../../../test-helpers/fixture-sql.mts'
 
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
@@ -164,7 +165,7 @@ describe('story posts', () => {
       try {
         await entered.promise
         await using probe = await beginTransaction()
-        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
         await expect(lockAuthor(probe, storyTeller.id)).rejects.toMatchObject({ code: '55P03' })
       } finally {
         authorSpy.mockRestore()

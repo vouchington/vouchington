@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 /** Appends a staff-entered submission that no moderator has reviewed or assessed yet. */
 export async function insertUnreviewedCopyrightSubmission(input: {

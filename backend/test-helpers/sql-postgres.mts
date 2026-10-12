@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 
 export async function getPublicBaseTableNamesForTest(): Promise<Set<string>> {
   const { rows } = await read<{ table_name: string }>(

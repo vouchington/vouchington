@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import { decryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 /** Reads this submission's immutable guidance evidence without exposing raw SQL to tests. */
 export async function readTestCopyrightSubmissionGuidanceRecords(submissionId: string) {

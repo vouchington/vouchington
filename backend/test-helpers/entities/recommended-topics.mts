@@ -1,7 +1,7 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@voucha/types/entities/entity-relation-tables'
 import { upsertTestRecentlyViewed } from './recently-viewed.mts'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function linkPostToTopic(postId: string, topicId: string, userId: string) {
   await write(

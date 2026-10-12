@@ -2,8 +2,8 @@
  * amazon_ses_bounce_events entity helpers
  */
 
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /**
  * Count amazon_ses_bounce_events rows for a given SES mail.messageId. Used to assert

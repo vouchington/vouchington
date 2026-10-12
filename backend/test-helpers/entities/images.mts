@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
-import { beginTransaction, read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 } from 'uuid'
 import { ensureImagePlacementBinding } from '../../services/media-delivery-safety/retained-image-identities.mts'
 export { insertTestImage, insertTestImageWithSha256 } from './images-insert.mts'
@@ -18,7 +19,6 @@ export async function updateImageStatus(
           : sql`upload_started_at = NULL, upload_completed_at = NULL, upload_failed_at = NULL`
   await write(sql`UPDATE images SET `.append(timestamps).append(sql` WHERE id = ${imageId}`))
 }
-
 export async function markImageDeleted(imageId: string) {
   await write(
     `

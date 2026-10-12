@@ -1,4 +1,5 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { randomUUID } from 'node:crypto'
 import {
   buildPreparedArgumentSql,

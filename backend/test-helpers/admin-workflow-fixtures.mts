@@ -1,5 +1,5 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 export async function readAdminWorkflowTraining(actorId: string) {
   const { rows } = await read(sql`/* readAdminWorkflowTraining */
     SELECT id FROM moderation_training_feedbacks WHERE actor_user_id = ${actorId} ORDER BY id

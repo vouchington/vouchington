@@ -24,6 +24,7 @@ import { lockPostPublication } from '@services/post-publication'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
 import { createPostImageRollbackFixture } from '@voucha/test-helpers/services/posts/images.fixtures'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('setPostImages', () => {
   afterEach(() => {
@@ -263,7 +264,7 @@ async function holdImageRowLock(
   releaseImage: PromiseWithResolvers<void>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SELECT id FROM images WHERE id = $1::uuid FOR UPDATE`, [imageId])
+  await query(allowFixtureQuery(`SELECT id FROM images WHERE id = $1::uuid FOR UPDATE`), [imageId])
   imageLocked.resolve()
   await releaseImage.promise
   await query.commit()
@@ -271,7 +272,7 @@ async function holdImageRowLock(
 
 async function acquirePostPublicationLockWithShortTimeout(postId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await lockPostPublication(query, postId)
   await query.commit()
 }

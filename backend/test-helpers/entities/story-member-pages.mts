@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { insertTestStory } from './stories.mts'
 import { insertTestRssFeedDirect } from './rss-feeds.mts'
 import { getTestRssFeedUrlHostnameId } from './rss-feed-items.mts'

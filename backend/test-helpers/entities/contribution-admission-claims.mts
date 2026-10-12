@@ -1,5 +1,6 @@
-import { write, type TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { TransactionQuery } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /** Forces a claimed lease to expire after this transaction opens, exercising DB-clock fences. */
 export async function expireContributionAdmissionClaimDuringTransactionForTest(

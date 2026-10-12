@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 import {
   encodeScopedPreciseTimestampCursor,
   encodeScopedTierPreciseUuidCursor,
@@ -6,7 +6,7 @@ import {
 import { copyrightStaffQueueCursorScope } from '../../../services/copyright-notices/read-models-staff.mts'
 import { copyrightStaffQueueKeysSql } from '../../../services/copyright-notices/read-models-staff-queue-sql.mts'
 import { copyrightAcceptedNoticeCursorScope } from '../../../services/copyright-notices/read-models.mts'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 
 export async function readCopyrightNoticeTargetId(noticeId: string): Promise<string> {
   const { rows } = await read<{ id: string }>(sql`/* readCopyrightNoticeTargetId */

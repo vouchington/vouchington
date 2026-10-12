@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 type ParserProbeRow = {
   nullable_text: string | null

@@ -2,8 +2,8 @@
  * Topic vote entity helpers
  */
 
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /**
  * Insert a topic vote for a given user and topic.

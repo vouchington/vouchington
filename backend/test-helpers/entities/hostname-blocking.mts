@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { v7 as uuidv7 } from 'uuid'
 

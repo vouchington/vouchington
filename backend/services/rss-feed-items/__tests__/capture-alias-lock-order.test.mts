@@ -12,6 +12,7 @@ import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics/alias
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { lockTopicMergeAliasPublicationScopes } from '@services/topics/alias-publication-locks'
+import { allowFixtureQuery } from '../../../test-helpers/fixture-sql.mts'
 
 describe('alias capture lock order', () => {
   it('hard deletion locks retained aliases before feed item rows', async () => {
@@ -20,9 +21,9 @@ describe('alias capture lock order', () => {
     await expectAliasBeforeBlockedCapture(
       alias.id,
       query =>
-        query(`SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`, [item.id]).then(
-          () => undefined,
-        ),
+        query(allowFixtureQuery(`SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`), [
+          item.id,
+        ]).then(() => undefined),
       query => recordRssFeedHardDeletePublicationChange(query, feed.id),
     )
   })
@@ -94,7 +95,7 @@ async function expectAliasBeforeBlockedCapture(
 
   async function contendForAliasPublicationScope(): Promise<void> {
     await using query = await beginTransaction()
-    await query(`SET LOCAL lock_timeout = '50ms'`)
+    await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
     await lockTopicAliasPublicationScopes(query, [aliasId])
     await query.commit()
   }

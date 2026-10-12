@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 
 /** Replaces the free text of an existing notification, to give a fixture another user's words. */
 export async function setTestNotificationText(

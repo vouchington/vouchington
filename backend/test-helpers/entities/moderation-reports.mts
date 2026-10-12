@@ -1,6 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { v7 as uuidv7 } from 'uuid'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy'
 import type { ModerationReportReason } from '@ts-shared/utils/moderation-reports'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'

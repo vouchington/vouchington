@@ -1,6 +1,6 @@
 import { deliverReviewDisputeForTest } from './dispute-delivery.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 import { createTestUser } from './entities/users.mts'
 import { insertTestUserWarning } from './entities/user-warnings.mts'
 import { insertTestModerationAppeal } from './entities/moderation-appeals.mts'

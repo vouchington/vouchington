@@ -2,9 +2,9 @@
  * Bedrock embeddings batches entity helpers
  */
 
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import {
   deriveBedrockBatchStatus,
   lifecycleColumnForBedrockStatus,

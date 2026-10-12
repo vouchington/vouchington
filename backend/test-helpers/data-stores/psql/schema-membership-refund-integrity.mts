@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 type ConstraintDefinition = { constraint_type: string; definition: string }
 

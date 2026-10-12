@@ -1,5 +1,5 @@
-import { write, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write, read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { createTestUserDirect } from './users.mts'
 import { createRandomString } from '../data.mts'
 import type { AgentModel, AgentModelProvider } from '@voucha/types/entities/agent-model'

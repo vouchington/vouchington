@@ -1,4 +1,5 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 
 export async function setTopicDeletedForEmbeddingTest(topicId: string): Promise<void> {
   await write(

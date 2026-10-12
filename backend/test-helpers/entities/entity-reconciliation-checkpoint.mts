@@ -1,11 +1,8 @@
 import { deepStrictEqual } from 'node:assert'
-import {
-  beginTransaction,
-  write,
-  type QueryOptions,
-  type OwnedTransaction,
-} from '@data-stores/psql'
+import { beginTransaction, type QueryOptions, type OwnedTransaction } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
+import { allowFixtureQuery } from '../fixture-sql.mts'
 
 type Checkpoint = { reconciled_through_at: string; updated_at: string }
 const checkpointSql = `/* readTestEntityReconciliationCheckpoint */
@@ -27,7 +24,7 @@ export async function withTestEntityReconciliationCheckpoint<Result>(
   const cleanupErrors: unknown[] = []
   try {
     transaction = await beginTransaction()
-    before = (await transaction<Checkpoint>(`${checkpointSql} FOR UPDATE`)).rows
+    before = (await transaction<Checkpoint>(allowFixtureQuery(`${checkpointSql} FOR UPDATE`))).rows
     if (before.length === 0) {
       await transaction(
         `/* reserveTestEntityReconciliationCheckpoint */

@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 import type { TopicRevision } from '../../services/topic-revisions/index.mts'
 
 export async function getTopicRevisionsForTest(topicId: string): Promise<TopicRevision[]> {

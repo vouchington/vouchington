@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 
 export type RetainedIdentityForeignKey = { target: string; owner: string; column: string }
 

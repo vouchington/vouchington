@@ -1,5 +1,6 @@
-import { beginTransaction, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
+import sql from './fixture-sql.mts'
 import type { PrivateUser } from '../services/users/types.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'

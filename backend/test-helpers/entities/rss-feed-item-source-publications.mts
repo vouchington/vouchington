@@ -1,5 +1,6 @@
-import { write } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
+import type { SQLStatement } from 'sql-template-strings'
 
 export type RssFeedItemSourcePublicationForTest = {
   item_published_at: Date

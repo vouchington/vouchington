@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import { decryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { copyrightCorrespondencePurpose } from '../services/copyright-notices/correspondence.mts'
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
 import type { PrivateUser } from '../services/users/types.mts'

@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 
 export async function getCrawlOembedPendingIndexDefinition(): Promise<string | undefined> {
   const { rows } = await read<{ indexdef: string }>(

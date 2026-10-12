@@ -1,6 +1,6 @@
-import { write } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { createCopyrightFormIntake } from '../services/copyright-notices/form-intakes.mts'
 import { appendCopyrightFormScreening } from '../services/copyright-notices/form-screenings.mts'
 import { copyrightSubmissionPurpose } from '../services/copyright-notices/submissions.mts'

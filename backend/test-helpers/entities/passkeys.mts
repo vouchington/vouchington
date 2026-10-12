@@ -1,5 +1,5 @@
-import { write, read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write, read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 } from 'uuid'
 
 // An explicit `id` lets tests engineer tie-key (equal-timestamp) fixtures: `created_at` on

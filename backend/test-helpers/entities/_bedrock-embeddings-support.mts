@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { ValkeyBloomFilter } from '@data-stores/valkey/bloom-filter'
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import pgvector from 'pgvector/pg'

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 
 /**
  * Package-local fixtures for the moderation and admission joined-id relations. They use raw SQL

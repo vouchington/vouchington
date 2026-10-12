@@ -1,5 +1,6 @@
-import { read, type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { type TransactionQuery, beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 export async function softDeleteUser(userId: string): Promise<void> {
   await write(sql`

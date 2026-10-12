@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 // @data-stores/psql cannot depend on @voucha/test-helpers (see users.mts in this directory for why).
 // Trimmed-down substitute for test-helpers' insertTestRssFeedDirect/insertTestRssFeed, scoped to

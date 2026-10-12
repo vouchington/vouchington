@@ -1,5 +1,6 @@
-import sql from 'sql-template-strings'
-import { beginTransaction, read } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 async function hasBlockedOperation(holderPid: number): Promise<boolean> {

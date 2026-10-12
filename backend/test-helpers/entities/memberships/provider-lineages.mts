@@ -1,6 +1,7 @@
-import { read, write, type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
+import { read, write } from '../../fixture-executor.mts'
 import type { MembershipProviderSourceIdentity } from '../../../services/memberships/create-types.mts'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 
 export async function createTestMembershipProviderLineage(
   sourceIdentity: MembershipProviderSourceIdentity,

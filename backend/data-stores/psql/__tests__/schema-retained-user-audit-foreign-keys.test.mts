@@ -8,6 +8,7 @@ import {
 } from '../../../test-helpers/entities/retained-user-audit-references.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { beginTransaction, onGracefulShutdown, read } from '../index.mts'
+import { allowFixtureQuery } from '../../../test-helpers/fixture-sql.mts'
 
 describe('retained-user audit foreign keys', () => {
   afterAll(onGracefulShutdown)
@@ -59,9 +60,10 @@ describe('retained-user audit foreign keys', () => {
     const post = await createTestPost()
     await using query = await beginTransaction()
     await insertTestRetainedUserAuditRow(query, 'post_clearance_changes', actorId, post.id)
-    const { rowCount } = await query('SELECT id FROM retained_user_identities WHERE id = $1', [
-      actorId,
-    ])
+    const { rowCount } = await query(
+      allowFixtureQuery('SELECT id FROM retained_user_identities WHERE id = $1'),
+      [actorId],
+    )
     expect(rowCount).toBe(1)
     expect(await countTestRetainedUserAuditRows(query, 'post_clearance_changes', actorId)).toBe(1)
   })

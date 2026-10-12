@@ -2,8 +2,8 @@
  * RSS feed item vote entity helpers
  */
 
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /**
  * Insert RSS feed item vote by rss_feed_item UUID.

@@ -1,4 +1,5 @@
-import { read, write, writePool } from '@data-stores/psql'
+import { writePool } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { EMBEDDINGS_TABLE, embeddingBloomFilter } from './_bedrock-embeddings-support.mts'
 
 export { makeRandomEmbedding, makeNearbyEmbedding } from './embedding-vectors.mts'

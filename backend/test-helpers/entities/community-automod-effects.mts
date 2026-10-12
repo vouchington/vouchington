@@ -1,6 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function readTestCommunityPostReviewHistory(postId: string) {
   const { rows } = await read<{

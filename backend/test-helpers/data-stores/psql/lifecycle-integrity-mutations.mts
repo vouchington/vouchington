@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 export async function insertContradictoryImageLifecycle(userId: string): Promise<void> {
   await write(sql`/* rejectContradictoryImageLifecycle */

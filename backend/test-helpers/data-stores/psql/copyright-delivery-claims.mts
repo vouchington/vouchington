@@ -1,6 +1,6 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../fixture-executor.mts'
 import assert from 'node:assert/strict'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 
 /**
  * Moves one owned delivery intent's claim past its 15-minute lease with `deliveryAttemptCount`

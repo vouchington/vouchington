@@ -7,6 +7,7 @@ import { insertTestCommunity } from './communities.mts'
 import { insertTestCommunityPostReview } from './community-post-reviews.mts'
 import { insertTestPost } from './posts.mts'
 import { createTestUser } from './users.mts'
+import { allowFixtureQuery } from '../fixture-sql.mts'
 
 const LOCK_ORDERING_MARKDOWN = 'Lock ordering regression fixture.'
 
@@ -146,7 +147,7 @@ async function holdCommunityPostReviewLock(input: {
 
 async function lockPostPublicationWithTimeout(postId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await lockPostPublication(query, postId)
   await query.commit()
 }

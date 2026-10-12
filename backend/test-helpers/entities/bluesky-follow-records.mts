@@ -1,5 +1,6 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 } from 'uuid'
 
 export async function insertTestBlueskyFollowReceipt(

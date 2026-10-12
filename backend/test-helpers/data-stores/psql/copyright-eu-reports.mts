@@ -1,5 +1,5 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 /** Counts the EU transparency reports one staff member compiled, so a rejected request can prove
  * it recorded nothing in the shared database. */

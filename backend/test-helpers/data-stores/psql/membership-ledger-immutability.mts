@@ -1,7 +1,7 @@
 import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 import { createLocalTestUser } from './users.mts'
 
 type QueryResult = { rowCount: number | null }

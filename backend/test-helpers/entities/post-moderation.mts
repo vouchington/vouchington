@@ -1,6 +1,6 @@
 /* oxlint-disable max-lines -- Ledger fixture readers and writers retain one coherent test boundary. */
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 type TestModerationSource = 'openai_omni' | 'spam_detection'
 type TestModerationDisposition = 'pass' | 'review' | 'reject' | 'incomplete'

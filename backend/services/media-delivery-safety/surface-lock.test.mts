@@ -11,6 +11,7 @@ import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-deliver
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { lockImageDeliveryMutation, prepublishImageSurfaceDenials } from './index.mts'
 import * as deliveryLock from './delivery-lock.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('multi-slot owner delivery fences', () => {
   afterEach(() => {
@@ -101,7 +102,7 @@ describe('multi-slot owner delivery fences', () => {
 
 async function probePlacementAdvisoryLock(placementId: string): Promise<void> {
   await using probe = await beginTransaction()
-  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await probe(`/* surface lock probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
     `image-placement:${placementId}`,
   ])

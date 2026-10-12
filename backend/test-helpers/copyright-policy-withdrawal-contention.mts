@@ -1,7 +1,8 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import type { PrivateUser } from '../services/users/types.mts'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { onTestFinished } from 'vitest'
 import { withdrawCopyrightJurisdictionPolicyApproval } from '../services/copyright-notices/jurisdiction-policy.mts'
 

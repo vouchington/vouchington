@@ -1,5 +1,6 @@
-import { read } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { read } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
+import type { SQLStatement } from 'sql-template-strings'
 import type {
   ContentCreationChannel,
   ContentProvenance,

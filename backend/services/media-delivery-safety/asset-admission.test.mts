@@ -29,6 +29,7 @@ import * as assetAdmissionLock from './asset-admission-lock.mts'
 import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 import { createCommunity } from '../communities/create.mts'
 import { lockActivePostAuthorImageAdmission } from '../posts/create/active-author.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('asset admission root domain', () => {
   afterEach(() => {
@@ -61,7 +62,7 @@ describe('asset admission root domain', () => {
     await using first = await beginTransaction()
     await using second = await beginTransaction()
     await lockUserProfileLinkImageOwners([ownerId], first)
-    await second(`SET LOCAL lock_timeout = '50ms'`)
+    await second(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
     await expect(
       lockUserProfileLinkImageOwners([ownerId.replaceAll('-', '').toUpperCase()], second),
     ).rejects.toMatchObject({ code: '55P03' })
@@ -268,7 +269,7 @@ function watchAdmissionLock(matches: (imageIds: readonly string[]) => boolean): 
 
 async function expectAdmissionLockHeld(imageId: string): Promise<void> {
   await using probe = await beginTransaction()
-  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await probe(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await expect(
     probe(`/* admission lock probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
       `image-asset-admission:${imageId}`,

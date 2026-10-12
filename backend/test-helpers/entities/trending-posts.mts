@@ -2,8 +2,8 @@
  * Test helper for creating trending posts data
  */
 
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from './users.mts'
 import { insertTestPost, deleteTestPost } from './posts.mts'

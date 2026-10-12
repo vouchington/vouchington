@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 
 /** A real query after early cursor exit proves the pool remains usable. */
 export async function readBoundedCursorConnectionProbeForTest(): Promise<Array<{ ready: number }>> {

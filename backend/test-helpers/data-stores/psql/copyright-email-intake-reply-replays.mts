@@ -1,5 +1,5 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 /** The audit rows that name a delivery intent as the replayed delivery, oldest first. */
 export async function readTestCopyrightDeliveryIntentReplayEvents(intentId: string): Promise<

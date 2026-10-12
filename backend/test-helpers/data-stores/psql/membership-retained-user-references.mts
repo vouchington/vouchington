@@ -1,7 +1,7 @@
 import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
-import { read, write } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { read, write } from '../../fixture-executor.mts'
 import { createTestAdministratorRefundOperation } from '../../entities/membership-refund-reconciliation-schema.mts'
 import { createLocalTestUser } from './users.mts'
 

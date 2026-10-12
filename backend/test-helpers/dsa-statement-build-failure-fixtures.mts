@@ -1,9 +1,9 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import {
   assertDsaStatementPayload,
   buildCopyrightDsaStatementPayload,
 } from '../services/copyright-notices/dsa-statement-payload.mts'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { v7 } from 'uuid'
 
 /**

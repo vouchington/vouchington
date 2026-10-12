@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../../../fixture-executor.mts'
 import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
 import generateSeed from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import type { StructuredDecisionResult } from '@modules/structured-decisions'

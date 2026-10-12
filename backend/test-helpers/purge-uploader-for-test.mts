@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { write } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { getRetentionCutoffDate } from '../services/data-retention/cleanup-options.mts'
 import { cleanupSoftDeletedUser } from '../services/data-retention/cleanup-soft-deleted-user.mts'

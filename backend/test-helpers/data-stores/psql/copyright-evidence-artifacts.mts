@@ -1,6 +1,6 @@
 import { upsertMediaTypes } from '../../../services/urls/media-types.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 /** Records a stored original for a submission; bytes stay in private object storage. */
 export async function insertCopyrightEvidenceArtifact(input: {

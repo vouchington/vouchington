@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { collectPlanNodes, definePlanStatisticsRefresh } from '../query-plans.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 

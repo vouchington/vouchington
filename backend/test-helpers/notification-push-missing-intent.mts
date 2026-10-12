@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 /** Removes only this notification's captured intent to exercise durable-intent recovery. */
 export async function createTestNotificationWithoutPushIntent(userId: string): Promise<string> {

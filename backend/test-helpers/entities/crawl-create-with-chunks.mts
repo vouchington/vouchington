@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { createTestUser } from './users.mts'
 import { insertTestUrlDirect } from './urls.mts'
 import { insertTestCrawler } from './crawlers.mts'

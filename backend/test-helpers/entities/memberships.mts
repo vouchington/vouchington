@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { randomUUID } from 'node:crypto'
 import type { MembershipPlanSlug, MembershipStatus } from '@voucha/types/entities/membership'
 import { recordTestMembershipChange, getLifecycleFields } from './memberships-lifecycle.mts'

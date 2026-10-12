@@ -1,6 +1,6 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 import { v7 as uuidv7 } from 'uuid'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 type InsertTestModeratorActionOptions = {
   actorId: string | null

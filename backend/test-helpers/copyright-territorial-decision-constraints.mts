@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { withRolledBackTerritorialTransaction } from './data-stores/psql/copyright-eu-uk-contracts.mts'
 
 type Jurisdiction = 'eu_dsa' | 'uk'

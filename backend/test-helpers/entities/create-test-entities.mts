@@ -3,7 +3,7 @@ import type { Post, PostBroadcast, PostPrivacy, PostType } from '@voucha/types/e
 import type { TopicTypes } from '@voucha/types/entities/topic'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { insertTestTopic } from './topics.mts'
 import { insertTestUrlHostname } from './url-hostnames.mts'
 import { insertTestUrlDirect } from './urls.mts'

@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 const ALLOWED_RELATION_TABLES = new Set(
   entityRelationMetadatum.map(relation => relation.table_name),

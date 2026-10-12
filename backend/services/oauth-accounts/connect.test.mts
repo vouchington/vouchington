@@ -16,6 +16,7 @@ import {
   runOAuthAccountConnectionPostCommitEffects,
 } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('connectOAuthAccountToUser', () => {
   it('rechecks suspension after provider work and leaves the account unlinked', async () => {
@@ -103,7 +104,7 @@ describe('connectOAuthAccountToUser', () => {
       )
       {
         await using contention = await beginTransaction()
-        await contention(`SET LOCAL lock_timeout = '50ms'`)
+        await contention(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
         await expect(
           connectOAuthAccountToUser('github', user.id, providerUserId, { query: contention }),
         ).rejects.toMatchObject({ code: '55P03' })

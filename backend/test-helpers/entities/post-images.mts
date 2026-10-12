@@ -1,7 +1,7 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
 import { completeTestMediaDeliveryRecord } from './image-surface-placements.mts'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function removeTestPostImage(postId: string, imageId: string): Promise<void> {
   await write(sql`

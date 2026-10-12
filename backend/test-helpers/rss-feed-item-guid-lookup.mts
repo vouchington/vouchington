@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from './fixture-executor.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 
 /**
  * Looks up an RSS feed item ID by GUID without scoping by hostname.

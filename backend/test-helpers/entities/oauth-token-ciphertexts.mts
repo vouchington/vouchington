@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 import { providerTableConfigs, type OAuthProvider } from './_oauth-config-support.mts'
 
 export async function getTestOAuthAccountCiphertexts(

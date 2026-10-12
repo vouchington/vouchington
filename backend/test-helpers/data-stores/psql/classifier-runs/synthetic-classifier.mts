@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../../../fixture-executor.mts'
+import sql from '../../../fixture-sql.mts'
 import type { ClassifierRunAdapter } from '../../../../services/classifier-runs/index.mts'
 import { createPostModerationContent } from '../../../../services/posts/content.mts'
 import { createTestPost, createTestUser } from '../../../index.mts'

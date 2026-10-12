@@ -1,8 +1,8 @@
-import { read } from '@data-stores/psql'
+import { read } from '../fixture-executor.mts'
 import { retainedKeyPayloadSql } from '../../services/post-publication/concrete-key-columns.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PostPublicationReason } from '../../services/post-publication/types.mts'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 export type TestPostPublicationDirtyWork = {
   id: string
   post_identity_id: string | null

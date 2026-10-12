@@ -19,6 +19,7 @@ import {
   setEditorialStoryOfficialItem,
 } from '@services/stories'
 import * as storyLifecycleLock from '../post-publication/story-lifecycle-lock.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 async function fixture() {
   const admin = await createTestUserDirect({ administrator: true })
@@ -95,9 +96,11 @@ describe('editorial official-item membership serialization', () => {
 
 async function probeItemRow(itemId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await query(
-    `SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
+    allowFixtureQuery(
+      `SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
+    ),
     [itemId],
   )
   await query.commit()

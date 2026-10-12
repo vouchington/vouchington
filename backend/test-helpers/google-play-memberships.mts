@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { acceptObservation } from '../services/memberships/google/verification-persistence.mts'
 import type { Context } from '../services/memberships/google/process-verification-types.mts'
 import type { GooglePlayMembershipObservation } from '../services/memberships/google/types.mts'
@@ -19,7 +20,6 @@ export async function getTestGooglePlayAcknowledgementId(
   `)
   return rows[0]?.id ?? null
 }
-
 export async function getTestGooglePlayAcknowledgementRecoveryCursor(): Promise<string | null> {
   const { rows } = await write<{ cursor_evidence_id: string | null }>(sql`
     /* getTestGooglePlayAcknowledgementRecoveryCursor */

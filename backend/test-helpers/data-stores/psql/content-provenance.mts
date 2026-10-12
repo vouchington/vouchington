@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import sql from 'sql-template-strings'
-import { read, write } from '@data-stores/psql'
+import sql from '../../fixture-sql.mts'
+import { read, write } from '../../fixture-executor.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ContentCreationChannel } from '@voucha/types/entities/content-provenance'
 import { createTestPost } from '../../entities/create-test-entities.mts'

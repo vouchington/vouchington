@@ -1,5 +1,6 @@
 import { mintUUIDv7 } from '@modules/utils/ids'
-import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
+import { beginTransaction, type QueryOptions } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import {
   entityRelationMetadatum,
   getEntityRelationIntegrityTargetColumn,

@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import sql from 'sql-template-strings'
+import sql from '../../../fixture-sql.mts'
 
 export async function runTestStripeCatalogReconciliationWhileProductReferenced<T>(
   reconcile: () => Promise<T>,

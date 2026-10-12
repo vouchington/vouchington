@@ -28,6 +28,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
+import { allowFixtureQuery } from '../../test-helpers/fixture-sql.mts'
 
 describe('entity relation publication mutation locks', () => {
   it('locks an RSS item hashtag alias scope before waiting on the item row', async () => {
@@ -262,7 +263,7 @@ async function lockScopeWithTimeout(
   lock: (query: TransactionQuery) => Promise<unknown>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(allowFixtureQuery(`SET LOCAL lock_timeout = '50ms'`))
   await lock(query)
   await query.commit()
 }

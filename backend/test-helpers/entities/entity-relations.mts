@@ -2,12 +2,12 @@
  * Entity relations helpers
  */
 
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 const ALLOWED_RELATION_TABLES = new Set(
   entityRelationMetadatum.map(relation => relation.table_name),

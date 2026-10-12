@@ -1,9 +1,9 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 
 export async function insertTestEntityRelationVote(options: {
   relationTable: string

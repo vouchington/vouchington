@@ -1,5 +1,5 @@
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../../../fixture-executor.mts'
+import sql from '../../../fixture-sql.mts'
 
 /** Raw `classifier_run_requests` rows and C5 local outcomes for schema tests. */
 export async function insertClassifierRunRequestForSchemaTest(input: {

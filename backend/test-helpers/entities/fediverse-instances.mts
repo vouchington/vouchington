@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { insertTestTopic } from './topics/core.mts'
 import { insertTestUrlHostname } from './url-hostnames/mutations.mts'

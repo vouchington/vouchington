@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export async function updateTopicMarkdown(topicId: string, markdown: string): Promise<void> {

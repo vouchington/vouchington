@@ -4,8 +4,8 @@
  * `@voucha/test-helpers` and `@voucha/test-helpers/entities/rss-feeds` consumers resolve unchanged.
  */
 
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 export async function addRssFeedTopicPublisherType(
   topicId: string,

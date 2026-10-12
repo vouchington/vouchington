@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 // Backdates a cached remote_actors row past REMOTE_ACTOR_CACHE_TTL_MS so a lookup treats it as
 // stale — used to exercise the refetch-on-stale and fallback-on-refetch-failure paths.

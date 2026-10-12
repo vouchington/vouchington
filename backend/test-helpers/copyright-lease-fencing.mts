@@ -1,9 +1,10 @@
 import { createTestUser } from './index.mts'
 import { createParsedCopyrightEmailIntake } from './copyright-email-intake-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../services/copyright-notices/email-rejection.mts'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from './fixture-executor.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { completeCopyrightActionIntentInTransaction } from '../services/copyright-notices/action-delivery-locking.mts'
 

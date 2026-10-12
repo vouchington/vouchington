@@ -1,4 +1,5 @@
-import { write, writePool } from '@data-stores/psql'
+import { writePool } from '@data-stores/psql'
+import { write } from './fixture-executor.mts'
 
 export async function probeWritePool(value: number): Promise<number | undefined> {
   const result = await write<{ value: number }>(

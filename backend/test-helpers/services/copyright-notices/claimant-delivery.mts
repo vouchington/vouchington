@@ -1,6 +1,6 @@
-import { read } from '@data-stores/psql'
+import { read } from '../../fixture-executor.mts'
 import { decryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from '../../fixture-sql.mts'
 import { createOutboundCopyrightCorrespondence } from '../../../services/copyright-notices/correspondence.mts'
 import { createCopyrightDeliveryIntent } from '../../../services/copyright-notices/delivery-intents.mts'
 

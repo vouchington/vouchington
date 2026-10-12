@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, write } from '../../fixture-executor.mts'
+import sql from '../../fixture-sql.mts'
 
 // @data-stores/psql cannot depend on @voucha/test-helpers: test-helpers itself depends on
 // @data-stores/psql, and every backend service devDeps test-helpers for its tests, so a

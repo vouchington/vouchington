@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 
 /** Creates a durable admission record whose crashed worker lease is already reclaimable. */
 export async function createExpiredContributionAdmissionClaimForTest(input: {

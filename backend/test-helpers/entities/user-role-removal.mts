@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write } from '../fixture-executor.mts'
 
 // Removes a role from a user, to simulate an administrator demoted after a token was issued. Raw
 // primitive like addTestUserRole: it omits the JWT-staleness side effect of the real service.

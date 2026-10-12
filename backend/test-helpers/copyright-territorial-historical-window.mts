@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql from './fixture-sql.mts'
 import { lockCopyrightJurisdictionPolicy } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 import { getTerritorialInformedWindow } from '../services/copyright-notices/territorial-informed-at.mts'

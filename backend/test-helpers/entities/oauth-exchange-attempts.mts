@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
 
 type TestOAuthExchangeAttemptOptions = {
   exchangeAttempts?: number

@@ -4,7 +4,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql from '../fixture-sql.mts'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
 
 type InsertTestUrlDirectOptions = {

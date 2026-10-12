@@ -1,5 +1,6 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { beginTransaction } from '@data-stores/psql'
+import { read, write } from '../fixture-executor.mts'
+import sql from '../fixture-sql.mts'
 import { v7 } from 'uuid'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
 import { createHash, randomBytes } from 'node:crypto'
@@ -17,7 +18,6 @@ export interface TestBlueskyLinkedAccountRow {
 export * from './bluesky-follow-records.mts'
 export * from './bluesky-link-authorizations.mts'
 export * from './bluesky-disconnect.mts'
-
 // Seeds a linked-and-attached bluesky_linked_accounts row directly, bypassing the real AT
 // Protocol OAuth dance (Playwright cannot drive a live Bluesky authorization server). The DID and
 // session ciphertext are randomized fixtures, not real AT Protocol credentials — callers that need
