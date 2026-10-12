@@ -1,7 +1,7 @@
 import {
   assertWhitelistedSqlIdentifier,
   beginTransaction,
-  read,
+  write,
   type TransactionQuery,
 } from '@data-stores/psql'
 import {
@@ -184,7 +184,7 @@ async function deleteEmptyFamilies(
 }
 
 async function hasRemainingExpiredArtifacts(window: RetentionWindow): Promise<boolean> {
-  const result = await read<{ has_more: boolean }>(
+  const result = await write<{ has_more: boolean }>(
     `/* hasRemainingExpiredOAuthArtifacts */
      SELECT EXISTS (SELECT 1 FROM oauth_authorization_requests WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))
        OR EXISTS (SELECT 1 FROM oauth_authorization_codes WHERE expires_at <= $1 AND ($2::timestamptz IS NULL OR expires_at >= $2))

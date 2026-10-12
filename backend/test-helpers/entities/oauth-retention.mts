@@ -106,6 +106,39 @@ export async function getTestOAuthRetentionRowCounts(clientId: string): Promise<
   return result.rows[0]!
 }
 
+export async function getTestOAuthRetentionFamilyId(clientId: string): Promise<string> {
+  const result = await write<{ id: string }>(
+    `/* getTestOAuthRetentionFamilyId */ SELECT family.id
+     FROM oauth_refresh_token_families AS family
+     JOIN oauth_grants AS grant_row ON grant_row.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = grant_row.client_id
+     WHERE client.client_id = $1 ORDER BY family.id LIMIT 1`,
+    [clientId],
+  )
+  if (!result.rows[0]) throw new Error('Test OAuth family is missing')
+  return result.rows[0].id
+}
+
+export async function lockTestOAuthRetentionRemainingAccessToken(
+  familyIds: readonly string[],
+  deletingQuery: TransactionQuery,
+  observerQuery: TransactionQuery,
+): Promise<number> {
+  const remaining = await deletingQuery<{ id: string }>(
+    `/* lockTestOAuthRetentionRemainingAccessToken */
+     SELECT id FROM oauth_access_tokens WHERE refresh_family_id = ANY($1::uuid[])
+     ORDER BY id LIMIT 1`,
+    [familyIds],
+  )
+  if (!remaining.rows[0]) throw new Error('Test OAuth access-token survivor is missing')
+  const locked = await observerQuery(
+    `/* lockTestOAuthRetentionRemainingAccessToken */
+     SELECT id FROM oauth_access_tokens WHERE id = $1 FOR UPDATE NOWAIT`,
+    [remaining.rows[0].id],
+  )
+  return locked.rowCount ?? 0
+}
+
 export async function lockTestOAuthRetentionPredecessor(
   clientId: string,
   query: TransactionQuery,

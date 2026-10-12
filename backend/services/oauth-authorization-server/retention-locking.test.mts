@@ -3,7 +3,9 @@ import { beginTransaction } from '@voucha/test-helpers'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createTestExpiryWindow } from '@voucha/test-helpers/data'
 import {
+  getTestOAuthRetentionFamilyId,
   getTestOAuthRetentionRowCounts,
+  lockTestOAuthRetentionRemainingAccessToken,
   lockTestOAuthRetentionPredecessor,
   prepareTestOAuthRetentionRows,
 } from '@voucha/test-helpers/entities/oauth-retention'
@@ -15,6 +17,43 @@ import {
 } from './retention-tokens.mts'
 
 describe('OAuth retention replacement-chain locking', () => {
+  it('locks only the globally selected child when several families have children', async () => {
+    const owner = await createTestUserDirect()
+    const window = createTestExpiryWindow()
+    const familyIds: string[] = []
+    for (let index = 0; index < 2; index += 1) {
+      const flow = await createTestApprovedOAuthAuthorization(owner)
+      await exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      })
+      await prepareTestOAuthRetentionRows(flow.client.client_id, {
+        expiresAt: window.firstEligibleDate,
+        childExpiresAt: window.afterUpperBoundDate,
+        only: 'family',
+      })
+      familyIds.push(await getTestOAuthRetentionFamilyId(flow.client.client_id))
+    }
+
+    await using deleting = await beginTransaction()
+    expect(
+      await deleteExpiredOAuthRetentionTokens(
+        deleting,
+        'oauth_access_tokens',
+        window,
+        1,
+        familyIds,
+        false,
+      ),
+    ).toBe(1)
+    await using observer = await beginTransaction()
+    expect(await lockTestOAuthRetentionRemainingAccessToken(familyIds, deleting, observer)).toBe(1)
+    await observer.rollback()
+    await deleting.commit()
+  })
+
   it('retains a replacement while its predecessor is locked, then drains the chain after release', async () => {
     const owner = await createTestUserDirect()
     const flow = await createTestApprovedOAuthAuthorization(owner)

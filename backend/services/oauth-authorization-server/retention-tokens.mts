@@ -48,17 +48,13 @@ export async function deleteExpiredOAuthRetentionTokens(
       ? { rowCount: 0 }
       : await query(
           `/* deleteOAuthRetentionFamilyTokens */
-     /* deadlock-safe: family locks and token locks skip held rows; refresh replacements
-        with any surviving predecessor are excluded, so SET NULL cannot wait on that predecessor. */
+     /* deadlock-safe: one global index-ordered token page locks at most $2 rows and skips
+        held rows; surviving predecessors exclude replacements that could invoke SET NULL. */
      WITH candidates AS MATERIALIZED (
-       SELECT artifact.id FROM unnest($1::uuid[]) AS family(id)
-       CROSS JOIN LATERAL (
-         SELECT artifact.id FROM ${tokenTable} AS artifact
-         WHERE artifact.${familyColumn} = family.id ${noPredecessor}
-         ORDER BY artifact.id LIMIT $2
-         FOR UPDATE OF artifact SKIP LOCKED
-       ) AS artifact
-       ORDER BY artifact.id LIMIT $2
+       SELECT artifact.id FROM ${tokenTable} AS artifact
+       WHERE artifact.${familyColumn} = ANY($1::uuid[]) ${noPredecessor}
+       ORDER BY artifact.${familyColumn}, artifact.id LIMIT $2
+       FOR UPDATE OF artifact SKIP LOCKED
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,
           [familyIds, limit],
         )
