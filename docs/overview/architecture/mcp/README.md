@@ -85,12 +85,13 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for both committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for all three committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
 
-| Artifact                                                           | Contents                                                                                                      |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json) | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
-| [`catalog.md`](catalog.md)                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
+| Artifact                                                                           | Contents                                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)                 | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
+| [`catalog.md`](catalog.md)                                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
+| [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json) | Versioned MCP result cases with tool arguments and structured results validated against the catalog schemas   |
 
 The live check asserts that each server's catalog equals what `tools/list` returns to a caller
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,

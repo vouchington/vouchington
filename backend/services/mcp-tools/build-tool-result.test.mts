@@ -165,7 +165,13 @@ describe('tool-local schema references', () => {
       await mkdir(join(root, 'api-fixtures/v1'), { recursive: true })
       await mkdir(join(markdown, '..'), { recursive: true })
       await writeFile(markdown, '# Catalog\n\n<!-- BEGIN GENERATED -->\n\n<!-- END GENERATED -->\n')
-      const options = { root, tools: [fixture], ready: Promise.resolve(), closeResources: [] }
+      const options = {
+        root,
+        tools: [fixture],
+        cases: [],
+        ready: Promise.resolve(),
+        closeResources: [],
+      }
       await runCatalogGeneration([], options)
       await runCatalogGeneration(['--check'], options)
       const catalog = JSON.parse(await readFile(join(root, 'api-fixtures/v1/mcp.json'), 'utf8'))
