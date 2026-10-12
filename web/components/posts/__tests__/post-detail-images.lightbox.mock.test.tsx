@@ -7,6 +7,30 @@ import {
   setUpPostDetailImagesTest,
 } from '@/test-helpers/components/posts/post-detail-images.mock-support'
 
+vi.mock(import('../post-image-lightbox'), () => ({
+  PostImageLightbox: ({
+    open,
+    startIndex,
+    onOpenChange,
+  }: {
+    open: boolean
+    startIndex: number
+    onOpenChange: (open: boolean) => void
+  }) =>
+    open ? (
+      <div data-start-index={startIndex}>
+        <button
+          type='button'
+          onClick={() => onOpenChange(false)}
+        >
+          Close lightbox
+        </button>
+      </div>
+    ) : (
+      <span hidden />
+    ),
+}))
+
 vi.mock(
   import('@/components/shared/entity-bookmark-button'),
   () =>

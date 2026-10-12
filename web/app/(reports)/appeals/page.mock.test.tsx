@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { registerAppealsDisputesPageCases } from '@/test-helpers/app/reports/appeals-disputes-page-cases'

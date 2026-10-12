@@ -1,7 +1,9 @@
 import { configure, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { CommunityCard } from '../community-card'
 import { makeCommunity } from '@/test-helpers/api-responses/communities'
+
+vi.mock(import('../join-button'), () => ({ default: () => <span hidden /> }))
 
 configure({ testIdAttribute: 'data-pw' })
 

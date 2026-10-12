@@ -51,6 +51,14 @@ vi.mock(import('@/components/shared/follower-share-actions'), () => ({
   FollowerShareActions: () => null,
 }))
 
+vi.mock(import('@/components/shared/report-menu-item'), () => ({
+  ReportMenuItem: () => <span hidden />,
+}))
+
+vi.mock(import('@/components/tags/add-tag-form'), () => ({
+  AddTagForm: () => <span hidden />,
+}))
+
 vi.mock(
   import('@/lib/auth/context'),
   () =>

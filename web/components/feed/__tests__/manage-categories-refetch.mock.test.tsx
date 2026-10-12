@@ -4,14 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { EntityRelation, EntityRelationsResponse } from '@/lib/api/entity-relations'
 
-const { mockFetchEntityRelations, mockCreateEntityRelation } = vi.hoisted(() => ({
+const { mockFetchEntityRelations } = vi.hoisted(() => ({
   mockFetchEntityRelations: vi.fn<VitestLooseMock>(),
-  mockCreateEntityRelation: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/lib/api/client/entity-relations'), () => ({
   fetchEntityRelations: mockFetchEntityRelations,
-  createEntityRelation: mockCreateEntityRelation,
 }))
 
 vi.mock(
@@ -102,14 +100,24 @@ vi.mock(import('@/components/tags/manage-tags-card'), () => ({
   ManageTagsCard: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 
-vi.mock(import('@/components/tags/tag-autocomplete'), () => ({
-  TagAutocomplete: ({ onSelect }: { onSelect: (id: string) => void }) => (
+vi.mock(import('@/components/tags/add-tag-form'), () => ({
+  AddTagForm: ({
+    entityType,
+    entityId,
+    predicate,
+    objectType,
+    onTagAdded,
+  }: Parameters<typeof import('@/components/tags/add-tag-form').AddTagForm>[0]) => (
     <button
       type='button'
       data-testid='autocomplete-select'
-      onClick={() => onSelect('topic-amazon')}
+      data-entity-type={entityType}
+      data-entity-id={entityId}
+      data-predicate={predicate}
+      data-object-type={objectType}
+      onClick={onTagAdded}
     >
-      Select tag
+      Add tag
     </button>
   ),
 }))
@@ -174,15 +182,9 @@ const populatedResponse: EntityRelationsResponse = {
   election_votes: {},
 }
 
-describe('ManageCategoriesMenuItem — refetch after add', () => {
+describe('ManageCategoriesMenuItem — refetch after add form reports a new tag', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreateEntityRelation.mockResolvedValue({
-      id: 'new-rel',
-      created_at: '2024-01-01T00:00:00Z',
-      created_by_id: 'user-1',
-      object_data: {},
-    })
     mockFetchEntityRelations
       .mockResolvedValueOnce(emptyResponse)
       .mockResolvedValueOnce(populatedResponse)
@@ -196,12 +198,16 @@ describe('ManageCategoriesMenuItem — refetch after add', () => {
       fireEvent.click(screen.getByRole('menuitem'))
     })
 
-    // Wait for the add form to render (dynamic component loads asynchronously via useEffect)
+    // The lazy form double signals a completed add through the real content callback.
     const selectBtn = await waitFor(() => screen.getByTestId('autocomplete-select'))
     expect(screen.getByTestId('tag-list')).toBeDefined()
     expect(screen.queryByTestId('tag-item')).toBeNull()
+    expect(selectBtn).toHaveAttribute('data-entity-type', 'rss_feed_item')
+    expect(selectBtn).toHaveAttribute('data-entity-id', 'item-1')
+    expect(selectBtn).toHaveAttribute('data-predicate', 'category')
+    expect(selectBtn).toHaveAttribute('data-object-type', 'topic')
 
-    // Add a tag; await act to flush createEntityRelation, startTransition, and re-suspension
+    // Signal a completed add and let the parent refetch its relation list.
     await act(async () => {
       fireEvent.click(selectBtn)
     })
@@ -211,13 +217,6 @@ describe('ManageCategoriesMenuItem — refetch after add', () => {
       expect(screen.getByText('topic-amazon')).toBeDefined()
     })
 
-    expect(mockCreateEntityRelation).toHaveBeenCalledWith(
-      'rss_feed_item',
-      'item-1',
-      'category',
-      'topic',
-      'topic-amazon',
-    )
     expect(mockFetchEntityRelations).toHaveBeenCalledTimes(2)
     expect(mockFetchEntityRelations).toHaveBeenCalledWith(
       'rss_feed_item',

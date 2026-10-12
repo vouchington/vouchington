@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { getOrCreateCrawlerForHostname } from './create-crawler.mts'
@@ -46,10 +47,11 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
   queryOptions: QueryOptions = {},
   excludeUrlIds: string[] = [],
 ): Promise<CrawlerRefreshCandidateUrl[]> => {
+  const minCrawlId = getMinUUIDv7ForParentHistory(hostnameId)
   const query = sql`/* searchCrawlerRefreshUrlCandidatesByHostnameId */
     SELECT u.id, u.url
     FROM urls u
-    LEFT JOIN crawls c ON c.url_id = u.id
+    LEFT JOIN crawls c ON c.url_id = u.id AND c.id >= ${minCrawlId}::uuid
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE u.hostname_id = ${hostnameId}
       AND NOT h.is_blocked

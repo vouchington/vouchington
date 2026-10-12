@@ -1,8 +1,12 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import type { User } from '@/types/user'
 import { RootAppShell } from './root-app-shell'
+
+// This test inspects the auth projection, rather than rendering the shell’s lazy UI children.
+vi.mock(import('@/components/app-sidebar'), () => ({ AppSidebar: () => <aside /> }))
+vi.mock(import('@/components/navbar'), () => ({ Navbar: () => <nav /> }))
 
 function findElementByType(node: ReactNode, type: ReactElement['type']): ReactElement | null {
   if (!isValidElement(node)) return null

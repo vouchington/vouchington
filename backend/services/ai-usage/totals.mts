@@ -46,6 +46,7 @@ export async function getCommunityAiCostTotals(
       COALESCE(SUM(aul.output_tokens), 0)::BIGINT AS total_output_tokens,
       COUNT(*) FILTER (WHERE aul.pricing_status = 'unpriced')::INT AS unpriced_request_count,
       COALESCE(SUM(aul.cost_microunits), 0)::TEXT AS total_cost_microunits
+    -- no-mistakes-disable-next-line postgres-required-predicates: all-time community cost totals rank usage from every retained ID partition
     FROM ai_usage_records aul
     JOIN communities c ON c.id = aul.community_id
   `

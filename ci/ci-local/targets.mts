@@ -23,7 +23,7 @@ export const targets = {
         'no-mistakes',
         'pnpm run no-mistakes',
         'static-code-analysis.yml',
-        'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+        'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
       ),
       workflowCommand(
         'squawk',

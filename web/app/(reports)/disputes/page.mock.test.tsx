@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, vi } from 'vitest'
 import { registerAppealsDisputesPageCases } from '@/test-helpers/app/reports/appeals-disputes-page-cases'
 

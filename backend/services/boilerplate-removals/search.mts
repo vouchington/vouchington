@@ -30,6 +30,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
         END AS parent_path
       FROM urls u
       JOIN url_hostnames h ON h.id = u.hostname_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: global candidate search includes crawls started in older retained ID partitions but completed within the snapshot window
       JOIN crawls c ON c.url_id = u.id
       WHERE NOT h.is_blocked
         AND h.is_crawlable

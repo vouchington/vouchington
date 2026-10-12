@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import { navMockModule } from '@/test-helpers/next-navigation-mock'
 
 import { Navbar as NavbarComponent } from '../navbar'
 
@@ -32,14 +33,7 @@ vi.mock(
     }) as unknown as typeof import('next/link'),
 )
 
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      usePathname: () => '/',
-      useRouter: () => ({ push: vi.fn<VitestLooseMock>() }),
-    }) as unknown as typeof import('next/navigation'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(import('next/dynamic'), () => ({
   default: () =>
@@ -63,6 +57,10 @@ vi.mock(
       WriteDialog: () => null,
     }) as unknown as typeof import('@/components/navbar/write-dialog'),
 )
+
+vi.mock(import('@/components/keyboard-shortcuts-dialog'), () => ({
+  KeyboardShortcutsDialog: () => <span hidden />,
+}))
 
 vi.mock(
   import('@/components/notifications/inbox-button'),

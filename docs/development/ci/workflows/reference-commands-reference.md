@@ -27,7 +27,7 @@ Use the underlying command unless a package script owns repository policy. The S
 | `pnpm run test:smoke:backend`                                      | `working-directory: backend`, then `./scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh`                                                 |
 | `pnpm run test:smoke:web`                                          | `working-directory: web`, then `./scripts/tests/smoke-test-web.sh`                                                                                                |
 | `pnpm run syncpack:lint`                                           | `syncpack lint && syncpack format --check` — validates dependency version/range/specifier policy AND `package.json` key/dependency ordering across all workspaces |
-| `pnpm run no-mistakes`                                             | `no-mistakes check --tsconfig tsconfig.json` — validates package field shape, workspace declarations, dependency graph, and repository structure                  |
+| `pnpm run no-mistakes`                                             | `no-mistakes check` — validates package field shape, workspace declarations, dependency graph, and repository structure                                           |
 | `pnpm run jscpd`                                                   | `pnpm exec jscpd .` — reads [`.jscpd.json`](../../../../.jscpd.json)                                                                                              |
 
 For local reproduction, `./dev/ci-local --list` shows supported targets and

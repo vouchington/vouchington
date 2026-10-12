@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { MARKDOWN_CONTENT_FEATURES_UTM } from '@/components/shared/markdown-content-features'

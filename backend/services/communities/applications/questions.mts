@@ -16,7 +16,7 @@ export async function getApplicationQuestions(
   options?: QueryOptions & { lock?: boolean },
 ): Promise<CommunityApplicationQuestion[]> {
   const statement = sql`/* getApplicationQuestions */
-    SELECT *
+    SELECT id, community_id, question, field_type, options, order_index, is_required, created_at, deleted_at
     FROM community_application_questions
     WHERE community_id = ${communityId}
       AND deleted_at IS NULL

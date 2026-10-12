@@ -52,6 +52,7 @@ export async function detectBanEvasionForMember(
   const postExistsQuery = sql`/* detectBanEvasionForMember:check-posts */
     SELECT EXISTS (
       SELECT 1
+      -- no-mistakes-disable-next-line postgres-required-predicates: community posts can be attached after creation, so the community ID cannot safely bound historical post IDs
       FROM posts
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}

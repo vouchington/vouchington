@@ -114,7 +114,7 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('static-code-analysis/rust-no-inline-tests.sh')
     expect(workflow).not.toContain('static-code-analysis/agents-md-max-size/agents-md-max-size.sh')
     expect(workflow).toContain(
-      '      - name: Run no-mistakes\n        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+      '      - name: Run no-mistakes\n        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
     )
   })
 

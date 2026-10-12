@@ -26,6 +26,10 @@ vi.mock(import('next/dynamic'), () => ({
   default: () => () => null,
 }))
 
+vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
+  default: () => <span hidden />,
+}))
+
 vi.mock(import('lucide-react'), () =>
   mockLucideReact({
     MessageSquare: () => <svg data-testid='message-square-icon' />,

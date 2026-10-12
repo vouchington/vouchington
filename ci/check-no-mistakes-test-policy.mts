@@ -12,7 +12,7 @@ const expectedWorkflowCommands = [
   {
     path: workflowPath,
     job: 'no-mistakes',
-    command: 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+    command: 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
   },
   {
     path: workflowPath,

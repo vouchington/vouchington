@@ -107,6 +107,9 @@ for the detailed check and test reference.
 `pnpm run no-mistakes`; required static-analysis CI and the required CI static-analysis
 matrix run the same check. See [CI static analysis](../../ci.md#static-analysis-static-code-analysisyml)
 and [local static analysis](../../tests.md#linters-and-static-analysis).
+The monorepo check selects each importer’s owning TypeScript config. Do not force the root
+`--tsconfig`: it lacks package aliases such as the web `@/*` mapping and would hide reachable
+imports from graph checks. Use an explicit package config only for an intentionally scoped query.
 
 - **Reachability**: every included Markdown document must be discoverable from a tracked
   `AGENTS.md` link, directly or through `README.md` indexes, at a maximum graph depth of three
@@ -561,6 +564,9 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `no-mistakes` enforces `postgres-require-query-annotation` for backend TypeScript runtime
 code, excluding tests, test helpers, seed scripts, and the migration runner, with a separate
 entry for the five development-runtime helpers. Other backend scripts remain covered.
+The annotation, pagination, lock-ordering, and protected-column-write entries explicitly set
+`unanalyzableSql: ignore` to preserve their existing handling of unrecoverable statements.
+Recovered SQL still undergoes the ordinary annotation, OFFSET, ordering, and column-write checks.
 `postgres-no-offset` excludes all backend scripts and applies to tracked migrations, views,
 and config-driven SQL. The
 `postgres-generated-column-predicates` runtime entry excludes tests plus only seed scripts and
@@ -655,6 +661,9 @@ Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness ch
 
 Tests for static-analysis tooling should be covered by semantic Vitest projects in `vitest.config.mts`, not by a catch-all repo bucket.
 
+The Vitest Web project declares its real Web-only setup through `setup_files` in
+`.no-mistakes.yml`, so shared unit-test mocks do not apply to API or integration projects.
+
 The publication writer inventory uses `vouchington-tooling/post-publication-inventory` for source
 analysis. Product configuration supplies the approved capture modules and symbols, eligibility tables,
 and writer conventions; the local checker owns the tracked inventory and its diagnostics. The reader
@@ -669,7 +678,8 @@ Monetary storage, polymorphic targets, UUIDv7 timestamps, and moderation-history
 released `no-mistakes` SQL source facts. Product-specific table/column policy remains local;
 the aggregate awaits their asynchronous entrypoints and diagnostics retain source locations.
 UUIDv7 checks inspect the required root function call rather than promoting a nested call from
-an unrelated expression. Remaining runtime/generated-DDL consumers still use
+an unrelated expression. Generated-DDL replay guards also await released SQL facts for trigger
+events and literal EXECUTE payloads. Remaining runtime/generated-DDL consumers still use
 `vouchington-tooling/sql-ast` while their replay fact requirements are completed upstream.
 Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column` owns migration ADD
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in

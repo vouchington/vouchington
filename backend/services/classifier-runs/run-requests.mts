@@ -40,6 +40,7 @@ export async function requestClassifierRuns(
       ${input.inputSha256}
     FROM classifiers classifier
     WHERE classifier.slug = ANY(${slugs}::text[])
+    ORDER BY classifier.id
     ON CONFLICT `
       .append(conflict)
       .append(' DO UPDATE SET run_id = NULL, no_work_at = NULL, stale_at = NULL'),

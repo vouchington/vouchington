@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/pagination'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import type { ReferralClickLogEntry } from '@voucha/types/entities/referral-click-log'
 import type { PublicUser } from '@voucha/types/entities/user'
 
@@ -42,6 +43,7 @@ export async function getReferralClickLog(
     LEFT JOIN users ON users.id = sra.user_id
       AND users.deleted_at IS NULL
     WHERE sra.referrer_user_id = ${referrerId}
+      AND sra.id >= ${getMinUUIDv7ForParentHistory(referrerId)}::uuid
   `
 
   if (afterId) {

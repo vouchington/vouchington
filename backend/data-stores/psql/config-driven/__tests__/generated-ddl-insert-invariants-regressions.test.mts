@@ -7,17 +7,17 @@ import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data
 describe('config-driven generated DDL insert invariant regressions', () => {
   beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
 
-  it('rejects a config-driven INSERT with neither ON CONFLICT nor NOT EXISTS', () => {
-    expect(findFirstUnguardedInsertViolation("INSERT INTO prompts (body) VALUES ('hi');")).toBe(
-      "INSERT INTO prompts (body) VALUES ('hi')",
-    )
+  it('rejects a config-driven INSERT with neither ON CONFLICT nor NOT EXISTS', async () => {
     expect(
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
+      await findFirstUnguardedInsertViolation("INSERT INTO prompts (body) VALUES ('hi');"),
+    ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
+    expect(
+      await findFirstUnguardedInsertViolation(`DO $$ BEGIN
   INSERT INTO prompts (body) VALUES ('hi');
 END $$;`),
     ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
     expect(
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         "INSERT INTO prompts (body) VALUES ('hi') ON CONFLICT DO NOTHING;",
       ),
     ).toBeNull()
@@ -25,7 +25,7 @@ END $$;`),
       // A DO UPDATE whose SET target accumulates the self-reference is not
       // convergent: every worker boot re-applies the mutation instead of the
       // duplicate-key error the guard exists to catch.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         'INSERT INTO foo (id, attempts) VALUES (1, 1) ON CONFLICT (id) ' +
           'DO UPDATE SET attempts = foo.attempts + 1;',
       ),
@@ -36,7 +36,7 @@ END $$;`),
     expect(
       // A DO UPDATE whose self-reference is shielded by COALESCE/GREATEST re-applies
       // to the same steady state on every boot, so it is convergent.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         'INSERT INTO currencies (id, activated_at, score) VALUES (1, now(), 1) ' +
           'ON CONFLICT (id) DO UPDATE SET ' +
           'activated_at = COALESCE(currencies.activated_at, CURRENT_TIMESTAMP), ' +
@@ -47,7 +47,7 @@ END $$;`),
       // A subscript index that itself self-references the existing row (here, the array's
       // own element 1) makes the write *location* differ across replays even though the
       // assigned value is a stable literal: [1,0] -> [2,0] -> [2,2] on repeated replay.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         'INSERT INTO foo (id, values) VALUES (1, ARRAY[1, 0]) ON CONFLICT (id) ' +
           'DO UPDATE SET values[values[1]] = 2;',
       ),
@@ -58,20 +58,20 @@ END $$;`),
     expect(
       // A subscript index that is a plain literal has no self-reference, so the same
       // subscripted-assignment shape is convergent once the index no longer reads the row.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         'INSERT INTO currencies (id, values) VALUES (1, ARRAY[1, 0]) ON CONFLICT (id) ' +
           'DO UPDATE SET values[1] = 2;',
       ),
     ).toBeNull()
     expect(
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         "INSERT INTO prompts (id, body) SELECT uuidv7(), 'hi' " +
           "WHERE NOT EXISTS (SELECT 1 FROM prompts WHERE body = 'hi');",
       ),
     ).toBeNull()
     expect(
       // A claim row does not exempt a following unguarded insert in config-driven SQL.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
+      await findFirstUnguardedInsertViolation(`DO $$ BEGIN
   INSERT INTO migration_claims (migration_id) VALUES ('seed-x') ON CONFLICT DO NOTHING;
   IF NOT FOUND THEN RETURN; END IF;
   INSERT INTO prompts (body) VALUES ('hi');
@@ -80,7 +80,7 @@ END $$;`),
     expect(
       // A guard on one CTE's own INSERT must not mask an unguarded INSERT in a
       // sibling CTE of the same compound statement.
-      findFirstUnguardedInsertViolation(`WITH a AS (
+      await findFirstUnguardedInsertViolation(`WITH a AS (
   INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), b AS (
   INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM a
@@ -89,7 +89,7 @@ SELECT id FROM a;`),
     ).toBe("INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM a")
     expect(
       // Both CTEs guard their own INSERT, so no violation.
-      findFirstUnguardedInsertViolation(`WITH a AS (
+      await findFirstUnguardedInsertViolation(`WITH a AS (
   INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), b AS (
   INSERT INTO topic_aliases (topic_id, alias) SELECT id, 'a' FROM a WHERE NOT EXISTS (SELECT 1)
@@ -100,12 +100,12 @@ SELECT id FROM a;`),
       // An INSERT run via a dynamically EXECUTEd literal is opaque one level deeper
       // still: the DO block body scan sees only the EXECUTE statement, not the INSERT
       // inside its string argument.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
+      await findFirstUnguardedInsertViolation(`DO $$ BEGIN
   EXECUTE 'INSERT INTO prompts (body) VALUES (''hi'')';
 END $$;`),
     ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
     expect(
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
+      await findFirstUnguardedInsertViolation(`DO $$ BEGIN
   EXECUTE 'INSERT INTO prompts (body) VALUES (''hi'') ON CONFLICT DO NOTHING';
 END $$;`),
     ).toBeNull()
@@ -113,14 +113,14 @@ END $$;`),
       // "NOT EXISTS" appearing as a computed boolean VALUE, not as a WHERE/AND-scoped
       // condition restricting the INSERT's source rows, must not be mistaken for a guard —
       // this INSERT still unconditionally inserts a row on every worker boot.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         'INSERT INTO audit_rows (is_first) VALUES (NOT EXISTS (SELECT 1 FROM audit_rows));',
       ),
     ).toBe('INSERT INTO audit_rows (is_first) VALUES (NOT EXISTS (SELECT 1 FROM audit_rows))')
     expect(
       // An OR-joined NOT EXISTS is disjunctive, not a guard: this still inserts on every
       // boot where force_seed is true, regardless of whether the row already exists.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         "INSERT INTO prompts (id, body) SELECT uuidv7(), 'hi' " +
           "WHERE force_seed OR NOT EXISTS (SELECT 1 FROM prompts WHERE body = 'hi');",
       ),
@@ -134,7 +134,7 @@ END $$;`),
       // text mistaken for the real conflict action once the fragment falls back to a
       // masked regex match (the leading BEGIN glued on by the fallback splitter makes
       // it fail to parse standalone).
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         `DO $$ BEGIN
   INSERT INTO foo (id, attempts, note) VALUES (1, 1, 'x') ON CONFLICT (id) ` +
           `DO UPDATE SET attempts = foo.attempts + 1, note = 'DO NOTHING';
@@ -150,7 +150,7 @@ END $$;`,
       // both CTEs' INSERTs. The "copy" INSERT has no onConflictClause at all — it's
       // guarded by its own source SELECT's conjunctive NOT EXISTS — so it must not be
       // wrongly rejected just because its sibling "seed" CTE uses ON CONFLICT.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         `WITH "seed" AS (
   INSERT INTO topics (created_via, slug) VALUES ('system', 'a') ON CONFLICT DO NOTHING RETURNING id
 ), "copy" AS (
@@ -167,7 +167,7 @@ SELECT id FROM "seed";`,
       // NOTHING must not mask the "a" CTE's accumulating DO UPDATE elsewhere in the same
       // unparseable segment — the fallback must fail closed on DO UPDATE regardless of
       // where DO NOTHING also appears in the segment.
-      findFirstUnguardedInsertViolation(
+      await findFirstUnguardedInsertViolation(
         `DO $$ BEGIN
 WITH "a" AS (
   INSERT INTO foo (id, attempts) VALUES (1, 1) ON CONFLICT (id) DO UPDATE SET attempts = foo.attempts + 1

@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { vi } from 'vitest'
 
 import { Button } from '@/components/ui/button'
