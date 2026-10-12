@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { Queue, Worker, type Job } from 'glide-mq'
+import { Queue, Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { QUEUE_NAME } from '@queues/activitypub/config'
