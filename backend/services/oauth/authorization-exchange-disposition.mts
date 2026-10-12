@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { MAX_EXCHANGE_ATTEMPTS } from './authorization-exchange-state.mts'
+import {
+  MAX_EXCHANGE_ATTEMPTS,
+  X_MAX_QUEUE_DELAY_SECONDS,
+} from './authorization-exchange-state.mts'
 
 export type OAuthExchangeDisposition = 'released' | 'terminal' | 'superseded' | 'missing'
 
@@ -20,9 +23,15 @@ export async function settleOAuthAuthorizationExchangeClaim(
     status: string
     exchange_claim_id: string | null
     exchange_attempts: number
+    authorization_expired: boolean
+    provider_code_expired: boolean
   }>(
-    '/* settleOAuthAuthorizationExchangeClaim:history */ SELECT status, exchange_claim_id, exchange_attempts FROM view_oauth_authorization_current_records WHERE id = $1',
-    [authorizationId],
+    `/* settleOAuthAuthorizationExchangeClaim:history */ SELECT status, exchange_claim_id, exchange_attempts,
+       expires_at <= CURRENT_TIMESTAMP AS authorization_expired,
+       provider = 'x' AND callback_received_at <= CURRENT_TIMESTAMP - make_interval(secs => $2)
+         AS provider_code_expired
+     FROM view_oauth_authorization_current_records WHERE id = $1`,
+    [authorizationId, X_MAX_QUEUE_DELAY_SECONDS],
   )
   const current = rows[0]
   let disposition: OAuthExchangeDisposition
@@ -33,19 +42,25 @@ export async function settleOAuthAuthorizationExchangeClaim(
     disposition = 'released'
   else if (current.exchange_claim_id !== claimId) disposition = 'superseded'
   else {
-    const exhausted = current.exchange_attempts >= MAX_EXCHANGE_ATTEMPTS
+    const expired = current.authorization_expired
+    const codeExpired = !expired && current.provider_code_expired
+    const exhausted = !expired && !codeExpired && current.exchange_attempts >= MAX_EXCHANGE_ATTEMPTS
+    const terminal = expired || codeExpired || exhausted
     const { rowCount } = await transaction(
       `/* settleOAuthAuthorizationExchangeClaim:dispose */ UPDATE oauth_authorizations
        SET exchange_claim_id = NULL,
-           rejected_at = CASE WHEN $3 THEN COALESCE(rejected_at, clock_timestamp()) ELSE rejected_at END,
-           callback_error = CASE WHEN $3 THEN 'provider_exchange_failed' ELSE callback_error END,
-           callback_code_ciphertext = CASE WHEN $3 THEN NULL ELSE callback_code_ciphertext END
+           expired_at = CASE WHEN $3 THEN COALESCE(expired_at, clock_timestamp()) ELSE expired_at END,
+           rejected_at = CASE WHEN $4 OR $5 THEN COALESCE(rejected_at, clock_timestamp()) ELSE rejected_at END,
+           callback_error = CASE WHEN $4 THEN 'provider_code_expired'
+             WHEN $5 THEN 'provider_exchange_failed' ELSE callback_error END,
+           callback_code_ciphertext = CASE WHEN $3 OR $4 OR $5 THEN NULL ELSE callback_code_ciphertext END,
+           completion_token_ciphertext = CASE WHEN $3 THEN NULL ELSE completion_token_ciphertext END
        WHERE id = $1 AND exchange_claim_id = $2 AND status = 'callback_received'`,
-      [authorizationId, claimId, exhausted],
+      [authorizationId, claimId, expired, codeExpired, exhausted],
     )
     if (rowCount !== 1)
       throw new Error('Owned OAuth exchange disposition did not update exactly one authorization')
-    disposition = exhausted ? 'terminal' : 'released'
+    disposition = terminal ? 'terminal' : 'released'
   }
   await transaction.commit()
   return disposition

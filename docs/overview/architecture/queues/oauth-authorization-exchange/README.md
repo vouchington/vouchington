@@ -3,7 +3,9 @@
 Source entrypoint: [backend/queues/oauth-authorization-exchange/README.md](../../../../../backend/queues/oauth-authorization-exchange/README.md)
 
 Exchanges server-held Facebook, X, and GitHub authorization codes after the public callback has
-persisted them in PostgreSQL. Queue payloads contain only the durable authorization UUID.
+persisted them in PostgreSQL. Initial payloads contain the durable authorization UUID. Before provider execution, the worker
+adds only the fenced claim UUID as `exchangeClaimId` through the public job-data API. Active and
+retained retry jobs can therefore carry both UUIDs; no provider code, token, or raw error enters Valkey.
 
 ## Jobs
 
@@ -22,8 +24,9 @@ persisted them in PostgreSQL. Queue payloads contain only the durable authorizat
   would stay claimed while the finished pass is retained (and GlideMQ rejects the backfill's
   `backfill:` prefix as an id), so every later trigger would fail or silently get `null`.
 
-Individual exchanges retry five times with exponential backoff. A failed attempt releases its
-durable claim before throwing. Provider work uses a 30-second end-to-end abort signal, below the
+Individual exchanges retry five times with exponential backoff. A recorded continuation reconciles only its own claim without repeating provider execution.
+Authorization expiry and the X code deadline take precedence over exhausted-attempt rejection.
+A failed attempt releases its durable claim before throwing when that disposition succeeds. Provider work uses a 30-second end-to-end abort signal, below the
 60-second stale-claim lease, so the dispatcher cannot reclaim a normally running exchange. Rows
 that exhaust five durable claims become `rejected` and their provider code is cleared, preventing a
 permanent provider failure from monopolizing the oldest recovery page.
