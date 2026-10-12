@@ -12,6 +12,33 @@ import {
 } from './index.mts'
 
 describe('OAuth retention family phase', () => {
+  it('uses one short physical batch across empty and occupied phases', async () => {
+    const user = await createTestUserDirect()
+    const flow = await createTestApprovedOAuthAuthorization(user)
+    await exchangeOAuthAuthorizationCode({
+      clientId: flow.client.client_id,
+      code: flow.code,
+      codeVerifier: flow.verifier,
+      redirectUri: flow.redirectUri,
+    })
+    const window = createTestExpiryWindow()
+    await prepareTestOAuthRetentionRows(flow.client.client_id, {
+      expiresAt: window.firstEligibleDate,
+      childExpiresAt: window.firstEligibleDate,
+      only: 'family',
+    })
+    const before = await getTestOAuthRetentionRowCounts(flow.client.client_id)
+
+    const result = await deleteExpiredOAuthAuthorizationServerArtifacts(4, {
+      ...window,
+      maxBatches: 1,
+    })
+    const after = await getTestOAuthRetentionRowCounts(flow.client.client_id)
+    expect(result).toEqual({ deleted: 3, hasMore: false })
+    expect(before.total - after.total).toBe(3)
+    expect(after).toMatchObject({ access: 0, refresh: 0, families: 0 })
+  })
+
   it('spends the family share on access children before refresh children', async () => {
     const user = await createTestUserDirect()
     const flow = await createTestApprovedOAuthAuthorization(user)

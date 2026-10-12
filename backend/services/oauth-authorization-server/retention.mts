@@ -42,44 +42,48 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
   const window = { lowerBoundDate: options.lowerBoundDate, now: options.now ?? new Date() }
   const share = Math.floor(budget / OAUTH_RETENTION_DELETE_ORDER.length)
   const remainder = budget % OAUTH_RETENTION_DELETE_ORDER.length
+  const allowances = OAUTH_RETENTION_DELETE_ORDER.map(
+    (_, index) => share + (index === 0 ? remainder : 0),
+  )
   let deleted = 0
-  for (const [index, table] of OAUTH_RETENTION_DELETE_ORDER.entries()) {
-    // oxlint-disable-next-line no-await-in-loop -- reserve each phase a share before redistributing in FK order
-    deleted += await deletePhase(table, window, batchSize, share + (index === 0 ? remainder : 0))
-  }
-  while (deleted < budget) {
-    const before = deleted
-    for (const table of OAUTH_RETENTION_DELETE_ORDER) {
-      if (deleted === budget) break
-      // oxlint-disable-next-line no-await-in-loop -- child-first deletes consume one shared physical-row budget
-      deleted += await deletePhase(table, window, batchSize, budget - deleted)
-    }
-    if (deleted === before) break
-  }
-  return { deleted, hasMore: deleted === budget }
-}
-
-async function deletePhase(
-  table: (typeof OAUTH_RETENTION_DELETE_ORDER)[number],
-  window: RetentionWindow,
-  batchSize: number,
-  allowance: number,
-): Promise<number> {
-  let deleted = 0
-  while (deleted < allowance) {
-    const limit = Math.min(batchSize, allowance - deleted)
-    // oxlint-disable-next-line no-await-in-loop -- commit each bounded physical-row batch independently
+  let phase = 0
+  let redistributing = false
+  let lastBatchFull = false
+  for (let batch = 0; batch < maxBatches && deleted < budget; batch++) {
+    // oxlint-disable-next-line no-await-in-loop -- one committed transaction per physical batch
     await using query = await beginTransaction()
-    // oxlint-disable-next-line no-await-in-loop -- each statement remains capped within the phase allowance
-    const count = await (table === 'oauth_refresh_token_families'
-      ? deleteExpiredFamilyPhaseRows(query, window, limit)
-      : deleteExpiredRows(query, table, window, limit))
-    // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before another bounded batch
+    let remaining = batchSize
+    while (remaining > 0 && deleted < budget) {
+      if (phase === OAUTH_RETENTION_DELETE_ORDER.length) {
+        if (redistributing) break
+        redistributing = true
+        phase = 0
+      }
+      const table = OAUTH_RETENTION_DELETE_ORDER[phase]!
+      const limit = redistributing ? remaining : Math.min(remaining, allowances[phase]!)
+      if (limit === 0) {
+        phase++
+        continue
+      }
+      // oxlint-disable-next-line no-await-in-loop -- each phase shares this batch's row cap
+      const count = await (table === 'oauth_refresh_token_families'
+        ? deleteExpiredFamilyPhaseRows(query, window, limit)
+        : deleteExpiredRows(query, table, window, limit))
+      deleted += count
+      remaining -= count
+      if (!redistributing) allowances[phase]! -= count
+      if (redistributing || count < limit || allowances[phase] === 0) phase++
+    }
+    // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before the next one
     await query.commit()
-    deleted += count
-    if (count < limit) break
+    lastBatchFull = remaining === 0
+    if (redistributing) {
+      if (phase === OAUTH_RETENTION_DELETE_ORDER.length && remaining > 0) break
+      phase = 0
+    }
+    if (remaining === batchSize) break
   }
-  return deleted
+  return { deleted, hasMore: deleted === budget || lastBatchFull }
 }
 
 async function deleteExpiredFamilyPhaseRows(

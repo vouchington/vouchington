@@ -84,8 +84,9 @@ be a positive integer; an uncapped run is a type error and `Infinity` is rejecte
 `runDataRetentionCleanup()` a per-cleanup option may override the run's `batchSize` or
 `maxBatches`. Bounds are inclusive at the
 lower edge. OAuth authorization expiry is inclusive at `now`; Bluesky expiry is
-strictly before `now`. Without an injected `now`, OAuth uses PostgreSQL `CURRENT_TIMESTAMP` for
-each batch, topic-import attempt cleanup uses the PostgreSQL clock for each batch, Bluesky
+strictly before `now`. Without an injected `now`, other OAuth cleanups use PostgreSQL
+`CURRENT_TIMESTAMP` for each batch, while authorization-server artifact cleanup captures one
+JavaScript cutoff per run. Topic-import attempt cleanup uses the PostgreSQL clock for each batch, Bluesky
 completion cleanup creates a JavaScript time for each batch, and abandoned Bluesky sessions
 capture one JavaScript time per cleanup run.
 
@@ -108,9 +109,11 @@ account cleanup shares one batch budget across providers, and OAuth authorizatio
 batch returns its own `hasMore`, so neither uses it; both validate `maxBatches` with
 `assertPositiveInteger()`. The orphaned-account sweep rotates its first provider by UTC day, so a
 capped daily run can reach later providers despite an earlier provider's backlog. OAuth
-authorization-server cleanup shares one run budget across its artifact phases, first reserving an
-initial share for each phase, then redistributing unused shares in the same child-first order.
-Every delete statement remains bounded by the configured page size. Token children are eligible
+authorization-server cleanup freezes its default expiry cutoff once per run and shares one
+`batchSize * maxBatches` row budget across its artifact phases, first reserving an initial share
+for each phase, then redistributing unused shares in the same child-first order. At most
+`maxBatches` physical transactions run; each spends no more than `batchSize` rows across phases,
+and every delete statement remains bounded by that page size. Token children are eligible
 when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
 counts against the run budget. The family phase drains eligible access children, then refresh
 children, then empty families; independently expired refresh tokens use any allowance left after
