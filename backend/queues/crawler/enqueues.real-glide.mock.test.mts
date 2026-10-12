@@ -23,6 +23,30 @@ describe('crawl_urls priority under backlog', () => {
     }
   })
 
+  it('replaces a waiting ranked crawl when its debounce id is reused', async () => {
+    const prefix = `${workerQueuePrefix}-debounce-${randomUUID()}`
+    const queue = new Queue<{ url_id: string }>(CRAWL_URLS_QUEUE_NAME, {
+      connection: workerQueueConnection,
+      prefix,
+    })
+    try {
+      const opts = {
+        priority: 1,
+        delay: 60_000,
+        deduplication: { id: randomUUID(), mode: 'debounce' as const, ttl: 60_000 },
+      }
+      const first = await queue.add('crawl_url', { url_id: 'same-url' }, opts)
+      const replacement = await queue.add('crawl_url', { url_id: 'same-url' }, opts)
+      expect(replacement?.id).toBeDefined()
+      expect(replacement?.id).not.toBe(first?.id)
+      await expect(queue.getJob(first!.id)).resolves.toBeNull()
+      await expect(queue.getJob(replacement!.id)).resolves.not.toBeNull()
+    } finally {
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
   it('runs a waiting discovery crawl before default-priority crawls', async () => {
     const prefix = `${workerQueuePrefix}-priority-${randomUUID()}`
     const queue = new Queue<{ url_id: string }>(CRAWL_URLS_QUEUE_NAME, {
