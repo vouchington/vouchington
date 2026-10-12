@@ -1,4 +1,4 @@
-import type { DistributeActivityData } from '../queues/activitypub-delivery/enqueues.mts'
+import type { DistributeActivityData } from '../queues/activitypub/enqueues/delivery.mts'
 
 export const FOLLOW_DATA: DistributeActivityData = {
   activityId: 'activity-1',

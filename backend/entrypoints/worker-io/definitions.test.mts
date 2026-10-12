@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { upsertSchedules as upsertActivityPubInboxSchedules } from '@queues/activitypub-inbox/enqueues/schedules'
+import { upsertSchedules as upsertActivityPubInboxSchedules } from '@queues/activitypub/enqueues/schedules'
 import { upsertSchedules as upsertAccountLifecycleSchedules } from '@queues/account-lifecycle/enqueues/schedules'
 import { upsertSchedules as upsertBloomFilterSchedules } from '@queues/bloom-filters/enqueues/schedules'
 import { upsertSchedules as upsertFindYourFriendsSchedules } from '@queues/find-your-friends/enqueues/schedules'
@@ -28,7 +28,7 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('story-post-related-url-projections').load()).resolves.toBe(
       upsertStoryPostRelatedUrlProjectionSchedules,
     )
-    await expect(byQueue('activitypub-inbox').load()).resolves.toBe(upsertActivityPubInboxSchedules)
+    await expect(byQueue('activitypub').load()).resolves.toBe(upsertActivityPubInboxSchedules)
     await expect(byQueue('entity-listeners').load()).resolves.toBe(upsertEntityListenerSchedules)
     await expect(byQueue('notifications').load()).resolves.toBe(upsertNotificationSchedules)
     await expect(byQueue('urls-domains-blacklist').load()).resolves.toBe(

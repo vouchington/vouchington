@@ -4,7 +4,7 @@ import {
   isDeduplicatedEnqueue,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { activitypubInbox } from '@queues/activitypub-inbox/queues'
+import { activitypub } from '@queues/activitypub/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
@@ -138,7 +138,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error('ActivityPub failed-delivery backfill missing')
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(activitypubInbox, enqueued)).resolves.toMatchObject({
+    await expect(readEnqueuedJob(activitypub, enqueued)).resolves.toMatchObject({
       name: 'rearmFailedDeliveries',
     })
   })

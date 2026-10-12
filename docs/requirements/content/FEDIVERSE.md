@@ -85,8 +85,8 @@ Full technical design: [Fediverse Federation architecture](../../overview/archit
   reservation, core effect, and envelope completion commit atomically, with only Follow Accept
   enqueueing after commit. There is no queryable AP **outbox** collection endpoint; outbound
   delivery remains push-based through its separate queue.
-- **Federation delivery queues: implemented.** `@queues/activitypub-delivery` +
-  `@workers/activitypub-delivery` fan a local follow/like out to the acting user's remote followers.
+- **Federation delivery queues: implemented.** `@queues/activitypub` +
+  `@workers/activitypub` fan a local follow/like out to the acting user's remote followers.
   Each activity has a durable PostgreSQL fan-out cursor: strict remote-actor keyset pages contain
   at most 500 recipients, commit only after Valkey accepts their distinct inbox jobs, and hand off
   one ordered continuation so large distributions yield between pages. Eligibility is evaluated on

@@ -3,8 +3,8 @@ import { upsertEntityRelationsForSubjects } from './upsert-for-subjects.mts'
 import { softDeleteEntityRelationsForSubjects } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
 import { createTestUser, insertTestLegacyLocalFollow, readAllQueueJobs } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -28,9 +28,9 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
@@ -73,7 +73,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
     // Includes a subject that was never following `followee` — the RETURNING-gated filter must
@@ -85,7 +85,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    const apJobs = await readAllQueueJobs(activitypubDelivery)
+    const apJobs = await readAllQueueJobs(activitypub)
     expect(undoFollowPairs(apJobs)).toEqual(
       new Set([`${followerA.id}__${followee.id}`, `${followerB.id}__${followee.id}`]),
     )
@@ -108,7 +108,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
     // Retry the identical bulk unfollow while the relation is already inactive.
@@ -120,7 +120,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     )
 
     await settleEnqueues(pendingEnqueues)
-    const apJobs = await readAllQueueJobs(activitypubDelivery)
+    const apJobs = await readAllQueueJobs(activitypub)
     expect(undoFollowPairs(apJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
@@ -133,7 +133,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
 
     await upsertEntityRelationsForSubjects(followee, userFollowUserMetadata, [follower], followee)
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
     await softDeleteEntityRelationsForSubjects(
@@ -147,7 +147,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     )
 
     await settleEnqueues(pendingEnqueues)
-    const apJobs = await readAllQueueJobs(activitypubDelivery)
+    const apJobs = await readAllQueueJobs(activitypub)
     expect(undoFollowPairs(apJobs).has(`${follower.id}__${followee.id}`)).toBe(false)
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
@@ -166,7 +166,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
 
     await softDeleteEntityRelationsForSubjects(
@@ -177,7 +177,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     )
 
     await settleEnqueues(pendingEnqueues)
-    const apJobs = await readAllQueueJobs(activitypubDelivery)
+    const apJobs = await readAllQueueJobs(activitypub)
     expect(undoFollowPairs(apJobs)).toEqual(new Set([`${knownFollower.id}__${followee.id}`]))
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)

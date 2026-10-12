@@ -4,7 +4,7 @@ Source entrypoint: [backend/services/activitypub-delivery/README.md](../../../..
 
 Builds and signs outbound ActivityPub activities (Phase C4), and owns the durable fan-out cursor.
 Activity construction and HTTP delivery are pure/stateless apart from their network boundary;
-checkpoint functions use PostgreSQL. `@workers/activitypub-delivery` owns federation checks, key
+checkpoint functions use PostgreSQL. `@workers/activitypub` owns federation checks, key
 access, and queue orchestration.
 
 - `buildActivityJson(input)` — builds the AS2 JSON body for `Follow`, `Like`, `Undo(Follow)`, or
@@ -42,7 +42,7 @@ has no timeout at all unless this is passed) and the signed `POST` itself (`DELI
 10s). A DNS-resolution timeout surfaces as a status-less error so the worker's `wrapHttpForRetry`
 keeps the delivery retryable, same as a non-2xx delivery response. It always issues exactly one
 outbound HTTP request per call — batching across many followers happens one queue job (and
-therefore one function call) per inbox, in `@workers/activitypub-delivery`, never in a loop inside
+therefore one function call) per inbox, in `@workers/activitypub`, never in a loop inside
 this package.
 
 The checkpoint is retained after completion until its source user is deleted. It prevents a later

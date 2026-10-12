@@ -7,8 +7,8 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 
@@ -16,10 +16,10 @@ describe('user vouch follow side effects', () => {
   let settleSideEffects = () => Promise.resolve()
 
   beforeEach(async () => {
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
     const pending: Promise<unknown>[] = []
-    for (const queue of [activitypubDelivery, blueskyFollowPropagation]) {
+    for (const queue of [activitypub, blueskyFollowPropagation]) {
       const addBulk = queue.addBulk
       vi.spyOn(queue, 'addBulk').mockImplementation((...args: Parameters<typeof addBulk>) => {
         const jobs = addBulk.call(queue, ...args)
@@ -31,7 +31,7 @@ describe('user vouch follow side effects', () => {
   })
 
   afterEach(() => {
-    vi.mocked(activitypubDelivery.addBulk).mockRestore()
+    vi.mocked(activitypub.addBulk).mockRestore()
     vi.mocked(blueskyFollowPropagation.addBulk).mockRestore()
   })
 
@@ -50,7 +50,7 @@ describe('user vouch follow side effects', () => {
     await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
     await settleSideEffects()
 
-    const activityJobs = await readAllQueueJobs(activitypubDelivery)
+    const activityJobs = await readAllQueueJobs(activitypub)
     const undo = activityJobs
       .map(job => job.data as DistributeActivityData)
       .find(
@@ -86,7 +86,7 @@ describe('user vouch follow side effects', () => {
         .filter(data => data.followerUserId === voter.id && data.followeeUserId === target.id),
     ).toHaveLength(1)
     expect(
-      (await readAllQueueJobs(activitypubDelivery))
+      (await readAllQueueJobs(activitypub))
         .map(job => job.data as DistributeActivityData)
         .filter(
           data =>

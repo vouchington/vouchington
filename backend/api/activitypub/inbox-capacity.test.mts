@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { activitypubInbox } from '@queues/activitypub-inbox/queues'
+import { activitypub } from '@queues/activitypub/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -23,7 +23,7 @@ let restoreWorkerConfig: () => void = () => undefined
 describe('POST /ap/inbox capacity handling', () => {
   beforeEach(async () => {
     await resetActivityPubInboxDeliveryStorageForTest()
-    await activitypubInbox.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     restoreWorkerConfig = overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
       async_delivery_enabled: true,
     })
@@ -31,7 +31,7 @@ describe('POST /ap/inbox capacity handling', () => {
   afterEach(async () => {
     restoreWorkerConfig()
     await resetActivityPubInboxDeliveryStorageForTest()
-    await activitypubInbox.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
   })
 
   it('returns 503 with Retry-After 300 and creates no job when unverified storage is full', async () => {
@@ -41,7 +41,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await request.expect(503)
 
     expect(response.headers['retry-after']).toBe('300')
-    expect(await activitypubInbox.searchJobs({})).toHaveLength(0)
+    expect(await activitypub.searchJobs({})).toHaveLength(0)
   })
 
   it('maps only the named PostgreSQL capacity violation to 503', async () => {
@@ -51,7 +51,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await request.expect(500)
 
     expect(response.headers['retry-after']).toBeUndefined()
-    expect(await activitypubInbox.searchJobs({})).toHaveLength(0)
+    expect(await activitypub.searchJobs({})).toHaveLength(0)
   })
 
   it('allows a cached verified signer to bypass the unverified capacity cap', async () => {
@@ -61,7 +61,7 @@ describe('POST /ap/inbox capacity handling', () => {
     const response = await signedRequest(actorUri, keyId, privateKeyPem).expect(202)
 
     expect(response.headers['retry-after']).toBeUndefined()
-    expect(await activitypubInbox.searchJobs({})).toHaveLength(1)
+    expect(await activitypub.searchJobs({})).toHaveLength(1)
   })
 })
 

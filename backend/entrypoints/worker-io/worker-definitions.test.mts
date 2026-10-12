@@ -60,8 +60,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
         'oauth-authorization-exchange',
         'oauthAuthorizationExchangeWorker',
       ],
-      ['activitypub-delivery', 'activitypub-delivery', 'activitypubDeliveryWorker'],
-      ['activitypub-inbox', 'activitypub-inbox', 'activitypubInboxWorker'],
+      ['activitypub', 'activitypub', 'activitypubWorker'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['follower-distributions', 'follower-distributions', 'followerDistributionsWorker'],
@@ -153,8 +152,8 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     }
   })
 
-  it('activitypub-inbox definition load resolves to its worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub-inbox')!
+  it('activitypub definition load resolves to its worker', async () => {
+    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub')!
     const worker = await definition.load()
     try {
       expect(worker).toBeDefined()

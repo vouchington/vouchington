@@ -7,8 +7,8 @@ import {
   insertPostElectionVote,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import type { PrivateUser } from '@services/users/types'
 import { upsertPostElectionVotes } from '@services/elections-votes/post'
 
@@ -17,11 +17,11 @@ describe('post vote ActivityPub identities', () => {
   let settleDelivery = () => Promise.resolve()
 
   beforeEach(async () => {
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
     const pending: Promise<unknown>[] = []
-    const add = activitypubDelivery.add
-    vi.spyOn(activitypubDelivery, 'add').mockImplementation((...args: Parameters<typeof add>) => {
-      const job = add.call(activitypubDelivery, ...args)
+    const add = activitypub.add
+    vi.spyOn(activitypub, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+      const job = add.call(activitypub, ...args)
       pending.push(job)
       return job
     })
@@ -30,7 +30,7 @@ describe('post vote ActivityPub identities', () => {
   })
 
   afterEach(() => {
-    vi.mocked(activitypubDelivery.add).mockRestore()
+    vi.mocked(activitypub.add).mockRestore()
   })
 
   it('rotates the Like identity when re-liking after an UndoLike', async () => {
@@ -64,7 +64,7 @@ describe('post vote ActivityPub identities', () => {
     const request = createRequest()
     await request.authenticateAs(voter)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
 
     await Promise.all([
       request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
@@ -78,7 +78,7 @@ describe('post vote ActivityPub identities', () => {
   it('preserves an unknown legacy Like identity and quietly skips its Undo', async () => {
     const post = await createTestPost({ user: voter })
     await insertPostElectionVote(voter.id, post.id, 1, undefined, false, true)
-    await activitypubDelivery.obliterate({ force: true })
+    await activitypub.obliterate({ force: true })
 
     const [repeatedLike] = await upsertPostElectionVotes(voter.id, [
       { entityId: post.id, score: 1 },
@@ -95,11 +95,11 @@ describe('post vote ActivityPub identities', () => {
 
 async function settledDeliveryJobs(settle: () => Promise<void>) {
   await settle()
-  return readAllQueueJobs(activitypubDelivery)
+  return readAllQueueJobs(activitypub)
 }
 
 function getLikeIds(
-  jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+  jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
   postId: string,
 ): string[] {
   return jobs

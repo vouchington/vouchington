@@ -10,7 +10,7 @@ import {
   createFederatedUser,
   acceptJobsFor,
 } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
+import { activitypub } from '@queues/activitypub/queues'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { RemoteActorRow } from '@services/remote-actors'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
@@ -114,7 +114,7 @@ describe('recordAndDispatchInboundActivity', () => {
     })
     expect(await getEntityRelation(followRelation.table_name, remoteActor.id, user.id)).toEqual([])
     expect(result).not.toHaveProperty('postCommitEnqueue')
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(acceptJobsFor(jobs, activityId)).toHaveLength(0)
 
     await activityPubInboxDeliveryTransitions.claim(
@@ -145,7 +145,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const replay = await recordAndDispatchInboundActivity(remoteActor, activity)
     expect(replay).toMatchObject({ outcome: 'applied', duplicate: true })
     expect(replay.postCommitEnqueue).toBeDefined()
-    const acceptJob = await readEnqueuedJob(activitypubDelivery, await replay.postCommitEnqueue)
+    const acceptJob = await readEnqueuedJob(activitypub, await replay.postCommitEnqueue)
     const followRelation = getEntityRelationMetadataOrThrow({
       subjectType: 'remote_actor',
       objectType: 'user',
@@ -183,10 +183,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const first = await recordAndDispatchInboundActivity(remoteActor, followActivity)
     expect(first).toMatchObject({ outcome: 'applied', duplicate: false })
     expect(first.postCommitEnqueue).toBeDefined()
-    const originalAcceptJob = await readEnqueuedJob(
-      activitypubDelivery,
-      await first.postCommitEnqueue,
-    )
+    const originalAcceptJob = await readEnqueuedJob(activitypub, await first.postCommitEnqueue)
     const ownedAcceptJobsBeforeUndo = acceptJobsFor([originalAcceptJob], followActivityId)
     expect(ownedAcceptJobsBeforeUndo).toHaveLength(1)
 
@@ -212,7 +209,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(relation).toHaveLength(1)
     expect(relation[0]).toMatchObject({ deleted_at: expect.any(Date) })
 
-    const jobsAfterReplay = await readAllQueueJobs(activitypubDelivery)
+    const jobsAfterReplay = await readAllQueueJobs(activitypub)
     expect(acceptJobsFor(jobsAfterReplay, followActivityId)).toEqual(ownedAcceptJobsBeforeUndo)
   })
 })

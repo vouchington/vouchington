@@ -144,7 +144,7 @@ its queue from a constructor `queueMicrotask`, and that microtask runs before th
 importing module body. `afterAll` and a `close()` after the static import are both
 too late. Pause that test queue before evaluating the worker module, close the
 worker, then resume the queue.
-`backend/workers/activitypub-inbox/workers.test.mts` does this so a waiting
+`backend/workers/activitypub/workers.test.mts` does this so a waiting
 `rearmFailedDeliveries` job cannot call `rearmFailedActivityPubInboxDeliveries()`
 with no ids. Still `await worker.close()` in `afterAll`.
 

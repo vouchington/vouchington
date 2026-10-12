@@ -2,7 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost, type Post } from '@services/posts'
-import { enqueueDistributeActivity } from '@queues/activitypub-delivery/enqueues'
+import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'
 import app from '../../../app.mts'
 import {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
@@ -35,7 +35,7 @@ describe('enqueueUndoFollowSideEffects', () => {
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await clearQueues()
   })
@@ -49,7 +49,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(muteRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await readAllQueueJobs(activitypub)).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
@@ -57,7 +57,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(followRelation, [])
     await settleEnqueues(pendingEnqueues)
 
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await readAllQueueJobs(activitypub)).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
@@ -65,7 +65,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(followRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
-    const activityPubJobs = await readAllQueueJobs(activitypubDelivery)
+    const activityPubJobs = await readAllQueueJobs(activitypub)
     expect(activityPubJobs).toHaveLength(1)
     expect(activityPubJobs[0]?.name).toBe('distributeActivity')
     expect(activityPubJobs[0]?.data as DistributeActivityData).toEqual({
@@ -95,7 +95,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     ])
 
     await settleEnqueues(pendingEnqueues)
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await readAllQueueJobs(activitypub)).toEqual([])
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(blueskyJobs).toHaveLength(1)
@@ -107,7 +107,7 @@ describe('enqueueUndoFollowSideEffects', () => {
 })
 
 async function clearQueues(): Promise<void> {
-  await activitypubDelivery.obliterate({ force: true })
+  await activitypub.obliterate({ force: true })
   await blueskyFollowPropagation.obliterate({ force: true })
 }
 

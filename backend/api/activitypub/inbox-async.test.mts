@@ -1,7 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { buildSignatureHeaders } from '@modules/http-signatures'
 import { computeDigest } from '@vouchington/utils/http-signatures'
-import { activitypubInbox } from '@queues/activitypub-inbox/queues'
+import { activitypub } from '@queues/activitypub/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
@@ -134,12 +134,12 @@ describe('POST /ap/inbox durable worker path', () => {
       object: { type: 'Note', content: 'persist despite queue outage' },
     })
     const headers = buildSignatureHeaders('POST', INBOX_URL, body, keyId, privateKeyPem)
-    const originalAdd = activitypubInbox.add
-    activitypubInbox.add = async () => {
+    const originalAdd = activitypub.add
+    activitypub.add = async () => {
       throw new Error('simulated initial ActivityPub inbox enqueue failure')
     }
     onTestFinished(() => {
-      activitypubInbox.add = originalAdd
+      activitypub.add = originalAdd
     })
 
     const response = await createRequest()
@@ -227,7 +227,7 @@ async function getInboxJobs() {
   return (
     await Promise.all(
       (['waiting', 'active', 'completed', 'failed', 'delayed'] as const).map(state =>
-        activitypubInbox.getJobs(state),
+        activitypub.getJobs(state),
       ),
     )
   ).flat()

@@ -1,6 +1,6 @@
 # ActivityPub inbox worker
 
-Source entrypoint: [backend/workers/activitypub-inbox/README.md](../../../../../../backend/workers/activitypub-inbox/README.md)
+Source entrypoint: [backend/workers/activitypub/README.md](../../../../../../backend/workers/activitypub/README.md)
 
 This I/O worker verifies durable inbound ActivityPub envelopes, rechecks the instance allowlist,
 refreshes the remote actor key, applies sender rate limiting once, and dispatches through

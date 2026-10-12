@@ -15,10 +15,12 @@ index tests in `backend/entrypoints/worker-cpu/` and `backend/entrypoints/worker
 baselines to the helper's resolution behavior.
 
 `ignoreScale: true` is reserved for workers whose concurrency must not move with the global scale
-knob (`psql`, `account-data-requests`, `kagi-smallweb` — they serialize themselves or hit an
+knob (`psql`, `account-lifecycle`, `kagi-smallweb` — they serialize themselves or hit an
 upstream rate-limited API).
 
 `vote-aggregation` shares one baseline-10 IO worker across election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; the shared cap of 10 bounds concurrent database work without throughput measurements. Jobs from one domain can delay another under sustained load. Election ordering lanes retain their per-key concurrency and are further bounded by the shared worker.
+
+`activitypub` shares one baseline-10 IO worker across outbound distribution/delivery and inbound durable inbox processing. The prior two baseline-5 workers also allowed ten jobs in total; the shared pool keeps that aggregate limit while allowing either direction to use idle slots. Bursts in either direction can delay the other, and each outbound distribution activity retains its own concurrency-one ordering lane.
 
 ### Worker env knobs
 

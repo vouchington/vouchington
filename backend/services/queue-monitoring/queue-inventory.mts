@@ -33,9 +33,8 @@ import { sitemaps } from '@queues/sitemaps/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
 import { storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/queues'
 import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
+import { activitypub } from '@queues/activitypub/queues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
-import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { ban_evasion as banEvasion } from '@queues/ban-evasion/queues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
@@ -82,9 +81,8 @@ const allQueues = [
   storyPostRelatedUrlProjections,
   aiAgentsQueue,
   spendCapRechecks,
-  activitypubDelivery,
+  activitypub,
   blueskyFollowPropagation,
-  activitypubInbox,
   banEvasion,
   cachePurge,
   crawlBrowserQueue,

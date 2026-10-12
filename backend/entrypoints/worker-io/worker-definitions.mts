@@ -85,16 +85,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
       ),
   },
   {
-    queueName: 'activitypub-delivery',
-    load: () =>
-      import('@workers/activitypub-delivery/workers').then(
-        module => module.activitypubDeliveryWorker,
-      ),
-  },
-  {
-    queueName: 'activitypub-inbox',
-    load: () =>
-      import('@workers/activitypub-inbox/workers').then(module => module.activitypubInboxWorker),
+    queueName: 'activitypub',
+    load: () => import('@workers/activitypub/workers').then(module => module.activitypubWorker),
   },
   {
     queueName: 'bloom-filters',

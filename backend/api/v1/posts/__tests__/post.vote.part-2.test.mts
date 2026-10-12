@@ -8,8 +8,8 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -26,31 +26,29 @@ describe('post.vote', () => {
       let settleDelivery = () => Promise.resolve()
 
       beforeEach(async () => {
-        await activitypubDelivery.obliterate({ force: true })
+        await activitypub.obliterate({ force: true })
         const pending: Promise<unknown>[] = []
-        const add = activitypubDelivery.add
-        vi.spyOn(activitypubDelivery, 'add').mockImplementation(
-          (...args: Parameters<typeof add>) => {
-            const job = add.call(activitypubDelivery, ...args)
-            pending.push(job)
-            return job
-          },
-        )
+        const add = activitypub.add
+        vi.spyOn(activitypub, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+          const job = add.call(activitypub, ...args)
+          pending.push(job)
+          return job
+        })
         settleDelivery = () => Promise.all(pending).then(() => undefined)
         voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       })
 
       afterEach(() => {
-        vi.mocked(activitypubDelivery.add).mockRestore()
+        vi.mocked(activitypub.add).mockRestore()
       })
 
       async function settledJobs() {
         await settleDelivery()
-        return readAllQueueJobs(activitypubDelivery)
+        return readAllQueueJobs(activitypub)
       }
 
       function hasDistributeJobFor(
-        jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+        jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
         targetPostId: string,
         activityType: 'Like' | 'UndoLike',
       ): boolean {
@@ -64,7 +62,7 @@ describe('post.vote', () => {
       }
 
       function countDistributeJobsFor(
-        jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+        jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
         targetPostId: string,
         activityType: 'Like' | 'UndoLike',
       ): number {
@@ -78,7 +76,7 @@ describe('post.vote', () => {
       }
 
       function getDistributeJobFor(
-        jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+        jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
         targetPostId: string,
         activityType: 'Like' | 'UndoLike',
       ): Extract<DistributeActivityData, { activityType: 'Like' | 'UndoLike' }> | undefined {
