@@ -48,7 +48,9 @@ export async function authenticateMcpBearer(
   if (!rawToken) return { status: 'missing' }
   const verified = await verifyMcpBearerToken(rawToken, config)
   if (!verified) return { status: 'invalid' }
-  const owner = await getPrivateUserByAny(verified.userId)
+  // Suspension and plan are the authorization decision. The primary read keeps a replica
+  // from serving a just-suspended owner or a plan that has already lapsed.
+  const owner = await getPrivateUserByAny(verified.userId, { readOnly: false })
   if (!owner) return { status: 'invalid' }
   // Suspension is decided here for OAuth and API keys, on every request. Access-token validation
   // and refresh rotation do not look at it. A new authorization still rejects a suspended user.
