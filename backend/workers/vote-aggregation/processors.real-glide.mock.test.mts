@@ -59,6 +59,35 @@ async function runJobs(jobs: RoutedJob[]): Promise<Set<string>> {
 }
 
 describe('vote-aggregation real worker', () => {
+  it('rejects an unknown job name through the real worker', async () => {
+    const prefix = `${workerQueuePrefix}-vote-aggregation-unknown-${randomUUID()}`
+    const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
+    let worker: Worker | undefined
+    const failed = Promise.withResolvers<Error>()
+    try {
+      const job = await queue.add('unknownVoteAggregationJob', {}, { priority: 10, attempts: 1 })
+      if (!job) throw new Error('Expected unknown job to enqueue')
+      worker = new Worker(QUEUE_NAME, processVoteAggregationJob, {
+        connection: workerQueueConnection,
+        prefix,
+        concurrency: 1,
+        blockTimeout: 1000,
+      })
+      worker.on('error', error => failed.reject(error))
+      worker.on('failed', (rejected, error) => {
+        if (rejected?.id === job.id) failed.resolve(error)
+      })
+      await expect(failed.promise).resolves.toMatchObject({
+        message: 'Unknown job name: unknownVoteAggregationJob',
+      })
+      await expect(job.getState()).resolves.toBe('failed')
+    } finally {
+      await worker?.close()
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
   it('routes election, rating, and all metric jobs to durable or cached effects', async () => {
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({
