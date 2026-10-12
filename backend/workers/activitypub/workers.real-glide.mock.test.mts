@@ -24,6 +24,8 @@ import {
   makeActivityPubInboxDeliveryRecoverableForTest,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { scopedActivityPubInboxProcessors } from '@voucha/test-helpers/activitypub-inbox-scoped-processors'
+import type { ActivityPubInboxJobProcessors } from './processors/inbox-job.mts'
 import {
   claimTestDelivery,
   exhaustTestDelivery,
@@ -61,6 +63,7 @@ async function runJob(
   data: Record<string, unknown>,
   captured: CapturedRequest[] = [],
   priority = 10,
+  inboxProcessors?: ActivityPubInboxJobProcessors,
 ): Promise<unknown> {
   const prefix = `${workerQueuePrefix}-activitypub-${randomUUID()}`
   const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
@@ -72,7 +75,10 @@ async function runJob(
     worker = new Worker(
       QUEUE_NAME,
       (current: Job) =>
-        processActivityPubJob(current, { deliverActivityToInbox: networkBoundary(captured) }),
+        processActivityPubJob(current, {
+          deliverActivityToInbox: networkBoundary(captured),
+          inboxProcessors,
+        }),
       { connection: workerQueueConnection, prefix, concurrency: 1, blockTimeout: 1000 },
     )
     worker.on('error', error => completed.reject(error))
@@ -86,6 +92,10 @@ async function runJob(
     await queue.obliterate({ force: true })
     await queue.close()
   }
+}
+
+function runScopedMaintenanceJob(name: string, deliveryId: string): Promise<unknown> {
+  return runJob(name, {}, [], 100, scopedActivityPubInboxProcessors(deliveryId))
 }
 
 async function createFederatedUser() {
@@ -177,7 +187,7 @@ describe('activitypub shared real worker', () => {
 
     const abandoned = await createSignedDelivery(actor)
     await makeActivityPubInboxDeliveryRecoverableForTest(abandoned.deliveryId, 'unstarted')
-    const result = await runJob('recoverDeliveries', {}, [], 100)
+    const result = await runScopedMaintenanceJob('recoverDeliveries', abandoned.deliveryId)
     expect((result as { enqueued: number }).enqueued).toBeGreaterThanOrEqual(1)
     const recovered = (await readAllQueueJobs(activitypub)).find(
       job =>
@@ -254,7 +264,7 @@ describe('activitypub shared real worker', () => {
     expect(
       await exhaustTestDelivery(failed.deliveryId, failed.leaseToken, new Error('offline')),
     ).toBe(true)
-    const rearmed = await runJob('rearmFailedDeliveries', {}, [], 100)
+    const rearmed = await runScopedMaintenanceJob('rearmFailedDeliveries', failed.deliveryId)
     expect((rearmed as { enqueued: number }).enqueued).toBeGreaterThanOrEqual(1)
     const jobs = await readAllQueueJobs(activitypub)
     const child = jobs.find(
@@ -278,7 +288,7 @@ describe('activitypub shared real worker', () => {
     const expiredActivityId = `${actor.actorUri}/activities/${randomUUID()}`
     const expired = await createSignedDelivery(actor, { activityId: expiredActivityId })
     await expireActivityPubInboxDeliveryForTest(expired.deliveryId)
-    const cleanup = await runJob('cleanupExpiredDeliveries', {}, [], 100)
+    const cleanup = await runScopedMaintenanceJob('cleanupExpiredDeliveries', expired.deliveryId)
     expect(cleanup).toMatchObject({ deletedRows: expect.any(Number) })
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(expiredActivityId)).toBe(false)
   })

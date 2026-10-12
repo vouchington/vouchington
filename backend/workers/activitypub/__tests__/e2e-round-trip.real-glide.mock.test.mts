@@ -150,6 +150,19 @@ function verifyCapturedSignature(captured: CapturedRequest, publicKeyPem: string
   ).valid
 }
 
+async function removeOwnedActivityJobs(sourceUserId: string): Promise<void> {
+  const jobs = await readAllQueueJobs(activitypub)
+  await Promise.all(
+    jobs
+      .filter(
+        job =>
+          ['distributeActivity', 'deliverActivity'].includes(job.name) &&
+          (job.data as { sourceUserId?: string }).sourceUserId === sourceUserId,
+      )
+      .map(job => job.remove()),
+  )
+}
+
 // Phase C6: exercises the real outbound chain end to end — a local Follow/Like production write
 // -> the real glide-mq activitypub queue -> the real distributeActivity processor
 // (real DB read of the acting user's remote followers) -> the real deliverActivity processor
@@ -164,101 +177,111 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
   // back out as if it were a local action, forever.
   it('a Follow received through the real inbound receiver does not itself enqueue outbound distribution', async () => {
     const targetUser = await createFederatedUser()
-
-    await createRemoteFollowerOf(targetUser.id)
-
-    const jobs = await readAllQueueJobs(activitypub)
-    expect(
-      jobs.some(
-        job =>
-          job.name === 'distributeActivity' &&
-          (job.data as { sourceUserId?: string }).sourceUserId === targetUser.id,
-      ),
-    ).toBe(false)
+    try {
+      await createRemoteFollowerOf(targetUser.id)
+      const jobs = await readAllQueueJobs(activitypub)
+      expect(
+        jobs.some(
+          job =>
+            job.name === 'distributeActivity' &&
+            (job.data as { sourceUserId?: string }).sourceUserId === targetUser.id,
+        ),
+      ).toBe(false)
+    } finally {
+      await removeOwnedActivityJobs(targetUser.id)
+    }
   })
 
   it('a local Follow write fans out to the acting user’s remote followers with a verifiable signature', async () => {
     const sourceUser = await createFederatedUser()
-    // The target must also be opted into federation, or distributeActivity's target-gate (mirrors
-    // the inbound-Follow and GET /ap/users/:id gates) would correctly suppress this Follow.
-    const followee = await createFederatedUser()
-    const remoteFollower = await createRemoteFollowerOf(sourceUser.id)
-    const { public_key_pem: sourcePublicKeyPem } = await getOrCreateActorKeyPair(sourceUser.id)
-
-    const followMetadata = getEntityRelationMetadataOrThrow({
-      subjectType: 'user',
-      objectType: 'user',
-      predicate: 'follow',
-    })
-    // The real production trigger site (entity-relations/upsert.mts): a local user->user follow
-    // enqueues an outbound Follow distribution for the follower's own remote audience.
-    const observed = await observeJob<{ name: string; data: DistributeActivityData }>(
-      job =>
-        job.name === 'distributeActivity' &&
-        job.data.activityType === 'Follow' &&
-        job.data.sourceUserId === sourceUser.id,
-    )
-    let distributeJob: { name: string; data: DistributeActivityData }
     try {
-      await upsertEntityRelation(sourceUser, followMetadata, sourceUser, [followee])
-      distributeJob = await observed.job
+      // The target must also be opted into federation, or distributeActivity's target-gate (mirrors
+      // the inbound-Follow and GET /ap/users/:id gates) would correctly suppress this Follow.
+      const followee = await createFederatedUser()
+      const remoteFollower = await createRemoteFollowerOf(sourceUser.id)
+      const { public_key_pem: sourcePublicKeyPem } = await getOrCreateActorKeyPair(sourceUser.id)
+
+      const followMetadata = getEntityRelationMetadataOrThrow({
+        subjectType: 'user',
+        objectType: 'user',
+        predicate: 'follow',
+      })
+      // The real production trigger site (entity-relations/upsert.mts): a local user->user follow
+      // enqueues an outbound Follow distribution for the follower's own remote audience.
+      const observed = await observeJob<{ name: string; data: DistributeActivityData }>(
+        job =>
+          job.name === 'distributeActivity' &&
+          job.data.activityType === 'Follow' &&
+          job.data.sourceUserId === sourceUser.id,
+      )
+      let distributeJob: { name: string; data: DistributeActivityData }
+      try {
+        await upsertEntityRelation(sourceUser, followMetadata, sourceUser, [followee])
+        distributeJob = await observed.job
+      } finally {
+        await observed.close()
+      }
+      const distributeResult = await distributeActivity(distributeJob.data)
+      expect(distributeResult.enqueued).toBeGreaterThan(0)
+
+      const deliverJob = await findDeliveredJob(distributeJob.data.activityId)
+      const captured: CapturedRequest[] = []
+      const deliverResult = await deliverActivity(deliverJob.data, {
+        deliverActivityToInbox: deliverToMockedNetwork(captured),
+      })
+
+      expect(deliverResult).toEqual({ delivered: true })
+      expect(captured).toHaveLength(1)
+      expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
+      expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
+      expect(JSON.parse(captured[0]!.body)).toMatchObject({
+        type: 'Follow',
+        actor: getActorUri(sourceUser.id),
+        object: getActorUri(followee.id),
+      })
     } finally {
-      await observed.close()
+      await removeOwnedActivityJobs(sourceUser.id)
     }
-    const distributeResult = await distributeActivity(distributeJob.data)
-    expect(distributeResult.enqueued).toBeGreaterThan(0)
-
-    const deliverJob = await findDeliveredJob(distributeJob.data.activityId)
-    const captured: CapturedRequest[] = []
-    const deliverResult = await deliverActivity(deliverJob.data, {
-      deliverActivityToInbox: deliverToMockedNetwork(captured),
-    })
-
-    expect(deliverResult).toEqual({ delivered: true })
-    expect(captured).toHaveLength(1)
-    expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
-    expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
-    expect(JSON.parse(captured[0]!.body)).toMatchObject({
-      type: 'Follow',
-      actor: getActorUri(sourceUser.id),
-      object: getActorUri(followee.id),
-    })
   })
 
   it('a local Like write fans out to the acting user’s remote followers with a verifiable signature', async () => {
     const sourceUser = await createFederatedUser()
-    const post = await createTestPost()
-    const remoteFollower = await createRemoteFollowerOf(sourceUser.id)
-    const { public_key_pem: sourcePublicKeyPem } = await getOrCreateActorKeyPair(sourceUser.id)
+    try {
+      const post = await createTestPost()
+      const remoteFollower = await createRemoteFollowerOf(sourceUser.id)
+      const { public_key_pem: sourcePublicKeyPem } = await getOrCreateActorKeyPair(sourceUser.id)
 
-    // The real production trigger call (posts/post-routes/comment-ancestors-route.mts's onVote):
-    // an upvote on a post enqueues an outbound Like distribution for the voter's remote audience.
-    const distributeJob = await enqueueDistributeActivity({
-      activityId: post.id,
-      activityType: 'Like',
-      sourceUserId: sourceUser.id,
-      targetPostId: post.id,
-    })
-    if (!distributeJob) throw new Error('Expected a Like distribution job')
-    const distributeResult = await distributeActivity(
-      (distributeJob as Job<DistributeActivityData>).data,
-    )
-    expect(distributeResult.enqueued).toBeGreaterThan(0)
+      // The real production trigger call (posts/post-routes/comment-ancestors-route.mts's onVote):
+      // an upvote on a post enqueues an outbound Like distribution for the voter's remote audience.
+      const distributeJob = await enqueueDistributeActivity({
+        activityId: post.id,
+        activityType: 'Like',
+        sourceUserId: sourceUser.id,
+        targetPostId: post.id,
+      })
+      if (!distributeJob) throw new Error('Expected a Like distribution job')
+      const distributeResult = await distributeActivity(
+        (distributeJob as Job<DistributeActivityData>).data,
+      )
+      expect(distributeResult.enqueued).toBeGreaterThan(0)
 
-    const deliverJob = await findDeliveredJob(post.id)
-    const captured: CapturedRequest[] = []
-    const deliverResult = await deliverActivity(deliverJob.data, {
-      deliverActivityToInbox: deliverToMockedNetwork(captured),
-    })
+      const deliverJob = await findDeliveredJob(post.id)
+      const captured: CapturedRequest[] = []
+      const deliverResult = await deliverActivity(deliverJob.data, {
+        deliverActivityToInbox: deliverToMockedNetwork(captured),
+      })
 
-    expect(deliverResult).toEqual({ delivered: true })
-    expect(captured).toHaveLength(1)
-    expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
-    expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
-    expect(JSON.parse(captured[0]!.body)).toMatchObject({
-      type: 'Like',
-      actor: getActorUri(sourceUser.id),
-      object: getPostUri(post.id),
-    })
+      expect(deliverResult).toEqual({ delivered: true })
+      expect(captured).toHaveLength(1)
+      expect(captured[0]!.url).toBe(remoteFollower.inbox_url)
+      expect(verifyCapturedSignature(captured[0]!, sourcePublicKeyPem)).toBe(true)
+      expect(JSON.parse(captured[0]!.body)).toMatchObject({
+        type: 'Like',
+        actor: getActorUri(sourceUser.id),
+        object: getPostUri(post.id),
+      })
+    } finally {
+      await removeOwnedActivityJobs(sourceUser.id)
+    }
   })
 })
