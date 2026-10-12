@@ -15,6 +15,21 @@ export async function getTestMembershipPauseCollectionRequestedAt(
   return rows[0]?.requested_at ?? null
 }
 
+/** Writes one pause-collection generation the same way suspension does, without a service import. */
+export async function recordTestMembershipPauseCollectionWork(userId: string): Promise<void> {
+  await write(sql`/* recordTestMembershipPauseCollectionWork */
+    INSERT INTO membership_pause_collection_work_items (user_id, requested_at)
+    VALUES (${userId}, date_trunc('milliseconds', clock_timestamp()))
+    ON CONFLICT (user_id) DO UPDATE SET
+      requested_at = date_trunc('milliseconds', clock_timestamp()),
+      available_at = clock_timestamp(),
+      lease_token = NULL,
+      leased_at = NULL,
+      lease_expires_at = NULL,
+      attempt_count = 0
+  `)
+}
+
 /** Removes one user's pause-collection work so a later dispatcher claim stays scoped. */
 export async function deleteTestMembershipPauseCollectionWork(userId: string): Promise<void> {
   await write(sql`/* deleteTestMembershipPauseCollectionWork */

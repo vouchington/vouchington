@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import * as stripeClientModule from '@modules/stripe/client'
 import { memberships } from '@queues/memberships/queues'
 import type { SyncMembershipPauseCollectionData } from '@queues/memberships/types'
@@ -11,13 +10,13 @@ import {
   expireTestMembershipPauseCollectionLease,
   getTestMembershipRaw,
   readAllQueueJobs,
+  recordTestMembershipPauseCollectionWork,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '../get-catalog.mts'
 import { dispatchDuePauseCollectionWork } from './dispatch.mts'
 import { enqueueRecordedMembershipPauseCollection } from './enqueue-recorded.mts'
-import { recordMembershipPauseCollectionWork } from './record.mts'
 import { syncMembershipPauseCollection } from './sync.mts'
 
 type Pause = { behavior: 'void'; resumes_at?: number | null } | null
@@ -237,9 +236,7 @@ async function directSubscription(userId: string): Promise<{
 }
 
 async function queuePause(userId: string): Promise<void> {
-  await using transaction = await beginTransaction()
-  await recordMembershipPauseCollectionWork(transaction, userId)
-  await transaction.commit()
+  await recordTestMembershipPauseCollectionWork(userId)
   await enqueueRecordedMembershipPauseCollection(userId)
 }
 
