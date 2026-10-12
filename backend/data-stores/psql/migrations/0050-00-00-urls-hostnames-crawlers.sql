@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   attempt_threshold_hours SMALLINT DEFAULT 1, -- if a crawl fails, we do not attempt to crawl again for this many hours
   age_threshold_days SMALLINT NOT NULL DEFAULT 1, -- days after which a page's successful crawl is considered old and should be crawled again
   crawl_swept_at TIMESTAMPTZ,
+  crawl_policy_changed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   reversed_hostname TEXT GENERATED ALWAYS AS (fn_reverse_hostname_labels(hostname)) STORED,
 
@@ -130,6 +131,32 @@ BEFORE UPDATE ON url_hostnames
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- Only crawl-policy transitions invalidate a sweep, including a change later reverted.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable
+    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked
+    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days
+    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit
+    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours
+  THEN
+    NEW.crawl_policy_changed_at = GREATEST(
+      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'
+    );
+  ELSE
+    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_url_hostnames_crawl_policy_changed_at
+BEFORE UPDATE ON url_hostnames
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at();
+
 COMMENT ON TABLE url_hostnames IS 'Registered hostnames with crawl and moderation policies.';
 COMMENT ON COLUMN url_hostnames.hostname IS 'Lowercase, unique hostname (e.g. example.com).';
 COMMENT ON COLUMN url_hostnames.is_blocked IS 'NOT NULL, default FALSE. TRUE blocks this hostname from being used on the site (e.g. spam); FALSE permits it. Trigger-maintained from url_hostname_blocks — do not write directly in app code.';
@@ -140,6 +167,7 @@ COMMENT ON COLUMN url_hostnames.requests_per_second_limit IS 'Max crawl requests
 COMMENT ON COLUMN url_hostnames.attempt_threshold_hours IS 'Hours to wait before retrying a failed crawl.';
 COMMENT ON COLUMN url_hostnames.age_threshold_days IS 'Days after which a successful crawl is considered stale and should be re-crawled.';
 COMMENT ON COLUMN url_hostnames.crawl_swept_at IS 'Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.';
+COMMENT ON COLUMN url_hostnames.crawl_policy_changed_at IS 'Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.';
 
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__crawl_due
   ON url_hostnames (age_threshold_days, crawl_swept_at NULLS FIRST, id)
