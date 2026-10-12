@@ -69,13 +69,13 @@ describe('post-publication notification recovery (real GlideMQ)', () => {
           },
         ),
       ).resolves.toEqual({ reconciled: 1 })
-      expect((await recovered.getJobs('waiting')).map(job => job.data.id)).toContain(postId)
+      expect((await recovered.getJobs('delayed')).map(job => job.data.id)).toContain(postId)
       await expect(
         getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
       ).resolves.toBeUndefined()
       await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(true)
     } finally {
-      for (const job of await recovered.getJobs('waiting')) await job.remove()
+      for (const job of await recovered.getJobs('delayed')) await job.remove()
       await closeAndUnregisterGlideMQInstance(recovered)
     }
   })
