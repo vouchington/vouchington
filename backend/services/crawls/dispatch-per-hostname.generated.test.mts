@@ -57,10 +57,11 @@ describe('dispatch-per-hostname.generated', () => {
   })
 
   it('completes a sweep after an unrelated hostname update between dispatch and completion', async () => {
+    const sweepUser = await createTestUser()
     const random = Math.random().toString(36).slice(2, 15)
     const hostnameValue = `dispatch-unrelated-write-${random}.localhost`
     await setTestRobotsTxtCache(hostnameValue, 'User-agent: *\nAllow: /')
-    const url = await addUrl(user.id, `https://${hostnameValue}/only`)
+    const url = await addUrl(sweepUser.id, `https://${hostnameValue}/only`)
     expect(url).toBeTruthy()
     let sweepStartedAt: string | undefined
 
@@ -80,10 +81,11 @@ describe('dispatch-per-hostname.generated', () => {
   })
 
   it('does not complete a sweep after a crawl-policy change is reverted', async () => {
+    const sweepUser = await createTestUser()
     const random = Math.random().toString(36).slice(2, 15)
     const hostnameValue = `dispatch-policy-reverted-${random}.localhost`
     await setTestRobotsTxtCache(hostnameValue, 'User-agent: *\nAllow: /')
-    const url = await addUrl(user.id, `https://${hostnameValue}/only`)
+    const url = await addUrl(sweepUser.id, `https://${hostnameValue}/only`)
     expect(url).toBeTruthy()
 
     const result = await dispatchCrawlUrlsPerHostname(
