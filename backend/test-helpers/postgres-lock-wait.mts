@@ -63,12 +63,18 @@ export async function waitForTestPostgresLockWaiter(
   holderProcessId: number,
   queryMarker: string,
   observerPool: 'write' | 'advisoryLock' | QueryExecutor = 'write',
+  onDiagnostic?: (diagnostic: {
+    phase: 'snapshot-clear-start' | 'snapshot-cleared' | 'waiter-query-start' | 'waiter-query'
+    waiting: boolean
+  }) => void,
 ): Promise<void> {
   await pollUntilNotNull(
     async () => {
       if (typeof observerPool === 'function') {
+        onDiagnostic?.({ phase: 'snapshot-clear-start', waiting: false })
         await observerPool(sql`/* waitForTestPostgresLockWaiter.refresh */
           SELECT pg_stat_clear_snapshot()`)
+        onDiagnostic?.({ phase: 'snapshot-cleared', waiting: false })
       }
       const observation = sql`
         /* waitForTestPostgresLockWaiter */
@@ -82,12 +88,14 @@ export async function waitForTestPostgresLockWaiter(
             AND ${holderProcessId} = ANY(pg_blocking_pids(activity.pid))
         ) AS waiting
       `
+      onDiagnostic?.({ phase: 'waiter-query-start', waiting: false })
       const { rows } =
         typeof observerPool === 'function'
           ? await observerPool<{ waiting: boolean }>(observation)
           : observerPool === 'advisoryLock'
             ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
             : await write<{ waiting: boolean }>(observation)
+      onDiagnostic?.({ phase: 'waiter-query', waiting: rows[0]?.waiting ?? false })
       return rows[0]?.waiting ? true : null
     },
     5_000,

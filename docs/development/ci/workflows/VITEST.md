@@ -9,6 +9,13 @@ merge-group diff, and a selected area runs its full suites; CI never selects ind
 [`ci/vitest/project-ownership-registry.mts`](../../../../ci/vitest/project-ownership-registry.mts) derives
 the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../ci.md#area-test-suites).
 
+Backend data-store setup emits synchronous phase start, completion, and failure records when
+`VITEST_CI_REPORTERS=run`. The records identify imports, seeding, each dynamic configuration, and
+bloom warmups before a test file is assigned. Inspect the last open phase when file-progress logs
+have not started. Setup drains every started parallel operation before reporting distinct failures;
+subscription-client connection bounds belong to the installed Valkey dependency. The setup owner is
+[`vitest.setup.data-stores.mts`](../../../../test-helpers/vitest.setup.data-stores.mts).
+
 Credentialed projects must use workflow, job, or step `if:` gates so untrusted PRs from forks, Dependabot, or Renovate do not receive API keys, repository secrets, or OIDC-assumed cloud roles. Test suites must skip when their required env vars are absent.
 
 Each area's path filters must trigger the owning workflow when a project’s source files, test
