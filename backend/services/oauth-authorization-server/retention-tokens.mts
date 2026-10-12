@@ -12,6 +12,7 @@ export async function lockExpiredOAuthRetentionFamilies(
   // arbitrarily many earlier empty families to find one with a child.
   const families = await query<{ id: string }>(
     `/* lockExpiredOAuthRetentionFamilies */
+     /* deadlock-safe: ordered family locks skip held rows before child cleanup. */
      SELECT family.id FROM oauth_refresh_token_families AS family
      WHERE family.expires_at <= $1
        AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
