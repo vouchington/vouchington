@@ -125,7 +125,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "priority": 1,
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
