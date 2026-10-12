@@ -1,14 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function createModmailNotification(
-  userId: string,
-  conversationId: string,
-  targetPath: string,
-): Promise<Array<{ user_id: string; id: string }>> {
-  return createModmailNotifications([userId], conversationId, targetPath)
-}
-
 /** Upsert one modmail notification per distinct recipient in one statement. */
 export async function createModmailNotifications(
   userIds: string[],

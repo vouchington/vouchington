@@ -1,13 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function createDirectMessageNotification(
-  userId: string,
-  conversationId: string,
-): Promise<Array<{ user_id: string; id: string }>> {
-  return createDirectMessageNotifications([userId], conversationId)
-}
-
 /** Upsert one notification per distinct recipient and return the ids used for push dispatch. */
 export async function createDirectMessageNotifications(
   userIds: string[],
