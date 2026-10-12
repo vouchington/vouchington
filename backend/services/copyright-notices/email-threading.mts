@@ -61,7 +61,7 @@ export async function recordCopyrightEmailThreadReferences(input: {
     }, [])
     if (replyLookups.length > 0) {
       await transaction(sql`/* recordCopyrightEmailThreadReferences:parent */
-        INSERT INTO copyright_notice_email_message_parents (reply_message_id, parent_message_id)
+        INSERT INTO copyright_notice_email_message_parents (reply_message_intake_id, parent_message_intake_id)
         SELECT ${input.intakeId}::uuid, parent.copyright_notice_email_intake_id
         FROM copyright_notice_email_thread_references parent
         WHERE parent.lookup_token = ANY(${replyLookups}::text[])
@@ -70,7 +70,7 @@ export async function recordCopyrightEmailThreadReferences(input: {
         ORDER BY array_position(${replyLookups}::text[], parent.lookup_token),
           parent.copyright_notice_email_intake_id
         LIMIT 1
-        ON CONFLICT (reply_message_id) DO NOTHING
+        ON CONFLICT (reply_message_intake_id) DO NOTHING
       `)
     }
     const messageLookup = referenceRows.find(
@@ -78,14 +78,14 @@ export async function recordCopyrightEmailThreadReferences(input: {
     )?.lookup_token
     if (messageLookup) {
       await transaction(sql`/* recordCopyrightEmailThreadReferences:waitingReplies */
-        INSERT INTO copyright_notice_email_message_parents (reply_message_id, parent_message_id)
+        INSERT INTO copyright_notice_email_message_parents (reply_message_intake_id, parent_message_intake_id)
         SELECT DISTINCT reference.copyright_notice_email_intake_id, ${input.intakeId}::uuid
         FROM copyright_notice_email_thread_references reference
         WHERE reference.lookup_token = ${messageLookup}
           AND reference.reference_kind = 'reply_reference'
           AND reference.copyright_notice_email_intake_id <> ${input.intakeId}
         ORDER BY reference.copyright_notice_email_intake_id
-        ON CONFLICT (reply_message_id) DO NOTHING
+        ON CONFLICT (reply_message_intake_id) DO NOTHING
       `)
     }
   }

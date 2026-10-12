@@ -47,8 +47,10 @@ export const createUser = async ({
     const existing = await getPrivateUserByAny(emailAddress, { query })
     if (existing) throw createCodedError(409, 'User creation race', USER_CREATION_RACE)
 
-    const id = await createUserId({ query }, referrerId)
-    const emailDomainHostnameId = await resolveEmailDomainHostnameId(emailAddress, { query })
+    const [id, emailDomainHostnameId] = await Promise.all([
+      createUserId({ query }, referrerId),
+      resolveEmailDomainHostnameId(emailAddress, { query }),
+    ])
     const {
       rows: [userEmailAddress],
     } = await query(sql`/* createUser */

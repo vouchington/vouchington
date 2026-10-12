@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -28,4 +28,10 @@ export async function upsertTestHostnameId(
   const id = rows[0]?.id
   if (!id) throw new Error('Test email domain hostname upsert returned no ID')
   return id
+}
+
+export async function readTestEmailDomainHostname(id: string): Promise<string | null> {
+  const { rows } = await read<{ hostname: string }>(sql`/* readTestEmailDomainHostname */
+    SELECT hostname FROM url_hostnames WHERE id = ${id}`)
+  return rows[0]?.hostname ?? null
 }

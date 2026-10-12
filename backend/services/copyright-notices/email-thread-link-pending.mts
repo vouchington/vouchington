@@ -10,10 +10,10 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     WITH RECURSIVE thread_intakes(intake_id) AS (
       SELECT ${input.initialIntakeId}::uuid
       UNION
-      SELECT reply.reply_message_id
+      SELECT reply.reply_message_intake_id
       FROM thread_intakes parent
       JOIN copyright_notice_email_message_parents reply
-        ON reply.parent_message_id = parent.intake_id
+        ON reply.parent_message_intake_id = parent.intake_id
     )
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind

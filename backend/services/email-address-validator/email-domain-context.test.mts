@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
+import { readTestEmailDomainHostname } from '@voucha/test-helpers/entities/email-domain-hostname'
 import { resolveEmailDomainHostnameId } from './email-domain-context.mts'
 
 describe('email domain hostname identity', () => {
@@ -10,8 +9,7 @@ describe('email domain hostname identity', () => {
     const quotedId = await resolveEmailDomainHostnameId(`"left@right"@${domain.toUpperCase()}`)
     const plainId = await resolveEmailDomainHostnameId(`user@${domain}`)
     expect(quotedId).toBe(plainId)
-    const { rows } = await read<{ hostname: string }>(sql`/* verifyEmailDomainHostnameId */
-    SELECT hostname FROM url_hostnames WHERE id = ${quotedId}`)
-    expect(rows[0]?.hostname).toBe(domain)
+    if (!quotedId) throw new Error('Quoted email domain was not resolved')
+    expect(await readTestEmailDomainHostname(quotedId)).toBe(domain)
   })
 })

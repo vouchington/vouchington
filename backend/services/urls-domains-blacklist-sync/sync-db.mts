@@ -58,7 +58,6 @@ export async function syncDomainsWithDatabase(
     await dropSyncTempTables(client).catch(onError)
     client.release()
   }
-
   if (sourceType === 'email') {
     await bloomRebuildDependencies.invalidateEmailReadyMarker()
     await bloomRebuildDependencies.enqueueEmailRebuild()
@@ -161,6 +160,7 @@ async function persistDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
 ): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- hostname FK owners must exist before block rows; ordered insert/delete projects policy in one transaction.
   await query(
     `/* syncDomainsWithDatabase */
       INSERT INTO url_hostnames (hostname)
