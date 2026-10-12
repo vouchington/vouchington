@@ -121,8 +121,8 @@ those steps, even when an expired family was locked or still has children. Famil
 family drains across runs without uncounted cascading deletes. Each bounded physical-row batch
 commits independently, releasing its locks before the next batch while preserving the shared run
 allowance. Family-expiry and child-family indexes select eligible-family children
-separately from independently expired tokens. One global index-ordered child page bounds token
-locks across all selected families; the final remaining-work probe reads the writer after the
+separately from independently expired tokens. A global family-child page and an own-expiry page
+bound predecessor checks and token locks; the final remaining-work probe reads the writer after the
 cleanup transactions commit. The full refresh-token expiry index also covers
 consumed and revoked tokens, which remain eligible for independent expiry cleanup. A refresh
 replacement with a surviving predecessor is retained until the predecessor can be removed,

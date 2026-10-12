@@ -48,13 +48,19 @@ export async function deleteExpiredOAuthRetentionTokens(
       ? { rowCount: 0 }
       : await query(
           `/* deleteOAuthRetentionFamilyTokens */
-     /* deadlock-safe: one global index-ordered token page locks at most $2 rows and skips
-        held rows; surviving predecessors exclude replacements that could invoke SET NULL. */
-     WITH candidates AS MATERIALIZED (
+     /* deadlock-safe: the index-ordered page bounds predecessor checks and gives each
+        selected row one lock attempt; surviving predecessors avoid SET NULL waits. */
+     WITH page AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact
-       WHERE artifact.${familyColumn} = ANY($1::uuid[]) ${noPredecessor}
+       WHERE artifact.${familyColumn} = ANY($1::uuid[])
        ORDER BY artifact.${familyColumn}, artifact.id LIMIT $2
-       FOR UPDATE OF artifact SKIP LOCKED
+     ), candidates AS MATERIALIZED (
+       SELECT locked.id FROM page
+       CROSS JOIN LATERAL (
+         SELECT artifact.id FROM ${tokenTable} AS artifact
+         WHERE artifact.id = page.id ${noPredecessor}
+         FOR UPDATE OF artifact SKIP LOCKED
+       ) AS locked
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,
           [familyIds, limit],
         )
@@ -62,16 +68,20 @@ export async function deleteExpiredOAuthRetentionTokens(
   if (!includeOwnExpiry || deleted === limit) return deleted
   const independentlyExpired = await query(
     `/* deleteOAuthRetentionExpiredTokens */
-     /* deadlock-safe: ordered token locks skip held rows, while surviving predecessors
-        exclude replacements. Own expiry ignores family age, so locked families cannot
-        hide later tokens. */
-     WITH candidates AS MATERIALIZED (
+     /* deadlock-safe: the expiry-index page bounds predecessor checks and gives each
+        selected row one lock attempt; surviving predecessors avoid SET NULL waits. */
+     WITH page AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact
        WHERE artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2)
-         ${noPredecessor}
        ORDER BY artifact.expires_at, artifact.id LIMIT $3
-       FOR UPDATE OF artifact SKIP LOCKED
+     ), candidates AS MATERIALIZED (
+       SELECT locked.id FROM page
+       CROSS JOIN LATERAL (
+         SELECT artifact.id FROM ${tokenTable} AS artifact
+         WHERE artifact.id = page.id ${noPredecessor}
+         FOR UPDATE OF artifact SKIP LOCKED
+       ) AS locked
      ) DELETE FROM ${tokenTable} AS target USING candidates WHERE target.id = candidates.id`,
     [window.now, window.lowerBoundDate ?? null, limit - deleted],
   )
