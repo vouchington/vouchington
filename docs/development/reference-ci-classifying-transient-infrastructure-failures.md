@@ -152,10 +152,11 @@ also the only socket-leak tripwire — see
 Under the retired self-hosted runners' CPU contention the close occasionally missed the previous 5s
 `teardownTimeout` and was force-killed mid-close, which the forks pool then misreports as
 `Worker exited unexpectedly`. `vitest.config.mts`'s root-only `teardownTimeout` is now `20_000` for
-contention headroom; a genuine hang still force-kills at that ceiling. On any trip,
-`[vitest-teardown] phase=… start/done ms=…` lines from `teardown()` plus a `[vitest-teardown-overrun]`
-process/handle snapshot from the teardown-overrun reporter's `onProcessTimeout()` name which phase was
-still in flight. That vocabulary is deliberately neutral — it must never contain a substring
+contention headroom; a genuine hang still force-kills at that ceiling. CI reporter mode emits the
+`[vitest-teardown-overrun]` process/handle snapshot from `onProcessTimeout()` independently of
+`VITEST_DIAGNOSTICS`. Phase start/done markers from `teardown()` are opt-in with
+`VITEST_DIAGNOSTICS=1`; when present, their last unmatched start identifies the phase still in flight.
+Routine runs do not provide those phase markers. That vocabulary is deliberately neutral — it must never contain a substring
 `hasBackendUnitVitestFailure` (`ci/transient-retry/runner-shutdown-fingerprints.mts`) reads as a
 real failure, which `runner-shutdown-safety-regressions.test.mts` regression-tests.
 

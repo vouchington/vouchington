@@ -43,7 +43,9 @@ Review Vitest tests. Pick at most one concrete, bounded improvement that is safe
   instead of adding another diagnostic pass.
 - For a post-assertion worker exit (the test passes, then its worker crashes during teardown),
   the failure is Vitest's own `Worker exited unexpectedly` error. Check per-shard RSS/heap and the
-  `[vitest-teardown]` / `[vitest-teardown-overrun]` output before assuming a leak.
+  `[vitest-teardown-overrun]` output before assuming a leak. CI reporter mode retains that
+  timeout snapshot independently of `VITEST_DIAGNOSTICS`; `[vitest-teardown]` phase markers
+  are available only with `VITEST_DIAGNOSTICS=1`, so their absence in routine runs is expected.
   Per-project `pool` / `isolate` values are recorded in
   [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5).
   Forks-pool projects have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is

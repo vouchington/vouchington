@@ -131,6 +131,7 @@ jobs:
           CI_PROJECT: web-integration
           CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
           VITEST_CI_REPORTERS: run
+          VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-integration-shard-${{ matrix.shard }}.junit.xml
         run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
