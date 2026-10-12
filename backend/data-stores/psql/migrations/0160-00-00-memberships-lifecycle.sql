@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS membership_provider_contexts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT uq_membership_provider_contexts__identity UNIQUE (provider, environment, application_id)
 );
+COMMENT ON TABLE membership_provider_contexts IS 'Canonical identity for a configured membership provider, environment, and application.';
+COMMENT ON COLUMN membership_provider_contexts.provider IS 'Provider that owns this membership context.';
+COMMENT ON COLUMN membership_provider_contexts.environment IS 'Provider environment for this membership context.';
+COMMENT ON COLUMN membership_provider_contexts.application_id IS 'Configured provider application identity within the provider environment.';
 -- Resolve provider-supplied or configured identities atomically for both application writers and
 -- single-statement fixture inserts. Concurrent insertions reuse the same durable row.
 CREATE FUNCTION fn_upsert_membership_provider_context_id(
