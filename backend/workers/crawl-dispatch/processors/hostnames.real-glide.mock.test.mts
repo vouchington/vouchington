@@ -8,6 +8,7 @@ import { QUEUE_NAME } from '@queues/crawl-dispatch/config'
 import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { crawlUrls } from '@queues/crawler/queues'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
+import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { addUrl } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -30,6 +31,8 @@ import {
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processCrawlDispatchJob } from '../processors.mts'
+import { processCrawlHostnamesJob } from './hostnames.mts'
+import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 const fetchWithTimeoutSimpleMock = vi.hoisted(() =>
@@ -58,7 +61,11 @@ async function crawlableUrl(path: string) {
   return { user, url, hostname }
 }
 
-async function runJob(name: string, data: Record<string, unknown> = {}): Promise<unknown> {
+async function runJob(
+  name: string,
+  data: Record<string, unknown> = {},
+  processor: (job: Job) => Promise<unknown> = processCrawlDispatchJob,
+): Promise<unknown> {
   const prefix = `${workerQueuePrefix}-crawl-dispatch-${randomUUID()}`
   const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
   let worker: Worker | undefined
@@ -66,7 +73,7 @@ async function runJob(name: string, data: Record<string, unknown> = {}): Promise
   try {
     const job = await queue.add(name, data, { priority: 10, attempts: 1 })
     if (!job) throw new Error(`Expected ${name} to enqueue`)
-    worker = new Worker(QUEUE_NAME, (current: Job) => processCrawlDispatchJob(current), {
+    worker = new Worker(QUEUE_NAME, processor, {
       connection: workerQueueConnection,
       prefix,
       concurrency: 1,
@@ -97,9 +104,16 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       ['enqueueCrawlTier1Dispatcher', 'crawl_tier1_dispatcher'],
       ['enqueueCrawlTier2Dispatcher', 'crawl_tier2_dispatcher'],
     ] as const
-    for (const [name, child] of routes) {
-      await runJob(name)
-      expect(await childCount(child)).toBeGreaterThan(0)
+    const ownedChildren = [] as Array<{ remove: () => Promise<unknown> }>
+    try {
+      for (const [name, child] of routes) {
+        const enqueued = await runJob(name, { deduplication_id: randomUUID() })
+        const childJob = await readEnqueuedJob(crawlDispatchQueue, enqueued)
+        ownedChildren.push(childJob)
+        expect(childJob.name).toBe(child)
+      }
+    } finally {
+      await Promise.all(ownedChildren.map(childJob => childJob.remove()))
     }
   })
 
@@ -204,7 +218,14 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     const { url } = await crawlableUrl('old-invalid')
     const oldCrawlId = await insertOldInvalidCrawlForTest(url.id)
     expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
-    const result = await runJob('crawl_cleanup')
+    const result = await runJob('crawl_cleanup', {}, current =>
+      processCrawlDispatchJob(current, {
+        processCrawlHostnamesJob: job =>
+          processCrawlHostnamesJob(job, {
+            deleteOldInvalidCrawls: () => deleteOldInvalidCrawls(30, oldCrawlId),
+          }),
+      }),
+    )
     expect(result).toMatchObject({ crawls_deleted_invalid: expect.any(Number) })
     expect(await getCrawlData(url.id, oldCrawlId)).toBeUndefined()
     expect(await countCrawlsForUrl(url.id)).toBe(0)

@@ -92,13 +92,15 @@ export async function processCrawlHostnamesJob(
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<unknown> {
   const deps = getDependencies(dependencies)
+  const deduplicationId =
+    typeof job.data?.deduplication_id === 'string' ? job.data.deduplication_id : undefined
   switch (job.name as CrawlHostnamesJobs) {
     case 'enqueueCrawlHostnamesDispatcher':
-      return enqueueCrawlHostnamesDispatcher()
+      return enqueueCrawlHostnamesDispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'enqueueCrawlTier1Dispatcher':
-      return enqueueCrawlTier1Dispatcher()
+      return enqueueCrawlTier1Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'enqueueCrawlTier2Dispatcher':
-      return enqueueCrawlTier2Dispatcher()
+      return enqueueCrawlTier2Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'crawl_hostnames_dispatcher':
       return processRetainedSweep(job, save =>
         deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),

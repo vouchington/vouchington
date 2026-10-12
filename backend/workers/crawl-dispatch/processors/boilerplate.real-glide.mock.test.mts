@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { Queue, Worker, type Job } from 'glide-mq'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { S3ImagesClient } from '@modules/aws'
 import { gzipBytes } from '@modules/utils/compression'
@@ -15,6 +15,7 @@ import { addUrls } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { createTestUser } from '@voucha/test-helpers'
 import { processCrawlDispatchJob } from '../processors.mts'
+import { processBoilerplateRemovalDispatcher } from './boilerplate.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
@@ -22,7 +23,11 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
   S3ImagesClient: { send: vi.fn<VitestLooseMock>() } as unknown as typeof S3ImagesClient,
 }))
 
-async function runJob(name: string, data: Record<string, unknown> = {}): Promise<unknown> {
+async function runJob(
+  name: string,
+  data: Record<string, unknown> = {},
+  processor: (job: Job) => Promise<unknown> = processCrawlDispatchJob,
+): Promise<unknown> {
   const prefix = `${workerQueuePrefix}-crawl-dispatch-boilerplate-${randomUUID()}`
   const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
   let worker: Worker | undefined
@@ -30,7 +35,7 @@ async function runJob(name: string, data: Record<string, unknown> = {}): Promise
   try {
     const job = await queue.add(name, data, { priority: 10, attempts: 1 })
     if (!job) throw new Error(`Expected ${name} to enqueue`)
-    worker = new Worker(QUEUE_NAME, (current: Job) => processCrawlDispatchJob(current), {
+    worker = new Worker(QUEUE_NAME, processor, {
       connection: workerQueueConnection,
       prefix,
       concurrency: 1,
@@ -70,6 +75,13 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       `https://${hostname}/blog/post-2`,
     ])
     const hostnameId = urls[0]!.hostname.id
+    onTestFinished(async () => {
+      const ownedJobs = await crawlDispatchQueue.searchJobs({
+        name: 'boilerplate_removal',
+        data: { hostname_id: hostnameId, parent_path: '/blog' },
+      })
+      await Promise.all(ownedJobs.map(job => job.remove()))
+    })
     await updateUrlHostname(hostnameId, { is_crawlable: true })
     const crawler = await createCrawler(user, { hostname_id: hostnameId, crawler_type: 'fetch' })
     for (const url of urls) {
@@ -82,7 +94,11 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       })
     }
 
-    const dispatched = await runJob('boilerplate_removal_dispatcher')
+    const dispatched = await runJob('boilerplate_removal_dispatcher', {}, current =>
+      processCrawlDispatchJob(current, {
+        processBoilerplateRemovalDispatcher: () => processBoilerplateRemovalDispatcher(hostnameId),
+      }),
+    )
     expect(dispatched).toBeGreaterThan(0)
     expect(
       (

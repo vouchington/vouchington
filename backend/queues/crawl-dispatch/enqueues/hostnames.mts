@@ -53,7 +53,10 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
         jobName === 'crawl_tier2_dispatcher' ||
         jobName === 'crawl_hostnames_dispatcher'
           ? {
-              deduplication: { id: jobName, mode: 'simple' as const },
+              deduplication: {
+                id: options?.deduplicationId ?? jobName,
+                mode: 'simple' as const,
+              },
             }
           : options?.deduplicationId
             ? {
