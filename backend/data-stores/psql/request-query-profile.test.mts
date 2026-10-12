@@ -85,6 +85,19 @@ describe('request query profile attribution', () => {
     expect(first.summarize().repeats).toEqual([])
     expect(second.summarize().totalQueries).toBe(1)
   })
+
+  it('ignores transaction starts as repeats but still flags statements repeated inside them', () => {
+    const profile = createRequestQueryProfile()
+    profile.run(() => {
+      for (let i = 0; i < 2; i++) {
+        recordQueryTiming({ ...timing, annotation: 'beginTransaction' })
+        recordQueryTiming({ ...timing, annotation: 'insideTransaction' })
+      }
+    })
+    const summary = profile.summarize()
+    expect(summary.totalQueries).toBe(4)
+    expect(summary.repeats).toEqual([{ annotation: 'insideTransaction', count: 2 }])
+  })
 })
 
 const BASELINE_URL = new URL(

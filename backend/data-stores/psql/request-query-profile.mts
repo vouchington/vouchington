@@ -41,6 +41,13 @@ interface RequestQueryTimingInput {
   pipelined?: boolean
 }
 
+/**
+ * Annotation `@vouchington/postgres` gives a transaction's BEGIN/COMMIT/ROLLBACK. Opening a
+ * transaction is not a lookup, so repeats are not the per-item signature; per-item loops are still
+ * caught by the statements repeated inside them.
+ */
+const TRANSACTION_CONTROL_ANNOTATION = 'beginTransaction'
+
 /** Fed from the query-timing hook, which fires for every query including in-transaction ones. */
 export function recordRequestQueryTiming(input: RequestQueryTimingInput): void {
   const queries = requestProfiles.getStore()
@@ -50,6 +57,9 @@ export function recordRequestQueryTiming(input: RequestQueryTimingInput): void {
     annotation: input.annotation,
     startMs: endMs - input.durationMs,
     endMs,
-    excludedFromRepeats: input.cursorBatches !== undefined || input.pipelined === true,
+    excludedFromRepeats:
+      input.cursorBatches !== undefined ||
+      input.pipelined === true ||
+      input.annotation === TRANSACTION_CONTROL_ANNOTATION,
   })
 }
