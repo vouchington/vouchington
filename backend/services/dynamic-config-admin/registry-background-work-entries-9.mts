@@ -11,7 +11,7 @@ import { voteWeightWorkConfig, voteWeightWorkMaxValues } from '@services/vote-we
 import {
   crawlBoilerplateRemovalWorkConfig,
   crawlBoilerplateRemovalWorkMaxValues,
-} from '@queues/crawl-boilerplate-removal/config'
+} from '@queues/crawl-dispatch/config'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import {
   findYourFriendsWorkConfig,

@@ -1,7 +1,7 @@
 import { getUrlById } from '@services/urls/get'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { computeParentPath } from '@ts-shared/utils/urls'
-import { enqueueBulkBoilerplateRemoval } from '@queues/crawl-boilerplate-removal/enqueues'
+import { enqueueBulkBoilerplateRemoval } from '@queues/crawl-dispatch/enqueues/boilerplate'
 
 export const processUrlCreated = async (
   { id }: { id: string },

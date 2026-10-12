@@ -10,7 +10,7 @@ import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
 import { getCrawlDispatchLimits } from './work-limits.mts'
 import { enqueueByHostname } from './dispatch-url-batches.mts'
-import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
+import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
 
 const TIER_1_AGE_DAYS = 7
 const TIER_2_AGE_DAYS = 30

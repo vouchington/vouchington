@@ -1,9 +1,8 @@
 {
   "cpuOnlyQueues": [
     "crawl_urls",
-    "crawl_hostnames",
+    "crawl-dispatch",
     "crawl_referral_links",
-    "crawl_html_boilerplate_removal",
     "crawl_browser",
     "unfurl_referral_links",
     "images",

@@ -1,5 +1,5 @@
 import { getWeeklyHostnameRefreshBatchSize } from '@services/crawls/work-limits'
-import type { CrawlHostnamesJobs } from '@queues/crawl-hostnames/types'
+import type { CrawlHostnamesJobs } from '@queues/crawl-dispatch/types'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { refreshHostnameCrawler } from '@services/crawlers/refresh'
@@ -12,7 +12,7 @@ import {
   enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-hostnames/enqueues'
+} from '@queues/crawl-dispatch/enqueues/hostnames'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { Job } from 'glide-mq'

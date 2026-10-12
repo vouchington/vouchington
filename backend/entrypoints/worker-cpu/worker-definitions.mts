@@ -9,20 +9,13 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/crawler/workers').then(module => module.crawlUrls),
   },
   {
-    queueName: 'crawl_hostnames',
-    load: () => import('@workers/crawl-hostnames/workers').then(module => module.crawlHostnames),
+    queueName: 'crawl-dispatch',
+    load: () => import('@workers/crawl-dispatch/workers').then(module => module.crawlDispatch),
   },
   {
     queueName: 'crawl_referral_links',
     load: () =>
       import('@workers/crawl-referral-links/workers').then(module => module.crawlReferralLinks),
-  },
-  {
-    queueName: 'crawl_html_boilerplate_removal',
-    load: () =>
-      import('@workers/crawl-boilerplate-removal/workers').then(
-        module => module.boilerplateRemoval,
-      ),
   },
   {
     queueName: 'crawl_browser',

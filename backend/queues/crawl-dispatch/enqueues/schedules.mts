@@ -4,15 +4,16 @@ import {
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import type { CrawlHostnamesJobs } from '../types.mts'
-import { crawlHostnamesQueue } from '../queues.mts'
-import { CRAWL_HOSTNAMES_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { crawlDispatchQueue } from '../queues.mts'
+import { enqueueBoilerplateRemovalDispatcher } from './boilerplate.mts'
+import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
 import {
   enqueueCrawlCleanup,
   enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
   enqueueRefreshHostnameCrawlerDispatcher,
-} from '../enqueues.mts'
+} from './hostnames.mts'
 
 const DEFAULT_OPTIONS = {
   attempts: 3,
@@ -21,7 +22,7 @@ const DEFAULT_OPTIONS = {
   removeOnFail: 100,
 }
 
-export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_HOSTNAMES_QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   crawlJob(
     'crawl_hostnames_dispatcher',
     '0 * * * *',
@@ -60,10 +61,28 @@ export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_HOSTNAMES_Q
     'Clean up old crawl data (daily)',
     enqueueCrawlCleanup,
   ),
+  {
+    schedulerId: 'boilerplate_removal_dispatcher',
+    repeat: { pattern: '0 5 * * *' },
+    template: {
+      name: 'boilerplate_removal_dispatcher',
+      data: {},
+      opts: { ...DEFAULT_OPTIONS, priority: PRIORITY_DISPATCHER } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'boilerplate_removal_dispatcher',
+        schedule: '0 5 * * *',
+        description: 'Dispatch HTML boilerplate removal',
+        trigger: enqueueBoilerplateRemovalDispatcher,
+      },
+    ],
+  },
 ])
 
 export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(crawlHostnamesQueue, scheduledJobManifest)
+  await upsertScheduledJobManifest(crawlDispatchQueue, scheduledJobManifest)
 }
 
 function crawlJob(

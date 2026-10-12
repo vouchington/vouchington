@@ -11,8 +11,7 @@ import * as openaiModerationQueues from '@queues/openai-moderation/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { psql } from '@queues/psql/queues'
 import * as crawlerQueues from '@queues/crawler/queues'
-import * as crawlHostnamesQueues from '@queues/crawl-hostnames/queues'
-import * as crawlBoilerplateRemovalQueues from '@queues/crawl-boilerplate-removal/queues'
+import * as crawlDispatchQueues from '@queues/crawl-dispatch/queues'
 import { rss_feeds } from '@queues/rss-feeds/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
@@ -52,8 +51,7 @@ const allQueues = [
   voteAggregation,
   psql,
   ...Object.values(crawlerQueues),
-  ...Object.values(crawlHostnamesQueues),
-  ...Object.values(crawlBoilerplateRemovalQueues),
+  ...Object.values(crawlDispatchQueues),
   rss_feeds,
   rssFeedMaintenance,
   ...Object.values(bedrockEmbeddingsQueues),

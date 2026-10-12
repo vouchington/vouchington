@@ -9,14 +9,14 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { crawlHostnamesQueue } from '@queues/crawl-hostnames/queues'
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import {
   enqueueBulkCrawlHostname,
   enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-hostnames/enqueues'
-import { scheduledJobManifest as crawlManifest } from '@queues/crawl-hostnames/enqueues/schedules'
+} from '@queues/crawl-dispatch/enqueues/hostnames'
+import { scheduledJobManifest as crawlManifest } from '@queues/crawl-dispatch/enqueues/schedules'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 import { scheduledJobManifest as referralManifest } from '@queues/crawl-referral-links/enqueues/schedules'
@@ -26,7 +26,7 @@ import { scheduledJobManifest as unfurlManifest } from '@queues/unfurl-referral-
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { scheduledJobManifest as friendsManifest } from '@queues/find-your-friends/enqueues/schedules'
-import { processCrawlHostnamesJob } from '../processors.mts'
+import { processCrawlDispatchJob } from './processors.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -40,7 +40,7 @@ const PROMOTION_INTERVAL_MS = 100
 const fixtures = [
   {
     label: 'hostnames',
-    queue: crawlHostnamesQueue,
+    queue: crawlDispatchQueue,
     manifest: crawlManifest,
     schedulerId: 'crawl_hostnames_dispatcher',
     work: 'crawl_hostnames_dispatcher',
@@ -48,7 +48,7 @@ const fixtures = [
   },
   {
     label: 'tier1',
-    queue: crawlHostnamesQueue,
+    queue: crawlDispatchQueue,
     manifest: crawlManifest,
     schedulerId: 'crawl_tier1_dispatcher',
     work: 'crawl_tier1_dispatcher',
@@ -56,7 +56,7 @@ const fixtures = [
   },
   {
     label: 'tier2',
-    queue: crawlHostnamesQueue,
+    queue: crawlDispatchQueue,
     manifest: crawlManifest,
     schedulerId: 'crawl_tier2_dispatcher',
     work: 'crawl_tier2_dispatcher',
@@ -122,7 +122,7 @@ describe('periodic sweep coalescing', () => {
         if (job.name !== fixture.work) {
           const result =
             fixture.label === 'tier1' || fixture.label === 'tier2' || fixture.label === 'hostnames'
-              ? await processCrawlHostnamesJob(job)
+              ? await processCrawlDispatchJob(job)
               : await fixture.root()
           if (++roots >= 2) repeated.resolve()
           return result
@@ -197,7 +197,7 @@ describe('periodic sweep coalescing', () => {
   })
 
   it('coalesces daily hostname fanout without suppressing a different hostname', async () => {
-    const queue = crawlHostnamesQueue
+    const queue = crawlDispatchQueue
     const hostname = crypto.randomUUID()
     const otherHostname = crypto.randomUUID()
     const started = Promise.withResolvers<void>()

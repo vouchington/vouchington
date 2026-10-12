@@ -37,5 +37,5 @@ Business logic extracted from this system lives in:
 - Parent: [../AGENTS.md](../../../../../backend/queues/AGENTS.md)
 - Crawling overview: [../../../docs/overview/architecture/crawling.md](../../crawling.md)
 - [Crawlers Service](../../services/crawlers/README.md) — crawler management and scheduling
-- Hostname dispatch: `@queues/crawl-hostnames`
-- Boilerplate removal: `@queues/crawl-boilerplate-removal`
+- Hostname dispatch: `@queues/crawl-dispatch`
+- Boilerplate removal: `@queues/crawl-dispatch`

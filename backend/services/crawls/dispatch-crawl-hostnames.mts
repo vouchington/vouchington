@@ -1,5 +1,5 @@
-import { enqueueBulkCrawlHostname } from '@queues/crawl-hostnames/enqueues'
-import type { CrawlHostnameDispatchCursor } from '@queues/crawl-hostnames/types'
+import { enqueueBulkCrawlHostname } from '@queues/crawl-dispatch/enqueues/hostnames'
+import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { getCrawlHostnameDispatchLimits } from './work-limits.mts'
 import {
   getCrawlHostnameCandidates,

@@ -19,7 +19,7 @@ import * as owner14 from '@services/engagement-emails/work-limits'
 import * as owner15 from '@services/recommended-topics/work-limits'
 import * as owner16 from '@services/stripe/work-limits'
 import * as owner17 from '@queues/find-your-friends/config'
-import * as owner18 from '@queues/crawl-boilerplate-removal/config'
+import * as owner18 from '@queues/crawl-dispatch/config'
 
 const owners = [
   {

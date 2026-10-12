@@ -34,12 +34,12 @@ const EXPECTED_SCHEDULED_JOBS = [
   'bedrock-embeddings-batch/reconcile_existing_posts',
   'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
   'bedrock-embeddings-batch/post_trigger_recovery',
-  'crawl_html_boilerplate_removal/boilerplate_removal_dispatcher',
-  'crawl_hostnames/crawl_cleanup',
-  'crawl_hostnames/crawl_hostnames_dispatcher',
-  'crawl_hostnames/crawl_tier1_dispatcher',
-  'crawl_hostnames/crawl_tier2_dispatcher',
-  'crawl_hostnames/refresh_hostname_crawler_dispatcher',
+  'crawl-dispatch/boilerplate_removal_dispatcher',
+  'crawl-dispatch/crawl_cleanup',
+  'crawl-dispatch/crawl_hostnames_dispatcher',
+  'crawl-dispatch/crawl_tier1_dispatcher',
+  'crawl-dispatch/crawl_tier2_dispatcher',
+  'crawl-dispatch/refresh_hostname_crawler_dispatcher',
   'crawl_referral_links/crawl_referral_links_dispatcher',
   'emails/dispatchApiKeyExpiryReminders',
   'emails/dispatchCommunityModerationSummaryEmails',
@@ -97,8 +97,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 28 manifests and 83 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(28)
+  it('imports the exact 27 manifests and 83 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(27)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

@@ -9,7 +9,7 @@ import onError from '@modules/on-error'
 import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
 import { getCrawlDispatchLimits } from './work-limits.mts'
-import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
+import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
 
 /**
  * Given a hostname ID, dispatch a bounded page of URLs that need crawling.

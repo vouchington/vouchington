@@ -1,9 +1,9 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { BOILERPLATE_REMOVAL_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
-import { boilerplateRemovalQueue } from './queues.mts'
-import type { BoilerplateRemovalJobs } from './types.mts'
+import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { crawlDispatchQueue } from '../queues.mts'
+import type { BoilerplateRemovalJobs } from '../types.mts'
 
 type EnqueueBoilerplateRemovalEntry = {
   hostnameId: string
@@ -19,8 +19,8 @@ const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction<
   { hostname_id: string; parent_path: string },
   BoilerplateRemovalJobs
 >({
-  queue: boilerplateRemovalQueue,
-  queueName: BOILERPLATE_REMOVAL_QUEUE_NAME,
+  queue: crawlDispatchQueue,
+  queueName: QUEUE_NAME,
   jobName: REMOVAL_JOB_NAME,
   buildJob: ({ hostnameId, parentPath }) => ({
     data: { hostname_id: hostnameId, parent_path: parentPath },
@@ -38,8 +38,8 @@ const enqueueBoilerplateRemovalDispatcherJob = createEnqueueFunction<
   Record<string, never>,
   BoilerplateRemovalJobs
 >({
-  queue: boilerplateRemovalQueue,
-  queueName: BOILERPLATE_REMOVAL_QUEUE_NAME,
+  queue: crawlDispatchQueue,
+  queueName: QUEUE_NAME,
   jobName: DISPATCHER_JOB_NAME,
 })
 

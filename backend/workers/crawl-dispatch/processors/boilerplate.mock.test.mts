@@ -9,7 +9,7 @@ import { createCrawler } from '@services/crawlers'
 import { createCrawl } from '@services/crawls/create'
 import { updateCrawl } from '@services/crawls/update'
 import { getLatestBoilerplateRemovalByHostnameAndPath } from '@services/boilerplate-removals'
-import { processBoilerplateRemoval } from './processors.mts'
+import { processBoilerplateRemoval } from './boilerplate.mts'
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => {
   const mockSend = vi.fn<VitestLooseMock>()

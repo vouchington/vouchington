@@ -34,16 +34,16 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | bloom-filters                                | processRebuildEmbeddingBloomFilter             | —                                        | 5 (baseline)     |
 | crawl_referral_links                         | crawl_referral_links_dispatcher                | dispatcher                               | 100              |
 | crawl_referral_links                         | crawl_referral_link                            | crawl                                    | 10               |
-| crawl_html_boilerplate_removal               | boilerplate_removal_dispatcher                 | —                                        | 100              |
-| crawl_html_boilerplate_removal               | boilerplate_removal                            | —                                        | 10               |
-| crawl_hostnames                              | crawl_hostnames_dispatcher                     | —                                        | 100              |
-| crawl_hostnames                              | enqueueCrawlHostnamesDispatcher                | —                                        | 100              |
-| crawl_hostnames                              | crawl_urls_per_hostname_dispatcher             | —                                        | 100              |
-| crawl_hostnames                              | crawl_tier1_dispatcher                         | —                                        | 100              |
-| crawl_hostnames                              | crawl_tier2_dispatcher                         | —                                        | 100              |
-| crawl_hostnames                              | refresh_hostname_crawler_dispatcher            | —                                        | 100              |
-| crawl_hostnames                              | refresh_hostname_crawler                       | —                                        | 10               |
-| crawl_hostnames                              | crawl_cleanup                                  | —                                        | 10               |
+| crawl-dispatch                               | boilerplate_removal_dispatcher                 | —                                        | 100              |
+| crawl-dispatch                               | boilerplate_removal                            | —                                        | 10               |
+| crawl-dispatch                               | crawl-dispatch_dispatcher                      | —                                        | 100              |
+| crawl-dispatch                               | enqueueCrawlHostnamesDispatcher                | —                                        | 100              |
+| crawl-dispatch                               | crawl_urls_per_hostname_dispatcher             | —                                        | 100              |
+| crawl-dispatch                               | crawl_tier1_dispatcher                         | —                                        | 100              |
+| crawl-dispatch                               | crawl_tier2_dispatcher                         | —                                        | 100              |
+| crawl-dispatch                               | refresh_hostname_crawler_dispatcher            | —                                        | 100              |
+| crawl-dispatch                               | refresh_hostname_crawler                       | —                                        | 10               |
+| crawl-dispatch                               | crawl_cleanup                                  | —                                        | 10               |
 | crawl_embeds                                 | resolve_crawl_oembed                           | oembed:<destination hostname>            | 10               |
 | crawl_embeds                                 | backfill_crawl_embeds                          | backfill                                 | 100              |
 | crawl_urls                                   | crawl_url                                      | —                                        | 10               |

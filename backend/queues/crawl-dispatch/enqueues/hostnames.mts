@@ -1,9 +1,9 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { CRAWL_HOSTNAMES_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
-import { crawlHostnamesQueue } from './queues.mts'
-import type { CrawlHostnamesJobs } from './types.mts'
+import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { crawlDispatchQueue } from '../queues.mts'
+import type { CrawlHostnamesJobs } from '../types.mts'
 
 const ONE_MINUTE_MS = 60_000
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * ONE_MINUTE_MS
@@ -15,8 +15,8 @@ type DispatcherOptions = {
 
 function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: number) {
   const enqueue = createBulkEnqueueFunction<string, { hostname_id: string }, CrawlHostnamesJobs>({
-    queue: crawlHostnamesQueue,
-    queueName: CRAWL_HOSTNAMES_QUEUE_NAME,
+    queue: crawlDispatchQueue,
+    queueName: QUEUE_NAME,
     jobName,
     buildJob: hostnameId => ({
       data: { hostname_id: hostnameId },
@@ -39,8 +39,8 @@ function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority:
 
 function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: number) {
   const enqueue = createEnqueueFunction<Record<string, never>, CrawlHostnamesJobs>({
-    queue: crawlHostnamesQueue,
-    queueName: CRAWL_HOSTNAMES_QUEUE_NAME,
+    queue: crawlDispatchQueue,
+    queueName: QUEUE_NAME,
     jobName,
   })
 
