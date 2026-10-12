@@ -43672,6 +43672,7 @@
             "type": "string"
           }
         },
+        "anyOf": [{ "required": ["q"] }, { "required": ["username"] }],
         "type": "object"
       }
     },

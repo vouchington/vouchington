@@ -69,7 +69,8 @@ every active community prompt in a single provider call. The community's
 - [`enqueues/report-judgement.mts`](../../../../../backend/queues/ai-agents/enqueues/report-judgement.mts) — report judgements and missing-judgement backfill
 - [`enqueues/dispute-resolution.mts`](../../../../../backend/queues/ai-agents/enqueues/dispute-resolution.mts) — dispute recommendation jobs
 - [`enqueues/appeal-resolution.mts`](../../../../../backend/queues/ai-agents/enqueues/appeal-resolution.mts) — appeal recommendation jobs
-- [`enqueues/auto-dispatch-judgement.mts`](../../../../../backend/queues/ai-agents/enqueues/auto-dispatch-judgement.mts) — stored-judgement dispatch, and the one-call `enqueueBulkAutoDispatchJudgements` used by recovery
+- [`enqueues/auto-dispatch-judgement.mts`](../../../../../backend/queues/ai-agents/enqueues/auto-dispatch-judgement.mts) — stored-judgement dispatch jobs
+- [`enqueues/reconcile-auto-dispatch.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-auto-dispatch.mts) — automatic judgement recovery job
 - [`enqueues/reconcile-background-responses.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-background-responses.mts) — background-response sweeper job
 
 ## Copyright Agent Dispatch
