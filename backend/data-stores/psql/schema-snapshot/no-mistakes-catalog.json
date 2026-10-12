@@ -73742,7 +73742,7 @@
         "idx_oauth_refresh_tokens__expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id) WHERE ((consumed_at IS NULL) AND (revoked_at IS NULL))",
+          "definition": "CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id)",
           "immediate": true,
           "keys": [
             {
@@ -73765,7 +73765,7 @@
             }
           ],
           "live": true,
-          "predicate": "((consumed_at IS NULL) AND (revoked_at IS NULL))",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
