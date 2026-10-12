@@ -3,7 +3,7 @@
 effects:
   postgres:
     functions: [read, write, query]
-    transactionFunctions: [transaction.query, client.query, query.client.query]
+    transactionFunctions: [client.query, query.client.query]
     batchFunctions: [pipelineBatch, executeHandlerWithCursorInBatches]
   valkey:
     functions:
