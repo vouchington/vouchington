@@ -8,7 +8,7 @@ CREATE TABLE copyright_notice_email_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
   received_at timestamptz NOT NULL,
-  raw_storage_key text NOT NULL CHECK (char_length(raw_storage_key) BETWEEN 1 AND 1024),
+  raw_storage_object_id uuid,
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
   raw_media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
@@ -18,6 +18,12 @@ CREATE TABLE copyright_notice_email_intakes (
   spam_verdict email_security_verdicts NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   virus_verdict email_security_verdicts NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
+ALTER TABLE copyright_notice_email_intakes
+  ADD CONSTRAINT fk_copyright_notice_email_intakes__raw_storage_object
+  FOREIGN KEY (raw_storage_object_id) REFERENCES copyright_notice_storage_objects(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_email_intakes
+  VALIDATE CONSTRAINT fk_copyright_notice_email_intakes__raw_storage_object;
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_email_intake_fk
@@ -120,7 +126,7 @@ CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE UPDATE OR DELETE
 CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_email_intakes IS 'Immutable, private records for email sent to the designated copyright inbox before a moderator validates it into a legal case.';
-COMMENT ON COLUMN copyright_notice_email_intakes.raw_storage_key IS 'Private immutable original RFC 5322 object. The original preserves every attachment and is retained before the SES source object can be deleted.';
+COMMENT ON COLUMN copyright_notice_email_intakes.raw_storage_object_id IS 'Registry identity of the immutable original RFC 5322 object; cleared only by retention erasure after the object is no longer shared.';
 COMMENT ON TABLE copyright_notice_email_intake_attachments IS 'Private parsed attachment metadata; attachment bytes remain preserved inside the original MIME object until a moderator admits them as case evidence.';
 COMMENT ON TABLE copyright_notice_email_intake_recommendations IS 'Immutable agent extraction and recommendation. It is advisory only and cannot impose a copyright restriction.';
 COMMENT ON TABLE copyright_notice_email_intake_reviews IS 'Append-only staff decision on an email intake: approval into a case, rejection, or closure as legal process with no reply. This row is the audit record of the decision. A moderator must review before an email can create or affect a copyright case.';
@@ -171,6 +177,9 @@ CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
+CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
+  ON copyright_notice_email_intakes (raw_storage_object_id)
+  WHERE raw_storage_object_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intake_attachments__media_type_id ON copyright_notice_email_intake_attachments (media_type_id);

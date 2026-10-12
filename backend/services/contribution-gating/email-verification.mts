@@ -23,27 +23,27 @@ async function getVerifiedEmailCandidatesBatch(
 
   const { rows } = await read<VerifiedEmailCandidate>(sql`/* getVerifiedEmailCandidatesBatch */
     WITH candidates AS (
-      SELECT user_id, email_address, 0 AS provider_priority,
+      SELECT user_id, email_address, email_domain_hostname_id, 0 AS provider_priority,
         CASE WHEN is_primary THEN 0 ELSE 1 END AS address_priority, created_at
       FROM user_email_addresses WHERE user_id = ANY(${userIds}::uuid[])
-      UNION ALL SELECT user_id, apple_user_email_address, 1, 0, created_at FROM apple_accounts
+      UNION ALL SELECT user_id, apple_user_email_address, email_domain_hostname_id, 1, 0, created_at FROM apple_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND apple_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, google_user_email_address, 2, 0, created_at FROM google_accounts
+      UNION ALL SELECT user_id, google_user_email_address, email_domain_hostname_id, 2, 0, created_at FROM google_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND google_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, linkedin_user_email_address, 3, 0, created_at FROM linkedin_accounts
+      UNION ALL SELECT user_id, linkedin_user_email_address, email_domain_hostname_id, 3, 0, created_at FROM linkedin_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND linkedin_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, github_user_email_address, 4, 0, created_at FROM github_accounts
+      UNION ALL SELECT user_id, github_user_email_address, email_domain_hostname_id, 4, 0, created_at FROM github_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND github_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, facebook_user_email_address, 5, 0, created_at FROM facebook_accounts
+      UNION ALL SELECT user_id, facebook_user_email_address, email_domain_hostname_id, 5, 0, created_at FROM facebook_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND facebook_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, microsoft_user_email_address, 6, 0, created_at FROM microsoft_accounts
+      UNION ALL SELECT user_id, microsoft_user_email_address, email_domain_hostname_id, 6, 0, created_at FROM microsoft_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND microsoft_user_email_address IS NOT NULL
     )
     SELECT candidates.user_id, candidates.email_address, EXISTS (
-      SELECT 1 FROM blocklisted_domains db
-      INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-      WHERE db.domain = LOWER(split_part(candidates.email_address, '@', 2))
-        AND dbs.type = 'email'::domain_blocklist_types
+      SELECT 1 FROM url_hostname_blocks block
+      WHERE block.url_hostname_id = candidates.email_domain_hostname_id
+        AND block.blocked_source = 'email_blocklist'
+        AND block.lifted_at IS NULL
     ) AS is_disposable
     FROM candidates
     INNER JOIN users ON users.id = candidates.user_id AND users.deleted_at IS NULL

@@ -13,10 +13,11 @@ export function buildRecentAutomodActionsQuery(
     WITH recent AS (
       SELECT
         'community_prompt:' || am.id::text AS source_key,
-        'community_prompt'::text AS source_type,
+        'community_prompt'::moderation_training_source_types AS source_type,
         p.id AS post_id,
         cap.community_id AS community_id,
         am.id AS agent_moderation_id,
+        NULL::bytea AS input_sha256,
         NULL::text AS moderator_slug,
         COALESCE(NULLIF(BTRIM(p.title), ''), 'Untitled post') AS title,
         NULLIF(BTRIM(p.title), '') AS authored_title,
@@ -77,10 +78,11 @@ export function buildRecentAutomodActionsQuery(
       UNION ALL
       SELECT
         'agent_moderation:' || am.id::text AS source_key,
-        'agent_moderation'::text AS source_type,
+        'agent_moderation'::moderation_training_source_types AS source_type,
         p.id AS post_id,
         p.community_id AS community_id,
         am.id AS agent_moderation_id,
+        NULL::bytea AS input_sha256,
         mod.slug AS moderator_slug,
         COALESCE(NULLIF(BTRIM(p.title), ''), 'Untitled post') AS title,
         NULLIF(BTRIM(p.title), '') AS authored_title,
@@ -140,10 +142,11 @@ export function buildRecentAutomodActionsQuery(
       UNION ALL
       SELECT
         'openai_omni:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key,
-        'openai_omni'::text AS source_type,
+        'openai_omni'::moderation_training_source_types AS source_type,
         p.id AS post_id,
         p.community_id AS community_id,
         NULL::uuid AS agent_moderation_id,
+        version.content_sha256 AS input_sha256,
         NULL::text AS moderator_slug,
         COALESCE(NULLIF(BTRIM(p.title), ''), 'Untitled post') AS title,
         NULLIF(BTRIM(p.title), '') AS authored_title,
@@ -192,10 +195,11 @@ export function buildRecentAutomodActionsQuery(
       UNION ALL
       SELECT
         'spam_detection:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key,
-        'spam_detection'::text AS source_type,
+        'spam_detection'::moderation_training_source_types AS source_type,
         p.id AS post_id,
         p.community_id AS community_id,
         NULL::uuid AS agent_moderation_id,
+        version.content_sha256 AS input_sha256,
         NULL::text AS moderator_slug,
         COALESCE(NULLIF(BTRIM(p.title), ''), 'Untitled post') AS title,
         NULLIF(BTRIM(p.title), '') AS authored_title,

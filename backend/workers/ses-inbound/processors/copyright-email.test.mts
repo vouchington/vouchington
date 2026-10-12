@@ -11,6 +11,7 @@ const intake = {
   amazon_ses_message_id: 'ses-untrusted',
   received_at: new Date('2026-07-01T12:00:00.000Z'),
   raw_storage_key: 'copyright-evidence/ses-untrusted',
+  raw_storage_object_id: 'object-id',
   raw_sha256: Buffer.alloc(32, 1),
   raw_media_type_id: '1',
   raw_mime_type: 'message/rfc822',

@@ -5,14 +5,14 @@ import { COPYRIGHT_RETENTION_ERASURE } from '../../../services/copyright-notices
 
 export type CopyrightRetentionRows = Record<string, Record<string, unknown>[]>
 
-/** Every copyright column that can hold ciphertext, a storage key or a lookup token, by table. */
+/** Every copyright column that can hold ciphertext, a storage-object reference or a lookup token. */
 export async function readCopyrightSensitiveColumns(): Promise<Record<string, string[]>> {
   const { rows } = await read<{ table_name: string; columns: string[] }>(
     sql`/* readCopyrightSensitiveColumns */
       SELECT table_name::text, array_agg(column_name::text ORDER BY column_name) AS columns
       FROM information_schema.columns
       WHERE table_schema = 'public' AND table_name LIKE 'copyright%'
-        AND (column_name LIKE '%ciphertext' OR column_name LIKE '%storage_key'
+        AND (column_name LIKE '%ciphertext' OR column_name LIKE '%storage_object_id'
           OR column_name LIKE '%lookup%')
       GROUP BY table_name`,
   )

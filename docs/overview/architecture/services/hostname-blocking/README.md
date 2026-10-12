@@ -10,14 +10,20 @@ Admin service for blocking hostnames site-wide. Blocking a hostname removes asso
 
 Blocks a hostname and all its subdomains atomically in a transaction:
 
-1. Sets `blocked = true`, `blocked_at`, `blocked_by_id` on the target hostname
-2. Finds all subdomains (`hostname LIKE '%.<target>'`) and blocks them too
+1. Inserts active `url_hostname_blocks` history for the target; a trigger projects URL block history to `url_hostnames.is_blocked`
+2. Finds all subdomains (`hostname LIKE '%.<target>'`) and inserts their block history too
 3. Soft-deletes all URL entity relations (across all relation tables) pointing to URLs under these hostnames
 4. Inserts a one-time 20% vote weight penalty (`reason = 'blocked_hostname'`) for each user who created those relations, keyed by `source_hostname_id` so it's idempotent
 
 `options.penalizeCreators = false` is used by automated Google Web Risk blocks. Those blocks still soft-delete matching relations and block subdomains, but do not apply the initial creator penalty.
 
 After the transaction, enqueues vote weight recalculation for all affected users.
+
+Domain blacklist sync stores each input domain with a `url_hostname_id` and projects a source-owned
+history row. URL sources affect crawl policy; email-only sources affect email eligibility without
+blocking URL crawls. `unblockHostname` lifts admin, Web Risk, and inherited hostname history but
+preserves source-owned rows. Removing a domain from its source lifts that source's history. Manual
+blocks and inherited parent blocks remain active when a source is removed.
 
 **Returns:**
 

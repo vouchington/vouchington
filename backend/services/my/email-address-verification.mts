@@ -2,6 +2,7 @@ import { read, beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateEmailAddress } from '@services/email-address-validator'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import { createLoginToken } from '@services/users/login-token'
 import {
   invalidateVerifiedEmailCache,
@@ -106,9 +107,13 @@ async function verifyTokenAndPrimeEmailCache(
     'Email address has already been claimed by another account',
   )
 
+  const emailDomainHostnameId = await resolveEmailDomainHostnameId(normalizedEmailAddress, {
+    query,
+  })
+
   await query(sql`/* verifyEmailVerificationToken */
-      INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-      SELECT ${userId}::uuid, ${normalizedEmailAddress}::text, NOT EXISTS (
+      INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+      SELECT ${userId}::uuid, ${normalizedEmailAddress}::text, ${emailDomainHostnameId}::uuid, NOT EXISTS (
         SELECT 1 FROM user_email_addresses WHERE user_id = ${userId}::uuid
       )
       ON CONFLICT (user_id, email_address) DO NOTHING

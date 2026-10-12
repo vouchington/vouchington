@@ -29,6 +29,7 @@ export function decryptAgentIntake(
     amazon_ses_message_id: intake.amazon_ses_message_id,
     received_at: intake.received_at,
     raw_storage_key: intake.raw_storage_key,
+    raw_storage_object_id: intake.raw_storage_object_id,
     raw_sha256: intake.raw_sha256,
     raw_media_type_id: intake.raw_media_type_id,
     raw_mime_type: intake.raw_mime_type,

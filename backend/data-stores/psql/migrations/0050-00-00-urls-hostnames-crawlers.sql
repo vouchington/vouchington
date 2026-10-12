@@ -89,6 +89,52 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- These address tables are created before url_hostnames; each stores the domain identity
+-- resolved when the address is written, and never copies the hostname's block state.
+ALTER TABLE user_email_addresses
+  ADD CONSTRAINT fk_user_email_addresses__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE user_email_addresses VALIDATE CONSTRAINT fk_user_email_addresses__email_domain_hostname;
+ALTER TABLE apple_accounts
+  ADD CONSTRAINT fk_apple_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE apple_accounts VALIDATE CONSTRAINT fk_apple_accounts__email_domain_hostname;
+ALTER TABLE google_accounts
+  ADD CONSTRAINT fk_google_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE google_accounts VALIDATE CONSTRAINT fk_google_accounts__email_domain_hostname;
+ALTER TABLE linkedin_accounts
+  ADD CONSTRAINT fk_linkedin_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE linkedin_accounts VALIDATE CONSTRAINT fk_linkedin_accounts__email_domain_hostname;
+ALTER TABLE facebook_accounts
+  ADD CONSTRAINT fk_facebook_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE facebook_accounts VALIDATE CONSTRAINT fk_facebook_accounts__email_domain_hostname;
+ALTER TABLE microsoft_accounts
+  ADD CONSTRAINT fk_microsoft_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE microsoft_accounts VALIDATE CONSTRAINT fk_microsoft_accounts__email_domain_hostname;
+
+CREATE INDEX idx_user_email_addresses__email_domain_hostname_id
+  ON user_email_addresses (email_domain_hostname_id);
+CREATE INDEX idx_apple_accounts__email_domain_hostname_id
+  ON apple_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_google_accounts__email_domain_hostname_id
+  ON google_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_linkedin_accounts__email_domain_hostname_id
+  ON linkedin_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_facebook_accounts__email_domain_hostname_id
+  ON facebook_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_microsoft_accounts__email_domain_hostname_id
+  ON microsoft_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+COMMENT ON COLUMN user_email_addresses.email_domain_hostname_id IS 'Resolved email domain hostname identity for policy reads.';
+COMMENT ON COLUMN apple_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN google_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN linkedin_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN facebook_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN microsoft_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname__text_pattern_ops
 ON url_hostnames (hostname text_pattern_ops);
@@ -308,9 +354,11 @@ COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source 
 CREATE TABLE IF NOT EXISTS blocklisted_domains (
   source_id BIGINT NOT NULL REFERENCES domain_blocklist_sources ON DELETE CASCADE,
   domain TEXT NOT NULL,
+  url_hostname_id UUID NOT NULL REFERENCES url_hostnames(id) ON DELETE RESTRICT,
   CHECK (domain = LOWER(domain)),
   CHECK (domain = TRIM(domain)),
   PRIMARY KEY (domain, source_id),
+  CONSTRAINT uq_blocklisted_domains__hostname_source UNIQUE (url_hostname_id, source_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -328,6 +376,7 @@ ON blocklisted_domains (source_id, domain);
 COMMENT ON TABLE blocklisted_domains IS 'Individual blacklisted domains from external sources.';
 COMMENT ON COLUMN blocklisted_domains.source_id IS 'The blacklist source this domain came from.';
 COMMENT ON COLUMN blocklisted_domains.domain IS 'The blacklisted domain name (lowercase).';
+COMMENT ON COLUMN blocklisted_domains.url_hostname_id IS 'Resolved hostname identity used by block projections and readers.';
 
 -- ==========================================================================
 -- 0030-00-00-url-hostname_crawler_configurations.sql

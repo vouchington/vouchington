@@ -23,7 +23,6 @@ const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
 const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'
 const ADDED_DOMAINS_TABLE = 'tmp_domain_blacklist_added_domains'
 const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
-
 interface BloomRebuildDependencies {
   invalidateEmailReadyMarker: () => Promise<unknown>
   invalidateUrlReadyMarker: () => Promise<unknown>
@@ -37,7 +36,6 @@ const defaultBloomRebuildDependencies: BloomRebuildDependencies = {
   enqueueEmailRebuild: enqueueEmailBlocklistRebuild,
   enqueueUrlRebuild: enqueueUrlBlocklistRebuild,
 }
-
 async function* generateDomainCsvRows(response: Response): AsyncGenerator<string> {
   for await (const domain of readNormalizedDomains(response)) {
     yield `"${domain.replaceAll('"', '""')}"\n`
@@ -165,10 +163,19 @@ async function persistDomainDiff(
 ): Promise<void> {
   await query(
     `/* syncDomainsWithDatabase */
-        INSERT INTO blocklisted_domains (source_id, domain)
-        SELECT $1::bigint AS source_id, domain
-        FROM ${ADDED_DOMAINS_TABLE}
-        ORDER BY domain ASC NULLS LAST, source_id ASC NULLS LAST
+      INSERT INTO url_hostnames (hostname)
+      SELECT domain FROM ${ADDED_DOMAINS_TABLE}
+      ORDER BY domain
+      ON CONFLICT (hostname) DO NOTHING
+    `,
+  )
+  await query(
+    `/* syncDomainsWithDatabase */
+        INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+        SELECT $1::bigint AS source_id, added.domain, hostname.id
+        FROM ${ADDED_DOMAINS_TABLE} added
+        JOIN url_hostnames hostname ON hostname.hostname = added.domain
+        ORDER BY added.domain ASC NULLS LAST, source_id ASC NULLS LAST
         ON CONFLICT (domain, source_id) DO NOTHING
       `,
     [sourceId],

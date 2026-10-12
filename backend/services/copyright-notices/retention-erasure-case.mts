@@ -1,10 +1,10 @@
 import { beginBoundedTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 import { lockCopyrightRetentionCase } from './retention-erasure-preservation.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
 import {
-  COPYRIGHT_ERASED_KEY_PREFIX,
   COPYRIGHT_RETENTION_ERASURE,
   eraseCopyrightRetentionTableSql,
 } from './retention-erasure-spec.mts'
@@ -18,38 +18,62 @@ function scopeOf(table: string, noticeId: string) {
   return COPYRIGHT_RETENTION_ERASURE.find(entry => entry.table === table)!.scope(noticeId)
 }
 
-/**
- * Evidence-bucket keys that only this case references. A key another case's intake or artifact
- * still points at stays in the bucket; this case's own pointer to it is overwritten regardless.
- */
-function evidenceKeysSql(noticeId: string) {
+/** Candidate identities only. This statement does not decide whether an object is exclusive. */
+function evidenceObjectIdsSql(noticeId: string) {
+  return sql`/* listCopyrightRetentionEvidenceObjectIds */
+    SELECT DISTINCT raw_storage_object_id AS id FROM copyright_notice_email_intakes WHERE `
+    .append(scopeOf('copyright_notice_email_intakes', noticeId))
+    .append(sql` AND raw_storage_object_id IS NOT NULL
+      UNION
+      SELECT DISTINCT storage_object_id AS id FROM copyright_notice_evidence_artifacts WHERE `)
+    .append(scopeOf('copyright_notice_evidence_artifacts', noticeId))
+    .append(sql` AND storage_object_id IS NOT NULL ORDER BY id`)
+}
+
+/** Run after the object-row locks: READ COMMITTED must see owners that committed while locking. */
+function exclusiveEvidenceObjectsSql(noticeId: string, objectIds: readonly string[]) {
   return sql`/* listCopyrightRetentionEvidenceKeys */
     WITH own_intake AS (
-      SELECT id, raw_storage_key AS key FROM copyright_notice_email_intakes WHERE `
+      SELECT id FROM copyright_notice_email_intakes WHERE `
     .append(scopeOf('copyright_notice_email_intakes', noticeId))
-    .append(
-      sql`
+    .append(sql`
     ), own_artifact AS (
-      SELECT id, storage_key AS key FROM copyright_notice_evidence_artifacts WHERE `,
+      SELECT id FROM copyright_notice_evidence_artifacts WHERE `)
+    .append(scopeOf('copyright_notice_evidence_artifacts', noticeId)).append(sql`
     )
-    .append(scopeOf('copyright_notice_evidence_artifacts', noticeId))
-    .append(
-      sql`
-    ), own_key AS (
-      SELECT key FROM own_intake UNION SELECT key FROM own_artifact
-    )
-    SELECT key FROM own_key
-    WHERE key IS NOT NULL AND NOT starts_with(key, ${COPYRIGHT_ERASED_KEY_PREFIX})
+    SELECT object.id, object.storage_key AS key
+    FROM copyright_notice_storage_objects object
+    WHERE object.id = ANY(${[...objectIds]}::uuid[])
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intakes other
-        WHERE other.raw_storage_key = own_key.key AND NOT EXISTS (SELECT 1 FROM own_intake WHERE own_intake.id = other.id)
+        WHERE other.raw_storage_object_id = object.id
+          AND NOT EXISTS (SELECT 1 FROM own_intake WHERE own_intake.id = other.id)
       )
       AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_evidence_artifacts other
-        WHERE other.storage_key = own_key.key AND NOT EXISTS (SELECT 1 FROM own_artifact WHERE own_artifact.id = other.id)
+        WHERE other.storage_object_id = object.id
+          AND NOT EXISTS (SELECT 1 FROM own_artifact WHERE own_artifact.id = other.id)
       )
-    ORDER BY key`,
-    )
+    ORDER BY object.id`)
+}
+
+/** Lock registry rows, then use a fresh statement to see references committed during lock waits. */
+export async function listCopyrightRetentionEvidenceKeys(
+  noticeId: string,
+  transaction: TransactionQuery,
+): Promise<{ id: string; key: string }[]> {
+  const { rows: candidates } = await transaction<{ id: string }>(evidenceObjectIdsSql(noticeId))
+  const objectIds = candidates.map(row => row.id)
+  // FK writers take KEY SHARE on this row. An in-flight writer commits before these locks
+  // succeed, or waits until this transaction finishes.
+  await transaction(sql`/* lockCopyrightRetentionEvidenceObjects */
+    SELECT id FROM copyright_notice_storage_objects
+    WHERE id = ANY(${objectIds}::uuid[]) ORDER BY id FOR UPDATE`)
+  // This must be a NEW statement: a NOT EXISTS in the locking statement sees the old snapshot.
+  const { rows } = await transaction<{ id: string; key: string }>(
+    exclusiveEvidenceObjectsSql(noticeId, objectIds),
+  )
+  return rows
 }
 
 /**
@@ -79,8 +103,8 @@ export async function eraseCopyrightRetentionCase(
       .append(sql`SELECT id FROM eligible WHERE id = ${noticeId}`),
   )
   if (stillEligible.length === 0) return 'ineligible'
-  const { rows: keyRows } = await transaction<{ key: string }>(evidenceKeysSql(noticeId))
-  const keys = keyRows.map(row => row.key)
+  const exclusiveObjects = await listCopyrightRetentionEvidenceKeys(noticeId, transaction)
+  const keys = exclusiveObjects.map(row => row.key)
   await deleteCopyrightEvidenceObjectVersions(keys)
   await transaction(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
@@ -89,6 +113,9 @@ export async function eraseCopyrightRetentionCase(
     // oxlint-disable-next-line no-await-in-loop -- one transaction connection runs its statements in order.
     await transaction(eraseCopyrightRetentionTableSql(spec, noticeId))
   }
+  await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
+    DELETE FROM copyright_notice_storage_objects
+    WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)
   await transaction(sql`/* insertCopyrightRetentionErasure */
     INSERT INTO copyright_notice_retention_erasures (copyright_notice_id, retention_days, erased_object_count)
     VALUES (${noticeId}, ${options.retentionDays}, ${keys.length})`)

@@ -4,6 +4,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 
 async function replacePrimaryContact(
   query: TransactionQuery,
@@ -77,6 +78,7 @@ export const updateUserEmailAddress = async (
 
   await using query = await beginTransaction()
   await query(sql`/* updateUserEmailAddress */ SELECT fn_lock_active_user_for_mutation(${userId})`)
+  const emailDomainHostnameId = await resolveEmailDomainHostnameId(validatedEmailAddress, { query })
   const clearPrimaryEmail = sql`/* updateUserEmailAddress */
       UPDATE user_email_addresses
       SET is_primary = FALSE
@@ -84,10 +86,11 @@ export const updateUserEmailAddress = async (
         AND is_primary = TRUE
     `
   const upsertPrimaryEmail = sql`/* updateUserEmailAddress */
-      INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-      VALUES (${userId}, ${validatedEmailAddress}, TRUE)
+      INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+      VALUES (${userId}, ${validatedEmailAddress}, ${emailDomainHostnameId}, TRUE)
       ON CONFLICT (user_id, email_address)
-      DO UPDATE SET is_primary = TRUE
+      DO UPDATE SET is_primary = TRUE,
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id
     `
   await replacePrimaryContact(query, clearPrimaryEmail, upsertPrimaryEmail)
   await query.commit()

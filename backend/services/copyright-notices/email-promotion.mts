@@ -10,13 +10,14 @@ import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose, type CopyrightEmailIntake } from './email-intakes.mts'
-import { linkPendingCopyrightEmailRepliesInTransaction } from './email-threading.mts'
+import { linkPendingCopyrightEmailRepliesInTransaction } from './email-thread-link-pending.mts'
 import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
 } from './email-promotion-input.mts'
 import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 
@@ -45,9 +46,13 @@ async function admitCopyrightEmailIntake(
   await using transaction = await beginTransaction()
   const { rows: intakeRows } =
     await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:lock */
-    SELECT id, amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
-      (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size
-    FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
+      COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
+      intake.raw_storage_object_id, intake.raw_sha256, intake.raw_media_type_id,
+      (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size
+    FROM copyright_notice_email_intakes intake
+    LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
+    WHERE intake.id = ${input.intakeId} FOR UPDATE OF intake
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')
@@ -201,8 +206,8 @@ async function recordEmailPromotion(
   assert(submission, 500, 'Email copyright submission was not created')
   // ast-grep-ignore: no-three-sequential-awaits -- immutable evidence, human review, thread linking, and delivery obligations are ordered in one transaction.
   await transaction(sql`/* promoteCopyrightEmailIntake:evidence */
-    INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size)
-    VALUES (${submission.id}, ${intake.raw_storage_key}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
+    INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
+    VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
   `)
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (

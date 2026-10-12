@@ -1,8 +1,9 @@
 import { upsertMediaTypes } from '../../../services/urls/media-types.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeSchemaFixture } from './copyright-notice-schema.mts'
+import { upsertCopyrightStorageObjectId } from '../../../services/copyright-notices/storage-objects.mts'
 
 export async function rejectCrossNoticeSubmissionTarget(): Promise<void> {
   const owningNotice = await createCopyrightNoticeSchemaFixture()
@@ -15,8 +16,13 @@ export async function rejectCrossNoticeSubmissionTarget(): Promise<void> {
 
 export async function rejectCopyrightEvidenceMissingParent(): Promise<void> {
   const mediaTypeId = await upsertMediaTypes('application/pdf')
-  await write(sql`/* rejectCopyrightEvidenceMissingParent */
+  await using transaction = await beginTransaction()
+  const objectId = await upsertCopyrightStorageObjectId(
+    `missing-parent-${randomUUID()}`,
+    transaction,
+  )
+  await transaction(sql`/* rejectCopyrightEvidenceMissingParent */
     INSERT INTO copyright_notice_evidence_artifacts (
-      copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size
-    ) VALUES (uuidv7(), ${`missing-parent-${randomUUID()}`}, ${randomBytes(32)}, ${mediaTypeId}, 1)`)
+      copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size
+    ) VALUES (uuidv7(), ${objectId}, ${randomBytes(32)}, ${mediaTypeId}, 1)`)
 }

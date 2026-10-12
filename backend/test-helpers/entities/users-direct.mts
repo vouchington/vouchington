@@ -5,6 +5,7 @@ import assert from 'node:assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
 
 export type CreateTestUserOptions = {
   phone_number?: string | boolean
@@ -30,7 +31,6 @@ export async function createTestUserDirect(
   options: CreateTestUserOptions = {},
 ): Promise<PrivateUser> {
   const username = options.username ?? (options.noUsername ? null : createTestUsername())
-
   const { rows } = await write(sql`/* createTestUserDirect */
     INSERT INTO users (username)
     VALUES (${username})
@@ -41,9 +41,10 @@ export async function createTestUserDirect(
 
   if (options.withEmail) {
     const emailAddress = createRandomEmailAddress()
+    const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(emailAddress)
     await write(sql`/* createTestUserDirect */
-      INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-      VALUES (${userId}, ${emailAddress}, TRUE)
+      INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+      VALUES (${userId}, ${emailAddress}, ${emailDomainHostnameId}, TRUE)
     `)
   }
 
@@ -127,9 +128,10 @@ export async function createTestUserWithAge(
 
   if (!options.noEmail) {
     const emailAddress = createRandomEmailAddress()
+    const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(emailAddress)
     await write(sql`/* createTestUserWithAge */
-      INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-      VALUES (${id}, ${emailAddress}, TRUE)
+      INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+      VALUES (${id}, ${emailAddress}, ${emailDomainHostnameId}, TRUE)
     `)
   }
 

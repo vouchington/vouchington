@@ -110,7 +110,9 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
     const hasOtherActiveSignals = await hasOtherActiveAutomodSignals({
       communityId: input.communityId,
       postId: context.post_id,
-      sourceKey: input.sourceKey,
+      sourceType: parsed.sourceType,
+      sourceId: parsed.id,
+      inputSha256: parsed.inputSha256,
       query,
     })
     if (hasOtherActiveSignals) {

@@ -115,7 +115,13 @@ export const DOMAIN_FINITE_VALUES = {
     'feed',
   ],
   post_publication_receipt_cursor_kinds: ['typed'],
-  url_hostname_block_sources: ['admin', 'google_web_risk', 'parent_hostname'],
+  url_hostname_block_sources: [
+    'admin',
+    'google_web_risk',
+    'parent_hostname',
+    'url_blocklist',
+    'email_blocklist',
+  ],
   http_request_methods: [
     'GET',
     'HEAD',

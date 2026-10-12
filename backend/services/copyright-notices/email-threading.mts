@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import { hashToken } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -32,14 +31,20 @@ export async function recordCopyrightEmailThreadReferences(input: {
       kind: 'reply_reference' as const,
     })),
   ].filter(reference => reference.value.length > 0)
+  const referenceRows = references.map(reference => ({
+    lookup_token: hashToken(THREAD_REFERENCE_PURPOSE, reference.value),
+    reference_kind: reference.kind,
+  }))
   await using transaction = await beginTransaction()
-  if (references.length > 0) {
-    const rows = JSON.stringify(
-      references.map(reference => ({
-        lookup_token: hashToken(THREAD_REFERENCE_PURPOSE, reference.value),
-        reference_kind: reference.kind,
-      })),
-    )
+  if (referenceRows.length > 0) {
+    // Both arrival orders serialize on the same private token before either reads for an edge.
+    for (const lookupToken of [...new Set(referenceRows.map(row => row.lookup_token))].toSorted()) {
+      // oxlint-disable-next-line no-await-in-loop -- deterministic advisory-lock order prevents crossed replies from deadlocking
+      await transaction(sql`/* recordCopyrightEmailThreadReferences:lock */
+        SELECT pg_advisory_xact_lock(hashtextextended(${lookupToken}, 0))
+      `)
+    }
+    const rows = JSON.stringify(referenceRows)
     await transaction(sql`/* recordCopyrightEmailThreadReferences */
       INSERT INTO copyright_notice_email_thread_references (
         copyright_notice_email_intake_id, lookup_token, reference_kind
@@ -50,6 +55,39 @@ export async function recordCopyrightEmailThreadReferences(input: {
       ORDER BY intake_id, reference.lookup_token, reference.reference_kind
       ON CONFLICT (copyright_notice_email_intake_id, lookup_token, reference_kind) DO NOTHING
     `)
+    const replyLookups = referenceRows.reduce<string[]>((tokens, reference) => {
+      if (reference.reference_kind === 'reply_reference') tokens.push(reference.lookup_token)
+      return tokens
+    }, [])
+    if (replyLookups.length > 0) {
+      await transaction(sql`/* recordCopyrightEmailThreadReferences:parent */
+        INSERT INTO copyright_notice_email_message_parents (reply_message_id, parent_message_id)
+        SELECT ${input.intakeId}::uuid, parent.copyright_notice_email_intake_id
+        FROM copyright_notice_email_thread_references parent
+        WHERE parent.lookup_token = ANY(${replyLookups}::text[])
+          AND parent.reference_kind = 'message_id'
+          AND parent.copyright_notice_email_intake_id <> ${input.intakeId}
+        ORDER BY array_position(${replyLookups}::text[], parent.lookup_token),
+          parent.copyright_notice_email_intake_id
+        LIMIT 1
+        ON CONFLICT (reply_message_id) DO NOTHING
+      `)
+    }
+    const messageLookup = referenceRows.find(
+      row => row.reference_kind === 'message_id',
+    )?.lookup_token
+    if (messageLookup) {
+      await transaction(sql`/* recordCopyrightEmailThreadReferences:waitingReplies */
+        INSERT INTO copyright_notice_email_message_parents (reply_message_id, parent_message_id)
+        SELECT DISTINCT reference.copyright_notice_email_intake_id, ${input.intakeId}::uuid
+        FROM copyright_notice_email_thread_references reference
+        WHERE reference.lookup_token = ${messageLookup}
+          AND reference.reference_kind = 'reply_reference'
+          AND reference.copyright_notice_email_intake_id <> ${input.intakeId}
+        ORDER BY reference.copyright_notice_email_intake_id
+        ON CONFLICT (reply_message_id) DO NOTHING
+      `)
+    }
   }
   await transaction.commit()
   const replyReferences = references.reduce<string[]>((result, reference) => {
@@ -93,45 +131,6 @@ export async function linkCopyrightEmailIntakeToNotice(input: {
     `)
   }
   await transaction.commit()
-}
-
-/** Links replies that arrived before the root message was admitted, including reply chains. */
-export async function linkPendingCopyrightEmailRepliesInTransaction(
-  input: { initialIntakeId: string; noticeId: string },
-  transaction: TransactionQuery,
-): Promise<void> {
-  await transaction(sql`/* linkPendingCopyrightEmailRepliesInTransaction:links */
-    WITH RECURSIVE thread_intakes(intake_id) AS (
-      SELECT ${input.initialIntakeId}::uuid
-      UNION
-      SELECT reply.copyright_notice_email_intake_id
-      FROM thread_intakes parent
-      JOIN copyright_notice_email_thread_references parent_message
-        ON parent_message.copyright_notice_email_intake_id = parent.intake_id
-        AND parent_message.reference_kind = 'message_id'
-      JOIN copyright_notice_email_thread_references reply
-        ON reply.lookup_token = parent_message.lookup_token
-        AND reply.reference_kind = 'reply_reference'
-    )
-    INSERT INTO copyright_notice_email_intake_notice_links (
-      copyright_notice_email_intake_id, copyright_notice_id, link_kind
-    )
-    SELECT intake_id, ${input.noticeId}, 'thread'
-    FROM thread_intakes
-    WHERE intake_id <> ${input.initialIntakeId}
-    ORDER BY intake_id
-    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
-  `)
-  await transaction(sql`/* linkPendingCopyrightEmailRepliesInTransaction:reviews */
-    INSERT INTO copyright_notice_email_correspondence_reviews (
-      copyright_notice_email_intake_id, copyright_notice_id, action
-    )
-    SELECT link.copyright_notice_email_intake_id, link.copyright_notice_id, 'pending'
-    FROM copyright_notice_email_intake_notice_links link
-    WHERE link.copyright_notice_id = ${input.noticeId} AND link.link_kind = 'thread'
-    ORDER BY link.copyright_notice_email_intake_id
-    ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
-  `)
 }
 
 async function findCopyrightEmailThreadMatch(

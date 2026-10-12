@@ -4,6 +4,7 @@ import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getPrivateUserByAny } from './get.mts'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import {
   AUTOTAGGER_AGENT_SYSTEM_USERNAME,
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
@@ -78,6 +79,9 @@ export const upsertAdminEmailAddresses = async (
   const primaryCount = emails.filter(e => e.isPrimary).length
   assert(primaryCount <= 1, 422, 'At most one email address can be marked as primary')
   await using query = await beginTransaction()
+  const emailDomainHostnameIds = await Promise.all(
+    emails.map(({ email }) => resolveEmailDomainHostnameId(email, { query })),
+  )
   // Clear existing primary flag first to avoid violating the unique partial index
   // on (user_id) WHERE is_primary = TRUE when primary email changes.
   await write(
@@ -88,13 +92,15 @@ export const upsertAdminEmailAddresses = async (
   )
   // Batch-upsert all emails in one statement, then restore the correct primary flag.
   const insert = sql`/* upsertAdminEmailAddresses */
-    INSERT INTO user_email_addresses (user_id, email_address, is_primary) VALUES `
+    INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary) VALUES `
   emails.forEach(({ email, isPrimary }, i) => {
     if (i > 0) insert.append(sql`, `)
-    insert.append(sql`(${userId}, ${email}, ${isPrimary})`)
+    insert.append(sql`(${userId}, ${email}, ${emailDomainHostnameIds[i]}, ${isPrimary})`)
   })
   insert.append(
-    sql` ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = EXCLUDED.is_primary`,
+    sql` ON CONFLICT (user_id, email_address) DO UPDATE SET
+      email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
+      is_primary = EXCLUDED.is_primary`,
   )
   await write(insert, { query })
   await query.commit()

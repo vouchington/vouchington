@@ -6,9 +6,10 @@ import {
   isAuthenticatedCopyrightEmail,
   type CopyrightEmailSesVerdicts,
 } from './email-ses-verdicts.mts'
-import { encryptSecret } from '@modules/token-secrets'
+import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
   copyrightEmailIntakePurpose,
   type CopyrightEmailAttachmentInput,
@@ -68,6 +69,19 @@ export async function recordCopyrightEmailParse(
       ${input.status === 'failed' ? encryptSecret(input.error, purpose) : null}
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
+  const retainedThread = !rowCount
+    ? (
+        await transaction<{
+          status: 'succeeded' | 'failed'
+          message_id_ciphertext: string | null
+          reply_references_ciphertext: string | null
+        }>(sql`/* recordCopyrightEmailParse:retainedThread */
+          SELECT status, message_id_ciphertext, reply_references_ciphertext
+          FROM copyright_notice_email_intake_parses
+          WHERE copyright_notice_email_intake_id = ${intake.id}
+        `)
+      ).rows[0]
+    : null
   if (rowCount && input.status === 'succeeded' && input.attachments.length > 0) {
     await insertCopyrightEmailAttachments(transaction, intake.id, input.attachments, purpose)
   }
@@ -96,11 +110,26 @@ export async function recordCopyrightEmailParse(
       )
   }
   await transaction.commit()
-  if (input.status !== 'succeeded') return null
+  if (!rowCount && retainedThread?.status !== 'succeeded') return null
+  if (rowCount && input.status !== 'succeeded') return null
   return await recordCopyrightEmailThreadReferences({
     intakeId: intake.id,
-    messageId: input.messageId,
-    replyReferences: input.replyReferences,
+    messageId: retainedThread
+      ? retainedThread.message_id_ciphertext
+        ? decryptSecret(retainedThread.message_id_ciphertext, purpose)
+        : null
+      : input.status === 'succeeded'
+        ? input.messageId
+        : null,
+    replyReferences: retainedThread
+      ? retainedThread.reply_references_ciphertext
+        ? (JSON.parse(
+            decryptSecret(retainedThread.reply_references_ciphertext, purpose),
+          ) as string[])
+        : []
+      : input.status === 'succeeded'
+        ? input.replyReferences
+        : [],
   })
 }
 export async function getCopyrightEmailIntakeForAgent(
@@ -109,12 +138,14 @@ export async function getCopyrightEmailIntakeForAgent(
   await using transaction = await beginTransaction()
   const { rows } = await transaction<CopyrightEmailIntake & ParseCiphertexts>(
     sql`/* getCopyrightEmailIntakeForAgent */
-      SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key,
-        intake.raw_sha256, intake.raw_media_type_id,
+      SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
+        COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
+        intake.raw_storage_object_id, intake.raw_sha256, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
         parse.sender_email_ciphertext, parse.sender_name_ciphertext,
         parse.subject_ciphertext, parse.body_ciphertext
       FROM copyright_notice_email_intakes intake
+      LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
       JOIN copyright_notice_email_intake_parses parse
         ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
       WHERE intake.id = ${intakeId} LIMIT 1`,

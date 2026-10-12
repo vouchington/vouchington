@@ -6,11 +6,10 @@ import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
  * constraints and never collides with a real value:
  * - `redact`: ciphertext becomes the literal `erased`; a NULL stays NULL so row-shape checks hold.
  * - `null`: a user id reference is dropped.
- * - `key`: a storage key becomes `erased:<row id>`, which stays unique.
  * - `hex64`: a 64-character lookup token becomes a per-row digest, NULL stays NULL.
  * - `digest`: a 32-byte identity digest becomes a per-row digest.
  */
-export type CopyrightRetentionErasureKind = 'redact' | 'null' | 'key' | 'hex64' | 'digest'
+export type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
 
 export type CopyrightRetentionErasureTable = {
   table: string
@@ -19,7 +18,7 @@ export type CopyrightRetentionErasureTable = {
   scope: (noticeId: string) => SQLStatement
 }
 
-/** Prefix of an overwritten storage key; a real key never starts with it. */
+/** Prefix exposed for an intake whose storage-object reference was erased. */
 export const COPYRIGHT_ERASED_KEY_PREFIX = 'erased:'
 
 const own = (id: string) => sql`copyright_notice_id = ${id}`
@@ -74,8 +73,8 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     viaFormIntakes,
   ),
   table('copyright_notice_form_intake_reviews', { rationale_ciphertext: 'redact' }, viaFormIntakes),
-  table('copyright_notice_evidence_artifacts', { storage_key: 'key' }, viaSubmissions),
-  table('copyright_notice_email_intakes', { raw_storage_key: 'key' }, id =>
+  table('copyright_notice_evidence_artifacts', { storage_object_id: 'null' }, viaSubmissions),
+  table('copyright_notice_email_intakes', { raw_storage_object_id: 'null' }, id =>
     sql`id IN `.append(emailIntakesOf(id)),
   ),
   table(
@@ -162,7 +161,6 @@ const OVERWRITE: Record<CopyrightRetentionErasureKind, (column: string) => strin
   redact: column =>
     `CASE WHEN ${column} IS NULL THEN NULL ELSE '${COPYRIGHT_ERASED_CIPHERTEXT}' END`,
   null: () => 'NULL',
-  key: () => `'${COPYRIGHT_ERASED_KEY_PREFIX}' || id::text`,
   hex64: column =>
     `CASE WHEN ${column} IS NULL THEN NULL
       ELSE encode(sha256(convert_to('erased:' || id::text, 'UTF8')), 'hex') END`,

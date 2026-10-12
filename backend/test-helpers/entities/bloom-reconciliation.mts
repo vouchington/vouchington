@@ -49,9 +49,9 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
   )
   await transaction(
     `/* insertTestBloomRepairSources */
-    INSERT INTO blocklisted_domains (source_id, domain, updated_at)
-    SELECT id, $2, $3 FROM unnest($1::bigint[]) id`,
-    [sources.map(row => row.id), domain, inside],
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id, updated_at)
+    SELECT id, $2, $3, $4 FROM unnest($1::bigint[]) id`,
+    [sources.map(row => row.id), domain, hostnameId, inside],
   )
   const { rows: embeddings } = await transaction<{ hash: string }>(
     `/* insertTestBloomRepairSources */

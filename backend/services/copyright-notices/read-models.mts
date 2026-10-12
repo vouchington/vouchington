@@ -54,7 +54,6 @@ export async function getCopyrightStaffEmailIntake(
     id: string
     amazon_ses_message_id: string
     received_at: Date
-    raw_storage_key: string
     raw_mime_type: string
     raw_byte_size: number
     raw_sha256: Buffer
@@ -73,7 +72,7 @@ export async function getCopyrightStaffEmailIntake(
     linked_notice_id: string | null
     has_reply_reference: boolean
   }>(sql`/* getCopyrightStaffEmailIntake */
-    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key, intake.raw_media_type_id,
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
       intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
       parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,

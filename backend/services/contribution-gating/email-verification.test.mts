@@ -11,6 +11,11 @@ import {
   connectTestOAuthAccount,
 } from '@voucha/test-helpers/entities/oauth-accounts'
 import {
+  createTestBlacklistSource,
+  deleteTestBlacklistSource,
+  insertTestDomainBlacklist,
+} from '@voucha/test-helpers/entities/domain-blacklists'
+import {
   getVerifiedEmailAddress,
   getVerifiedEmailAddressesBatch,
   hasVerifiedNonDisposableEmail,
@@ -150,6 +155,32 @@ describe('hasVerifiedNonDisposableEmail', () => {
     await invalidateVerifiedEmailCache(user.id)
     const result = await hasVerifiedNonDisposableEmail(user.id)
     expect(result).toBe(false)
+  })
+
+  it('observes email blacklist changes through a stable stored domain identity', async () => {
+    const user = await createTestUserDirect()
+    const suffix = crypto.randomUUID()
+    const domain = `email-policy-${suffix}.test`
+    const sourceName = `email-policy-${suffix.replace(/[0-9a-f]/g, character =>
+      String.fromCodePoint(97 + Number.parseInt(character, 16)),
+    )}`
+    await addVerifiedEmailForUser(user.id, `member@${domain}`)
+    const sourceId = await createTestBlacklistSource({
+      type: 'email',
+      name: sourceName,
+      url: 'https://example.com/email-policy.txt',
+    })
+    try {
+      await invalidateVerifiedEmailCache(user.id)
+      await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
+      await insertTestDomainBlacklist(domain, sourceName)
+      await invalidateVerifiedEmailCache(user.id)
+      await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(false)
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+    await invalidateVerifiedEmailCache(user.id)
+    await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
   })
 
   it('caches results and returns cached value on second call', async () => {

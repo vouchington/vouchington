@@ -64,7 +64,7 @@ async function dispatchHostnamePage(
     }
   } else {
     const hostnameIds: string[] = []
-    for (const row of rows) if (!row.is_domain_blocklisted) hostnameIds.push(row.id)
+    for (const row of rows) hostnameIds.push(row.id)
     if (hostnameIds.length) await enqueueBulkCrawlHostname(hostnameIds)
     const next = { ...cursor }
     for (const row of rows) {

@@ -111,6 +111,7 @@ export const upsertUrlHostnames = async (
         SELECT 1 FROM url_hostname_blocks
         WHERE url_hostname_id = t.hn_id
           AND lifted_at IS NULL
+          AND domain_blocklist_source_id IS NULL
       )
     `,
       [inheritedBlockedIds],

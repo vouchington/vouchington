@@ -51,9 +51,18 @@ export async function insertExplainBloomRepairSources(
     ON CONFLICT DO NOTHING`)
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO blocklisted_domains (source_id, domain, updated_at)
-    SELECT source.id, fixture.key || '.example.com', fixture.updated_at
+    INSERT INTO url_hostnames (hostname)
+    SELECT DISTINCT fixture.key || '.example.com'
+    FROM jsonb_to_recordset($1::jsonb) fixture(key text)
+    ON CONFLICT (hostname) DO NOTHING`,
+    [JSON.stringify(rows)],
+  )
+  await transaction(
+    `/* insertExplainBloomRepairSources */
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id, updated_at)
+    SELECT source.id, fixture.key || '.example.com', hostname.id, fixture.updated_at
     FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
+    JOIN url_hostnames hostname ON hostname.hostname = fixture.key || '.example.com'
     CROSS JOIN domain_blocklist_sources source
     WHERE source.name IN ('seed-bloom-repair-url', 'seed-bloom-repair-email')
     ON CONFLICT DO NOTHING`,

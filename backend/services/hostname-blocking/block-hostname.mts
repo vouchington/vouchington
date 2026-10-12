@@ -99,6 +99,7 @@ async function blockHostnameWithQuery(
         SELECT 1 FROM url_hostname_blocks
         WHERE url_hostname_id = ${hostnameId}
           AND lifted_at IS NULL
+          AND domain_blocklist_source_id IS NULL
       )
     `)
   // Also update web_risk tracking columns on the hostname row itself (non-history metadata)
@@ -126,6 +127,7 @@ async function blockHostnameWithQuery(
           SELECT 1 FROM url_hostname_blocks
           WHERE url_hostname_id = url_hostnames.id
             AND lifted_at IS NULL
+            AND domain_blocklist_source_id IS NULL
         )
     `)
 

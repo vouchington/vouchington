@@ -5,6 +5,7 @@ import onError from '@modules/on-error'
 import { invalidateVerifiedEmailCache } from '@services/contribution-gating/email-verification'
 import { providerTableConfigs, type OAuthProvider, type OAuthAccount } from './providers.mts'
 import { completeOAuthAuthorizationExchange } from './authorization-exchange-completion.mts'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 
 export async function upsertOAuthAccount(
   provider: OAuthProvider,
@@ -24,6 +25,7 @@ export async function upsertOAuthAccount(
   if (!providerUserId) throw createHttpError(401, 'Provider user ID is empty')
   const config = providerTableConfigs[provider]
   const { hasTokenColumns, hasRefreshToken } = config
+  const emailDomainHostnameId = await resolveEmailDomainHostnameId(providerUserEmailAddress)
   const providerDataUpdate =
     config.dataConflictStrategy === 'merge'
       ? `${config.table}.${config.dataColumn} || EXCLUDED.${config.dataColumn}`
@@ -49,15 +51,17 @@ export async function upsertOAuthAccount(
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        email_domain_hostname_id,
         ${config.dataColumn},
         access_token_ciphertext,
         refresh_token_ciphertext,
         access_token_expires_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
         ${config.dataColumn} = ${providerDataUpdate},
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         refresh_token_ciphertext = EXCLUDED.refresh_token_ciphertext,
@@ -72,6 +76,7 @@ export async function upsertOAuthAccount(
     values = [
       providerUserId,
       providerUserEmailAddress,
+      emailDomainHostnameId,
       JSON.stringify(providerUserData),
       accessTokenCiphertext,
       refreshTokenCiphertext,
@@ -82,14 +87,16 @@ export async function upsertOAuthAccount(
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        email_domain_hostname_id,
         ${config.dataColumn},
         access_token_ciphertext,
         access_token_expires_at
       )
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
         ${config.dataColumn} = ${providerDataUpdate},
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         access_token_expires_at = EXCLUDED.access_token_expires_at
@@ -103,6 +110,7 @@ export async function upsertOAuthAccount(
     values = [
       providerUserId,
       providerUserEmailAddress,
+      emailDomainHostnameId,
       JSON.stringify(providerUserData),
       accessTokenCiphertext,
       tokens?.accessTokenExpiresAt ?? null,
@@ -112,12 +120,14 @@ export async function upsertOAuthAccount(
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        email_domain_hostname_id,
         ${config.dataColumn}
       )
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
         ${config.dataColumn} = ${providerDataUpdate}
       RETURNING
         ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
@@ -126,7 +136,12 @@ export async function upsertOAuthAccount(
         ${config.emailColumn} AS provider_user_email_address,
         ${config.dataColumn} AS provider_user_data
     `
-    values = [providerUserId, providerUserEmailAddress, JSON.stringify(providerUserData)]
+    values = [
+      providerUserId,
+      providerUserEmailAddress,
+      emailDomainHostnameId,
+      JSON.stringify(providerUserData),
+    ]
   }
 
   const persistence = options.authorizationId

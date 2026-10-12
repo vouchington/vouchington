@@ -22,7 +22,8 @@ export async function unblockHostname(
       SET lifted_at = CURRENT_TIMESTAMP,
           lifted_by_id = ${adminUserId}
       WHERE url_hostname_id = ${hostnameId}
-        AND lifted_at IS NULL  -- intentionally lifts ALL active blocks for this hostname (admin + web_risk + parent_hostname)
+        AND lifted_at IS NULL
+        AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
       RETURNING url_hostname_id
     `)
     return updateRows

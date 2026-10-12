@@ -20,6 +20,33 @@ CREATE TABLE copyright_notice_email_thread_references (
   CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)
 );
 
+-- A message's intake row is immutable; this append-only edge is recorded when both sides exist.
+CREATE TABLE copyright_notice_email_message_parents (
+  reply_message_id uuid PRIMARY KEY,
+  parent_message_id uuid NOT NULL,
+  CONSTRAINT chk_copyright_email_message_parents__distinct CHECK (reply_message_id <> parent_message_id)
+);
+ALTER TABLE copyright_notice_email_message_parents
+  ADD CONSTRAINT fk_copyright_notice_email_message_parents__reply
+  FOREIGN KEY (reply_message_id) REFERENCES copyright_notice_email_intakes(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_email_message_parents
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_parents__reply;
+ALTER TABLE copyright_notice_email_message_parents
+  ADD CONSTRAINT fk_copyright_notice_email_message_parents__parent
+  FOREIGN KEY (parent_message_id) REFERENCES copyright_notice_email_intakes(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_email_message_parents
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_parents__parent;
+CREATE INDEX idx_copyright_notice_email_message_parents__parent
+  ON copyright_notice_email_message_parents (parent_message_id);
+CREATE TRIGGER trigger_copyright_email_message_parents_immutable
+  BEFORE UPDATE OR DELETE ON copyright_notice_email_message_parents
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+COMMENT ON TABLE copyright_notice_email_message_parents IS 'Immutable resolved parent edge between inbound email intake messages; replies may arrive before parents.';
+COMMENT ON COLUMN copyright_notice_email_message_parents.reply_message_id IS 'Inbound reply intake, which owns at most one resolved parent edge.';
+COMMENT ON COLUMN copyright_notice_email_message_parents.parent_message_id IS 'Inbound parent intake resolved from a keyed RFC Message-ID during ingestion.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_notice_links (
   id uuid PRIMARY KEY DEFAULT uuidv7(),

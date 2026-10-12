@@ -122,17 +122,28 @@ CREATE TABLE copyright_notice_submissions (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_storage_objects (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  storage_key text NOT NULL UNIQUE CHECK (char_length(storage_key) BETWEEN 1 AND 1024 AND NOT starts_with(storage_key, 'erased:')),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable
+  BEFORE UPDATE ON copyright_notice_storage_objects
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE copyright_notice_storage_objects IS 'One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.';
+COMMENT ON COLUMN copyright_notice_storage_objects.storage_key IS 'Unique private object-storage key; the row is deleted only after no intake or artifact references it.';
+
 CREATE TABLE copyright_notice_evidence_artifacts (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL,
-  storage_key text NOT NULL,
+  storage_object_id uuid REFERENCES copyright_notice_storage_objects(id) ON DELETE RESTRICT,
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
   media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_copyrig_notice_evidence_artifact__submission_id__storage_key UNIQUE (copyright_notice_submission_id, storage_key),
+  CONSTRAINT uq_copyright_evidence_artifacts__submission_object UNIQUE (copyright_notice_submission_id, storage_object_id),
   CONSTRAINT fk_copyright_artifacts__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
@@ -1176,7 +1187,7 @@ COMMENT ON COLUMN copyright_notice_correspondence_messages.sent_at IS 'One-way t
 
 COMMENT ON TABLE copyright_notice_evidence_artifacts IS 'Private immutable evidence, including original inbound email MIME and attachments.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_submission_id IS 'Submission whose preserved source or attachment this artifact represents.';
-COMMENT ON COLUMN copyright_notice_evidence_artifacts.storage_key IS 'Private object-storage key; never included in member projections.';
+COMMENT ON COLUMN copyright_notice_evidence_artifacts.storage_object_id IS 'Registry identity of private evidence bytes; cleared only by retention erasure after unshared object deletion.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.sha256 IS 'SHA-256 digest used to verify immutable evidence bytes.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.media_type_id IS 'Untrusted declared or detected media type used only for quarantined processing.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved artifact byte length for bounds and integrity checks.';
@@ -1226,3 +1237,6 @@ CREATE TRIGGER trigger_copyright_lifecycle_change_rationales_immutable BEFORE UP
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
+CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id
+  ON copyright_notice_evidence_artifacts (storage_object_id)
+  WHERE storage_object_id IS NOT NULL;

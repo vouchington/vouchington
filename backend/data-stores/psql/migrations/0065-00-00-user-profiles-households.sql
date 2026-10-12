@@ -447,6 +447,7 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   github_user_id TEXT PRIMARY KEY,
   github_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   github_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
   refresh_token_ciphertext TEXT,
@@ -455,6 +456,10 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE github_accounts
+  ADD CONSTRAINT fk_github_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE github_accounts VALIDATE CONSTRAINT fk_github_accounts__email_domain_hostname;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_github_accounts_updated_at
@@ -472,6 +477,10 @@ CREATE INDEX IF NOT EXISTS idx_github_accounts__email
 ON github_accounts (github_user_email_address)
 WHERE github_user_email_address IS NOT NULL;
 
+CREATE INDEX idx_github_accounts__email_domain_hostname_id
+ON github_accounts (email_domain_hostname_id)
+WHERE email_domain_hostname_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__token_expires_at
 ON github_accounts (access_token_expires_at)
@@ -481,6 +490,7 @@ COMMENT ON TABLE github_accounts IS 'Linked GitHub accounts for OAuth authentica
 COMMENT ON COLUMN github_accounts.user_id IS 'The Voucha user linked to this GitHub account.';
 COMMENT ON COLUMN github_accounts.github_user_id IS 'GitHub''s unique user ID (primary key).';
 COMMENT ON COLUMN github_accounts.github_user_email_address IS 'Email address from the GitHub profile.';
+COMMENT ON COLUMN github_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
 COMMENT ON COLUMN github_accounts.github_user_data IS 'Raw JSONB profile data from the GitHub API.';
 COMMENT ON COLUMN github_accounts.access_token_ciphertext IS 'Encrypted OAuth access token ciphertext for GitHub API calls.';
 COMMENT ON COLUMN github_accounts.refresh_token_ciphertext IS 'Encrypted OAuth refresh token ciphertext for renewing the access token.';

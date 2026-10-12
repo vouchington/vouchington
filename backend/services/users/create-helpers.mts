@@ -11,6 +11,7 @@ import createHttpError from 'http-errors'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, CreateUserOptions, GetUserOptions } from './types.mts'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 
 // Effective dates of the current consent documents.
 // Update the relevant constant whenever a document is revised.
@@ -47,11 +48,12 @@ export const createUser = async ({
     if (existing) throw createCodedError(409, 'User creation race', USER_CREATION_RACE)
 
     const id = await createUserId({ query }, referrerId)
+    const emailDomainHostnameId = await resolveEmailDomainHostnameId(emailAddress, { query })
     const {
       rows: [userEmailAddress],
     } = await query(sql`/* createUser */
-        INSERT INTO user_email_addresses (user_id, email_address)
-        VALUES (${id}, ${emailAddress})
+        INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id)
+        VALUES (${id}, ${emailAddress}, ${emailDomainHostnameId})
         ON CONFLICT DO NOTHING
         RETURNING user_id
     `)

@@ -1,6 +1,7 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { write, read } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { write } from '@data-stores/psql'
+import { encryptSecret } from '@modules/token-secrets'
+import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
 import {
   getOAuthTokenPurpose,
   providerTableConfigs,
@@ -14,13 +15,20 @@ export async function insertTestOAuthAccount(
   providerUserEmailAddress: string | null = null,
 ): Promise<OAuthAccount> {
   const config = providerTableConfigs[provider]
+  const emailDomainHostnameId =
+    provider !== 'x' && providerUserEmailAddress
+      ? await upsertTestEmailDomainHostnameId(providerUserEmailAddress)
+      : null
+  const emailDomainColumn = provider === 'x' ? '' : 'email_domain_hostname_id,'
+  const emailDomainValue = provider === 'x' ? '' : '$3,'
   const query = `
     INSERT INTO ${config.table} (
       ${config.providerUserIdColumn},
       ${config.emailColumn},
+      ${emailDomainColumn}
       ${config.dataColumn}
     )
-    VALUES ($1, $2, '{}')
+    VALUES ($1, $2, ${emailDomainValue} '{}')
     RETURNING
       user_id,
       ${config.providerUserIdColumn} AS provider_user_id,
@@ -28,10 +36,11 @@ export async function insertTestOAuthAccount(
       ${config.emailColumn} AS provider_user_email_address,
       ${config.dataColumn} AS provider_user_data
   `
-  const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), [
-    providerUserId,
-    providerUserEmailAddress,
-  ])
+  const values =
+    provider === 'x'
+      ? [providerUserId, providerUserEmailAddress]
+      : [providerUserId, providerUserEmailAddress, emailDomainHostnameId]
+  const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), values)
   return rows[0]
 }
 
@@ -152,47 +161,4 @@ export async function deleteTestOAuthAccount(
   )
 }
 
-type RawOAuthAccountRow = {
-  user_id: string | null
-  provider_user_email_address: string | null
-  provider_user_data: Record<string, unknown>
-  access_token: string | null
-  refresh_token: string | null
-  access_token_expires_at: Date | null
-}
-
-export async function getTestOAuthAccountRaw(
-  provider: OAuthProvider,
-  providerUserId: string,
-): Promise<RawOAuthAccountRow | null> {
-  const config = providerTableConfigs[provider]
-  let tokenColumns: string
-  if (!config.hasTokenColumns) {
-    tokenColumns = `, NULL AS access_token, NULL AS refresh_token, NULL AS access_token_expires_at`
-  } else if (config.hasRefreshToken) {
-    tokenColumns = `, access_token_ciphertext AS access_token, refresh_token_ciphertext AS refresh_token, access_token_expires_at`
-  } else {
-    tokenColumns = `, access_token_ciphertext AS access_token, NULL AS refresh_token, access_token_expires_at`
-  }
-  const { rows } = await read<RawOAuthAccountRow>(
-    allowUnannotatedQuery(`SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
-     FROM ${config.table}
-     WHERE ${config.providerUserIdColumn} = $1`),
-    [providerUserId],
-  )
-  const row = rows[0]
-  if (!row) return null
-  if (row.access_token) {
-    row.access_token = decryptSecret(
-      row.access_token,
-      getOAuthTokenPurpose(provider, providerUserId, 'access_token'),
-    )
-  }
-  if (row.refresh_token) {
-    row.refresh_token = decryptSecret(
-      row.refresh_token,
-      getOAuthTokenPurpose(provider, providerUserId, 'refresh_token'),
-    )
-  }
-  return row
-}
+export { getTestOAuthAccountRaw } from './oauth-account-raw.mts'
