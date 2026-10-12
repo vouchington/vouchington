@@ -3,6 +3,7 @@
  */
 
 import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   deriveBedrockBatchStatus,
@@ -13,21 +14,24 @@ import {
 /**
  * Insert a test embeddings batch with flexible parameters
  */
-export async function insertTestEmbeddingsBatch(data: {
-  id: string
-  model?: string
-  jobType?: string
-  jobArn?: string | null
-  bedrockStatus?: string
-  batchData?: unknown
-  urlId?: string | null
-  crawlId?: string | null
-  records?: number
-  completedAt?: Date | null
-  createdAt?: Date
-  submittedAt?: Date | null
-  inProgressAt?: Date | null
-}): Promise<void> {
+export async function insertTestEmbeddingsBatch(
+  data: {
+    id: string
+    model?: string
+    jobType?: string
+    jobArn?: string | null
+    bedrockStatus?: string
+    batchData?: unknown
+    urlId?: string | null
+    crawlId?: string | null
+    records?: number
+    completedAt?: Date | null
+    createdAt?: Date
+    submittedAt?: Date | null
+    inProgressAt?: Date | null
+  },
+  options: QueryOptions = {},
+): Promise<void> {
   const model = data.model || 'amazon.nova-2-multimodal-embeddings-v1:0'
   const jobType = data.jobType || 'topics'
   const bedrockStatus = data.bedrockStatus || 'Submitted'
@@ -62,7 +66,8 @@ export async function insertTestEmbeddingsBatch(data: {
 
   const job_arn = data.jobArn !== undefined ? data.jobArn : null
 
-  await write(sql`
+  await write(
+    sql`
     INSERT INTO bedrock_embedding_batches
       (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
     VALUES (
@@ -81,7 +86,9 @@ export async function insertTestEmbeddingsBatch(data: {
       ${cancelled_at},
       ${data.createdAt ?? now}
     )
-  `)
+  `,
+    options,
+  )
 }
 
 export async function cleanupTestEmbeddingsBatchesByPrefix(prefix: string): Promise<void> {

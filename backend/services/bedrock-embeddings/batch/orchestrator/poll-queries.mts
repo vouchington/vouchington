@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 
 export const getPendingBatches = async (): Promise<Array<{ id: string }>> => {
   const { rows } = await read(
@@ -15,19 +16,25 @@ export const getPendingBatches = async (): Promise<Array<{ id: string }>> => {
   return rows.map(row => ({ id: row.id }))
 }
 
-export const getBatchRecordsCreatedInLastHour = async (): Promise<number> => {
+export const getBatchRecordsCreatedInLastHour = async (
+  options: QueryOptions = {},
+): Promise<number> => {
   const { rows } = await read(
     `/* getBatchRecordsCreatedInLastHour */
     SELECT COALESCE(SUM(records), 0) as records
     FROM bedrock_embedding_batches
     WHERE created_at > NOW() - INTERVAL '1 hour'
   `,
+    [],
+    options,
   )
 
   return Number.parseInt(rows[0]?.records || '0', 10)
 }
 
-export const getActiveBatchStats = async (): Promise<{
+export const getActiveBatchStats = async (
+  options: QueryOptions = {},
+): Promise<{
   count: number
   inputSizeMB: number
 }> => {
@@ -42,6 +49,8 @@ export const getActiveBatchStats = async (): Promise<{
       AND failed_at IS NULL
       AND cancelled_at IS NULL
   `,
+    [],
+    options,
   )
 
   return {

@@ -780,3 +780,47 @@ from calls that create or retire provider mappings.
 ### Retained relation cleanup reservation
 
 `withTestRetainedRelationCleanupReservation` acquires every elected-family advisory transaction lock before admitting the normal global worker call. Admission matches the actual query executor, active test, and retained-relation operation; it closes before the helper awaits rollback. Worker deletes and cursor checkpoints remain in that transaction and are rolled back, including on assertion or registration failure. A handler failure retains its original identity unless rollback also fails, when both errors are reported in an `AggregateError`. A rollback failure always fails the test. Calls outside the reservation, on another executor, or from another test remain rejected by the shared-database scope guard. This is trusted test infrastructure: registration must stay after successful lock acquisition and must never be used to admit committed global writes.
+
+Embedding creation's exact global-capacity cases run in the first project group on the ordinary
+backend shard database. Later projects reuse the same database without resetting it. The fixture
+advisory lock coordinates concurrent runs of this file only; it does not serialize arbitrary
+production writers. Persist owned accounting rows, include other-work positive controls in the
+unfiltered aggregate, observe committed owned-job queue events, and drain before owned cleanup
+and configuration restoration. No test creates a database or raises capacity to hide saturation.
+Count-denial cases keep unfiltered admission, one positive-size owned active reservation, and
+worker denial in one `REPEATABLE READ` transaction. Their local count ceiling is the snapshot's
+active count plus one and never exceeds the normal configured ceiling, so they need one free
+count slot. Setup verifies the owned active row; rollback and cleanup verify its removal without
+requiring foreign usage to remain stationary. The mixed fairness case lowers its local size
+ceiling to the smallest positive integer GiB covering the snapshot's usage plus the exact size
+midpoint, never above normal capacity. Its rollback-owned active size reservation is only the
+remainder below that integer ceiling, less than one GiB. A positive remainder requires one
+reservation slot plus one admission slot; an exactly zero remainder inserts no row and needs
+only admission. The count ceiling reflects that actual contribution and never exceeds normal
+capacity. These are explicit preconditions, not skips or raised ceilings.
+A separately committed owned completed row with one record tests
+snapshot isolation using the real hourly query directly; it consumes no active count or size.
+All transaction setup and later operations are registered before effects and settle before
+rollback. Completed-row writes are owned and registered before insertion. Queue drain and
+successful rollback precede config restoration; unsafe cleanup withholds restoration.
+After acquiring the advisory lock, the fixture claims an atomic same-host lease before
+configuration initialization or worker admission. The nonce-owned witness lives outside Git in
+the ordinary user's local state and includes the actual server/database identity and database
+OID. Only proven physical drain, snapshot rollback, configuration restoration, and owned
+accounting removal permit its deletion. A failure retains it across owner exit, so the next
+fork refuses admission even when PostgreSQL releases the disconnected owner's advisory lock.
+There is no PID-age expiry or automatic stale removal. Recovery requires an explicit coordinator
+decision with exact witness ownership and actual process/PostgreSQL/Valkey idle evidence.
+This boundary covers the normal same-host, same-user non-main fixture and the GitHub Actions
+local ephemeral `postgres` service database, not remote databases.
+Database recreation changes the OID; an OID collision conservatively refuses admission.
+The six empty/unknown embedding-creation route cases use `createEmptyEmbeddingCreationWorker`
+from the first-layer empty-routing helper, with its controlled `emptyEmbeddingCreationDependencies`. This typed fixture injects controlled admitted capacity through
+the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL
+empty scans and real SDK worker completion or unknown-route failure, retaining actual `createBatch`
+(which empty scans must not invoke). They do not prove ambient provider admission. The five route
+denial cases and mixed fairness case retain real unfiltered global quota discovery. Production
+callers omit dependencies and preserve capacity-before-stream ordering and ordinary ceilings.
+Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
+admission within the test budget; this preserves priority ordering and delayed-job due times.
+The normal worker factory forwards that optional setting without changing production defaults.
