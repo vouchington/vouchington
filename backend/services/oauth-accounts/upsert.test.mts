@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { read } from '@data-stores/psql'
 import { getTestOAuthAccountCiphertexts } from '@voucha/test-helpers'
+import { getTestOAuthAccountEmailDomainHostnameId } from '@voucha/test-helpers/entities/oauth-accounts'
 import { getOAuthAccountByProviderUserId } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
@@ -22,20 +22,13 @@ describe('upsertOAuthAccount', () => {
       const providerUserId = `${provider}-domain-${randomUUID()}`
       const email = `tests+${providerUserId}@voucha.ai`
       await upsertOAuthAccount(provider, providerUserId, email, { name: providerUserId })
-      const table = `${provider}_accounts`
-      const idColumn = `${provider}_user_id`
-      const before = await read<{ email_domain_hostname_id: string | null }>(
-        `/* testOAuthEmailDomainOwner */ SELECT email_domain_hostname_id FROM ${table} WHERE ${idColumn} = $1`,
-        [providerUserId],
-      )
-      expect(before.rows[0]?.email_domain_hostname_id).toBeTruthy()
+      const before = await getTestOAuthAccountEmailDomainHostnameId(provider, providerUserId)
+      expect(before).toBeTruthy()
 
       await upsertOAuthAccount(provider, providerUserId, null, { name: providerUserId })
-      const after = await read<{ email_domain_hostname_id: string | null }>(
-        `/* testOAuthEmailDomainOwner */ SELECT email_domain_hostname_id FROM ${table} WHERE ${idColumn} = $1`,
-        [providerUserId],
-      )
-      expect(after.rows[0]?.email_domain_hostname_id).toBeNull()
+      await expect(
+        getTestOAuthAccountEmailDomainHostnameId(provider, providerUserId),
+      ).resolves.toBeNull()
     },
   )
 

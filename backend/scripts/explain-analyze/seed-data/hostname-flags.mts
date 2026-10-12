@@ -3,8 +3,10 @@ import { bloomRepairSeedWindow } from './bloom-reconciliation.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
+export const HOSTNAME_FLAG_SEED_ROW_COUNT = 11
+
 export async function seedHostnameFlags(): Promise<void> {
-  const rows = Array.from({ length: 11 }, (_, i) => ({
+  const rows = Array.from({ length: HOSTNAME_FLAG_SEED_ROW_COUNT }, (_, i) => ({
     id: seedUuid(1100 + i, '02'),
     hostname: `seed-flags-${i}.example.com`,
     crawlable: i >= 5 && i !== 10,

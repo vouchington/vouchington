@@ -1,5 +1,5 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
 import {
@@ -42,6 +42,22 @@ export async function insertTestOAuthAccount(
       : [providerUserId, providerUserEmailAddress, emailDomainHostnameId]
   const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), values)
   return rows[0]
+}
+
+export async function getTestOAuthAccountEmailDomainHostnameId(
+  provider: Exclude<OAuthProvider, 'x'>,
+  providerUserId: string,
+): Promise<string | null> {
+  const config = providerTableConfigs[provider]
+  const result = await read<{ email_domain_hostname_id: string | null }>(
+    allowUnannotatedQuery(
+      `/* getTestOAuthAccountEmailDomainHostnameId */
+       SELECT email_domain_hostname_id FROM ${config.table}
+       WHERE ${config.providerUserIdColumn} = $1`,
+    ),
+    [providerUserId],
+  )
+  return result.rows[0]?.email_domain_hostname_id ?? null
 }
 
 export async function connectTestOAuthAccount(

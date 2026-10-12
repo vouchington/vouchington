@@ -2,6 +2,8 @@ import { insertExplainBloomRepairSources } from '@voucha/test-helpers/entities/e
 import { resolveSeedAnchor } from './seed-anchor.mts'
 import { seedUuid } from './common.mts'
 
+export const BLOOM_REPAIR_SEED_ROW_COUNT = 256
+
 export function bloomRepairSeedWindow() {
   const recent = new Date(
     resolveSeedAnchor(process.env.EXPLAIN_SEED_ANCHOR_DATE).dayAnchorMs - 86_400_000,
@@ -13,7 +15,7 @@ export async function seedBloomReconciliation(): Promise<void> {
   const { start } = bloomRepairSeedWindow()
   const recent = new Date(start.getTime() + 1000)
   const old = new Date(recent.getTime() - 90 * 86_400_000)
-  const rows = Array.from({ length: 256 }, (_, ordinal) => ({
+  const rows = Array.from({ length: BLOOM_REPAIR_SEED_ROW_COUNT }, (_, ordinal) => ({
     id: seedUuid(50_000 + ordinal, '14'),
     apiKeyId: seedUuid(50_000 + ordinal, '35'),
     aliasId: seedUuid(50_000 + ordinal, '36'),
