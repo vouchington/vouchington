@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `created_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
 | `updated_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                            |
 | `annual_fee_minor_units` | `bigint`                   | yes      |                     |          |           |           | Annual fee in the currency minor unit. NULL if unknown.    |
-| `currency_code`          | `text`                     | yes      |                     |          |           |           | Currency for the annual fee. NULL when the fee is unknown. |
+| `currency_code`          | `currency_codes`           | yes      |                     |          |           |           | Currency for the annual fee. NULL when the fee is unknown. |
 
 **Primary key:** `PRIMARY KEY (topic_id)`
 

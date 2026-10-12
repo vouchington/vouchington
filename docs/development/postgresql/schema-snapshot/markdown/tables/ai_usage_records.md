@@ -26,7 +26,7 @@ RANGE partitioned on `id` (children: default, no retention owner, access class: 
 | `latency_milliseconds`        | `integer`                          | yes      |                              |          |           |           | Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.     |
 | `pricing_status`              | `ai_usage_record_pricing_statuses` | no       |                              |          |           |           | Whether pricing was known when this usage record was written.                                                                |
 | `cost_microunits`             | `bigint`                           | yes      |                              |          |           |           | Estimated cost in millionths of the major currency unit; NULL when unpriced.                                                 |
-| `currency_code`               | `text`                             | yes      |                              |          |           |           | Currency of the estimated cost; NULL when unpriced.                                                                          |
+| `currency_code`               | `currency_codes`                   | yes      |                              |          |           |           | Currency of the estimated cost; NULL when unpriced.                                                                          |
 | `created_at`                  | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`

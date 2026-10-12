@@ -6,10 +6,10 @@ ISO 4217 currency codes supported by the platform.
 
 Not partitioned — growth: bounded.
 
-| Column                | Type       | Nullable | Default | Identity | Generated | Collation | Comment                                                                     |
-| --------------------- | ---------- | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
-| `code`                | `text`     | no       |         |          |           |           | Lowercase ISO 4217 three-letter currency code, matching Stripe wire values. |
-| `minor_unit_exponent` | `smallint` | no       |         |          |           |           | Decimal exponent used to convert major units to the currency minor unit.    |
+| Column                | Type             | Nullable | Default | Identity | Generated | Collation | Comment                                                                     |
+| --------------------- | ---------------- | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `code`                | `currency_codes` | no       |         |          |           |           | Lowercase ISO 4217 three-letter currency code, matching Stripe wire values. |
+| `minor_unit_exponent` | `smallint`       | no       |         |          |           |           | Decimal exponent used to convert major units to the currency minor unit.    |
 
 **Primary key:** `PRIMARY KEY (code)`
 
@@ -18,7 +18,6 @@ _none_
 
 **Check constraints:**
 
-- `currencies_code_check`: `CHECK ((code ~ '^[a-z]{3}$'::text))`
 - `currencies_minor_unit_exponent_check`: `CHECK (((minor_unit_exponent >= 0) AND (minor_unit_exponent <= 4)))`
 
 **Foreign keys:**
