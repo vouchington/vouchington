@@ -1,6 +1,5 @@
 import type { OAuthAuthorizationExchangeDependencies } from '../services/oauth/authorization-exchange.mts'
 import type { ownOAuthActors } from './oauth-exchange-actor-owner.mts'
-import type { OAuthContinuationFault } from './oauth-exchange-continuation.mts'
 import {
   claimOAuthAuthorizationExchange,
   validateOAuthAuthorizationExchangeClaim,
@@ -14,6 +13,16 @@ import {
 import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebook/index.mts'
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
 import { upsertXAccount } from '../services/oauth-x/index.mts'
+
+export type OAuthContinuationFault =
+  | 'rejection'
+  | 'release'
+  | 'ownership-write'
+  | 'ownership-response'
+  | 'clear-write'
+  | 'provider-outcome'
+  | 'lost-provider-marker'
+  | 'admission-expiry'
 
 export type OAuthContinuationMetrics = {
   decryptCalls: number

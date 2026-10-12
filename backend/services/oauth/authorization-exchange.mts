@@ -1,4 +1,12 @@
-import { exchangeClaimedOAuthAuthorization } from './authorization-exchange-provider.mts'
+import {
+  exchangeClaimedOAuthAuthorization,
+  type OAuthAuthorizationExchangeDependencies,
+  type OAuthExchangeOwnership,
+} from './authorization-exchange-provider.mts'
+export type {
+  OAuthAuthorizationExchangeDependencies,
+  OAuthExchangeOwnership,
+} from './authorization-exchange-provider.mts'
 import { settleOAuthAuthorizationExchangeClaim } from './authorization-exchange-disposition.mts'
 import { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import { upsertGithubAccount } from '@services/oauth-github'
@@ -22,18 +30,6 @@ export {
   getRecoverableOAuthAuthorizationIds,
 } from './authorization-exchange-recovery.mts'
 
-export type OAuthAuthorizationExchangeDependencies = {
-  validateClaim: typeof validateOAuthAuthorizationExchangeClaim
-  claim: typeof claimOAuthAuthorizationExchange
-  decryptCode: typeof decryptOAuthAuthorizationCode
-  decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
-  upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
-  upsertGithub: typeof upsertGithubAccount
-  upsertX: typeof upsertXAccount
-  rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
-  releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
-}
-
 const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   validateClaim: validateOAuthAuthorizationExchangeClaim,
   claim: claimOAuthAuthorizationExchange,
@@ -44,12 +40,6 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   upsertX: upsertXAccount,
   rejectExhausted: rejectExhaustedOAuthAuthorizationExchange,
   releaseClaim: releaseOAuthAuthorizationExchangeClaim,
-}
-
-export type OAuthExchangeOwnership = {
-  claimId?: string
-  providerRequestArmed?: boolean
-  persist(claimId: string | null, providerRequestArmed?: boolean): Promise<void>
 }
 
 export async function processOAuthAuthorizationExchange(

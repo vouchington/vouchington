@@ -1,8 +1,35 @@
-import type { ClaimedOAuthAuthorization } from './authorization-exchange-state.mts'
 import type {
-  OAuthAuthorizationExchangeDependencies,
-  OAuthExchangeOwnership,
-} from './authorization-exchange.mts'
+  ClaimedOAuthAuthorization,
+  claimOAuthAuthorizationExchange,
+  rejectExhaustedOAuthAuthorizationExchange,
+  releaseOAuthAuthorizationExchangeClaim,
+  validateOAuthAuthorizationExchangeClaim,
+} from './authorization-exchange-state.mts'
+import type {
+  decryptOAuthAuthorizationCode,
+  decryptOAuthAuthorizationPkceVerifier,
+} from './authorization-broker.mts'
+import type { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
+import type { upsertGithubAccount } from '@services/oauth-github'
+import type { upsertXAccount } from '@services/oauth-x'
+
+export type OAuthAuthorizationExchangeDependencies = {
+  validateClaim: typeof validateOAuthAuthorizationExchangeClaim
+  claim: typeof claimOAuthAuthorizationExchange
+  decryptCode: typeof decryptOAuthAuthorizationCode
+  decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
+  upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
+  upsertGithub: typeof upsertGithubAccount
+  upsertX: typeof upsertXAccount
+  rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
+  releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
+}
+
+export type OAuthExchangeOwnership = {
+  claimId?: string
+  providerRequestArmed?: boolean
+  persist(claimId: string | null, providerRequestArmed?: boolean): Promise<void>
+}
 
 /** Keep the write-ahead marker, fresh native claim check and original provider routing in one path. */
 export async function exchangeClaimedOAuthAuthorization(

@@ -16,17 +16,8 @@ import { processOAuthAuthorizationExchange } from '../services/oauth/authorizati
 import {
   createTestOAuthContinuationDependencies,
   type OAuthContinuationMetrics,
+  type OAuthContinuationFault,
 } from './oauth-exchange-continuation-dependencies.mts'
-
-export type OAuthContinuationFault =
-  | 'rejection'
-  | 'release'
-  | 'ownership-write'
-  | 'ownership-response'
-  | 'clear-write'
-  | 'provider-outcome'
-  | 'lost-provider-marker'
-  | 'admission-expiry'
 
 /** Real queue attempts, real claim/decrypt/mutations, and an actual second PostgreSQL connection. */
 export async function runTestOAuthExchangeContinuation(
