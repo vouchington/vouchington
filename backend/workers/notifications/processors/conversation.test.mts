@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestGroupConversation,
+  createTestChatConversationWithParticipant,
   createTestUser,
   insertTestBlock,
   insertTestMute,
@@ -104,5 +105,32 @@ describe('conversation notification relation filtering', () => {
     expect((await listNotifications(subject.id)).results.map(row => row.id)).toEqual([
       payload?.[0]?.notificationId,
     ])
+  })
+
+  it('does not write notifications when every direct-message recipient is blocked', async () => {
+    const sender = await createTestUser()
+    const recipient = await createTestUser()
+    const conversation = await createTestGroupConversation({
+      createdById: sender.id,
+      memberUserIds: [recipient.id],
+    })
+    await insertTestBlock(recipient.id, sender.id)
+
+    const { queries } = await dispatch(conversation.id, sender.id)
+
+    expect(countCapturedQueriesByAnnotation(queries, 'getUserIdsBlockedOrMutedEitherWay')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(queries, 'createDirectMessageNotifications')).toBe(0)
+    expect((await listNotifications(recipient.id)).results).toHaveLength(0)
+    expect(enqueuePushes).toHaveBeenCalledExactlyOnceWith([])
+  })
+
+  it('rejects a chat event routed to the conversation notification worker', async () => {
+    const sender = await createTestUser()
+    const recipient = await createTestUser()
+    const conversation = await createTestChatConversationWithParticipant(sender.id, recipient.id)
+
+    await expect(dispatch(conversation.id, sender.id)).rejects.toThrow('unknown channel_type: chat')
+    expect((await listNotifications(recipient.id)).results).toHaveLength(0)
+    expect(enqueuePushes).not.toHaveBeenCalled()
   })
 })
