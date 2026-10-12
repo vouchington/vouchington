@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
+import { closeEmbeddingCreationResources } from './embedding-creation-resource-close.mts'
 import { Queue, QueueEvents, type Worker, type Job, type QueueEventsOptions } from 'glide-mq'
 import type { acquireEmbeddingQuotaFixture } from './embedding-creation-quota.mts'
 import { registerEmbeddingCreationDiagnostics } from './embedding-creation-diagnostics.mts'
 
-type EventName = 'delay-changed' | 'completed' | 'failed'
+type EventName = 'added' | 'delay-changed' | 'completed' | 'failed'
 type Fixture = Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
 
 /** Observes committed stream transitions on an owned real queue, not worker emptiness. */
@@ -56,7 +57,7 @@ export function createOwnedEmbeddingQueue(
   queue.on('error', onError)
   fixture.assertOpen()
   events = new QueueEvents(name, { ...options, lastEventId: '0-0' })
-  for (const event of ['delay-changed', 'completed', 'failed'] as const)
+  for (const event of ['added', 'delay-changed', 'completed', 'failed'] as const)
     events.on(event, (payload: { jobId: string }) => {
       const counts = history.get(payload.jobId) ?? new Map<EventName, number>()
       counts.set(event, (counts.get(event) ?? 0) + 1)
@@ -132,6 +133,8 @@ export function createOwnedEmbeddingQueue(
         }),
       ),
     add: (...args: Parameters<Queue['add']>) => start(() => queue.add(...args)),
+    addAndWait: (...args: Parameters<Queue['addAndWait']>) =>
+      start(() => queue.addAndWait(...args)),
     releaseOnCleanup: (action: () => void) => {
       assertOpen()
       release.push(action)
@@ -165,19 +168,17 @@ export function createOwnedEmbeddingQueue(
     for (const wait of waits) wait.reject(new Error('Owned embedding queue closed'))
     waits.clear()
     for (const action of release) await attempt(action)
-    const settledCreations = await Promise.allSettled(creations)
-    for (const result of settledCreations)
-      if (result.status === 'rejected') errors.push(result.reason)
-    // Iteration also retains writes registered while an earlier owned operation settles.
-    for (const write of writes) await attempt(() => write)
-    // graceful close drains active processors before the owned queue can be deleted.
-    const closedWorkers = await Promise.allSettled(workers.map(async worker => worker.close(false)))
-    // A rejected factory is an error, not evidence of a live physical writer.
-    writersDrained = closedWorkers.every(result => result.status === 'fulfilled')
-    for (const result of closedWorkers) if (result.status === 'rejected') errors.push(result.reason)
-    await attempt(() => events?.close())
-    if (writersDrained) await attempt(() => queue.obliterate({ force: true }))
-    await attempt(() => queue.close())
+    const resources = await closeEmbeddingCreationResources({
+      queue,
+      events,
+      workers,
+      creations,
+      writes,
+      options,
+      onError,
+    })
+    errors.push(...resources.errors)
+    writersDrained = resources.writersDrained
     // An SDK error can arrive after the last wait resolves, including during close.
     if (hasEventError) errors.push(eventError)
     for (const worker of workers) worker.off('error', onError)

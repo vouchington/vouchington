@@ -1,4 +1,5 @@
 import { Queue, Worker } from 'glide-mq'
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
@@ -132,5 +133,25 @@ describe('owned embedding cleanup failures', () => {
       writersDrained: true,
       history: [{ id, events: { completed: 1 } }],
     })
+  }, 5000)
+
+  it('closes native completion resources before draining a pending SDK call', async () => {
+    const owner = await ownQueue('native_pending')
+    await owner.owned.ready()
+    const id = randomUUID()
+    const admitted = owner.owned.waitFor(id, 'added')
+    const completion = owner.owned.addAndWait('pending', {}, { jobId: id, waitTimeout: 1000 })
+    void completion.catch(() => {})
+    // The real stream witnesses admission; no worker exists to complete this native wait.
+    await admitted
+    const result = await owner.close()
+    expect(result.status).toBe('rejected')
+    await expect(completion).rejects.toThrow('Queue is closing')
+    expect(owner.safelyDrained()).toBe(true)
+    let verification: Queue | undefined
+    onTestFinished(() => verification?.close())
+    verification = new Queue(owner.owned.queue.name, owner.owned.options)
+    expect(await verification.getJob(id)).toBeNull()
+    await verification.close()
   }, 5000)
 })
