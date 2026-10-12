@@ -35,6 +35,7 @@ describe('index.generated', () => {
 
       const random = Math.random().toString(36).slice(2, 10)
       const slug = `topic-recommendation-${Date.now()}-${random}`
+      const hostname = `${slug}.example.com`
       const topicTitle = `Test Topic Recommendation ${random}`
       const createResponse = await requestAsUser
         .post('/api/v1/topic-recommendations')
@@ -44,8 +45,8 @@ describe('index.generated', () => {
           topic_title: topicTitle,
           topic_slug: slug,
           topic_markdown: 'A proposed topic summary.',
-          topic_hostname: `topic-recommendation-${Date.now()}-${random}.example.com`,
-          topic_hostnames: [`topic-recommendation-${Date.now()}-${random}.example.com`],
+          topic_hostname: hostname,
+          topic_hostnames: [hostname],
           topic_aliases: [`topic-rec-alias-${random}`],
         })
         .expect(201)
@@ -94,6 +95,7 @@ describe('index.generated', () => {
 
       const random = Math.random().toString(36).slice(2, 10)
       const slug = `approved-topic-${Date.now()}-${random}`
+      const hostname = `${slug}.example.com`
       const approvedAlias = `approved-topic-alias-${random}`
       const createResponse = await requestAsAdmin
         .post('/api/v1/topic-recommendations')
@@ -102,8 +104,8 @@ describe('index.generated', () => {
           topic_title: `Approved Topic Recommendation ${random}`,
           topic_slug: slug,
           topic_markdown: 'Approved topic markdown.',
-          topic_hostname: `approved-topic-${Date.now()}-${random}.example.com`,
-          topic_hostnames: [`approved-topic-${Date.now()}-${random}.example.com`],
+          topic_hostname: hostname,
+          topic_hostnames: [hostname],
           topic_aliases: [approvedAlias],
         })
         .expect(201)
