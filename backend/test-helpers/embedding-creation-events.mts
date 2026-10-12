@@ -8,7 +8,7 @@ type Fixture = Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
 
 /** Observes committed stream transitions on an owned real queue, not worker emptiness. */
 export function createOwnedEmbeddingQueue(
-  fixture: Fixture,
+  fixture: Pick<Fixture, 'assertOpen' | 'beforeRelease'>,
   label: string,
   options: Pick<QueueEventsOptions, 'connection' | 'prefix'>,
 ) {
@@ -38,11 +38,13 @@ export function createOwnedEmbeddingQueue(
   }>()
   let eventError: unknown
   let hasEventError = false
-  const drainDiagnostics = registerEmbeddingCreationDiagnostics(queue, () => ({
+  let pendingAtClose: Array<{ id: string; event: string; occurrence: number }> | undefined
+  const diagnostics = registerEmbeddingCreationDiagnostics(queue.name, () => ({
     prefix: options.prefix,
     closing: closing !== undefined,
     writersDrained,
-    pending: [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence })),
+    pending:
+      pendingAtClose ?? [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence })),
     history: [...history].map(([id, counts]) => ({ id, events: Object.fromEntries(counts) })),
   }))
   const onError = (error: unknown) => {
@@ -92,6 +94,7 @@ export function createOwnedEmbeddingQueue(
   return {
     queue,
     workers,
+    diagnostics,
     /** Register ownership before factory effects; closing still retains a late returned worker. */
     createWorker: <T extends Worker>(factory: () => T | Promise<T>): Promise<T> => {
       assertOpen()
@@ -158,6 +161,9 @@ export function createOwnedEmbeddingQueue(
         errors.push(err)
       }
     }
+    pendingAtClose = [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence }))
+    for (const wait of waits) wait.reject(new Error('Owned embedding queue closed'))
+    waits.clear()
     for (const action of release) await attempt(action)
     const settledCreations = await Promise.allSettled(creations)
     for (const result of settledCreations)
@@ -166,17 +172,12 @@ export function createOwnedEmbeddingQueue(
     for (const write of writes) await attempt(() => write)
     // graceful close drains active processors before the owned queue can be deleted.
     const closedWorkers = await Promise.allSettled(workers.map(async worker => worker.close(false)))
-    writersDrained =
-      settledCreations.every(result => result.status === 'fulfilled') &&
-      closedWorkers.every(result => result.status === 'fulfilled')
+    // A rejected factory is an error, not evidence of a live physical writer.
+    writersDrained = closedWorkers.every(result => result.status === 'fulfilled')
     for (const result of closedWorkers) if (result.status === 'rejected') errors.push(result.reason)
     await attempt(() => events?.close())
-    for (const wait of waits) wait.reject(new Error('Owned embedding queue closed'))
-    waits.clear()
     if (writersDrained) await attempt(() => queue.obliterate({ force: true }))
     await attempt(() => queue.close())
-    // Diagnostics cannot precede or skip any mandatory resource cleanup step.
-    await drainDiagnostics()
     // An SDK error can arrive after the last wait resolves, including during close.
     if (hasEventError) errors.push(eventError)
     for (const worker of workers) worker.off('error', onError)

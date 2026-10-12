@@ -1,5 +1,5 @@
 import { onTestFinished } from 'vitest'
-import type { Queue, QueueEventsOptions } from 'glide-mq'
+import type { QueueEventsOptions } from 'glide-mq'
 
 type DiagnosticSnapshot = {
   prefix: QueueEventsOptions['prefix']
@@ -9,45 +9,19 @@ type DiagnosticSnapshot = {
   history: Array<{ id: string; events: Record<string, number> }>
 }
 
-/** Diagnostic reads never precede or skip the queue owner's mandatory cleanup. */
+/** Reports retained owned stream observations, never a fresh state read from a deleted queue. */
 export function registerEmbeddingCreationDiagnostics(
-  queue: Queue,
+  queue: string,
   snapshot: () => DiagnosticSnapshot,
-): () => Promise<void> {
-  const reads: Array<() => Promise<void>> = []
+) {
+  const diagnostic = () => ({
+    queue,
+    observation: 'retained owned QueueEvents history; not a current job-state read',
+    ...snapshot(),
+  })
   onTestFinished(({ task }) => {
     if (task.result?.state !== 'fail') return
-    const diagnostic = {
-      queue: queue.name,
-      ...snapshot(),
-      jobs: [] as Array<{ id: string; state?: string; readError?: string }>,
-    }
-    Object.assign(task.meta, { ownedEmbeddingQueue: diagnostic })
-    const ids = new Set([
-      ...diagnostic.history.map(({ id }) => id),
-      ...diagnostic.pending.map(({ id }) => id),
-    ])
-    for (const id of ids) {
-      // Queue reads do not borrow the worker's blocking connection or PostgreSQL pool.
-      reads.push(() =>
-        Promise.resolve()
-          .then(() => queue.getJob(id))
-          .then(job => job?.getState())
-          .then(
-            state => {
-              return void diagnostic.jobs.push({ id, state })
-            },
-            err => {
-              return void diagnostic.jobs.push({
-                id,
-                readError: err instanceof Error ? err.name : typeof err,
-              })
-            },
-          ),
-      )
-    }
+    Object.assign(task.meta, { ownedEmbeddingQueue: diagnostic() })
   })
-  return async () => {
-    for (const read of reads) await Promise.allSettled([Promise.resolve().then(read)])
-  }
+  return diagnostic
 }
