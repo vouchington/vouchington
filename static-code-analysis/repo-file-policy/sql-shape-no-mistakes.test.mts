@@ -39,7 +39,7 @@ describe('SQL offset and shape no-mistakes configuration', () => {
     expect(ownedFiles(ruleFindings(rejected, 'postgres-no-offset'))).toEqual(
       [...sqlPaths, runtimePath].toSorted(),
     )
-    expect(ruleFindings(rejected, 'postgres-sql-shape-policy')).toHaveLength(12)
+    expect(ruleFindings(rejected, 'postgres-sql-shape-policy')).toHaveLength(20)
     expect(ownedFiles(ruleFindings(rejected, 'postgres-sql-shape-policy'))).toEqual(
       [...sqlPaths, runtimePath].toSorted(),
     )
@@ -47,7 +47,7 @@ describe('SQL offset and shape no-mistakes configuration', () => {
       ruleFindings(rejected, 'postgres-sql-shape-policy').filter(finding =>
         finding.message.includes('uuidv7'),
       ),
-    ).toHaveLength(4)
+    ).toHaveLength(12)
 
     await writeFixture(directory, goodSql())
     const corrected = check(directory)
@@ -83,7 +83,9 @@ function badSql(): string {
   return `SELECT id FROM records OFFSET 1;
 SELECT id FROM records WHERE id NOT IN (SELECT id FROM blocked_records);
 SELECT COUNT(*) > 0 FROM records;
-SELECT id FROM records WHERE id >= uuidv7();\n`
+SELECT id FROM records WHERE id >= uuidv7();
+SELECT records.id FROM records JOIN blocked_records ON blocked_records.id = uuidv7();
+SELECT records.id FROM records GROUP BY records.id HAVING records.id >= uuidv7();\n`
 }
 
 function goodSql(): string {
