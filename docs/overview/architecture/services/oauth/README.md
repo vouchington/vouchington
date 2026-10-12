@@ -141,3 +141,19 @@ This service orchestrates OAuth flows across seven providers (Facebook, Apple, G
 - Friend sync jobs: [docs/overview/architecture/queues/find-your-friends/README.md](../../queues/find-your-friends/README.md)
 - JWT sessions: [docs/overview/architecture/services/jwt-session/README.md](../jwt-session/README.md)
 - Auth overview: [docs/overview/architecture/auth-overview.md](../../auth-overview.md)
+
+## Queue-owned exchange continuation
+
+Exchange jobs persist only the authorization ID and claim ID before decrypting or calling a
+provider. A retry carrying that claim resumes the owned rejection/release, rather than acquiring
+a new claim or repeating the provider. The disposition reads current history after acquiring the
+base row in a READ COMMITTED transaction; it protects completed authorizations and successor
+claims and requires exactly one affected row for an owned mutation. A live claim without persisted
+job ownership is an explicit failure, never a successful no-op.
+
+PostgreSQL claim commit and Valkey ownership persistence are not atomic. If ownership persistence
+fails, the provider has not been called, but recovery may still be needed for the committed claim.
+After persistence, a crash during the provider call leaves an unknown external outcome; continuation
+disposes the interrupted claim without replaying that provider call or claiming it completed.
+Actual durable completion is preserved. Live provider/decrypt failures retain their raw primary cause
+and ordered secondary mutation/storage errors; queue payloads never contain those errors or secrets.

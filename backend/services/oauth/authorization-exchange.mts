@@ -1,3 +1,4 @@
+import { settleOAuthAuthorizationExchangeClaim } from './authorization-exchange-disposition.mts'
 import { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import { upsertGithubAccount } from '@services/oauth-github'
 import { upsertXAccount } from '@services/oauth-x'
@@ -19,7 +20,7 @@ export {
   getRecoverableOAuthAuthorizationIds,
 } from './authorization-exchange-recovery.mts'
 
-type OAuthAuthorizationExchangeDependencies = {
+export type OAuthAuthorizationExchangeDependencies = {
   claim: typeof claimOAuthAuthorizationExchange
   decryptCode: typeof decryptOAuthAuthorizationCode
   decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
@@ -41,12 +42,28 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   releaseClaim: releaseOAuthAuthorizationExchangeClaim,
 }
 
+export type OAuthExchangeOwnership = {
+  claimId?: string
+  persist(claimId: string | null): Promise<void>
+}
+
 export async function processOAuthAuthorizationExchange(
   flowId: string,
   dependencies: OAuthAuthorizationExchangeDependencies = defaultDependencies,
+  ownership?: OAuthExchangeOwnership,
 ): Promise<void> {
+  if (ownership?.claimId) {
+    const disposition = await settleOAuthAuthorizationExchangeClaim(flowId, ownership.claimId)
+    await ownership.persist(null)
+    if (disposition === 'terminal' || disposition === 'missing') return
+    throw new Error(
+      `OAuth exchange continuation disposed as ${disposition}; provider was not replayed`,
+    )
+  }
   const authorization = await dependencies.claim(flowId)
   if (!authorization) return
+  // This write precedes decrypt/provider execution. If it fails, no provider is called.
+  await ownership?.persist(authorization.exchange_claim_id)
 
   try {
     const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
@@ -61,7 +78,7 @@ export async function processOAuthAuthorizationExchange(
     switch (authorization.provider) {
       case 'facebook':
         await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
-        return
+        break
       case 'x': {
         const codeVerifier = dependencies.decryptVerifier(
           authorization.id,
@@ -73,7 +90,7 @@ export async function processOAuthAuthorizationExchange(
           codeVerifier,
           completionOptions,
         )
-        return
+        break
       }
       case 'github': {
         const codeVerifier = dependencies.decryptVerifier(
@@ -102,7 +119,19 @@ export async function processOAuthAuthorizationExchange(
       )
       throw aggregateError
     }
-    if (rejected) return
+    if (rejected) {
+      try {
+        await ownership?.persist(null)
+      } catch (err) {
+        const aggregateError = new AggregateError(
+          [outerErr, err],
+          'OAuth exchange was rejected but ownership could not be cleared',
+          { cause: outerErr },
+        )
+        throw aggregateError
+      }
+      return
+    }
     await dependencies
       .releaseClaim(authorization.id, authorization.exchange_claim_id)
       .catch(err => {
@@ -113,6 +142,17 @@ export async function processOAuthAuthorizationExchange(
         )
         throw aggregateError
       })
+    try {
+      await ownership?.persist(null)
+    } catch (err) {
+      const aggregateError = new AggregateError(
+        [outerErr, err],
+        'OAuth claim was released but ownership could not be cleared',
+        { cause: outerErr },
+      )
+      throw aggregateError
+    }
     throw outerErr
   }
+  await ownership?.persist(null)
 }

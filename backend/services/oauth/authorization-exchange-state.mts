@@ -49,6 +49,13 @@ export async function claimOAuthAuthorizationExchange(
     )
     const authorization = rows[0] as ClaimedOAuthAuthorization | undefined
     if (!authorization) {
+      const { rows: current } = await transaction<{ status: string }>(
+        '/* claimOAuthAuthorizationExchange:unclaimed */ SELECT status FROM view_oauth_authorization_current_records WHERE id = $1',
+        [flowId],
+      )
+      if (current[0]?.status === 'exchanging') {
+        throw new Error('OAuth authorization has an unresolved exchange claim')
+      }
       await rejectExpiredXAuthorizationCode(transaction, flowId)
       await expireOAuthAuthorization(transaction, flowId)
       return null
