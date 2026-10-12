@@ -187,4 +187,13 @@ END $$;`),
       ),
     ).toBeNull()
   })
+
+  it('does not lose a table hidden in unrepresented procedural control flow', async () => {
+    const sql = `DO $$ BEGIN
+  FOR counter IN 1..2 LOOP
+    CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now());
+  END LOOP;
+END $$;`
+    expect(await findFirstUuidv7CreatedAtViolation(sql)).not.toBeNull()
+  })
 })

@@ -2,6 +2,7 @@ import {
   parsePostgresSql,
   type PostgresSqlColumn,
   type PostgresSqlExpressionRoot,
+  type PostgresSqlProceduralOccurrence,
   type PostgresSqlStatement,
 } from 'no-mistakes'
 
@@ -22,6 +23,12 @@ function findViolation(statements: readonly PostgresSqlStatement[]): string | nu
     } else if (statement.kind === 'doBlock') {
       const violation = findViolation(statement.block.statements)
       if (violation) return violation
+      if (!statement.block.complete || statement.block.diagnostics.length > 0) {
+        return 'Procedural SQL facts are incomplete'
+      }
+      if (hasUnrepresentedUtility(statement.block.occurrences, statement.block.statements)) {
+        return 'Procedural SQL contains unrepresented utility statements'
+      }
     } else if (statement.kind === 'conditional') {
       for (const branch of statement.branches) {
         const violation = findViolation(branch.statements)
@@ -30,11 +37,40 @@ function findViolation(statements: readonly PostgresSqlStatement[]): string | nu
     } else if (statement.kind === 'literalExecute') {
       const violation = findViolation(statement.execute.statements)
       if (violation) return violation
+      if (!statement.execute.complete || statement.execute.diagnostics.length > 0) {
+        return 'Literal EXECUTE SQL facts are incomplete'
+      }
     } else if (statement.kind === 'other' && /\bEXECUTE\b/i.test(maskSqlLiterals(statement.sql))) {
       return 'EXECUTE statements must use literal SQL payloads'
     }
   }
   return null
+}
+
+function hasUnrepresentedUtility(
+  occurrences: readonly PostgresSqlProceduralOccurrence[],
+  statements: readonly PostgresSqlStatement[],
+): boolean {
+  // Procedural occurrences can expose a utility command inside a FOR/LOOP even when the
+  // block reports complete and omits that command from its typed statement tree.
+  const represented = new Set<string>()
+  const collect = (nested: readonly PostgresSqlStatement[]): void => {
+    for (const statement of nested) {
+      represented.add(`${statement.span.start.offset}:${statement.span.end.offset}`)
+      if (statement.kind === 'conditional') {
+        for (const branch of statement.branches) collect(branch.statements)
+      }
+    }
+  }
+  collect(statements)
+  const unrepresented = (nested: readonly PostgresSqlProceduralOccurrence[]): boolean =>
+    nested.some(
+      occurrence =>
+        (occurrence.kind === 'utility' &&
+          !represented.has(`${occurrence.span.start.offset}:${occurrence.span.end.offset}`)) ||
+        unrepresented(occurrence.occurrences),
+    )
+  return unrepresented(occurrences)
 }
 
 function tableViolation(
