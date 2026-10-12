@@ -29596,10 +29596,10 @@
     },
     "copyright_notice_email_message_parents": {
       "checkConstraints": {
-        "chk_copyright_email_message_parents__distinct": "CHECK ((reply_message_id <> parent_message_id))"
+        "chk_copyright_email_message_parents__distinct": "CHECK ((reply_message_intake_id <> parent_message_intake_id))"
       },
       "columns": {
-        "parent_message_id": {
+        "parent_message_intake_id": {
           "collation": null,
           "comment": "Inbound parent intake resolved from a keyed RFC Message-ID during ingestion.",
           "defaultExpression": null,
@@ -29610,7 +29610,7 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "reply_message_id": {
+        "reply_message_intake_id": {
           "collation": null,
           "comment": "Inbound reply intake, which owns at most one resolved parent edge.",
           "defaultExpression": null,
@@ -29625,8 +29625,8 @@
       "comment": "Immutable resolved parent edge between inbound email intake messages; replies may arrive before parents.",
       "foreignKeys": {
         "fk_copyright_notice_email_message_parents__parent": {
-          "columns": ["parent_message_id"],
-          "definition": "FOREIGN KEY (parent_message_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "columns": ["parent_message_intake_id"],
+          "definition": "FOREIGN KEY (parent_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -29634,8 +29634,8 @@
           "validated": true
         },
         "fk_copyright_notice_email_message_parents__reply": {
-          "columns": ["reply_message_id"],
-          "definition": "FOREIGN KEY (reply_message_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "columns": ["reply_message_intake_id"],
+          "definition": "FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -29648,13 +29648,13 @@
         "copyright_notice_email_message_parents_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_intake_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "reply_message_id",
+              "column": "reply_message_intake_id",
               "descending": false,
-              "expression": "reply_message_id",
+              "expression": "reply_message_intake_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -29668,13 +29668,13 @@
         "idx_copyright_notice_email_message_parents__parent": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_intake_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "parent_message_id",
+              "column": "parent_message_intake_id",
               "descending": false,
-              "expression": "parent_message_id",
+              "expression": "parent_message_intake_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -29689,8 +29689,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["reply_message_id"],
-        "definition": "PRIMARY KEY (reply_message_id)"
+        "columns": ["reply_message_intake_id"],
+        "definition": "PRIMARY KEY (reply_message_intake_id)"
       },
       "relationKind": "table",
       "triggers": {

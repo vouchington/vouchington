@@ -31044,12 +31044,12 @@
     "copyright_notice_email_message_parents": {
       "checkConstraints": {
         "chk_copyright_email_message_parents__distinct": {
-          "definition": "CHECK ((reply_message_id <> parent_message_id))",
+          "definition": "CHECK ((reply_message_intake_id <> parent_message_intake_id))",
           "validated": true
         }
       },
       "columns": {
-        "parent_message_id": {
+        "parent_message_intake_id": {
           "comment": "Inbound parent intake resolved from a keyed RFC Message-ID during ingestion.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -31059,7 +31059,7 @@
           "nullable": false,
           "ordinalPosition": 2
         },
-        "reply_message_id": {
+        "reply_message_intake_id": {
           "comment": "Inbound reply intake, which owns at most one resolved parent edge.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -31073,7 +31073,7 @@
       "comment": "Immutable resolved parent edge between inbound email intake messages; replies may arrive before parents.",
       "foreignKeys": {
         "fk_copyright_notice_email_message_parents__parent": {
-          "columns": ["parent_message_id"],
+          "columns": ["parent_message_intake_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -31081,7 +31081,7 @@
           "validated": true
         },
         "fk_copyright_notice_email_message_parents__reply": {
-          "columns": ["reply_message_id"],
+          "columns": ["reply_message_intake_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -31093,14 +31093,14 @@
         "copyright_notice_email_message_parents_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_intake_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "reply_message_id",
+              "column": "reply_message_intake_id",
               "descending": false,
-              "expression": "reply_message_id",
+              "expression": "reply_message_intake_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -31116,14 +31116,14 @@
         "idx_copyright_notice_email_message_parents__parent": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_intake_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "parent_message_id",
+              "column": "parent_message_intake_id",
               "descending": false,
-              "expression": "parent_message_id",
+              "expression": "parent_message_intake_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -31139,7 +31139,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["reply_message_id"]
+        "columns": ["reply_message_intake_id"]
       },
       "relationKind": "table",
       "triggers": {

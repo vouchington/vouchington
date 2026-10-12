@@ -6,29 +6,29 @@ Immutable resolved parent edge between inbound email intake messages; replies ma
 
 Not partitioned — growth: bounded.
 
-| Column              | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                      |
-| ------------------- | ------ | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
-| `reply_message_id`  | `uuid` | no       |         |          |           |           | Inbound reply intake, which owns at most one resolved parent edge.           |
-| `parent_message_id` | `uuid` | no       |         |          |           |           | Inbound parent intake resolved from a keyed RFC Message-ID during ingestion. |
+| Column                     | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                      |
+| -------------------------- | ------ | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
+| `reply_message_intake_id`  | `uuid` | no       |         |          |           |           | Inbound reply intake, which owns at most one resolved parent edge.           |
+| `parent_message_intake_id` | `uuid` | no       |         |          |           |           | Inbound parent intake resolved from a keyed RFC Message-ID during ingestion. |
 
-**Primary key:** `PRIMARY KEY (reply_message_id)`
+**Primary key:** `PRIMARY KEY (reply_message_intake_id)`
 
 **Unique constraints:**
 _none_
 
 **Check constraints:**
 
-- `chk_copyright_email_message_parents__distinct`: `CHECK ((reply_message_id <> parent_message_id))`
+- `chk_copyright_email_message_parents__distinct`: `CHECK ((reply_message_intake_id <> parent_message_intake_id))`
 
 **Foreign keys:**
 
-- `fk_copyright_notice_email_message_parents__parent`: `FOREIGN KEY (parent_message_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_message_parents__reply`: `FOREIGN KEY (reply_message_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_message_parents__parent`: `FOREIGN KEY (parent_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_message_parents__reply`: `FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_email_message_parents_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_id)`
-- `idx_copyright_notice_email_message_parents__parent`: `CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_id)`
+- `copyright_notice_email_message_parents_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_intake_id)`
+- `idx_copyright_notice_email_message_parents__parent`: `CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_intake_id)`
 
 **Triggers:**
 
