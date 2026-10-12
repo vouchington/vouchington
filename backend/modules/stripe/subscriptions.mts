@@ -10,6 +10,18 @@ export function getStripeSubscription(id: string): Promise<Stripe.Response<Strip
 }
 
 /* no-mistakes: integration=stripe */
+export function updateStripeSubscriptionPauseCollection(
+  id: string,
+  behavior: 'void' | 'clear',
+  idempotencyKey: string,
+): Promise<Stripe.Response<Stripe.Subscription>> {
+  const stripe = getStripeClient()
+  const params: Stripe.SubscriptionUpdateParams =
+    behavior === 'void' ? { pause_collection: { behavior: 'void' } } : { pause_collection: '' }
+  return stripe.subscriptions.update(id, params, { idempotencyKey })
+}
+
+/* no-mistakes: integration=stripe */
 export async function cancelStripeSubscriptionImmediately(
   id: string,
 ): Promise<Stripe.Response<Stripe.Subscription>> {

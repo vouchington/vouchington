@@ -14,6 +14,8 @@ import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
 } from '@services/post-publication'
+import { enqueueRecordedMembershipPauseCollectionBestEffort } from '@services/memberships/pause-collection/enqueue-recorded'
+import { recordMembershipPauseCollectionWork } from '@services/memberships/pause-collection/record'
 
 export async function suspendUser(
   currentUser: PrivateUser | null,
@@ -47,6 +49,7 @@ export async function suspendUser(
 export async function accelerateUserSuspensionAfterCommit(userId: string): Promise<void> {
   await invalidate.users(userId)
   void enqueueRefreshTopHashtags()
+  await enqueueRecordedMembershipPauseCollectionBestEffort(userId)
 }
 
 export async function ensureUserSuspendedInTransaction(
@@ -81,6 +84,7 @@ export async function ensureUserSuspendedInTransaction(
     { actionType: 'suspend', targetUserId: input.userId, reason: input.reason },
     { query },
   )
+  await recordMembershipPauseCollectionWork(query, input.userId)
   return { newlySuspended: true }
 }
 
@@ -138,6 +142,7 @@ export async function unsuspendUser(
     reason: 'author_suspension_changed',
     footprint: { priorAuthorUserId: userId },
   })
+  await recordMembershipPauseCollectionWork(query, userId)
   await query.commit()
 
   await Promise.all([
@@ -148,6 +153,7 @@ export async function unsuspendUser(
     }),
   ])
   void enqueueRefreshTopHashtags()
+  await enqueueRecordedMembershipPauseCollectionBestEffort(userId)
 
   const updated = await getPrivateUserByAny(userId)
   if (!updated) throw createHttpError(404, 'User not found')

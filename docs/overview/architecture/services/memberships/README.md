@@ -20,6 +20,9 @@ Business logic for user memberships (plans, billing, admin grants).
 - `membership_operations` retains provider operation identity and outcomes, with execution leases
   and retry availability in `membership_operation_execution_work_items`. Completion deletes work
   atomically while immutable refund attempts and receipts remain
+- `membership_pause_collection_work_items` is one row per user while a suspension change still
+  needs the direct Stripe subscription's `pause_collection` to match. Completion deletes the row.
+  Granted memberships never become a Stripe update
 - `membership_google_play_acknowledgments` retains the encrypted purchase obligation and terminal
   result; its child work row owns the retry lease. Every retry refetches authoritative provider state
   before an acknowledgement side effect
@@ -175,6 +178,29 @@ PostgreSQL without an operator or support workflow.
 - `expired` — incomplete or incomplete-expired subscription, or a non-Stripe grant whose
   `expires_at` has elapsed (`view_memberships` derives this without waiting for a lifecycle
   write; Stripe `expires_at` is the current period end and does not expire the row)
+
+## Suspension pause collection
+
+<a id="suspension-pause-collection"></a>
+
+Account suspension pauses collection on the user's direct Stripe subscription.
+`pause_collection.behavior` is `void`: renewals are not charged, and nothing is owed for the
+suspended time. The period already paid is not refunded. Lifting the suspension clears
+`pause_collection`, and billing resumes. The suspension or lift transaction writes
+`membership_pause_collection_work_items.requested_at` and clears any lease. Stripe runs only after
+that commit, from `syncMembershipPauseCollection`. A lost enqueue stays on the row;
+`dispatchMembershipPauseCollection` claims due rows every minute.
+
+The membership stays `active`. This path does not set `paused_at`, and it does not change
+`view_current_paid_memberships`, checkout, or Stripe billing mode. `paused` stays the projection
+of a Stripe subscription whose status is `paused`.
+
+Granted memberships are out of scope. The worker records the suspension change, finds no direct
+Stripe subscription, and deletes the work row. The cancellation-only portal stays available
+because the membership stays active and the direct subscription stays manageable until it is
+cancelled. Deleting the user cascades the work row. The durable transition matrix and Stripe
+identity columns are in
+[suspension pause collection](reference-suspension-pause-collection.md).
 
 Provider-owned management surfaces initiate cancellation. Provider notifications and reconciliation
 then project cancellation state; the common membership API does not expose a cancellation command.

@@ -30,6 +30,9 @@ Worker package for membership billing, Stripe event processing, renewal notifica
   cannot abandon a continuation. Each child job still reloads durable credentials.
 - Entitlement-effect delivery claims bounded Postgres rows with `SKIP LOCKED`; a stale five-minute
   lease is reclaimable and the claim token fences late completion.
+- Suspension pause collection claims one row per user and calls Stripe outside the suspension
+  transaction. Its failure matrix lives in
+  [suspension pause collection](../../../services/memberships/reference-suspension-pause-collection.md).
 - Grant expiry scans elapsed administrator-grant projections every minute. Candidate discovery is
   bounded; each candidate user is locked and converged in a separate transaction, including FIFO
   promotion. Stripe terms remain provider-authoritative.

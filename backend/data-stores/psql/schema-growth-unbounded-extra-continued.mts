@@ -47,6 +47,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'topic_revisions',
   'card_topics',
   'fediverse_instance_topics',
+  'membership_pause_collection_work_items',
   'referral_program_topic_link_validation_rule_sets',
   'referral_program_topics',
   'retailer_topics',

@@ -23,7 +23,7 @@ import {
 } from '../enqueues.mts'
 import { googlePlaySchedules } from './google-play-schedules.mts'
 import { microsoftStoreSchedules } from './microsoft-store-schedules.mts'
-import { refundReconciliationSchedule } from './refund-reconciliation.mts'
+import { directBillingSchedules } from './direct-billing-schedules.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
@@ -52,7 +52,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   },
   ...googlePlaySchedules,
   ...microsoftStoreSchedules,
-  refundReconciliationSchedule,
+  ...directBillingSchedules,
   {
     schedulerId: 'stripeCatalogReconciliation',
     repeat: { every: STRIPE_CATALOG_RECONCILIATION_INTERVAL_MS },
