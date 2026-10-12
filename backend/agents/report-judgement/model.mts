@@ -53,7 +53,6 @@ Respond with a JSON object containing:
 - Always be conservative — if unsure, escalate.
 - Do not assume guilt; consider context and community rules.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callJudgementModel: JudgementModelCaller = (
   input,
   safetyIdentifier,
@@ -79,4 +78,3 @@ export const callJudgementModel: JudgementModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

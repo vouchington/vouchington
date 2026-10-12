@@ -323,6 +323,27 @@ lines, headers, and SSE or JSON bytes and nothing touches the network
   and the unit projects exclude them. Call `replay.reset()` in `beforeEach` because the client is a
   module singleton.
 
+- **Per-provider adapters** cover transports that are not a `fetch` option. Each is a thin wrapper
+  over the same `createProviderReplay()`, so fixtures, `requests`, and `assertDrained()` behave
+  identically; read the header comment of each file for its exact use.
+  - [`anthropic-message-replay.mts`](../../../../backend/test-helpers/anthropic-message-replay.mts):
+    agent packages cannot resolve `@anthropic-ai/sdk`, so `createAnthropicMessageReplay()` supplies
+    a `createMessage` dependency that serves recorded Messages bodies, and `replayGenerateJson()`
+    injects it into the real `generateJson`. The SDK-level replay stays beside the client.
+  - [`aws-replay-request-handler.mts`](../../../../backend/test-helpers/aws-replay-request-handler.mts):
+    `replayAwsClient()` wraps an AWS SDK v3 client class (SES, Bedrock) in a `vi.mock` factory so its
+    `requestHandler` serves the replay; the SDK still serializes, signs, and classifies errors.
+  - [`stripe-replay.mts`](../../../../backend/test-helpers/stripe-replay.mts): Stripe takes an
+    `httpClient`, so the test spies on `getProviderFetch` or `getStripeClient()` with
+    `createReplayStripeClient()`, not a module mock (`no-mistakes/module-mock-boundary` bans mocking
+    internal modules). `routeStripeReplay()` answers by method and path when the call count is ours
+    to change.
+
+  Live calls never gate CI: the `*.openai*`, `*.anthropic*`, `*.openrouter`, `*.stripe`, `*.bedrock`,
+  and `*.s3` files are non-gating smoke checks, and a recorded fixture test gates the code they
+  once covered. A coverage-ignore marker must not cite a live or credentialed test as its reason; add
+  a replay case instead. See [live-provider smoke checks](../../tests.md#live-provider-smoke-checks).
+
 - **Assert our behavior**: the request we build (model, parameters, headers we set), how we parse
   the result (the id, model, tier, and usage the ledger reads), and our failure policy (for example
   the latch-and-stop on a possibly billed create failure). Do not assert an upstream error message,

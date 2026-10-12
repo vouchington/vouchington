@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_01ReplayFixtureToolUse
+
+{"id":"msg_01ReplayFixtureToolUse","type":"message","role":"assistant","model":"claude-haiku-5-5-20261001","content":[{"type":"text","text":"Looking that up."},{"type":"tool_use","id":"toolu_01ReplayLookup","name":"lookup_topics","input":{"query":"rust"}}],"stop_reason":"tool_use","stop_sequence":null,"usage":{"input_tokens":30,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":25,"service_tier":"standard"}}

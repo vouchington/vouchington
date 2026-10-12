@@ -76,7 +76,6 @@ guidance.risk_notes lists possible fair use, abuse signals, or a claimant who ap
 represent the work; return an empty list when none apply. guidance.suggested_action is a
 non-binding suggestion for the moderator's intake review.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callCopyrightFormScreeningModel: CopyrightFormScreeningModelCaller = (
   input,
   safetyIdentifier,
@@ -97,4 +96,3 @@ export const callCopyrightFormScreeningModel: CopyrightFormScreeningModelCaller 
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

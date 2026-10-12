@@ -52,7 +52,6 @@ export const sendEmail = (options: SendEmailOptions) => {
     return Promise.resolve({ $metadata: {}, MessageId: 'vitest-placeholder' })
   }
 
-  /* c8 ignore start -- AWS transport wiring; raw MIME construction is covered separately. */
   if (options.headers) {
     const command = new SendRawEmailCommand({
       RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf8') },
@@ -69,7 +68,6 @@ export const sendEmail = (options: SendEmailOptions) => {
     promise.catch(onError)
     return promise
   }
-  /* c8 ignore stop */
 
   const input = {
     Destination: {
