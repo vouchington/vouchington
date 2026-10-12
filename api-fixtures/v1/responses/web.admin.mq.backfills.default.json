@@ -11,7 +11,7 @@
       "description": "Re-enqueue integrity checks for entities with pending mass-report campaigns",
       "id": "backfill_report_integrity",
       "job_name": "backfill_report_integrity",
-      "queue_name": "report_integrity",
+      "queue_name": "vote-aggregation",
       "source_table": "moderation_reports"
     }
   ]
