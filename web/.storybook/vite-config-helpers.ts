@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { postDetailAlias, postDetailAsideAliases } from './post-detail-aside-aliases'
 import { transformWithOxc, type Alias, type Plugin } from 'vite'
 
 export const transformWorkspaceMts = {
@@ -120,11 +121,8 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       find: '@/components/posts/edit-post-page',
       replacement: fileURLToPath(new URL('../storybook/mocks/edit-post-page.tsx', import.meta.url)),
     },
-    {
-      // PostDetail awaits auth and translations. The fixture renders the same view synchronously.
-      find: '@/components/posts/post-detail',
-      replacement: fileURLToPath(new URL('../storybook/mocks/post-detail.tsx', import.meta.url)),
-    },
+    postDetailAlias,
+    ...postDetailAsideAliases,
     {
       // ManageTagsTabs awaits server relations. The fixture renders the same card with empty rows.
       find: '@/components/tags/manage-tags-tabs',
