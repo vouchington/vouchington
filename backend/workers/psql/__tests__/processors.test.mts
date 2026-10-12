@@ -1,7 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
+  deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
-  snapshotDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
 
@@ -57,12 +57,14 @@ describe('processPsql', () => {
 
   it('waits for stored retention limits to load on a cold start', async () => {
     await dataRetentionConfig.waitForInitialization()
-    const restoreFields = snapshotDynamicConfigFieldsForTest([dataRetentionConfig])
+    const restoreFields = deleteDynamicConfigFieldsForTest(
+      dataRetentionConfig,
+      Object.keys(dataRetentionConfig.fieldTypes),
+    )
     onTestFinished(() => {
       restoreFields()
       vi.restoreAllMocks()
     })
-    dataRetentionConfig.fields.clear()
     const initialized = Promise.withResolvers<void>()
     vi.spyOn(dataRetentionConfig, 'waitForInitialization').mockReturnValue(initialized.promise)
     dataRetentionCleanup.mockReset()
