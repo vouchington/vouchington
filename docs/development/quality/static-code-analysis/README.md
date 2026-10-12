@@ -6,6 +6,8 @@ Static-analysis tools, policy checks, link checks, and invariant tests for repos
 The catalog-backed `postgres-key-column-types` rule in [`.no-mistakes.yml`](../../../../.no-mistakes.yml)
 enforces [R3](../../postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data)
 for primary and foreign key column types. Temporary text-key allowances name their replacement issues.
+An allowance is scoped to a whole constraint; if that constraint later gains another text column,
+the rule also allows that column until the replacement issue removes the allowance.
 Before authoring or changing a guard, use the
 [static-analysis-checklist skill](../../../../.agents/skills/static-analysis-checklist/SKILL.md) and read the
 placement, authoring, rollout, and cleanup sections below. Scoped repository-state invariants remain
