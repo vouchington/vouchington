@@ -1,4 +1,18 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- This shared guard keeps Google-only evidence on a Google provider context without copying
+-- provider text into token or acknowledgement rows.
+CREATE FUNCTION fn_reject_non_google_play_membership_context() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM membership_provider_contexts context
+    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'google_play'
+  ) THEN
+    RAISE EXCEPTION 'Google Play records require a Google Play provider context' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgments (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_provider_evidence_record_id UUID NOT NULL CONSTRAINT uq_membership_google_play_acknowledgment__provider_evidence_id UNIQUE,
@@ -14,6 +28,9 @@ CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgments (
   CONSTRAINT fk_membership_google_play_acknowledgments__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_google_play_acknowledgments__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_membership_google_play_acknowledgments_context
+  BEFORE INSERT OR UPDATE ON membership_google_play_acknowledgments
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_google_play_acknowledgment_work_items (
   membership_google_play_acknowledgment_id UUID PRIMARY KEY REFERENCES membership_google_play_acknowledgments(id) ON DELETE CASCADE,

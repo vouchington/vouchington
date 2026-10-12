@@ -26,6 +26,9 @@ COMMENT ON TABLE membership_provider_contexts IS 'Canonical identity for a confi
 COMMENT ON COLUMN membership_provider_contexts.provider IS 'Provider that owns this membership context.';
 COMMENT ON COLUMN membership_provider_contexts.environment IS 'Provider environment for this membership context.';
 COMMENT ON COLUMN membership_provider_contexts.application_id IS 'Configured provider application identity within the provider environment.';
+CREATE TRIGGER trigger_membership_provider_contexts_immutable
+  BEFORE UPDATE OR DELETE ON membership_provider_contexts
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 -- Resolve provider-supplied or configured identities atomically for both application writers and
 -- single-statement fixture inserts. Concurrent insertions reuse the same durable row.
 CREATE FUNCTION fn_upsert_membership_provider_context_id(

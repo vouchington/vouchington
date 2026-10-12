@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   request_id UUID NOT NULL REFERENCES user_deletion_requests ON DELETE CASCADE,
   work_kind user_deletion_external_work_kinds NOT NULL,
   work_key TEXT,
-  membership_provider_lineage_id UUID REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
+  membership_provider_lineage_id UUID,
   relation_impact_id UUID,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMPTZ,
@@ -108,6 +108,12 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   UNIQUE (request_id, work_kind, membership_provider_lineage_id),
   UNIQUE (request_id, relation_impact_id)
 );
+ALTER TABLE user_deletion_external_works
+  ADD CONSTRAINT fk_user_deletion_external_works__provider_lineage
+  FOREIGN KEY (membership_provider_lineage_id)
+  REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE user_deletion_external_works
+  VALIDATE CONSTRAINT fk_user_deletion_external_works__provider_lineage;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_external_works_updated_at

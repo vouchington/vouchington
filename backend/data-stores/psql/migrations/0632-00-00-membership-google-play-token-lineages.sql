@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS membership_google_play_purchase_tokens (
   CONSTRAINT uq_membership_google_play_purchase_tokens__id_lineage_context UNIQUE (id, membership_provider_lineage_id, membership_provider_context_id),
   CONSTRAINT fk_membership_google_play_purchase_tokens__predecessor FOREIGN KEY (linked_purchase_token_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_google_play_purchase_tokens(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT
 );
+CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context
+  BEFORE INSERT OR UPDATE ON membership_google_play_purchase_tokens
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__context_token ON membership_google_play_purchase_tokens (membership_provider_context_id, purchase_token_lookup_sha256);
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__lineage ON membership_google_play_purchase_tokens (membership_provider_lineage_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__successor ON membership_google_play_purchase_tokens (linked_purchase_token_id) WHERE linked_purchase_token_id IS NOT NULL;

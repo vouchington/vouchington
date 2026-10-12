@@ -18,7 +18,7 @@ import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 import {
   addTestSharedStripeCustomerSources,
   countTestStripeCustomerDeletionWorks,
-} from '@voucha/test-helpers/services/users/delete-test-support'
+} from '@voucha/test-helpers/entities/stripe-customer-deletion'
 
 describe('user deletion account-data phase', () => {
   it('queues one Stripe customer cleanup across capped batches for two lineages', async () => {
