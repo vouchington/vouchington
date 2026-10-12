@@ -26,6 +26,6 @@ export async function enqueueRecordedMembershipPauseCollectionBestEffort(
   try {
     await enqueueRecordedMembershipPauseCollection(userId)
   } catch (err) {
-    onError(err)
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
