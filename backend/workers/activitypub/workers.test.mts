@@ -1,15 +1,26 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { activitypub } from '@queues/activitypub/queues'
-import { activitypubWorker } from './workers.mts'
+
+let activitypubWorker: (typeof import('./workers.mts'))['activitypubWorker']
 
 describe('activitypubWorker', () => {
+  beforeAll(async () => {
+    await activitypub.pause()
+    try {
+      ;({ activitypubWorker } = await import('./workers.mts'))
+      await activitypub.obliterate({ force: true })
+    } finally {
+      await activitypub.resume()
+    }
+  })
+
   beforeEach(async () => {
     await activitypub.obliterate({ force: true })
   })
 
   afterAll(async () => {
-    await activitypubWorker.close()
+    await activitypubWorker?.close()
   })
 
   it('rejects unknown jobs', async () => {

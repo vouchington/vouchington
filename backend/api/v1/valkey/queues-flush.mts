@@ -19,7 +19,7 @@ const OBLITERATE_CONCURRENCY = 8
  */
 const LEGACY_DEAD_LETTER_QUEUE_NAMES = [
   'account-data-requests-dlq',
-  'activitypub-dlq',
+  'activitypub-delivery-dlq',
   'admin-imports-dlq',
   'bluesky-follow-propagation-dlq',
   'emails-dlq',
