@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -10,10 +10,8 @@ type ToolArgs = {
 
 type ToolResult = { success: true; ancestors: McpPost[] } | { success: false; error: string }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_post_ancestors',
-    type: 'function',
     description:
       'Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_post_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }.',
     parameters: {
@@ -23,7 +21,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['post_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

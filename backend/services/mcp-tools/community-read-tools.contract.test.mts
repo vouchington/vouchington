@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { updateCommunity } from '@services/communities'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -7,10 +12,6 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
@@ -25,7 +26,7 @@ const call = (caller: McpContractCaller, name: string, args: Body) =>
   callStructuredMcpTool(caller, name, args, ['communities:read'])
 const ids = (entries: Entry[]) => entries.map(entry => entry.community['id'])
 
-describe('search_communities and get_community — real DB', () => {
+describe('discover_communities.search and read_community.details — real DB', () => {
   const random = createRandomString(8)
   let owner: McpContractCaller
   let moderator: McpContractCaller
@@ -79,10 +80,18 @@ describe('search_communities and get_community — real DB', () => {
     }
   })
 
-  describe('get_community', () => {
+  describe('read_community.details', () => {
     it('returns a public community by id and by slug with its owner and public counts', async () => {
-      const byId = await call(outsider, 'get_community', { community_id: alpha.id })
-      const bySlug = await call(admin, 'get_community', { community_id: alpha.slug })
+      const byId = await call(
+        outsider,
+        'read_community',
+        optionArgs('details', { community_id: alpha.id }),
+      )
+      const bySlug = await call(
+        admin,
+        'read_community',
+        optionArgs('details', { community_id: alpha.slug }),
+      )
 
       expect(bySlug).toEqual(byId)
       expect(byId).toMatchObject({
@@ -96,16 +105,24 @@ describe('search_communities and get_community — real DB', () => {
     })
 
     it('wraps the description and rules as external content', async () => {
-      const { community } = (await call(outsider, 'get_community', {
-        community_id: alpha.id,
-      })) as unknown as Entry
+      const { community } = (await call(
+        outsider,
+        'read_community',
+        optionArgs('details', {
+          community_id: alpha.id,
+        }),
+      )) as unknown as Entry
 
       expect(community['markdown']).toContain('A community about alphabets')
       expect(community['markdown']).not.toBe('A community about alphabets')
       expect(community['rules_markdown']).toContain('Be kind to each other')
       expect(community['rules_markdown']).not.toBe('Be kind to each other')
       expect(
-        (await call(outsider, 'get_community', { community_id: bravo.id })) as Body,
+        (await call(
+          outsider,
+          'read_community',
+          optionArgs('details', { community_id: bravo.id }),
+        )) as Body,
       ).toMatchObject({
         community: { markdown: null, rules_markdown: null },
       })
@@ -117,21 +134,31 @@ describe('search_communities and get_community — real DB', () => {
         const callers = { owner, moderator, member, outsider, admin }
 
         for (const community_id of [hidden.id, hidden.slug]) {
-          expect(await call(callers[who], 'get_community', { community_id })).toEqual(NOT_FOUND)
+          expect(
+            await call(callers[who], 'read_community', optionArgs('details', { community_id })),
+          ).toEqual(NOT_FOUND)
         }
       },
     )
 
     it('treats an unknown community as not found', async () => {
-      const body = await call(owner, 'get_community', { community_id: `nope-${random}` })
+      const body = await call(
+        owner,
+        'read_community',
+        optionArgs('details', { community_id: `nope-${random}` }),
+      )
 
       expect(body).toEqual(NOT_FOUND)
     })
   })
 
-  describe('search_communities', () => {
+  describe('discover_communities.search', () => {
     const search = (caller: McpContractCaller, args: Body = {}) =>
-      call(caller, 'search_communities', { q: random, ...args }) as Promise<{
+      call(
+        caller,
+        'discover_communities',
+        optionArgs('search', { q: random, ...args }),
+      ) as Promise<{
         success: true
         results: Entry[]
         page_info: Page

@@ -37,7 +37,8 @@ const dependencies = (callTurn: AgentToolTurnCaller) => ({
   bounds: { maxTurns: 4, maxToolCalls: 4, maxOutputTokens: 1000 },
 })
 
-const search = () => makeToolTurnResult([{ name: 'search_topics', input: { query: 'x' } }])
+const search = () =>
+  makeToolTurnResult([{ name: 'lookup_candidate_topics', input: { query: 'x' } }])
 const providerError = (
   code: ConstructorParameters<typeof ModelProviderError>[0],
   retryClass: 'transient' | 'permanent',
@@ -265,7 +266,9 @@ describe('executeAutotaggerAgentRun failures (real PG)', () => {
     const callTurn = vi
       .fn<AgentToolTurnCaller>()
       .mockResolvedValueOnce(
-        makeToolTurnResult([{ name: 'search_topics', input: { query: 'zzzz-no-such-topic' } }]),
+        makeToolTurnResult([
+          { name: 'lookup_candidate_topics', input: { query: 'zzzz-no-such-topic' } },
+        ]),
       )
       .mockResolvedValueOnce(
         makeToolTurnResult([{ name: 'submit_topics', input: { topic_ids: [] } }]),

@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { buildPageInfo, decodeScopedAliasCursor } from '@modules/pagination'
 import { searchUsers, usersSearchCursorScope } from '@services/users'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { pageInputProperties } from './mcp-read-output.mts'
 import {
@@ -23,11 +23,9 @@ type ToolResult = McpUsersPage | InvalidCursorResult
 
 const { default: defaultLimit, max } = USER_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_users',
-    type: 'function',
-    description: `Search users by the start of their username, case-insensitive, sorted A to Z. Results are public profiles only, as get_user returns them, and never an administrator's view. A blank query returns no results. Returns at most ${max} users per page and page_info.end_cursor; pass it as after, with the same q, to get the next page. A malformed cursor, or one from a different q, returns { success: false, error: "Invalid cursor" }.`,
+    description: `Search users by the start of their username, case-insensitive, sorted A to Z. Results are public profiles only, as read_users (option details) returns them, and never an administrator's view. A blank query returns no results. Returns at most ${max} users per page and page_info.end_cursor; pass it as after, with the same q, to get the next page. A malformed cursor, or one from a different q, returns { success: false, error: "Invalid cursor" }.`,
     parameters: {
       type: 'object',
       properties: {
@@ -36,7 +34,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['q'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { resolveCommunityHashtagQuery, searchCommunities } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import {
   COMMUNITY_PAGE_LIMIT,
   communityPageInfoSchema,
@@ -39,10 +39,8 @@ type ToolResult =
 
 const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_communities',
-    type: 'function',
     description: `Search public communities, as a signed-out reader sees them: a private community never appears, whoever asks. q matches names and descriptions and may carry #hashtags. Sorted by name (the default, A to Z), members or virtual_subscriptions (most first). Returns at most ${max} communities per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
     parameters: {
       type: 'object',
@@ -63,7 +61,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

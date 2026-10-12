@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getTrendingCommunities } from '@services/trending-communities'
-import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import {
   pageInputProperties,
@@ -28,17 +28,14 @@ type ToolResult = McpPage<TrendingCommunityEntry> | InvalidCursorResult
 
 const { default: defaultLimit, max } = TRENDING_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_trending_communities',
-    type: 'function',
-    description: `List the public communities with the most recent activity, as a signed-out reader sees them: a private community never appears, whoever asks. Each result is a community id with its trending score and counts; use get_community for the community itself. "Trending" is the last 30 days of reviewed posts, members and follows. Returns at most ${max} communities per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description: `List the public communities with the most recent activity, as a signed-out reader sees them: a private community never appears, whoever asks. Each result is a community id with its trending score and counts; use read_community (option details) for the community itself. "Trending" is the last 30 days of reviewed posts, members and follows. Returns at most ${max} communities per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: pageInputProperties('Communities', TRENDING_PAGE_LIMIT),
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

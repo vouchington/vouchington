@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   addDummyEmbeddingToPost,
   createTestPost,
@@ -7,7 +8,6 @@ import {
   muteUser,
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   seedMcpPostReadabilityFixtures,
   type McpPostReadabilityFixtures,
@@ -27,11 +27,11 @@ const EMPTY_PAGE = {
 
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// search_posts reads as the credential owner minus private data, like get_post: the owner's own
+// read_posts reads as the credential owner minus private data, like read_posts: the owner's own
 // private, audience-limited and not-yet-cleared posts stay out of the results, and so do the
-// comments of a thread that get_post would refuse. Every fixture matches all three search modes, so
+// comments of a thread that read_posts would refuse. Every fixture matches all three search modes, so
 // what a search leaves out is left out by the read policy alone.
-describe('search_posts read policy — real DB', () => {
+describe('read_posts.search read policy — real DB', () => {
   const token = `srchpriv${crypto.randomUUID().replaceAll('-', '')}`
   const semanticQuery = `private post search ${crypto.randomUUID()}`
   const queryEmbedding = makeRandomEmbedding()
@@ -46,8 +46,8 @@ describe('search_posts read policy — real DB', () => {
     for (const post_type of [undefined, 'comment']) {
       const page = (await callStructuredMcpTool(
         as,
-        'search_posts',
-        { ...args, ...(post_type && { post_type }), limit: 100 },
+        'read_posts',
+        optionArgs('search', { ...args, ...(post_type && { post_type }), limit: 100 }),
         SCOPES,
       )) as Page
       ids.push(...page.results.map(result => result.id))
@@ -98,8 +98,8 @@ describe('search_posts read policy — real DB', () => {
       for (const seed of fixtures.hidden) {
         answers[seed.label] = await callStructuredMcpTool(
           caller,
-          'search_posts',
-          { similar_post_id: seed.id },
+          'read_posts',
+          optionArgs('search', { similar_post_id: seed.id }),
           SCOPES,
         )
       }

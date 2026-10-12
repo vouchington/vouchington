@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { searchRssFeeds } from '@services/rss-feeds'
@@ -35,10 +35,8 @@ type ListResult = McpPage<McpRssFeed> | typeof INVALID_CURSOR_RESULT
 type DetailResult = { success: true; rss_feed: McpRssFeed } | { success: false; error: string }
 const MAX_LIMIT = 25
 
-export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
+export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    name: 'search_rss_feeds',
-    type: 'function',
     description: `Search RSS feeds by title, type and current state. Returns at most ${MAX_LIMIT} feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.`,
     parameters: {
       type: 'object',
@@ -62,7 +60,6 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -122,10 +119,8 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
     },
 }
 
-export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
+export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
   schema: {
-    name: 'get_rss_feed',
-    type: 'function',
     description:
       'Get an RSS feed by UUID, including disabled or non-discoverable feeds as the REST detail route does.',
     parameters: {
@@ -133,7 +128,6 @@ export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
       properties: { rss_feed_id: { type: 'string', format: 'uuid' } },
       required: ['rss_feed_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

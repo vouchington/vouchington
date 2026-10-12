@@ -1,7 +1,7 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { getReferralLinksFeed, VALID_REFERRAL_LINKS_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
@@ -15,10 +15,8 @@ import {
   type ReferralResult,
 } from './personal-feed-support.mts'
 
-const getReferralLinkFeedTool: Tool<ReferralArgs, ReferralResult> = {
+const getReferralLinkFeedTool: MergedToolSource<ReferralArgs, ReferralResult> = {
   schema: {
-    name: 'get_referral_link_feed',
-    type: 'function',
     description:
       'Page referral links from users you follow, applying the REST feed privacy and mute policy. Returns at most 100 per page with page_info.end_cursor.',
     parameters: {
@@ -29,7 +27,6 @@ const getReferralLinkFeedTool: Tool<ReferralArgs, ReferralResult> = {
       },
       required: ['feed_type'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

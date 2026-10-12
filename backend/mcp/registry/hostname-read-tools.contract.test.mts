@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { getUrlHostnameByAny } from '@services/urls-hostnames'
 import {
   createRandomString,
@@ -8,10 +13,6 @@ import {
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
@@ -31,7 +32,7 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
 })
 const names = (page: { results: Row[] }) => page.results.map(row => row.hostname)
 
-describe('search_hostnames and get_top_hostnames — real DB', () => {
+describe('read_hostnames.search and read_hostnames.top — real DB', () => {
   const random = createRandomString(8).toLowerCase()
   const host = (label: string) => `${label}-${random}.example.com`
   let member: McpContractCaller
@@ -44,10 +45,20 @@ describe('search_hostnames and get_top_hostnames — real DB', () => {
   const search = (args: Body = {}, caller = member) => {
     const named = 'hostname' in args || 'query' in args
     const withDefault = named ? args : { query: random, ...args }
-    return callStructuredMcpTool(caller, 'search_hostnames', withDefault, SCOPES) as Promise<Page>
+    return callStructuredMcpTool(
+      caller,
+      'read_hostnames',
+      optionArgs('search', withDefault),
+      SCOPES,
+    ) as Promise<Page>
   }
   const top = (args: Body = {}, caller = member) =>
-    callStructuredMcpTool(caller, 'get_top_hostnames', args, SCOPES) as Promise<Page>
+    callStructuredMcpTool(
+      caller,
+      'read_hostnames',
+      optionArgs('top', args),
+      SCOPES,
+    ) as Promise<Page>
 
   beforeAll(async () => {
     ;[member, admin] = (
@@ -76,7 +87,7 @@ describe('search_hostnames and get_top_hostnames — real DB', () => {
     await updateUrlHostnameBlocked(ids['blockedtopic']!, true)
   })
 
-  describe('search_hostnames', () => {
+  describe('read_hostnames.search', () => {
     it('lists hostnames A to Z and never a blocked one, for every caller', async () => {
       for (const caller of [member, admin]) {
         expect(names(await search({}, caller))).toEqual(
@@ -156,7 +167,7 @@ describe('search_hostnames and get_top_hostnames — real DB', () => {
     })
   })
 
-  describe('get_top_hostnames', () => {
+  describe('read_hostnames.top', () => {
     it('lists the voted hostnames of a topic and never a blocked one', async () => {
       const { results } = await top({ topic: topic.id })
 

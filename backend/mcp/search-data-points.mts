@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { searchDataPoints } from '@services/data-points/search'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import {
@@ -37,10 +37,8 @@ type ToolResult =
       error: string
     }
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_data_points',
-    type: 'function',
     description:
       'Search for data point posts with optional JSONB filters. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.',
     parameters: {
@@ -73,7 +71,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

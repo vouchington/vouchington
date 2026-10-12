@@ -59,7 +59,12 @@ export async function callMcpTool(
       ...(rateLimitContext ? { mcpRateLimit: { ip: rateLimitContext.ip } } : {}),
     }
     const result = await tool.function(user)(args as never, invocationContext)
-    return buildToolResult(toolName, result, tool.meta?.outputSchema)
+    return buildToolResult(
+      toolName,
+      result,
+      tool.meta?.outputSchema,
+      tool.meta?.selectOutputSchema?.(args as Record<string, unknown>),
+    )
   } catch (err) {
     if (err instanceof ToolRateLimitError) {
       await rateLimitContext?.onRateLimited()

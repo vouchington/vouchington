@@ -39,7 +39,7 @@ Filter Options:
 - `semantic_search_query: <String>` — semantic search query
 - `post_types: Array<PostType>` — filter by post type
 - `drafts: Boolean` — no longer supported (all posts are published immediately)
-- `public_eligibility_only: Boolean` — internal, set only by MCP `search_posts`: judges every candidate as a signed-out reader even when `currentUser` is set, so an author's private or uncleared posts and an administrator's wider access do not apply. Viewer-keyed parts (`exclude_for_user_id`, the `following_new` join) still follow `currentUser`. With `post_types` including `comment`, a comment is also dropped when any live ancestor is unapproved or a topic recommendation. REST routes never set it. The caller must also check a `similar_post_id` seed itself, because the embedding CTE loads any post's embedding by id. Keep it aligned with `resolveReadableThread` (`backend/mcp/mcp-post-access.mts`), as described in [MCP read tools](../../mcp-tools/read-tools.md#privacy).
+- `public_eligibility_only: Boolean` — internal, set only by MCP `read_posts(search)`: judges every candidate as a signed-out reader even when `currentUser` is set, so an author's private or uncleared posts and an administrator's wider access do not apply. Viewer-keyed parts (`exclude_for_user_id`, the `following_new` join) still follow `currentUser`. With `post_types` including `comment`, a comment is also dropped when any live ancestor is unapproved or a topic recommendation. REST routes never set it. The caller must also check a `similar_post_id` seed itself, because the embedding CTE loads any post's embedding by id. Keep it aligned with `resolveReadableThread` (`backend/mcp/mcp-post-access.mts`), as described in [MCP read tools](../../mcp-tools/read-tools.md#privacy).
 
 Internal workflow note:
 
@@ -52,7 +52,7 @@ Notes:
 
 ### Semantic search plan
 
-REST `GET /api/v1/posts` and MCP `search_posts` share one query. A `semantic_search_query`
+REST `GET /api/v1/posts` and MCP `read_posts(search)` share one query. A `semantic_search_query`
 first selects a materialized window ordered by raw cosine distance, with privacy, moderation,
 text and other search filters applied before the window. The HNSW scan uses relaxed iterative
 ordering and finite search limits; its settings and a forced custom plan are scoped to the

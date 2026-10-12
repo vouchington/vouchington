@@ -1,4 +1,9 @@
 import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
+import {
   addDummyEmbeddingToPost,
   blockUser,
   createTestPost,
@@ -8,7 +13,6 @@ import {
   muteUser,
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -27,14 +31,14 @@ const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: nul
 // Every result goes through the real call path, which checks it against the tool's published output
 // schema. The cursor is the one the tool itself returned, fed back as `after`. A per-run token keeps
 // each query to this file's fixtures in a shared database.
-describe('MCP output schema contract for search_posts — real DB', () => {
+describe('MCP output schema contract for read_posts.search — real DB', () => {
   const token = `srchpost${crypto.randomUUID().replaceAll('-', '')}`
   let caller: Caller
   let textIds: string[]
   let authorId: string
 
   const search = (args: Record<string, unknown>, as: Caller = caller) =>
-    callStructuredMcpTool(as, 'search_posts', args, SCOPES) as Promise<Page>
+    callStructuredMcpTool(as, 'read_posts', optionArgs('search', args), SCOPES) as Promise<Page>
 
   beforeAll(async () => {
     const author = await createTestUser()
@@ -173,10 +177,10 @@ describe('MCP output schema contract for search_posts — real DB', () => {
     expect(clamped.results.length).toBeGreaterThanOrEqual(3)
     expect(clamped.results.length).toBeLessThanOrEqual(100)
     await expect(
-      callRejectedMcpTool(caller, 'search_posts', { limit: 0 }, SCOPES),
+      callRejectedMcpTool(caller, 'read_posts', optionArgs('search', { limit: 0 }), SCOPES),
     ).resolves.toContain('/limit must be >= 1')
     await expect(
-      callRejectedMcpTool(caller, 'search_posts', { sort: 'ranking' }, SCOPES),
+      callRejectedMcpTool(caller, 'read_posts', optionArgs('search', { sort: 'ranking' }), SCOPES),
     ).resolves.toContain('/sort must be equal to one of the allowed values')
   })
 
@@ -185,15 +189,19 @@ describe('MCP output schema contract for search_posts — real DB', () => {
 
     const malformed = await callStructuredMcpTool(
       caller,
-      'search_posts',
-      { text_search_query: token, after: 'not-a-cursor' },
+      'read_posts',
+      optionArgs('search', { text_search_query: token, after: 'not-a-cursor' }),
       SCOPES,
     )
     // A sort=new cursor holds only an id, so another sort refuses it.
     const foreign = await callStructuredMcpTool(
       caller,
-      'search_posts',
-      { text_search_query: token, sort: 'best', after: newest.page_info.end_cursor },
+      'read_posts',
+      optionArgs('search', {
+        text_search_query: token,
+        sort: 'best',
+        after: newest.page_info.end_cursor,
+      }),
       SCOPES,
     )
 

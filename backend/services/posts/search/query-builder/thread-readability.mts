@@ -7,7 +7,7 @@ import { BLOCKED_POST_TYPES } from '../../blocked-post-types.mts'
  * The public eligibility filter judges a candidate and its thread root. MCP reads
  * (`resolveReadableThread`) judge every live comment from the root down, so a comment under a
  * pending intermediate comment, or under a blocked-type root, would otherwise be found by search
- * but answered as not found by `get_post`. A deleted ancestor is skipped, as in the read chain.
+ * but answered as not found by `read_posts(details)`. A deleted ancestor is skipped, as in the read chain.
  * The clause is only needed when comments can be candidates.
  */
 export function buildThreadReadabilityFilter(): SQLStatement {

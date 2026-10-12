@@ -45,7 +45,7 @@ export function mcpPostSchema() {
 /**
  * Maps a post to its MCP shape, carrying the `provenance` it already has. Read tools go through
  * `toMcpPosts` and write tools through `toWrittenMcpPost`, which attach it. User text is sanitized
- * and wrapped as external content, like `search_posts`. The author of an anonymous post is hidden
+ * and wrapped as external content, like `read_posts (option search)`. The author of an anonymous post is hidden
  * from every caller, including the author and administrators, so the answer never depends on who
  * asks.
  */

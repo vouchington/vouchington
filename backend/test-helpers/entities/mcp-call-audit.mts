@@ -33,6 +33,31 @@ export async function readTestMcpCallAuditEvents(
   return result.rows
 }
 
+// Narrow option projection for merged-tool tests; existing audit consumers keep their row shape.
+export async function readTestMcpCallAuditOptions(actorUserId: string): Promise<
+  Array<{
+    correlation_id: string
+    tool_name: string | null
+    tool_option: string | null
+    outcome: string
+  }>
+> {
+  const result = await read<{
+    correlation_id: string
+    tool_name: string | null
+    tool_option: string | null
+    outcome: string
+  }>(
+    `/* readTestMcpCallAuditOptions */ SELECT
+       correlation_id, tool_name, tool_option, outcome
+     FROM mcp_call_audit_events
+     WHERE actor_user_id = $1
+     ORDER BY id`,
+    [actorUserId],
+  )
+  return result.rows
+}
+
 // The whole stored row as text, for asserting that no secret or argument was ever persisted.
 export async function readTestMcpCallAuditRowText(actorUserId: string): Promise<string[]> {
   const result = await read<{ row_text: string }>(

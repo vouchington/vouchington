@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe } from 'vitest'
 import { registerMcpReadToolGatingTests } from '@voucha/test-helpers/mcp-read-tool-gating'
 
@@ -8,26 +9,26 @@ describe('hostname, list and user read tool gating', () => {
   registerMcpReadToolGatingTests({
     scopes: ['hostnames:read', 'users:read', 'lists:read'],
     tools: [
-      ['search_hostnames', 'hostnames:read', {}],
-      ['get_top_hostnames', 'hostnames:read', {}],
-      ['get_user', 'users:read', { user_id: 'some-user' }],
-      ['search_users', 'users:read', { q: 'some' }],
-      ['get_my_lists', 'lists:read', {}],
-      ['get_list', 'lists:read', { list_id: LIST_ID }],
-      ['get_list_items', 'lists:read', { list_id: LIST_ID }],
+      ['read_hostnames', 'hostnames:read', optionArgs('search', {})],
+      ['read_hostnames', 'hostnames:read', optionArgs('top', {})],
+      ['read_users', 'users:read', optionArgs('details', { user_id: 'some-user' })],
+      ['read_users', 'users:read', optionArgs('search', { q: 'some' })],
+      ['read_my_lists', 'lists:read', optionArgs('list', {})],
+      ['read_my_lists', 'lists:read', optionArgs('get', { list_id: LIST_ID })],
+      ['read_my_lists', 'lists:read', optionArgs('items', { list_id: LIST_ID })],
     ],
     pagedTools: [
-      'search_hostnames',
-      'get_top_hostnames',
-      'search_users',
-      'get_my_lists',
-      'get_list_items',
+      ['read_hostnames', 'search'],
+      ['read_hostnames', 'top'],
+      ['read_users', 'search'],
+      ['read_my_lists', 'list'],
+      ['read_my_lists', 'items'],
     ],
     requiredArguments: [
-      ['get_user', { q: 'some' }],
-      ['search_users', {}],
-      ['get_list', {}],
-      ['get_list_items', {}],
+      ['read_users', optionArgs('details', { q: 'some' })],
+      ['read_users', optionArgs('search', {})],
+      ['read_my_lists', optionArgs('get', {})],
+      ['read_my_lists', optionArgs('items', {})],
     ],
   })
 })

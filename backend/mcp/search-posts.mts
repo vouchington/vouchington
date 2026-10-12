@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
@@ -67,10 +67,8 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
   page_info: componentSchema('PageInfo'),
 })
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_posts',
-    type: 'function',
     description:
       'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search.',
     parameters: {
@@ -83,7 +81,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -120,7 +117,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
-        // A similar-post seed the caller cannot read through get_post answers like a seed that does
+        // A similar-post seed the caller cannot read through read_posts (option details) answers like a seed that does
         // not exist: its embedding must not rank anything for them. A tool call always has a user,
         // so a missing one gets an empty page rather than a crash.
         const { similar_post_id } = searchOptions
@@ -131,7 +128,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           return { results: [], page_info: EMPTY_PAGE_INFO }
         }
 
-        // Every candidate is judged like get_post judges it (the credential owner minus private
+        // Every candidate is judged like read_posts (option details) judges it (the credential owner minus private
         // data), so an owner's private or uncleared post is not returned. Muted and blocked users,
         // topics and hostnames still stay out of the caller's results.
         return getPostIds(currentUser, {

@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getEmailPreferences, updateEmailPreferences } from '@services/users'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -6,21 +7,17 @@ import {
   type EmailPreferencesToolArgs,
 } from './preference-tool-support.mts'
 import { requireActiveToolUser } from './private-user.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
 type UpdateMyEmailPreferencesResult = {
   success: true
   email_preferences: Awaited<ReturnType<typeof getEmailPreferences>>
 }
 
-const tool: Tool<EmailPreferencesToolArgs, UpdateMyEmailPreferencesResult> = {
+const tool: MergedToolSource<EmailPreferencesToolArgs, UpdateMyEmailPreferencesResult> = {
   schema: {
-    name: 'update_my_email_preferences',
-    type: 'function',
     description:
       'Change which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries. Only the fields sent change. Email addresses and sign-in settings cannot be changed here.',
     parameters: EMAIL_PREFERENCES_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

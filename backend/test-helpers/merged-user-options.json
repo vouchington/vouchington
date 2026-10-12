@@ -1,0 +1,878 @@
+{
+  "cases": [
+    {
+      "target": "read_my_review_disputes",
+      "option": "list",
+      "args": {},
+      "routes": ["GET:/api/v1/disputes"]
+    },
+    {
+      "target": "read_my_review_disputes",
+      "option": "get",
+      "args": {
+        "dispute_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/disputes/:id"]
+    },
+    {
+      "target": "read_my_moderation_appeals",
+      "option": "list",
+      "args": {},
+      "routes": ["GET:/api/v1/appeals"]
+    },
+    {
+      "target": "read_my_moderation_appeals",
+      "option": "get",
+      "args": {
+        "appeal_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/appeals/:id"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_item_counts",
+      "args": {
+        "community_id": "sample"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/counts"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_items",
+      "args": {
+        "community_id": "sample",
+        "item_type": "topic"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/topics"]
+    },
+    {
+      "target": "read_reference_data",
+      "option": "membership_plans",
+      "args": {},
+      "routes": ["GET:/api/v1/memberships/plans"]
+    },
+    {
+      "target": "read_my_lists",
+      "option": "containing",
+      "args": {
+        "item_type": "post",
+        "entity_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/lists/contains"]
+    },
+    {
+      "target": "read_my_profile",
+      "option": "bio",
+      "args": {},
+      "routes": ["GET:/api/v1/my/profile"]
+    },
+    {
+      "target": "read_my_preferences",
+      "option": "email",
+      "args": {},
+      "routes": ["GET:/api/v1/my/email-preferences"]
+    },
+    {
+      "target": "read_my_notifications",
+      "option": "list",
+      "args": {},
+      "routes": ["GET:/api/v1/my/notifications"]
+    },
+    {
+      "target": "read_my_preferences",
+      "option": "general",
+      "args": {},
+      "routes": ["GET:/api/v1/users/:idOrSlug"]
+    },
+    {
+      "target": "read_my_profile",
+      "option": "links",
+      "args": {},
+      "routes": ["GET:/api/v1/my/profile/links"]
+    },
+    {
+      "target": "read_my_notifications",
+      "option": "unread",
+      "args": {},
+      "routes": ["GET:/api/v1/my/notifications/unread"]
+    },
+    {
+      "target": "read_reference_data",
+      "option": "platform_stats",
+      "args": {},
+      "routes": ["GET:/api/v1/platform-stats"]
+    },
+    {
+      "target": "read_topic",
+      "option": "referral_program",
+      "args": {
+        "topic_id": "sample"
+      },
+      "routes": ["GET:/api/v1/topics/:idOrSlug/referral-program"]
+    },
+    {
+      "target": "discover_communities",
+      "option": "trending",
+      "args": {},
+      "routes": ["GET:/api/v1/trending-communities"]
+    },
+    {
+      "target": "discover_topics",
+      "option": "trending_referral_programs",
+      "args": {},
+      "routes": ["GET:/api/v1/trending-referral-programs"]
+    },
+    {
+      "target": "read_reference_data",
+      "option": "countries",
+      "args": {},
+      "routes": ["GET:/api/v1/countries"]
+    },
+    {
+      "target": "read_reference_data",
+      "option": "currencies",
+      "args": {},
+      "routes": ["GET:/api/v1/currencies"]
+    },
+    {
+      "target": "discover_rss_feeds",
+      "option": "search",
+      "args": {},
+      "routes": ["GET:/api/v1/rss-feeds"]
+    },
+    {
+      "target": "read_rss_feed",
+      "option": "details",
+      "args": {
+        "rss_feed_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feeds/:id"]
+    },
+    {
+      "target": "read_rss_feed_item",
+      "option": "list",
+      "args": {},
+      "routes": ["GET:/api/v1/rss-feed-items"]
+    },
+    {
+      "target": "read_rss_feed_item",
+      "option": "details",
+      "args": {
+        "rss_feed_item_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feed-items/:id"]
+    },
+    {
+      "target": "discover_rss_feeds",
+      "option": "trending",
+      "args": {},
+      "routes": ["GET:/api/v1/rss-feeds/trending"]
+    },
+    {
+      "target": "discover_rss_feeds",
+      "option": "recommended",
+      "args": {},
+      "routes": ["GET:/api/v1/rss-feeds/recommended"]
+    },
+    {
+      "target": "read_rss_feed",
+      "option": "crawls",
+      "args": {
+        "rss_feed_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feeds/:id/crawls"]
+    },
+    {
+      "target": "read_rss_feed",
+      "option": "crawl",
+      "args": {
+        "rss_feed_id": "00000000-0000-4000-8000-000000000001",
+        "crawl_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feeds/:id/crawls/:crawlId"]
+    },
+    {
+      "target": "read_rss_feed_item",
+      "option": "follow_context",
+      "args": {
+        "rss_feed_item_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feed-items/:id/follow-context"]
+    },
+    {
+      "target": "read_rss_feed_item",
+      "option": "votes",
+      "args": {
+        "rss_feed_item_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/rss-feed-items/:id/votes"]
+    },
+    {
+      "target": "read_feed",
+      "option": "posts",
+      "args": {
+        "feed_type": "follow_users"
+      },
+      "routes": ["GET:/api/v1/feeds/posts/:feed_type"]
+    },
+    {
+      "target": "read_feed",
+      "option": "rss_items",
+      "args": {
+        "feed_type": "follow_users"
+      },
+      "routes": ["GET:/api/v1/feeds/rss_feed_items/:feed_type"]
+    },
+    {
+      "target": "read_feed",
+      "option": "referral_links",
+      "args": {
+        "feed_type": "follow_users"
+      },
+      "routes": ["GET:/api/v1/feeds/referral_links/:feed_type"]
+    },
+    {
+      "target": "read_topic",
+      "option": "compare",
+      "args": {
+        "topic_id_a": "sample",
+        "topic_id_b": "sample"
+      },
+      "routes": ["GET:/api/v1/topics/compare"]
+    },
+    {
+      "target": "remove_list_content",
+      "option": "list",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["DELETE:/api/v1/lists/:id"]
+    },
+    {
+      "target": "remove_referral_link",
+      "option": "activation",
+      "args": {
+        "link_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["DELETE:/api/v1/referral-links/:linkId/activations"]
+    },
+    {
+      "target": "remove_referral_link",
+      "option": "link",
+      "args": {
+        "link_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["DELETE:/api/v1/referral-links/:linkId"]
+    },
+    {
+      "target": "read_community",
+      "option": "members",
+      "args": {
+        "community_id": "sample"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/members"]
+    },
+    {
+      "target": "read_community",
+      "option": "pinned_posts",
+      "args": {
+        "community_id": "sample"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/pinned-posts"]
+    },
+    {
+      "target": "read_community",
+      "option": "posts",
+      "args": {
+        "community_id": "sample"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/posts"]
+    },
+    {
+      "target": "read_community",
+      "option": "details",
+      "args": {
+        "community_id": "sample"
+      },
+      "routes": ["GET:/api/v1/communities/:idOrSlug"]
+    },
+    {
+      "target": "read_my_lists",
+      "option": "items",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/lists/:id/items"]
+    },
+    {
+      "target": "read_my_lists",
+      "option": "get",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["GET:/api/v1/lists/:id"]
+    },
+    {
+      "target": "read_my_profile",
+      "option": "overview",
+      "args": {},
+      "routes": [
+        "GET:/api/v1/my/cards",
+        "GET:/api/v1/my/rewards-program-point-valuations",
+        "GET:/api/v1/my/rewards-program-statuses"
+      ]
+    },
+    {
+      "target": "read_my_lists",
+      "option": "list",
+      "args": {},
+      "routes": ["GET:/api/v1/lists"]
+    },
+    {
+      "target": "read_posts",
+      "option": "ancestors",
+      "args": {
+        "post_id": "sample"
+      },
+      "routes": ["GET:/api/v1/posts/:idOrSlug/ancestors"]
+    },
+    {
+      "target": "read_posts",
+      "option": "descendants",
+      "args": {
+        "post_id": "sample"
+      },
+      "routes": ["GET:/api/v1/posts/:idOrSlug/descendants"]
+    },
+    {
+      "target": "read_posts",
+      "option": "details",
+      "args": {
+        "post_id": "sample"
+      },
+      "routes": ["GET:/api/v1/posts/:idOrSlug"]
+    },
+    {
+      "target": "read_hostnames",
+      "option": "top",
+      "args": {},
+      "routes": ["GET:/api/v1/hostnames/top"]
+    },
+    {
+      "target": "read_topic",
+      "option": "details",
+      "args": {
+        "topic_id": "sample"
+      },
+      "routes": ["GET:/api/v1/topics/:idOrSlug"]
+    },
+    {
+      "target": "read_data_points",
+      "option": "topic_insights",
+      "args": {
+        "topic_id": "sample"
+      },
+      "routes": []
+    },
+    {
+      "target": "read_topic",
+      "option": "metrics",
+      "args": {
+        "topic_id": "sample"
+      },
+      "routes": []
+    },
+    {
+      "target": "read_posts",
+      "option": "trending",
+      "args": {},
+      "routes": ["GET:/api/v1/trending-posts"]
+    },
+    {
+      "target": "discover_topics",
+      "option": "trending",
+      "args": {},
+      "routes": ["GET:/api/v1/trending-topics"]
+    },
+    {
+      "target": "read_users",
+      "option": "details",
+      "args": {
+        "user_id": "sample"
+      },
+      "routes": ["GET:/api/v1/users/:idOrSlug"]
+    },
+    {
+      "target": "mark_notifications_read",
+      "option": "all",
+      "args": {},
+      "routes": ["POST:/api/v1/my/notifications/read-all"]
+    },
+    {
+      "target": "mark_notifications_read",
+      "option": "one",
+      "args": {
+        "notification_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["PATCH:/api/v1/my/notifications/:id"]
+    },
+    {
+      "target": "manage_bookmark",
+      "option": "remove",
+      "args": {
+        "entity_type": "post",
+        "entity_id": "00000000-0000-4000-8000-000000000001",
+        "predicate": "save"
+      },
+      "routes": ["DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate"]
+    },
+    {
+      "target": "remove_list_content",
+      "option": "item",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001",
+        "item_type": "post",
+        "entity_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["DELETE:/api/v1/lists/:id/items/posts/:entityId"]
+    },
+    {
+      "target": "discover_communities",
+      "option": "search",
+      "args": {},
+      "routes": ["GET:/api/v1/communities"]
+    },
+    {
+      "target": "read_data_points",
+      "option": "search",
+      "args": {},
+      "routes": []
+    },
+    {
+      "target": "read_hostnames",
+      "option": "search",
+      "args": {},
+      "routes": ["GET:/api/v1/hostnames"]
+    },
+    {
+      "target": "read_posts",
+      "option": "search",
+      "args": {},
+      "routes": ["GET:/api/v1/posts"]
+    },
+    {
+      "target": "discover_topics",
+      "option": "search",
+      "args": {},
+      "routes": ["GET:/api/v1/topics"]
+    },
+    {
+      "target": "read_users",
+      "option": "search",
+      "args": {
+        "q": "sample"
+      },
+      "routes": ["GET:/api/v1/users"]
+    },
+    {
+      "target": "manage_bookmark",
+      "option": "set",
+      "args": {
+        "entity_type": "post",
+        "entity_id": "00000000-0000-4000-8000-000000000001",
+        "predicate": "save"
+      },
+      "routes": ["PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate"]
+    },
+    {
+      "target": "edit_my_profile",
+      "option": "bio",
+      "args": {
+        "markdown": "sample"
+      },
+      "routes": ["PATCH:/api/v1/my/profile"]
+    },
+    {
+      "target": "edit_my_profile",
+      "option": "display_identity",
+      "args": {
+        "use_display_name_from": "apple"
+      },
+      "routes": ["PATCH:/api/v1/my/identity"]
+    },
+    {
+      "target": "edit_my_preferences",
+      "option": "email",
+      "args": {
+        "is_engagement_emails_enabled": true
+      },
+      "routes": ["PATCH:/api/v1/my/email-preferences"]
+    },
+    {
+      "target": "edit_my_preferences",
+      "option": "general",
+      "args": {
+        "follows_visibility": "everyone"
+      },
+      "routes": ["PATCH:/api/v1/users/:idOrSlug"]
+    },
+    {
+      "target": "edit_my_profile",
+      "option": "link",
+      "args": {
+        "link_id": "00000000-0000-4000-8000-000000000001",
+        "url": null
+      },
+      "routes": ["PATCH:/api/v1/my/profile/links/:id"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_items",
+      "args": { "community_id": "sample", "item_type": "rss_feed" },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_items",
+      "args": { "community_id": "sample", "item_type": "post" },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/posts"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_items",
+      "args": { "community_id": "sample", "item_type": "url_hostname" },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/domains"]
+    },
+    {
+      "target": "read_community",
+      "option": "list_items",
+      "args": { "community_id": "sample", "item_type": "url" },
+      "routes": ["GET:/api/v1/communities/:idOrSlug/list-items/urls"]
+    },
+    {
+      "target": "remove_list_content",
+      "option": "item",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001",
+        "item_type": "rss_feed_item",
+        "entity_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "routes": ["DELETE:/api/v1/lists/:id/items/rss-feed-items/:entityId"]
+    }
+  ],
+  "groups": [
+    {
+      "target": "read_my_review_disputes",
+      "scopes": ["disputes:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_my_moderation_appeals",
+      "scopes": ["appeals:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_community",
+      "scopes": ["communities:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_reference_data",
+      "scopes": ["reference-data:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_my_lists",
+      "scopes": ["lists:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_my_profile",
+      "scopes": ["profile:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_my_preferences",
+      "scopes": ["preferences:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_my_notifications",
+      "scopes": ["notifications:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_topic",
+      "scopes": ["topics:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "discover_communities",
+      "scopes": ["communities:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "discover_topics",
+      "scopes": ["topics:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "discover_rss_feeds",
+      "scopes": ["rss-feeds:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_rss_feed",
+      "scopes": ["rss-feeds:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_rss_feed_item",
+      "scopes": ["rss-feed-items:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_feed",
+      "scopes": ["feeds:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "remove_list_content",
+      "scopes": ["lists:read", "lists:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "target": "remove_referral_link",
+      "scopes": ["referral-links:read", "referral-links:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "target": "read_posts",
+      "scopes": ["posts:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_hostnames",
+      "scopes": ["hostnames:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_data_points",
+      "scopes": ["data-points:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "read_users",
+      "scopes": ["users:read"],
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "target": "mark_notifications_read",
+      "scopes": ["notifications:read", "notifications:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    {
+      "target": "manage_bookmark",
+      "scopes": ["bookmarks:read", "bookmarks:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "target": "edit_my_profile",
+      "scopes": ["profile:read", "profile:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    {
+      "target": "edit_my_preferences",
+      "scopes": ["preferences:read", "preferences:write"],
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    }
+  ],
+  "incompatible": [
+    {
+      "target": "read_my_review_disputes",
+      "option": "list",
+      "args": {
+        "dispute_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "read_my_moderation_appeals",
+      "option": "list",
+      "args": {
+        "appeal_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "read_community",
+      "option": "list_item_counts",
+      "args": {
+        "community_id": "sample",
+        "item_type": "topic"
+      }
+    },
+    {
+      "target": "read_my_lists",
+      "option": "containing",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "read_topic",
+      "option": "referral_program",
+      "args": {
+        "topic_id_a": "sample",
+        "topic_id_b": "sample"
+      }
+    },
+    {
+      "target": "read_rss_feed",
+      "option": "details",
+      "args": {
+        "rss_feed_id": "00000000-0000-4000-8000-000000000001",
+        "crawl_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "read_rss_feed_item",
+      "option": "list",
+      "args": {
+        "rss_feed_item_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "remove_list_content",
+      "option": "list",
+      "args": {
+        "list_id": "00000000-0000-4000-8000-000000000001",
+        "item_type": "post",
+        "entity_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "read_posts",
+      "option": "ancestors",
+      "args": {}
+    },
+    {
+      "target": "read_data_points",
+      "option": "topic_insights",
+      "args": {}
+    },
+    {
+      "target": "read_users",
+      "option": "details",
+      "args": {
+        "q": "sample"
+      }
+    },
+    {
+      "target": "mark_notifications_read",
+      "option": "all",
+      "args": {
+        "notification_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "target": "edit_my_profile",
+      "option": "bio",
+      "args": {
+        "use_display_name_from": "apple"
+      }
+    },
+    {
+      "target": "edit_my_preferences",
+      "option": "email",
+      "args": {
+        "follows_visibility": "everyone"
+      }
+    }
+  ]
+}

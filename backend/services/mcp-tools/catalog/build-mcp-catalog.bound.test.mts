@@ -36,12 +36,11 @@ const grants = [
   },
 ]
 
-// Interim ceilings measured from this slice's base 584eb48cd; later consolidation slices
-// replace them with their approved final ceilings. Sizes are compact UTF-16 code units.
+// Final #2495 user-server ceilings. Sizes are compact UTF-16 code units.
 const caps = {
   mcp: {
-    all: { count: 115, list: 276413, core: 110000, output: 258038 },
-    Reader: { count: 30, list: 64469, core: 30000, output: 60277 },
+    all: { count: 69, list: 260000, core: 110000, output: 240000 },
+    Reader: { count: 9, list: 65000, core: 30000, output: 60000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {

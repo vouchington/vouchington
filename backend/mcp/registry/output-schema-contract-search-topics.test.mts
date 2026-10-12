@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { createHash } from 'node:crypto'
 import {
   createTestTopic,
@@ -7,7 +12,6 @@ import {
   seedSearchEmbeddingCache,
 } from '@voucha/test-helpers'
 import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics/embeddings'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -22,13 +26,18 @@ const EMPTY_PAGE_INFO = { has_next_page: false, start_cursor: null, end_cursor: 
 // Every result goes through the real call path, which checks it against the tool's published output
 // schema. The cursor is the one the tool itself returned, fed back as `after`. A per-run token keeps
 // each query to this file's fixtures in a shared database.
-describe('MCP output schema contract for search_topics — real DB', () => {
+describe('MCP output schema contract for discover_topics.search — real DB', () => {
   const token = `srchtopic${crypto.randomUUID().replaceAll('-', '')}`
   let caller: PrivateUser & { membership_plan: null }
   let textIds: string[]
 
   const search = (args: Record<string, unknown>) =>
-    callStructuredMcpTool(caller, 'search_topics', args, SCOPES) as Promise<Page>
+    callStructuredMcpTool(
+      caller,
+      'discover_topics',
+      optionArgs('search', args),
+      SCOPES,
+    ) as Promise<Page>
 
   beforeAll(async () => {
     const user = await createTestUser()
@@ -110,7 +119,7 @@ describe('MCP output schema contract for search_topics — real DB', () => {
 
     expect(clamped.topics.map(topic => topic.id).toSorted()).toEqual(textIds.toSorted())
     await expect(
-      callRejectedMcpTool(caller, 'search_topics', { limit: 0 }, SCOPES),
+      callRejectedMcpTool(caller, 'discover_topics', optionArgs('search', { limit: 0 }), SCOPES),
     ).resolves.toContain('/limit must be >= 1')
   })
 
@@ -119,15 +128,15 @@ describe('MCP output schema contract for search_topics — real DB', () => {
 
     const malformed = await callStructuredMcpTool(
       caller,
-      'search_topics',
-      { text_search_query: token, after: 'not-a-cursor' },
+      'discover_topics',
+      optionArgs('search', { text_search_query: token, after: 'not-a-cursor' }),
       SCOPES,
     )
     // A keyword-search cursor holds a relevance tier, which a search without keywords refuses.
     const foreign = await callStructuredMcpTool(
       caller,
-      'search_topics',
-      { after: textPage.page_info.end_cursor },
+      'discover_topics',
+      optionArgs('search', { after: textPage.page_info.end_cursor }),
       SCOPES,
     )
 

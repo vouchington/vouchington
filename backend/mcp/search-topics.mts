@@ -1,7 +1,7 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPaginationLimits } from '@services/pagination'
 import { VALID_TOPIC_TYPES } from '@modules/pagination/filters'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicIds } from '@services/topics/search/get-ids'
 import { prepareTopicsSearchParams, resolveTopicsSearchParams } from '@services/search-params'
 import {
@@ -52,10 +52,8 @@ const OUTPUT_SCHEMA = outcomeSchema('success', {
   page_info: componentSchema('PageInfo'),
 })
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'search_topics',
-    type: 'function',
     description:
       'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search.',
     parameters: {
@@ -72,7 +70,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

@@ -17,14 +17,17 @@ type Parent = { id: string; root: string }
 
 const random = createRandomString(6)
 
-describe('get_list_items thread resolution — real DB', () => {
+describe('read_my_lists(items) thread resolution — real DB', () => {
   let owner: McpContractCaller
   let counter = 0
 
   const getItems = (listId: string) =>
-    callStructuredMcpTool(owner, 'get_list_items', { list_id: listId }, [
-      'lists:read',
-    ]) as Promise<Page>
+    callStructuredMcpTool(
+      owner,
+      'read_my_lists',
+      { option: 'items', arguments: { list_id: listId } },
+      ['lists:read'],
+    ) as Promise<Page>
   const post = (privacy: 'public' | 'private', parent?: Parent) => {
     const label = `${random}-${(counter += 1)}`
     return insertTestPost({

@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import {
@@ -11,7 +16,6 @@ import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 import getMyReferralLinksTool from '../get-my-referral-links.mts'
 
@@ -31,14 +35,16 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>) => ({
 })
 type Caller = ReturnType<typeof asCaller>
 
-describe('get_topic_referral_program — real DB', () => {
+describe('read_topic.referral_program — real DB', () => {
   let caller: Caller
   let program: { referralProgramId: string }
   let slug: string
   let switchedOff: string
 
   const read = (topic_id: string) =>
-    callStructuredMcpTool(caller, 'get_topic_referral_program', { topic_id }, ['topics:read'])
+    callStructuredMcpTool(caller, 'read_topic', optionArgs('referral_program', { topic_id }), [
+      'topics:read',
+    ])
 
   beforeAll(async () => {
     caller = asCaller(await createTestUser())
