@@ -1,4 +1,4 @@
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { write } from './fixture-query.mts'
 import { getTopicTypeSlug } from '../../backend/types/entities/topic.mts'
 
 // Test user ID from seed data

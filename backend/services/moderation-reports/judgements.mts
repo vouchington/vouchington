@@ -113,7 +113,7 @@ export async function getLatestJudgementsForEntitiesBatch(
   }
 
   const subqueries = [...byFk.entries()].map(([fkColumn, { entityType, ids }], index) => {
-    const subquery = sql`SELECT * FROM (
+    const subquery = sql`/* getLatestJudgementsForEntitiesBatch */ SELECT * FROM (
       SELECT DISTINCT ON (j.`
     subquery.append(fkColumn)
     subquery.append(

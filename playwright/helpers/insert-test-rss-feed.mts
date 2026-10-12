@@ -1,4 +1,4 @@
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { write } from './fixture-query.mts'
 import { linkHostnameToSourceTopic } from '../../backend/services/topics/hostname-link.mts'
 
 interface TestRssFeed {

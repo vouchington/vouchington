@@ -4,7 +4,7 @@ import { loginAsUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { voteTrigger } from '../../helpers/semantic-vote.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { write } from '../../helpers/fixture-query.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,

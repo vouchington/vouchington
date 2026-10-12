@@ -8,7 +8,7 @@ import {
 } from '../../../backend/test-helpers/entities/communities.mts'
 import { insertTestCommunityPostReview } from '../../../backend/test-helpers/entities/community-post-reviews.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { write } from '../../helpers/fixture-query.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 
 let COMMUNITY_SLUG = ''

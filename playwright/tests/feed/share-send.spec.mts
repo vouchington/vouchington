@@ -10,7 +10,7 @@ import { createDeviceAndSessionTokens } from '../../../backend/services/jwt-sess
 import { processFollowerDistributionChunk } from '../../../backend/services/follower-distributions/index.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
-import { read } from '../../../backend/data-stores/psql/clients.mts'
+import { read } from '../../helpers/fixture-query.mts'
 import { mintUUIDv7 } from '../../../ts-shared/session-jwt/index.mts'
 let sharerId = ''
 let followerId = ''

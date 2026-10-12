@@ -1,5 +1,5 @@
 import { setRssFeedItemMediaDetails } from '../../backend/test-helpers/entities/rss-feed-items-media.mts'
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { write } from './fixture-query.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import { setTopicHostnameLink } from '../../backend/services/topics/hostname-link.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from '../../lambdas/playwright-podcast-cover.mts'

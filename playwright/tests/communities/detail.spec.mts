@@ -6,7 +6,7 @@ import {
   insertTestCommunityMember,
 } from '../../../backend/test-helpers/entities/communities.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { write } from '../../helpers/fixture-query.mts'
 
 /**
  * Community detail page tests.

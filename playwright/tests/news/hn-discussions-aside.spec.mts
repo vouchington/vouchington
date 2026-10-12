@@ -5,7 +5,7 @@ import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { write } from '../../helpers/fixture-query.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
 import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
 

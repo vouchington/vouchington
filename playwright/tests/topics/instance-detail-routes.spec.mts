@@ -6,7 +6,7 @@ import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
 import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import { write } from '../../helpers/fixture-query.mts'
 import { insertTestFediverseInstanceMetadata } from '../../helpers/insert-test-fediverse-instance.mts'
 
 test.describe('Instance Detail Routes', () => {

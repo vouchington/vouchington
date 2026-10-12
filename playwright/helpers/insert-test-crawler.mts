@@ -1,4 +1,4 @@
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { write } from './fixture-query.mts'
 
 // Seeded hostname: example.com (019c64e6-1000-7000-b000-000000000001)
 const SEEDED_HOSTNAME_ID = '019c64e6-1000-7000-b000-000000000001'

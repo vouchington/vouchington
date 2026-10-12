@@ -1,4 +1,4 @@
-import { write } from '../../backend/data-stores/psql/clients.mts'
+import { write } from './fixture-query.mts'
 import { setTopicHostnameLink } from '../../backend/services/topics/hostname-link.mts'
 
 export async function linkTopicHostname(topicId: string, hostname: string): Promise<string> {
