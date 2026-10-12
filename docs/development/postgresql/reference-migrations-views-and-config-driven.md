@@ -20,6 +20,13 @@ generator by path, so its default export carries a
 [production-exports guard](../quality/static-code-analysis/README.md#knip-production-exports)
 reports it as an export only tests use.
 
+Generated-SQL replay tests consume typed PostgreSQL facts from `no-mistakes` through the
+[insert replay guard](../../../backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts).
+The upstream parser owns query scopes, effective predicate polarity and conjunctiveness, source
+spans, and procedural completeness; the guard applies Voucha's convergence, arbiter, and trigger
+policies. Parser errors and incomplete executable containers fail closed. Each sibling insert is checked independently,
+and a violation identifies the unsafe SQL rather than an unrelated sibling's guard.
+
 Forced view rebuilding drops only the managed ordinary and materialized declarations with PostgreSQL's
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
 progress, then recreates the files in dependency-safe passes. Its teardown is one server-side command,

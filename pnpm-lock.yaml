@@ -11424,9 +11424,6 @@ importers:
       '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
-      '@libpg-query/parser':
-        specifier: ^18.0.0
-        version: 18.0.0
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../modules/http-signatures

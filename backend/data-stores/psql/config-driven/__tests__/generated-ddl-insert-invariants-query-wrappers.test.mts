@@ -1,12 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { initSqlAst } from 'vouchington-tooling/sql-ast'
+import { describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 
 describe('config-driven generated DDL insert invariant: PREPARE/EXPLAIN wrappers', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
   it('flags a non-convergent INSERT inside a PREPARE ... AS statement', async () => {
     // A PREPARE's INSERT is scanned unconditionally (fail closed): whether it ever runs
     // depends on a separate EXECUTE statement this per-statement guard can't see.

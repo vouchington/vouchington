@@ -1,9 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parsePostgresSql, type PostgresSqlTrigger } from 'no-mistakes'
+import {
+  parsePostgresSql,
+  type PostgresSqlConflict,
+  type PostgresSqlInsert,
+  type PostgresSqlTrigger,
+} from 'no-mistakes'
 import {
   createPostgresReplayContextFromSchema,
+  projectGeneratedArbiterInput,
   type SchemaSnapshot,
 } from 'vouchington-tooling/pg-schema-snapshot'
 import { generatedArbiterViolation } from './on-conflict-generated-arbiter.mts'
@@ -20,10 +26,6 @@ const schemaPath = fileURLToPath(
 )
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
 const replayContext = await createPostgresReplayContextFromSchema(schema)
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
 
 // The snapshot is immutable for this process. Parse its trigger DDL in one native batch so the
 // synchronous INSERT guard consumes only normalized facts. A malformed trigger stays undefined and
@@ -54,14 +56,18 @@ export function triggerFactsForTable(
   return triggerFactsByTable.get(table)
 }
 
-export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): boolean {
+export function hasReplayUnsafeTrigger(
+  insert: PostgresSqlInsert,
+  onConflict: PostgresSqlConflict,
+): boolean {
   const table = insertTableName(insert)
   if (table === undefined) return true
   const triggers = triggerFactsForTable(table)
   if (triggers === undefined) return true
   const assignedColumns = assignedColumnsFromOnConflict(onConflict)
   const excludedAssignedColumns = excludedAssignedColumnsFromOnConflict(onConflict)
-  const conflictWhereClause = isRecord(onConflict) ? onConflict.whereClause : undefined
+  const conflictWhereClause =
+    onConflict.action.kind === 'doUpdate' ? onConflict.action.predicate : null
   return replayUnsafeTrigger(
     triggers,
     assignedColumns,
@@ -81,10 +87,13 @@ export function generatedDependenciesForTable(
   return replayContext.generatedDependenciesForTable(table)
 }
 
-export function hasGeneratedArbiterViolation(insert: unknown, onConflict: unknown): boolean {
+export function hasGeneratedArbiterViolation(
+  insert: PostgresSqlInsert,
+  onConflict: PostgresSqlConflict,
+): boolean {
   const table = insertTableName(insert)
   if (table === undefined) return true
   const dependencies = generatedDependenciesForTable(table)
   if (dependencies === undefined) return true
-  return generatedArbiterViolation(onConflict, dependencies).violation
+  return generatedArbiterViolation(projectGeneratedArbiterInput(onConflict), dependencies).violation
 }
