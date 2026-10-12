@@ -67,7 +67,7 @@ import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
 import {
   scheduledJobManifest as voteWeightManifest,
   upsertSchedules as registerVoteWeight,
-} from '@queues/vote-aggregation/enqueues/vote-weight-schedules'
+} from '@queues/vote-aggregation/enqueues/schedules'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 
 const REGISTRATIONS = [

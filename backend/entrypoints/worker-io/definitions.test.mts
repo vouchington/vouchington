@@ -19,7 +19,7 @@ import { upsertSchedules as upsertTopicAliasSchedules } from '@queues/topic-alia
 import { upsertSchedules as upsertSitemapSchedules } from '@queues/sitemaps/enqueues/schedules'
 import { upsertSchedules as upsertSesInboundSchedules } from '@queues/ses-inbound/enqueues/schedules'
 import { upsertSchedules as upsertUrlDomainBlacklistSchedules } from '@queues/urls-domains-blacklist/enqueues/schedules'
-import { upsertSchedules as upsertVoteWeightSchedules } from '@queues/vote-aggregation/enqueues/vote-weight-schedules'
+import { upsertSchedules as upsertVoteWeightSchedules } from '@queues/vote-aggregation/enqueues/schedules'
 import { SCHEDULE_DEFINITIONS } from './definitions.mts'
 
 describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
