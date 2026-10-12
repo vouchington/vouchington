@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
-import { postSlugExists } from './get.mts'
+import { getPostByAny, postSlugExists } from './get.mts'
 
 function rand(): string {
   return createRandomString(8)
@@ -76,6 +76,24 @@ describe('createPostSlug', () => {
 
     const { postSlugExists } = await import('./get.mts')
     expect(await postSlugExists(newSlug)).toBe(true)
+  })
+
+  it('projects the newest UUID-keyed slug through the post reader', async () => {
+    const user = await createTestUser()
+    const firstSlug = `first-${rand()}`
+    const postId = await insertTestPost({
+      title: `Slug order ${rand()}`,
+      slug: firstSlug,
+      createdById: user.id,
+      markdown: 'body',
+    })
+    const latestSlug = `latest-${rand()}`
+    await using query = await beginTransaction()
+    await createPostSlug({ id: postId, title: 'Slug order' }, latestSlug, { query })
+    await query.commit()
+
+    await expect(getPostByAny(postId)).resolves.toMatchObject({ slug: latestSlug })
+    expect(await postSlugExists(firstSlug)).toBe(true)
   })
 
   it('rejects a duplicate slug with 409', async () => {

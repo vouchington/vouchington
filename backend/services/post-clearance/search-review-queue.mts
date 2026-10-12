@@ -71,7 +71,7 @@ export async function searchPostsForAdminReview(
         SELECT slug
         FROM post_slugs
         WHERE post_id = p.id
-        ORDER BY post_slugs.created_at DESC
+        ORDER BY post_slugs.id DESC
         LIMIT 1
       ) AS slug,
       LEFT(p.markdown, 500) AS markdown_preview,
@@ -84,7 +84,7 @@ export async function searchPostsForAdminReview(
         SELECT slug
         FROM post_slugs
         WHERE post_id = p.root_post_id
-        ORDER BY post_slugs.created_at DESC
+        ORDER BY post_slugs.id DESC
         LIMIT 1
       ) AS root_slug,
       clearance.clearance_status,

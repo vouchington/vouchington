@@ -94,7 +94,7 @@ async function verifyTokenAndPrimeEmailCache(
         AND email_address = ${normalizedEmailAddress}
         AND token = ${normalizedToken}
         AND logged_in_at IS NULL
-        AND created_at > NOW() - INTERVAL '30 minutes'
+        AND uuid_extract_timestamp(id) > NOW() - INTERVAL '30 minutes'
     `)
   assert(rowCount === 1, 400, 'Invalid or expired verification code')
 

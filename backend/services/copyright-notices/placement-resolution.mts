@@ -147,7 +147,7 @@ export async function resolveCopyrightImagePlacement(
     LEFT JOIN LATERAL (
       SELECT post_slugs.slug FROM post_slugs
       WHERE post_slugs.post_id = p.id
-      ORDER BY post_slugs.created_at DESC LIMIT 1
+      ORDER BY post_slugs.id DESC LIMIT 1
     ) slug ON true
     WHERE pi.post_id = ${input.postId} AND pi.image_id = ${input.imageId}
   `)

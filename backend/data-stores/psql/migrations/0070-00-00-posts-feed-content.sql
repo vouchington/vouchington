@@ -506,13 +506,14 @@ COMMENT ON COLUMN post_review_topic_ratings.order_index IS 'Display order of thi
 -- the most recent one is canonical
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS post_slugs (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
 
-  slug TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
   CHECK (char_length(slug) <= 255),
   CHECK (slug = LOWER(slug)),
   CHECK (slug = TRIM(slug)),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -523,16 +524,16 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- Supports latest-slug lookup by post:
--- WHERE post_id = ? ORDER BY created_at DESC LIMIT 1
+-- WHERE post_id = ? ORDER BY id DESC LIMIT 1
 -- INCLUDE (slug) keeps the lookup index-only when possible.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_slugs__post_id__created_at_desc
-ON post_slugs (post_id, created_at DESC)
+CREATE INDEX IF NOT EXISTS idx_post_slugs__post_id__id_desc
+ON post_slugs (post_id, id DESC)
 INCLUDE (slug);
 
 COMMENT ON TABLE post_slugs IS 'URL slugs for posts. The most recently created slug is canonical; older slugs redirect.';
 COMMENT ON COLUMN post_slugs.post_id IS 'The post this slug belongs to.';
-COMMENT ON COLUMN post_slugs.slug IS 'URL-safe lowercase slug (primary key). Unique across all posts.';
+COMMENT ON COLUMN post_slugs.slug IS 'URL-safe lowercase slug, unique across all posts.';
 
 -- =============================================================================
 -- agents

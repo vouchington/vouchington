@@ -39,15 +39,15 @@ export async function listEmailAddressesPage(
     query.append(sql` AND (
       (is_primary::int) < ${options.after.tier}
       OR ((is_primary::int) = ${options.after.tier}
-        AND created_at > ${options.after.timestamp}::timestamptz)
+        AND uuid_extract_timestamp(id) > ${options.after.timestamp}::timestamptz)
       OR ((is_primary::int) = ${options.after.tier}
-        AND created_at = ${options.after.timestamp}::timestamptz
+        AND uuid_extract_timestamp(id) = ${options.after.timestamp}::timestamptz
         AND email_address > ${options.after.name})
     )`)
   }
   query.append(
     sql` ORDER BY (is_primary::int) DESC,
-      created_at ASC, email_address ASC LIMIT ${options.limit + 1}`,
+      uuid_extract_timestamp(id) ASC, email_address ASC LIMIT ${options.limit + 1}`,
   )
   const { rows } = await read<EmailAddress & { cursor_timestamp: string }>(query)
   return {
@@ -58,7 +58,7 @@ export async function listEmailAddressesPage(
 
 export async function getPrimaryEmailAddress(userId: string): Promise<string | null> {
   const { rows } = await read<{ email_address: string }>(
-    sql`/* getPrimaryEmailAddress */ SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} ORDER BY is_primary DESC, created_at ASC LIMIT 1`,
+    sql`/* getPrimaryEmailAddress */ SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} ORDER BY is_primary DESC, uuid_extract_timestamp(id) ASC LIMIT 1`,
   )
   return rows[0]?.email_address ?? null
 }

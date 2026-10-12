@@ -117,7 +117,7 @@ export async function checkAvailability(
       // Common path first: an active post with this slug is the conflict (one query).
       const post = await getPostByAny(trimmed)
       if (!post) {
-        // Not active: post_slugs keeps the slug (PK) even for deleted posts, which still reserves it.
+        // Not active: post_slugs keeps the unique slug even for deleted posts, which still reserves it.
         if (await postSlugExists(trimmed)) return { available: false, conflict: null }
         return { available: true, conflict: null }
       }

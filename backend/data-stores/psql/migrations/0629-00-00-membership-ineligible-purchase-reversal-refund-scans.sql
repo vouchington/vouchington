@@ -57,14 +57,16 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_observations (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_ineligible_purchase_reversal_refund_scan_id UUID NOT NULL
     CONSTRAINT fk_mipr_succeeded_refund_observations__scan REFERENCES membership_ineligible_purchase_reversal_refund_scans(id) ON DELETE RESTRICT,
   stripe_refund_id TEXT NOT NULL,
   amount_minor_units BIGINT NOT NULL CONSTRAINT chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code currency_codes NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT pk_mipr_succeeded_refund_observations PRIMARY KEY (
+  CONSTRAINT uq_mipr_succeeded_refund_observations__scan_refund UNIQUE (
     membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id
   ),
   CONSTRAINT chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id CHECK (char_length(stripe_refund_id) BETWEEN 1 AND 255 AND stripe_refund_id = TRIM(stripe_refund_id))
