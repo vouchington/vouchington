@@ -1,6 +1,13 @@
-import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  write,
+} from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { enqueueRecordedMembershipPauseCollectionBestEffort } from '@services/memberships/pause-collection/enqueue-recorded'
+import { recordMembershipPauseCollectionWork } from '@services/memberships/pause-collection/record'
 import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
@@ -71,6 +78,10 @@ export async function liftUserSuspensionById(
         reason: 'author_suspension_changed',
         footprint: { priorAuthorUserId: suspension.user_id },
       })
+      await recordMembershipPauseCollectionWork(query, suspension.user_id)
+      registerPostCommitAction(query, () =>
+        enqueueRecordedMembershipPauseCollectionBestEffort(suspension.user_id),
+      )
     }
   }
   if (options.query || options.client) return withTransactionOptions(options, run)

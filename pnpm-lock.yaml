@@ -7538,6 +7538,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../memberships
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases

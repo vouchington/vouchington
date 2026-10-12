@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type PauseCollectionClaim = {
@@ -12,7 +12,7 @@ export async function confirmMembershipPauseCollectionLease(input: {
   requestedAt: string
   leaseToken: string
 }): Promise<PauseCollectionClaim | null> {
-  const { rows } = await read<{ leaseToken: string; suspended: boolean }>(
+  const { rows } = await write<{ leaseToken: string; suspended: boolean }>(
     sql`/* confirmMembershipPauseCollectionLease */
       SELECT work.lease_token AS "leaseToken",
         EXISTS (
@@ -63,7 +63,7 @@ export async function membershipPauseCollectionLeaseHeld(input: {
   requestedAt: string
   leaseToken: string
 }): Promise<boolean> {
-  const { rows } = await read<{ held: boolean }>(sql`/* membershipPauseCollectionLeaseHeld */
+  const { rows } = await write<{ held: boolean }>(sql`/* membershipPauseCollectionLeaseHeld */
     SELECT true AS held
     FROM membership_pause_collection_work_items
     WHERE user_id = ${input.userId}

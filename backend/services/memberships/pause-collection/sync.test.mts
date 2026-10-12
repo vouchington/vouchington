@@ -206,6 +206,22 @@ describe('membership pause collection', () => {
     expect(update).toHaveBeenCalledTimes(1)
   })
 
+  it('reacquires a released dispatcher lease and retries Stripe', async () => {
+    const member = await createTestUser()
+    await directSubscription(member.id)
+    update.mockRejectedValueOnce(new Error('stripe timeout'))
+    await suspendTestUser(member.id)
+    await queuePause(member.id)
+    const [job] = await pauseJobs(member.id)
+    const stale = { ...job!, leaseToken: randomUUID() }
+
+    await expect(syncMembershipPauseCollection(stale)).rejects.toThrow('stripe timeout')
+    await syncMembershipPauseCollection(stale)
+
+    expect(update).toHaveBeenCalledTimes(2)
+    await deleteTestMembershipPauseCollectionWork(member.id)
+  })
+
   it('reclaims an expired lease when unleased work fills the page', async () => {
     const expired = await createTestUser()
     const queued = await createTestUser()

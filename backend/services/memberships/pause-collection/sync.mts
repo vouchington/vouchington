@@ -45,11 +45,12 @@ async function claimForSync(
   input: SyncMembershipPauseCollectionInput,
 ): Promise<PauseCollectionClaim | null> {
   if (input.leaseToken) {
-    return confirmMembershipPauseCollectionLease({
+    const confirmed = await confirmMembershipPauseCollectionLease({
       userId: input.userId,
       requestedAt: input.requestedAt,
       leaseToken: input.leaseToken,
     })
+    if (confirmed) return confirmed
   }
   return claimMembershipPauseCollection(input)
 }
