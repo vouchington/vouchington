@@ -71,6 +71,7 @@ export async function processOAuthAuthorizationExchange(
   // This write precedes decrypt/provider execution. If it fails, no provider is called.
   await ownership?.persist(authorization.exchange_claim_id)
 
+  let providerRequestArmed = false
   try {
     const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
     const providerExchangeTimeoutMs =
@@ -84,6 +85,7 @@ export async function processOAuthAuthorizationExchange(
     switch (authorization.provider) {
       case 'facebook':
         await ownership?.persist(authorization.exchange_claim_id, true)
+        providerRequestArmed = ownership !== undefined
         await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
         break
       case 'x': {
@@ -92,6 +94,7 @@ export async function processOAuthAuthorizationExchange(
           authorization.pkce_verifier_ciphertext,
         )
         await ownership?.persist(authorization.exchange_claim_id, true)
+        providerRequestArmed = ownership !== undefined
         await dependencies.upsertX(
           code,
           authorization.redirect_uri,
@@ -106,6 +109,7 @@ export async function processOAuthAuthorizationExchange(
           authorization.pkce_verifier_ciphertext,
         )
         await ownership?.persist(authorization.exchange_claim_id, true)
+        providerRequestArmed = ownership !== undefined
         await dependencies.upsertGithub(code, authorization.redirect_uri, {
           codeVerifier,
           ...completionOptions,
@@ -113,6 +117,9 @@ export async function processOAuthAuthorizationExchange(
       }
     }
   } catch (outerErr) {
+    // Retain durable armed ownership: a provider exception may follow external success.
+    // The next owned continuation establishes the terminal unknown outcome.
+    if (providerRequestArmed) throw outerErr
     let rejected: boolean
     try {
       rejected = await dependencies.rejectExhausted(

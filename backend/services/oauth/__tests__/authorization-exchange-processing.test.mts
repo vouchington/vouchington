@@ -58,6 +58,42 @@ describe('OAuth authorization provider exchange processing', () => {
     },
   )
 
+  it.each(['facebook', 'x', 'github'] as const)(
+    'retains armed ownership and the raw %s provider exception for terminal continuation',
+    async provider => {
+      const failure =
+        provider === 'github'
+          ? Symbol('raw provider outcome failure')
+          : new Error('provider outcome is unknown')
+      const dependencies = exchangeDependencies(provider)
+      const providerCall =
+        provider === 'facebook'
+          ? dependencies.upsertFacebook
+          : provider === 'x'
+            ? dependencies.upsertX
+            : dependencies.upsertGithub
+      vi.mocked(providerCall).mockRejectedValue(failure)
+      const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
+      await expect(
+        processOAuthAuthorizationExchange('flow-id', dependencies, {
+          async persist(claimId, armed) {
+            writes.push({ claimId, armed })
+          },
+        }),
+      ).rejects.toBe(failure)
+      expect(writes).toEqual([
+        { claimId: 'claim-id', armed: undefined },
+        { claimId: 'claim-id', armed: true },
+      ])
+      expect(providerCall).toHaveBeenCalledTimes(1)
+      expect(dependencies.upsertFacebook).toHaveBeenCalledTimes(provider === 'facebook' ? 1 : 0)
+      expect(dependencies.upsertX).toHaveBeenCalledTimes(provider === 'x' ? 1 : 0)
+      expect(dependencies.upsertGithub).toHaveBeenCalledTimes(provider === 'github' ? 1 : 0)
+      expect(dependencies.rejectExhausted).not.toHaveBeenCalled()
+      expect(dependencies.releaseClaim).not.toHaveBeenCalled()
+    },
+  )
+
   it('releases the claim when authorization-code decryption fails', async () => {
     const failure = new Error('authorization code decryption failed')
     const dependencies = exchangeDependencies('x')
