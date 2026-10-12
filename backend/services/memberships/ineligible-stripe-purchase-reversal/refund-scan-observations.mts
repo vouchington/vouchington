@@ -58,7 +58,7 @@ export async function insertSucceededStripeRefundObservations(
       membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id,
       amount_minor_units, currency_code
     ) SELECT ${scanId}::uuid AS scan_id, refund_id, amount_minor_units, currency_code
-    FROM UNNEST(${ids}::TEXT[], ${amounts}::BIGINT[], ${currencies}::TEXT[])
+    FROM UNNEST(${ids}::TEXT[], ${amounts}::BIGINT[], ${currencies}::currency_codes[])
       AS observation(refund_id, amount_minor_units, currency_code)
     ORDER BY scan_id, refund_id
     ON CONFLICT (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)

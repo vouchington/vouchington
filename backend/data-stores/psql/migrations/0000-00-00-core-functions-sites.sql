@@ -157,8 +157,7 @@ END $$;
 -- Currencies table
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS currencies (
-  code TEXT PRIMARY KEY,
-  CHECK (code ~ '^[a-z]{3}$'),
+  code currency_codes PRIMARY KEY,
   minor_unit_exponent SMALLINT NOT NULL,
   CHECK (minor_unit_exponent BETWEEN 0 AND 4)
 );

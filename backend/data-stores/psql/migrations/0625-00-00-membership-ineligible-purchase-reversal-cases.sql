@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_cases (
   winning_source_kind membership_source_kinds NOT NULL,
   qualifying_amount_minor_units BIGINT NOT NULL CONSTRAINT chk_memb_ineli_purch_rever_cases__qualifying_amount_minor_units CHECK (qualifying_amount_minor_units BETWEEN 0 AND 9007199254740991),
   refund_cap_minor_units BIGINT NOT NULL CONSTRAINT chk_member_inelig_purchas_reversa_cases__refund_cap_minor_units CHECK (refund_cap_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT NOT NULL,
+  currency_code currency_codes NOT NULL,
   period_started_at TIMESTAMPTZ NOT NULL,
   period_ends_at TIMESTAMPTZ NOT NULL,
   collision_at TIMESTAMPTZ NOT NULL,

@@ -106,9 +106,9 @@ export async function recordMembershipRefundEvent(options: {
         AND operation.application_id = ${options.providerApplicationId ?? 'voucha-web'}
         AND operation.operation_kind = 'administrator_refund'
         AND attempt.amount_minor_units = receipt.amount_minor_units
-        AND attempt.currency_code = receipt.currency_code
+        AND attempt.currency_code::text = receipt.currency_code
         AND request.amount_minor_units = receipt.amount_minor_units
-        AND request.currency_code = receipt.currency_code
+        AND request.currency_code::text = receipt.currency_code
         AND request.provider_payment_reference IN (
           receipt.stripe_charge_id, receipt.stripe_payment_intent_id
         )
