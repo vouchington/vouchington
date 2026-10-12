@@ -8,6 +8,9 @@ const { mockUseManageSourcePage } = vi.hoisted(() => ({
 vi.mock(import('@/components/topics/manage-source/use-manage-source-page'), () => ({
   useManageSourcePage: mockUseManageSourcePage,
 }))
+vi.mock(import('@/components/topics/manage-source/domains-section'), () => ({
+  DomainsSection: () => <div data-testid='domains-section' />,
+}))
 vi.mock(import('@/components/topics/manage-source/source-section'), () => ({
   SourceSection: () => <div data-testid='source-section' />,
 }))
@@ -86,6 +89,7 @@ describe('SourceClient', () => {
     )
     expect(screen.getByText('Failed to load')).toBeInTheDocument()
     expect(screen.queryByTestId('source-section')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('domains-section')).not.toBeInTheDocument()
   })
 
   it('renders source section when no feed is loaded', () => {
@@ -110,6 +114,7 @@ describe('SourceClient', () => {
       />,
     )
     expect(screen.getByTestId('source-section')).toBeInTheDocument()
+    expect(screen.queryByTestId('domains-section')).not.toBeInTheDocument()
     expect(screen.queryByTestId('crawl-history-section')).not.toBeInTheDocument()
   })
 
@@ -134,6 +139,7 @@ describe('SourceClient', () => {
         initialData={{}}
       />,
     )
+    expect(screen.queryByTestId('domains-section')).not.toBeInTheDocument()
     expect(screen.getByTestId('crawl-history-section')).toBeInTheDocument()
     const section = screen.getByTestId('crawl-history-section')
     expect(section.getAttribute('data-crawls-href')).toContain('/crawls')

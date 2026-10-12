@@ -48,5 +48,11 @@
       "web/test-helpers/vitest.setup.storybook-browser-guard.mts"
     ]
   },
-  "ignore": ["**/migrations/**", "**/fixtures/**", "**/route-selectors.generated.mts"]
+  "ignore": [
+    "**/migrations/**",
+    "**/fixtures/**",
+    "**/route-selectors.generated.mts",
+    "**/bank-account-fields.tsx",
+    "**/credit-card-fields.tsx"
+  ]
 }

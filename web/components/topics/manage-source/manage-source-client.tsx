@@ -1,13 +1,9 @@
 'use client'
 
-import { CrawlHistorySection } from './crawl-history-section'
 import { DomainsSection } from './domains-section'
-import { FeedActionsSection } from './feed-actions-section'
-import { FeedMetadataSection } from './feed-metadata-section'
-import { SourceSection } from './source-section'
+import { SourceFeedSections } from './source-feed-sections'
 import { useManageSourcePage } from './use-manage-source-page'
 import type { ManageSourceState } from './manage-source-model'
-import { createTopicPathname } from '@/lib/links/entity-href'
 
 export function ManageSourceClient({
   id,
@@ -17,10 +13,6 @@ export function ManageSourceClient({
   initialData: Partial<ManageSourceState>
 }) {
   const { handlers, state } = useManageSourcePage(id, initialData)
-
-  const crawlsHref = createTopicPathname({ topic_type: 'rss_feed', id }, '/crawls')
-  const crawlDetailHrefBase = createTopicPathname({ topic_type: 'rss_feed', id }, '/crawls/')
-  const newsHref = createTopicPathname({ topic_type: 'rss_feed', id }, '/latest')
 
   if (state.loadError) {
     return (
@@ -48,35 +40,11 @@ export function ManageSourceClient({
         hostnamesFetchError={state.hostnamesFetchError}
         onClearHostnamesError={handlers.handleClearHostnamesError}
       />
-      <SourceSection
-        onSubmit={handlers.handleSubmit}
-        rssFeed={state.rssFeed}
-        saving={state.saving}
+      <SourceFeedSections
+        id={id}
+        handlers={handlers}
+        state={state}
       />
-      {state.rssFeed && (
-        <>
-          <FeedActionsSection
-            confirmDelete={state.confirmDelete}
-            deleting={state.deleting}
-            onConfirmDeleteChange={handlers.handleConfirmDeleteChange}
-            onDelete={handlers.handleDelete}
-            onRefresh={handlers.handleRefresh}
-            onToggle={handlers.handleToggle}
-            onToggleDiscoverability={handlers.handleToggleDiscoverability}
-            refreshing={state.refreshing}
-            rssFeed={state.rssFeed}
-            toggling={state.toggling}
-            togglingDiscoverability={state.togglingDiscoverability}
-          />
-          <FeedMetadataSection rssFeed={state.rssFeed} />
-          <CrawlHistorySection
-            crawls={state.crawls}
-            crawlsHref={crawlsHref}
-            crawlDetailHrefBase={crawlDetailHrefBase}
-            newsHref={newsHref}
-          />
-        </>
-      )}
     </div>
   )
 }

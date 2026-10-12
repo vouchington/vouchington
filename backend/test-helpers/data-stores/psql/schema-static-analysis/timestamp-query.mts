@@ -2,9 +2,7 @@
 import { read } from '../../../../data-stores/psql/index.mts'
 import type { TimestampConventionViolation } from './conventions.mts'
 
-export async function getTimestampConventionViolations(): Promise<TimestampConventionViolation[]> {
-  const { rows } = await read<TimestampConventionViolation>(
-    `/* getTimestampConventionViolations */
+const timestampConventionViolationsSql = `/* getTimestampConventionViolations */
       WITH public_tables AS (
         SELECT pg_class.oid, pg_class.relname
         FROM pg_class
@@ -96,8 +94,10 @@ export async function getTimestampConventionViolations(): Promise<TimestampConve
       SELECT columns.table_name, 'timestamp-without-time-zone' AS problem, columns.column_name
       FROM columns
       WHERE columns.data_type = 'timestamp without time zone'
-      ORDER BY table_name, problem, detail`,
-  )
+      ORDER BY table_name, problem, detail`
+
+export async function getTimestampConventionViolations(): Promise<TimestampConventionViolation[]> {
+  const { rows } = await read<TimestampConventionViolation>(timestampConventionViolationsSql)
   return rows
 }
 /* v8 ignore stop */
