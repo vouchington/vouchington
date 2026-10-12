@@ -1,5 +1,3 @@
-export type ActivityPubDeliveryJobs = 'distributeActivity' | 'deliverActivity'
-
 export type ActivityPubInboxDeliveryJob = {
   deliveryId: string
   leaseToken: string
