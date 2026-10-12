@@ -83,8 +83,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.86.0
-        version: 0.86.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.86.2
+        version: 0.86.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -143,8 +143,8 @@ importers:
         specifier: ^1.64.0
         version: 1.64.0
       pr-shepherd:
-        specifier: ^0.56.6
-        version: 0.56.6(supports-color@10.2.2)
+        specifier: ^0.57.0
+        version: 0.57.0(supports-color@10.2.2)
       squawk-cli:
         specifier: ^2.67.0
         version: 2.67.0
@@ -19970,8 +19970,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.86.0:
-    resolution: {integrity: sha512-mb8SHTnbP+nkjGAUlZPaNHqmiT/2s1kT0b77LCF7qyqwbrJq0hQvfeM45TYHdKw3vbszPC+J++x8ProGuRg9wA==}
+  eslint-plugin-no-mistakes@0.86.2:
+    resolution: {integrity: sha512-4VdmxQBqGEetnXqrqP/+p0qxPQmOCQzsq34eKlRs4q1XfucU9qfYnXbtsv89sdxxCxOjDqjlrbbIRMQRu767Rg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21729,8 +21729,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.56.6:
-    resolution: {integrity: sha512-9JUy5mZT92lu359vEtsAhqL6KlK8PdxJsJcyrL0pZDhVe1GDXagZo7170WR+b3CNcWR563lI9g0qHXjGzdltAw==}
+  pr-shepherd@0.57.0:
+    resolution: {integrity: sha512-8WYEDfZxampRKjBZLWKpYd8jEq/sio8sc/WReFKf/LYDu0kaCc+JXQMQbNwLbQTtLs9yD4BjZF3rdkLAWpO/iw==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -22622,6 +22622,10 @@ packages:
 
   undici@7.29.1:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
+    engines: {node: '>=20.18.1'}
+
+  undici@7.30.0:
+    resolution: {integrity: sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==}
     engines: {node: '>=20.18.1'}
 
   undici@8.11.2:
@@ -28754,7 +28758,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.86.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.86.2(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -30767,10 +30771,11 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.56.6(supports-color@10.2.2):
+  pr-shepherd@0.57.0(supports-color@10.2.2):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
+      undici: 7.30.0
       yaml: 2.9.1
       zod: 4.6.5
     transitivePeerDependencies:
@@ -31780,6 +31785,8 @@ snapshots:
   undici@6.28.1: {}
 
   undici@7.29.1: {}
+
+  undici@7.30.0: {}
 
   undici@8.11.2: {}
 
