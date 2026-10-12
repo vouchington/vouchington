@@ -4,12 +4,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { SPEND_CAP_RECHECK_JOB_NAME } from '../config.mts'
 import type { SpendCapRecheckJobData } from '../types.mts'
+import { enqueueSpendCapRecheck } from './spend-cap-recheck.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
 describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
+  it('enqueues the coordinator with generation-scoped deduplication and priority zero', async () => {
+    const generation = randomUUID()
+    const job = await enqueueSpendCapRecheck('2026-08-16', generation, 1_000)
+    if (!job) throw new Error('Expected spend-cap recheck job')
+    try {
+      expect(job.data).toEqual({ day: '2026-08-16', generation })
+      expect(job.opts).toMatchObject({
+        delay: 1_000,
+        attempts: 2_880,
+        backoff: { type: 'fixed', delay: 60_000, jitter: 0 },
+        removeOnComplete: true,
+        removeOnFail: true,
+        priority: 0,
+        deduplication: {
+          id: `ai-spend-cap-recheck_2026-08-16_${generation}`,
+          mode: 'simple',
+        },
+      })
+    } finally {
+      await job.remove()
+    }
+  })
+
   it('wakes an idle coordinator worker after its delay elapses', async () => {
     const queueName = `ai_spend_cap_recheck_wake_${randomUUID()}`
     const queue = new Queue<SpendCapRecheckJobData>(queueName, connection)
