@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans 
   id UUID CONSTRAINT pk_mipr_refund_scans PRIMARY KEY DEFAULT uuidv7(),
   membership_ineligible_purchase_reversal_case_id UUID NOT NULL,
   invoice_id TEXT NOT NULL,
-  currency_code TEXT NOT NULL,
+  currency_code currency_codes NOT NULL,
   charge_id TEXT,
   payment_intent_id TEXT,
   generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT ck_mipr_refund_scans__generation_safe CHECK (generation BETWEEN 1 AND 9007199254740991),
@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_members_ineligib_purchase_reversal_refund_scans__invoice_id CHECK (char_length(invoice_id) BETWEEN 1 AND 255 AND invoice_id = TRIM(invoice_id)),
-  CONSTRAINT chk_members_ineligi_purchas_reversa_refund_scans__currency_code CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code)),
   CONSTRAINT chk_membersh_ineligib_purchase_reversal_refund_scans__charge_id CHECK (charge_id IS NULL OR (char_length(charge_id) BETWEEN 1 AND 255 AND charge_id = TRIM(charge_id))),
   CONSTRAINT chk_member_inelig_purcha_revers_refund_scans__payment_intent_id CHECK (payment_intent_id IS NULL OR (char_length(payment_intent_id) BETWEEN 1 AND 255 AND payment_intent_id = TRIM(payment_intent_id))),
   CONSTRAINT chk_membe_ineli_purch_rever_refund_scans__head_stripe_refund_id CHECK (head_stripe_refund_id IS NULL OR (char_length(head_stripe_refund_id) BETWEEN 1 AND 255 AND head_stripe_refund_id = TRIM(head_stripe_refund_id))),
@@ -62,14 +61,13 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_observ
     CONSTRAINT fk_mipr_succeeded_refund_observations__scan REFERENCES membership_ineligible_purchase_reversal_refund_scans(id) ON DELETE RESTRICT,
   stripe_refund_id TEXT NOT NULL,
   amount_minor_units BIGINT NOT NULL CONSTRAINT chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT NOT NULL,
+  currency_code currency_codes NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT pk_mipr_succeeded_refund_observations PRIMARY KEY (
     membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id
   ),
-  CONSTRAINT chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id CHECK (char_length(stripe_refund_id) BETWEEN 1 AND 255 AND stripe_refund_id = TRIM(stripe_refund_id)),
-  CONSTRAINT chk_member_inelig_purchas_reversa_refund_observa__currency_code CHECK (char_length(currency_code) BETWEEN 1 AND 16 AND currency_code = TRIM(currency_code))
+  CONSTRAINT chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id CHECK (char_length(stripe_refund_id) BETWEEN 1 AND 255 AND stripe_refund_id = TRIM(stripe_refund_id))
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -94,7 +92,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  scan_currency TEXT;
+  scan_currency currency_codes;
 BEGIN
   SELECT currency_code INTO scan_currency
   FROM membership_ineligible_purchase_reversal_refund_scans

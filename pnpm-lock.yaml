@@ -1421,6 +1421,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@ts-shared/money':
+        specifier: workspace:^
+        version: link:../../../ts-shared/money
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

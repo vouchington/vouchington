@@ -51,9 +51,10 @@ export async function checkMonetaryMigration(
   for (const table of tables) {
     const currencyColumns = table.columns.filter(column => column.name.endsWith('currency_code'))
     for (const currencyColumn of currencyColumns) {
-      if (currencyColumn.type !== 'text') {
+      const expectedType = table.name === 'membership_refunds' ? 'text' : 'currency_codes'
+      if (currencyColumn.type !== expectedType) {
         errors.push(
-          `::error file=${file}::${file}: ${table.name}.${currencyColumn.name} must be TEXT`,
+          `::error file=${file}::${file}: ${table.name}.${currencyColumn.name} must be ${expectedType.toUpperCase()}`,
         )
       }
     }

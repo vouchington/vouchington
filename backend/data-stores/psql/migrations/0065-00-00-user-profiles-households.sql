@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS individual_cards (
   closed_on DATE,
   credit_limit_minor_units BIGINT,
   CHECK (credit_limit_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes REFERENCES currencies(code) ON DELETE RESTRICT,
   CHECK ((credit_limit_minor_units IS NULL) = (currency_code IS NULL)),
   received_sign_up_bonus_on DATE,
 
@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS spending_entries (
   spending_frequency spending_frequencies NOT NULL DEFAULT 'monthly',
   amount_minor_units BIGINT NOT NULL,
   CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
 
   note TEXT,
 
@@ -287,7 +287,7 @@ CREATE TABLE IF NOT EXISTS individual_rewards_program_point_valuations (
 
   value_microunits_per_point BIGINT NOT NULL,
   CONSTRAINT chk_indiv_rewar_progra_point_valuat__value_microunits_per_point CHECK (value_microunits_per_point BETWEEN 0 AND 9999999999),
-  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
 
   note TEXT,
 
@@ -347,7 +347,7 @@ CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   -- Total credit limit across all open cards in the currency minor unit.
   total_credit_limit_minor_units BIGINT,
   CONSTRAINT chk_individu_financial_profiles__total_credit_limit_minor_units CHECK (total_credit_limit_minor_units BETWEEN 0 AND 9007199254740991),
-  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
   -- Years since oldest credit account was opened
   years_of_credit_history SMALLINT,
   -- Hard credit inquiries in the last 12 months (credit-card relevant)
