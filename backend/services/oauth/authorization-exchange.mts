@@ -1,3 +1,4 @@
+import { exchangeClaimedOAuthAuthorization } from './authorization-exchange-provider.mts'
 import { settleOAuthAuthorizationExchangeClaim } from './authorization-exchange-disposition.mts'
 import { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import { upsertGithubAccount } from '@services/oauth-github'
@@ -10,6 +11,7 @@ import {
   claimOAuthAuthorizationExchange,
   rejectExhaustedOAuthAuthorizationExchange,
   releaseOAuthAuthorizationExchangeClaim,
+  validateOAuthAuthorizationExchangeClaim,
 } from './authorization-exchange-state.mts'
 
 const PROVIDER_EXCHANGE_TIMEOUT_MS = 30_000
@@ -21,6 +23,7 @@ export {
 } from './authorization-exchange-recovery.mts'
 
 export type OAuthAuthorizationExchangeDependencies = {
+  validateClaim: typeof validateOAuthAuthorizationExchangeClaim
   claim: typeof claimOAuthAuthorizationExchange
   decryptCode: typeof decryptOAuthAuthorizationCode
   decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
@@ -32,6 +35,7 @@ export type OAuthAuthorizationExchangeDependencies = {
 }
 
 const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
+  validateClaim: validateOAuthAuthorizationExchangeClaim,
   claim: claimOAuthAuthorizationExchange,
   decryptCode: decryptOAuthAuthorizationCode,
   decryptVerifier: decryptOAuthAuthorizationPkceVerifier,
@@ -68,13 +72,22 @@ export async function processOAuthAuthorizationExchange(
   }
   const authorization = await dependencies.claim(flowId)
   if (!authorization) return
+  // The deadline includes both ownership writes; resuming a stalled write cannot restart it.
+  const signal = AbortSignal.timeout(
+    authorization.provider === 'x' ? X_PROVIDER_EXCHANGE_TIMEOUT_MS : PROVIDER_EXCHANGE_TIMEOUT_MS,
+  )
   // This write precedes decrypt/provider execution. If it fails, no provider is called.
   try {
     await ownership?.persist(authorization.exchange_claim_id)
   } catch (outerErr) {
     // No provider was admitted, even if the queue write committed before its response failed.
     try {
-      await dependencies.releaseClaim(authorization.id, authorization.exchange_claim_id)
+      const rejected = await dependencies.rejectExhausted(
+        authorization.id,
+        authorization.exchange_claim_id,
+      )
+      if (!rejected)
+        await dependencies.releaseClaim(authorization.id, authorization.exchange_claim_id)
     } catch (err) {
       const aggregateError = new AggregateError(
         [outerErr, err],
@@ -86,55 +99,19 @@ export async function processOAuthAuthorizationExchange(
     throw outerErr
   }
 
-  let providerRequestArmed = false
+  const admission = { armed: false }
   try {
-    const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
-    const providerExchangeTimeoutMs =
-      authorization.provider === 'x' ? X_PROVIDER_EXCHANGE_TIMEOUT_MS : PROVIDER_EXCHANGE_TIMEOUT_MS
-    const completionOptions = {
-      authorizationId: authorization.id,
-      authorizationClaimId: authorization.exchange_claim_id,
-      signal: AbortSignal.timeout(providerExchangeTimeoutMs),
-    }
-
-    switch (authorization.provider) {
-      case 'facebook':
-        await ownership?.persist(authorization.exchange_claim_id, true)
-        providerRequestArmed = ownership !== undefined
-        await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
-        break
-      case 'x': {
-        const codeVerifier = dependencies.decryptVerifier(
-          authorization.id,
-          authorization.pkce_verifier_ciphertext,
-        )
-        await ownership?.persist(authorization.exchange_claim_id, true)
-        providerRequestArmed = ownership !== undefined
-        await dependencies.upsertX(
-          code,
-          authorization.redirect_uri,
-          codeVerifier,
-          completionOptions,
-        )
-        break
-      }
-      case 'github': {
-        const codeVerifier = dependencies.decryptVerifier(
-          authorization.id,
-          authorization.pkce_verifier_ciphertext,
-        )
-        await ownership?.persist(authorization.exchange_claim_id, true)
-        providerRequestArmed = ownership !== undefined
-        await dependencies.upsertGithub(code, authorization.redirect_uri, {
-          codeVerifier,
-          ...completionOptions,
-        })
-      }
-    }
+    await exchangeClaimedOAuthAuthorization(
+      authorization,
+      dependencies,
+      ownership,
+      admission,
+      signal,
+    )
   } catch (outerErr) {
     // Retain durable armed ownership: a provider exception may follow external success.
     // The next owned continuation establishes the terminal unknown outcome.
-    if (providerRequestArmed) throw outerErr
+    if (admission.armed) throw outerErr
     let rejected: boolean
     try {
       rejected = await dependencies.rejectExhausted(

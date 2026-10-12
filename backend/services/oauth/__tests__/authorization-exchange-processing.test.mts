@@ -3,9 +3,7 @@ import {
   processOAuthAuthorizationExchange,
   type OAuthExchangeOwnership,
 } from '../authorization-exchange.mts'
-import type { BrokerOAuthProvider } from '../broker-config.mts'
-
-type ExchangeDependencies = NonNullable<Parameters<typeof processOAuthAuthorizationExchange>[1]>
+import { createTestOAuthExchangeDependencies as exchangeDependencies } from '@voucha/test-helpers/oauth-exchange-dependencies'
 
 describe('OAuth authorization provider exchange processing', () => {
   it.each(['facebook', 'x', 'github'] as const)(
@@ -108,7 +106,7 @@ describe('OAuth authorization provider exchange processing', () => {
     expect(dependencies.releaseClaim).toHaveBeenCalledExactlyOnceWith('flow-id', 'claim-id')
     expect(dependencies.decryptCode).not.toHaveBeenCalled()
     expect(dependencies.upsertX).not.toHaveBeenCalled()
-    expect(dependencies.rejectExhausted).not.toHaveBeenCalled()
+    expect(dependencies.rejectExhausted).toHaveBeenCalledExactlyOnceWith('flow-id', 'claim-id')
   })
 
   it('retains ownership persistence as primary when releasing the unused claim also fails', async () => {
@@ -124,6 +122,58 @@ describe('OAuth authorization provider exchange processing', () => {
     expect(outcome.errors).toEqual([failure, releaseFailure])
     expect(outcome.cause).toBe(failure)
     expect(dependencies.decryptCode).not.toHaveBeenCalled()
+    expect(dependencies.upsertX).not.toHaveBeenCalled()
+  })
+
+  it('does not admit a provider after the persisted marker loses its native claim authority', async () => {
+    const dependencies = exchangeDependencies('github')
+    const failure = new Error('owned claim was terminalized during queue persistence')
+    const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
+    vi.mocked(dependencies.validateClaim).mockImplementation(async () => {
+      expect(writes.at(-1)).toEqual({ claimId: 'claim-id', armed: true })
+      throw failure
+    })
+    await expect(
+      processOAuthAuthorizationExchange('flow-id', dependencies, {
+        async persist(claimId, armed) {
+          writes.push({ claimId, armed })
+        },
+      }),
+    ).rejects.toBe(failure)
+    expect(dependencies.validateClaim).toHaveBeenCalledExactlyOnceWith('flow-id', 'claim-id')
+    expect(dependencies.upsertGithub).not.toHaveBeenCalled()
+    expect(dependencies.releaseClaim).not.toHaveBeenCalled()
+    expect(writes.at(-1)).toEqual({ claimId: 'claim-id', armed: true })
+  })
+
+  it('settles exhaustion before propagating the fifth initial ownership write failure', async () => {
+    const dependencies = exchangeDependencies('x')
+    const failure = new Error('fifth ownership write failed')
+    vi.mocked(dependencies.rejectExhausted).mockResolvedValue(true)
+    await expect(
+      processOAuthAuthorizationExchange('flow-id', dependencies, {
+        persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
+      }),
+    ).rejects.toBe(failure)
+    expect(dependencies.rejectExhausted).toHaveBeenCalledExactlyOnceWith('flow-id', 'claim-id')
+    expect(dependencies.releaseClaim).not.toHaveBeenCalled()
+    expect(dependencies.decryptCode).not.toHaveBeenCalled()
+    expect(dependencies.upsertX).not.toHaveBeenCalled()
+  })
+
+  it('retains ownership failure before native exhaustion failure without an uncertain release', async () => {
+    const dependencies = exchangeDependencies('x')
+    const failure = new Error('ownership write failed')
+    const nativeFailure = new Error('exhaustion mutation failed')
+    vi.mocked(dependencies.rejectExhausted).mockRejectedValue(nativeFailure)
+    const outcome = await processOAuthAuthorizationExchange('flow-id', dependencies, {
+      persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
+    }).catch(err => err)
+    expect(outcome).toBeInstanceOf(AggregateError)
+    if (!(outcome instanceof AggregateError)) throw new Error('Expected ordered cleanup errors')
+    expect(outcome.errors).toEqual([failure, nativeFailure])
+    expect(outcome.cause).toBe(failure)
+    expect(dependencies.releaseClaim).not.toHaveBeenCalled()
     expect(dependencies.upsertX).not.toHaveBeenCalled()
   })
 
@@ -225,41 +275,3 @@ describe('OAuth authorization provider exchange processing', () => {
     expect(error.cause).toBe(providerFailure)
   })
 })
-
-function exchangeDependencies(
-  provider: BrokerOAuthProvider,
-  providerFailure?: Error,
-): ExchangeDependencies {
-  const successfulAccount = {
-    user_id: null,
-    provider_user_id: 'provider-user',
-    provider_user_email_address: null,
-    provider_user_data: {},
-  }
-  return {
-    claim: vi.fn<ExchangeDependencies['claim']>(async () => ({
-      id: 'flow-id',
-      provider,
-      redirect_uri: 'https://example.com/callback',
-      callback_code_ciphertext: 'encrypted-code',
-      pkce_verifier_ciphertext: 'encrypted-verifier',
-      exchange_claim_id: 'claim-id',
-    })),
-    decryptCode: vi.fn<ExchangeDependencies['decryptCode']>(() => 'provider-code'),
-    decryptVerifier: vi.fn<ExchangeDependencies['decryptVerifier']>(() => 'provider-verifier'),
-    upsertFacebook: vi.fn<ExchangeDependencies['upsertFacebook']>(async () => {
-      if (provider === 'facebook' && providerFailure) throw providerFailure
-      return successfulAccount
-    }),
-    upsertGithub: vi.fn<ExchangeDependencies['upsertGithub']>(async () => {
-      if (provider === 'github' && providerFailure) throw providerFailure
-      return successfulAccount
-    }),
-    upsertX: vi.fn<ExchangeDependencies['upsertX']>(async () => {
-      if (provider === 'x' && providerFailure) throw providerFailure
-      return successfulAccount
-    }),
-    rejectExhausted: vi.fn<ExchangeDependencies['rejectExhausted']>(async () => false),
-    releaseClaim: vi.fn<ExchangeDependencies['releaseClaim']>(async () => undefined),
-  }
-}

@@ -22,5 +22,9 @@ export function createTestOAuthOwnershipPersistence(
       throw injectedError
     }
     await ownership.persist(claimId, providerRequestArmed)
+    if (fault === 'admission-expiry' && providerRequestArmed && !state.used) {
+      state.used = true
+      await expireTestOAuthAuthorization(authorizationId)
+    }
   }
 }

@@ -1,9 +1,11 @@
 import { createTestOAuthOwnershipPersistence } from './oauth-exchange-ownership-fault.mts'
-import { closeOwnedOAuthContinuation } from './oauth-exchange-continuation-resources.mts'
+import {
+  ownOAuthActors,
+  type createOAuthActorCleanupReceipt,
+} from './oauth-exchange-actor-owner.mts'
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { beginTransaction } from '@data-stores/psql'
-import { observeOAuthExchangeTerminal } from './oauth-exchange-terminal.mts'
 import {
   workerQueueConnection,
   workerQueuePrefix,
@@ -12,17 +14,9 @@ import type { OAuthAuthorizationExchangeJobData } from '../queues/oauth-authoriz
 import { processOAuthAuthorizationExchangeJob } from '../workers/oauth-authorization-exchange/processors/process-job.mts'
 import { processOAuthAuthorizationExchange } from '../services/oauth/authorization-exchange.mts'
 import {
-  claimOAuthAuthorizationExchange,
-  rejectExhaustedOAuthAuthorizationExchange,
-  releaseOAuthAuthorizationExchangeClaim,
-} from '../services/oauth/authorization-exchange-state.mts'
-import {
-  decryptOAuthAuthorizationCode,
-  decryptOAuthAuthorizationPkceVerifier,
-} from '../services/oauth/authorization-broker.mts'
-import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebook/index.mts'
-import { upsertGithubAccount } from '../services/oauth-github/index.mts'
-import { upsertXAccount } from '../services/oauth-x/index.mts'
+  createTestOAuthContinuationDependencies,
+  type OAuthContinuationMetrics,
+} from './oauth-exchange-continuation-dependencies.mts'
 
 export type OAuthContinuationFault =
   | 'rejection'
@@ -32,150 +26,129 @@ export type OAuthContinuationFault =
   | 'clear-write'
   | 'provider-outcome'
   | 'lost-provider-marker'
+  | 'admission-expiry'
 
 /** Real queue attempts, real claim/decrypt/mutations, and an actual second PostgreSQL connection. */
 export async function runTestOAuthExchangeContinuation(
   authorizationId: string,
   fault: OAuthContinuationFault,
+  cleanupReceipt: ReturnType<typeof createOAuthActorCleanupReceipt>,
   recordedClaimId?: string,
   expireOnWriteFailure = false,
 ) {
   const name = `oauth_continuation_${randomUUID()}`
   const jobId = randomUUID()
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-  const queue = new Queue<OAuthAuthorizationExchangeJobData>(name, connection)
-  let events: QueueEvents | undefined
-  let worker: Worker<OAuthAuthorizationExchangeJobData> | undefined
   const errors: unknown[] = []
+  const owner = ownOAuthActors(errors, cleanupReceipt)
+  const queue = owner.queue(() => new Queue<OAuthAuthorizationExchangeJobData>(name, connection))
   const attempts: { claimId: string | undefined; data: OAuthAuthorizationExchangeJobData }[] = []
-  let decryptCalls = 0
-  let providerCalls = 0
-  let primary: unknown
+  const metrics: OAuthContinuationMetrics = {
+    decryptCalls: 0,
+    providerCalls: 0,
+    primary: undefined,
+    faultUsed: false,
+  }
   let firstFailure: unknown
   let terminalError: unknown
   let terminalFailed = false
   let result: { state: string; data: OAuthAuthorizationExchangeJobData } | undefined
   const injectedError = new Error(`owned ${fault} storage fault`)
-  let faultUsed = false
   const ownershipFault = { used: false }
   try {
-    events = new QueueEvents(name, { ...connection, lastEventId: '0' })
-    const terminal = observeOAuthExchangeTerminal(events, jobId, err => errors.push(err))
-    await events.waitUntilReady()
-    worker = new Worker<OAuthAuthorizationExchangeJobData>(
-      name,
-      async (job: Job<OAuthAuthorizationExchangeJobData>) => {
-        await using holder = await beginTransaction()
-        const lock = async () => {
-          await holder('SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT', [
-            authorizationId,
-          ])
-        }
-        attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
-        try {
-          if (fault === 'provider-outcome' && attempts.length === 1) await lock()
-          await processOAuthAuthorizationExchangeJob(
-            job,
-            undefined,
-            async (id, _dependencies, ownership) => {
-              if (!ownership) throw new Error('Actual OAuth worker omitted queue ownership')
-              await processOAuthAuthorizationExchange(
-                id,
-                {
-                  claim: claimOAuthAuthorizationExchange,
-                  decryptCode(id, ciphertext) {
-                    decryptCalls += 1
-                    try {
-                      return decryptOAuthAuthorizationCode(id, ciphertext)
-                    } catch (err) {
-                      primary = err
-                      throw err
-                    }
-                  },
-                  decryptVerifier: decryptOAuthAuthorizationPkceVerifier,
-                  upsertFacebook(...args) {
-                    providerCalls += 1
-                    return upsertFacebookAuthorizationCodeAccount(...args)
-                  },
-                  upsertGithub(...args) {
-                    providerCalls += 1
-                    return upsertGithubAccount(...args)
-                  },
-                  upsertX(...args) {
-                    providerCalls += 1
-                    return upsertXAccount(...args)
-                  },
-                  async rejectExhausted(id, claimId) {
-                    if (fault === 'rejection' && !faultUsed) {
-                      faultUsed = true
-                      await lock()
-                    }
-                    const rejected = await rejectExhaustedOAuthAuthorizationExchange(id, claimId)
-                    if (fault === 'release' && !faultUsed) {
-                      faultUsed = true
-                      await lock()
-                    }
-                    return rejected
-                  },
-                  releaseClaim: releaseOAuthAuthorizationExchangeClaim,
-                },
-                {
-                  claimId: ownership.claimId,
-                  providerRequestArmed: ownership.providerRequestArmed,
-                  persist: createTestOAuthOwnershipPersistence(
+    const events = owner.events(() => new QueueEvents(name, { ...connection, lastEventId: '0' }))
+    const terminal = owner.observe(events, jobId)
+    await owner.run(() => events.waitUntilReady())
+    const worker = owner.worker(
+      () =>
+        new Worker<OAuthAuthorizationExchangeJobData>(
+          name,
+          (job: Job<OAuthAuthorizationExchangeJobData>) =>
+            owner.run(async () => {
+              owner.assertOpen()
+              await using holder = await beginTransaction()
+              owner.assertOpen()
+              const lock = async () => {
+                await owner.run(() =>
+                  holder('SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT', [
                     authorizationId,
-                    ownership,
-                    fault,
-                    injectedError,
-                    expireOnWriteFailure,
-                    ownershipFault,
-                  ),
-                },
-              )
-            },
-          )
-        } catch (err) {
-          if (attempts.length === 1) firstFailure = err
-          throw err
-        }
-        // await-using holder rollback occurs before the worker schedules its next actual attempt.
-      },
-      { ...connection, blockTimeout: 1000 },
+                  ]),
+                )
+              }
+              attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
+              try {
+                if (fault === 'provider-outcome' && attempts.length === 1) await lock()
+                await processOAuthAuthorizationExchangeJob(
+                  job,
+                  undefined,
+                  async (id, _dependencies, ownership) => {
+                    if (!ownership) throw new Error('Actual OAuth worker omitted queue ownership')
+                    await processOAuthAuthorizationExchange(
+                      id,
+                      createTestOAuthContinuationDependencies(owner, fault, lock, metrics),
+                      {
+                        claimId: ownership.claimId,
+                        providerRequestArmed: ownership.providerRequestArmed,
+                        persist: (claim, providerRequestArmed) =>
+                          owner.run(() =>
+                            createTestOAuthOwnershipPersistence(
+                              authorizationId,
+                              ownership,
+                              fault,
+                              injectedError,
+                              expireOnWriteFailure,
+                              ownershipFault,
+                            )(claim, providerRequestArmed),
+                          ),
+                      },
+                    )
+                  },
+                )
+              } catch (err) {
+                if (attempts.length === 1) firstFailure = err
+                throw err
+              }
+              // await-using holder rollback occurs before the worker schedules its next actual attempt.
+            }),
+          { ...connection, blockTimeout: 1000 },
+        ),
     )
     worker.on('error', err => {
       errors.push(err)
       terminal.reject(err)
     })
-    await worker.waitUntilReady()
-    const job = await queue.add(
-      'exchangeOAuthAuthorization',
-      {
-        authorizationId,
-        ...(recordedClaimId
-          ? { exchangeClaimId: recordedClaimId, exchangeProviderRequestArmed: true as const }
-          : {}),
-      },
-      {
-        jobId,
-        attempts: fault === 'provider-outcome' ? 5 : 2,
-        backoff: { type: 'exponential', delay: 250 },
-      },
+    await owner.run(() => worker.waitUntilReady())
+    const job = await owner.run(() =>
+      queue.add(
+        'exchangeOAuthAuthorization',
+        {
+          authorizationId,
+          ...(recordedClaimId
+            ? { exchangeClaimId: recordedClaimId, exchangeProviderRequestArmed: true as const }
+            : {}),
+        },
+        {
+          jobId,
+          attempts: fault === 'provider-outcome' ? 5 : 2,
+          backoff: { type: 'exponential', delay: 250 },
+        },
+      ),
     )
     if (!job || job.id !== jobId) throw new Error('Expected exact owned continuation job')
-    const receipt = await terminal.promise
+    const receipt = await owner.run(() => terminal.promise)
     terminalFailed = receipt.state === 'failed'
     if (terminalFailed) terminalError = new Error(receipt.failedReason)
 
-    const stored = await queue.getJob(job.id)
+    const stored = await owner.run(() => queue.getJob(job.id))
     if (!stored) throw new Error('Owned continuation job disappeared')
-    const state = await stored.getState()
+    const state = await owner.run(() => stored.getState())
     if (state !== receipt.state)
       throw new Error('Owned stream terminal receipt disagrees with job state')
     result = { state, data: stored.data }
   } catch (err) {
     errors.push(err)
   }
-  await closeOwnedOAuthContinuation(queue, events, worker, errors)
+  await owner.dispose()
   if (errors.length)
     throw new AggregateError(errors, 'Owned continuation actors failed to drain', {
       cause: errors[0],
@@ -184,9 +157,9 @@ export async function runTestOAuthExchangeContinuation(
   return {
     ...result,
     attempts,
-    decryptCalls,
-    providerCalls,
-    primary,
+    decryptCalls: metrics.decryptCalls,
+    providerCalls: metrics.providerCalls,
+    primary: metrics.primary,
     firstFailure,
     injectedError,
     terminalFailed,

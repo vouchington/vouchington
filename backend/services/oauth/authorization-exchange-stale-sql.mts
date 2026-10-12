@@ -3,8 +3,7 @@ export const rejectStaleOAuthAuthorizationExchangeSql = `/* rejectStaleOAuthAuth
   WITH stale_claim AS (
     SELECT id, exchange_claim_id, updated_at,
       CASE WHEN provider = 'x' AND callback_received_at <=
-        clock_timestamp() - make_interval(secs => $4) THEN 'provider_code_expired'
-        WHEN exchange_attempts >= $3 THEN 'provider_exchange_failed'
+        clock_timestamp() - make_interval(secs => $3) THEN 'provider_code_expired'
         ELSE 'provider_exchange_outcome_unknown' END AS callback_error
     FROM view_oauth_authorization_current_records
     WHERE id = $1 AND status = 'exchanging' AND expires_at > clock_timestamp()

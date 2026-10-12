@@ -9,6 +9,7 @@ import {
 } from '../services/oauth/authorization-broker.mts'
 import {
   claimOAuthAuthorizationExchange,
+  validateOAuthAuthorizationExchangeClaim,
   rejectExhaustedOAuthAuthorizationExchange,
   releaseOAuthAuthorizationExchangeClaim,
 } from '../services/oauth/authorization-exchange-state.mts'
@@ -33,6 +34,7 @@ export async function captureTestOAuthExchangeMutationFailure(
   }
   try {
     await processOAuthAuthorizationExchange(authorizationId, {
+      validateClaim: validateOAuthAuthorizationExchangeClaim,
       async claim(id) {
         const claimed = await claimOAuthAuthorizationExchange(id)
         if (claimed) {

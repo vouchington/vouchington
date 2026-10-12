@@ -1,4 +1,10 @@
 import { randomUUID } from 'node:crypto'
+import { v7 as uuidv7 } from 'uuid'
+import { createTestUserWithId, createTestUsername } from '@voucha/test-helpers/entities/users'
+import {
+  insertTestOAuthAccount,
+  connectTestOAuthAccount,
+} from '@voucha/test-helpers/entities/oauth-accounts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   deleteTestOAuthAuthorizationFixtures,
@@ -90,6 +96,26 @@ describe('OAuth recorded claim temporal disposition', () => {
       error: 'provider_exchange_failed',
     },
     {
+      label: 'armed fifth attempt remains an unknown outcome',
+      provider: 'github' as const,
+      attempts: 5,
+      expired: false,
+      oldCode: false,
+      armed: true,
+      status: 'rejected',
+      error: 'provider_exchange_outcome_unknown',
+    },
+    {
+      label: 'armed fifth attempt still obeys X code expiry',
+      provider: 'x' as const,
+      attempts: 5,
+      expired: false,
+      oldCode: true,
+      armed: true,
+      status: 'rejected',
+      error: 'provider_code_expired',
+    },
+    {
       label: 'live retryable claim',
       provider: 'github' as const,
       attempts: 1,
@@ -115,7 +141,7 @@ describe('OAuth recorded claim temporal disposition', () => {
       completionTokenCiphertext: 'test-completion-ciphertext',
     })
     ids.push(id)
-    await expect(settleOAuthAuthorizationExchangeClaim(id, claimId)).resolves.toBe(
+    await expect(settleOAuthAuthorizationExchangeClaim(id, claimId, scenario.armed)).resolves.toBe(
       scenario.status === 'callback_received' ? 'released' : 'terminal',
     )
     expect(await getTestOAuthAuthorization(id)).toMatchObject({
@@ -127,4 +153,57 @@ describe('OAuth recorded claim temporal disposition', () => {
       completion_token_ciphertext: scenario.expired ? null : 'test-completion-ciphertext',
     })
   })
+  it.each(['completion_ready', 'completed'] as const)(
+    'settles past-expiry %s ownership without changing consumed account results',
+    async status => {
+      const accountId = `oauth-expiry-${randomUUID()}`
+      const userId = uuidv7()
+      const id = uuidv7()
+      onTestFinished(() =>
+        deleteTestOAuthAuthorizationFixtures({
+          authorizationIds: [id],
+          githubUserIds: [accountId],
+          userIds: [userId],
+        }),
+      )
+      await createTestUserWithId(userId, createTestUsername())
+      await insertTestOAuthAccount('github', accountId)
+      await connectTestOAuthAccount('github', userId, accountId)
+      await insertTestOAuthAuthorization({
+        id,
+        provider: 'github',
+        status,
+        providerUserId: accountId,
+        purpose: 'connect',
+        initiatingUserId: userId,
+        callbackReceivedAt: new Date(),
+        completionReadyAt: new Date(),
+        completionToken: 'owned-expired-token',
+        completionTokenCiphertext: 'owned-expired-ciphertext',
+        expiresAt: new Date(Date.now() - 60_000),
+        ...(status === 'completed'
+          ? { completedAt: new Date(), resultKind: 'connected', resultUserId: userId }
+          : {}),
+      })
+      const before = await getTestOAuthAuthorization(id)
+      await expect(settleOAuthAuthorizationExchangeClaim(id, randomUUID(), true)).resolves.toBe(
+        'terminal',
+      )
+      const expected =
+        status === 'completed'
+          ? before
+          : {
+              ...before,
+              status: 'expired',
+              callback_code_ciphertext: null,
+              completion_token_ciphertext: null,
+              exchange_claim_id: null,
+            }
+      const after = await getTestOAuthAuthorization(id)
+      expect(after).toEqual(expected)
+      expect(after?.github_user_id).toBe(accountId)
+      const retainedCiphertext = status === 'completed' ? before?.completion_token_ciphertext : null
+      expect(after?.completion_token_ciphertext).toBe(retainedCiphertext)
+    },
+  )
 })

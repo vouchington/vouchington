@@ -37,7 +37,23 @@ export async function settleOAuthAuthorizationExchangeClaim(
   const current = rows[0]
   let disposition: OAuthExchangeDisposition
   if (!current) disposition = 'missing'
-  else if (['completion_ready', 'completed', 'rejected', 'expired'].includes(current.status))
+  else if (
+    current.authorization_expired &&
+    ['pending', 'callback_received', 'exchanging', 'completion_ready'].includes(current.status)
+  ) {
+    const { rowCount } = await transaction(
+      `/* settleOAuthAuthorizationExchangeClaim:expireCompletion */ UPDATE oauth_authorizations
+       SET expired_at = COALESCE(expired_at, clock_timestamp()),
+           callback_code_ciphertext = NULL, completion_token_ciphertext = NULL,
+           exchange_claim_id = NULL
+       WHERE id = $1 AND status IN ('pending', 'callback_received', 'exchanging', 'completion_ready')
+         AND expires_at <= CURRENT_TIMESTAMP`,
+      [authorizationId],
+    )
+    if (rowCount !== 1)
+      throw new Error('Expired unconsumed OAuth authorization was not settled exactly once')
+    disposition = 'terminal'
+  } else if (['completion_ready', 'completed', 'rejected', 'expired'].includes(current.status))
     disposition = 'terminal'
   else if (current.exchange_claim_id === null && current.status === 'callback_received')
     disposition = 'released'
@@ -45,8 +61,12 @@ export async function settleOAuthAuthorizationExchangeClaim(
   else {
     const expired = current.authorization_expired
     const codeExpired = !expired && current.provider_code_expired
-    const exhausted = !expired && !codeExpired && current.exchange_attempts >= MAX_EXCHANGE_ATTEMPTS
-    const outcomeUnknown = !expired && !codeExpired && !exhausted && providerRequestArmed
+    const outcomeUnknown = !expired && !codeExpired && providerRequestArmed
+    const exhausted =
+      !expired &&
+      !codeExpired &&
+      !outcomeUnknown &&
+      current.exchange_attempts >= MAX_EXCHANGE_ATTEMPTS
     const terminal = expired || codeExpired || exhausted || outcomeUnknown
     const { rowCount } = await transaction(
       `/* settleOAuthAuthorizationExchangeClaim:dispose */ UPDATE oauth_authorizations

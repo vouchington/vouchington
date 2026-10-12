@@ -9,6 +9,7 @@ import {
   markTestOAuthAuthorizationExchanging,
 } from '@voucha/test-helpers/entities/oauth-authorizations'
 import { getTestOAuthExchangeAttempts } from '@voucha/test-helpers/entities/oauth-exchange-attempts'
+import { createOAuthActorCleanupReceipt } from '@voucha/test-helpers/oauth-exchange-actor-owner'
 import { runTestOAuthExchangeContinuation } from '@voucha/test-helpers/oauth-exchange-continuation'
 import {
   insertTestOAuthAccount,
@@ -26,8 +27,8 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   it.each(['rejection', 'release'] as const)(
     'resumes native %s contention on the second real queue attempt without another provider attempt',
     async fault => {
-      const id = await fixture(fault === 'rejection' ? 4 : 0)
-      const result = await runTestOAuthExchangeContinuation(id, fault)
+      const { id, cleanupReceipt } = await fixture(fault === 'rejection' ? 4 : 0)
+      const result = await runTestOAuthExchangeContinuation(id, fault, cleanupReceipt)
       expect(result.attempts).toHaveLength(2)
       expect(result.attempts[0]?.claimId).toBeUndefined()
       expect(result.attempts[1]?.claimId).toEqual(expect.any(String))
@@ -51,12 +52,13 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   )
 
   it('settles an armed provider outcome after native contention without admitting a third attempt', async () => {
-    const id = await fixture(0)
+    const { id, cleanupReceipt } = await fixture(0)
     const claim = await claimOAuthAuthorizationExchange(id)
     if (!claim) throw new Error('Expected the actual committed claim')
     const result = await runTestOAuthExchangeContinuation(
       id,
       'provider-outcome',
+      cleanupReceipt,
       claim.exchange_claim_id,
     )
     expect(result.attempts).toHaveLength(2)
@@ -80,8 +82,8 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   })
 
   it('releases the unused claim before an ID-only retry after ownership storage fails', async () => {
-    const id = await fixture(0, 'callback_received', 'x')
-    const result = await runTestOAuthExchangeContinuation(id, 'ownership-write')
+    const { id, cleanupReceipt } = await fixture(0, 'callback_received', 'x')
+    const result = await runTestOAuthExchangeContinuation(id, 'ownership-write', cleanupReceipt)
     expect(result.attempts).toHaveLength(2)
     expect(result.decryptCalls).toBe(1)
     expect(result.providerCalls).toBe(0)
@@ -98,8 +100,8 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   })
 
   it('observes the released claim when the initial job update commits but its response fails', async () => {
-    const id = await fixture(0)
-    const result = await runTestOAuthExchangeContinuation(id, 'ownership-response')
+    const { id, cleanupReceipt } = await fixture(0)
+    const result = await runTestOAuthExchangeContinuation(id, 'ownership-response', cleanupReceipt)
     expect(result.attempts).toHaveLength(2)
     expect(result.attempts[1]?.data.exchangeClaimId).toEqual(expect.any(String))
     expect(result.firstFailure).toBe(result.injectedError)
@@ -119,7 +121,11 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   it('terminalizes a stale unknown claim when a rebuilt real queue job has only its authorization ID', async () => {
     const id = uuidv7()
     const claimId = uuidv7()
-    onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: [id] }))
+    const cleanupReceipt = createOAuthActorCleanupReceipt()
+    onTestFinished(async () => {
+      cleanupReceipt.assertSafeToDelete()
+      await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [id] })
+    })
     await insertTestOAuthAuthorization({
       id,
       provider: 'github',
@@ -129,7 +135,11 @@ describe('OAuth authorization exchange durable queue continuation', () => {
       callbackReceivedAt: new Date(),
       updatedAt: new Date(Date.now() - 61_000),
     })
-    const result = await runTestOAuthExchangeContinuation(id, 'lost-provider-marker')
+    const result = await runTestOAuthExchangeContinuation(
+      id,
+      'lost-provider-marker',
+      cleanupReceipt,
+    )
     expect(result.attempts).toHaveLength(1)
     expect(result.attempts[0]?.data).toEqual({ authorizationId: id })
     expect(result.decryptCalls).toBe(0)
@@ -145,8 +155,14 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   })
 
   it('expires the ID-only second attempt after actual ownership storage failure and clears its secrets', async () => {
-    const id = await fixture(0)
-    const result = await runTestOAuthExchangeContinuation(id, 'ownership-write', undefined, true)
+    const { id, cleanupReceipt } = await fixture(0)
+    const result = await runTestOAuthExchangeContinuation(
+      id,
+      'ownership-write',
+      cleanupReceipt,
+      undefined,
+      true,
+    )
     expect(result.attempts).toHaveLength(2)
     expect(result.firstFailure).toBe(result.injectedError)
     expect(result.attempts[1]?.data).toEqual({ authorizationId: id })
@@ -165,8 +181,8 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   it.each([0, 4])(
     'retains the provider primary when clearing committed disposition fails at prior count %s',
     async priorAttempts => {
-      const id = await fixture(priorAttempts)
-      const result = await runTestOAuthExchangeContinuation(id, 'clear-write')
+      const { id, cleanupReceipt } = await fixture(priorAttempts)
+      const result = await runTestOAuthExchangeContinuation(id, 'clear-write', cleanupReceipt)
       expect(result.firstFailure).toBeInstanceOf(AggregateError)
       if (!(result.firstFailure instanceof AggregateError))
         throw new Error('Expected ordered primary and ownership failure')
@@ -181,7 +197,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   )
 
   it('does not clear or reject a successor claim when an old job resumes', async () => {
-    const id = await fixture(0)
+    const { id } = await fixture(0)
     const oldClaim = randomUUID()
     await markTestOAuthAuthorizationExchanging(id, oldClaim)
     await releaseOAuthAuthorizationExchangeClaim(id, oldClaim)
@@ -195,7 +211,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
   })
 
   it('preserves an already terminal authorization when a recorded claim resumes', async () => {
-    const id = await fixture(5, 'rejected')
+    const { id } = await fixture(5, 'rejected')
     const before = await getTestOAuthAuthorization(id)
     await expect(settleOAuthAuthorizationExchangeClaim(id, randomUUID())).resolves.toBe('terminal')
     expect(await getTestOAuthAuthorization(id)).toEqual(before)
@@ -245,13 +261,19 @@ async function fixture(
   status: 'callback_received' | 'rejected' = 'callback_received',
   provider: 'github' | 'x' = 'github',
 ) {
-  const id = await insertTestOAuthAuthorization({
+  const id = uuidv7()
+  const cleanupReceipt = createOAuthActorCleanupReceipt()
+  onTestFinished(async () => {
+    cleanupReceipt.assertSafeToDelete()
+    await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [id] })
+  })
+  await insertTestOAuthAuthorization({
+    id,
     provider,
     status,
     callbackCodeCiphertext: 'invalid-owned-continuation-ciphertext',
     callbackReceivedAt: new Date(),
     exchangeAttempts,
   })
-  onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: [id] }))
-  return id
+  return { id, cleanupReceipt }
 }
