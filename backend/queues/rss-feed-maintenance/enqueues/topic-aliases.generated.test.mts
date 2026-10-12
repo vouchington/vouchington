@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { describe, expect, it } from 'vitest'
+import { readEnqueuedJob } from '@voucha/test-helpers'
 import { TOPIC_ALIAS_ORDERING } from '../config.mts'
 import {
   enqueueContinueTopicAliasCategoryMappingReconciliation,
@@ -6,44 +8,41 @@ import {
 } from './topic-aliases.mts'
 import { rssFeedMaintenance } from '../queues.mts'
 
-const QUEUE_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
-
 describe('topic-aliases enqueues', () => {
-  beforeEach(async () => {
-    await rssFeedMaintenance.obliterate({ force: true })
-  })
-
   it('serializes durable category-mapping reconciliation', async () => {
-    await enqueueReconcileTopicAliasCategoryMappings({ deduplicationId: 'topic-aliases-test' })
-
-    const jobs = (
-      await Promise.all(QUEUE_STATES.map(state => rssFeedMaintenance.getJobs(state)))
-    ).flat()
-    const job = jobs.find(job => job.name === 'processReconcileTopicAliasCategoryMappings')
-
-    expect(job?.opts).toMatchObject({
-      priority: 100,
-      ordering: TOPIC_ALIAS_ORDERING.category_mapping_reconciliation,
-      deduplication: {
-        id: 'topic-aliases-test',
-        mode: 'throttle',
-        ttl: 60_000,
-      },
-    })
+    const deduplicationId = `topic-aliases-test-${randomUUID()}`
+    const job = await readEnqueuedJob(
+      rssFeedMaintenance,
+      await enqueueReconcileTopicAliasCategoryMappings({ deduplicationId }),
+    )
+    try {
+      expect(job.opts).toMatchObject({
+        priority: 100,
+        ordering: TOPIC_ALIAS_ORDERING.category_mapping_reconciliation,
+        deduplication: {
+          id: deduplicationId,
+          mode: 'throttle',
+          ttl: 60_000,
+        },
+      })
+    } finally {
+      await job.remove()
+    }
   })
 
   it('chains a full reconciliation page without throttle deduplication', async () => {
-    await enqueueContinueTopicAliasCategoryMappingReconciliation()
-
-    const jobs = (
-      await Promise.all(QUEUE_STATES.map(state => rssFeedMaintenance.getJobs(state)))
-    ).flat()
-    const job = jobs.find(job => job.name === 'processReconcileTopicAliasCategoryMappings')
-
-    expect(job?.opts).toMatchObject({
-      priority: 100,
-      ordering: TOPIC_ALIAS_ORDERING.category_mapping_reconciliation,
-    })
-    expect(job?.opts.deduplication).toBeUndefined()
+    const job = await readEnqueuedJob(
+      rssFeedMaintenance,
+      await enqueueContinueTopicAliasCategoryMappingReconciliation(),
+    )
+    try {
+      expect(job.opts).toMatchObject({
+        priority: 100,
+        ordering: TOPIC_ALIAS_ORDERING.category_mapping_reconciliation,
+      })
+      expect(job.opts.deduplication).toBeUndefined()
+    } finally {
+      await job.remove()
+    }
   })
 })
