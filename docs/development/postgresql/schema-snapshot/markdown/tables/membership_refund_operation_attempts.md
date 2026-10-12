@@ -17,7 +17,7 @@ Not partitioned — growth: unbounded.
 | `provider_idempotency_key` | `text`                             | no       |                              |          |           |           | Provider-scoped idempotency key used for this immutable attempt.                 |
 | `provider_refund_id`       | `text`                             | yes      |                              |          |           |           | Provider refund identity, initially unknown and enriched at most once.           |
 | `amount_minor_units`       | `bigint`                           | no       |                              |          |           |           | Attempted refund amount in the provider currency minor unit.                     |
-| `currency_code`            | `text`                             | no       |                              |          |           |           | ISO 4217 currency code for the attempted refund.                                 |
+| `currency_code`            | `currency_codes`                   | no       |                              |          |           |           | ISO 4217 currency code for the attempted refund.                                 |
 | `created_at`               | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`

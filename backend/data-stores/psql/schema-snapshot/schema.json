@@ -459,6 +459,9 @@
     "curated_aside_item_types": {
       "values": ["topic", "source", "community"]
     },
+    "currency_codes": {
+      "values": ["aud", "cad", "eur", "gbp", "jpy", "usd"]
+    },
     "digest_frequencies": {
       "values": ["none", "daily", "weekly"]
     },
@@ -1593,7 +1596,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_case_operation_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  valid_context BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind = 'ineligible_purchase_reversal'\n    AND operation.membership_source_id = reversal_case.membership_source_id\n    AND operation.membership_provider_lineage_id = reversal_case.membership_provider_lineage_id\n    AND operation.membership_lineage_binding_id = reversal_case.membership_lineage_binding_id\n  INTO valid_context\n  FROM membership_operations operation\n  CROSS JOIN membership_ineligible_purchase_reversal_cases reversal_case\n  WHERE operation.id = NEW.membership_operation_id\n    AND reversal_case.id = NEW.membership_ineligible_purchase_reversal_case_id;\n\n  IF valid_context = FALSE THEN\n    RAISE EXCEPTION 'reversal case operation context does not match its immutable case'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_purchase_reversal_refund_observation_currency": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency TEXT;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency currency_codes;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_review_dispute_subject_snapshot": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -5331,7 +5334,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 19,
-          "type": "text"
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -5583,7 +5586,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": "(currency_code IS NOT NULL)",
@@ -8937,7 +8940,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 7,
-          "type": "text"
+          "type": "currency_codes"
         },
         "topic_id": {
           "collation": null,
@@ -9074,7 +9077,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": "(currency_code IS NOT NULL)",
@@ -40547,7 +40550,6 @@
     },
     "currencies": {
       "checkConstraints": {
-        "currencies_code_check": "CHECK ((code ~ '^[a-z]{3}$'::text))",
         "currencies_minor_unit_exponent_check": "CHECK (((minor_unit_exponent >= 0) AND (minor_unit_exponent <= 4)))"
       },
       "columns": {
@@ -40560,7 +40562,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "text"
+          "type": "currency_codes"
         },
         "minor_unit_exponent": {
           "collation": null,
@@ -40589,7 +40591,7 @@
               "descending": false,
               "expression": "code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -46334,7 +46336,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 7,
-          "type": "text"
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -46506,7 +46508,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": "(currency_code IS NOT NULL)",
@@ -46625,7 +46627,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 6,
-          "type": "text"
+          "type": "currency_codes"
         },
         "hard_inquiries_12m": {
           "collation": null,
@@ -46739,7 +46741,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -46806,7 +46808,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 5,
-          "type": "text"
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -46918,7 +46920,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -49110,7 +49112,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 9,
-          "type": "text"
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -49275,7 +49277,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -49481,7 +49483,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 10,
-          "type": "text"
+          "type": "currency_codes"
         },
         "environment": {
           "collation": null,
@@ -49620,7 +49622,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -52100,7 +52102,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 9,
-          "type": "text"
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -52303,7 +52305,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -52348,8 +52350,7 @@
     "membership_ineligible_purchase_reversal_refund_observations": {
       "checkConstraints": {
         "chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units": "CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))",
-        "chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id": "CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))",
-        "chk_member_inelig_purchas_reversa_refund_observa__currency_code": "CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))"
+        "chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id": "CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))"
       },
       "columns": {
         "amount_minor_units": {
@@ -52372,7 +52373,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
-          "type": "text"
+          "type": "currency_codes"
         },
         "membership_ineligible_purchase_reversal_refund_scan_id": {
           "collation": null,
@@ -52442,7 +52443,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -52605,7 +52606,6 @@
         "chk_memb_ineli_purch_rever_refun_scans__cursor_stripe_refund_id": "CHECK (((cursor_stripe_refund_id IS NULL) OR (((char_length(cursor_stripe_refund_id) >= 1) AND (char_length(cursor_stripe_refund_id) <= 255)) AND (cursor_stripe_refund_id = TRIM(BOTH FROM cursor_stripe_refund_id)))))",
         "chk_membe_ineli_purch_rever_refund_scans__head_stripe_refund_id": "CHECK (((head_stripe_refund_id IS NULL) OR (((char_length(head_stripe_refund_id) >= 1) AND (char_length(head_stripe_refund_id) <= 255)) AND (head_stripe_refund_id = TRIM(BOTH FROM head_stripe_refund_id)))))",
         "chk_member_inelig_purcha_revers_refund_scans__payment_intent_id": "CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))",
-        "chk_members_ineligi_purchas_reversa_refund_scans__currency_code": "CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))",
         "chk_members_ineligib_purchase_reversal_refund_scans__invoice_id": "CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))",
         "chk_membersh_ineligib_purchase_reversal_refund_scans__charge_id": "CHECK (((charge_id IS NULL) OR (((char_length(charge_id) >= 1) AND (char_length(charge_id) <= 255)) AND (charge_id = TRIM(BOTH FROM charge_id)))))",
         "ck_mipr_refund_scans__generation_safe": "CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))",
@@ -52661,7 +52661,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
-          "type": "text"
+          "type": "currency_codes"
         },
         "cursor_stripe_refund_id": {
           "collation": null,
@@ -52841,7 +52841,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -52875,7 +52875,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             },
             {
               "column": "charge_id",
@@ -53958,7 +53958,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 13,
-          "type": "text"
+          "type": "currency_codes"
         },
         "environment": {
           "collation": null,
@@ -54241,7 +54241,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -54439,7 +54439,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -55417,7 +55417,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 10,
-          "type": "text"
+          "type": "currency_codes"
         },
         "observed_price_minor_units": {
           "collation": null,
@@ -55527,7 +55527,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 14,
-          "type": "text"
+          "type": "currency_codes"
         },
         "renewal_price_minor_units": {
           "collation": null,
@@ -55767,7 +55767,7 @@
               "descending": false,
               "expression": "renewal_price_currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             },
             {
               "column": "renewal_effective_at",
@@ -55862,7 +55862,7 @@
               "descending": false,
               "expression": "observed_price_currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -55902,7 +55902,7 @@
               "descending": false,
               "expression": "renewal_price_currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": "(renewal_price_currency_code IS NOT NULL)",
@@ -56019,7 +56019,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 11,
-          "type": "text"
+          "type": "currency_codes"
         },
         "environment": {
           "collation": null,
@@ -56166,7 +56166,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -56960,7 +56960,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 10,
-          "type": "text"
+          "type": "currency_codes"
         },
         "environment": {
           "collation": null,
@@ -57063,7 +57063,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -57794,7 +57794,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 6,
-          "type": "text"
+          "type": "currency_codes"
         },
         "delivery_attempted_at": {
           "collation": null,
@@ -57989,7 +57989,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -112751,7 +112751,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 7,
-          "type": "text"
+          "type": "currency_codes"
         },
         "household_id": {
           "collation": null,
@@ -112883,7 +112883,7 @@
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,

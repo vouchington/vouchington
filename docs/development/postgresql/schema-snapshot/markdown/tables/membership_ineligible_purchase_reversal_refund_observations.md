@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `membership_ineligible_purchase_reversal_refund_scan_id` | `uuid`                     | no       |                     |          |           |           | Case-target scan that observed this succeeded Stripe refund.          |
 | `stripe_refund_id`                                       | `text`                     | no       |                     |          |           |           | Immutable Stripe refund identifier.                                   |
 | `amount_minor_units`                                     | `bigint`                   | no       |                     |          |           |           | Succeeded Stripe refund amount in the smallest currency unit.         |
-| `currency_code`                                          | `text`                     | no       |                     |          |           |           | Stripe refund currency, required by trigger to match the owning scan. |
+| `currency_code`                                          | `currency_codes`           | no       |                     |          |           |           | Stripe refund currency, required by trigger to match the owning scan. |
 | `observed_at`                                            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this succeeded refund was first committed locally.               |
 
 **Primary key:** `PRIMARY KEY (membership_ineligible_purchase_reversal_refund_scan_id, stripe_refund_id)`
@@ -23,7 +23,6 @@ _none_
 
 - `chk_membe_ineli_purcha_revers_refund_observ__amount_minor_units`: `CHECK (((amount_minor_units >= 0) AND (amount_minor_units <= '9007199254740991'::bigint)))`
 - `chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id`: `CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))`
-- `chk_member_inelig_purchas_reversa_refund_observa__currency_code`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
 
 **Foreign keys:**
 

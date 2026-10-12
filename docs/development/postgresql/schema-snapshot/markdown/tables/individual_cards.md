@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `opened_on`                  | `date`                     | yes      |                              |          |           |           | Date the card account was opened.                                |
 | `closed_on`                  | `date`                     | yes      |                              |          |           |           | Date the card account was closed. NULL if still open.            |
 | `credit_limit_minor_units`   | `bigint`                   | yes      |                              |          |           |           | Credit limit in the currency minor unit.                         |
-| `currency_code`              | `text`                     | yes      |                              |          |           |           | Currency for the credit limit.                                   |
+| `currency_code`              | `currency_codes`           | yes      |                              |          |           |           | Currency for the credit limit.                                   |
 | `received_sign_up_bonus_on`  | `date`                     | yes      |                              |          |           |           | Date the sign-up bonus was received.                             |
 | `is_authorized_user`         | `boolean`                  | yes      | `false`                      |          |           |           | TRUE if this card is an authorized user card on another account. |
 | `authorized_user_of_card_id` | `uuid`                     | yes      |                              |          |           |           | The primary cardholder's individual_cards row, if this is an AU. |
