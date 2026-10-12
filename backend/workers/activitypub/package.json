@@ -36,7 +36,6 @@
   },
   "devDependencies": {
     "@modules/http-signatures": "workspace:^",
-    "@services/ap-inbox-activities": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/remote-actors": "workspace:^",
