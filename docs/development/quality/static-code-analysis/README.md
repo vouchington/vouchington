@@ -285,6 +285,8 @@ requires that owner to import the real registrar and call
 exercise actual registration and connection-close behavior; the graph and syntax guards preserve
 entrypoint wiring without reloading shared runtime modules or shutting down shared clients.
 
+The local `valkey-no-consecutive-unbatched-reads` AST-grep rule flags consecutive unbatched Valkey reads that can share one batch.
+
 The scope-aware Oxlint `no-mistakes/postgres-cursor-call-contract` rule protects the two PostgreSQL
 cursor executors exported by `@data-stores/psql` and `@data-stores/psql/cursors`. Production callers
 must invoke the exact import or namespace member directly and expose SQL at that callsite, either

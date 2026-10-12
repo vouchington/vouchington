@@ -1,3 +1,221 @@
+# Export spellings verified against @data-stores/psql and the named Glide clients.
+# Reviewed existing per-item calls are tracked by #2523; remediation removes allow entries.
+effects:
+  postgres:
+    functions: [read, write, query]
+    transactionFunctions: [transaction.query, client.query, query.client.query]
+    batchFunctions: [pipelineBatch, executeHandlerWithCursorInBatches]
+  valkey:
+    functions:
+      - cacheValkeyClient.get
+      - cacheValkeyClient.set
+      - cacheValkeyClient.del
+      - cacheValkeyClient.unlink
+      - cacheValkeyClient.exists
+      - cacheValkeyClient.expire
+      - cacheValkeyClient.ttl
+      - cacheValkeyClient.pttl
+      - cacheValkeyClient.hget
+      - cacheValkeyClient.hset
+      - cacheValkeyClient.hdel
+      - cacheValkeyClient.hgetall
+      - cacheValkeyClient.sadd
+      - cacheValkeyClient.srem
+      - cacheValkeyClient.smembers
+      - cacheValkeyClient.zadd
+      - cacheValkeyClient.zrem
+      - cacheValkeyClient.zcard
+      - cacheValkeyClient.zrange
+      - cacheValkeyClient.incr
+      - cacheValkeyClient.decr
+      - cacheValkeyClient.scan
+      - cacheValkeyClient.customCommand
+      - cacheValkeyClient.invokeScript
+      - cacheValkeyClient.hmget
+      - cacheValkeyClient.sismember
+      - cacheValkeyClient.zscore
+      - cacheValkeyClient.scard
+      - cacheValkeyClient.llen
+      - cacheValkeyClient.type
+      - cacheValkeyClient.strlen
+      - dynamicConfigValkeyClient.get
+      - dynamicConfigValkeyClient.set
+      - dynamicConfigValkeyClient.del
+      - dynamicConfigValkeyClient.unlink
+      - dynamicConfigValkeyClient.exists
+      - dynamicConfigValkeyClient.expire
+      - dynamicConfigValkeyClient.ttl
+      - dynamicConfigValkeyClient.pttl
+      - dynamicConfigValkeyClient.hget
+      - dynamicConfigValkeyClient.hset
+      - dynamicConfigValkeyClient.hdel
+      - dynamicConfigValkeyClient.hgetall
+      - dynamicConfigValkeyClient.sadd
+      - dynamicConfigValkeyClient.srem
+      - dynamicConfigValkeyClient.smembers
+      - dynamicConfigValkeyClient.zadd
+      - dynamicConfigValkeyClient.zrem
+      - dynamicConfigValkeyClient.zcard
+      - dynamicConfigValkeyClient.zrange
+      - dynamicConfigValkeyClient.incr
+      - dynamicConfigValkeyClient.decr
+      - dynamicConfigValkeyClient.scan
+      - dynamicConfigValkeyClient.customCommand
+      - dynamicConfigValkeyClient.invokeScript
+      - dynamicConfigValkeyClient.hmget
+      - dynamicConfigValkeyClient.sismember
+      - dynamicConfigValkeyClient.zscore
+      - dynamicConfigValkeyClient.scard
+      - dynamicConfigValkeyClient.llen
+      - dynamicConfigValkeyClient.type
+      - dynamicConfigValkeyClient.strlen
+      - dynamicConfigPrimaryValkeyClient.get
+      - dynamicConfigPrimaryValkeyClient.set
+      - dynamicConfigPrimaryValkeyClient.del
+      - dynamicConfigPrimaryValkeyClient.unlink
+      - dynamicConfigPrimaryValkeyClient.exists
+      - dynamicConfigPrimaryValkeyClient.expire
+      - dynamicConfigPrimaryValkeyClient.ttl
+      - dynamicConfigPrimaryValkeyClient.pttl
+      - dynamicConfigPrimaryValkeyClient.hget
+      - dynamicConfigPrimaryValkeyClient.hset
+      - dynamicConfigPrimaryValkeyClient.hdel
+      - dynamicConfigPrimaryValkeyClient.hgetall
+      - dynamicConfigPrimaryValkeyClient.sadd
+      - dynamicConfigPrimaryValkeyClient.srem
+      - dynamicConfigPrimaryValkeyClient.smembers
+      - dynamicConfigPrimaryValkeyClient.zadd
+      - dynamicConfigPrimaryValkeyClient.zrem
+      - dynamicConfigPrimaryValkeyClient.zcard
+      - dynamicConfigPrimaryValkeyClient.zrange
+      - dynamicConfigPrimaryValkeyClient.incr
+      - dynamicConfigPrimaryValkeyClient.decr
+      - dynamicConfigPrimaryValkeyClient.scan
+      - dynamicConfigPrimaryValkeyClient.customCommand
+      - dynamicConfigPrimaryValkeyClient.invokeScript
+      - dynamicConfigPrimaryValkeyClient.hmget
+      - dynamicConfigPrimaryValkeyClient.sismember
+      - dynamicConfigPrimaryValkeyClient.zscore
+      - dynamicConfigPrimaryValkeyClient.scard
+      - dynamicConfigPrimaryValkeyClient.llen
+      - dynamicConfigPrimaryValkeyClient.type
+      - dynamicConfigPrimaryValkeyClient.strlen
+      - sessionValkeyClient.get
+      - sessionValkeyClient.set
+      - sessionValkeyClient.del
+      - sessionValkeyClient.unlink
+      - sessionValkeyClient.exists
+      - sessionValkeyClient.expire
+      - sessionValkeyClient.ttl
+      - sessionValkeyClient.pttl
+      - sessionValkeyClient.hget
+      - sessionValkeyClient.hset
+      - sessionValkeyClient.hdel
+      - sessionValkeyClient.hgetall
+      - sessionValkeyClient.sadd
+      - sessionValkeyClient.srem
+      - sessionValkeyClient.smembers
+      - sessionValkeyClient.zadd
+      - sessionValkeyClient.zrem
+      - sessionValkeyClient.zcard
+      - sessionValkeyClient.zrange
+      - sessionValkeyClient.incr
+      - sessionValkeyClient.decr
+      - sessionValkeyClient.scan
+      - sessionValkeyClient.customCommand
+      - sessionValkeyClient.invokeScript
+      - sessionValkeyClient.hmget
+      - sessionValkeyClient.sismember
+      - sessionValkeyClient.zscore
+      - sessionValkeyClient.scard
+      - sessionValkeyClient.llen
+      - sessionValkeyClient.type
+      - sessionValkeyClient.strlen
+      - bloomValkeyClient.get
+      - bloomValkeyClient.set
+      - bloomValkeyClient.del
+      - bloomValkeyClient.unlink
+      - bloomValkeyClient.exists
+      - bloomValkeyClient.expire
+      - bloomValkeyClient.ttl
+      - bloomValkeyClient.pttl
+      - bloomValkeyClient.hget
+      - bloomValkeyClient.hset
+      - bloomValkeyClient.hdel
+      - bloomValkeyClient.hgetall
+      - bloomValkeyClient.sadd
+      - bloomValkeyClient.srem
+      - bloomValkeyClient.smembers
+      - bloomValkeyClient.zadd
+      - bloomValkeyClient.zrem
+      - bloomValkeyClient.zcard
+      - bloomValkeyClient.zrange
+      - bloomValkeyClient.incr
+      - bloomValkeyClient.decr
+      - bloomValkeyClient.scan
+      - bloomValkeyClient.customCommand
+      - bloomValkeyClient.invokeScript
+      - bloomValkeyClient.hmget
+      - bloomValkeyClient.sismember
+      - bloomValkeyClient.zscore
+      - bloomValkeyClient.scard
+      - bloomValkeyClient.llen
+      - bloomValkeyClient.type
+      - bloomValkeyClient.strlen
+      - rateLimiterValkeyClient.get
+      - rateLimiterValkeyClient.set
+      - rateLimiterValkeyClient.del
+      - rateLimiterValkeyClient.unlink
+      - rateLimiterValkeyClient.exists
+      - rateLimiterValkeyClient.expire
+      - rateLimiterValkeyClient.ttl
+      - rateLimiterValkeyClient.pttl
+      - rateLimiterValkeyClient.hget
+      - rateLimiterValkeyClient.hset
+      - rateLimiterValkeyClient.hdel
+      - rateLimiterValkeyClient.hgetall
+      - rateLimiterValkeyClient.sadd
+      - rateLimiterValkeyClient.srem
+      - rateLimiterValkeyClient.smembers
+      - rateLimiterValkeyClient.zadd
+      - rateLimiterValkeyClient.zrem
+      - rateLimiterValkeyClient.zcard
+      - rateLimiterValkeyClient.zrange
+      - rateLimiterValkeyClient.incr
+      - rateLimiterValkeyClient.decr
+      - rateLimiterValkeyClient.scan
+      - rateLimiterValkeyClient.customCommand
+      - rateLimiterValkeyClient.invokeScript
+      - rateLimiterValkeyClient.hmget
+      - rateLimiterValkeyClient.sismember
+      - rateLimiterValkeyClient.zscore
+      - rateLimiterValkeyClient.scard
+      - rateLimiterValkeyClient.llen
+      - rateLimiterValkeyClient.type
+      - rateLimiterValkeyClient.strlen
+    transactionFunctions: []
+    batchFunctions:
+      - cacheGetByAnyBatch
+      - multiCacheGetByAnyBatch
+      - cacheValkeyClient.exec
+      - cacheValkeyClient.mget
+      - cacheValkeyClient.mset
+      - dynamicConfigValkeyClient.exec
+      - dynamicConfigValkeyClient.mget
+      - dynamicConfigValkeyClient.mset
+      - dynamicConfigPrimaryValkeyClient.exec
+      - dynamicConfigPrimaryValkeyClient.mget
+      - dynamicConfigPrimaryValkeyClient.mset
+      - sessionValkeyClient.exec
+      - sessionValkeyClient.mget
+      - sessionValkeyClient.mset
+      - bloomValkeyClient.exec
+      - bloomValkeyClient.mget
+      - bloomValkeyClient.mset
+      - rateLimiterValkeyClient.exec
+      - rateLimiterValkeyClient.mget
+      - rateLimiterValkeyClient.mset
+
 ci:
   actionDirs:
     - .github/actions
@@ -281,6 +499,815 @@ tests:
             - stripe
 
 rules:
+  - name: Per-item PostgreSQL and Valkey effects
+    rule: query-reached-per-item
+    scope: repository
+    exclude:
+      ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/test-helpers/**', '**/fixtures/**']
+    options:
+      effects: [postgres, valkey]
+      allow:
+        - { file: backend/api/mcp-route-rate-limit-helpers.mts, callee: 'checkRouteRateLimit' }
+        - {
+            file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
+            callee: 'backfillRssFeedItemSourcePublications',
+          }
+        - {
+            file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
+            callee: 'hasRssFeedItemSourcesMissingPublication',
+          }
+        - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
+        - {
+            file: backend/scripts/explain-analyze/pruning/capture.mts,
+            callee: 'getPartitionLeaves',
+          }
+        - { file: backend/scripts/explain-analyze/pruning/partitions.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/pruning/seed.mts, callee: 'write' }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/follower-distributions.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
+            callee: 'read',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
+            callee: 'analyzeMediaDeliveryReplayRelations',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
+            callee: 'assertOwnedCandidatePage',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
+            callee: 'countOwnedReplayAuditEvents',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
+            callee: 'runSharePages',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
+            callee: 'inspectSemanticPostSeed',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
+            callee: 'read',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
+            callee: 'recordSemanticPostFailure',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
+            callee: 'captureHydration',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
+            callee: 'capturePage',
+          }
+        - { file: backend/scripts/explain-analyze/run-support.mts, callee: 'explainAnalyze' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/comments-and-recently-viewed.mts,
+            callee: 'upsertRecentlyViewed',
+          }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/communities-and-ratings.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/conversation-pagination.mts,
+            callee: 'query',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/crawls.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/entities.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/individual-cards.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/maintenance.mts, callee: 'write' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
+            callee: 'rearmMediaDeliveryReplayPage',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/point-valuations.mts, callee: 'query' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/post-diagnostics.mts,
+            callee: 'client.query',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/relations.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/remote-followers.mts, callee: 'query' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/rewards-program-statuses.mts,
+            callee: 'query',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/semantic-posts.mts, callee: 'write' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/spending-categories.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/trending-communities.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/user-removed-platform-posts.mts,
+            callee: 'query',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/vote-aggregation.mts, callee: 'query' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/vote-aggregation.mts,
+            callee: 'updateEntityRelationElectionVoteStatsFromPrimary',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/votes-and-aliases.mts, callee: 'query' }
+        - { file: backend/scripts/login-as/run.mts, callee: 'addUserRole' }
+        - { file: backend/scripts/login-as/run.mts, callee: 'mintDeepLink' }
+        - {
+            file: backend/scripts/seeds/playwright-seed-assertions.mts,
+            callee: 'seedAssertionExists',
+          }
+        - {
+            file: backend/scripts/seeds/playwright-test-data/post-account-labels.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/services/account-data-requests/recovery.mts,
+            callee: 'lockActiveDataRequestUser',
+          }
+        - { file: backend/services/admin-imports/create-batch.mts, callee: 'write' }
+        - {
+            file: backend/services/admin-imports/process-topic-row-relations.mts,
+            callee: 'replaceSpendingCategoryAttributes',
+          }
+        - {
+            file: backend/services/admin-imports/process-topic-row-relations.mts,
+            callee: 'updateRetailerAttributes',
+          }
+        - {
+            file: backend/services/admin-imports/process-topic-row-relations.mts,
+            callee: 'upsertEntityRelation',
+          }
+        - { file: backend/services/admin-imports/seed-csvs.mts, callee: 'processTopicRow' }
+        - { file: backend/services/articles/sync.mts, callee: 'createPost' }
+        - { file: backend/services/articles/sync.mts, callee: 'getPostByAny' }
+        - { file: backend/services/articles/sync.mts, callee: 'tagPostWithTopics' }
+        - { file: backend/services/articles/sync.mts, callee: 'updatePost' }
+        - { file: backend/services/attribution/create.mts, callee: 'query' }
+        - {
+            file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+            callee: 'cleanupBatchLocks',
+          }
+        - {
+            file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+            callee: 'processBatch',
+          }
+        - {
+            file: backend/services/bedrock-embeddings-batch/orchestrator/stale-cleanup.mts,
+            callee: 'write',
+          }
+        - {
+            file: backend/services/bluesky-follows/disconnect.mts,
+            callee: 'deleteBlueskyFollowReceipt',
+          }
+        - {
+            file: backend/services/bookmarks/bloom-filter.mts,
+            callee: 'getUserBookmarkRelationCount',
+          }
+        - { file: backend/services/bookmarks/get.mts, callee: 'queryBookmarksForRelation' }
+        - {
+            file: backend/services/communities/ban-evasion/get.mts,
+            callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
+          }
+        - {
+            file: backend/services/communities/publications/pinned.mts,
+            callee: 'recordModeratorAction',
+          }
+        - {
+            file: backend/services/communities/update-transaction.mts,
+            callee: 'syncImageSurfacePlacement',
+          }
+        - {
+            file: backend/services/community-agent-prompts/deactivate-for-user.mts,
+            callee: 'recordCommunityAgentPromptChange',
+          }
+        - {
+            file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
+            callee: 'resolveCopyrightImagePlacement',
+          }
+        - {
+            file: backend/services/copyright-notices/court-hold-restore-replay.mts,
+            callee: 'replayOriginalRestore',
+          }
+        - {
+            file: backend/services/copyright-notices/dsa-statement-submission-sweep.mts,
+            callee: 'materializeDsaStatementSubmission',
+          }
+        - {
+            file: backend/services/copyright-notices/form-intakes.mts,
+            callee: 'claimantCanViewCopyrightImagePlacement',
+          }
+        - {
+            file: backend/services/copyright-notices/form-intakes.mts,
+            callee: 'resolveCopyrightImagePlacement',
+          }
+        - {
+            file: backend/services/copyright-notices/form-reviews-reversal.mts,
+            callee: 'createCopyrightRestoreIntentForReversalInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/holds-late-restrictions.mts,
+            callee: 'insertCopyrightActionIntent',
+          }
+        - {
+            file: backend/services/copyright-notices/holds-late-restrictions.mts,
+            callee: 'withholdImagePlacementForCopyright',
+          }
+        - {
+            file: backend/services/copyright-notices/repeat-infringer-locks.mts,
+            callee: 'lockAuthorPublicationLifecycle',
+          }
+        - {
+            file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
+            callee: 'createEligibleCopyrightRestoreIntent',
+          }
+        - {
+            file: backend/services/copyright-notices/submission-reviews.mts,
+            callee: 'createCopyrightRestoreIntentForReversalInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/territorial-decision.mts,
+            callee: 'resolveCopyrightImagePlacement',
+          }
+        - {
+            file: backend/services/copyright-notices/territorial-redress.mts,
+            callee: 'createCopyrightRestoreIntentForReversalInTransaction',
+          }
+        - {
+            file: backend/services/crawls/dispatch-crawl-hostnames.mts,
+            callee: 'dispatchHostnamePage',
+          }
+        - {
+            file: backend/services/crawls/dispatch-url-batches.mts,
+            callee: 'computeHostnameRateLimitMs',
+          }
+        - {
+            file: backend/services/data-retention/cleanup-batches.mts,
+            callee: 'cleanupSoftDeletedUser',
+          }
+        - {
+            file: backend/services/data-retention/cleanup-oauth-authorization-server.mts,
+            callee: 'deleteExpiredOAuthAuthorizationServerArtifactsBatch',
+          }
+        - {
+            file: backend/services/data-retention/cleanup-retained-identities.mts,
+            callee: 'cleanupRetainedIdentityFamily',
+          }
+        - {
+            file: backend/services/data-retention/cleanup-retained-relation-identities.mts,
+            callee: 'cleanupRelationFamily',
+          }
+        - {
+            file: backend/services/data-retention/cleanup.mts,
+            callee: 'cleanupSoftDeletedUserBatch',
+          }
+        - {
+            file: backend/services/data-retention/cleanup.mts,
+            callee: 'deleteOrphanedOAuthAccountBatch',
+          }
+        - {
+            file: backend/services/elections-votes/agent-moderation/votes-upsert.mts,
+            callee: 'recordModeratorAction',
+          }
+        - {
+            file: backend/services/elections-votes/entity-relation/vote-stats-batch.mts,
+            callee: 'refreshChunkAndCapture',
+          }
+        - { file: backend/services/entity-relations/post-topic-publication.mts, callee: 'query' }
+        - {
+            file: backend/services/entity-relations/post-topic-publication.mts,
+            callee: 'recordRssFeedDiscoverabilityChanges',
+          }
+        - {
+            file: backend/services/hostname-blocking/soft-delete-relations.mts,
+            callee: 'lockPostPublicationPostScopes',
+          }
+        - { file: backend/services/hostname-blocking/soft-delete-relations.mts, callee: 'query' }
+        - {
+            file: backend/services/hostname-blocking/soft-delete-relations.mts,
+            callee: 'recordPostRelatedUrlPublicationChanges',
+          }
+        - {
+            file: backend/services/images/cleanup-abandoned-uploads.mts,
+            callee: 'cleanupStagedUploadSource',
+          }
+        - { file: backend/services/images/delete-rollback.mts, callee: 'compensatePostRevision' }
+        - {
+            file: backend/services/images/delete-rollback.mts,
+            callee: 'ensureCurrentPostModerationVersion',
+          }
+        - { file: backend/services/images/delete-rollback.mts, callee: 'getPostModerationInput' }
+        - { file: backend/services/images/delete-rollback.mts, callee: 'query' }
+        - {
+            file: backend/services/images/delete-rollback.mts,
+            callee: 'recordRestoredPostContentChange',
+          }
+        - { file: backend/services/images/delete-rollback.mts, callee: 'resetPostClearance' }
+        - {
+            file: backend/services/images/delete-rollback.mts,
+            callee: 'restorePostClearanceStatus',
+          }
+        - {
+            file: backend/services/images/delete-rollback.mts,
+            callee: 'updatePostModerationContentHash',
+          }
+        - {
+            file: backend/services/images/delete-while-storage-locked.mts,
+            callee: 'createImageDeletionPostRevision',
+          }
+        - {
+            file: backend/services/images/delete-while-storage-locked.mts,
+            callee: 'getPostModerationInput',
+          }
+        - { file: backend/services/images/delete-while-storage-locked.mts, callee: 'query' }
+        - {
+            file: backend/services/images/delete-while-storage-locked.mts,
+            callee: 'recordPostPublicationChange',
+          }
+        - {
+            file: backend/services/images/delete-while-storage-locked.mts,
+            callee: 'resetPostClearance',
+          }
+        - { file: backend/services/images/placements.mts, callee: 'query' }
+        - { file: backend/services/kagi-smallweb/get-existing-feed-urls.mts, callee: 'read' }
+        - {
+            file: backend/services/media-delivery-safety/delivery-denials.mts,
+            callee: 'prepublishImagePlacementDenial',
+          }
+        - { file: backend/services/media-delivery-safety/delivery-lock.mts, callee: 'query' }
+        - {
+            file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
+            callee: 'processMediaDeliveryRegistryRecord',
+          }
+        - {
+            file: backend/services/media-delivery-safety/delivery-registry-recovery.mts,
+            callee: 'reconcileDeliveryRepairMarker',
+          }
+        - {
+            file: backend/services/media-delivery-safety/delivery-registry-staging-page.mts,
+            callee: 'stageCurrentDeliveryRecord',
+          }
+        - {
+            file: backend/services/media-delivery-safety/delivery-repair-markers.mts,
+            callee: 'reconcileDeliveryRepairMarker',
+          }
+        - {
+            file: backend/services/media-delivery-safety/index.mts,
+            callee: 'prepublishImagePlacementDenial',
+          }
+        - { file: backend/services/media-delivery-safety/index.mts, callee: 'query' }
+        - { file: backend/services/media-delivery-safety/surface-lock.mts, callee: 'query' }
+        - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query' }
+        - {
+            file: backend/services/memberships/google/lineage.mts,
+            callee: 'getKnownGooglePlayCanonicalRoot',
+          }
+        - { file: backend/services/memberships/google/lineage.mts, callee: 'query' }
+        - {
+            file: backend/services/memberships/google/notification-recovery.mts,
+            callee: 'rejectMalformedRecoveryEvidence',
+          }
+        - {
+            file: backend/services/memberships/grants/expire-elapsed-batch.mts,
+            callee: 'expireElapsedMembershipsForUserInTransaction',
+          }
+        - {
+            file: backend/services/memberships/grants/expire-elapsed.mts,
+            callee: 'activateOldestQueuedGrant',
+          }
+        - { file: backend/services/memberships/grants/expire-elapsed.mts, callee: 'query' }
+        - {
+            file: backend/services/memberships/grants/expire-elapsed.mts,
+            callee: 'recordMembershipChange',
+          }
+        - {
+            file: backend/services/memberships/grants/expire-elapsed.mts,
+            callee: 'restoreFallbackAfterCurrentAccessEndsInTransaction',
+          }
+        - {
+            file: backend/services/memberships/grants/resume-after-direct-termination.mts,
+            callee: 'recordMembershipChange',
+          }
+        - {
+            file: backend/services/memberships/ineligible-stripe-purchase-reversal/execute.mts,
+            callee: 'failIneligiblePurchaseReversal',
+          }
+        - {
+            file: backend/services/memberships/reconcile-won-stripe-dispute.mts,
+            callee: 'getIneligiblePurchaseReversalCase',
+          }
+        - {
+            file: backend/services/memberships/stripe-catalog.mts,
+            callee: 'publishStripeCatalogMapping',
+          }
+        - { file: backend/services/moderation-claims/release.mts, callee: 'recordModeratorAction' }
+        - {
+            file: backend/services/moderation-reports/judgement-context.mts,
+            callee: 'selectReportContextRows',
+          }
+        - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
+        - {
+            file: backend/services/notifications/reconcile-batches.mts,
+            callee: 'createNextRecipientNotificationBatch',
+          }
+        - {
+            file: backend/services/notifications/reconcile-batches.mts,
+            callee: 'dispatchNextCreatedNotificationBatch',
+          }
+        - { file: backend/services/oauth-authorization-server/active-users.mts, callee: 'query' }
+        - {
+            file: backend/services/oauth-authorization-server/retention.mts,
+            callee: 'deleteExpiredRows',
+          }
+        - {
+            file: backend/services/oauth-facebook/friends-persistence.mts,
+            callee: 'deleteFacebookFriendBatch',
+          }
+        - {
+            file: backend/services/oauth-facebook/friends-persistence.mts,
+            callee: 'getStaleFacebookFriendIds',
+          }
+        - {
+            file: backend/services/oauth-facebook/friends-persistence.mts,
+            callee: 'markFacebookFriendSyncComplete',
+          }
+        - {
+            file: backend/services/oauth-facebook/friends-persistence.mts,
+            callee: 'persistFacebookFriendBatch',
+          }
+        - { file: backend/services/oauth-facebook/friends.mts, callee: 'persistFacebookFriendPage' }
+        - {
+            file: backend/services/oauth-github/friends-persistence.mts,
+            callee: 'deleteGithubFriendBatch',
+          }
+        - {
+            file: backend/services/oauth-github/friends-persistence.mts,
+            callee: 'getStaleGithubFriendIds',
+          }
+        - {
+            file: backend/services/oauth-github/friends-persistence.mts,
+            callee: 'markGithubFriendSyncComplete',
+          }
+        - {
+            file: backend/services/oauth-github/friends-persistence.mts,
+            callee: 'persistGithubFriendBatch',
+          }
+        - { file: backend/services/oauth-github/friends.mts, callee: 'persistGithubFriendPage' }
+        - { file: backend/services/oauth-x/friend-pages.mts, callee: 'deleteXFriendBatch' }
+        - { file: backend/services/oauth-x/friend-pages.mts, callee: 'getStaleXFriendIds' }
+        - { file: backend/services/oauth-x/friend-pages.mts, callee: 'markXFriendSyncComplete' }
+        - { file: backend/services/oauth-x/friend-pages.mts, callee: 'persistXFriendBatch' }
+        - { file: backend/services/oauth-x/friends.mts, callee: 'persistXFriendPage' }
+        - {
+            file: backend/services/openai-moderation/delete-flagged.mts,
+            callee: 'deleteFlaggedImage',
+          }
+        - {
+            file: backend/services/openai-moderation/image-auto-removal-audit.mts,
+            callee: 'recordModeratorAction',
+          }
+        - { file: backend/services/post-publication/capture-deletions.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-deletions.mts,
+            callee: 'retainLockedFeedIdentityPage',
+          }
+        - {
+            file: backend/services/post-publication/capture-deletions.mts,
+            callee: 'retainPostPublicationImpactKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-deletions.mts,
+            callee: 'retainPublicationIdentityBridges',
+          }
+        - {
+            file: backend/services/post-publication/capture-impacts.mts,
+            callee: 'retainPostPublicationKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-post-context.mts,
+            callee: 'listPublicationIdentitySourcePage',
+          }
+        - { file: backend/services/post-publication/capture-post-context.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-post-context.mts,
+            callee: 'retainPostPublicationKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-post-context.mts,
+            callee: 'retainPostScope',
+          }
+        - {
+            file: backend/services/post-publication/capture-post-context.mts,
+            callee: 'retainSnapshotPage',
+          }
+        - { file: backend/services/post-publication/capture-posts.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-posts.mts,
+            callee: 'recordPostPublicationChangeBatch',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts,
+            callee: 'recordTopicAliasPublicationWork',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feed-hard-delete-topics.mts,
+            callee: 'query',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feed-hard-delete-topics.mts,
+            callee: 'retainPostPublicationImpactKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feeds.mts,
+            callee: 'lockPostPublicationRssFeedScopes',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feeds.mts,
+            callee: 'lockTopicRssFeedAttachmentLifecycle',
+          }
+        - { file: backend/services/post-publication/capture-rss-feeds.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-rss-feeds.mts,
+            callee: 'retainCurrentRssFeedPublicationKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feeds.mts,
+            callee: 'retainPostPublicationImpacts',
+          }
+        - {
+            file: backend/services/post-publication/capture-rss-feeds.mts,
+            callee: 'upsertPostPublicationDirtyWork',
+          }
+        - {
+            file: backend/services/post-publication/capture-story-topics.mts,
+            callee: 'recordStoryTopicPublicationChangeBatch',
+          }
+        - {
+            file: backend/services/post-publication/capture-topic-alias.mts,
+            callee: 'lockTopicAliasPublicationScopes',
+          }
+        - { file: backend/services/post-publication/capture-topic-alias.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-topic-alias.mts,
+            callee: 'retainPostPublicationImpactKeys',
+          }
+        - {
+            file: backend/services/post-publication/capture-topic-alias.mts,
+            callee: 'upsertPostPublicationDirtyWork',
+          }
+        - {
+            file: backend/services/post-publication/capture-topic-merge.mts,
+            callee: 'lockPostPublicationRssFeedScopes',
+          }
+        - { file: backend/services/post-publication/capture-topic-merge.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/capture-topic-merge.mts,
+            callee: 'recordRssFeedDiscoverabilityChanges',
+          }
+        - {
+            file: backend/services/post-publication/capture-topic-merge.mts,
+            callee: 'recordTopicAliasPublicationWork',
+          }
+        - {
+            file: backend/services/post-publication/identity-source-paging.mts,
+            callee: 'listSourceRows',
+          }
+        - { file: backend/services/post-publication/lock.mts, callee: 'client.query' }
+        - {
+            file: backend/services/post-publication/orphan-identities.mts,
+            callee: 'getOrCreateSnapshot',
+          }
+        - {
+            file: backend/services/post-publication/orphan-identities.mts,
+            callee: 'retainSnapshotReceiptPage',
+          }
+        - { file: backend/services/post-publication/prepare-alias-identities.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/prepare-alias-identities.mts,
+            callee: 'retainPublicationIdentityBridges',
+          }
+        - { file: backend/services/post-publication/prepare-identity-bridges.mts, callee: 'query' }
+        - {
+            file: backend/services/post-publication/prepare-identity-bridges.mts,
+            callee: 'retainPublicationIdentityBridges',
+          }
+        - {
+            file: backend/services/post-publication/reconcile.mts,
+            callee: 'materializePostPublicationIdentitySnapshot',
+          }
+        - {
+            file: backend/services/post-publication/retain-rss-feed-notification-impacts.mts,
+            callee: 'retainNotificationImpactPage',
+          }
+        - {
+            file: backend/services/post-publication/retained-key-writes.mts,
+            callee: 'insertPostPublicationKeyBatch',
+          }
+        - {
+            file: backend/services/post-publication/retained-key-writes.mts,
+            callee: 'retainPublicationIdentityBridges',
+          }
+        - { file: backend/services/post-publication/story-lifecycle-lock.mts, callee: 'query' }
+        - { file: backend/services/posts/hashtags.mts, callee: 'createUnlinkedTopicAlias' }
+        - {
+            file: backend/services/posts/image-placements.mts,
+            callee: 'ensureImagePlacementBinding',
+          }
+        - { file: backend/services/posts/image-placements.mts, callee: 'query' }
+        - {
+            file: backend/services/posts/register-post-related-urls-guard.mts,
+            callee: 'assertCommunityNoLinksAllowed',
+          }
+        - {
+            file: backend/services/referral-link-unfurl/unfurl.mts,
+            callee: 'createChildReferralLink',
+          }
+        - { file: backend/services/referral-link-unfurl/unfurl.mts, callee: 'isUrlReferralLink' }
+        - {
+            file: backend/services/rss-feed-items/categories-chunks.mts,
+            callee: 'insertMissingCategoriesChunk',
+          }
+        - {
+            file: backend/services/rss-feed-items/categories-chunks.mts,
+            callee: 'updateMatchedCategoriesChunk',
+          }
+        - { file: backend/services/rss-feed-items/categories.mts, callee: 'readCategoryDataChunk' }
+        - {
+            file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
+            callee: 'acknowledgeRssFeedItemCategorySnapshot',
+          }
+        - {
+            file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
+            callee: 'getRssFeedItemCategorySnapshot',
+          }
+        - {
+            file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
+            callee: 'upsertRssFeedItemCategories',
+          }
+        - {
+            file: backend/services/rss-feed-items/enclosure-media-types.mts,
+            callee: 'upsertMediaTypes',
+          }
+        - {
+            file: backend/services/rss-feed-items/reconcile-category-votes.mts,
+            callee: 'retractUnsupportedCategorizerVotesForKind',
+          }
+        - { file: backend/services/rss-feed-items/story-publication-change.mts, callee: 'query' }
+        - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read' }
+        - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
+        - {
+            file: backend/services/rss-feeds/categories.mts,
+            callee: 'upsertRssFeedCategoriesChunk',
+          }
+        - { file: backend/services/rss-feeds/categories.mts, callee: 'write' }
+        - { file: backend/services/stories/assign.mts, callee: 'recordPostPublicationChange' }
+        - {
+            file: backend/services/stories/publication-change.mts,
+            callee: 'recordPostPublicationChange',
+          }
+        - {
+            file: backend/services/stripe/event-charge-handlers.mts,
+            callee: 'leaseDueRefundReconciliation',
+          }
+        - {
+            file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
+            callee: 'createTopicRecommendationLinkRelation',
+          }
+        - {
+            file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
+            callee: 'createTopicRecommendationUrlRelation',
+          }
+        - {
+            file: backend/services/topics/publication-change.mts,
+            callee: 'recordPostPublicationChange',
+          }
+        - {
+            file: backend/services/topics/publication-change.mts,
+            callee: 'retainPostPublicationTopicAliasIdentity',
+          }
+        - {
+            file: backend/services/topics/publication-change.mts,
+            callee: 'retainTopicAliasPublicationPostImpacts',
+          }
+        - { file: backend/services/topics/update.mts, callee: 'syncImageSurfacePlacement' }
+        - { file: backend/services/urls/media-types.mts, callee: 'upsertMediaTypes' }
+        - { file: backend/services/urls/upsert.mts, callee: 'getOrCreateCrawlerForHostname' }
+        - {
+            file: backend/services/user-import-export/auto-follow-on-approval.mts,
+            callee: 'followRequest',
+          }
+        - {
+            file: backend/services/user-import-export/import-topics.mts,
+            callee: 'admitImportedTopicRecommendation',
+          }
+        - {
+            file: backend/services/users/delete-entity-relation-votes.mts,
+            callee: 'recordPostTopicRelationPublicationChanges',
+          }
+        - { file: backend/services/users/delete-phase-credentials.mts, callee: 'query' }
+        - { file: backend/services/users/delete-phases.mts, callee: 'deleteOwnedRows' }
+        - {
+            file: backend/services/users/delete-phases.mts,
+            callee: 'deleteUserSubjectRelationRows',
+          }
+        - { file: backend/services/users/delete.mts, callee: 'addUserDeletionExternalWork' }
+        - { file: backend/services/users/delete.mts, callee: 'completeUserDeletionExternalWork' }
+        - { file: backend/services/users/record-deleted-relation-impacts.mts, callee: 'query' }
+        - {
+            file: backend/services/users/record-deleted-relation-impacts.mts,
+            callee: 'recordRelationTableImpacts',
+          }
+        - {
+            file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
+            callee: 'giveUpSweepRun',
+          }
+        - {
+            file: backend/workers/emails/processors/api-key-expiry.mts,
+            callee: 'getApiKeysDueForExpiryReminder',
+          }
+        - {
+            file: backend/workers/entity-listeners/processors/post-created-recovery.mts,
+            callee: 'recoverUrlEffect',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectCommunityLanguageBatch',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectCrawlLanguageBatch',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectPostLanguageBatch',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectRssFeedItemLanguageBatch',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectTopicLanguageBatch',
+          }
+        - {
+            file: backend/workers/language-detection/processors.mts,
+            callee: 'detectUserLanguageBatch',
+          }
+        - {
+            file: backend/workers/memberships/processors/renewal-notification-check.mts,
+            callee: 'getUsersApproachingRenewalWithPriceIncrease',
+          }
+        - {
+            file: backend/workers/memberships/processors/renewal-notification-check.mts,
+            callee: 'prepareRenewalPriceIncreaseNotification',
+          }
+        - {
+            file: backend/workers/notifications/processors.mts,
+            callee: 'createDirectMessageNotification',
+          }
+        - {
+            file: backend/workers/notifications/processors.mts,
+            callee: 'createModmailNotification',
+          }
+        - { file: backend/workers/notifications/processors.mts, callee: 'isUserBlockedOrMuted' }
+        - {
+            file: backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts,
+            callee: 'checkPostClearance',
+          }
+        - { file: playwright/tests/tags/tag-voting-helpers.mts, callee: 'deleteTestPost' }
+        - {
+            file: playwright/tests/tags/tag-voting-helpers.mts,
+            callee: 'softDeleteScoredPostTopicCategoryRelation',
+          }
+
   - name: GitHub Actions uses pins
     rule: github-actions-pinned-hash
     scope: repository
