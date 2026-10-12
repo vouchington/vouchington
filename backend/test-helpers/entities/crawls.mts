@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Crawls test verification helpers
  */
@@ -10,11 +11,13 @@ import type { CrawlerHtmlStructuredObject } from '@voucha/types/entities/crawl'
  * Count crawls for a URL
  */
 export async function countCrawlsForUrl(urlId: string): Promise<number> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int as count
     FROM crawls
     WHERE url_id = ${urlId}
-  `)
+  `),
+  )
   return rows[0].count
 }
 
@@ -22,7 +25,7 @@ export async function countCrawlsForUrl(urlId: string): Promise<number> {
  * Get crawl data (used after updates to refresh the object)
  */
 export async function getCrawlData(urlId: string, crawlId: string): Promise<unknown> {
-  const { rows } = await read(sql`
+  const { rows } = await read(sql`/* getCrawlData */
     SELECT * FROM crawls
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
@@ -34,7 +37,7 @@ export async function getCrawlData(urlId: string, crawlId: string): Promise<unkn
  * Check if crawl has pending embeddings
  */
 export async function crawlHasPendingEmbeddings(urlId: string, crawlId: string): Promise<boolean> {
-  const { rows } = await read(sql`
+  const { rows } = await read(sql`/* crawlHasPendingEmbeddings */
     SELECT has_pending_embeddings
     FROM crawls
     WHERE url_id = ${urlId}
@@ -54,7 +57,7 @@ export async function insertTestCrawlPending(
   urlId: string,
   crawlerId: string,
 ): Promise<{ id: string }> {
-  const { rows } = await write(sql`
+  const { rows } = await write(sql`/* insertTestCrawlPending */
     INSERT INTO crawls (
       url_id,
       hostname_crawler_configuration_id,
@@ -101,7 +104,7 @@ export async function insertTestCrawl(data: {
 }): Promise<{ id: string }> {
   const hasId = data.id !== undefined
 
-  const query = sql`INSERT INTO crawls (`
+  const query = sql`/* insertTestCrawl */ INSERT INTO crawls (`
   if (hasId) {
     query.append(sql`id, `)
   }

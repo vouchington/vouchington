@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -31,7 +32,8 @@ export async function insertTestDataPoint(data: {
   if (data.creditScoreRange) structuredData.credit_score_range = data.creditScoreRange
   if (data.creditLimit != null) structuredData.credit_limit = data.creditLimit
 
-  const { rows: postRows } = await write(sql`
+  const { rows: postRows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO posts (
       id,
       post_type,
@@ -57,19 +59,24 @@ export async function insertTestDataPoint(data: {
       'system'
     )
     RETURNING id
-  `)
+  `),
+  )
   const postId = postRows[0].id
   await setTestPostClearanceStatus(postId, 'approved', data.createdById)
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO post_slugs (post_id, slug)
     VALUES (${postId}, ${data.slug})
-  `)
+  `),
+  )
   if (data.topicId) {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
       VALUES (${postId}, ${data.topicId}, 0)
       ON CONFLICT (post_id, topic_id) DO NOTHING
-    `)
+    `),
+    )
   }
   return postId
 }
@@ -79,11 +86,13 @@ export async function insertTestDataPoint(data: {
  * ordered by order_index ascending. Useful for asserting sync correctness in tests.
  */
 export async function getPostDataPointTopicIds(postId: string): Promise<string[]> {
-  const { rows } = await read<{ topic_id: string }>(sql`
+  const { rows } = await read<{ topic_id: string }>(
+    allowUnannotatedQuery(sql`
     SELECT topic_id
     FROM post_data_point_topics
     WHERE post_id = ${postId}
     ORDER BY order_index ASC
-  `)
+  `),
+  )
   return rows.map(r => r.topic_id)
 }

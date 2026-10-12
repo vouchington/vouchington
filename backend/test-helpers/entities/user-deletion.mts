@@ -1,14 +1,17 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { hardDeleteTestPost } from './posts-deletion.mts'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 export async function countTestBlueskyLinkAuthorizationsForUser(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
+  const { rows } = await read<{ count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM bluesky_link_authorizations
     WHERE user_id = ${userId}
-  `)
+  `),
+  )
   return rows[0]?.count ?? 0
 }
 
@@ -49,11 +52,13 @@ export async function startPausedTestUserSoftDeletion(
 }
 
 export async function countTestUserDeletionEntityRelationVotes(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
+  const { rows } = await read<{ count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM view_entity_relation_votes
     WHERE user_id = ${userId}
-  `)
+  `),
+  )
   return rows[0]?.count ?? 0
 }
 
@@ -94,83 +99,28 @@ export async function withTestEntityRelationVoteCandidateCascade<T>(
   )
 }
 
-export async function insertTestUserDeletionPostVotes(
-  userId: string,
-  postId: string,
-  count: number,
-): Promise<void> {
-  await write(sql`
-    INSERT INTO post_votes (user_id, post_id, score)
-    SELECT ${userId}, ${postId}, 1
-    FROM generate_series(1, ${count})
-  `)
-}
-
-export async function countTestUserDeletionPostVotes(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
-    SELECT COUNT(*)::int AS count
-    FROM post_votes
-    WHERE user_id = ${userId}
-  `)
-  return rows[0]?.count ?? 0
-}
-
-export async function insertTestUserDeletionLists(userId: string, count: number): Promise<void> {
-  await write(sql`
-    INSERT INTO user_lists (owner_user_id, name, created_via)
-    SELECT ${userId}, 'deletion batch list ' || ordinality, 'system'
-    FROM generate_series(1, ${count}) WITH ORDINALITY AS generated(value, ordinality)
-  `)
-}
-
-export async function countTestUserDeletionActiveLists(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
-    SELECT COUNT(*)::int AS count
-    FROM user_lists
-    WHERE owner_user_id = ${userId}
-      AND removed_at IS NULL
-  `)
-  return rows[0]?.count ?? 0
-}
-
-export async function insertTestUserDeletionFollowPostRelations(
-  userId: string,
-  postIds: string[],
-): Promise<void> {
-  await write(sql`
-    INSERT INTO relation__user__follow__post (subject_id, object_id)
-    SELECT ${userId}, post_id
-    FROM UNNEST(${postIds}::uuid[]) AS post_id
-  `)
-}
-
-export async function countTestUserDeletionFollowPostRelations(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
-    SELECT COUNT(*)::int AS count
-    FROM relation__user__follow__post
-    WHERE subject_id = ${userId}
-  `)
-  return rows[0]?.count ?? 0
-}
-
 export async function rotateTestUserDeletionAttemptDuringProviderCall(
   requestId: string,
   successorAttemptId: string,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE user_deletion_requests
     SET processing_attempt_id = ${successorAttemptId},
         processing_started_at = NULL
     WHERE id = ${requestId}
-  `)
+  `),
+  )
 }
 
 export async function isTestUserDeletionExternalWorkCompleted(requestId: string): Promise<boolean> {
-  const { rows } = await read<{ completed: boolean }>(sql`
+  const { rows } = await read<{ completed: boolean }>(
+    allowUnannotatedQuery(sql`
     SELECT completed_at IS NOT NULL AS completed
     FROM user_deletion_external_works
     WHERE request_id = ${requestId}
-  `)
+  `),
+  )
   return rows[0]?.completed ?? false
 }
 
@@ -178,11 +128,22 @@ export async function getTestUserDeletionExternalWorkKeys(
   requestId: string,
   workKind: 's3-export',
 ): Promise<string[]> {
-  const { rows } = await read<{ work_key: string }>(sql`
+  const { rows } = await read<{ work_key: string }>(
+    allowUnannotatedQuery(sql`
     SELECT work_key
     FROM user_deletion_external_works
     WHERE request_id = ${requestId} AND work_kind = ${workKind}
     ORDER BY work_key
-  `)
+  `),
+  )
   return rows.map(row => row.work_key)
 }
+
+export {
+  insertTestUserDeletionPostVotes,
+  countTestUserDeletionPostVotes,
+  insertTestUserDeletionLists,
+  countTestUserDeletionActiveLists,
+  insertTestUserDeletionFollowPostRelations,
+  countTestUserDeletionFollowPostRelations,
+} from './user-deletion-batch-fixtures.mts'

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -10,7 +11,8 @@ export async function setTestUserLegacyBookmarkMetrics(
     followers: number
   },
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE user_metrics
     SET
       bookmarks__follow__topics_count = ${counts.topics},
@@ -18,5 +20,6 @@ export async function setTestUserLegacyBookmarkMetrics(
       bookmarks__follow__users_count = ${counts.users},
       bookmarkers__follow_count = ${counts.followers}
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }

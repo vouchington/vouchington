@@ -121,7 +121,9 @@ describe('create.generated', () => {
     const release = Promise.withResolvers<void>()
     const holder = (async () => {
       await using query = await beginTransaction()
-      await query(`SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`, [topic.id])
+      await query(`/* testCreate */ SELECT 1 FROM topics WHERE id = $1::uuid FOR UPDATE`, [
+        topic.id,
+      ])
       locked.resolve()
       await release.promise
       await query.commit()
@@ -145,7 +147,7 @@ describe('create.generated', () => {
     try {
       await held.promise
       await using probe = await beginTransaction()
-      await probe(`SET LOCAL lock_timeout = '50ms'`)
+      await probe(`/* testCreate */ SET LOCAL lock_timeout = '50ms'`)
       await expect(lockAttachment(probe, topic.id)).rejects.toMatchObject({ code: '55P03' })
     } finally {
       release.resolve()

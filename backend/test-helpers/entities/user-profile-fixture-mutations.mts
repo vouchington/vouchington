@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import { upsertTestRecentlyViewed } from './recently-viewed.mts'
 
@@ -27,12 +28,12 @@ export async function updateEntityRelationElection(
   values.push(subjectId, objectId)
 
   await write(
-    `
+    allowUnannotatedQuery(`
     UPDATE ${tableName}
     SET ${assignments.join(', ')}
     WHERE subject_id = $${values.length - 1}
       AND object_id = $${values.length}
-    `,
+    `),
     values,
   )
 }
@@ -46,9 +47,9 @@ export async function insertUserSavedRssFeedItem(
   rssFeedItemId: string,
 ): Promise<void> {
   await write(
-    `INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id)
+    allowUnannotatedQuery(`INSERT INTO relation__user__save__rss_feed_item (subject_id, object_id)
     VALUES ($1, $2)
-    ON CONFLICT DO NOTHING`,
+    ON CONFLICT DO NOTHING`),
     [userId, rssFeedItemId],
   )
 }
@@ -58,9 +59,9 @@ export async function insertUserHiddenRssFeedItem(
   rssFeedItemId: string,
 ): Promise<void> {
   await write(
-    `INSERT INTO relation__user__hide__rss_feed_item (subject_id, object_id)
+    allowUnannotatedQuery(`INSERT INTO relation__user__hide__rss_feed_item (subject_id, object_id)
     VALUES ($1, $2)
-    ON CONFLICT DO NOTHING`,
+    ON CONFLICT DO NOTHING`),
     [userId, rssFeedItemId],
   )
 }

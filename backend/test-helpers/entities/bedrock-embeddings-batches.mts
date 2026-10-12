@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Bedrock embeddings batches entity helpers
  */
@@ -62,7 +63,8 @@ export async function insertTestEmbeddingsBatch(data: {
 
   const job_arn = data.jobArn !== undefined ? data.jobArn : null
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO bedrock_embedding_batches
       (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
     VALUES (
@@ -81,14 +83,17 @@ export async function insertTestEmbeddingsBatch(data: {
       ${cancelled_at},
       ${data.createdAt ?? now}
     )
-  `)
+  `),
+  )
 }
 
 export async function cleanupTestEmbeddingsBatchesByPrefix(prefix: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     DELETE FROM bedrock_embedding_batches
     WHERE id LIKE ${`${prefix}%`}
-  `)
+  `),
+  )
 }
 
 export async function cleanupTestEmbeddingsBatches(ids: string[]): Promise<void> {
@@ -122,7 +127,8 @@ export async function getTestBatchTerminalTimestamps(batchId: string): Promise<{
 export async function getTestBatchEntities(
   batchId: string,
 ): Promise<Array<{ entity_id: string; entity_type: string }>> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT
       entity_type::text AS entity_type,
       CASE entity_type
@@ -135,7 +141,8 @@ export async function getTestBatchEntities(
     FROM bedrock_embedding_batch_entities
     WHERE batch_id = ${batchId}
     ORDER BY entity_id
-  `)
+  `),
+  )
   return rows.map(row => ({
     entity_id: String(row.entity_id),
     entity_type: String(row.entity_type),
@@ -151,18 +158,21 @@ export async function getTestBatchSourceColumns(batchId: string): Promise<{
     url_id: string | null
     crawl_id: string | null
     metadata: unknown
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT url_id, crawl_id, data -> 'metadata' AS metadata
     FROM bedrock_embedding_batches
     WHERE id = ${batchId}
-  `)
+  `),
+  )
   return rows[0] ?? null
 }
 
 export async function getTestBatchSummary(
   batchId: string,
 ): Promise<{ job_type: string; status: BedrockBatchStatus } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT
       job_type::text AS job_type,
       submitted_at,
@@ -172,7 +182,8 @@ export async function getTestBatchSummary(
       cancelled_at
     FROM bedrock_embedding_batches
     WHERE id = ${batchId}
-  `)
+  `),
+  )
   const row = rows[0]
   if (!row) return null
   const status = deriveBedrockBatchStatus({

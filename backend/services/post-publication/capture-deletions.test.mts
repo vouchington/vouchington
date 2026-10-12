@@ -33,7 +33,9 @@ async function holdPostRow(
   release: PromiseWithResolvers<void>,
 ) {
   await using query = await beginTransaction()
-  await query(`SELECT 1 FROM posts WHERE id = $1::uuid FOR UPDATE`, [postId])
+  await query(`/* testCaptureDeletions */ SELECT 1 FROM posts WHERE id = $1::uuid FOR UPDATE`, [
+    postId,
+  ])
   locked.resolve()
   await release.promise
   await query.commit()
@@ -67,7 +69,7 @@ function gateWhenSqlReturns(
 }
 async function probePostPublicationLock(postId: string) {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(`/* testCaptureDeletions */ SET LOCAL lock_timeout = '50ms'`)
   await lockPostPublication(query, postId)
   await query.commit()
 }

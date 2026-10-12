@@ -164,7 +164,7 @@ describe('story posts', () => {
       try {
         await entered.promise
         await using probe = await beginTransaction()
-        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await probe(`/* testStoryPosts */ SET LOCAL lock_timeout = '50ms'`)
         await expect(lockAuthor(probe, storyTeller.id)).rejects.toMatchObject({ code: '55P03' })
       } finally {
         authorSpy.mockRestore()

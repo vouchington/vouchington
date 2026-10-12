@@ -1,1 +1,1 @@
-export { LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
+export { LEADING_QUERY_ANNOTATION_PATTERN, allowUnannotatedQuery } from '@vouchington/postgres'

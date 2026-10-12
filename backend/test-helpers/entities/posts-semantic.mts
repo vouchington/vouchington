@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Posts semantic search test helpers
  */
@@ -20,7 +21,7 @@ export async function addDummyEmbeddingToPost(
   // Create 1024-dimension dummy embedding
   const dummyEmbedding = `[${vector.join(',')}]`
 
-  const query = sql`
+  const query = sql`/* addDummyEmbeddingToPost */
     UPDATE posts
     SET bedrock_nova_multimodal_v1_embedding = ${dummyEmbedding}::vector,
         bedrock_nova_multimodal_v1_embedding_created_at = ${options?.rankFirst ? '9999-01-01T00:00:00Z' : new Date().toISOString()}
@@ -46,9 +47,11 @@ export async function setPostEmbeddingContentSha256KeepingInput(
   contentSha256: Buffer,
 ): Promise<void> {
   const { write } = await import('@data-stores/psql')
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE posts
     SET bedrock_nova_multimodal_v1_content_sha256 = ${contentSha256}
     WHERE id = ${postId}
-  `)
+  `),
+  )
 }

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Domain blacklists entity test helpers
  */
@@ -19,9 +20,9 @@ export async function insertTestDomainBlacklist(
 ): Promise<void> {
   // Get or create the source
   const sourceResult = await read(
-    sql`
+    allowUnannotatedQuery(sql`
     SELECT id FROM domain_blocklist_sources WHERE name = ${sourceName}
-  `,
+  `),
     options,
   )
 
@@ -30,23 +31,23 @@ export async function insertTestDomainBlacklist(
     sourceId = sourceResult.rows[0].id
   } else {
     const insertResult = await write(
-      sql`
+      allowUnannotatedQuery(sql`
       INSERT INTO domain_blocklist_sources (type, name, url)
       VALUES ('url'::domain_blocklist_types, ${sourceName}, 'https://example.com/blacklist.txt')
       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
       RETURNING id
-    `,
+    `),
       options,
     )
     sourceId = insertResult.rows[0].id
   }
 
   await write(
-    sql`
+    allowUnannotatedQuery(sql`
     INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `,
+  `),
     options,
   )
 }
@@ -59,14 +60,14 @@ export async function createTestBlacklistSource(
   options: QueryOptions = {},
 ): Promise<DomainBlacklistSourceId> {
   const result = await write(
-    sql`
+    allowUnannotatedQuery(sql`
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES (${source.type}::domain_blocklist_types, ${source.name}, ${source.url})
     ON CONFLICT (name) DO UPDATE SET
       type = EXCLUDED.type,
       url = EXCLUDED.url
     RETURNING id
-  `,
+  `),
     options,
   )
   return result.rows[0].id
@@ -78,10 +79,12 @@ export async function createTestBlacklistSource(
 export async function countBlacklistEntriesBySource(
   sourceId: DomainBlacklistSourceId,
 ): Promise<number> {
-  const result = await read(sql`
+  const result = await read(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int as count FROM blocklisted_domains
     WHERE source_id = ${sourceId}
-  `)
+  `),
+  )
   return result.rows[0].count
 }
 
@@ -98,12 +101,14 @@ export async function deleteTestBlacklistSource(sourceId: DomainBlacklistSourceI
 export async function listBlacklistDomainsBySource(
   sourceId: DomainBlacklistSourceId,
 ): Promise<string[]> {
-  const result = await read<{ domain: string }>(sql`
+  const result = await read<{ domain: string }>(
+    allowUnannotatedQuery(sql`
     SELECT domain
     FROM blocklisted_domains
     WHERE source_id = ${sourceId}
     ORDER BY domain
-  `)
+  `),
+  )
   return result.rows.map(row => row.domain)
 }
 
@@ -111,12 +116,14 @@ export async function listBlacklistDomainsBySource(
  * Check if any URL-type domain blacklist entries exist
  */
 export async function hasUrlTypeDomainBlacklists(): Promise<boolean> {
-  const result = await read(sql`
+  const result = await read(
+    allowUnannotatedQuery(sql`
     SELECT 1 FROM blocklisted_domains db
     INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
     WHERE dbs.type = 'url'::domain_blocklist_types
     LIMIT 1
-  `)
+  `),
+  )
   return result.rows.length > 0
 }
 
@@ -124,12 +131,14 @@ export async function hasUrlTypeDomainBlacklists(): Promise<boolean> {
  * Check if any email-type domain blacklist entries exist
  */
 export async function hasEmailTypeDomainBlacklists(): Promise<boolean> {
-  const result = await read(sql`
+  const result = await read(
+    allowUnannotatedQuery(sql`
     SELECT 1 FROM blocklisted_domains db
     INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
     WHERE dbs.type = 'email'::domain_blocklist_types
     LIMIT 1
-  `)
+  `),
+  )
   return result.rows.length > 0
 }
 
@@ -137,8 +146,10 @@ export async function hasEmailTypeDomainBlacklists(): Promise<boolean> {
  * Count total blacklist sources
  */
 export async function countBlacklistSources(): Promise<number> {
-  const result = await read(sql`
+  const result = await read(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int as count FROM domain_blocklist_sources
-  `)
+  `),
+  )
   return result.rows[0].count
 }

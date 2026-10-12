@@ -148,13 +148,15 @@ export async function getLatestJudgementsForEntitiesBatch(
     return subquery
   })
 
-  const query = subqueries.reduce((combined, subquery) => {
-    const next = sql``
-    next.append(combined)
-    next.append(sql` UNION ALL `)
-    next.append(subquery)
-    return next
-  })
+  const query = sql`/* getLatestJudgementsForEntitiesBatch */`.append(
+    subqueries.reduce((combined, subquery) => {
+      const next = sql``
+      next.append(combined)
+      next.append(sql` UNION ALL `)
+      next.append(subquery)
+      return next
+    }),
+  )
 
   const { rows } = await read(query)
   const result = new Map<string, ModerationReportJudgement>()

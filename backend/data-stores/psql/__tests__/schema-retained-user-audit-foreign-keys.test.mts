@@ -59,9 +59,10 @@ describe('retained-user audit foreign keys', () => {
     const post = await createTestPost()
     await using query = await beginTransaction()
     await insertTestRetainedUserAuditRow(query, 'post_clearance_changes', actorId, post.id)
-    const { rowCount } = await query('SELECT id FROM retained_user_identities WHERE id = $1', [
-      actorId,
-    ])
+    const { rowCount } = await query(
+      '/* testSchemaRetainedUserAuditForeignKeys */ SELECT id FROM retained_user_identities WHERE id = $1',
+      [actorId],
+    )
     expect(rowCount).toBe(1)
     expect(await countTestRetainedUserAuditRows(query, 'post_clearance_changes', actorId)).toBe(1)
   })

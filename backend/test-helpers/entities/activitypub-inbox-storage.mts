@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -159,7 +160,7 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
 export async function explainActivityPubInboxCleanupForTest(query: SQLStatement): Promise<string> {
   {
     await using transaction = await beginTransaction()
-    await transaction(sql`SET LOCAL enable_seqscan = off`)
+    await transaction(allowUnannotatedQuery(sql`SET LOCAL enable_seqscan = off`))
     const { rows } = await transaction<{ 'QUERY PLAN': unknown }>(
       `EXPLAIN (FORMAT JSON) ${query.text}`,
       query.values,

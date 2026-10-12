@@ -14,7 +14,9 @@ export async function eraseTestCopyrightSubmissionGuidanceForNotice(
   )
   if (!spec) throw new Error('Submission guidance is absent from copyright retention policy')
   await using transaction = await beginTransaction()
-  await transaction(sql`SET LOCAL app.copyright_retention_erasure = 'on'`)
+  await transaction(
+    sql`/* eraseTestCopyrightSubmissionGuidanceForNotice */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+  )
   await transaction(eraseCopyrightRetentionTableSql(spec, noticeId))
   await transaction.commit()
 }

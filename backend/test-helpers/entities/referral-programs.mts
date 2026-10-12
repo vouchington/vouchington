@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
@@ -26,14 +27,17 @@ export async function createReferralProgramFixture(data: {
     topicType: 'referral_program',
   })
 
-  const validation = await write(sql`
+  const validation = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${`validation_${randomSuffix}`}, 'test validation')
     RETURNING id
-  `)
+  `),
+  )
   const validationId = validation.rows[0].id
 
-  const rule = await write(sql`
+  const rule = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_link_validation_rules (
       referral_program_link_validation_rule_set_id,
       hostname,
@@ -42,25 +46,30 @@ export async function createReferralProgramFixture(data: {
     )
     VALUES (${validationId}, ${hostname}, ${pathname}, true)
     RETURNING id
-  `)
+  `),
+  )
   const ruleId = rule.rows[0].id
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${referralProgramId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO UPDATE
     SET enabled_at = CURRENT_TIMESTAMP,
         disabled_at = NULL
-  `)
+  `),
+  )
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_topic_link_validation_rule_sets (
       referral_program_topic_id,
       referral_program_link_validation_rule_set_id
     )
     VALUES (${referralProgramId}, ${validationId})
     ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING
-  `)
+  `),
+  )
 
   return {
     referralProgramId,
@@ -74,11 +83,13 @@ export async function createReferralProgramLinkValidation(
   slug: string,
   userHelpText = 'Test help text',
 ): Promise<string> {
-  const result = await write(sql`
+  const result = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
     VALUES (${slug}, ${userHelpText})
     RETURNING id
-  `)
+  `),
+  )
 
   return result.rows[0].id
 }
@@ -91,7 +102,8 @@ export async function createReferralProgramLinkValidationRule(data: {
   isInvalidReferralLinkUrl?: boolean
   userErrorText?: string | null
 }): Promise<string> {
-  const result = await write(sql`
+  const result = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_link_validation_rules (
       referral_program_link_validation_rule_set_id,
       hostname,
@@ -109,48 +121,57 @@ export async function createReferralProgramLinkValidationRule(data: {
       ${data.userErrorText === undefined ? null : data.userErrorText}
     )
     RETURNING id
-  `)
+  `),
+  )
 
   return result.rows[0].id
 }
 
 export async function enableReferralProgramByTopicId(referralProgramId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${referralProgramId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO UPDATE
     SET enabled_at = CURRENT_TIMESTAMP,
         disabled_at = NULL
-  `)
+  `),
+  )
 }
 
 export async function disableReferralProgramByTopicId(referralProgramId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE referral_program_topics
     SET disabled_at = CURRENT_TIMESTAMP, enabled_at = NULL
     WHERE topic_id = ${referralProgramId}
-  `)
+  `),
+  )
 }
 
 export async function assignValidationToReferralProgram(
   referralProgramId: string,
   validationId: string,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_topic_link_validation_rule_sets (
       referral_program_topic_id,
       referral_program_link_validation_rule_set_id
     )
     VALUES (${referralProgramId}, ${validationId})
     ON CONFLICT (referral_program_topic_id, referral_program_link_validation_rule_set_id) DO NOTHING
-  `)
+  `),
+  )
 }
 
 export async function setTopicReferralProgramId(
   topicId: string,
   referralProgramId: string,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE topics SET referral_program_topic_id = ${referralProgramId} WHERE id = ${topicId}
-  `)
+  `),
+  )
 }

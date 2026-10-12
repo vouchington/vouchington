@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { List, ListItem } from '@voucha/types/entities/list'
@@ -71,7 +72,9 @@ export async function insertTestListRssFeedItem(
 
 export async function listPostItemExists(listId: string, postId: string): Promise<boolean> {
   const { rows } = await read(
-    'SELECT 1 FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    allowUnannotatedQuery(
+      'SELECT 1 FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    ),
     [listId, postId],
   )
   return rows.length > 0
@@ -79,7 +82,9 @@ export async function listPostItemExists(listId: string, postId: string): Promis
 
 export async function listPostItemCount(listId: string, postId: string): Promise<number> {
   const { rows } = await read(
-    'SELECT COUNT(*)::int AS cnt FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    allowUnannotatedQuery(
+      'SELECT COUNT(*)::int AS cnt FROM user_list_posts WHERE user_list_id = $1 AND post_id = $2 AND removed_at IS NULL',
+    ),
     [listId, postId],
   )
   return (rows[0] as { cnt: number }).cnt
@@ -91,9 +96,9 @@ export async function listRssFeedItemsFromFeedExist(
   rssFeedItemId: string,
 ): Promise<boolean> {
   const { rows } = await read(
-    `SELECT li.rss_feed_item_id FROM user_list_rss_feed_items li
+    allowUnannotatedQuery(`SELECT li.rss_feed_item_id FROM user_list_rss_feed_items li
      JOIN rss_feed_item_sources src ON src.rss_feed_item_id = li.rss_feed_item_id
-     WHERE li.user_list_id = $1 AND src.rss_feed_id = $2 AND li.removed_at IS NULL`,
+     WHERE li.user_list_id = $1 AND src.rss_feed_id = $2 AND li.removed_at IS NULL`),
     [listId, rssFeedId],
   )
   return rows.some((r: Record<string, unknown>) => r.rss_feed_item_id === rssFeedItemId)

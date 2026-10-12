@@ -153,11 +153,9 @@ describe('assign', () => {
     await adminAssignItemToStory(storyPostUser.id, story1.id, itemId)
     const result = await adminAssignItemToStory(storyPostUser.id, story2.id, itemId)
     expect(result).toBe(itemId)
-
     const ids = await getStoryItemIds(story2.id)
     expect(ids).toContain(itemId)
   })
-
   it('serializes overlapping admin assignment and removal before projecting final story relations', async () => {
     const [retainedUrlId, assignedUrlId] = await Promise.all([
       createTestUrlWithHostname(),
@@ -167,7 +165,6 @@ describe('assign', () => {
     const assignedItemId = await makeTestItemForUrl(assignedUrlId)
     const assignedTopic = await createTestTopic({ name: `Story overlap topic ${randomUUID()}` })
     await addCategoryToRssFeedItem(assignedItemId, assignedTopic.id)
-
     const entered = Promise.withResolvers<void>()
     const lockLifecycles = storyLifecycleLock.lockStoryLifecycles
     const lifecycleSpy = vi
@@ -183,9 +180,11 @@ describe('assign', () => {
         assign = adminAssignItemToStory(storyPostUser.id, story.id, assignedItemId)
         await entered.promise
         await using probe = await beginTransaction()
-        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await probe(`/* testAssign */ SET LOCAL lock_timeout = '50ms'`)
         await expect(
-          probe(`SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`, [assignedItemId]),
+          probe(`/* testAssign */ SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`, [
+            assignedItemId,
+          ]),
         ).rejects.toMatchObject({ code: '55P03' })
         remove = adminRemoveItemFromStory(storyPostUser.id, assignedItemId)
       })

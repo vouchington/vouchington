@@ -7,7 +7,7 @@ const ZERO_EMBEDDING = `decode('${'0'.repeat(64)}', 'hex')`
 
 export async function seedPlaywrightPublisherTypeTopics(query: TransactionQuery): Promise<void> {
   await query(
-    `INSERT INTO topics (id, topic_type, name, slug, markdown, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES
+    `/* seedPlaywrightPublisherTypeTopics */ INSERT INTO topics (id, topic_type, name, slug, markdown, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES
       ('019c64e6-f700-7001-a000-000000000001','topic','Mainstream Media','mainstream-media','',${ZERO_EMBEDDING}, 'system'),
       ('019c64e6-f700-7008-a000-000000000008','topic','Public Media','public-media','',${ZERO_EMBEDDING}, 'system'),
       ('019c64e6-f700-7002-a000-000000000002','topic','Corporate Media','corporate-media','',${ZERO_EMBEDDING}, 'system'),

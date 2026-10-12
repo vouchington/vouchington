@@ -8,7 +8,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery): Promise<void> {
   // Get existing seeded RSS feed item IDs (created in feeds.mts)
   const { rows: itemRows } = await query<{ id: string }>(
-    `SELECT id FROM rss_feed_item_guids WHERE guid IN ('doc-csp-bonus', 'tpg-csp-bonus', 'doc-amex-grocery', 'tpg-amex-grocery', 'doc-hilton-devalue')
+    `/* seedPlaywrightRssFeedCategoryData */ SELECT id FROM rss_feed_item_guids WHERE guid IN ('doc-csp-bonus', 'tpg-csp-bonus', 'doc-amex-grocery', 'tpg-amex-grocery', 'doc-hilton-devalue')
     LIMIT 5`,
   )
 
@@ -17,7 +17,7 @@ export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery)
   // Insert unmapped categories for Playwright tests
   // Use ON CONFLICT DO NOTHING so re-seeding is safe
   await query(
-    `INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
+    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
     SELECT item.id, category.category_text, NULL
     FROM unnest($1::uuid[]) AS item(id)
     CROSS JOIN (VALUES ('credit-cards-pw-test'), ('news-pw-test')) AS category(category_text)
@@ -27,7 +27,7 @@ export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery)
 
   // Pre-reject 'news-pw-test' so the rejected-status view has a row for Playwright tests
   await query(
-    `INSERT INTO rss_feed_item_category_rejections (category_text, created_by_id)
+    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_category_rejections (category_text, created_by_id)
     VALUES ('news-pw-test', NULL)
     ON CONFLICT DO NOTHING`,
   )

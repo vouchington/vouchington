@@ -95,9 +95,9 @@ describe('editorial official-item membership serialization', () => {
 
 async function probeItemRow(itemId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(`/* testAdminStoryConcurrency */ SET LOCAL lock_timeout = '50ms'`)
   await query(
-    `SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
+    `/* testAdminStoryConcurrency */ SELECT id FROM rss_feed_items WHERE id = $1::uuid AND deleted_at IS NULL FOR UPDATE`,
     [itemId],
   )
   await query.commit()

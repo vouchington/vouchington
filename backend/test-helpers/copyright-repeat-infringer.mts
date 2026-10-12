@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
@@ -99,10 +100,12 @@ export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
 }
 
 export async function readTestRepeatInfringerOpenReviewIds(accountId: string): Promise<string[]> {
-  const { rows } = await read<{ id: string }>(sql`
+  const { rows } = await read<{ id: string }>(
+    allowUnannotatedQuery(sql`
     SELECT id FROM copyright_repeat_infringer_reviews
     WHERE account_user_id = ${accountId} AND outcome IS NULL
-  `)
+  `),
+  )
   return rows.map(row => row.id)
 }
 
@@ -121,7 +124,9 @@ export async function confirmTestRepeatInfringerNoticesConcurrently(
     outcomes = Promise.allSettled(operations.map(operation => operation()))
     await pollUntilNotNull(
       async () => {
-        const { rows } = await read<{ count: number }>(sql`
+        const { rows } = await read<{
+          count: number
+        }>(sql`/* confirmTestRepeatInfringerNoticesConcurrently */
         SELECT count(*)::integer AS count FROM pg_stat_activity
         WHERE ${pid} = ANY(pg_blocking_pids(pid))
           AND query LIKE '%lockPostPublicationScope%'

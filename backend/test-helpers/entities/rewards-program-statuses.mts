@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
@@ -19,10 +20,12 @@ export async function insertTestRewardsProgramStatus(data: {
   })
 
   // Insert into rewards_program_status_topics table
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO rewards_program_status_topics (topic_id)
     VALUES (${topicId})
-  `)
+  `),
+  )
 
   return topicId
 }

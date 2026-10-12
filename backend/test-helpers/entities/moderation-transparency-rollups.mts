@@ -1,21 +1,26 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** Returns the rollup mutator definition for structural cascade-lock regressions. */
 export async function getTestModerationTransparencyRollupFunctionDefinition(): Promise<string> {
-  const { rows } = await read<{ definition: string }>(sql`
+  const { rows } = await read<{ definition: string }>(
+    allowUnannotatedQuery(sql`
     SELECT pg_get_functiondef(
       'fn_apply_moderation_transparency_daily_rollup(timestamp with time zone,uuid,moderation_transparency_metrics,moderation_transparency_categories,integer)'::regprocedure
     ) AS definition
-  `)
+  `),
+  )
   return rows[0]!.definition
 }
 
 export async function getTestModerationTransparencyClearanceRollupFunctionDefinition(): Promise<string> {
-  const { rows } = await read<{ definition: string }>(sql`
+  const { rows } = await read<{ definition: string }>(
+    allowUnannotatedQuery(sql`
     SELECT pg_get_functiondef('fn_project_moderation_transparency_clearance_insert_rollup()'::regprocedure) AS definition
-  `)
+  `),
+  )
   return rows[0]!.definition
 }
 
@@ -23,7 +28,8 @@ export async function getTestModerationTransparencyClearanceRollupFunctionDefini
 export async function getTestModerationTransparencyDeleteRollupFunctionDefinitions(): Promise<
   Record<string, string>
 > {
-  const { rows } = await read<{ name: string; definition: string }>(sql`
+  const { rows } = await read<{ name: string; definition: string }>(
+    allowUnannotatedQuery(sql`
     SELECT p.proname AS name,
       pg_get_functiondef(p.oid) || COALESCE(string_agg(pg_get_triggerdef(t.oid), E'\n' ORDER BY t.tgname), '') AS definition
     FROM pg_proc p
@@ -37,7 +43,8 @@ export async function getTestModerationTransparencyDeleteRollupFunctionDefinitio
       ]
     )
     GROUP BY p.oid
-  `)
+  `),
+  )
   return Object.fromEntries(rows.map(row => [row.name, row.definition]))
 }
 
@@ -139,13 +146,15 @@ export async function getTestCommunityModerationTransparencyRollupCounts(options
 export async function getTestCommunityModerationTransparencyRollupVersion(
   communityId: string,
 ): Promise<{ count: number; rowVersion: string } | undefined> {
-  const { rows } = await read<{ count: number; rowVersion: string }>(sql`
+  const { rows } = await read<{ count: number; rowVersion: string }>(
+    allowUnannotatedQuery(sql`
     SELECT count, xmin::text AS "rowVersion"
     FROM moderation_transparency_daily_rollups
     WHERE community_id = ${communityId}::uuid
       AND metric = 'automated_moderation'
       AND category = 'community_ai'
-  `)
+  `),
+  )
   return rows[0]
 }
 

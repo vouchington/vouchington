@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Crawl chunks test verification helpers
  */
@@ -17,7 +18,7 @@ export async function countCrawlChunks(filters: {
 }): Promise<number> {
   let query
   if (filters.crawlId && filters.urlId) {
-    query = sql`
+    query = sql`/* countCrawlChunks */
       SELECT COUNT(*) as count
       FROM crawl_chunks
       JOIN crawls ON crawls.id = crawl_chunks.crawl_id
@@ -25,13 +26,13 @@ export async function countCrawlChunks(filters: {
         AND crawls.url_id = ${filters.urlId}
     `
   } else if (filters.crawlId) {
-    query = sql`
+    query = sql`/* countCrawlChunks */
       SELECT COUNT(*) as count
       FROM crawl_chunks
       WHERE crawl_id = ${filters.crawlId}
     `
   } else if (filters.urlId) {
-    query = sql`
+    query = sql`/* countCrawlChunks */
       SELECT COUNT(*) as count
       FROM crawl_chunks
       JOIN crawls ON crawls.id = crawl_chunks.crawl_id
@@ -49,14 +50,16 @@ export async function countCrawlChunks(filters: {
  * Get crawl chunks for a URL and crawl ID
  */
 export async function getCrawlChunks(urlId: string, crawlId: string): Promise<unknown[]> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT crawl_chunks.crawl_id, crawl_chunks.markdown, crawl_chunks.order_index
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id
     WHERE crawl_chunks.crawl_id = ${crawlId}
       AND crawls.url_id = ${urlId}
     ORDER BY crawl_chunks.order_index
-  `)
+  `),
+  )
 
   return rows
 }
@@ -65,13 +68,15 @@ export async function getCrawlChunks(urlId: string, crawlId: string): Promise<un
  * Get all crawl chunks for a URL
  */
 export async function getAllCrawlChunksForUrl(urlId: string): Promise<unknown[]> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT crawl_chunks.*
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id
     WHERE crawls.url_id = ${urlId}
     ORDER BY crawl_chunks.crawl_id, crawl_chunks.order_index
-  `)
+  `),
+  )
 
   return rows
 }
@@ -83,13 +88,15 @@ export async function getCrawlChunksWithEmbeddingStatus(
   urlId: string,
   crawlId: string,
 ): Promise<unknown[]> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT crawl_chunks.bedrock_nova_multimodal_v1_embedding, crawl_chunks.bedrock_nova_multimodal_v1_embedding_created_at
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id
     WHERE crawl_chunks.crawl_id = ${crawlId}
       AND crawls.url_id = ${urlId}
-  `)
+  `),
+  )
 
   return rows
 }
@@ -100,13 +107,15 @@ export async function getCrawlChunksWithEmbeddingStatus(
 export async function getCrawlChunksGroupedByCrawl(
   urlId: string,
 ): Promise<Array<{ crawl_id: string; count: number }>> {
-  const { rows } = await read<{ crawl_id: string; count: number }>(sql`
+  const { rows } = await read<{ crawl_id: string; count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT crawl_chunks.crawl_id, COUNT(*)::int as count
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id
     WHERE crawls.url_id = ${urlId}
     GROUP BY crawl_chunks.crawl_id
-  `)
+  `),
+  )
 
   return rows
 }
@@ -118,12 +127,14 @@ export async function getCrawlEmbeddingsGeneratedAt(
   urlId: string,
   crawlId: string,
 ): Promise<Date | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT embeddings_generated_at
     FROM crawls
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `)
+  `),
+  )
 
   return rows[0]?.embeddings_generated_at || null
 }
@@ -136,10 +147,12 @@ export async function updateCrawlEmbeddingsGeneratedAt(
   crawlId: string,
   timestamp: Date,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE crawls
     SET embeddings_generated_at = ${timestamp}
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `)
+  `),
+  )
 }

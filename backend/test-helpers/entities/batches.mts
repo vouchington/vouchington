@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 
 /**
@@ -18,10 +19,10 @@ export const createTestBatch = async (
 
   // Create the batch first
   await write(
-    `
+    allowUnannotatedQuery(`
     INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, records, submitted_at)
     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-  `,
+  `),
     [
       batchId,
       'amazon.nova-2-multimodal-embeddings-v1:0',
@@ -39,7 +40,7 @@ export const createTestBatch = async (
       rows.push(`($${values.push(batchId)}, $${values.push(jobType)}, $${values.push(entityId)})`)
     }
     await write(
-      `
+      allowUnannotatedQuery(`
       WITH entity_ids (batch_id, entity_type, entity_id) AS (
         VALUES ${rows.join(', ')}
       )
@@ -63,7 +64,7 @@ export const createTestBatch = async (
         CASE WHEN entity_type = 'crawl_chunks' THEN substring(entity_id from '-([0-9]+)$')::int ELSE NULL END,
         CASE WHEN entity_type = 'images' THEN entity_id::uuid ELSE NULL END
       FROM entity_ids
-    `,
+    `),
       values,
     )
   }
@@ -76,11 +77,11 @@ export const createTestBatch = async (
  */
 export const countBatchEntities = async (batchId: string): Promise<number> => {
   const { rows } = await read(
-    `
+    allowUnannotatedQuery(`
     SELECT COUNT(*)::int as count
     FROM bedrock_embedding_batch_entities
     WHERE batch_id = $1
-  `,
+  `),
     [batchId],
   )
   return rows[0].count

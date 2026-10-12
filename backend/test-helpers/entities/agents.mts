@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUserDirect } from './users.mts'
@@ -70,28 +71,34 @@ export async function createTestAgent(options: CreateTestAgentOptions = {}) {
   )
 
   // Insert into agents table
-  const { rows } = await write(sql`
+  const { rows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO agents (system_user_id, agent_type)
     VALUES (${systemUser.id}, ${agentType})
     RETURNING id, system_user_id, agent_type, activated_at, deactivated_at, created_at, updated_at, deleted_at
-  `)
+  `),
+  )
   const agent = rows[0]
 
   // If moderator, insert into moderator_agents
   if (agentType === 'moderator') {
     const slug = options.slug ?? `mod-${random}`
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       INSERT INTO moderator_agents (agent_id, slug)
       VALUES (${agent.id}, ${slug})
-    `)
+    `),
+    )
     agent.slug = slug
   }
 
   // If activated, set activated_at
   if (options.activated) {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       UPDATE agents SET activated_at = CURRENT_TIMESTAMP WHERE id = ${agent.id}
-    `)
+    `),
+    )
     agent.activated_at = new Date()
   }
 
@@ -111,33 +118,41 @@ export async function createTestAgent(options: CreateTestAgentOptions = {}) {
 export async function setupTestAutotaggerAgent(): Promise<TestAgentPrompt> {
   // Upsert autotagger system user. platform_account_kind = 'system' so getSystemUserByUsername('autotagger')
   // (platform_account_kind-gated to close the reserved-username squatting vector) resolves this fixture.
-  const { rows: userRows } = await write(sql`
+  const { rows: userRows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO users (username, platform_account_kind)
     VALUES ('autotagger', 'system')
     ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL
     DO UPDATE SET username = EXCLUDED.username, platform_account_kind = 'system'
     WHERE users.platform_account_kind = 'system'
     RETURNING id
-  `)
+  `),
+  )
   const autotaggerUserId = userRows[0].id as string
 
   // Get existing agent (including soft-deleted) or create a new one
-  const { rows: existingAgentRows } = await read(sql`
+  const { rows: existingAgentRows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT id, deleted_at FROM agents WHERE system_user_id = ${autotaggerUserId} LIMIT 1
-  `)
+  `),
+  )
   let agentId: string
   if (existingAgentRows.length > 0) {
     agentId = existingAgentRows[0].id as string
     // Restore soft-deleted agents
     if (existingAgentRows[0].deleted_at) {
-      await write(sql`UPDATE agents SET deleted_at = NULL WHERE id = ${agentId}`)
+      await write(
+        allowUnannotatedQuery(sql`UPDATE agents SET deleted_at = NULL WHERE id = ${agentId}`),
+      )
     }
   } else {
-    const { rows: newAgentRows } = await write(sql`
+    const { rows: newAgentRows } = await write(
+      allowUnannotatedQuery(sql`
       INSERT INTO agents (system_user_id, agent_type)
       VALUES (${autotaggerUserId}, 'autotagger')
       RETURNING id
-    `)
+    `),
+    )
     agentId = newAgentRows[0].id as string
   }
 

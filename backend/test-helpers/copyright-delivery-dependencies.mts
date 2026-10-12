@@ -28,7 +28,7 @@ export function createTestCopyrightDeliveryDependencies(
         placement_revision: number
         image_id: string
         desired_state: 'allow' | 'withheld'
-      }>(sql`
+      }>(sql`/* createTestCopyrightDeliveryDependencies */
         SELECT placement_id, placement_revision, image_id, desired_state
         FROM view_media_delivery_registry_current_records WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
       `)
