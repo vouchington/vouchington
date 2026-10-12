@@ -109,7 +109,6 @@ export default defineConfig({
         },
         test: {
           name: 'backend-embedding-creation-capacity',
-          setupFiles: ['./test-helpers/vitest.setup.dynamic-config-isolation.mts'],
           pool: 'forks',
           isolate: true,
           include: [

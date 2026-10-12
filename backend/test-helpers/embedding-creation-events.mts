@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { onTestFinished } from 'vitest'
 import { Queue, QueueEvents, type Worker, type Job, type QueueEventsOptions } from 'glide-mq'
 import type { acquireEmbeddingQuotaFixture } from './embedding-creation-quota.mts'
+import { registerEmbeddingCreationDiagnostics } from './embedding-creation-diagnostics.mts'
 
 type EventName = 'delay-changed' | 'completed' | 'failed'
 type Fixture = Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
@@ -12,15 +12,21 @@ export function createOwnedEmbeddingQueue(
   label: string,
   options: Pick<QueueEventsOptions, 'connection' | 'prefix'>,
 ) {
+  fixture.assertOpen()
   const name = `embedding_creation_${label}_${randomUUID()}`
   const queue = new Queue(name, options)
   const workers: Worker[] = []
   const writes: Promise<unknown>[] = []
+  const creations: Promise<Worker>[] = []
   const release: Array<() => void> = []
   let events: QueueEvents | undefined
   let closing: Promise<void> | undefined
+  let accepting = true
   let writersDrained = false
-  const cleanup = () => (closing ??= close())
+  const cleanup = () => {
+    accepting = false
+    return (closing ??= close())
+  }
   fixture.beforeRelease(cleanup, () => writersDrained)
   const history = new Map<string, Map<EventName, number>>()
   const waits = new Set<{
@@ -32,39 +38,13 @@ export function createOwnedEmbeddingQueue(
   }>()
   let eventError: unknown
   let hasEventError = false
-  const diagnosticReads: Promise<void>[] = []
-  onTestFinished(({ task }) => {
-    if (task.result?.state !== 'fail') return
-    const diagnostic = {
-      queue: name,
-      prefix: options.prefix,
-      closing: closing !== undefined,
-      writersDrained,
-      pending: [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence })),
-      history: [...history].map(([id, counts]) => ({ id, events: Object.fromEntries(counts) })),
-      jobs: [] as Array<{ id: string; state?: string; readError?: string }>,
-    }
-    Object.assign(task.meta, { ownedEmbeddingQueue: diagnostic })
-    for (const id of new Set([...history.keys(), ...[...waits].map(wait => wait.id)])) {
-      // Queue command reads do not borrow the worker's blocking connection or PostgreSQL pool.
-      diagnosticReads.push(
-        queue
-          .getJob(id)
-          .then(job => job?.getState())
-          .then(
-            state => {
-              return void diagnostic.jobs.push({ id, state })
-            },
-            err => {
-              return void diagnostic.jobs.push({
-                id,
-                readError: err instanceof Error ? err.name : typeof err,
-              })
-            },
-          ),
-      )
-    }
-  })
+  const drainDiagnostics = registerEmbeddingCreationDiagnostics(queue, () => ({
+    prefix: options.prefix,
+    closing: closing !== undefined,
+    writersDrained,
+    pending: [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence })),
+    history: [...history].map(([id, counts]) => ({ id, events: Object.fromEntries(counts) })),
+  }))
   const onError = (error: unknown) => {
     eventError = error
     hasEventError = true
@@ -72,6 +52,7 @@ export function createOwnedEmbeddingQueue(
     waits.clear()
   }
   queue.on('error', onError)
+  fixture.assertOpen()
   events = new QueueEvents(name, { ...options, lastEventId: '0-0' })
   for (const event of ['delay-changed', 'completed', 'failed'] as const)
     events.on(event, (payload: { jobId: string }) => {
@@ -95,17 +76,34 @@ export function createOwnedEmbeddingQueue(
     void write.catch(() => {})
     return write
   }
+  function assertOpen() {
+    fixture.assertOpen()
+    if (!accepting) throw new Error('Owned embedding queue is closing')
+  }
+  function start<T>(action: () => Promise<T>): Promise<T> {
+    assertOpen()
+    return track(Promise.resolve().then(action))
+  }
+  function watchWorker<T extends Worker>(worker: T): T {
+    workers.push(worker)
+    worker.on('error', onError)
+    return worker
+  }
   return {
     queue,
     workers,
-    watchWorker: (worker: Worker) => {
-      workers.push(worker)
-      worker.on('error', onError)
-      return worker
+    /** Register ownership before factory effects; closing still retains a late returned worker. */
+    createWorker: <T extends Worker>(factory: () => T | Promise<T>): Promise<T> => {
+      assertOpen()
+      const creation = Promise.resolve().then(factory).then(watchWorker)
+      creations.push(creation)
+      void creation.catch(() => {})
+      return creation
     },
     options,
     cleanup,
     run: async <T,>(action: () => Promise<T>): Promise<T> => {
+      assertOpen()
       let result: T
       try {
         result = await action()
@@ -120,19 +118,23 @@ export function createOwnedEmbeddingQueue(
       await cleanup()
       return result
     },
-    ready: () => events!.waitUntilReady(),
-    track,
+    ready: () => start(() => events!.waitUntilReady()),
+    promote: (job: Pick<Job, 'promote'>) => start(() => job.promote()),
     /** A zero-delay continuation may already be promoted; require its actual completion. */
     promoteContinuation: (job: Pick<Job, 'promote'>, completed: Promise<void>) =>
-      track(
+      start(() =>
         job.promote().catch(async err => {
           if (!(err instanceof Error) || err.message !== 'Cannot promote: not_delayed') throw err
           await completed
         }),
       ),
-    add: (...args: Parameters<Queue['add']>) => track(queue.add(...args)),
-    releaseOnCleanup: (action: () => void) => release.push(action),
+    add: (...args: Parameters<Queue['add']>) => start(() => queue.add(...args)),
+    releaseOnCleanup: (action: () => void) => {
+      assertOpen()
+      release.push(action)
+    },
     waitFor: (id: string, event: EventName, occurrence = 1): Promise<void> => {
+      assertOpen()
       if (hasEventError)
         return Promise.reject(
           eventError instanceof Error
@@ -157,11 +159,16 @@ export function createOwnedEmbeddingQueue(
       }
     }
     for (const action of release) await attempt(action)
-    const settledWrites = await Promise.allSettled(writes)
-    for (const result of settledWrites) if (result.status === 'rejected') errors.push(result.reason)
+    const settledCreations = await Promise.allSettled(creations)
+    for (const result of settledCreations)
+      if (result.status === 'rejected') errors.push(result.reason)
+    // Iteration also retains writes registered while an earlier owned operation settles.
+    for (const write of writes) await attempt(() => write)
     // graceful close drains active processors before the owned queue can be deleted.
     const closedWorkers = await Promise.allSettled(workers.map(async worker => worker.close(false)))
-    writersDrained = closedWorkers.every(result => result.status === 'fulfilled')
+    writersDrained =
+      settledCreations.every(result => result.status === 'fulfilled') &&
+      closedWorkers.every(result => result.status === 'fulfilled')
     for (const result of closedWorkers) if (result.status === 'rejected') errors.push(result.reason)
     await attempt(() => events?.close())
     for (const wait of waits) wait.reject(new Error('Owned embedding queue closed'))
@@ -169,7 +176,7 @@ export function createOwnedEmbeddingQueue(
     if (writersDrained) await attempt(() => queue.obliterate({ force: true }))
     await attempt(() => queue.close())
     // Diagnostics cannot precede or skip any mandatory resource cleanup step.
-    await Promise.allSettled(diagnosticReads)
+    await drainDiagnostics()
     // An SDK error can arrive after the last wait resolves, including during close.
     if (hasEventError) errors.push(eventError)
     for (const worker of workers) worker.off('error', onError)
@@ -179,6 +186,7 @@ export function createOwnedEmbeddingQueue(
         writersDrained
           ? 'Owned embedding queue cleanup failed'
           : 'Owned embedding worker drain failed; queue obliteration and config/accounting restoration withheld',
+        { cause: errors[0] },
       )
   }
 }

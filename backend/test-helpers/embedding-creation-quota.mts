@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
+import type { PoolClient } from '@data-stores/psql/types'
 import type { BatchCreationDependencies } from '../services/bedrock-embeddings-batch/utils.mts'
 import { createBatch } from '../services/bedrock-embeddings-batch/orchestrator/create.mts'
 import { minimumImageBatchSizeMB } from '../services/bedrock-embeddings/batch/input-size-limits.mts'
+import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -22,19 +24,40 @@ export const emptyEmbeddingCreationDependencies: BatchCreationDependencies = {
 
 /** Coordinates these fixtures, not unrelated production writers or a separate provider account. */
 export async function acquireEmbeddingQuotaFixture() {
-  const client = await advisoryLockPool.connect()
+  let client: PoolClient | undefined
+  const prepared = Promise.withResolvers<void>()
   const key = 'embedding-creation-global-quota-fixture'
   const ids: string[] = []
+  const writes: Promise<unknown>[] = []
   const drains: Array<{ run(): Promise<void>; safeAfterFailure?: () => boolean }> = []
   let acquired = false
+  let restoreConfig: (() => void) | undefined
   let disposal: Promise<void> | undefined
-  const close = () => (disposal ??= dispose())
+  let closing = false
+  const assertOpen = () => {
+    if (closing) throw new Error('Embedding quota fixture is closing')
+  }
+  const close = () => {
+    closing = true
+    return (disposal ??= dispose())
+  }
   onTestFinished(close)
   try {
-    await client.query("SET statement_timeout = '5s'")
+    client = await advisoryLockPool.connect()
+    assertOpen()
+    restoreConfig = await initializeEmbeddingCreationConfig()
+    assertOpen()
+    // A different valid invocation can hold the reservation for its whole test budget.
+    // Acquisition has its own bounded hook budget; subsequent fixture queries remain short.
+    await client.query("SET statement_timeout = '20s'")
+    assertOpen()
     await client.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [key])
     acquired = true
+    assertOpen()
+    await client.query("SET statement_timeout = '5s'")
+    assertOpen()
   } catch (err) {
+    prepared.resolve()
     const [disposed] = await Promise.allSettled([close()])
     if (disposed?.status === 'rejected')
       throw new AggregateError([err, disposed.reason], 'Quota acquisition and cleanup failed', {
@@ -42,10 +65,14 @@ export async function acquireEmbeddingQuotaFixture() {
       })
     throw err
   }
+  prepared.resolve()
   return {
     close,
-    beforeRelease: (run: () => Promise<void>, safeAfterFailure?: () => boolean) =>
-      drains.push({ run, safeAfterFailure }),
+    assertOpen,
+    beforeRelease: (run: () => Promise<void>, safeAfterFailure?: () => boolean) => {
+      assertOpen()
+      drains.push({ run, safeAfterFailure })
+    },
     readGlobalUsage,
     removeOwnedReservations: async () => {
       const ownedIds = [...ids]
@@ -54,40 +81,28 @@ export async function acquireEmbeddingQuotaFixture() {
       ids.length = 0
       return { verifiedAbsentCount: ownedIds.length, remainingCount: 0 }
     },
-    insertOtherWork: async (inputSizeMB: number) => {
-      const before = await readGlobalUsage()
-      const id = `embedding-other-work-${randomUUID()}`
-      ids.push(id)
-      await insertTestEmbeddingsBatch({
-        id,
-        bedrockStatus: 'Submitted',
-        batchData: { metadata: { inputSizeMB } },
+    insertOtherWork: (inputSizeMB: number) => {
+      assertOpen()
+      const write = Promise.resolve().then(async () => {
+        const before = await readGlobalUsage()
+        const id = `embedding-other-work-${randomUUID()}`
+        ids.push(id)
+        await insertTestEmbeddingsBatch({
+          id,
+          bedrockStatus: 'Submitted',
+          batchData: { metadata: { inputSizeMB } },
+        })
+        await assertOwnedReservation(id, inputSizeMB)
+        return { before, id, inputSizeMB }
       })
-      await assertOwnedReservation(id, inputSizeMB)
-      return { before, id, inputSizeMB }
-    },
-    insertFairnessReservation: async (inflightLimitMB: number, remainingMB: number) => {
-      const before = await readGlobalUsage()
-      const reservationMB = inflightLimitMB - before.inputSizeMB - remainingMB
-      if (!Number.isFinite(reservationMB) || reservationMB < 0)
-        throw new Error('Global quota precondition: no nonnegative owned reservation')
-      const id = `embedding-fairness-${randomUUID()}`
-      ids.push(id)
-      await insertTestEmbeddingsBatch({
-        id,
-        bedrockStatus: 'Submitted',
-        batchData: { metadata: { inputSizeMB: reservationMB } },
-      })
-      await assertOwnedReservation(id, reservationMB)
-      return {
-        before,
-        reservationMB,
-        assertPresent: () => assertOwnedReservation(id, reservationMB),
-      }
+      writes.push(write)
+      void write.catch(() => {})
+      return write
     },
   }
 
   async function dispose() {
+    await prepared.promise
     const errors: unknown[] = []
     const attempt = async (action: () => unknown) => {
       try {
@@ -110,21 +125,23 @@ export async function acquireEmbeddingQuotaFixture() {
         safeToRestore = safeToRestore && safe
       }
     }
+    for (const write of writes) await attempt(() => write)
     if (safeToRestore) {
+      await attempt(() => restoreConfig?.())
       await attempt(() => cleanupTestEmbeddingsBatches(ids))
       await attempt(() => assertOwnedAccountingRemoved(ids))
     }
     if (acquired)
       await attempt(async () => {
-        const { rows } = await client.query<{ unlocked: boolean }>(
+        const { rows } = await client!.query<{ unlocked: boolean }>(
           'SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
           [key],
         )
         if (!rows[0]?.unlocked) throw new Error('Global quota fixture lock was not released')
       })
-    await attempt(() => client.query('RESET statement_timeout'))
+    await attempt(() => client?.query('RESET statement_timeout'))
     await attempt(() =>
-      client.release(
+      client?.release(
         errors.length ? new AggregateError(errors, 'Quota disposal failed') : undefined,
       ),
     )

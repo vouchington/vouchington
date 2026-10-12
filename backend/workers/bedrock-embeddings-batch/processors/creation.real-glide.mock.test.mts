@@ -18,6 +18,7 @@ import {
   emptyEmbeddingCreationDependencies,
 } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
+import { createEmbeddingFairnessSnapshot } from '@voucha/test-helpers/embedding-creation-fairness'
 import { createEmbeddingCreationWorker } from '../workers/bedrock-embeddings-batch-creation.mts'
 import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
 
@@ -38,7 +39,8 @@ function fixedEmptyCursor() {
 }
 
 describe('same-job embedding continuation', () => {
-  beforeEach(setupQuota)
+  // Lock acquisition may wait for another invocation; each test keeps its five-second budget.
+  beforeEach(setupQuota, 25_000)
   it('preserves a delayed cursor and coalesces later roots through repeated capacity denials', async () => {
     const owned = createOwnedEmbeddingQueue(quota, 'retry', connection)
     const { queue } = owned
@@ -51,19 +53,21 @@ describe('same-job embedding continuation', () => {
     let advanced = false
     const nextCursor = { ...cursor, afterId: randomUUID() }
     const seen: { id: string; data: unknown }[] = []
-    const worker = new Worker(
-      queue.name,
-      async (job: Job) => {
-        seen.push({ id: job.id, data: job.data })
-        if (!capacityAvailable) await delayEmbeddingCreationJob(job, cursor, 30000)
-        else if (!advanced) {
-          advanced = true
-          await delayEmbeddingCreationJob(job, nextCursor)
-        }
-      },
-      { ...owned.options, concurrency: 1, blockTimeout: 100, promotionInterval: 100 },
+    const worker = await owned.createWorker(
+      () =>
+        new Worker(
+          queue.name,
+          async (job: Job) => {
+            seen.push({ id: job.id, data: job.data })
+            if (!capacityAvailable) await delayEmbeddingCreationJob(job, cursor, 30000)
+            else if (!advanced) {
+              advanced = true
+              await delayEmbeddingCreationJob(job, nextCursor)
+            }
+          },
+          { ...owned.options, concurrency: 1, blockTimeout: 100, promotionInterval: 100 },
+        ),
     )
-    owned.watchWorker(worker)
     await owned.run(async () => {
       await Promise.all([owned.ready(), worker.waitUntilReady()])
       const first = await owned.add('images', {}, creationJobOptions('images_batch'))
@@ -73,13 +77,13 @@ describe('same-job embedding continuation', () => {
       expect((await queue.getJob(first.id))?.data).toEqual({ cursor })
       for (let attempt = 0; attempt < 3; attempt++)
         expect(await owned.add('images', {}, creationJobOptions('images_batch'))).toBeNull()
-      await owned.track(first.promote())
+      await owned.promote(first)
       await owned.waitFor(first.id, 'delay-changed', 2)
       expect(await first.getState()).toBe('delayed')
       expect(await owned.add('images', {}, creationJobOptions('images_batch'))).toBeNull()
       expect((await queue.getJob(first.id))?.attemptsMade).toBe(0)
       capacityAvailable = true
-      await owned.track(first.promote())
+      await owned.promote(first)
       await owned.waitFor(first.id, 'delay-changed', 3)
       const completed = owned.waitFor(first.id, 'completed')
       await owned.promoteContinuation(first, completed)
@@ -117,11 +121,12 @@ describe('same-job embedding continuation', () => {
       const seen = new Set<string>()
       await owned.run(async () => {
         await owned.ready()
-        const worker = await createEmbeddingCreationWorker(owned.queue, {
-          blockTimeout: 100,
-          promotionInterval: 100,
-        })
-        owned.watchWorker(worker)
+        const worker = await owned.createWorker(() =>
+          createEmbeddingCreationWorker(owned.queue, {
+            blockTimeout: 100,
+            promotionInterval: 100,
+          }),
+        )
         worker.on('active', active => seen.add(active.name))
         await worker.waitUntilReady()
         const job = await owned.add(type, { cursor }, creationJobOptions(type))
@@ -148,12 +153,13 @@ describe('same-job embedding continuation', () => {
         await owned.ready()
         const job = await owned.add(type, { cursor: fixedEmptyCursor() }, creationJobOptions(type))
         if (!job) throw new Error('Expected empty creation sweep job')
-        const worker = await createEmbeddingCreationWorker(
-          owned.queue,
-          { blockTimeout: 100, promotionInterval: 100 },
-          emptyEmbeddingCreationDependencies,
+        const worker = await owned.createWorker(() =>
+          createEmbeddingCreationWorker(
+            owned.queue,
+            { blockTimeout: 100, promotionInterval: 100 },
+            emptyEmbeddingCreationDependencies,
+          ),
         )
-        owned.watchWorker(worker)
         await worker.waitUntilReady()
         await owned.waitFor(job.id, type === 'unknown' ? 'failed' : 'completed')
         expect(await job.getState()).toBe(type === 'unknown' ? 'failed' : 'completed')
@@ -169,28 +175,33 @@ describe('same-job embedding continuation', () => {
   it('yields an image capacity delay to text work while preserving the global creation cap', async () => {
     const owned = createOwnedEmbeddingQueue(quota, 'mixed', connection)
     const config = getRateLimitConfig()
-    const baseline = await requireAdmitted(true)
-    const imageMinimum = minimumImageBatchSizeMB(baseline.minRecords)
-    const textMinimum = minimumTextBatchSizeMB(baseline.minRecords)
+    const imageMinimum = minimumImageBatchSizeMB(config.MIN_RECORDS_PER_JOB)
+    const textMinimum = minimumTextBatchSizeMB(config.MIN_RECORDS_PER_JOB)
     const remainingMB = (imageMinimum + textMinimum) / 2
-    const reservation = await quota.insertFairnessReservation(
+    const reservation = await createEmbeddingFairnessSnapshot(
+      quota,
       config.MAX_INFLIGHT_SIZE_MB,
       remainingMB,
     )
     // This size-fairness case reserves one count slot and leaves one free locally.
     // The production count-denial cases above retain their independent boundary.
+    expect(reservation.before.count + 2).toBeLessThanOrEqual(config.MAX_INFLIGHT_JOBS)
     const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       max_inflight_jobs: reservation.before.count + 2,
       creation_retry_delay_ms: 30000,
     })
     quota.beforeRelease(async () => restore())
-    const reserved = await getBatchCreationLimits()
+    const reserved = await reservation.limits()
     if (!reserved.allowed) throw new Error(`Global accounting changed: ${reserved.reason}`)
     expect(reserved.maxRecords).toBeGreaterThanOrEqual(reserved.minRecords)
     expect(reserved.maxSizeMB).toBeCloseTo(remainingMB, 6)
     expect(reserved.maxSizeMB).toBeGreaterThanOrEqual(textMinimum)
     expect(reserved.maxSizeMB).toBeLessThan(imageMinimum)
     expect(reservation.reservationMB).toBeGreaterThan(0)
+    // Commit unrelated owned work after snapshot establishment. A READ COMMITTED
+    // regression would change the exact fairness boundary used by these real workers.
+    await quota.insertOtherWork(1)
+    expect(await reservation.limits()).toEqual(reserved)
     const setConcurrency = vi.spyOn(owned.queue, 'setGlobalConcurrency')
     quota.beforeRelease(async () => {
       setConcurrency.mockRestore()
@@ -198,11 +209,16 @@ describe('same-job embedding continuation', () => {
     await owned.run(async () => {
       await owned.ready()
       for (let index = 0; index < 2; index++) {
-        const worker = await createEmbeddingCreationWorker(owned.queue, {
-          blockTimeout: 100,
-          promotionInterval: 100,
-        })
-        owned.watchWorker(worker)
+        await owned.createWorker(() =>
+          createEmbeddingCreationWorker(
+            owned.queue,
+            {
+              blockTimeout: 100,
+              promotionInterval: 100,
+            },
+            reservation.dependencies,
+          ),
+        )
       }
       await Promise.all(owned.workers.map(worker => worker.waitUntilReady()))
       expect(setConcurrency).toHaveBeenCalledTimes(2)
@@ -222,6 +238,10 @@ describe('same-job embedding continuation', () => {
       expect(await owned.add('images', {}, creationJobOptions('mixed_images'))).toBeNull()
     })
     await reservation.assertPresent()
+    expect(await reservation.removeOwnedReservations()).toEqual({
+      verifiedAbsentCount: 1,
+      remainingCount: 0,
+    })
     expect(await quota.removeOwnedReservations()).toEqual({
       verifiedAbsentCount: 1,
       remainingCount: 0,
@@ -230,7 +250,7 @@ describe('same-job embedding continuation', () => {
 })
 
 describe('creation queue global concurrency', () => {
-  beforeEach(setupQuota)
+  beforeEach(setupQuota, 25_000)
   it('serializes creation jobs across workers without retaining a delayed ordering lane', async () => {
     const owned = createOwnedEmbeddingQueue(quota, 'global', connection)
     const { queue } = owned
@@ -258,13 +278,14 @@ describe('creation queue global concurrency', () => {
       await owned.add('images', {}, creationJobOptions('images'))
       await owned.add('topics', {}, creationJobOptions('topics'))
       for (let index = 0; index < 2; index++)
-        owned.watchWorker(
-          new Worker(queue.name, processor, {
-            ...owned.options,
-            concurrency: 2,
-            blockTimeout: 100,
-            promotionInterval: 100,
-          }),
+        await owned.createWorker(
+          () =>
+            new Worker(queue.name, processor, {
+              ...owned.options,
+              concurrency: 2,
+              blockTimeout: 100,
+              promotionInterval: 100,
+            }),
         )
       await Promise.all(owned.workers.map(worker => worker.waitUntilReady()))
       await firstStarted.promise
@@ -276,14 +297,3 @@ describe('creation queue global concurrency', () => {
     })
   })
 })
-
-async function requireAdmitted(images: boolean) {
-  const limits = await getBatchCreationLimits()
-  if (!limits.allowed) throw new Error(`Global quota precondition: ${limits.reason}`)
-  const requiredMB = images
-    ? minimumImageBatchSizeMB(limits.minRecords)
-    : minimumTextBatchSizeMB(limits.minRecords)
-  if (limits.maxRecords < limits.minRecords || limits.maxSizeMB < requiredMB)
-    throw new Error('Global quota precondition: insufficient minimum batch capacity')
-  return limits
-}
