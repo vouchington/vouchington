@@ -44,6 +44,7 @@
     "@services/data-points": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",
+    "@services/email-address-validator": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",

@@ -25,7 +25,9 @@ export async function upsertOAuthAccount(
   if (!providerUserId) throw createHttpError(401, 'Provider user ID is empty')
   const config = providerTableConfigs[provider]
   const { hasTokenColumns, hasRefreshToken } = config
-  const emailDomainHostnameId = await resolveEmailDomainHostnameId(providerUserEmailAddress)
+  // X is not a verified-email source and has no email-domain FK.
+  const emailDomainHostnameId =
+    provider === 'x' ? null : await resolveEmailDomainHostnameId(providerUserEmailAddress)
   const providerDataUpdate =
     config.dataConflictStrategy === 'merge'
       ? `${config.table}.${config.dataColumn} || EXCLUDED.${config.dataColumn}`
@@ -47,21 +49,23 @@ export async function upsertOAuthAccount(
   let values: unknown[]
 
   if (hasTokenColumns && hasRefreshToken) {
+    const ownsEmailDomain = provider !== 'x'
+    const dataParameter = ownsEmailDomain ? 4 : 3
     query = `/* upsertOAuthAccount */
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
-        email_domain_hostname_id,
+        ${ownsEmailDomain ? 'email_domain_hostname_id,' : ''}
         ${config.dataColumn},
         access_token_ciphertext,
         refresh_token_ciphertext,
         access_token_expires_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, ${ownsEmailDomain ? '$3, ' : ''}$${dataParameter}, $${dataParameter + 1}, $${dataParameter + 2}, $${dataParameter + 3})
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
-        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
+        ${ownsEmailDomain ? 'email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,' : ''}
         ${config.dataColumn} = ${providerDataUpdate},
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         refresh_token_ciphertext = EXCLUDED.refresh_token_ciphertext,
@@ -76,7 +80,7 @@ export async function upsertOAuthAccount(
     values = [
       providerUserId,
       providerUserEmailAddress,
-      emailDomainHostnameId,
+      ...(ownsEmailDomain ? [emailDomainHostnameId] : []),
       JSON.stringify(providerUserData),
       accessTokenCiphertext,
       refreshTokenCiphertext,

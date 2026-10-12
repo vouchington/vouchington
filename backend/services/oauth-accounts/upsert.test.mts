@@ -1,10 +1,44 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { read } from '@data-stores/psql'
 import { getTestOAuthAccountCiphertexts } from '@voucha/test-helpers'
 import { getOAuthAccountByProviderUserId } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
 describe('upsertOAuthAccount', () => {
+  it('persists X accounts without a verified-email hostname owner', async () => {
+    const providerUserId = `x-account-${randomUUID()}`
+    const account = await upsertOAuthAccount('x', providerUserId, null, {
+      username: providerUserId,
+    })
+
+    expect(account.provider_user_id).toBe(providerUserId)
+    expect(account.provider_user_email_address).toBeNull()
+  })
+
+  it.each(['linkedin', 'microsoft', 'github'] as const)(
+    'updates the %s email-domain owner with the address',
+    async provider => {
+      const providerUserId = `${provider}-domain-${randomUUID()}`
+      const email = `tests+${providerUserId}@voucha.ai`
+      await upsertOAuthAccount(provider, providerUserId, email, { name: providerUserId })
+      const table = `${provider}_accounts`
+      const idColumn = `${provider}_user_id`
+      const before = await read<{ email_domain_hostname_id: string | null }>(
+        `/* testOAuthEmailDomainOwner */ SELECT email_domain_hostname_id FROM ${table} WHERE ${idColumn} = $1`,
+        [providerUserId],
+      )
+      expect(before.rows[0]?.email_domain_hostname_id).toBeTruthy()
+
+      await upsertOAuthAccount(provider, providerUserId, null, { name: providerUserId })
+      const after = await read<{ email_domain_hostname_id: string | null }>(
+        `/* testOAuthEmailDomainOwner */ SELECT email_domain_hostname_id FROM ${table} WHERE ${idColumn} = $1`,
+        [providerUserId],
+      )
+      expect(after.rows[0]?.email_domain_hostname_id).toBeNull()
+    },
+  )
+
   it('merges omitted Apple profile fields on conflict', async () => {
     const providerUserId = `apple-data-merge-${randomUUID()}`
     const email = `tests+${providerUserId}@voucha.ai`

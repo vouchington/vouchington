@@ -113,7 +113,7 @@ describe('copyright email approval parity between REST and MCP', () => {
       expect(aggregate?.notice.claimant_display_name).toBe('Caller stated name')
       expect(aggregate?.evidenceArtifacts).toEqual([
         expect.objectContaining({
-          storage_key: intake.raw_storage_key,
+          storage_object_id: intake.raw_storage_object_id,
           sha256: intake.raw_sha256,
           mime_type: 'message/rfc822',
         }),

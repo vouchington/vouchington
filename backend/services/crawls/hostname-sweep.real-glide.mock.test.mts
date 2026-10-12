@@ -47,7 +47,14 @@ describe('hostname sweep selection and completion', () => {
   it('caps both due ranges, excludes recent completion, and resumes beyond queued hosts', async () => {
     const hosts: string[] = []
     const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
-    for (const sweptAt of [null, null, null, '2098-01-01T00:00:00Z', '2099-01-14T12:00:00Z']) {
+    for (const sweptAt of [
+      null,
+      null,
+      null,
+      null,
+      '2098-01-01T00:00:00Z',
+      '2099-01-14T12:00:00Z',
+    ]) {
       const hostname = `sweep-${randomUUID()}.example.com`
       const host = await insertTestUrlHostname({ hostname })
       if (!hosts.length) await insertTestDomainBlacklist(hostname)
@@ -65,7 +72,7 @@ describe('hostname sweep selection and completion', () => {
       bucketDays,
     }
     // Use a cutoff within the bucket's full 32700-day interval.
-    await setTestHostnameCrawlSweep(hosts[3]!, bucketDays, '2000-01-01T00:00:00Z')
+    await setTestHostnameCrawlSweep(hosts[4]!, bucketDays, '2000-01-01T00:00:00Z')
     const saved: CrawlHostnameDispatchCursor[] = []
     expect(
       await dispatchCrawlHostnames(start, async cursor => {
@@ -81,7 +88,7 @@ describe('hostname sweep selection and completion', () => {
         saved.push(cursor)
       }),
     ).toEqual({ count: 2, hasMore: true })
-    expect(saved.at(-1)?.afterId).toBe(hosts[2])
+    expect(saved.at(-1)?.afterId).toBe(hosts[3])
     expect(saved.at(-1)?.range).toBe(0)
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
       hostname_batch_size: 1,
@@ -101,7 +108,7 @@ describe('hostname sweep selection and completion', () => {
     expect(saved.at(-1)?.afterBucketDays).toBe(bucketDays)
     const queued = await crawlDispatchQueue.searchJobs({
       name: 'crawl_urls_per_hostname_dispatcher',
-      data: { hostname_id: hosts[3]! },
+      data: { hostname_id: hosts[4]! },
     })
     expect(queued).toHaveLength(1)
     expect(
@@ -118,7 +125,7 @@ describe('hostname sweep selection and completion', () => {
     expect(
       await crawlDispatchQueue.searchJobs({
         name: 'crawl_urls_per_hostname_dispatcher',
-        data: { hostname_id: hosts[4]! },
+        data: { hostname_id: hosts[5]! },
       }),
     ).toHaveLength(0)
   })

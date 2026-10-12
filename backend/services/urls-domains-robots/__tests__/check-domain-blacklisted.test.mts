@@ -58,13 +58,13 @@ describe('checkDomainBlacklisted', () => {
     await expect(checkDomainBlacklisted(hostname)).resolves.toBe(true)
   })
 
-  it('trusts a Bloom negative for a crawlable hostname without reading blocklisted_domains', async () => {
+  it('keeps a projected URL block active even when Bloom answers negative', async () => {
     const domain = `robots-negative-${randomUUID()}.test`
     await ownBlocklistedDomain(domain)
     bloomSpy.mockResolvedValue([false])
 
-    // The row exists, so only a skipped blocklisted_domains read can answer false.
-    await expect(checkDomainBlacklisted(domain)).resolves.toBe(false)
+    // The URL source now projects into url_hostnames.is_blocked for the fast local read.
+    await expect(checkDomainBlacklisted(domain)).resolves.toBe(true)
   })
 
   it('confirms a Bloom maybe and an unknown Bloom answer against blocklisted_domains', async () => {

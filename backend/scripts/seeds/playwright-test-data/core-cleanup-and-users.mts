@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 
 async function seedPlaywrightCleanupAndUsers(
   query: TransactionQuery,
@@ -91,9 +92,11 @@ async function seedPlaywrightCleanupAndUsers(
     `/* seedPlaywrightCleanupAndUsers */ DELETE FROM user_email_addresses WHERE email_address = $1 AND user_id <> '019f0000-0000-7000-8000-000000000000'`,
     [normalizedTestEmail],
   )
+  const emailDomainHostnameId = await resolveEmailDomainHostnameId(normalizedTestEmail, { query })
+  if (!emailDomainHostnameId) throw new Error('Playwright user email domain was not resolved')
   await query(
-    `/* seedPlaywrightCleanupAndUsers */ INSERT INTO user_email_addresses (user_id, email_address, is_primary) VALUES ('019f0000-0000-7000-8000-000000000000', $1, TRUE) ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE`,
-    [normalizedTestEmail],
+    `/* seedPlaywrightCleanupAndUsers */ INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary) VALUES ('019f0000-0000-7000-8000-000000000000', $1, $2, TRUE) ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE`,
+    [normalizedTestEmail, emailDomainHostnameId],
   )
   {
     const seedHash = hashToken('email-address-login-token', 'playwright-test-user-seed-token')

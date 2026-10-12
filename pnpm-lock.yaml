@@ -3382,6 +3382,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../services/elections-votes
+      '@services/email-address-validator':
+        specifier: workspace:^
+        version: link:../services/email-address-validator
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
