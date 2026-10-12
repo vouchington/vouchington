@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write, type TransactionQuery } from '@data-stores/psql'
 
 export async function prepareTestOAuthRetentionRows(
   clientId: string,
@@ -104,4 +104,20 @@ export async function getTestOAuthRetentionRowCounts(clientId: string): Promise<
     [clientId],
   )
   return result.rows[0]!
+}
+
+export async function lockTestOAuthRetentionPredecessor(
+  clientId: string,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(
+    `/* lockTestOAuthRetentionPredecessor */ SELECT token.id
+     FROM oauth_refresh_tokens AS token
+     JOIN oauth_refresh_token_families AS family ON family.id = token.family_id
+     JOIN oauth_grants AS grant_row ON grant_row.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = grant_row.client_id
+     WHERE client.client_id = $1 AND token.replaced_by_token_id IS NOT NULL
+     ORDER BY token.id FOR UPDATE OF token`,
+    [clientId],
+  )
 }

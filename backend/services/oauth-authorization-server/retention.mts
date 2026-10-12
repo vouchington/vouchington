@@ -3,6 +3,7 @@ import {
   beginTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
+import { deleteExpiredOAuthRetentionTokens } from './retention-tokens.mts'
 
 export type OAuthAuthorizationServerRetentionResult = {
   deleted: number
@@ -41,33 +42,24 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
   const window = { lowerBoundDate: options.lowerBoundDate, now: options.now ?? new Date() }
   const share = Math.floor(budget / OAUTH_RETENTION_DELETE_ORDER.length)
   const remainder = budget % OAUTH_RETENTION_DELETE_ORDER.length
-  await using query = await beginTransaction()
   let deleted = 0
   for (const [index, table] of OAUTH_RETENTION_DELETE_ORDER.entries()) {
     // oxlint-disable-next-line no-await-in-loop -- reserve each phase a share before redistributing in FK order
-    deleted += await deletePhase(
-      query,
-      table,
-      window,
-      batchSize,
-      share + (index === 0 ? remainder : 0),
-    )
+    deleted += await deletePhase(table, window, batchSize, share + (index === 0 ? remainder : 0))
   }
   while (deleted < budget) {
     const before = deleted
     for (const table of OAUTH_RETENTION_DELETE_ORDER) {
       if (deleted === budget) break
       // oxlint-disable-next-line no-await-in-loop -- child-first deletes consume one shared physical-row budget
-      deleted += await deletePhase(query, table, window, batchSize, budget - deleted)
+      deleted += await deletePhase(table, window, batchSize, budget - deleted)
     }
     if (deleted === before) break
   }
-  await query.commit()
   return { deleted, hasMore: deleted === budget }
 }
 
 async function deletePhase(
-  query: TransactionQuery,
   table: (typeof OAUTH_RETENTION_DELETE_ORDER)[number],
   window: RetentionWindow,
   batchSize: number,
@@ -76,24 +68,24 @@ async function deletePhase(
   let deleted = 0
   while (deleted < allowance) {
     const limit = Math.min(batchSize, allowance - deleted)
-    // oxlint-disable-next-line no-await-in-loop -- each statement remains capped while draining only this phase's allowance
+    // oxlint-disable-next-line no-await-in-loop -- commit each bounded physical-row batch independently
+    await using query = await beginTransaction()
+    // oxlint-disable-next-line no-await-in-loop -- each statement remains capped within the phase allowance
     const count = await deleteExpiredRows(
       query,
       table === 'oauth_refresh_token_families' ? 'oauth_refresh_tokens' : table,
       window,
       limit,
     )
-    deleted += count
-    if (count === limit) continue
-    if (table !== 'oauth_refresh_token_families') break
-    // oxlint-disable-next-line no-await-in-loop -- refresh children must be removed and counted before their empty families
-    const families = await deleteEmptyFamilies(
-      query,
-      window,
-      Math.min(batchSize, allowance - deleted),
-    )
-    deleted += families
-    if (families === 0) break
+    let families = 0
+    if (table === 'oauth_refresh_token_families' && count < limit) {
+      // oxlint-disable-next-line no-await-in-loop -- counted children precede locked empty families within this batch
+      families = await deleteEmptyFamilies(query, window, limit - count)
+    }
+    // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before another bounded batch
+    await query.commit()
+    deleted += count + families
+    if (count + families < limit) break
   }
   return deleted
 }
@@ -109,17 +101,8 @@ async function deleteExpiredRows(
     EXPIRING_OAUTH_TABLES,
     'OAuth authorization-server retention table',
   )
-  const familyColumn = table === 'oauth_access_tokens' ? 'refresh_family_id' : 'family_id'
-  const childTable = table === 'oauth_access_tokens' || table === 'oauth_refresh_tokens'
-  const eligibleFamily = `EXISTS (
-    SELECT 1 FROM oauth_refresh_token_families AS family
-    WHERE family.id = artifact.${familyColumn}
-      AND family.expires_at <= $1
-      AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
-  )`
-  const familyEligibility = childTable ? `OR ${eligibleFamily}` : ''
-  // Eligible-family children drain before unrelated token backlogs, including future-expiry children.
-  const childPriority = childTable ? `CASE WHEN ${eligibleFamily} THEN 0 ELSE 1 END,` : ''
+  if (table === 'oauth_access_tokens' || table === 'oauth_refresh_tokens')
+    return deleteExpiredOAuthRetentionTokens(query, table, window, limit)
   const result = await query(
     `/* deleteExpiredOAuthAuthorizationServerArtifacts:${validatedTable} */
      /* deadlock-safe: ordered token/request/code rows use SKIP LOCKED; empty-family
@@ -128,8 +111,7 @@ async function deleteExpiredRows(
        SELECT artifact.id FROM ${validatedTable} AS artifact
        WHERE (artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2))
-         ${familyEligibility}
-       ORDER BY ${childPriority} artifact.expires_at ASC, artifact.id ASC
+       ORDER BY artifact.expires_at ASC, artifact.id ASC
        LIMIT $3
        FOR UPDATE OF artifact SKIP LOCKED
      )
