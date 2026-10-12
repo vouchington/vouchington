@@ -1,6 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { loadCommunityWithViewer } from '@services/communities/load-with-viewer'
+import { getCommentAncestorsBatch } from '@services/comments/ancestors-batch'
 import { getPendingCopyrightStaffCases } from '@services/copyright-notices/read-models-staff-case'
 import { currentUserCanMessageUsers } from '@services/messaging/message-eligibility'
 import {
@@ -11,7 +12,26 @@ import {
 } from '@services/urls-hostnames/policies'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
-import { seedUuid } from '../seed-data/common.mts'
+import { commentSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+
+async function runCommentAncestorsBatch(): Promise<void> {
+  registerScenarioContract('comment-ancestors-batch', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 100 }],
+  })
+  const ids = Array.from({ length: 10 }, (_, i) =>
+    seedUuidAtTimestamp(commentSeedTimestampMs(0, 3), i),
+  )
+  await runAndCapture(
+    'comment-ancestors-batch',
+    async () => {
+      const chains = await getCommentAncestorsBatch(ids)
+      if (chains.size !== ids.length || [...chains.values()].some(chain => chain.length !== 4))
+        throw new Error('Seeded comments must retain their four-node ancestor chains')
+    },
+    undefined,
+    'getCommentAncestorsBatch',
+  )
+}
 
 // The community and viewer membership come back in one statement, by slug and by id.
 async function runCommunityWithViewer(): Promise<void> {
@@ -96,7 +116,7 @@ async function runMessagingEligibility(): Promise<void> {
 }
 
 // The staff queue page loads every listed notice's sections with one statement per section. The
-// fixture is the development seed's notices, which fill only the notice and target sections:
+// fixture is the development seed's notices plus one EXPLAIN evidence artifact:
 // the harness rejects a plan that returns no rows, so the other section statements are not
 // captured here.
 async function runCopyrightStaffCases(): Promise<void> {
@@ -121,7 +141,12 @@ async function runCopyrightStaffCases(): Promise<void> {
       await transaction.rollback()
     },
     undefined,
-    ['getPendingCopyrightStaffCase:notice', 'getPendingCopyrightStaffCase:targets'],
+    [
+      'getPendingCopyrightStaffCase:notice',
+      'getPendingCopyrightStaffCase:targets',
+      'getPendingCopyrightStaffCase:evidence',
+      'getPendingCopyrightStaffCase:formReview',
+    ],
   )
 }
 
@@ -147,6 +172,7 @@ async function runUserAgentReadFirst(): Promise<void> {
 }
 
 export async function runRoundTripShapeScenarios(): Promise<void> {
+  await runCommentAncestorsBatch()
   await runCommunityWithViewer()
   await runHostnamePolicies()
   await runMessagingEligibility()

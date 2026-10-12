@@ -15,6 +15,12 @@ use the fixed `019e0000-` prefix for easy identification.
 pnpm run explain:seed
 ```
 
+Initialize the backend first and supply its isolated `DATABASE_URL` and `VALKEY_URL` inline for
+each command. The three `explain:*` scripts use only the caller's environment and do not load
+`.env`. Run `node backend/scripts/seeds/dev-seed.mts` before the EXPLAIN seed: the copyright
+scenarios need its notice and target, and both steps need the same stored-secret encryption key.
+CI provisions these values in its workflow.
+
 `seed.mts` and `run.mts` are separate processes, and `run.mts` re-derives every seeded post and
 crawl id from a shared UTC anchor day instead of hardcoding it. `EXPLAIN_SEED_ANCHOR_DATE`
 (`YYYY-MM-DD`, UTC) pins that day for both; a malformed value fails at import. When it is unset,
@@ -202,14 +208,18 @@ must pass; response-page timestamp formatting must preserve this index traversal
 
 Round-trip-reduction scenarios cover the batched shapes the "Query round-trip reductions" milestone
 introduced: `community-with-viewer` (`getCommunityWithViewerBySlug` and `ById`),
+`comment-ancestors-batch` (`getCommentAncestorsBatch` over ten three-level comments),
 `hostname-policies-batch` (`getLocalHostnamePolicies`, `getFullHostnamePolicies`,
 `getBlocklistedDomainKeys`), `messaging-eligibility-batch` (`currentUserCanMessageUsers`),
-`copyright-staff-case-batch` (`getPendingCopyrightStaffCase:notice` and `:targets`) and
+`copyright-staff-case-batch` (`getPendingCopyrightStaffCase:notice`, `:targets`, `:evidence`, and
+`:formReview`) and
 `user-agent-read-first` (the leading `upsertUserAgentString` select). The seed adds 20,000
 URL-type `blocklisted_domains` rows and 5,000 `user_agent_strings` so a scan shows up. The harness
 rejects a plan that returns no rows, so the user-agent miss path and the copyright section
-statements that the development seed leaves empty are not captured; the DB-backed unit tests own
-those.
+statements that the development seed leaves empty are not captured. The uncaptured staff sections
+are `restrictions`, `appeals`, `counters`, `legalHolds`,
+`actionIntents`, `deliveryIntents`, `emailCorrespondence`, and `staydownMatches`; each needs its
+own valid case row to produce a nonempty root plan. The DB-backed unit tests own those results.
 
 Embedding reconciliation scenarios mark a sparse 100-item current-embedding cohort late in the
 25,000-item RSS seed. The RSS recovery service scans it with an opaque keyset cursor and a no-op

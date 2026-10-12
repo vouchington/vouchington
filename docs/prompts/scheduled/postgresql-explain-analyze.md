@@ -12,11 +12,13 @@ decide most plan fixes:
 ## Capture the plans
 
 Run the same steps as `.github/workflows/explain-analyze.yml`, which captures custom and generic
-prepared plans. If the database is not initialized, run `./dev/initialize web`, then `source .env`;
-it sets the secrets the development seed needs. Then, in order:
+prepared plans. If the database is not initialized, run `./dev/initialize backend`. Supply its
+isolated `DATABASE_URL` and `VALKEY_URL` inline to each command and give the development seed the
+same secret configuration used by the EXPLAIN steps; the workflow shows its synthetic CI values.
+The `explain:*` scripts use the caller's environment. Then, in order:
 
 - `export EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)`, so the seed and the run derive the same ids
-- `pnpm run db:seed`, the development seed; some scenarios read its rows
+- `node backend/scripts/seeds/dev-seed.mts`, the development seed; some scenarios read its rows
 - `pnpm run explain:seed`
 - `EXPLAIN_PLAN_CACHE_MODE=compare pnpm run explain:run`
 - `pnpm run explain:analyze`
