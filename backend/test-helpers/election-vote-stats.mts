@@ -1,5 +1,5 @@
-import { elections as electionsWorker } from '../workers/elections/workers.mts'
-import type { ElectionsJobData } from '../queues/elections/types.mts'
+import { voteAggregation as electionsWorker } from '../workers/vote-aggregation/workers.mts'
+import type { ElectionsJobData } from '../queues/vote-aggregation/enqueues/types-elections.mts'
 import onError from '../modules/on-error/index.mts'
 import {
   type ElectionJob,

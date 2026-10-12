@@ -22,7 +22,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
 import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,

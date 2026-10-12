@@ -1,5 +1,5 @@
-import { elections as electionsQueue } from '../queues/elections/queues.mts'
-import type { ElectionsJobData } from '../queues/elections/types.mts'
+import { voteAggregation as electionsQueue } from '../queues/vote-aggregation/queues.mts'
+import type { ElectionsJobData } from '../queues/vote-aggregation/enqueues/types-elections.mts'
 import { promoteDelayedJobs } from './queue-jobs.mts'
 
 export const JOB_NAME = 'processUpdateElectionVoteStats'

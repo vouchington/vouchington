@@ -5,7 +5,7 @@ import {
   enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueUpdatePostDaySitemapForReconciliation,
 } from '@queues/sitemaps/enqueues'
-import { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import { enqueueBulkRefreshPostMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import {
   enqueueBulkReconcilePostNotifications,
   enqueueBulkReconcileRssFeedItemNotifications,

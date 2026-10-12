@@ -11,7 +11,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { insertTestEntityRelationVote } from '../../../../test-helpers/entities/entity-relation-votes.mts'
-import { elections } from '@queues/elections/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { getEntityRelationElectionVote } from '../votes-get.mts'
 import { upsertEntityRelationElectionVotes } from '../votes-upsert.mts'
 
@@ -77,7 +77,7 @@ describe('upsert.generated (votes)', () => {
     ).resolves.toEqual([])
     await flushPendingTasks()
 
-    const jobs = await readAllQueueJobs(elections)
+    const jobs = await readAllQueueJobs(voteAggregation)
     expect(
       jobs.some(job => {
         const data = job.data as { electionId?: string; relationTable?: string }

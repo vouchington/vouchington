@@ -1,12 +1,12 @@
 # Vote Integrity Worker
 
-Source entrypoint: [backend/workers/vote-integrity/README.md](../../../../../../backend/workers/vote-integrity/README.md)
+Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Worker package for vote integrity check jobs.
+Shared `vote-aggregation` worker handles vote integrity check jobs.
 
 ## Exports
 
-- `voteIntegrity` - worker instance for the `vote-integrity` queue.
+- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
 
 ## Related
 

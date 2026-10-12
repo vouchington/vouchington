@@ -7,7 +7,7 @@ import {
 } from '../../response-helpers.mts'
 import { adminSetVoteWeight, adminClearVoteWeight } from '@services/vote-weight/admin-set'
 import { currentUserCanSetVoteWeight } from '@services/vote-weight/authorization'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 
 type SetVoteWeightRequest = { weight: number }
 

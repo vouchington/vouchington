@@ -28,7 +28,7 @@
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
-    "@queues/entity-metrics-cache-refresh": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/elections-votes": "workspace:^",

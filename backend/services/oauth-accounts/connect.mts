@@ -6,7 +6,7 @@ import {
 } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { providerTableConfigs, type OAuthProvider, type OAuthAccount } from './providers.mts'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { invalidateVerifiedEmailCache } from '@services/contribution-gating/email-verification'
 import onError from '@modules/on-error'
 import { createCodedError } from '@modules/on-error/create-coded-error'

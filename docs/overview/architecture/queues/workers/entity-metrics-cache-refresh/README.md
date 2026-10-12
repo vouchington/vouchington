@@ -1,12 +1,12 @@
 # Entity Metrics Cache Refresh Worker
 
-Source entrypoint: [backend/workers/entity-metrics-cache-refresh/README.md](../../../../../../backend/workers/entity-metrics-cache-refresh/README.md)
+Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Worker package for refreshing cached topic, post, and user metrics.
+Shared `vote-aggregation` worker handles refreshing cached topic, post, and user metrics.
 
 ## Exports
 
-- `entityMetricsCacheRefresh` - worker instance for the `entity-metrics-cache-refresh` queue.
+- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
 
 ## Related
 

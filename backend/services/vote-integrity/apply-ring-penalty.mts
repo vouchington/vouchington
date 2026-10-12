@@ -9,7 +9,7 @@ import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
-import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { ENTITY_VOTE_TABLES, FLAG_ENTITY_FK_COLUMNS } from './config.mts'

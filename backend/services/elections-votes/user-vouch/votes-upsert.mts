@@ -5,7 +5,7 @@ import type {
   VoteEventContext,
 } from '../shared/index.mts'
 import { upsertElectionVotesShared } from '../shared/vote-upsert.mts'
-import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { softDeleteUserFollowRelations, upsertUserMuteRelations } from '@services/entity-relations'
 import { enqueueUndoFollowSideEffects } from '@services/entity-relations/enqueue-undo-follow-side-effects'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'

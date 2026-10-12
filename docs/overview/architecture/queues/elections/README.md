@@ -1,16 +1,16 @@
 # Elections System
 
-Source entrypoint: [backend/queues/elections/README.md](../../../../../backend/queues/elections/README.md)
+Source entrypoint: [backend/queues/vote-aggregation/README.md](../../../../../backend/queues/vote-aggregation/README.md)
 
 Queue system for asynchronous vote-stat refreshes.
 
 ## Queue
 
-| Queue       | Processor                        | Group Keys        | Default Priority |
-| ----------- | -------------------------------- | ----------------- | ---------------- |
-| `elections` | `processUpdateElectionVoteStats` | `post`            | 10               |
-| `elections` | `processUpdateElectionVoteStats` | `entity_relation` | 10               |
-| `elections` | `processUpdateElectionVoteStats` | `rss_feed_item`   | 10               |
+| Queue              | Processor                        | Group Keys        | Default Priority |
+| ------------------ | -------------------------------- | ----------------- | ---------------- |
+| `vote-aggregation` | `processUpdateElectionVoteStats` | `post`            | 10               |
+| `vote-aggregation` | `processUpdateElectionVoteStats` | `entity_relation` | 10               |
+| `vote-aggregation` | `processUpdateElectionVoteStats` | `rss_feed_item`   | 10               |
 
 ## Responsibilities
 
@@ -25,7 +25,7 @@ Queue system for asynchronous vote-stat refreshes.
 ```mermaid
 sequenceDiagram
   participant V as Vote writes
-  participant Q as Elections queue
+  participant Q as Vote aggregation queue
   participant R as Read replica
   V->>Q: t=0 enqueue accepted
   V-->>Q: 0 ≤ t < 5 same-election enqueues throttled

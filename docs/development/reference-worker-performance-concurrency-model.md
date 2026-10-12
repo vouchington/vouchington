@@ -18,6 +18,8 @@ baselines to the helper's resolution behavior.
 knob (`psql`, `account-data-requests`, `kagi-smallweb` — they serialize themselves or hit an
 upstream rate-limited API).
 
+`vote-aggregation` shares one baseline-10 IO worker across election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; the shared cap of 10 bounds concurrent database work without throughput measurements. Jobs from one domain can delay another under sustained load. Election ordering lanes retain their per-key concurrency and are further bounded by the shared worker.
+
 ### Worker env knobs
 
 | Env var                     | Effect                                                                                  |

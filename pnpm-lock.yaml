@@ -798,9 +798,6 @@ importers:
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../queues/crawl-referral-links
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
@@ -843,9 +840,6 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../queues/topic-ratings
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../queues/unfurl-referral-links
@@ -855,12 +849,9 @@ importers:
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../queues/user-rss-feed-imports
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-integrity
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
@@ -1820,9 +1811,9 @@ importers:
       '@queues/user-deletions':
         specifier: workspace:^
         version: link:../../queues/user-deletions
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@workers/account-data-requests':
         specifier: workspace:^
         version: link:../../workers/account-data-requests
@@ -1856,18 +1847,12 @@ importers:
       '@workers/crawl-embeds':
         specifier: workspace:^
         version: link:../../workers/crawl-embeds
-      '@workers/elections':
-        specifier: workspace:^
-        version: link:../../workers/elections
       '@workers/emails':
         specifier: workspace:^
         version: link:../../workers/emails
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../../workers/entity-listeners
-      '@workers/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../workers/entity-metrics-cache-refresh
       '@workers/find-your-friends':
         specifier: workspace:^
         version: link:../../workers/find-your-friends
@@ -1898,9 +1883,6 @@ importers:
       '@workers/psql':
         specifier: workspace:^
         version: link:../../workers/psql
-      '@workers/report-integrity':
-        specifier: workspace:^
-        version: link:../../workers/report-integrity
       '@workers/rss-feed-discoverability':
         specifier: workspace:^
         version: link:../../workers/rss-feed-discoverability
@@ -1934,9 +1916,6 @@ importers:
       '@workers/topic-aliases':
         specifier: workspace:^
         version: link:../../workers/topic-aliases
-      '@workers/topic-ratings':
-        specifier: workspace:^
-        version: link:../../workers/topic-ratings
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../workers/urls-domains-blacklist
@@ -1946,12 +1925,9 @@ importers:
       '@workers/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../workers/user-rss-feed-imports
-      '@workers/vote-integrity':
+      '@workers/vote-aggregation':
         specifier: workspace:^
-        version: link:../../workers/vote-integrity
-      '@workers/vote-weight':
-        specifier: workspace:^
-        version: link:../../workers/vote-weight
+        version: link:../../workers/vote-aggregation
 
   backend/mcp:
     dependencies:
@@ -1973,15 +1949,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../queues/elections
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
@@ -2990,18 +2963,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/queues/elections:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/emails:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3038,25 +2999,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/entity-metrics-cache-refresh:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/find-your-friends:
     dependencies:
@@ -3244,18 +3186,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/report-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/rss-feed-discoverability:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3370,18 +3300,6 @@ importers:
         specifier: workspace:^
         version: link:../../types
 
-  backend/queues/topic-ratings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/unfurl-referral-links:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3442,19 +3360,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/vote-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/vote-weight:
+  backend/queues/vote-aggregation:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -3468,6 +3374,13 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/rss:
     dependencies:
@@ -3514,9 +3427,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
@@ -4581,9 +4494,9 @@ importers:
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
-      '@queues/entity-metrics-cache-refresh':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
+        version: link:../../queues/vote-aggregation
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
@@ -5973,9 +5886,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -5985,9 +5895,9 @@ importers:
       '@queues/rss-feed-discoverability':
         specifier: workspace:^
         version: link:../../queues/rss-feed-discoverability
-      '@queues/topic-ratings':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/topic-ratings
+        version: link:../../queues/vote-aggregation
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
@@ -6744,9 +6654,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -7311,9 +7221,9 @@ importers:
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -7388,9 +7298,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -7662,9 +7572,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/report-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/report-integrity
+        version: link:../../queues/vote-aggregation
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases
@@ -8037,9 +7947,9 @@ importers:
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
@@ -8467,9 +8377,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -8956,18 +8866,12 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
@@ -9007,9 +8911,6 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/report-integrity':
-        specifier: workspace:^
-        version: link:../../queues/report-integrity
       '@queues/rss-feed-discoverability':
         specifier: workspace:^
         version: link:../../queues/rss-feed-discoverability
@@ -9034,9 +8935,6 @@ importers:
       '@queues/topic-aliases':
         specifier: workspace:^
         version: link:../../queues/topic-aliases
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../../queues/topic-ratings
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -9049,12 +8947,9 @@ importers:
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../queues/user-rss-feed-imports
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-integrity
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -10326,15 +10221,15 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
       '@queues/topic-aliases':
         specifier: workspace:^
         version: link:../../queues/topic-aliases
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
@@ -11094,9 +10989,9 @@ importers:
       '@queues/user-deletions':
         specifier: workspace:^
         version: link:../../queues/user-deletions
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../account-data-requests
@@ -11240,9 +11135,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -11286,9 +11181,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/elections':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/elections
+        version: link:../../queues/vote-aggregation
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -12397,24 +12292,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/elections:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/workers/emails:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12499,9 +12376,6 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/language-detection':
         specifier: workspace:^
         version: link:../../queues/language-detection
@@ -12523,9 +12397,9 @@ importers:
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -12599,24 +12473,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/workers/entity-metrics-cache-refresh:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../../services/entity-fetch
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/find-your-friends:
     dependencies:
@@ -12976,9 +12832,6 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12991,6 +12844,9 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
@@ -13038,34 +12894,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/report-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/report-integrity':
-        specifier: workspace:^
-        version: link:../../queues/report-integrity
-      '@services/report-integrity':
-        specifier: workspace:^
-        version: link:../../services/report-integrity
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -13358,24 +13186,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/topic-ratings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../../queues/topic-ratings
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/workers/unfurl-referral-links:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -13465,7 +13275,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/vote-integrity:
+  backend/workers/vote-aggregation:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -13476,27 +13286,24 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-integrity
+        version: link:../../queues/vote-aggregation
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../../services/entity-fetch
+      '@services/report-integrity':
+        specifier: workspace:^
+        version: link:../../services/report-integrity
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
       '@services/vote-integrity':
         specifier: workspace:^
         version: link:../../services/vote-integrity
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/vote-weight:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../../queues/vote-weight
       '@services/vote-weight':
         specifier: workspace:^
         version: link:../../services/vote-weight
@@ -13504,6 +13311,12 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

@@ -1,6 +1,6 @@
 # Vote Integrity System
 
-Source entrypoint: [backend/queues/vote-integrity/README.md](../../../../../backend/queues/vote-integrity/README.md)
+Source entrypoint: [backend/queues/vote-aggregation/README.md](../../../../../backend/queues/vote-aggregation/README.md)
 
 Job queue for detecting and flagging suspicious voting patterns such as velocity spikes and IP-correlated voting rings.
 

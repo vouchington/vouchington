@@ -151,8 +151,8 @@ await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' }
 
 This service's own test files (e.g. `post/votes-upsert.generated.test.mts`,
 `topic/votes-upsert.generated.test.mts`, `agent-moderation/votes-upsert.generated.test.mts`,
-`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — its helper imports `@workers/elections`, which
-already depends on `@services/elections-votes` (`workers.mts`'s `processElection` calls the
+`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — its helper imports `@workers/vote-aggregation`, which
+already depends on `@services/elections-votes` (`processors/elections.mts` `processElection` calls the
 per-entity-type update functions directly), and `pnpm-workspace.yaml` sets
 `disallowWorkspaceCycles: true`, so the reverse import would be a forbidden cycle. Those files keep
 their local polling helpers; only callers outside `@services/elections-votes` (routes, other

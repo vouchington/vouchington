@@ -1,0 +1,44 @@
+import { createReportIntegrityFlag } from '@services/report-integrity/create-flag'
+import { detectMassReportCampaign } from '@services/report-integrity/detect'
+import {
+  streamEntitiesWithPendingReportsBatches,
+  type PendingReportEntity,
+} from '@services/report-integrity/backfill'
+import { enqueueReportIntegrityCheckBatch } from '@queues/vote-aggregation/enqueues/report-integrity'
+import onError from '@modules/on-error'
+import type { ProcessReportIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-report-integrity'
+
+export async function processReportIntegrityCheck(
+  data: ProcessReportIntegrityCheckData,
+): Promise<void> {
+  try {
+    const { entityType, entityId } = data
+
+    const result = await detectMassReportCampaign(entityType, entityId)
+
+    if (result.flagged) {
+      await createReportIntegrityFlag(
+        entityType,
+        entityId,
+        result.reporter_count,
+        result.new_account_reporter_percent,
+        result.details,
+        result.reporter_user_ids,
+      )
+    }
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    throw err
+  }
+}
+
+export async function processBackfillReportIntegrity(
+  target?: PendingReportEntity,
+): Promise<{ enqueued: number }> {
+  let enqueued = 0
+  for await (const batch of streamEntitiesWithPendingReportsBatches(target)) {
+    await enqueueReportIntegrityCheckBatch(batch)
+    enqueued += batch.length
+  }
+  return { enqueued }
+}

@@ -9,7 +9,7 @@ import {
 import { invalidate } from '@services/entity-cache'
 import { recordPostTopicRelationPublicationChanges } from '@services/entity-relations'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
 import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'

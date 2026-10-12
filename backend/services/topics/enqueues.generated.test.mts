@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
 import { caches } from '@services/entity-cache/caches'
-import { enqueueBulkRefreshTopicMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import { enqueueBulkRefreshTopicMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 
 describe('enqueues.generated', () => {
   it('enqueueBulkRefreshTopicMetricsById refreshes topic metrics cache', async () => {

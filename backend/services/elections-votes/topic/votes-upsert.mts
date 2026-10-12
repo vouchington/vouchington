@@ -1,6 +1,6 @@
 import { createVotesUpsert } from '../shared/entity-service.mts'
-import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/elections/enqueues'
-import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/topic-ratings/enqueues'
+import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
+import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 
 export const upsertTopicElectionVotes = createVotesUpsert(TOPIC_ELECTION_CONFIG, {

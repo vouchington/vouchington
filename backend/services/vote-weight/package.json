@@ -24,7 +24,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/elections": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@voucha/config": "workspace:^",

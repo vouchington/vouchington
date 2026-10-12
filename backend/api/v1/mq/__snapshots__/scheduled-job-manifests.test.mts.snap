@@ -2544,7 +2544,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "vote-weight",
+    "queueName": "vote-aggregation",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 4 * * *",
@@ -2742,7 +2742,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Recalculate vote weights",
     "id": "dailyVoteWeightRecalculation",
     "job_name": "processRecalculateVoteWeightDispatcher",
-    "queue_name": "vote-weight",
+    "queue_name": "vote-aggregation",
     "schedule": "0 4 * * *",
     "triggerName": "enqueueRecalculateVoteWeightDispatcher",
   },

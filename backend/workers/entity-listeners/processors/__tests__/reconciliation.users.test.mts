@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { language_detection } from '@queues/language-detection/queues'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   streamEntityReconciliationCandidateBatches,
   type EntityReconciliationCandidate,
@@ -44,7 +44,7 @@ function trackEnqueues() {
       return enqueued
     }) as never)
   }
-  const voteWeightAdd = track(voteWeightQueue)
+  const voteWeightAdd = track(voteAggregation)
   track(language_detection)
   return {
     settle: () => Promise.all(pending),
@@ -103,7 +103,7 @@ async function reconcileUsers(
 }
 
 async function hasVoteWeightJob(userId: string): Promise<boolean> {
-  const jobs = await voteWeightQueue.searchJobs({
+  const jobs = await voteAggregation.searchJobs({
     name: 'processRecalculateUserVoteWeight',
     data: { userId },
   })

@@ -1,4 +1,4 @@
-import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
 import onError from '@modules/on-error'
 
 async function main() {

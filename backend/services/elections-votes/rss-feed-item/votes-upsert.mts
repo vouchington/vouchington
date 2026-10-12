@@ -1,4 +1,4 @@
-import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,

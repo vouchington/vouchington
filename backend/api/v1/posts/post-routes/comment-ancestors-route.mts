@@ -12,7 +12,7 @@ import {
 } from '../../../election-vote-handler.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
-import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
 import {
   apiNoRequestBody,

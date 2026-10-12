@@ -18,7 +18,7 @@ import {
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
 import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
-import { enqueueBackfillReportIntegrity } from '@queues/report-integrity/enqueues'
+import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
 import {
   enqueueBackfillBlueskyDisconnectRequests,
   enqueueBackfillBlueskyFollowPropagation,
@@ -173,7 +173,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'backfill_report_integrity',
-    queue_name: 'report_integrity',
+    queue_name: 'vote-aggregation',
     job_name: 'backfill_report_integrity',
     description: 'Re-enqueue integrity checks for entities with pending mass-report campaigns',
     source_table: 'moderation_reports',

@@ -28,7 +28,7 @@ import { scheduledJobManifest as topicAliases } from '@queues/topic-aliases/enqu
 import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as userDeletions } from '@queues/user-deletions/enqueues/schedules'
-import { scheduledJobManifest as voteWeight } from '@queues/vote-weight/enqueues/schedules'
+import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/vote-weight-schedules'
 
 export const SCHEDULED_JOB_MANIFESTS = [
   accountDataRequests,

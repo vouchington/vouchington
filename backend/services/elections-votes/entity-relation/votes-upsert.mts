@@ -11,7 +11,7 @@ import type {
   ElectionVoteScore,
   VoteEventContext,
 } from '../shared/types.mts'
-import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,

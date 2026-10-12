@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import { createVoteStatsUpdater } from '../shared/entity-service.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 import { invalidate } from '@services/entity-cache'
-import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/topic-ratings/enqueues'
+import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
 import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
 

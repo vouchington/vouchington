@@ -19,7 +19,7 @@ import {
   enqueueBulkRefreshPostMetricsById,
   enqueueBulkRefreshTopicMetricsById,
   enqueueBulkRefreshUserMetricsById,
-} from '@queues/entity-metrics-cache-refresh/enqueues'
+} from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
 import { getPublicUserByAny, isAdminUser, isPlatformAccount } from '@services/users'
 import { getContributionStatus } from '@services/contribution-gating/assert'

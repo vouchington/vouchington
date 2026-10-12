@@ -38,7 +38,7 @@
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/user-deletions": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/attribution": "workspace:^",
     "@services/batch-lookup": "workspace:^",

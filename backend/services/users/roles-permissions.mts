@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
 

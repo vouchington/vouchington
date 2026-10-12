@@ -7,7 +7,7 @@ import { getUserMfaStatus } from './status.mts'
 import { verifyAndDeleteReAuthToken } from './re-auth.mts'
 import { deletePasskey } from '@services/passkeys'
 import { deleteTotpAuthenticator } from '@services/totp'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 
 async function lockUserMfaRows(query: TransactionQuery, userId: string): Promise<void> {
   await query(

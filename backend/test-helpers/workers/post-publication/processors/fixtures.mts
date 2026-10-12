@@ -25,7 +25,7 @@ import type {
   enqueueBulkReconcilePostNotifications,
   enqueueBulkReconcileRssFeedItemNotifications,
 } from '@queues/notifications/enqueues'
-import type { enqueueBulkRefreshPostMetricsById } from '../../../../queues/entity-metrics-cache-refresh/enqueues.mts'
+import type { enqueueBulkRefreshPostMetricsById } from '../../../../queues/vote-aggregation/enqueues/entity-metrics-cache-refresh.mts'
 import type {
   invalidatePostPublicationTopicsStrict,
   invalidatePostPublicSurfacesStrict,

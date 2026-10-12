@@ -37,7 +37,7 @@ sequenceDiagram
   participant Web as ReportDialog
   participant API as Reports API
   participant DB as moderation_reports
-  participant Q as report_integrity queue
+  participant Q as vote-aggregation queue
   participant Admin as Staff queue
 
   User->>Web: Open Report control
@@ -53,7 +53,7 @@ sequenceDiagram
 3. User selects a reason and submits.
 4. `POST /api/v1/reports` creates an unresolved `moderation_reports` row.
 5. Dialog body replaces with "Report submitted — thank you" success state.
-6. A debounced `report_integrity` queue job checks for mass-report patterns; staff review reads pending rows directly from `moderation_reports`.
+6. A debounced `vote-aggregation` integrity job checks for mass-report patterns; staff review reads pending rows directly from `moderation_reports`.
 
 ---
 

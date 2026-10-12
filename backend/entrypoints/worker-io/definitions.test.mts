@@ -19,7 +19,7 @@ import { upsertSchedules as upsertTopicAliasSchedules } from '@queues/topic-alia
 import { upsertSchedules as upsertSitemapSchedules } from '@queues/sitemaps/enqueues/schedules'
 import { upsertSchedules as upsertSesInboundSchedules } from '@queues/ses-inbound/enqueues/schedules'
 import { upsertSchedules as upsertUrlDomainBlacklistSchedules } from '@queues/urls-domains-blacklist/enqueues/schedules'
-import { upsertSchedules as upsertVoteWeightSchedules } from '@queues/vote-weight/enqueues/schedules'
+import { upsertSchedules as upsertVoteWeightSchedules } from '@queues/vote-aggregation/enqueues/vote-weight-schedules'
 import { SCHEDULE_DEFINITIONS } from './definitions.mts'
 
 describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
@@ -56,7 +56,7 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('find-your-friends').load()).resolves.toBe(upsertFindYourFriendsSchedules)
     await expect(byQueue('sitemaps').load()).resolves.toBe(upsertSitemapSchedules)
     await expect(byQueue('memberships').load()).resolves.toBe(upsertMembershipSchedules)
-    await expect(byQueue('vote-weight').load()).resolves.toBe(upsertVoteWeightSchedules)
+    await expect(byQueue('vote-aggregation').load()).resolves.toBe(upsertVoteWeightSchedules)
     await expect(byQueue('kagi-smallweb').load()).resolves.toBe(upsertKagiSmallwebSchedules)
     await expect(byQueue('ses_inbound').load()).resolves.toBe(upsertSesInboundSchedules)
   })

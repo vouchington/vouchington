@@ -8,7 +8,7 @@ import {
   enqueueBulkUpdateEntityRelationElectionVoteStats,
   enqueueBulkUpdateAgentModerationElectionVoteStats,
   enqueueBulkUpdateUserVouchElectionVoteStats,
-} from '@queues/elections/enqueues'
+} from '@queues/vote-aggregation/enqueues/elections'
 import {
   createEntityRelationElectionTarget,
   entityRelationElectionTables,

@@ -1,4 +1,4 @@
-import { enqueueBulkRefreshTopicMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import { enqueueBulkRefreshTopicMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { TopicRatingStats } from './types.mts'
 import { normalizeTopicRatingStats } from './normalize-rating-stats.mts'

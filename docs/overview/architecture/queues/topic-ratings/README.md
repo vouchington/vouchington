@@ -1,12 +1,12 @@
 # Topic Ratings System
 
-Source entrypoint: [backend/queues/topic-ratings/README.md](../../../../../backend/queues/topic-ratings/README.md)
+Source entrypoint: [backend/queues/vote-aggregation/README.md](../../../../../backend/queues/vote-aggregation/README.md)
 
 Recalculates topic rating statistics with a 24-hour debounce per topic to avoid thrashing on high-traffic topics.
 
 ## Queue Configuration
 
-### `topic-ratings` (concurrency: 10)
+### `vote-aggregation` (concurrency: 10)
 
 - `processUpdateTopicRatingStats` — recomputes average rating, rating count, and rating distribution for a topic from all active votes and reviews
 

@@ -1,7 +1,7 @@
-import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { write } from '@data-stores/psql'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.mts'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { createEntityRelationElectionTarget } from './target.mts'
 

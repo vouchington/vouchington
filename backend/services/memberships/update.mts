@@ -1,7 +1,7 @@
 import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DuplicateStripeMembershipEventError } from './changes.mts'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
 import { enqueueUnfurledChildRemovalOnDowngrade } from './paid-tier-downgrade.mts'

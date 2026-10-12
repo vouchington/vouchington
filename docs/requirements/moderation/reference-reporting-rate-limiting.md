@@ -162,7 +162,7 @@ Service: `backend/services/moderation-reports/`
 
 Endpoints: `POST /api/v1/reports`, `GET /api/v1/reports`, `PATCH /api/v1/reports/:id`, `GET /api/v1/communities/:slug/reports/pending`, `PATCH /api/v1/communities/:slug/reports/:reportId`
 
-Queue: `backend/queues/report-integrity/` for asynchronous integrity checks. Report review itself is table-backed.
+Queue: `backend/queues/vote-aggregation/` for asynchronous integrity checks. Report review itself is table-backed.
 
 ---
 

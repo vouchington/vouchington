@@ -1,6 +1,6 @@
 import { suspendUser, unsuspendUser } from '@services/users'
 import { adminSetVoteWeight, adminClearVoteWeight } from '@services/vote-weight/admin-set'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { createAdminTool, adminInput, UUID_INPUT, TEXT_INPUT } from './create-admin-tool.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
