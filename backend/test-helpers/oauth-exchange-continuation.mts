@@ -1,4 +1,4 @@
-import { expireTestOAuthAuthorization } from './entities/oauth-authorizations.mts'
+import { createTestOAuthOwnershipPersistence } from './oauth-exchange-ownership-fault.mts'
 import { closeOwnedOAuthContinuation } from './oauth-exchange-continuation-resources.mts'
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
@@ -28,8 +28,10 @@ export type OAuthContinuationFault =
   | 'rejection'
   | 'release'
   | 'ownership-write'
+  | 'ownership-response'
   | 'clear-write'
   | 'provider-outcome'
+  | 'lost-provider-marker'
 
 /** Real queue attempts, real claim/decrypt/mutations, and an actual second PostgreSQL connection. */
 export async function runTestOAuthExchangeContinuation(
@@ -55,6 +57,7 @@ export async function runTestOAuthExchangeContinuation(
   let result: { state: string; data: OAuthAuthorizationExchangeJobData } | undefined
   const injectedError = new Error(`owned ${fault} storage fault`)
   let faultUsed = false
+  const ownershipFault = { used: false }
   try {
     events = new QueueEvents(name, { ...connection, lastEventId: '0' })
     const terminal = observeOAuthExchangeTerminal(events, jobId, err => errors.push(err))
@@ -119,18 +122,14 @@ export async function runTestOAuthExchangeContinuation(
                 {
                   claimId: ownership.claimId,
                   providerRequestArmed: ownership.providerRequestArmed,
-                  async persist(claimId, providerRequestArmed) {
-                    if (
-                      !faultUsed &&
-                      ((fault === 'ownership-write' && claimId) ||
-                        (fault === 'clear-write' && !claimId))
-                    ) {
-                      faultUsed = true
-                      if (expireOnWriteFailure) await expireTestOAuthAuthorization(authorizationId)
-                      throw injectedError
-                    }
-                    await ownership.persist(claimId, providerRequestArmed)
-                  },
+                  persist: createTestOAuthOwnershipPersistence(
+                    authorizationId,
+                    ownership,
+                    fault,
+                    injectedError,
+                    expireOnWriteFailure,
+                    ownershipFault,
+                  ),
                 },
               )
             },

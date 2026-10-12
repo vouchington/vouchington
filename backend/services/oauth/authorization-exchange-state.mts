@@ -1,3 +1,4 @@
+import { rejectStaleOAuthAuthorizationExchangeSql } from './authorization-exchange-stale-sql.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import type { BrokerOAuthProvider } from './broker-config.mts'
@@ -20,14 +21,20 @@ export async function claimOAuthAuthorizationExchange(
 ): Promise<ClaimedOAuthAuthorization | null> {
   const claimId = uuidv7()
   return withLockedOAuthAuthorization(flowId, async transaction => {
+    await expireOAuthAuthorization(transaction, flowId)
+    await transaction(rejectStaleOAuthAuthorizationExchangeSql, [
+      flowId,
+      STALE_EXCHANGE_CLAIM_SECONDS,
+      MAX_EXCHANGE_ATTEMPTS,
+      X_MAX_QUEUE_DELAY_SECONDS,
+    ])
     const { rows } = await transaction(
       `/* claimOAuthAuthorizationExchange */ WITH candidate AS (
        SELECT id, exchange_claim_id, updated_at
        FROM view_oauth_authorization_current_records
-       WHERE id = $1 AND expires_at > clock_timestamp() AND exchange_attempts < $4
-         AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $5))
-         AND (status = 'callback_received' OR
-           (status = 'exchanging' AND exchange_started_at < clock_timestamp() - make_interval(secs => $3)))
+       WHERE id = $1 AND expires_at > clock_timestamp() AND exchange_attempts < $3
+         AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $4))
+         AND status = 'callback_received'
        FOR UPDATE
      )
      UPDATE oauth_authorizations flow
@@ -39,13 +46,7 @@ export async function claimOAuthAuthorizationExchange(
        AND flow.exchange_claim_id IS NOT DISTINCT FROM candidate.exchange_claim_id
      RETURNING flow.id, flow.provider, flow.redirect_uri,
        flow.callback_code_ciphertext, flow.pkce_verifier_ciphertext, flow.exchange_claim_id`,
-      [
-        flowId,
-        claimId,
-        STALE_EXCHANGE_CLAIM_SECONDS,
-        MAX_EXCHANGE_ATTEMPTS,
-        X_MAX_QUEUE_DELAY_SECONDS,
-      ],
+      [flowId, claimId, MAX_EXCHANGE_ATTEMPTS, X_MAX_QUEUE_DELAY_SECONDS],
     )
     const authorization = rows[0] as ClaimedOAuthAuthorization | undefined
     if (!authorization) {

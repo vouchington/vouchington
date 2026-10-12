@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { processOAuthAuthorizationExchange } from '../authorization-exchange.mts'
+import {
+  processOAuthAuthorizationExchange,
+  type OAuthExchangeOwnership,
+} from '../authorization-exchange.mts'
 import type { BrokerOAuthProvider } from '../broker-config.mts'
 
 type ExchangeDependencies = NonNullable<Parameters<typeof processOAuthAuthorizationExchange>[1]>
@@ -93,6 +96,36 @@ describe('OAuth authorization provider exchange processing', () => {
       expect(dependencies.releaseClaim).not.toHaveBeenCalled()
     },
   )
+
+  it('releases the exact unused claim when initial ownership persistence fails', async () => {
+    const dependencies = exchangeDependencies('x')
+    const failure = new Error('initial ownership write failed')
+    await expect(
+      processOAuthAuthorizationExchange('flow-id', dependencies, {
+        persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
+      }),
+    ).rejects.toBe(failure)
+    expect(dependencies.releaseClaim).toHaveBeenCalledExactlyOnceWith('flow-id', 'claim-id')
+    expect(dependencies.decryptCode).not.toHaveBeenCalled()
+    expect(dependencies.upsertX).not.toHaveBeenCalled()
+    expect(dependencies.rejectExhausted).not.toHaveBeenCalled()
+  })
+
+  it('retains ownership persistence as primary when releasing the unused claim also fails', async () => {
+    const dependencies = exchangeDependencies('x')
+    const failure = new Error('initial ownership write failed')
+    const releaseFailure = new Error('unused claim release failed')
+    vi.mocked(dependencies.releaseClaim).mockRejectedValue(releaseFailure)
+    const outcome = await processOAuthAuthorizationExchange('flow-id', dependencies, {
+      persist: vi.fn<OAuthExchangeOwnership['persist']>().mockRejectedValue(failure),
+    }).catch(err => err)
+    expect(outcome).toBeInstanceOf(AggregateError)
+    if (!(outcome instanceof AggregateError)) throw new Error('Expected ordered cleanup failures')
+    expect(outcome.errors).toEqual([failure, releaseFailure])
+    expect(outcome.cause).toBe(failure)
+    expect(dependencies.decryptCode).not.toHaveBeenCalled()
+    expect(dependencies.upsertX).not.toHaveBeenCalled()
+  })
 
   it('releases the claim when authorization-code decryption fails', async () => {
     const failure = new Error('authorization code decryption failed')

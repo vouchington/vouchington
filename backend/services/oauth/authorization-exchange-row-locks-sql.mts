@@ -7,7 +7,9 @@ export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthA
        WHERE current_flow.expires_at > CURRENT_TIMESTAMP
          AND ($5::uuid[] IS NULL OR current_flow.id = ANY($5::uuid[]))
          AND (
-           (
+           (current_flow.status = 'exchanging'
+             AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2))
+           OR (
              current_flow.exchange_attempts >= $3
              AND (
                current_flow.status = 'callback_received'
@@ -45,13 +47,7 @@ export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthA
          OR current_flow.callback_received_at >
            CURRENT_TIMESTAMP - make_interval(secs => $4)
        )
-       AND (
-         current_flow.status = 'callback_received'
-         OR (
-           current_flow.status = 'exchanging'
-           AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2)
-         )
-       )
+       AND current_flow.status = 'callback_received'
      ORDER BY current_flow.id ASC
      LIMIT $1
      FOR UPDATE OF flow SKIP LOCKED

@@ -152,10 +152,18 @@ claims and requires exactly one affected row for an owned mutation. A live claim
 job ownership is an explicit failure, never a successful no-op.
 
 PostgreSQL claim commit and Valkey ownership persistence are not atomic. If ownership persistence
-fails, the provider has not been called, but recovery may still be needed for the committed claim.
+fails before provider admission, the exact unused claim is released before the storage error is
+propagated. A response failure after a committed queue write is also safe: that continuation observes
+the released claim. Release failures retain the storage error as primary and the native error as secondary.
 After the armed marker is stored, interruption leaves an unknown external outcome, including
 a crash before the call actually starts. Continuation rejects that owned claim as
 `provider_exchange_outcome_unknown` rather than releasing it into a later provider retry.
+Lost queue jobs cannot establish whether their retained PostgreSQL claim admitted the provider.
+Both direct claims and recovery therefore terminalize stale exchanging claims as unknown outcomes,
+instead of superseding them and repeating a one-shot exchange. Known pre-provider failures explicitly
+release their claim and remain retryable; a crash before that release can conservatively reject an unused
+code. Live claims stay protected until their normal stale boundary; completed rows and successors retain
+exact fencing. This decision needs no schema change and does not depend on retaining a Valkey marker.
 Authorization expiry and X code expiry take precedence. This conservative outcome is not a
 claim that the provider was called or completed. The marker also prevents a third queue attempt
 from re-admitting the provider after a continuation. Unrecorded claims are expired before an

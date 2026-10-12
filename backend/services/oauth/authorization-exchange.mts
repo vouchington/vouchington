@@ -69,7 +69,22 @@ export async function processOAuthAuthorizationExchange(
   const authorization = await dependencies.claim(flowId)
   if (!authorization) return
   // This write precedes decrypt/provider execution. If it fails, no provider is called.
-  await ownership?.persist(authorization.exchange_claim_id)
+  try {
+    await ownership?.persist(authorization.exchange_claim_id)
+  } catch (outerErr) {
+    // No provider was admitted, even if the queue write committed before its response failed.
+    try {
+      await dependencies.releaseClaim(authorization.id, authorization.exchange_claim_id)
+    } catch (err) {
+      const aggregateError = new AggregateError(
+        [outerErr, err],
+        'OAuth ownership could not be persisted and its unused claim could not be released',
+        { cause: outerErr },
+      )
+      throw aggregateError
+    }
+    throw outerErr
+  }
 
   let providerRequestArmed = false
   try {

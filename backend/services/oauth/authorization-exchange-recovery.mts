@@ -47,13 +47,16 @@ export async function getRecoverableOAuthAuthorizationIds(
              AND callback_received_at <=
                CURRENT_TIMESTAMP - make_interval(secs => $4)
              THEN 'provider_code_expired'
-           ELSE 'provider_exchange_failed'
+           WHEN exchange_attempts >= $3 THEN 'provider_exchange_failed'
+           ELSE 'provider_exchange_outcome_unknown'
          END AS callback_error
        FROM view_oauth_authorization_current_records
        WHERE expires_at > CURRENT_TIMESTAMP
          AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
          AND (
-           (
+           (status = 'exchanging'
+             AND exchange_started_at < clock_timestamp() - make_interval(secs => $2))
+           OR (
              exchange_attempts >= $3
              AND (
                status = 'callback_received'
@@ -103,13 +106,7 @@ export async function getRecoverableOAuthAuthorizationIds(
          OR callback_received_at >
            CURRENT_TIMESTAMP - make_interval(secs => $4)
        )
-       AND (
-         status = 'callback_received'
-         OR (
-           status = 'exchanging'
-           AND exchange_started_at < clock_timestamp() - make_interval(secs => $2)
-         )
-       )
+       AND status = 'callback_received'
      ORDER BY id ASC
      LIMIT $1`,
     [

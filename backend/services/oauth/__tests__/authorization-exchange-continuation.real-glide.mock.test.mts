@@ -79,18 +79,69 @@ describe('OAuth authorization exchange durable queue continuation', () => {
     })
   })
 
-  it('does not decrypt or falsely succeed on an ID-only retry after ownership storage fails', async () => {
-    const id = await fixture(0)
+  it('releases the unused claim before an ID-only retry after ownership storage fails', async () => {
+    const id = await fixture(0, 'callback_received', 'x')
     const result = await runTestOAuthExchangeContinuation(id, 'ownership-write')
     expect(result.attempts).toHaveLength(2)
-    expect(result.decryptCalls).toBe(0)
+    expect(result.decryptCalls).toBe(1)
     expect(result.providerCalls).toBe(0)
     expect(result.firstFailure).toBe(result.injectedError)
     expect(result.state).toBe('failed')
     expect(result.terminalError).toMatchObject({
-      message: expect.stringContaining('unresolved exchange claim'),
+      message: expect.stringContaining('Invalid encrypted secret format'),
+    })
+    expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(2)
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'callback_received',
+      exchange_claim_id: null,
+    })
+  })
+
+  it('observes the released claim when the initial job update commits but its response fails', async () => {
+    const id = await fixture(0)
+    const result = await runTestOAuthExchangeContinuation(id, 'ownership-response')
+    expect(result.attempts).toHaveLength(2)
+    expect(result.attempts[1]?.data.exchangeClaimId).toEqual(expect.any(String))
+    expect(result.firstFailure).toBe(result.injectedError)
+    expect(result.decryptCalls).toBe(0)
+    expect(result.providerCalls).toBe(0)
+    expect(result.state).toBe('failed')
+    expect(result.terminalError).toMatchObject({
+      message: expect.stringContaining('continuation disposed as released'),
     })
     expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(1)
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'callback_received',
+      exchange_claim_id: null,
+    })
+  })
+
+  it('terminalizes a stale unknown claim when a rebuilt real queue job has only its authorization ID', async () => {
+    const id = uuidv7()
+    const claimId = uuidv7()
+    onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: [id] }))
+    await insertTestOAuthAuthorization({
+      id,
+      provider: 'github',
+      status: 'exchanging',
+      exchangeClaimId: claimId,
+      callbackCodeCiphertext: 'invalid-owned-continuation-ciphertext',
+      callbackReceivedAt: new Date(),
+      updatedAt: new Date(Date.now() - 61_000),
+    })
+    const result = await runTestOAuthExchangeContinuation(id, 'lost-provider-marker')
+    expect(result.attempts).toHaveLength(1)
+    expect(result.attempts[0]?.data).toEqual({ authorizationId: id })
+    expect(result.decryptCalls).toBe(0)
+    expect(result.providerCalls).toBe(0)
+    expect(result.state).toBe('completed')
+    expect(await getTestOAuthExchangeAttempts(id)).toHaveLength(1)
+    expect(await getTestOAuthAuthorization(id)).toMatchObject({
+      status: 'rejected',
+      callback_error: 'provider_exchange_outcome_unknown',
+      callback_code_ciphertext: null,
+      exchange_claim_id: null,
+    })
   })
 
   it('expires the ID-only second attempt after actual ownership storage failure and clears its secrets', async () => {
@@ -192,9 +243,10 @@ describe('OAuth authorization exchange durable queue continuation', () => {
 async function fixture(
   exchangeAttempts: number,
   status: 'callback_received' | 'rejected' = 'callback_received',
+  provider: 'github' | 'x' = 'github',
 ) {
   const id = await insertTestOAuthAuthorization({
-    provider: 'github',
+    provider,
     status,
     callbackCodeCiphertext: 'invalid-owned-continuation-ciphertext',
     callbackReceivedAt: new Date(),
