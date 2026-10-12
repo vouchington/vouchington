@@ -112,14 +112,15 @@ authorization-server cleanup shares one run budget across its artifact phases, f
 initial share for each phase, then redistributing unused shares in the same child-first order.
 Every delete statement remains bounded by the configured page size. Token children are eligible
 when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
-counts against the run budget; families are removed only after their access and refresh tokens
-are gone, so a large family drains across runs without uncounted cascading deletes. Each bounded
-physical-row batch commits independently, releasing its locks before the next batch while preserving
-the shared run allowance. Family-expiry and child-family indexes select eligible-family children
-separately from independently expired tokens. The current refresh-token expiry index covers only
-unconsumed, unrevoked tokens; independently expired consumed or revoked tokens remain eligible but
-can require scanning beyond that index. A refresh replacement with a surviving predecessor is
-retained until the predecessor can be removed, avoiding foreign-key SET NULL waits on skipped locks.
+counts against the run budget; empty families use only the allowance left after child tokens in
+their phase. Families are removed only after their access and refresh tokens are gone, so a large
+family drains across runs without uncounted cascading deletes. Each bounded physical-row batch
+commits independently, releasing its locks before the next batch while preserving the shared run
+allowance. Family-expiry and child-family indexes select eligible-family children
+separately from independently expired tokens. The full refresh-token expiry index also covers
+consumed and revoked tokens, which remain eligible for independent expiry cleanup. A refresh
+replacement with a surviving predecessor is retained until the predecessor can be removed,
+avoiding foreign-key SET NULL waits on skipped locks.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes
