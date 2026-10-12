@@ -54511,6 +54511,233 @@
       },
       "uniqueConstraints": {}
     },
+    "membership_pause_collection_work_items": {
+      "checkConstraints": {
+        "membership_pause_collection_work_items_attempt_count_check": "CHECK ((attempt_count >= 0))",
+        "membership_pause_collection_work_items_check": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))"
+      },
+      "columns": {
+        "attempt_count": {
+          "collation": null,
+          "comment": "Leases acquired for the current requested_at. A newer suspension or lift resets it.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "integer"
+        },
+        "available_at": {
+          "collation": null,
+          "comment": "Earliest time an unleased row may be claimed by the recovery dispatcher.",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Time this user first had pause-collection work. Later generations update requested_at.",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": "Time after which recovery may replace this lease.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque fence for the worker that may call Stripe and delete this generation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": "Time the current lease was taken.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "requested_at": {
+          "collation": null,
+          "comment": "Generation of the latest suspension or lift, truncated to milliseconds. A newer value supersedes an in-flight lease.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last lease, supersession, or schedule change. Maintained by trigger.",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "User whose direct Stripe subscription should match the open suspension. One row per user.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "In-flight sync of Stripe pause_collection to the user's open suspension. Completion deletes the row. Granted memberships never become a Stripe update.",
+      "foreignKeys": {
+        "fk_membership_pause_collection_work_items__user": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_membership_pause_collection_work_items__available": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_pause_collection_work_items__available ON public.membership_pause_collection_work_items USING btree (available_at, user_id) WHERE (lease_token IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "available_at",
+              "descending": false,
+              "expression": "available_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_pause_collection_work_items__lease_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_pause_collection_work_items__lease_expiry ON public.membership_pause_collection_work_items USING btree (lease_expires_at, user_id) WHERE (lease_token IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_pause_collection_work_items__lease_token": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_pause_collection_work_items__lease_token ON public.membership_pause_collection_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_token",
+              "descending": false,
+              "expression": "lease_token",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "membership_pause_collection_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_pause_collection_work_items_pkey ON public.membership_pause_collection_work_items USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["user_id"],
+        "definition": "PRIMARY KEY (user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_pause_collection_work_items_updated_at": "CREATE TRIGGER trigger_membership_pause_collection_work_items_updated_at BEFORE UPDATE ON public.membership_pause_collection_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "membership_products": {
       "checkConstraints": {},
       "columns": {
