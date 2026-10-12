@@ -37,7 +37,6 @@ Rules:
 - Focus on facts, not speculation
 - Be neutral in tone`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callStoryPostModel: StoryPostModelCaller = (
   input,
   safetyIdentifier,
@@ -62,7 +61,6 @@ export const callStoryPostModel: StoryPostModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */
 
 export function parseStoryPostOutput(value: unknown): StoryPostOutput {
   const parsed = value as StoryPostOutput

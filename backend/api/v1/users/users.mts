@@ -35,15 +35,14 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
 
   if (q !== undefined && !username) {
     ctx.assert(currentUser, 401, 'Unauthorized')
-    const normalizedSearchQuery = {
-      q: Array.isArray(ctx.query.q) ? (ctx.query.q[0] ?? '') : ctx.query.q,
-    }
-    const qValue = normalizedSearchQuery.q
+    // Repeated q stays the first value. The shared query schema requires that value, so the
+    // pagination check has to see the normalized string rather than the raw list.
+    if (Array.isArray(ctx.query.q)) ctx.query.q = ctx.query.q[0] ?? ''
+    const qValue = ctx.query.q
     const options = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/users', usersSearchParser, {
       extraQueryContracts: [usersQuery.queryContract],
-      ignoredKeys: ['q'],
     })
-    validateRequestContract(ctx, 'GET:/api/v1/users', { query: normalizedSearchQuery })
+    validateRequestContract(ctx, 'GET:/api/v1/users', { query: { q: qValue } })
     const admin = isAdminUser(currentUser)
     const scope = usersSearchCursorScope({ query: qValue, admin })
     const after = options.after

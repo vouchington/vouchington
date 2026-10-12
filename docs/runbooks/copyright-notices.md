@@ -757,12 +757,44 @@ An AI advisor review ruled a manual process enough
 ([#1230](https://github.com/vouchington/vouchington/issues/1230)); it is not a legal determination.
 The owner handles their GDPR Art. 15 request:
 
-1. Find their email intakes, and any cases opened from them, by the requester's address: the sender
-   on each intake in the email review queue, and the claimant contact on each case.
+1. Find their email intakes with the retained-intake lookup below, and check the claimant contact
+   on each case. The review queue is not an inventory: decided intakes, including rejected intakes
+   with no case, leave it.
 2. Verify identity by replying to that same address. Release nothing to any other address.
 3. Send the records within one month of receiving the request (GDPR Art. 12(3)). Apply the
    redaction rule in [copyright records](../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records)
    to anything about another party.
+
+### Retained-intake lookup
+
+An operator with trusted database and decryption access runs this read-only tool in the target
+environment, using an existing, unsuspended copyright staff user's ID. It checks that user's
+staff role; it does not grant access or create a user. Load that environment's configuration
+through the normal operator process (below is the local invocation):
+
+```sh
+source .env
+node backend/scripts/lookup-copyright-email-intakes.mts --help
+```
+
+Replace `--help` with the staff user's ID. Enter the requester's address at the prompt; keep the
+output private. Each invocation scans at most 100 intakes, decrypts parsed senders, and compares
+trimmed addresses without case sensitivity. `matches` includes linked case IDs when present and
+does not filter by review decision or reply delivery state. Inspect those intake details and cases
+through the existing staff routes.
+
+For every `raw_review_candidates` ID, inspect the original MIME through the staff intake detail
+and `GET /api/v1/copyright-email-intakes/:id/raw` routes and compare its sender header with the
+requester's address. These are candidates with no retained parsed sender, including failed and
+missing parses, not confirmed matches. Honor malware quarantine; if an original cannot be safely
+accessed, record the unresolved gap for the owner rather than treating it as a nonmatch. Erased
+senders are not decrypted, and erased originals are not offered for MIME inspection.
+
+Repeat with the same staff ID and requester address, passing `next_cursor` as the second argument,
+until it is null. Continue even if a page has no matches: the cursor tracks scanned intakes, not
+matches. A failed invocation provides no complete result; resolve it and repeat that page. Do not
+declare the lookup complete until every page and every retained MIME candidate has been checked.
+The cursor is bound to the normalized requester address; another address requires a new scan.
 
 ## Urgent review
 

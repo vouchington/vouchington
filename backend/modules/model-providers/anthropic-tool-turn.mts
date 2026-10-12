@@ -17,7 +17,6 @@ type CreateMessage = (
 
 export type AnthropicToolDeps = { createMessage?: CreateMessage }
 
-/* v8 ignore start -- thin Anthropic integration wrapper; exercised by credentialed *.anthropic.test.mts */
 /* no-mistakes: integration=anthropic */
 function createWithClient(
   params: Anthropic.MessageCreateParamsNonStreaming,
@@ -25,7 +24,6 @@ function createWithClient(
 ): PromiseLike<Anthropic.Message> {
   return getAnthropicClient().messages.create(params, options)
 }
-/* v8 ignore stop */
 
 function toAnthropicMessage(message: AgentTurnMessage): Anthropic.MessageParam {
   if (message.role === 'user') return { role: 'user', content: message.text }

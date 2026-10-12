@@ -22,7 +22,6 @@ const TITLE_SCHEMA = {
 /** The model-calling seam. Injectable so tests can exercise the agent without a provider. */
 export type ConversationTitleModelCaller = AgentModelCaller<{ title: string }>
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callConversationTitleModel: ConversationTitleModelCaller = (
   input,
   safetyIdentifier,
@@ -42,7 +41,6 @@ export const callConversationTitleModel: ConversationTitleModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */
 
 /**
  * Sanitized conversation text ready for the title-generation prompt, or null when the

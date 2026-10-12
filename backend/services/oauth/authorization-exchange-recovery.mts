@@ -1,4 +1,9 @@
-import { write } from '@data-stores/psql'
+import {
+  getRetainedUnarmedOAuthExchangeIds,
+  type RetainedOAuthExchangeClaim,
+} from './authorization-exchange-recovery-ownership.mts'
+import { beginTransaction, write } from '@data-stores/psql'
+import { recoverableOAuthAuthorizationRowLocksSql } from './authorization-exchange-row-locks-sql.mts'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   MAX_EXCHANGE_ATTEMPTS,
@@ -9,11 +14,38 @@ import {
 export async function getRecoverableOAuthAuthorizationIds(
   limit = 500,
   authorizationIds?: readonly string[],
+  retainedClaim?: RetainedOAuthExchangeClaim,
 ): Promise<string[]> {
   if (authorizationIds?.length === 0) return []
   observeSharedDbScope('getRecoverableOAuthAuthorizationIds', sharedDbIdsScope(authorizationIds))
   const idScope = authorizationIds ? [...authorizationIds] : null
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  await transaction(
+    '/* getRecoverableOAuthAuthorizationIds:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+  )
+  const parameters = [
+    limit,
+    STALE_EXCHANGE_CLAIM_SECONDS,
+    MAX_EXCHANGE_ATTEMPTS,
+    X_MAX_QUEUE_DELAY_SECONDS,
+    idScope,
+  ]
+  const locked = await transaction<{ id: string }>(
+    recoverableOAuthAuthorizationRowLocksSql,
+    parameters,
+  )
+  const ownedIds = locked.rows.map(row => row.id)
+  if (ownedIds.length === 0) {
+    await transaction.commit()
+    return []
+  }
+  const retainedIds = await getRetainedUnarmedOAuthExchangeIds(
+    transaction,
+    ownedIds,
+    STALE_EXCHANGE_CLAIM_SECONDS,
+    retainedClaim,
+  )
+  const { rows } = await transaction(
     `/* getRecoverableOAuthAuthorizationIds */
      WITH terminal_candidates AS (
        SELECT
@@ -26,13 +58,18 @@ export async function getRecoverableOAuthAuthorizationIds(
              AND callback_received_at <=
                CURRENT_TIMESTAMP - make_interval(secs => $4)
              THEN 'provider_code_expired'
-           ELSE 'provider_exchange_failed'
+           WHEN status = 'exchanging' THEN 'provider_exchange_outcome_unknown'
+           WHEN exchange_attempts >= $3 THEN 'provider_exchange_failed'
+           ELSE 'provider_exchange_outcome_unknown'
          END AS callback_error
        FROM view_oauth_authorization_current_records
        WHERE expires_at > CURRENT_TIMESTAMP
          AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
+         AND NOT (id = ANY($6::uuid[]))
          AND (
-           (
+           (status = 'exchanging'
+             AND exchange_started_at < clock_timestamp() - make_interval(secs => $2))
+           OR (
              exchange_attempts >= $3
              AND (
                status = 'callback_received'
@@ -76,17 +113,11 @@ export async function getRecoverableOAuthAuthorizationIds(
      FROM view_oauth_authorization_current_records
      WHERE expires_at > CURRENT_TIMESTAMP
        AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
-       AND exchange_attempts < $3
        AND (
-         provider <> 'x'
-         OR callback_received_at >
-           CURRENT_TIMESTAMP - make_interval(secs => $4)
-       )
-       AND (
-         status = 'callback_received'
+         id = ANY($6::uuid[])
          OR (
-           status = 'exchanging'
-           AND exchange_started_at < clock_timestamp() - make_interval(secs => $2)
+           status = 'callback_received' AND exchange_attempts < $3
+           AND (provider <> 'x' OR callback_received_at > CURRENT_TIMESTAMP - make_interval(secs => $4))
          )
        )
      ORDER BY id ASC
@@ -96,9 +127,11 @@ export async function getRecoverableOAuthAuthorizationIds(
       STALE_EXCHANGE_CLAIM_SECONDS,
       MAX_EXCHANGE_ATTEMPTS,
       X_MAX_QUEUE_DELAY_SECONDS,
-      idScope,
+      ownedIds,
+      retainedIds,
     ],
   )
+  await transaction.commit()
   return rows.map(row => String(row.id))
 }
 

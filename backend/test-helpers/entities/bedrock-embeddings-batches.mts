@@ -4,6 +4,7 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
  */
 
 import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   deriveBedrockBatchStatus,
@@ -14,21 +15,24 @@ import {
 /**
  * Insert a test embeddings batch with flexible parameters
  */
-export async function insertTestEmbeddingsBatch(data: {
-  id: string
-  model?: string
-  jobType?: string
-  jobArn?: string | null
-  bedrockStatus?: string
-  batchData?: unknown
-  urlId?: string | null
-  crawlId?: string | null
-  records?: number
-  completedAt?: Date | null
-  createdAt?: Date
-  submittedAt?: Date | null
-  inProgressAt?: Date | null
-}): Promise<void> {
+export async function insertTestEmbeddingsBatch(
+  data: {
+    id: string
+    model?: string
+    jobType?: string
+    jobArn?: string | null
+    bedrockStatus?: string
+    batchData?: unknown
+    urlId?: string | null
+    crawlId?: string | null
+    records?: number
+    completedAt?: Date | null
+    createdAt?: Date
+    submittedAt?: Date | null
+    inProgressAt?: Date | null
+  },
+  options: QueryOptions = {},
+): Promise<void> {
   const model = data.model || 'amazon.nova-2-multimodal-embeddings-v1:0'
   const jobType = data.jobType || 'topics'
   const bedrockStatus = data.bedrockStatus || 'Submitted'
@@ -84,6 +88,7 @@ export async function insertTestEmbeddingsBatch(data: {
       ${data.createdAt ?? now}
     )
   `),
+    options,
   )
 }
 
@@ -104,24 +109,6 @@ export async function cleanupTestEmbeddingsBatches(ids: string[]): Promise<void>
     WHERE id = ANY($1)`,
     [ids],
   )
-}
-
-export async function getTestBatchTerminalTimestamps(batchId: string): Promise<{
-  completed_at: Date | null
-  failed_at: Date | null
-  cancelled_at: Date | null
-} | null> {
-  const { rows } = await read<{
-    completed_at: Date | null
-    failed_at: Date | null
-    cancelled_at: Date | null
-  }>(sql`
-    /* getTestBatchTerminalTimestamps */
-    SELECT completed_at, failed_at, cancelled_at
-    FROM bedrock_embedding_batches
-    WHERE id = ${batchId}
-  `)
-  return rows[0] ?? null
 }
 
 export async function getTestBatchEntities(
@@ -195,3 +182,5 @@ export async function getTestBatchSummary(
   })
   return { job_type: String(row.job_type), status }
 }
+
+export { getTestBatchTerminalTimestamps } from './bedrock-embeddings-batch-timestamps.mts'

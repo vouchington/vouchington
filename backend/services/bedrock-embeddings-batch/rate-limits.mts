@@ -3,8 +3,9 @@ import {
   getBatchRecordsCreatedInLastHour,
 } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getRateLimitConfig } from '@services/bedrock-embeddings/batch/config'
+import type { QueryOptions } from '@data-stores/psql/types'
 
-export async function getBatchCreationLimits(): Promise<
+export async function getBatchCreationLimits(options: QueryOptions = {}): Promise<
   | {
       allowed: true
       maxRecords: number
@@ -14,12 +15,12 @@ export async function getBatchCreationLimits(): Promise<
   | { allowed: false; reason: string }
 > {
   const config = getRateLimitConfig()
-  const activeStats = await getActiveBatchStats()
+  const activeStats = await getActiveBatchStats(options)
   if (activeStats.count >= config.MAX_INFLIGHT_JOBS) {
     return { allowed: false, reason: 'inflight_job_limit_exceeded' }
   }
 
-  const recordsCreatedLastHour = await getBatchRecordsCreatedInLastHour()
+  const recordsCreatedLastHour = await getBatchRecordsCreatedInLastHour(options)
   const remainingRequestsThisHour = config.MAX_REQUESTS_PER_HOUR - recordsCreatedLastHour
   if (remainingRequestsThisHour <= 0) {
     return { allowed: false, reason: 'hourly_request_limit_exceeded' }
