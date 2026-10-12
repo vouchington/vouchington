@@ -109,11 +109,3 @@ export async function countTopicAliasCategoryMappingDirtyRowsForTest(
   )
   return Number(rows[0]?.count ?? 0)
 }
-
-export async function countAllTopicAliasCategoryMappingDirtyRowsForTest(): Promise<number> {
-  const { rows } = await read<{ count: string }>(
-    `/* countAllTopicAliasCategoryMappingDirtyRowsForTest */
-      SELECT COUNT(*)::text AS count FROM topic_alias_category_mapping_reconciliations`,
-  )
-  return Number(rows[0]?.count ?? 0)
-}

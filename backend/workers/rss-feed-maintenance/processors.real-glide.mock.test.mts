@@ -11,11 +11,9 @@ import {
 } from '@services/rss-feed-items/categories'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedCategories, upsertRssFeedCategories } from '@services/rss-feeds/categories'
-import { getRssFeedsWorkLimit } from '@services/rss-feeds/work-limits'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
   createTestPost,
-  countAllTopicAliasCategoryMappingDirtyRowsForTest,
   createTestTopic,
   createTestUser,
   createTopHashtagPostSourceForTest,
@@ -193,14 +191,10 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     const topic = await createTestTopic({ slug: `mapping-${randomUUID()}` })
     const [alias] = await createTopicAliases(topic.id, `mapping-tag-${randomUUID()}`)
     expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeDefined()
-    const dirtyRows = await countAllTopicAliasCategoryMappingDirtyRowsForTest()
-    const pages = Math.ceil(
-      dirtyRows / getRssFeedsWorkLimit('topic_alias_category_mapping_reconciliation_batch_size'),
-    )
-    for (let page = 0; page < pages; page++) {
-      const result = await runJob('processReconcileTopicAliasCategoryMappings', {})
-      expect(result).toMatchObject({ reconciled: expect.any(Number) })
-    }
+    const result = await runJob('processReconcileTopicAliasCategoryMappings', {
+      topicAliasIds: [alias!.id],
+    })
+    expect(result).toMatchObject({ reconciled: 1 })
     expect(await getTopicAliasCategoryMappingDirtyRowForTest(alias!.id)).toBeUndefined()
   })
 })

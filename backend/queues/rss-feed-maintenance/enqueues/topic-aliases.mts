@@ -29,7 +29,7 @@ const enqueueTopicAliasRemovalUpdateJob = createEnqueueFunction<
 })
 
 const enqueueReconcileTopicAliasCategoryMappingsJob = createEnqueueFunction<
-  Record<string, never>,
+  { topicAliasIds?: string[] },
   TopicAliasJobs
 >({
   queue: rssFeedMaintenance,
@@ -95,9 +95,11 @@ export const enqueueReconcileTopicAliasCategoryMappings = (
 }
 
 /** Chains another bounded reconciliation page without throttle deduplication. */
-export const enqueueContinueTopicAliasCategoryMappingReconciliation = (): EnqueueReturnType =>
+export const enqueueContinueTopicAliasCategoryMappingReconciliation = (
+  topicAliasIds?: string[],
+): EnqueueReturnType =>
   enqueueReconcileTopicAliasCategoryMappingsJob(
-    {},
+    { topicAliasIds },
     {
       priority: PRIORITY_RECOVERY,
       ordering: TOPIC_ALIAS_ORDERING.category_mapping_reconciliation,

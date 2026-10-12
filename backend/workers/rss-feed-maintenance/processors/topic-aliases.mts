@@ -37,7 +37,7 @@ export async function processInvalidatePostsForTopicAliases(
 }
 
 export const processReconcileTopicAliasCategoryMappings = async (
-  _data: Record<string, never>,
+  data: { topicAliasIds?: string[] },
   dependencies?: Partial<TopicAliasCategoryMappingReconciliationDependencies>,
 ) => {
   const reconcile =
@@ -48,9 +48,12 @@ export const processReconcileTopicAliasCategoryMappings = async (
   const TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE = getRssFeedsWorkLimit(
     'topic_alias_category_mapping_reconciliation_batch_size',
   )
-  const result = await reconcile(TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE)
+  const result = await reconcile(
+    TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
+    data.topicAliasIds,
+  )
   if (result.reconciled === TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE) {
-    await enqueueContinuation()
+    await enqueueContinuation(data.topicAliasIds)
   }
   return result
 }
