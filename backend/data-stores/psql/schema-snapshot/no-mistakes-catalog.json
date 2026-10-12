@@ -1575,6 +1575,9 @@
     "fn_reject_mutation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_reject_non_google_play_membership_context()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_google_play_membership_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'google_play'\n  ) THEN\n    RAISE EXCEPTION 'Google Play records require a Google Play provider context' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_reject_non_stripe_membership_purchase_intent_checkout()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -53298,6 +53301,9 @@
         "trigger_google_play_acknowledgments_work": {
           "definition": "CREATE TRIGGER trigger_google_play_acknowledgments_work AFTER INSERT ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgment_work()"
         },
+        "trigger_membership_google_play_acknowledgments_context": {
+          "definition": "CREATE TRIGGER trigger_membership_google_play_acknowledgments_context BEFORE INSERT OR UPDATE ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context()"
+        },
         "trigger_membership_google_play_acknowledgments_updated_at": {
           "definition": "CREATE TRIGGER trigger_membership_google_play_acknowledgments_updated_at BEFORE UPDATE ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
@@ -53598,7 +53604,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_membership_google_play_purchase_tokens_context": {
+          "definition": "CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context BEFORE INSERT OR UPDATE ON public.membership_google_play_purchase_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context()"
+        }
+      },
       "uniqueConstraints": {
         "uq_membership_google_play_purchase_tokens__id_lineage_context": {
           "columns": ["id", "membership_provider_lineage_id", "membership_provider_context_id"]
@@ -57263,7 +57273,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_membership_provider_contexts_immutable": {
+          "definition": "CREATE TRIGGER trigger_membership_provider_contexts_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_contexts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        }
+      },
       "uniqueConstraints": {
         "uq_membership_provider_contexts__identity": {
           "columns": ["provider", "environment", "application_id"]
@@ -126287,20 +126301,20 @@
       },
       "comment": "Required provider cleanup intents. Completion gates the final internal deletion marker.",
       "foreignKeys": {
+        "fk_user_deletion_external_works__provider_lineage": {
+          "columns": ["membership_provider_lineage_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "membership_provider_lineages",
+          "validated": true
+        },
         "udew_relation_impact_fkey": {
           "columns": ["request_id", "relation_impact_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["request_id", "id"],
           "referencedTable": "user_deletion_relation_impacts",
-          "validated": true
-        },
-        "user_deletion_external_works_membership_provider_lineage_i_fkey": {
-          "columns": ["membership_provider_lineage_id"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "membership_provider_lineages",
           "validated": true
         },
         "user_deletion_external_works_request_id_fkey": {

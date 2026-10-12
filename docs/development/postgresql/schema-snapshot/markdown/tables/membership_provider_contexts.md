@@ -34,4 +34,5 @@ _none_
 - `uq_membership_provider_contexts__identity`: `CREATE UNIQUE INDEX uq_membership_provider_contexts__identity ON public.membership_provider_contexts USING btree (provider, environment, application_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_membership_provider_contexts_immutable`: `CREATE TRIGGER trigger_membership_provider_contexts_immutable BEFORE DELETE OR UPDATE ON public.membership_provider_contexts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

@@ -37,8 +37,8 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
+- `fk_user_deletion_external_works__provider_lineage`: `FOREIGN KEY (membership_provider_lineage_id) REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT`
 - `udew_relation_impact_fkey`: `FOREIGN KEY (request_id, relation_impact_id) REFERENCES user_deletion_relation_impacts(request_id, id) ON DELETE SET NULL (relation_impact_id)`
-- `user_deletion_external_works_membership_provider_lineage_i_fkey`: `FOREIGN KEY (membership_provider_lineage_id) REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT`
 - `user_deletion_external_works_request_id_fkey`: `FOREIGN KEY (request_id) REFERENCES user_deletion_requests(id) ON DELETE CASCADE`
 
 **Indexes:**

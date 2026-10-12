@@ -44,4 +44,5 @@ Not partitioned — growth: unbounded.
 - `uq_membership_google_play_purchase_tokens__id_lineage_context`: `CREATE UNIQUE INDEX uq_membership_google_play_purchase_tokens__id_lineage_context ON public.membership_google_play_purchase_tokens USING btree (id, membership_provider_lineage_id, membership_provider_context_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_membership_google_play_purchase_tokens_context`: `CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context BEFORE INSERT OR UPDATE ON public.membership_google_play_purchase_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context()`

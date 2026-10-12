@@ -52,4 +52,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_google_play_acknowledgments_work`: `CREATE TRIGGER trigger_google_play_acknowledgments_work AFTER INSERT ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_create_google_play_acknowledgment_work()`
+- `trigger_membership_google_play_acknowledgments_context`: `CREATE TRIGGER trigger_membership_google_play_acknowledgments_context BEFORE INSERT OR UPDATE ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_non_google_play_membership_context()`
 - `trigger_membership_google_play_acknowledgments_updated_at`: `CREATE TRIGGER trigger_membership_google_play_acknowledgments_updated_at BEFORE UPDATE ON public.membership_google_play_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
