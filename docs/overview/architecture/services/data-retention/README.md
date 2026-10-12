@@ -107,8 +107,13 @@ Cleanups whose batch delete returns a row count share `runBoundedBatches()`: it 
 account cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's
 batch returns its own `hasMore`, so neither uses it; both validate `maxBatches` with
 `assertPositiveInteger()`. The orphaned-account sweep rotates its first provider by UTC day, so a
-capped daily run can reach later providers despite an earlier provider's backlog. One OAuth
-authorization-server artifact batch shares its row budget across all four artifact tables.
+capped daily run can reach later providers despite an earlier provider's backlog. OAuth
+authorization-server cleanup shares one run budget across its artifact phases, first reserving an
+initial share for each phase, then redistributing unused shares in the same child-first order.
+Every delete statement remains bounded by the configured page size. Token children are eligible
+when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
+counts against the run budget; families are removed only after their access and refresh tokens
+are gone, so a large family drains across runs without uncounted cascading deletes.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

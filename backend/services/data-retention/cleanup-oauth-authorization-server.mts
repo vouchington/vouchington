@@ -1,4 +1,4 @@
-import { deleteExpiredOAuthAuthorizationServerArtifactsBatch } from '@services/oauth-authorization-server'
+import { deleteExpiredOAuthAuthorizationServerArtifacts } from '@services/oauth-authorization-server'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
@@ -12,14 +12,5 @@ export async function cleanupExpiredOAuthAuthorizationServerArtifacts(options: {
 }): Promise<CleanupResult> {
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
-  let deleted = 0
-  let hasMore = false
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each bounded delete determines whether another artifact batch remains
-    const result = await deleteExpiredOAuthAuthorizationServerArtifactsBatch(batchSize, options)
-    deleted += result.deleted
-    hasMore = result.hasMore
-    if (!hasMore) break
-  }
-  return { deleted, hasMore }
+  return deleteExpiredOAuthAuthorizationServerArtifacts(batchSize, { ...options, maxBatches })
 }

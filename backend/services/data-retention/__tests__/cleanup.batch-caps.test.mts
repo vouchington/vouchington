@@ -20,6 +20,7 @@ import {
   insertTestRetainedRelationIdentity,
 } from '@voucha/test-helpers/entities/retained-identities'
 import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retained-media'
+import * as cleanupBatches from '../cleanup-batches.mts'
 import * as retainedRoots from '../cleanup-retained-identities.mts'
 import * as retainedMedia from '../cleanup-retained-media-bindings.mts'
 import * as retainedRelations from '../cleanup-retained-relation-identities.mts'
@@ -155,6 +156,7 @@ describe('data retention per-run caps', () => {
     const ids = await Promise.all(
       eligibleDates.map(date => insertReferralAttributionAt(referrer.id, date)),
     )
+    await dataRetentionConfig.waitForInitialization()
     overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
       batch_size: 1,
       max_batches_per_run: 2,
@@ -168,7 +170,17 @@ describe('data retention per-run caps', () => {
       },
     }
 
+    expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
+    const batches = vi.spyOn(cleanupBatches, 'deleteOldReferralAttributionBatch')
+    onTestFinished(() => batches.mockRestore())
     const first = await runDataRetentionCleanup(getDataRetentionLimits(), options)
+    expect({
+      limits: batches.mock.calls.map(call => call[1]),
+      result: first.oldReferralAttributions,
+      remaining: (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(
+        Boolean,
+      ).length,
+    }).toEqual({ limits: [1, 1], result: { deleted: 2, hasMore: true }, remaining: 1 })
     expect(first.oldReferralAttributions).toEqual({ deleted: 2, hasMore: true })
     expect(
       (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),

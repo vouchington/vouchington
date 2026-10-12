@@ -82,8 +82,7 @@ export async function deleteOldReferralAttributionBatch(
   lowerBoundId?: string,
 ): Promise<number> {
   const query = sql`/* deleteOldReferralAttributionBatch */
-    DELETE FROM session_referral_attributions
-    WHERE id IN (
+    WITH candidates AS MATERIALIZED (
       SELECT id FROM session_referral_attributions
       WHERE user_id IS NULL
         AND id < ${cutoffId}
@@ -93,7 +92,9 @@ export async function deleteOldReferralAttributionBatch(
       ORDER BY id ASC
       LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
-    )`)
+    )
+    DELETE FROM session_referral_attributions target USING candidates
+    WHERE target.id = candidates.id`)
   const { rowCount } = await write(query)
   return rowCount ?? 0
 }
