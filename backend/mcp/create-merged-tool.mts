@@ -7,7 +7,7 @@ export type MergedToolSource<TArgs = never, TResult = unknown> = Pick<
   'function' | 'roles'
 > & {
   schema: Pick<Tool<TArgs, TResult>['schema'], 'parameters' | 'description'>
-  meta: ToolMeta
+  meta?: ToolMeta
 }
 export type MergedToolOption<TArgs = never, TResult = unknown> = {
   option: string
@@ -88,7 +88,7 @@ export function createMergedTool(
   const definitionByBody = new Map<string, string>()
   const seenOutputSchemas = new Set<string>()
   for (const [index, { source }] of options.entries()) {
-    const outputSchema = source.meta.outputSchema!
+    const outputSchema = source.meta!.outputSchema!
     const schemaKey = JSON.stringify(outputSchema)
     if (seenOutputSchemas.has(schemaKey)) continue
     seenOutputSchemas.add(schemaKey)
@@ -147,7 +147,7 @@ export function createMergedTool(
     meta: {
       ...commonMeta,
       title,
-      surfaces: [...new Set(options.flatMap(({ source }) => source.meta.surfaces))],
+      surfaces: [...new Set(options.flatMap(({ source }) => source.meta!.surfaces))],
       api: api.length ? api : null,
       outputSchema: factorToolSchema({
         ...(outputBranches.length === 1

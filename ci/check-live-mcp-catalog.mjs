@@ -8,7 +8,7 @@ import { runLiveMcpCatalogCheck } from './live-mcp-catalog-check.mts'
 await runLiveMcpCatalogCheck({
   ready: onGracefulShutdown.waitForInitialization(),
   check: () => {
-    const errors = findCatalogContractViolations(ALL_TOOLS, listMcpToolsForUser, 17)
+    const errors = findCatalogContractViolations(ALL_TOOLS, listMcpToolsForUser, 14)
     if (errors.length > 0) throw new Error(`MCP catalog contract violations:\n${errors.join('\n')}`)
   },
   closeResources: [onGracefulShutdown, closePsql],

@@ -168,7 +168,7 @@ const adminTools = [
 ]
 const toolsByName = new Map(adminTools.map(tool => [tool.schema.name, tool]))
 
-function sourceTool(name: string): Tool {
+function sourceTool(name: string): Tool<never> {
   const tool = toolsByName.get(name)
   if (!tool) throw new Error(`missing admin merge source ${name}`)
   return tool
