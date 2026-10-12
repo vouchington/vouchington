@@ -9,7 +9,11 @@ import { USER_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
 import type { BasicUser } from '../services/users/types.mts'
 import { getRegisteredToolByName } from '../mcp/registry/index.mts'
 
-export type McpContractCaller = BasicUser & { membership_plan: 'plus' | 'pro' | null }
+export type McpContractCaller = BasicUser & {
+  membership_plan: 'plus' | 'pro' | null
+  // Present when MCP authentication admitted a suspended paying user.
+  suspended?: boolean
+}
 
 const MCP_API_KEY_ORIGIN: CredentialRequestOrigin = {
   interface: 'mcp',
