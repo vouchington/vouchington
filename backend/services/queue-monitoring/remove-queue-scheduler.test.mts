@@ -7,7 +7,7 @@ describe('removeQueueScheduler', () => {
   it('removes only the named scheduler and is idempotent', async () => {
     const queueName = `remove-scheduler-${randomUUID()}`
     const schedulerId = `retired-${randomUUID()}`
-    const setupQueue = createQueue(queueName)
+    const setupQueue = createQueue(queueName, { priorityKind: 'ranked' })
     await setupQueue.upsertJobScheduler(
       schedulerId,
       { every: 60_000 },
@@ -27,7 +27,7 @@ describe('removeQueueScheduler', () => {
         removed: false,
       })
     } finally {
-      const cleanupQueue = createQueue(queueName)
+      const cleanupQueue = createQueue(queueName, { priorityKind: 'ranked' })
       await cleanupQueue.obliterate({ force: true })
       await closeAndUnregisterGlideMQInstance(cleanupQueue)
     }

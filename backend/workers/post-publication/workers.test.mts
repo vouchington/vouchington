@@ -29,7 +29,7 @@ describe('post publication worker integration', () => {
     const enqueueContinuation = vi.fn<() => Promise<unknown>>().mockResolvedValue(undefined)
     const completion = Promise.withResolvers<{ reconciled: number }>()
     const queueName = `${QUEUE_NAME}-test-${randomUUID()}`
-    const queue = createQueue(queueName)
+    const queue = createQueue(queueName, { priorityKind: 'ranked' })
     instances.push(
       queue,
       createWorker(queueName, job => {

@@ -6,6 +6,7 @@ import {
   createEnqueueFunction,
   ENQUEUE_BASE_DEFAULTS,
 } from '../glide-mq-enqueue.mts'
+import { checkedPriorityOptions } from '../queue-priority.mts'
 import {
   closeSharedCommandClientFromRegistry,
   getGlideMQInstances,
@@ -24,6 +25,7 @@ function createQueueStub<TData>() {
   return {
     added,
     queue: {
+      priorityKind: 'ranked' as const,
       add(name: string, data: TData, opts?: JobOptions) {
         added.push({ name, data, opts })
         return Promise.resolve({ id: `${name}-1` })
@@ -32,15 +34,58 @@ function createQueueStub<TData>() {
         added.push(...jobs)
         return Promise.resolve(jobs.map((job, index) => ({ id: `${job.name}-${index}` })))
       },
-    } as Pick<Queue<TData>, 'add' | 'addBulk'>,
+    } as Pick<Queue<TData>, 'add' | 'addBulk'> & { priorityKind: 'ranked' },
   }
 }
 
 describe('glide-mq factory', () => {
+  it('rejects a priority from the wrong kind before raw and wrapped enqueues', async () => {
+    const name = `priority-kind-${crypto.randomUUID()}`
+    const ranked = createQueue(name, { priorityKind: 'ranked' })
+    const none = createQueue(`${name}-none`, { priorityKind: 'none' })
+    try {
+      expect(() => ranked.add('raw', {}, { priority: 0 })).toThrow(RangeError)
+      expect(() => ranked.addBulk([{ name: 'raw', data: {}, opts: { priority: 0 } }])).toThrow(
+        RangeError,
+      )
+      expect(() => none.add('raw', {}, { priority: 10 })).toThrow(RangeError)
+      expect(() => ranked.addAndWait('raw', {}, { priority: 0 })).toThrow(RangeError)
+      expect(() =>
+        ranked.upsertJobScheduler(
+          'raw',
+          { every: 60_000 },
+          {
+            opts: { priority: 0 },
+          },
+        ),
+      ).toThrow(RangeError)
+      expect(() => ranked.add('raw', {}, { priority: 1.5 })).toThrow(RangeError)
+      expect(() => ranked.add('raw', {}, { priority: 2049 })).toThrow(RangeError)
+      expect(checkedPriorityOptions(name, 'ranked')).toMatchObject({ priority: 10 })
+      expect(checkedPriorityOptions(`${name}-none`, 'none')).toMatchObject({ priority: 0 })
+      const enqueue = createEnqueueFunction({
+        queue: ranked,
+        queueName: name,
+        jobName: 'wrapped',
+      })
+      expect(() => enqueue({}, { priority: 0 })).toThrow(RangeError)
+      const enqueueBulk = createBulkEnqueueFunction({
+        queue: none,
+        queueName: `${name}-none`,
+        jobName: 'wrapped',
+        buildJob: (data: Record<string, never>) => ({ data }),
+      })
+      expect(() => enqueueBulk([{}], { priority: 1 })).toThrow(RangeError)
+    } finally {
+      await ranked.close()
+      await none.close()
+    }
+  })
+
   it('creates queues and workers with shared DLQ configuration', async () => {
     const queueName = `factory-dlq-${crypto.randomUUID()}`
     const deadLetterQueue = { name: `${queueName}-dlq` }
-    const queue = createQueue(queueName, { deadLetterQueue })
+    const queue = createQueue(queueName, { deadLetterQueue, priorityKind: 'ranked' })
     const worker = createWorker(
       queueName,
       () => {

@@ -96,7 +96,7 @@ describe('get-queue-stats', () => {
 
   it('counts every unfinished job in the backlog depth, whichever list it is parked in', async () => {
     const name = `backlog-${crypto.randomUUID()}`
-    const queue = createQueue(name)
+    const queue = createQueue(name, { priorityKind: 'ranked' })
     try {
       await expect(getQueueBacklogDepth(name)).resolves.toBe(0)
       await queue.add('plain', {})
@@ -111,18 +111,18 @@ describe('get-queue-stats', () => {
 
   it('reports scheduled jobs as delayed rather than waiting, and rolls them up', async () => {
     const name = `delayed-${crypto.randomUUID()}`
-    const queue = createQueue(name)
+    const queue = createQueue(name, { priorityKind: 'ranked' })
     try {
       await queue.add('plain', {})
       await queue.add('prioritized', {}, { priority: 5 })
       await queue.add('delayed', {}, { delay: 60_000 })
 
       const stats = await getQueueStats(name)
-      expect(stats.waiting).toBe(1)
-      expect(stats.delayed).toBe(2)
+      expect(stats.waiting).toBe(0)
+      expect(stats.delayed).toBe(3)
       await expect(getAggregatedQueueStats([name])).resolves.toMatchObject({
-        totalWaiting: 1,
-        totalDelayed: 2,
+        totalWaiting: 0,
+        totalDelayed: 3,
         queueCount: 1,
       })
       // The metric path counts due priority jobs as waiting, so it carries no delayed total.
@@ -151,7 +151,7 @@ describe('get-queue-stats', () => {
   it('reads oldest waiting-job age only for the metrics aggregate', async () => {
     vi.useFakeTimers()
     const name = `metrics-${crypto.randomUUID()}`
-    const queue = createQueue(name)
+    const queue = createQueue(name, { priorityKind: 'none' })
     try {
       vi.setSystemTime(new Date('2026-08-26T12:00:00.000Z'))
       await queue.add('first', {})

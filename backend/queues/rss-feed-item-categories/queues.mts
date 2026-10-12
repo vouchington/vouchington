@@ -1,4 +1,4 @@
 import { createQueue } from '@data-stores/valkey-glide-mq'
 import { QUEUE_NAME } from './config.mts'
 
-export const rssFeedItemCategories = createQueue(QUEUE_NAME)
+export const rssFeedItemCategories = createQueue(QUEUE_NAME, { priorityKind: 'ranked' })

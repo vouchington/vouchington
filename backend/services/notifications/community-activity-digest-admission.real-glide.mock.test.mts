@@ -23,7 +23,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 describe('community activity digest work items', () => {
   it('releases the durable lease when queue admission fails', async () => {
     await withTestCommunityActivityDigestLock(async () => {
-      const queue = createQueue(`digest-admission-${randomUUID()}`)
+      const queue = createQueue(`digest-admission-${randomUUID()}`, { priorityKind: 'ranked' })
       const admission = vi.spyOn(queue, 'add')
       let started: ReturnType<typeof processCommunityActivityDigestScheduleTick> | undefined
       let cleanupPromise: Promise<void> | undefined

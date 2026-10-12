@@ -5,7 +5,7 @@ export const QUEUE_NAME = 'activitypub-inbox'
 export const PROCESS_PRIORITY = 10
 export const RECOVERY_PRIORITY = 100
 export const RECOVERY_INTERVAL_MS = 300_000
-export const CLEANUP_PRIORITY = 1
+export const CLEANUP_PRIORITY = 100
 export const CLEANUP_INTERVAL_MS = ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupIntervalMs
 
 export const ACTIVITYPUB_INBOX_DEFAULTS = {

@@ -2,9 +2,10 @@ import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
 import type { JobOptions, Queue } from 'glide-mq'
 import { retryTransientEnqueue } from './glide-mq-retry.mts'
+import { assertQueuePriority, type QueuePriorityKind } from './queue-priority.mts'
 
-type AddQueue = Pick<Queue, 'add'>
-type AddBulkQueue = Pick<Queue, 'addBulk'>
+type AddQueue = Pick<Queue, 'add'> & { readonly priorityKind: QueuePriorityKind }
+type AddBulkQueue = Pick<Queue, 'addBulk'> & { readonly priorityKind: QueuePriorityKind }
 
 type ErrorWithReportingContext = Error & {
   extra?: Record<string, unknown> | null
@@ -72,7 +73,9 @@ export function createEnqueueFunction<TData, TName extends string, TCallContext 
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
   ): ReturnType<AddQueue['add']> => {
-    const merged = mergeJobOptions(options.defaults, perCallOpts)
+    const kind = options.queue.priorityKind
+    const merged = mergeJobOptions(kind, options.defaults, perCallOpts)
+    assertQueuePriority(options.queueName, kind, merged.priority ?? (kind === 'none' ? 0 : 10))
     const job =
       options.retry !== false
         ? retryTransientEnqueue(() => options.queue.add(options.jobName, data, merged))
@@ -101,10 +104,13 @@ export function createBulkEnqueueFunction<
 
     const jobs = inputs.map((input, index) => {
       const job = options.buildJob(input, index)
+      const kind = options.queue.priorityKind
+      const opts = mergeJobOptions(kind, options.defaults, job.opts, perCallOpts)
+      assertQueuePriority(options.queueName, kind, opts.priority ?? (kind === 'none' ? 0 : 10))
       return {
         name: options.jobName,
         data: job.data,
-        opts: mergeJobOptions(options.defaults, job.opts, perCallOpts),
+        opts,
       }
     })
 
@@ -119,8 +125,16 @@ export function createBulkEnqueueFunction<
   }
 }
 
-function mergeJobOptions(...options: Array<Partial<JobOptions> | undefined>): JobOptions {
-  return Object.assign({}, ENQUEUE_BASE_DEFAULTS, ...options) as JobOptions
+function mergeJobOptions(
+  kind: QueuePriorityKind,
+  ...options: Array<Partial<JobOptions> | undefined>
+): JobOptions {
+  return Object.assign(
+    {},
+    ENQUEUE_BASE_DEFAULTS,
+    { priority: kind === 'none' ? 0 : 10 },
+    ...options,
+  ) as JobOptions
 }
 
 function reportRejectedEnqueue<TCallContext>(

@@ -7,4 +7,5 @@ import { SES_INBOUND_QUEUE_NAME } from './config.mts'
 
 export const sesInboundQueue = createQueue<SesInboundProcessJobData | SesInboundReconcileJobData>(
   SES_INBOUND_QUEUE_NAME,
+  { priorityKind: 'ranked' },
 )
