@@ -152,16 +152,25 @@ describe('community, report and appeal write tools over MCP HTTP', () => {
     )
   })
 
-  it.each(KINDS)('%s is rejected once its owner is suspended, writing nothing', async kind => {
-    const owner = await createTestPlusMcpCaller()
-    const postId = (await createTestPost({ user: await createTestUser() }))!.id
-    const token = await issueCredential(kind, owner)
-    await callOk(token, 'create_content_report', reportArgs(postId))
-    const other = (await createTestPost({ user: await createTestUser() }))!.id
-    await suspendTestUser(owner.id)
+  it.each(KINDS)(
+    '%s denies the next report once its Plus owner is suspended, writing nothing',
+    async kind => {
+      const owner = await createTestPlusMcpCaller()
+      const postId = (await createTestPost({ user: await createTestUser() }))!.id
+      const token = await issueCredential(kind, owner)
+      await callOk(token, 'create_content_report', reportArgs(postId))
+      const other = (await createTestPost({ user: await createTestUser() }))!.id
+      await suspendTestUser(owner.id)
 
-    await callTool(token, 'create_content_report', reportArgs(other)).expect(401)
+      expect(
+        (await callTool(token, 'create_content_report', reportArgs(other)).expect(200)).body,
+      ).toEqual({
+        jsonrpc: '2.0',
+        id: 1,
+        error: { code: -32600, message: 'MCP error -32600: suspended' },
+      })
 
-    expect(await countTestModerationReportsByReporter(owner.id)).toBe(1)
-  })
+      expect(await countTestModerationReportsByReporter(owner.id)).toBe(1)
+    },
+  )
 })
