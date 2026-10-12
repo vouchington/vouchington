@@ -29643,7 +29643,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_notice_email_message_parents_pkey": {
           "accessMethod": "btree",
@@ -33369,7 +33369,7 @@
       },
       "comment": "One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.",
       "foreignKeys": {},
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_notice_storage_objects_pkey": {
           "accessMethod": "btree",
