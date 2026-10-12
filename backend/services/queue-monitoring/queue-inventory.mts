@@ -14,8 +14,7 @@ import * as crawlerQueues from '@queues/crawler/queues'
 import * as crawlHostnamesQueues from '@queues/crawl-hostnames/queues'
 import * as crawlBoilerplateRemovalQueues from '@queues/crawl-boilerplate-removal/queues'
 import { rss_feeds } from '@queues/rss-feeds/queues'
-import { rssFeedItemCategories } from '@queues/rss-feed-item-categories/queues'
-import { topicAliases } from '@queues/topic-aliases/queues'
+import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
@@ -41,7 +40,6 @@ import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { language_detection as languageDetection } from '@queues/language-detection/queues'
 import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
-import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { sesInboundQueue } from '@queues/ses-inbound/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import type { Queue } from 'glide-mq'
@@ -57,8 +55,7 @@ const allQueues = [
   ...Object.values(crawlHostnamesQueues),
   ...Object.values(crawlBoilerplateRemovalQueues),
   rss_feeds,
-  rssFeedItemCategories,
-  topicAliases,
+  rssFeedMaintenance,
   ...Object.values(bedrockEmbeddingsQueues),
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
@@ -89,7 +86,6 @@ const allQueues = [
   crawlEmbedsQueue,
   languageDetection,
   oauthAuthorizationExchangeQueue,
-  rssFeedDiscoverability,
   sesInboundQueue,
   unfurlReferralLinksQueue,
 ]

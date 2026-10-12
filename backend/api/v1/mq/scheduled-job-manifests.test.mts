@@ -81,8 +81,8 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/refresh-rss-feed-crawl-tiers',
   'psql/refresh-top-hashtags',
   'rss-feeds/dispatchRssFeeds',
-  'rss-feed-item-categories/reconcileRssFeedItemCategorySnapshots',
-  'topic-aliases/reconcileTopicAliasCategoryMappings',
+  'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
+  'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
   'ses_inbound/ses-inbound-reconciliation',
   'sitemaps/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
   'sitemaps/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
@@ -97,8 +97,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 29 manifests and 83 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(29)
+  it('imports the exact 28 manifests and 83 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(28)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

@@ -1784,9 +1784,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -1799,9 +1799,6 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
@@ -1874,12 +1871,9 @@ importers:
       '@workers/psql':
         specifier: workspace:^
         version: link:../../workers/psql
-      '@workers/rss-feed-discoverability':
+      '@workers/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../workers/rss-feed-discoverability
-      '@workers/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../workers/rss-feed-item-categories
+        version: link:../../workers/rss-feed-maintenance
       '@workers/rss-feeds':
         specifier: workspace:^
         version: link:../../workers/rss-feeds
@@ -1904,9 +1898,6 @@ importers:
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
-      '@workers/topic-aliases':
-        specifier: workspace:^
-        version: link:../../workers/topic-aliases
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../workers/urls-domains-blacklist
@@ -3162,19 +3153,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/rss-feed-discoverability:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/rss-feed-item-categories:
+  backend/queues/rss-feed-maintenance:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -3185,6 +3164,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/rss-feeds:
     dependencies:
@@ -3257,18 +3239,6 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-
-  backend/queues/topic-aliases:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -5853,9 +5823,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
+        version: link:../../queues/rss-feed-maintenance
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -6299,9 +6269,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
+        version: link:../../queues/rss-feed-maintenance
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -8603,9 +8573,9 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
+        version: link:../../queues/rss-feed-maintenance
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
@@ -8869,12 +8839,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -8890,9 +8857,6 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -9387,9 +9351,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
@@ -9505,12 +9469,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -10081,9 +10042,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/topic-aliases':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/topic-aliases
+        version: link:../../queues/rss-feed-maintenance
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -10179,9 +10140,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/topic-aliases':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/topic-aliases
+        version: link:../../queues/rss-feed-maintenance
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -12331,9 +12292,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
@@ -12838,7 +12799,7 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/rss-feed-discoverability:
+  backend/workers/rss-feed-maintenance:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -12846,36 +12807,34 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@services/rss-feeds':
+        version: link:../../queues/rss-feed-maintenance
+      '@services/entity-cache':
         specifier: workspace:^
-        version: link:../../services/rss-feeds
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/rss-feed-item-categories:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../services/entity-cache
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../../queues/notifications
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/rss-feeds:
     dependencies:
@@ -13091,40 +13050,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-
-  backend/workers/topic-aliases:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../../services/rss-feed-items
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../../services/rss-feeds
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/workers/unfurl-referral-links:
     dependencies:

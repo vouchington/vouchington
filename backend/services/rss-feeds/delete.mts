@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { markRssFeedCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
-import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-item-categories/enqueues'
+import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-maintenance/enqueues/item-categories'
 import {
   lockPostPublicationRssFeedScopes,
   recordPostPublicationChange,

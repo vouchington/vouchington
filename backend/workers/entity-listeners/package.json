@@ -32,7 +32,7 @@
     "@queues/openai-moderation": "workspace:^",
     "@queues/post-mentions": "workspace:^",
     "@queues/psql": "workspace:^",
-    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/spam-detection": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/bookmarks": "workspace:^",

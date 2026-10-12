@@ -32,7 +32,7 @@
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/notifications": "workspace:^",
-    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",

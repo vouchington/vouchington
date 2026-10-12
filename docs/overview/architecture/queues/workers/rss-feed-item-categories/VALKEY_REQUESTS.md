@@ -1,4 +1,4 @@
-# Valkey Requests — rss-feed-item-categories
+# Valkey Requests — rss-feed-item-categories jobs on rss-feed-maintenance
 
 Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own

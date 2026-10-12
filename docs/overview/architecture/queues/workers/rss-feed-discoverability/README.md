@@ -1,12 +1,12 @@
 # RSS Feed Discoverability Worker
 
-Source entrypoint: [backend/workers/rss-feed-discoverability/README.md](../../../../../../backend/workers/rss-feed-discoverability/README.md)
+Source entrypoint: [backend/workers/rss-feed-maintenance/README.md](../../../../../../backend/workers/rss-feed-maintenance/README.md)
 
 Worker package for evaluating RSS feed discoverability.
 
 ## Exports
 
-- `rssFeedDiscoverability` - worker instance for the `rss-feed-discoverability` queue.
+- `rssFeedMaintenance` - shared worker instance for the `rss-feed-maintenance` queue.
 
 Malformed `processEvaluateRssFeedDiscoverability` jobs fail with `RSS feed discoverability job .rssFeedId is required` before processing.
 

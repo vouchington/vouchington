@@ -12,9 +12,8 @@ import { upsertSchedules as upsertEntityListenerSchedules } from '@queues/entity
 import { upsertSchedules as upsertOpenAiModerationSchedules } from '@queues/openai-moderation/enqueues/schedules'
 import { upsertSchedules as upsertPsqlSchedules } from '@queues/psql/enqueues/schedules'
 import { upsertSchedules as upsertRssFeedSchedules } from '@queues/rss-feeds/enqueues/schedules'
-import { upsertSchedules as upsertRssFeedItemCategorySchedules } from '@queues/rss-feed-item-categories/enqueues/schedules'
+import { upsertSchedules as upsertRssFeedMaintenanceSchedules } from '@queues/rss-feed-maintenance/enqueues/schedules'
 import { upsertSchedules as upsertStoryPostRelatedUrlProjectionSchedules } from '@queues/story-post-related-url-projections/enqueues/schedules'
-import { upsertSchedules as upsertTopicAliasSchedules } from '@queues/topic-aliases/enqueues/schedules'
 import { upsertSchedules as upsertSitemapSchedules } from '@queues/sitemaps/enqueues/schedules'
 import { upsertSchedules as upsertSesInboundSchedules } from '@queues/ses-inbound/enqueues/schedules'
 import { upsertSchedules as upsertUrlDomainBlacklistSchedules } from '@queues/urls-domains-blacklist/enqueues/schedules'
@@ -35,10 +34,9 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
       upsertUrlDomainBlacklistSchedules,
     )
     await expect(byQueue('rss-feeds').load()).resolves.toBe(upsertRssFeedSchedules)
-    await expect(byQueue('rss-feed-item-categories').load()).resolves.toBe(
-      upsertRssFeedItemCategorySchedules,
+    await expect(byQueue('rss-feed-maintenance').load()).resolves.toBe(
+      upsertRssFeedMaintenanceSchedules,
     )
-    await expect(byQueue('topic-aliases').load()).resolves.toBe(upsertTopicAliasSchedules)
     await expect(byQueue('emails').load()).resolves.toBe(upsertEmailSchedules)
     await expect(byQueue('psql').load()).resolves.toBe(upsertPsqlSchedules)
     await expect(byQueue('account-lifecycle').load()).resolves.toBe(upsertAccountLifecycleSchedules)

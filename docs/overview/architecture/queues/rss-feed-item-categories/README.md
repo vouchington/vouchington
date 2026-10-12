@@ -1,12 +1,12 @@
 # RSS Feed Item Categories System
 
-Source entrypoint: [backend/queues/rss-feed-item-categories/README.md](../../../../../backend/queues/rss-feed-item-categories/README.md)
+Source entrypoint: [backend/queues/rss-feed-maintenance/README.md](../../../../../backend/queues/rss-feed-maintenance/README.md)
 
 Reconciles durable RSS feed item category snapshots and backfills categories when topic aliases change.
 
 ## Queue Configuration
 
-### `rss-feed-item-categories` (concurrency: 5)
+### `rss-feed-maintenance` (shared baseline concurrency: 10)
 
 - `processReconcileRssFeedItemCategorySnapshots` — drains up to 25 durable complete snapshots oldest-first, immediately queues another serialized page after a full successful batch, and retains the five-minute schedule for lost dispatches; exact-generation acknowledgement preserves newer crawls.
 - `processBackfillCategoriesForTopicAliases` — re-categorizes all RSS feed items affected by a topic alias change

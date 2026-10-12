@@ -31,7 +31,7 @@ import {
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
-// @queues/rss-feed-item-categories <-> @services/rss-feed-items workspace cycle:
+// @queues/rss-feed-maintenance <-> @services/rss-feed-items workspace cycle:
 // the queue needs the input shape but must not reach into services/rss-feed-items).
 import type { RssFeedItemCategoryInput } from '@voucha/types/entities/rss-feed-item'
 

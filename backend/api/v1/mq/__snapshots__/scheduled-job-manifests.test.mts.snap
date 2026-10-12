@@ -2198,7 +2198,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "rss-feed-item-categories",
+    "queueName": "rss-feed-maintenance",
     "registration": "sequential",
     "repeat": {
       "every": 300000,
@@ -2217,6 +2217,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 1,
           "key": "snapshot-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
+        "id": "reconcileTopicAliasCategoryMappings",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileTopicAliasCategoryMappings",
+    "template": {
+      "data": {},
+      "name": "processReconcileTopicAliasCategoryMappings",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "category-mapping-reconciliation",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2415,43 +2452,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 1,
           "key": "story-post-related-url-projections",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
-        "id": "reconcileTopicAliasCategoryMappings",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "topic-aliases",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcileTopicAliasCategoryMappings",
-    "template": {
-      "data": {},
-      "name": "processReconcileTopicAliasCategoryMappings",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "category-mapping-reconciliation",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2886,7 +2886,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
     "id": "reconcileTopicAliasCategoryMappings",
     "job_name": "processReconcileTopicAliasCategoryMappings",
-    "queue_name": "topic-aliases",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileTopicAliasCategoryMappings",
   },
@@ -2894,7 +2894,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Drain durable RSS item category snapshots",
     "id": "reconcileRssFeedItemCategorySnapshots",
     "job_name": "processReconcileRssFeedItemCategorySnapshots",
-    "queue_name": "rss-feed-item-categories",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileRssFeedItemCategorySnapshots",
   },

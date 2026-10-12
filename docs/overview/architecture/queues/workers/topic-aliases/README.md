@@ -1,6 +1,6 @@
 # Topic Aliases Worker
 
-Source entrypoint: [backend/workers/topic-aliases/README.md](../../../../../../backend/workers/topic-aliases/README.md)
+Source entrypoint: [backend/workers/rss-feed-maintenance/README.md](../../../../../../backend/workers/rss-feed-maintenance/README.md)
 
 Worker package for topic alias update jobs.
 
@@ -13,7 +13,7 @@ post caches and notification-recipient reconciliation, processing 100 IDs at a t
 
 ## Exports
 
-- `topicAliases` - worker instance for the `topic-aliases` queue.
+- `rssFeedMaintenance` - shared worker instance for the `rss-feed-maintenance` queue.
 
 ## Related
 

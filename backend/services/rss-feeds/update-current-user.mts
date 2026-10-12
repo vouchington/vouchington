@@ -15,7 +15,7 @@ import {
 } from './discoverability.mts'
 import { updateRssFeedById, type UpdateRssFeedChanges } from './update.mts'
 import { omitStateChanges, type RssFeedStateChange } from './update-state-helpers.mts'
-import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 
 /**

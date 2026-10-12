@@ -28,7 +28,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
-    "@queues/topic-aliases": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/post-clearance": "workspace:^",

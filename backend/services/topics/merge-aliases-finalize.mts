@@ -1,7 +1,7 @@
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
-import { enqueueBulkTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
+import { enqueueBulkTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import assert from 'http-assert'
 import { getTopicByAny } from './get.mts'
