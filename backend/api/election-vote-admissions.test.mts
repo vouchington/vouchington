@@ -8,6 +8,7 @@ import {
 import { observeOwnedVoteRouteAdmissions } from '../test-helpers/owned-vote-route-admissions.mts'
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
 import { insertTestTopic } from '../test-helpers/entities/topics.mts'
+import { getEnqueuedJobId, readEnqueuedJob } from '../test-helpers/queue-jobs.mts'
 
 class RegisteredWaiters extends Map<string, (end: OwnedVoteJobEnd) => void> {
   registered = Promise.withResolvers<void>()
@@ -19,6 +20,95 @@ class RegisteredWaiters extends Map<string, (end: OwnedVoteJobEnd) => void> {
 }
 
 describe('owned vote-route admission settlement', () => {
+  it.each([
+    { mode: 'single', skipped: null },
+    { mode: 'bulk', skipped: [] },
+  ] as const)(
+    'rejects deduplicated $mode calls as fresh owned admissions',
+    async ({ mode, skipped }) => {
+      const user = await createTestUserDirect()
+      const { voteWeightQueue: queue } = await import('../queues/vote-weight/queues.mts')
+      const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
+      const data = { userId: user.id }
+      const opts = {
+        delay: 300_000,
+        deduplication: { id: randomUUID(), mode: 'simple' as const },
+      }
+      const admittedIds = new Set<string>()
+      let closing = false
+      const enqueue = async () => {
+        const result = await retry.retryTransientEnqueue<unknown>(() => {
+          if (closing) throw new Error('Owned dedup control is closing')
+          return mode === 'single'
+            ? queue.add('processRecalculateUserVoteWeight', data, opts)
+            : queue.addBulk([{ name: 'processRecalculateUserVoteWeight', data, opts }])
+        })
+        for (const job of Array.isArray(result) ? result : [result])
+          if (job !== null) admittedIds.add(getEnqueuedJobId(job))
+        return result
+      }
+      let finish: Awaited<ReturnType<typeof observeOwnedVoteRouteAdmissions>> | undefined
+      let settlement: Promise<void> | undefined
+      let preparation: Promise<void> | undefined
+      let failureAsserted = false
+      onTestFinished(async () => {
+        closing = true
+        const errors: unknown[] = []
+        const [prepared] = await Promise.allSettled([preparation])
+        if (prepared?.status === 'rejected') errors.push(prepared.reason)
+        if (finish) {
+          settlement ??= finish()
+          const [result] = await Promise.allSettled([settlement])
+          if (result?.status === 'rejected' && !failureAsserted) errors.push(result.reason)
+        }
+        for (const id of admittedIds) {
+          try {
+            const job = await queue.getJob(id)
+            if (!job || !('userId' in job.data) || job.data.userId !== user.id)
+              throw new Error(`Cannot resolve owned dedup fixture ${id}`)
+            const state = await job.getState()
+            if (!['delayed', 'waiting', 'prioritized', 'completed', 'failed'].includes(state))
+              throw new Error(`Cannot remove owned dedup fixture in state ${state}`)
+            await job.remove()
+          } catch (err) {
+            errors.push(err)
+          }
+        }
+        if (errors.length)
+          throw new AggregateError(errors, 'Owned dedup control cleanup failed', {
+            cause: errors[0],
+          })
+      })
+      preparation = Promise.resolve().then(async () => {
+        const first = await enqueue()
+        if (closing) throw new Error('Owned dedup control is closing')
+        const seeded = await readEnqueuedJob(queue, Array.isArray(first) ? first[0] : first)
+        expect(seeded.data).toEqual(data)
+        expect(await seeded.getState()).toBe('delayed')
+        if (closing) throw new Error('Owned dedup control is closing')
+        finish = await observeOwnedVoteRouteAdmissions(
+          payload =>
+            typeof payload === 'object' &&
+            payload !== null &&
+            'userId' in payload &&
+            payload.userId === user.id,
+          false,
+        )
+        if (closing) throw new Error('Owned dedup control is closing')
+        finish.requireAdmission('vote-weight')
+        const duplicate = await enqueue()
+        expect(duplicate).toEqual(skipped)
+        settlement = finish()
+        await expect(settlement).rejects.toThrow(
+          'No actual owned admission observed for vote-weight',
+        )
+        failureAsserted = true
+        return undefined
+      })
+      await preparation
+    },
+  )
+
   it.each([0, 10])(
     'retains a runnable public job with priority %s until its actual completion',
     async priority => {

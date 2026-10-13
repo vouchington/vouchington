@@ -88,7 +88,7 @@ export async function observeOwnedVoteRouteAdmissions(
   }
   const settle = async () => {
     const settledAttempts = new Set<Attempt>()
-    const allCalls: Attempt['calls'] = []
+    const admittedKinds = new Set<string>()
     const deadline = AbortSignal.timeout(25_000)
     while (true) {
       const ownedAttempts = attempts.filter(
@@ -98,7 +98,6 @@ export async function observeOwnedVoteRouteAdmissions(
       for (const attempt of ownedAttempts) settledAttempts.add(attempt)
       const admitted = await Promise.allSettled(ownedAttempts.map(attempt => attempt.promise!))
       const calls = ownedAttempts.flatMap(attempt => attempt.calls.filter(ownedCall))
-      allCalls.push(...calls)
       for (const result of admitted) if (result.status === 'rejected') failures.push(result.reason)
       const jobs = new Map<string, Job>()
       const returnedCalls = calls.filter(call => call.result !== undefined)
@@ -107,8 +106,13 @@ export async function observeOwnedVoteRouteAdmissions(
         const result = actual[index]!
         if (result.status === 'rejected') continue // Retried attempt; outer promise owns failure.
         const returned = Array.isArray(result.value) ? result.value : [result.value]
-        for (const job of returned as Array<Job | null>)
-          if (job?.id && owns(job.data)) jobs.set(`${returnedCalls[index]!.kind}:${job.id}`, job)
+        for (const job of returned as Array<Job | null>) {
+          if (job?.id && owns(job.data)) {
+            const kind = returnedCalls[index]!.kind
+            admittedKinds.add(kind)
+            jobs.set(`${kind}:${job.id}`, job)
+          }
+        }
       }
       const observed = await Promise.allSettled(
         [...jobs].map(async ([key, job]) => {
@@ -119,7 +123,7 @@ export async function observeOwnedVoteRouteAdmissions(
       for (const result of observed) if (result.status === 'rejected') failures.push(result.reason)
     }
     for (const kind of requiredKinds)
-      if (!allCalls.some(call => call.kind === kind))
+      if (!admittedKinds.has(kind))
         failures.push(new Error(`No actual owned admission observed for ${kind}`))
   }
   const restoreAll = (callbacks: Array<() => void>) => {
