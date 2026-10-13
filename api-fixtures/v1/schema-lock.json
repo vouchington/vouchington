@@ -1661,19 +1661,19 @@
     },
     "native.comments.ancestors.bounded.shallow": {
       "fixtureIds": ["native.comments.ancestors.bounded.shallow"],
-      "hash": "a89b37cdd9013d5168606329440f6ab65c80048c83ae7b243eda71a159e89376"
+      "hash": "d83a5af3417f6f0174ab52b2ecf028a02c03aa13dee30c44ccdaafadef524720"
     },
     "native.comments.ancestors.permalink": {
       "fixtureIds": ["native.comments.ancestors.permalink"],
-      "hash": "36f6c6e53b5f4d7cea175eb5b5f1a79f16b08295e8fe1bda5f25130e58f18d27"
+      "hash": "2fcad9efc8321c147048ef33695b0fc408315bd3642ab484b82f6efca2b84533"
     },
     "native.comments.descendants.default": {
       "fixtureIds": ["native.comments.descendants.default"],
-      "hash": "cb77affda09a064c18290e97141902d74297e894cf76e0254f0e812fa8334c92"
+      "hash": "952901d47b4bad477541f333b7868c0cb7a143af43f2766f0f04d0edf7f0b695"
     },
     "native.comments.post-detail.default": {
       "fixtureIds": ["native.comments.post-detail.default"],
-      "hash": "7b363d927ab6ea892b5cdf334a7d2d4d4420477978cc4a3b55f1e4e512c9da0d"
+      "hash": "f82acaf2869d31d4f1b303cb89adddc0952a8493a3639d413a2eea159432ee0f"
     },
     "native.communities.automod-flag.dismissal.default": {
       "fixtureIds": ["native.communities.automod-flag.dismissal.default"],

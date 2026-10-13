@@ -6,7 +6,12 @@ export const author = {
   id: user.id,
   username: user.username,
   roles: [],
-  profile_image_id: null,
+  profile_image_id: '00000000-0000-7000-8000-000000000201',
+  profile_image_placement: {
+    image_id: '00000000-0000-7000-8000-000000000201',
+    placement_id: '00000000-0000-7000-8000-000000000301',
+    placement_revision: 2,
+  },
 }
 
 export const otherUser = {
@@ -15,7 +20,12 @@ export const otherUser = {
   id: 'comment-user-2',
   username: 'commenter',
   roles: [],
-  profile_image_id: null,
+  profile_image_id: '00000000-0000-7000-8000-000000000202',
+  profile_image_placement: {
+    image_id: '00000000-0000-7000-8000-000000000202',
+    placement_id: '00000000-0000-7000-8000-000000000302',
+    placement_revision: 3,
+  },
 }
 
 const moderationNulls = {
