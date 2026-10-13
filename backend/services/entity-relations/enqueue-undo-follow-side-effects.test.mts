@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readAllQueueJobs } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
@@ -21,11 +22,11 @@ const muteRelation = getEntityRelationMetadataOrThrow({
   objectType: 'user',
 })
 const deletedPair: DeletedFollowPair = {
-  subjectId: 'follower',
-  objectId: 'followee',
+  subjectId: randomUUID(),
+  objectId: randomUUID(),
   activityPubUndoIdentity: {
-    originalActivityId: 'follow-activity',
-    undoActivityId: 'undo-activity',
+    originalActivityId: randomUUID(),
+    undoActivityId: randomUUID(),
   },
 }
 
@@ -35,12 +36,13 @@ describe('enqueueUndoFollowSideEffects', () => {
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await clearQueues()
   })
 
   afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
     await clearQueues()
   })
@@ -49,7 +51,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(muteRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await ownedActivityJobs()).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
@@ -57,7 +59,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(followRelation, [])
     await settleEnqueues(pendingEnqueues)
 
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await ownedActivityJobs()).toEqual([])
     expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
   })
 
@@ -65,50 +67,56 @@ describe('enqueueUndoFollowSideEffects', () => {
     enqueueUndoFollowSideEffects(followRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
-    const activityPubJobs = await readAllQueueJobs(activitypubDelivery)
+    const activityPubJobs = await ownedActivityJobs()
     expect(activityPubJobs).toHaveLength(1)
     expect(activityPubJobs[0]?.name).toBe('distributeActivity')
     expect(activityPubJobs[0]?.data as DistributeActivityData).toEqual({
-      activityId: 'undo-activity',
+      activityId: deletedPair.activityPubUndoIdentity?.undoActivityId,
       activityType: 'UndoFollow',
-      originalActivityId: 'follow-activity',
-      sourceUserId: 'follower',
-      targetUserId: 'followee',
+      originalActivityId: deletedPair.activityPubUndoIdentity?.originalActivityId,
+      sourceUserId: deletedPair.subjectId,
+      targetUserId: deletedPair.objectId,
     })
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(blueskyJobs).toHaveLength(1)
     expect(blueskyJobs[0]?.name).toBe('reconcileFollow')
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
-      followerUserId: 'follower',
-      followeeUserId: 'followee',
+      followerUserId: deletedPair.subjectId,
+      followeeUserId: deletedPair.objectId,
     })
   })
 
   it('reconciles Bluesky without fabricating an UndoFollow for a legacy unknown identity', async () => {
+    const legacyFollowerId = randomUUID()
     enqueueUndoFollowSideEffects(followRelation, [
       {
-        subjectId: 'legacy-follower',
-        objectId: 'followee',
+        subjectId: legacyFollowerId,
+        objectId: deletedPair.objectId,
         activityPubUndoIdentity: null,
       },
     ])
 
     await settleEnqueues(pendingEnqueues)
-    expect(await readAllQueueJobs(activitypubDelivery)).toEqual([])
+    expect(await ownedActivityJobs(legacyFollowerId)).toEqual([])
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
     expect(blueskyJobs).toHaveLength(1)
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
-      followerUserId: 'legacy-follower',
-      followeeUserId: 'followee',
+      followerUserId: legacyFollowerId,
+      followeeUserId: deletedPair.objectId,
     })
   })
 })
 
 async function clearQueues(): Promise<void> {
-  await activitypubDelivery.obliterate({ force: true })
   await blueskyFollowPropagation.obliterate({ force: true })
+}
+
+async function ownedActivityJobs(sourceUserId = deletedPair.subjectId) {
+  return (await readAllQueueJobs(activitypub)).filter(
+    job => (job.data as DistributeActivityData).sourceUserId === sourceUserId,
+  )
 }
 
 function trackBulkEnqueue(

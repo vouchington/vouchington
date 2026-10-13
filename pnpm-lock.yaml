@@ -768,12 +768,9 @@ importers:
       '@queues/account-lifecycle':
         specifier: workspace:^
         version: link:../queues/account-lifecycle
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../queues/activitypub-delivery
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../queues/activitypub-inbox
+        version: link:../queues/activitypub
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../queues/ai-agents
@@ -1751,9 +1748,9 @@ importers:
       '@queues/account-lifecycle':
         specifier: workspace:^
         version: link:../../queues/account-lifecycle
-      '@queues/activitypub-inbox':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
+        version: link:../../queues/activitypub
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -1814,12 +1811,9 @@ importers:
       '@workers/account-lifecycle':
         specifier: workspace:^
         version: link:../../workers/account-lifecycle
-      '@workers/activitypub-delivery':
+      '@workers/activitypub':
         specifier: workspace:^
-        version: link:../../workers/activitypub-delivery
-      '@workers/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../workers/activitypub-inbox
+        version: link:../../workers/activitypub
       '@workers/admin-imports':
         specifier: workspace:^
         version: link:../../workers/admin-imports
@@ -2699,22 +2693,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/activitypub-delivery:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
-
-  backend/queues/activitypub-inbox:
+  backend/queues/activitypub:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -2731,6 +2710,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3890,9 +3872,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../ap-post-likes
@@ -6305,9 +6287,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../../queues/bluesky-follow-propagation
@@ -8794,12 +8776,9 @@ importers:
       '@queues/account-lifecycle':
         specifier: workspace:^
         version: link:../../queues/account-lifecycle
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
+        version: link:../../queues/activitypub
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
@@ -11529,11 +11508,14 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/activitypub-delivery:
+  backend/workers/activitypub:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@modules/activitypub-inbox-storage-policy':
+        specifier: workspace:^
+        version: link:../../modules/activitypub-inbox-storage-policy
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
@@ -11543,15 +11525,18 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@services/activitypub-delivery':
         specifier: workspace:^
         version: link:../../services/activitypub-delivery
       '@services/ap-actor-keys':
         specifier: workspace:^
         version: link:../../services/ap-actor-keys
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../../services/ap-inbox-activities
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -11562,15 +11547,18 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@services/ap-inbox-activities':
+      '@services/bookmarks':
         specifier: workspace:^
-        version: link:../../services/ap-inbox-activities
+        version: link:../../services/bookmarks
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../../services/remote-actors
+      '@services/route-rate-limits':
+        specifier: workspace:^
+        version: link:../../services/route-rate-limits
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -11580,40 +11568,6 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-
-  backend/workers/activitypub-inbox:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../../modules/activitypub-inbox-storage-policy
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
-      '@services/ap-inbox-activities':
-        specifier: workspace:^
-        version: link:../../services/ap-inbox-activities
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/http-signatures':
-        specifier: workspace:^
-        version: link:../../modules/http-signatures
-      '@services/route-rate-limits':
-        specifier: workspace:^
-        version: link:../../services/route-rate-limits
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/workers/admin-imports:
     dependencies:

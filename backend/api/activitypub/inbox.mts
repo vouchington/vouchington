@@ -11,7 +11,7 @@ import {
   parseInboundActivity,
   recordAndDispatchInboundActivity,
 } from '@services/ap-inbox-activities'
-import { enqueueActivityPubInboxDelivery } from '@queues/activitypub-inbox/enqueues'
+import { enqueueActivityPubInboxDelivery } from '@queues/activitypub/enqueues/inbox'
 import {
   rejectActivityPubInboxCapacity,
   rejectRateLimitedActivityPubDelivery,

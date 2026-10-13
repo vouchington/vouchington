@@ -1,6 +1,6 @@
 # ActivityPub inbox queue
 
-Source entrypoint: [backend/queues/activitypub-inbox/README.md](../../../../../backend/queues/activitypub-inbox/README.md)
+Source entrypoint: [backend/queues/activitypub/README.md](../../../../../backend/queues/activitypub/README.md)
 
 This I/O-capable queue processes durable, unverified inbox envelopes from
 `activitypub_inbox_delivery_work_items`. Processing jobs carry only the delivery UUID and a fencing token. The
@@ -12,7 +12,7 @@ The manual backfill enqueues a separate priority-100 dispatcher that drains exha
 failures in sequential batches of at most 500, awaiting each bulk enqueue before claiming the next
 batch.
 
-The queue is intentionally separate from `activitypub-delivery`, which owns outbound federation.
+Inbound jobs share the `activitypub` queue and worker with outbound federation. Their durable envelope and lease-token contract remains separate from outbound delivery.
 It is an adapter over the
 [service-owned lifecycle](../../services/ap-inbox-activities/README.md#durable-delivery-lifecycle);
 queue processors do not mutate lifecycle timestamps directly.

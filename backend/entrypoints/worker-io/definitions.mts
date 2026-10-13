@@ -14,9 +14,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/post-publication/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'activitypub-inbox',
+    queueName: 'activitypub',
     load: () =>
-      import('@queues/activitypub-inbox/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/activitypub/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'entity-listeners',

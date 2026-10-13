@@ -28,7 +28,7 @@
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/activitypub-delivery": "workspace:^",
+    "@queues/activitypub": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/notifications": "workspace:^",

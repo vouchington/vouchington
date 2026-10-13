@@ -79,6 +79,29 @@ export async function readEnqueuedJob<T>(queue: QueueJobReader<T>, enqueued: unk
   return job
 }
 
+/** Remove only named jobs returned by a test's intercepted real enqueue calls. */
+export async function removeEnqueuedJobs(
+  pending: readonly Promise<unknown>[],
+  name: string,
+): Promise<void> {
+  const results = await Promise.all(pending)
+  const jobs = results.flatMap(result => (Array.isArray(result) ? result : [result]))
+  await Promise.all(
+    jobs
+      .filter((job): job is { name: string; remove: () => Promise<unknown> } =>
+        Boolean(
+          job &&
+          typeof job === 'object' &&
+          'name' in job &&
+          job.name === name &&
+          'remove' in job &&
+          typeof job.remove === 'function',
+        ),
+      )
+      .map(job => job.remove()),
+  )
+}
+
 /**
  * Reads every job on a queue across all five states, for assertions with no enqueue return value to
  * read back by id (an INDIRECT side-effect job, or a bulk enqueue whose result has no single `.id`).

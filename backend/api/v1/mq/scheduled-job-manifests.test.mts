@@ -20,8 +20,8 @@ import {
 const EXPECTED_SCHEDULED_JOBS = [
   'account-lifecycle/account-data-requests-cleanup',
   'account-lifecycle/accountDataRequestRecovery',
-  'activitypub-inbox/activitypub-inbox-recovery',
-  'activitypub-inbox/activitypub-inbox-cleanup',
+  'activitypub/activitypub-inbox-recovery',
+  'activitypub/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',

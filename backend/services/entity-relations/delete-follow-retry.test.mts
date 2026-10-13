@@ -2,9 +2,14 @@ import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vite
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, insertTestLegacyLocalFollow, readAllQueueJobs } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import {
+  createTestUser,
+  insertTestLegacyLocalFollow,
+  readAllQueueJobs,
+  removeEnqueuedJobs,
+} from '@voucha/test-helpers'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -27,18 +32,18 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
   function undoFollowJobsFor(
-    jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+    jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
     sourceUserId: string,
     targetUserId: string,
   ): unknown[] {
@@ -54,7 +59,7 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
   }
 
   function followActivitiesFor(
-    jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+    jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
     sourceUserId: string,
     targetUserId: string,
   ): Array<Extract<DistributeActivityData, { activityType: 'Follow' }>> {
@@ -76,7 +81,7 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(undoFollowJobsFor(jobs, follower.id, followee.id)).toHaveLength(0)
   })
 
@@ -87,14 +92,18 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    const previousUndoCount = undoFollowJobsFor(
+      await readAllQueueJobs(activitypub),
+      follower.id,
+      followee.id,
+    ).length
 
     // Retry the identical unfollow while the relation is already inactive.
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
-    expect(undoFollowJobsFor(jobs, follower.id, followee.id)).toHaveLength(0)
+    const jobs = await readAllQueueJobs(activitypub)
+    expect(undoFollowJobsFor(jobs, follower.id, followee.id)).toHaveLength(previousUndoCount)
   })
 
   it('enqueues an outbound UndoFollow for a relation actually deleted by this call (control)', async () => {
@@ -103,15 +112,14 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    let jobs = await readAllQueueJobs(activitypubDelivery)
+    let jobs = await readAllQueueJobs(activitypub)
     const originalActivityId = followActivitiesFor(jobs, follower.id, followee.id)[0]?.activityId
     expect(originalActivityId).toBeDefined()
-    await activitypubDelivery.obliterate({ force: true })
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    jobs = await readAllQueueJobs(activitypubDelivery)
+    jobs = await readAllQueueJobs(activitypub)
     expect(undoFollowJobsFor(jobs, follower.id, followee.id)).toHaveLength(1)
     const undo = (
       undoFollowJobsFor(jobs, follower.id, followee.id)[0] as {
@@ -130,7 +138,7 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const activityPubJobs = await readAllQueueJobs(activitypubDelivery)
+    const activityPubJobs = await readAllQueueJobs(activitypub)
     expect(undoFollowJobsFor(activityPubJobs, follower.id, followee.id)).toEqual([])
 
     const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)

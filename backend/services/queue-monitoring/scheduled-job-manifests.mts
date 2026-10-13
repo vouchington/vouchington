@@ -1,6 +1,6 @@
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { scheduledJobManifest as accountLifecycle } from '@queues/account-lifecycle/enqueues/schedules'
-import { scheduledJobManifest as activitypubInbox } from '@queues/activitypub-inbox/enqueues/schedules'
+import { scheduledJobManifest as activitypub } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
 import { scheduledJobManifest as bedrockEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { scheduledJobManifest as bloomFilters } from '@queues/bloom-filters/enqueues/schedules'
@@ -31,7 +31,7 @@ import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enq
 
 export const SCHEDULED_JOB_MANIFESTS = [
   accountLifecycle,
-  activitypubInbox,
+  activitypub,
   aiAgents,
   bedrockEmbeddingsBatch,
   bloomFilters,

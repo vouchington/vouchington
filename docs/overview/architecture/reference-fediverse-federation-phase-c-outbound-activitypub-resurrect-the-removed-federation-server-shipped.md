@@ -27,7 +27,7 @@ design choices:
   `dispatchInboundActivity`'s inbound Follow/Undo handling always sets, suppressing the outbound
   distribution enqueue. Verified both at the entity-relations origin-gate in isolation
   (`upsert-origin-gating.test.mts`/`delete-origin-gating.test.mts`) and at the real inbound-receiver
-  entry point (`backend/workers/activitypub-delivery/e2e-round-trip.test.mts`).
+  entry point (`backend/workers/activitypub/__tests__/e2e-round-trip.real-glide.mock.test.mts`).
 - Actor URIs are UUID-based, not username-based — usernames are mutable. **Shipped**:
   `@modules/activitypub-uris` makes `/ap/users/:id` the only actor-identity primitive; `username` usage
   is isolated to `webfinger.mts` as the `acct:` alias.
@@ -69,7 +69,7 @@ forwarding `/.well-known/`, `/ap/`, and `/nodeinfo/` to the backend (C5) → end
 exercising the real discovery-to-write chain in both directions (C6):
 `backend/api/activitypub/e2e-round-trip.test.mts` drives a synthetic remote actor through NodeInfo →
 WebFinger → actor document → a signature-verified inbox POST that writes a real follow/like;
-`backend/workers/activitypub-delivery/e2e-round-trip.test.mts` drives a real local follow/vote through
+`backend/workers/activitypub/__tests__/e2e-round-trip.real-glide.mock.test.mts` drives a real local follow/vote through
 the real queue → delivery worker → a cryptographically verifiable signed outbound request, plus a
 receiver-level loop-prevention check that an inbound remote Follow never itself enqueues outbound
 distribution. The default-false `activitypub-inbox.async_delivery_enabled` flag preserves that inline
@@ -95,7 +95,7 @@ rejections delete the pending row and raw bytes.
 ```mermaid
 flowchart LR
   API[Inbox network-free preflight] --> DB[(activitypub_inbox_delivery_work_items)]
-  DB --> Q[activitypub-inbox]
+  DB --> Q[activitypub]
   Q --> W[Actor fetch and received-time verification]
   W --> D[Sender limit, dedup, dispatch]
   D --> X[Atomic core effect and envelope completion]

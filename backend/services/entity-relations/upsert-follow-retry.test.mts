@@ -7,9 +7,10 @@ import {
   createTestPost,
   createTestUser,
   readAllQueueJobs,
+  removeEnqueuedJobs,
 } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TransactionQuery } from '@data-stores/psql'
 
@@ -32,16 +33,16 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
+    trackBulkEnqueue(activitypub, pendingEnqueues)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
   function followDistributeJobsFor(
-    jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+    jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
     sourceUserId: string,
     targetUserId: string,
   ): unknown[] {
@@ -62,7 +63,7 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    const firstJobs = await readAllQueueJobs(activitypubDelivery)
+    const firstJobs = await readAllQueueJobs(activitypub)
     expect(followDistributeJobsFor(firstJobs, follower.id, followee.id)).toHaveLength(1)
     const firstActivityId = (
       followDistributeJobsFor(firstJobs, follower.id, followee.id)[0] as {
@@ -73,7 +74,7 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     // Retry the identical upsert while the follow is still active.
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    const jobsAfterRetry = await readAllQueueJobs(activitypubDelivery)
+    const jobsAfterRetry = await readAllQueueJobs(activitypub)
     expect(followDistributeJobsFor(jobsAfterRetry, follower.id, followee.id)).toHaveLength(1)
     expect(
       (
@@ -90,7 +91,7 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    const initialJobs = await readAllQueueJobs(activitypubDelivery)
+    const initialJobs = await readAllQueueJobs(activitypub)
     const initialActivityId = (
       followDistributeJobsFor(initialJobs, follower.id, followee.id)[0] as {
         data: DistributeActivityData
@@ -98,16 +99,15 @@ describe('upsertEntityRelation follow-upsert retry idempotency', () => {
     ).data.activityId
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
-    expect(followDistributeJobsFor(jobs, follower.id, followee.id)).toHaveLength(1)
+    const jobs = await readAllQueueJobs(activitypub)
+    expect(followDistributeJobsFor(jobs, follower.id, followee.id)).toHaveLength(2)
     expect(
       (
-        followDistributeJobsFor(jobs, follower.id, followee.id)[0] as {
+        followDistributeJobsFor(jobs, follower.id, followee.id)[1] as {
           data: DistributeActivityData
         }
       ).data.activityId,

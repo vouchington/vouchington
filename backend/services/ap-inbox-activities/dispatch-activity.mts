@@ -4,7 +4,7 @@ import {
   upsertEntityRelation,
 } from '@services/entity-relations'
 import { recordLike, undoLike } from '@services/ap-post-likes'
-import { enqueueDeliverAcceptActivity } from '@queues/activitypub-delivery/enqueues'
+import { enqueueDeliverAcceptActivity } from '@queues/activitypub/enqueues/delivery'
 import type { RemoteActorRow } from '@services/remote-actors'
 import type { InboundActivity } from './parse-activity.mts'
 import type { QueryOptions } from '@data-stores/psql'

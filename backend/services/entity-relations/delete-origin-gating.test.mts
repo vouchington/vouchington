@@ -2,9 +2,9 @@ import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vite
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -29,18 +29,18 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
   function hasUndoFollowDistributeJobFor(
-    jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+    jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
     targetUserId: string,
   ): boolean {
     return jobs.some(
@@ -56,14 +56,13 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee], {
       origin: 'remote',
     })
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(hasUndoFollowDistributeJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -71,12 +70,11 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await activitypubDelivery.obliterate({ force: true })
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(hasUndoFollowDistributeJobFor(jobs, followee.id)).toBe(true)
   })
 
