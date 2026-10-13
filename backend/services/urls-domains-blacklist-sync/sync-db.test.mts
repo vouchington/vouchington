@@ -10,7 +10,7 @@ import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
 import { getUrlHostnameById } from '../urls-hostnames/get.mts'
-import { write } from '@data-stores/psql'
+import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
@@ -71,11 +71,7 @@ describe('sync-db', () => {
     const hostnameId = await resolveEmailDomainHostnameId(`reader@email-blocked-${suffix}.com`)
     if (!hostnameId) throw new Error('Expected email blocklist hostname')
     const bucketDays = 30000 + Math.floor(Math.random() * 1000)
-    await write(
-      `/* testEmailBlocklistCrawl */
-      UPDATE url_hostnames SET age_threshold_days = $1 WHERE id = $2`,
-      [bucketDays, hostnameId],
-    )
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
     const candidates = await getCrawlHostnameCandidates(
       {

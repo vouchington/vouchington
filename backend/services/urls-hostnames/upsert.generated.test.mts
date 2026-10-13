@@ -5,9 +5,8 @@ import { getLocalHostnamePolicy } from './policies.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
 import { addUrl } from '../urls/upsert.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUser } from '@voucha/test-helpers'
+import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -103,8 +102,7 @@ describe('upsert.generated', () => {
     const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
     if (!hostnameId) throw new Error('Expected email domain hostname')
     const bucketDays = 31000 + Math.floor(Math.random() * 1000)
-    await write(sql`/* testEmailOnlyHostnameCrawl */
-      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
     const candidates = await getCrawlHostnameCandidates(
@@ -126,8 +124,7 @@ describe('upsert.generated', () => {
     const hostnameId = (await upsertUrlHostnames(staff.id, [domain])).get(domain)
     if (!hostnameId) throw new Error('Expected staff hostname')
     const bucketDays = 29000 + Math.floor(Math.random() * 1000)
-    await write(sql`/* testStaffHostnameWithoutUrl */
-      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
     const candidates = await getCrawlHostnameCandidates(
@@ -148,8 +145,7 @@ describe('upsert.generated', () => {
     const hostnameId = await resolveEmailDomainHostnameId(`writer@${domain}`)
     if (!hostnameId) throw new Error('Expected email domain hostname')
     const bucketDays = 32000 + Math.floor(Math.random() * 700)
-    await write(sql`/* testEmailHostnamePromotion */
-      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     await addUrl(null, `https://${domain}/first`)
 
     const firstIntroduction = (await getUrlHostnameById(hostnameId))?.publicly_introduced_at

@@ -11,7 +11,6 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
-import { currentUserCanFilterHostnameModeration } from '../../urls-hostnames/authorization.mts'
 
 export async function searchCommunityListItems(
   communityId: string,
@@ -72,10 +71,7 @@ export async function searchCommunityListItems(
         })
     query.append(sql` AND `).append(eligibility)
   }
-  if (
-    itemType === 'url_hostname' &&
-    !currentUserCanFilterHostnameModeration(options?.currentUser)
-  ) {
+  if (itemType === 'url_hostname' && !options?.currentUser?.roles.includes('administrator')) {
     query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL`)
   }
 
@@ -160,7 +156,7 @@ export async function getCommunityListItemCounts(
         JOIN url_hostnames candidate_hostname ON candidate_hostname.id = list_item.url_hostname_id
         WHERE list_item.community_id = ${communityId}
           AND list_item.removed_at IS NULL`)
-      if (!currentUserCanFilterHostnameModeration(options?.currentUser)) {
+      if (!options?.currentUser?.roles.includes('administrator')) {
         query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL`)
       }
     } else {
