@@ -1,5 +1,6 @@
-import { write, read } from '@data-stores/psql'
+import { write, read, registerPostCommitAction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { invalidate } from '@services/entity-cache/invalidate'
 
 export type HostnameProvenance = 'public' | 'private_email'
 
@@ -48,23 +49,27 @@ export const upsertUrlHostnames = async (
   // Filter: only insert missing hostnames
   const missingHostnames = normalizedHostnames.filter(hostname => !existingMap.has(hostname))
 
+  let promotedRows: Array<{ id: string; hostname: string }> = []
   if (provenance === 'public' && existingMap.size > 0) {
-    await write(
+    const result = await write<{ id: string; hostname: string }>(
       `/* upsertUrlHostnames:promotePublic */
       UPDATE url_hostnames
       SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
-      WHERE id = ANY($1::uuid[]) AND publicly_introduced_at IS NULL`,
+      WHERE id = ANY($1::uuid[]) AND publicly_introduced_at IS NULL
+      RETURNING id, hostname`,
       [[...existingMap.values()]],
       options,
     )
+    promotedRows = result.rows
   }
 
   if (missingHostnames.length === 0) {
+    await invalidateChangedHostnames(promotedRows, options)
     return existingMap // All exist, skip write
   }
 
   // Write: insert only new hostnames (ON CONFLICT as safety net for replica lag/race conditions)
-  const { rows: newRows } = await write(
+  const { rows: newRows } = await write<{ id: string; hostname: string; is_blocked: boolean }>(
     `/* upsertUrlHostnames */
     WITH input(hostname) AS (
       SELECT unnest($1::text[])
@@ -74,8 +79,14 @@ export const upsertUrlHostnames = async (
         hostname,
         is_blocked,
         REPLACE(REPLACE(REPLACE(hostname, chr(92), chr(92) || chr(92)), '%', chr(92) || '%'), '_', chr(92) || '_') AS hostname_like
-      FROM url_hostnames
-      WHERE is_blocked
+      FROM url_hostnames host
+      WHERE host.is_blocked
+        AND EXISTS (
+          SELECT 1 FROM url_hostname_blocks parent_block
+          WHERE parent_block.url_hostname_id = host.id
+            AND parent_block.lifted_at IS NULL
+            AND parent_block.domain_blocklist_source_id IS NULL
+        )
     ),
     inherited AS (
       SELECT
@@ -138,5 +149,19 @@ export const upsertUrlHostnames = async (
 
   // Merge existing and new
   newRows.forEach(row => existingMap.set(row.hostname, row.id))
+  await invalidateChangedHostnames([...promotedRows, ...newRows], options)
   return existingMap
+}
+
+async function invalidateChangedHostnames(
+  changed: Array<{ id: string; hostname: string }>,
+  options: QueryOptions,
+): Promise<void> {
+  if (changed.length === 0) return
+  const action = () => invalidate.url_hostnames(...changed)
+  if (options.query || options.client) {
+    await withTransactionOptions(options, async query => registerPostCommitAction(query, action))
+    return
+  }
+  await action()
 }

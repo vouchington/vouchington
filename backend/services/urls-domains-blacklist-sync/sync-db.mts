@@ -16,10 +16,13 @@ import {
 } from './sync-bloom.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
+import {
+  ADDED_DOMAINS_TABLE,
+  REMOVED_DOMAINS_TABLE,
+  invalidateChangedHostnameCaches,
+} from './sync-cache.mts'
 const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
 const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'
-const ADDED_DOMAINS_TABLE = 'tmp_domain_blacklist_added_domains'
-const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
 async function* generateDomainCsvRows(response: Response): AsyncGenerator<string> {
   for await (const domain of readNormalizedDomains(response)) {
     yield `"${domain.replaceAll('"', '""')}"\n`
@@ -38,6 +41,7 @@ export async function syncDomainsWithDatabase(
     await using transaction = await beginTransaction({ client })
     result = await applyDesiredDomains(transaction, sourceId, sourceType)
     await transaction.commit()
+    await invalidateChangedHostnameCaches(client).catch(onError)
   } finally {
     await dropSyncTempTables(client).catch(onError)
     client.release()
@@ -93,7 +97,7 @@ async function materializeDomainDiff(
 ): Promise<void> {
   await query(
     `/* syncDomainsWithDatabase */
-      CREATE TEMP TABLE ${ADDED_DOMAINS_TABLE} ON COMMIT DROP
+      CREATE TEMP TABLE ${ADDED_DOMAINS_TABLE}
       AS
       SELECT n.domain
       FROM ${NEW_DOMAINS_TABLE} n
@@ -105,7 +109,7 @@ async function materializeDomainDiff(
   )
   await query(
     `/* syncDomainsWithDatabase */
-      CREATE TEMP TABLE ${REMOVED_DOMAINS_TABLE} ON COMMIT DROP
+      CREATE TEMP TABLE ${REMOVED_DOMAINS_TABLE}
       AS
       SELECT d.domain
       FROM blocklisted_domains d
@@ -115,6 +119,8 @@ async function materializeDomainDiff(
     `,
     [sourceId],
   )
+  await query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${ADDED_DOMAINS_TABLE} (domain)`)
+  await query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${REMOVED_DOMAINS_TABLE} (domain)`)
 }
 async function applyPreparedDomainDiff(
   query: TransactionQuery,

@@ -1,6 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { copyrightSubmissionPurpose } from '@services/copyright-notices/submissions'
+import { upsertCopyrightStorageObjectId } from '@services/copyright-notices/storage-objects'
 import { upsertMediaTypes } from '@services/urls/media-types'
 import { createHash } from 'node:crypto'
 import { seedUuid } from './common.mts'
@@ -18,9 +19,20 @@ export async function seedBlocklistedDomains(): Promise<void> {
     ON CONFLICT (name) DO NOTHING`,
   )
   await transaction(
-    `/* seedExplainData */ INSERT INTO blocklisted_domains (source_id, domain)
-    SELECT source.id, 'seed-blocked-' || n || '.example.net'
-    FROM domain_blocklist_sources source, generate_series(0, $1::int - 1) AS n
+    `/* seedExplainData */ INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    SELECT 'seed-blocked-' || n || '.example.net', CURRENT_TIMESTAMP
+    FROM generate_series(0, $1::int - 1) AS n
+    ON CONFLICT (hostname) DO UPDATE SET
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
+    WHERE url_hostnames.publicly_introduced_at IS NULL`,
+    [BLOCKLISTED_DOMAIN_SEED_COUNT],
+  )
+  await transaction(
+    `/* seedExplainData */ INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+    SELECT source.id, hostname.hostname, hostname.id
+    FROM domain_blocklist_sources source
+    CROSS JOIN generate_series(0, $1::int - 1) AS n
+    JOIN url_hostnames hostname ON hostname.hostname = 'seed-blocked-' || n || '.example.net'
     WHERE source.name = 'seed-explain-url-blocklist'
     ON CONFLICT DO NOTHING`,
     [BLOCKLISTED_DOMAIN_SEED_COUNT],
@@ -54,6 +66,10 @@ export async function seedCopyrightStaffEvidence(): Promise<void> {
   if (!mediaTypeId) throw new Error('Unable to seed evidence media type')
   const evidenceBytes = Buffer.from('seed-explain-copyright-evidence')
   await using transaction = await beginTransaction()
+  const storageObjectId = await upsertCopyrightStorageObjectId(
+    'seed-explain-copyright-evidence',
+    transaction,
+  )
   await transaction(
     `/* seedExplainCopyrightEvidence:submission */ INSERT INTO copyright_notice_submissions
        (id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext)
@@ -63,12 +79,12 @@ export async function seedCopyrightStaffEvidence(): Promise<void> {
   )
   await transaction(
     `/* seedExplainCopyrightEvidence:artifact */ INSERT INTO copyright_notice_evidence_artifacts
-       (copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size)
+       (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (copyright_notice_submission_id, storage_key) DO NOTHING`,
+     ON CONFLICT (copyright_notice_submission_id, storage_object_id) DO NOTHING`,
     [
       submissionId,
-      'seed-explain-copyright-evidence',
+      storageObjectId,
       createHash('sha256').update(evidenceBytes).digest(),
       mediaTypeId,
       evidenceBytes.length,

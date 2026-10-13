@@ -5,6 +5,9 @@ import { getLocalHostnamePolicy } from './policies.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
 import { addUrl } from '../urls/upsert.mts'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
+import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
@@ -165,5 +168,38 @@ describe('upsert.generated', () => {
       10,
     )
     expect(candidates.some(row => row.id === hostnameId)).toBe(true)
+  })
+
+  it('evicts a cached private hostname after public URL promotion', async () => {
+    const domain = `email-cached-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+    await caches.url_hostnames.set(domain, privateHostname)
+
+    await addUrl(null, `https://${domain}/first`)
+
+    for (const key of [hostnameId, domain]) {
+      const hostname = await getUrlHostnameByAnyCached(key)
+      expect(hostname?.id).toBe(hostnameId)
+      expect(hostname?.publicly_introduced_at).toBeTruthy()
+    }
+  })
+
+  it('evicts a promoted hostname only after its transaction commits', async () => {
+    const domain = `email-transaction-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+
+    await using transaction = await beginTransaction()
+    await upsertUrlHostnames(null, [domain], { query: transaction })
+    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
+    await transaction.commit()
+
+    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeTruthy()
   })
 })

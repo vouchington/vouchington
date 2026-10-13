@@ -10510,6 +10510,9 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -10541,6 +10544,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist

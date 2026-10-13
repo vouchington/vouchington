@@ -2,10 +2,12 @@ import {
   beginTransaction,
   write,
   read,
+  registerPostCommitAction,
   withTransactionOptions,
   type QueryOptions,
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { invalidateSourceHostnameCaches } from './source-cache.mts'
 import {
   BLACKLISTS,
   type DomainBlacklistType,
@@ -40,6 +42,16 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
     options,
   )
 
+  const changedTypes = await read<{ id: string }>(
+    sql`/* upsertBlacklistSources:changedTypes */
+      SELECT target.id
+      FROM unnest(${types}::domain_blocklist_types[], ${names}::text[]) AS input(type, name)
+      JOIN domain_blocklist_sources target ON target.name = input.name
+      WHERE target.type IS DISTINCT FROM input.type
+    `,
+    options,
+  )
+
   await write(
     sql`/* upsertBlacklistSources */
     WITH input AS (
@@ -65,6 +77,11 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
   `,
     options,
   )
+  if (changedTypes.rows.length > 0) {
+    registerPostCommitAction(options.query!, () =>
+      invalidateSourceHostnameCaches(changedTypes.rows.map(row => row.id)),
+    )
+  }
 }
 
 export const getAllBlacklistSources = async (): Promise<

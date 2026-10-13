@@ -2,6 +2,7 @@ import { expect, it, describe } from 'vitest'
 import {
   countBlacklistEntriesBySource,
   createTestBlacklistSource,
+  deleteTestBlacklistSource,
   getTestHostnameRow,
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
@@ -10,6 +11,8 @@ import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
 import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
@@ -84,6 +87,38 @@ describe('sync-db', () => {
       10,
     )
     expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+  })
+
+  it('evicts cached hostname policy after feed adds and removes a block', async () => {
+    const suffix = crypto.randomUUID()
+    const domain = `sync-cache-${suffix}.example.com`
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `sync-cache-${randomSourceSuffix()}`,
+      url: 'https://example.com/sync-cache.txt',
+    })
+    try {
+      const unblocked = await getUrlHostnameByAnyCached(hostnameId)
+      expect(unblocked?.is_blocked).toBe(false)
+      await caches.url_hostnames.set(hostnameId, unblocked)
+      await caches.url_hostnames.set(domain, unblocked)
+
+      await syncDomainsWithDatabase(sourceId, new Response(`${domain}\n`))
+      for (const key of [hostnameId, domain]) {
+        expect((await getUrlHostnameByAnyCached(key))?.is_blocked).toBe(true)
+      }
+
+      const blocked = await getUrlHostnameByAnyCached(hostnameId)
+      await caches.url_hostnames.set(hostnameId, blocked)
+      await caches.url_hostnames.set(domain, blocked)
+      await syncDomainsWithDatabase(sourceId, new Response(''))
+      for (const key of [hostnameId, domain]) {
+        expect((await getUrlHostnameByAnyCached(key))?.is_blocked).toBe(false)
+      }
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
   })
 
   it.each(['url', 'email'] as const)(
