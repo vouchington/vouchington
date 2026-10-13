@@ -265,7 +265,7 @@
     "@services/ap-post-likes": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "@types/supertest": "^7.2.1",
     "@voucha/mcp": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
