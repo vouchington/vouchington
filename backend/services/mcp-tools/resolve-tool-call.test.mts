@@ -64,6 +64,34 @@ describe('authorizeMcpTool', () => {
     })
   })
 
+  it('checks suspension before role, plan, and scopes', () => {
+    const suspended = { ...user, suspended: true, membership_plan: 'plus' as const }
+    const closed = fixtureTool(
+      'suspended_closed_fixture',
+      { plan: 'plus', requiredScopes: { mcp: ['cards:write'] } },
+      { administrator: true },
+    )
+    const open = fixtureTool('suspended_open_fixture', {
+      suspendedAccess: true,
+      requiredScopes: { mcp: ['cards:write'] },
+    })
+
+    expect(authorizeMcpTool(closed, suspended, ['cards:write'], USER_MCP_SERVER_CONFIG)).toEqual({
+      status: 'suspended',
+    })
+    expect(authorizeMcpTool(open, suspended, [], USER_MCP_SERVER_CONFIG)).toEqual({
+      status: 'insufficient_scope',
+      requiredScopes: ['cards:write'],
+    })
+    expect(authorizeMcpTool(open, suspended, ['cards:write'], USER_MCP_SERVER_CONFIG)).toEqual({
+      status: 'allowed',
+      tool: open,
+    })
+    expect(authorizeMcpTool(closed, user, [], USER_MCP_SERVER_CONFIG)).toEqual({
+      status: 'role_denied',
+    })
+  })
+
   it('checks role, plan and the copyright switch before exact scopes', () => {
     const tool = fixtureTool(
       'copyright_gate_fixture',

@@ -26,6 +26,7 @@ export const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
 
 type UserForCall = BasicUser & {
   membership_plan: 'plus' | 'pro' | null
+  suspended?: boolean
 }
 
 export async function callMcpTool(
@@ -117,6 +118,8 @@ function toMcpToolCallError(
   switch (resolution.status) {
     case 'not_found':
       return new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`)
+    case 'suspended':
+      return new McpError(ErrorCode.InvalidRequest, 'suspended')
     case 'role_denied':
       return new McpError(ErrorCode.InvalidRequest, `Tool not allowed for your role: ${toolName}`)
     case 'plan_denied':

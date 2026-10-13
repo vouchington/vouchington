@@ -257,7 +257,10 @@ gains no screen. Native MCP adoption is tracked by
 through the generated scope catalogue, so the web and native credential pickers, which filter that
 catalogue and resolve its description keys through their localisation catalogues, list them through
 the existing credential-picker flow. Each tool's own-case reads are narrower than the member REST
-list, and account suspension appeals remain a web flow.
+list. A suspended Plus or Pro member can call `create_moderation_appeal` and
+`read_my_moderation_appeals` on the user MCP server and no other user MCP tool. A suspended member
+without a current paid plan cannot use MCP. Account suspension appeals remain a web flow. No
+native client change.
 
 ## Member-chat transcript handoff
 

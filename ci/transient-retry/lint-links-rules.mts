@@ -2,7 +2,10 @@ import {
   getGithubActionsStepGroupSlices,
   terminalFailedGithubActionsStepLog,
 } from './github-actions-log.mts'
-import { isGithubReleasesDownloadFlake } from './github-releases-download-fingerprint.mts'
+import {
+  hasCurlGithubReleaseTransportFailure,
+  isGithubReleasesDownloadFlake,
+} from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
 
 const lintLinksJobName = 'lint-links'
@@ -79,11 +82,7 @@ function hasSetupLycheeReleasesDownloadFlake(log: string): boolean {
 
   if (!setupLog.includes('Process completed with exit code 1.')) return false
 
-  const curlFlake =
-    setupLog.includes('curl: (28)') ||
-    setupLog.includes('curl: (56)') ||
-    /curl: \(22\).* (?:000|5\d\d)/.test(setupLog)
-  if (curlFlake) return true
+  if (hasCurlGithubReleaseTransportFailure(setupLog)) return true
 
   const downloadFailedIndex = setupLog.lastIndexOf('DOWNLOAD FAILED: ')
   if (downloadFailedIndex === -1) return false

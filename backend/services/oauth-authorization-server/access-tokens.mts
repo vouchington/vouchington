@@ -39,12 +39,6 @@ export async function validateOAuthAccessToken(
            SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
          )
        )
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_suspensions AS suspension
-         WHERE suspension.user_id = oauth_grant.user_id
-           AND suspension.lifted_at IS NULL
-       )
        AND access.resource = $2
      RETURNING client.id AS oauth_client_id, client.client_id, client.owner_user_id,
        oauth_grant.id AS grant_id, oauth_grant.user_id, access.resource, access.scopes::text[] AS scopes, access.expires_at`,

@@ -9,6 +9,7 @@ type UserForListing = {
   id: string
   roles: readonly string[]
   membership_plan: 'plus' | 'pro' | null
+  suspended?: boolean
 }
 
 type UserForMcpContext = {
@@ -20,7 +21,10 @@ type UserForMcpContext = {
   membership_plan?: 'plus' | 'pro' | null
 }
 
-export function buildMcpContextUser(owner: UserForMcpContext): {
+export function buildMcpContextUser(
+  owner: UserForMcpContext,
+  suspended: boolean,
+): {
   __entity_type: 'user'
   account_type: import('@services/users/types').BasicUser['account_type']
   id: string
@@ -28,6 +32,7 @@ export function buildMcpContextUser(owner: UserForMcpContext): {
   roles: readonly string[]
   profile_image_id?: string
   membership_plan: 'plus' | 'pro' | null
+  suspended: boolean
 } {
   return {
     __entity_type: 'user',
@@ -37,6 +42,7 @@ export function buildMcpContextUser(owner: UserForMcpContext): {
     roles: owner.roles,
     profile_image_id: owner.profile_image_id ?? undefined,
     membership_plan: (owner.membership_plan ?? null) as 'plus' | 'pro' | null,
+    suspended,
   }
 }
 

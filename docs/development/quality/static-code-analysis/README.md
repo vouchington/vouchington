@@ -456,8 +456,8 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists enable the configured TypeScript, Unicorn, and Import rules. Keep
-`typescript`, `unicorn`, and `import` present in every inherited-config copy; `structured-config-policy` enforces parity.
+The root and nested plugin lists enable the configured TypeScript, Unicorn, Import, and Node rules. Keep
+`typescript`, `unicorn`, `import`, and `node` present in every inherited-config copy; `structured-config-policy` enforces parity.
 [`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
 checks every concrete tracked config against the installed analyzer, including inherited rules and
 overrides and disabled rule declarations, so another missing builtin plugin fails CI.
@@ -839,6 +839,15 @@ the rules.
 explicit radix. A full-repo scan on 2026-10-03 found no existing violations. The
 [`radix-oxlint` fixture](../../../../static-code-analysis/oxlint-plugin/radix-oxlint.test.mts)
 asserts that severity and rejects a missing radix while accepting decimal and hexadecimal calls.
+
+`node/no-path-concat` is enforced at error level in the same root config. `__dirname` and
+`__filename` must be joined with `path.join` or `path.resolve`. A full-repo scan on 2026-10-12
+found no existing violations. Nested Oxlint configs restate the root `plugins` array, including
+`node`, because `extends` does not inherit plugins. Enabling that plugin also turns on the
+suspicious-category `node/no-exports-assign` rule; the same scan found no `exports` assignments.
+The [`node-path-concat-oxlint` fixture](../../../../static-code-analysis/oxlint-plugin/node-path-concat-oxlint.test.mts)
+rejects separator concatenation, including template literals, and accepts `path.join` plus an
+extension suffix such as `__filename + '.map'`.
 
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**`
 under [`../.oxlintrc.json`](../../../../.oxlintrc.json). Its four test-helper/test-file exclusions keep

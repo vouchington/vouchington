@@ -32,6 +32,11 @@ return (
 )
 ```
 
+Gitleaks and setup-lychee already share the real curl predicate
+`hasCurlGithubReleaseTransportFailure()` in `github-releases-download-fingerprint.mts`.
+Broaden that helper when a new `ci/install-github-release.sh` curl variant shows up.
+The sketch above is only the shape of an anchored OR; it is not a second copy of the curl checks.
+
 For multi-error logs (for example, an infrastructure apply with several failing resources), use
 `errors.every(isKnownTransientError)` with a per-block predicate that ORs the action
 variants — that way a genuine non-transient error mixed into the set is never silently

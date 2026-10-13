@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
     'not_found',
     'role_denied',
     'plan_denied',
+    'suspended',
     'scopes_undeclared',
     'insufficient_scope',
     'rate_limited'

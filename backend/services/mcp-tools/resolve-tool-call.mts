@@ -15,10 +15,12 @@ type UserForToolAuthorization = {
   id: string
   roles: readonly string[]
   membership_plan: 'plus' | 'pro' | null
+  suspended?: boolean
 }
 
 export type McpToolAuthorization =
   | { status: 'not_found' }
+  | { status: 'suspended' }
   | { status: 'role_denied' }
   | { status: 'plan_denied' }
   | { status: 'scopes_undeclared' }
@@ -27,7 +29,7 @@ export type McpToolAuthorization =
 
 export type McpToolCallResolution = { status: 'not_found' } | McpToolAuthorization
 
-// The single ordered policy for listing and calling MCP tools: role, then plan, then scopes.
+// The single ordered policy for listing and calling MCP tools: suspension, then role, plan, and scopes.
 export function authorizeMcpTool(
   tool: Tool,
   user: UserForToolAuthorization,
@@ -35,6 +37,7 @@ export function authorizeMcpTool(
   config: McpServerConfig,
   copyrightDecisionToolsEnabled = false,
 ): McpToolAuthorization {
+  if (user.suspended === true && tool.meta?.suspendedAccess !== true) return { status: 'suspended' }
   if (!isToolAllowedForUser(tool, user)) return { status: 'role_denied' }
   if (!isToolAllowedForPlan(tool, user)) return { status: 'plan_denied' }
   if (tool.meta?.switch === 'copyright.mcpDecisionTools' && !copyrightDecisionToolsEnabled) {

@@ -54,6 +54,7 @@ export function createMergedTool(
     JSON.stringify({
       scopes: tool.meta?.requiredScopes?.mcp,
       plan: tool.meta?.plan ?? 'free',
+      suspendedAccess: tool.meta?.suspendedAccess === true,
       // ast-grep-ignore: no-roles-outside-services -- Declared tool gates, not user roles; authorization stays in mcp-tools services.
       roles: tool.roles ?? null,
       annotations: tool.meta?.annotations,

@@ -11,7 +11,18 @@ on:
         required: false
         type: boolean
         default: false
+      diagnostics:
+        description: 'Stream Vitest file progress and backend resource samples'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      diagnostics:
+        description: 'Stream Vitest file progress and backend resource samples'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -117,7 +128,7 @@ jobs:
           retention-days: 1
           overwrite: true
           if-no-files-found: error
-      # File-progress lines and resource samples share this step's streamed log. A runner
+      # Opt-in file progress and resource samples share this step's streamed log. A runner
       # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
       - name: Run backend tests
         env:
@@ -126,7 +137,7 @@ jobs:
           CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
           CI_PROJECT: backend-unit
           VITEST_CI_REPORTERS: run
-          VITEST_FILE_PROGRESS: '1'
+          VITEST_DIAGNOSTICS: ${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
@@ -195,9 +206,11 @@ jobs:
             return 0
           }
           trap stop_samplers EXIT
-          start_sampler sample_runner_resources 15
-          start_sampler sample_postgres_waits 0.5
-          start_sampler sample_runner_pressure 2
+          if [ "$VITEST_DIAGNOSTICS" = 1 ]; then
+            start_sampler sample_runner_resources 15
+            start_sampler sample_postgres_waits 0.5
+            start_sampler sample_runner_pressure 2
+          fi
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog

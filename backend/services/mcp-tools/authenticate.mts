@@ -4,6 +4,7 @@ import {
   validateOAuthAccessToken,
 } from '@services/oauth-authorization-server/access-tokens'
 import { getPrivateUserByAny, type PrivateUser } from '@services/users'
+import { getLoadedMembershipPlan } from '@services/users/loaded-membership-plan'
 import type { ApiScope } from '@modules/scopes'
 import type { McpServerConfig } from './config.mts'
 
@@ -31,6 +32,8 @@ export type McpBearerAuthentication =
       status: 'authenticated'
       owner: PrivateUser
       scopes: ApiScope[]
+      // True only for a suspended Plus or Pro member on the user server.
+      suspended: boolean
     })
 
 // One authenticator for both MCP routes. The token prefix picks the verifier, so an OAuth token is
@@ -45,9 +48,23 @@ export async function authenticateMcpBearer(
   if (!rawToken) return { status: 'missing' }
   const verified = await verifyMcpBearerToken(rawToken, config)
   if (!verified) return { status: 'invalid' }
-  const owner = await getPrivateUserByAny(verified.userId)
-  if (!owner || owner.suspended_at) return { status: 'invalid' }
-  return { status: 'authenticated', owner, scopes: verified.scopes, ...verified.credential }
+  // Suspension and plan are the authorization decision. The primary read keeps a replica
+  // from serving a just-suspended owner or a plan that has already lapsed.
+  const owner = await getPrivateUserByAny(verified.userId, { readOnly: false })
+  if (!owner) return { status: 'invalid' }
+  // Suspension is decided here for OAuth and API keys, on every request. Access-token validation
+  // and refresh rotation do not look at it. A new authorization still rejects a suspended user.
+  const suspended = owner.suspended_at != null
+  const plan = getLoadedMembershipPlan(owner)
+  const paying = plan === 'plus' || plan === 'pro'
+  if (suspended && !(config.audience === 'user' && paying)) return { status: 'invalid' }
+  return {
+    status: 'authenticated',
+    owner,
+    scopes: verified.scopes,
+    suspended,
+    ...verified.credential,
+  }
 }
 
 async function verifyMcpBearerToken(

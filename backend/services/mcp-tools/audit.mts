@@ -16,6 +16,7 @@ export type McpCallAuditOutcome =
   | 'not_found'
   | 'role_denied'
   | 'plan_denied'
+  | 'suspended'
   | 'scopes_undeclared'
   | 'insufficient_scope'
   | 'rate_limited'

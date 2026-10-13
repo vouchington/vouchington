@@ -77,7 +77,7 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
     expect(response.headers['www-authenticate']).toBe(INVALID_TOKEN_CHALLENGE)
   })
 
-  it('rejects a token whose owner is suspended', async () => {
+  it('rejects a token whose suspended owner has no paid plan', async () => {
     const suspended = await createTestUser()
     const tokens = await issueTestOAuthTokens(suspended)
     await suspendTestUser(suspended.id)
