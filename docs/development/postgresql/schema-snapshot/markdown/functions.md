@@ -1228,6 +1228,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_updated_at()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_url_hostname_crawl_policy_changed_at`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)`
 
 ```sql
