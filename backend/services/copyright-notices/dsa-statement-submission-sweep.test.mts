@@ -1,3 +1,9 @@
+import {
+  createTestDsaApprovalWithdrawalScene,
+  readTestDsaReceiptApproval,
+} from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
+import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
+import { withdrawCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createTestCopyrightImageFixture,
@@ -149,5 +155,45 @@ describe('DSA statement submission materialization', () => {
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toBe(0)
+  })
+
+  it('materializes an existing restriction after its receipt approval is withdrawn before the first sweep', async () => {
+    const scene = await createTestDsaApprovalWithdrawalScene()
+    await recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
+      text: 'Private EU statement.',
+      publicExplanation: 'Copyright was shown.',
+      outcome: 'restrict',
+      targets: scene.targets,
+    })
+    const restrictionId = await restrictionIdFor(scene.noticeId)
+    const foreign = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    expect(await readTestDsaReceiptApproval(scene.noticeId)).toEqual({
+      approval_id: scene.approvalId,
+      withdrawal_id: null,
+    })
+    expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
+    const withdrawal = await withdrawCopyrightJurisdictionPolicyApproval(
+      scene.administrator,
+      scene.approvalId,
+    )
+    expect(await readTestDsaReceiptApproval(scene.noticeId)).toEqual({
+      approval_id: scene.approvalId,
+      withdrawal_id: withdrawal.id,
+    })
+    expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
+    const from = new Date('2026-07-01T00:00:00.000Z')
+    const scope = { restrictionIds: [restrictionId] }
+    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(1)
+    expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(1)
+    const submission = await readTestDsaSubmissionForRestriction(restrictionId)
+    expect(submission.payload?.puid).toBe(restrictionId)
+    expect(submission.failed_at).toBeNull()
+    expect(submission.failure_code).toBeNull()
+    expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(0)
+    expect(await readTestDsaSubmissionForRestriction(restrictionId)).toEqual(submission)
+    expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
   })
 })
