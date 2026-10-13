@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getTestOAuthAccountCiphertexts } from '@voucha/test-helpers'
 import { getTestOAuthAccountEmailDomainHostnameId } from '@voucha/test-helpers/entities/oauth-accounts'
+import { read } from '@data-stores/psql'
 import { getOAuthAccountByProviderUserId } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
@@ -94,12 +95,13 @@ describe('upsertOAuthAccount', () => {
 
   it('requires a fencing claim when completing a durable authorization', async () => {
     const providerUserId = `github-authorization-${randomUUID()}`
+    const domain = `oauth-rollback-${randomUUID()}.example.test`
 
     await expect(
       upsertOAuthAccount(
         'github',
         providerUserId,
-        `tests+${providerUserId}@voucha.ai`,
+        `tests@${domain}`,
         { login: providerUserId },
         undefined,
         { authorizationId: randomUUID() },
@@ -107,5 +109,10 @@ describe('upsertOAuthAccount', () => {
     ).rejects.toThrow('authorizationClaimId is required with authorizationId')
 
     await expect(getOAuthAccountByProviderUserId('github', providerUserId)).resolves.toBeNull()
+    const { rows } = await read<{ id: string }>(
+      '/* upsertOAuthAccount:rollbackHostname */ SELECT id FROM url_hostnames WHERE hostname = $1',
+      [domain],
+    )
+    expect(rows).toHaveLength(0)
   })
 })

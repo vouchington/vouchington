@@ -167,7 +167,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_email_intake_recommendations`,
   `copyright_notice_email_intake_reviews`,
   `copyright_notice_email_intakes`, `copyright_notice_email_message_ancestors`,
-  `copyright_notice_email_thread_references`,
+  `copyright_notice_email_thread_references`, `copyright_notice_email_thread_tokens`,
   `copyright_notice_evidence_artifacts`, `copyright_notice_storage_objects`,
   `copyright_notice_form_intake_reviews`, `copyright_notice_form_intakes`,
   `copyright_notice_form_screening_attempts`, `copyright_notice_form_screenings`,

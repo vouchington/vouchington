@@ -1,4 +1,4 @@
-import { beginBoundedTransaction, write } from '@data-stores/psql'
+import { beginBoundedTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
@@ -25,9 +25,6 @@ export async function upsertOAuthAccount(
   if (!providerUserId) throw createHttpError(401, 'Provider user ID is empty')
   const config = providerTableConfigs[provider]
   const { hasTokenColumns, hasRefreshToken } = config
-  // X is not a verified-email source and has no email-domain FK.
-  const emailDomainHostnameId =
-    provider === 'x' ? null : await resolveEmailDomainHostnameId(providerUserEmailAddress)
   const providerDataUpdate =
     config.dataConflictStrategy === 'merge'
       ? `${config.table}.${config.dataColumn} || EXCLUDED.${config.dataColumn}`
@@ -44,6 +41,16 @@ export async function upsertOAuthAccount(
         getOAuthTokenPurpose(provider, providerUserId, 'refresh_token'),
       )
     : null
+
+  await using transactionQuery = await beginBoundedTransaction({
+    connectionTimeoutMs: 10_000,
+    statementTimeoutMs: 2_000,
+  })
+  // X is not a verified-email source and has no email-domain FK.
+  const emailDomainHostnameId =
+    provider === 'x'
+      ? null
+      : await resolveEmailDomainHostnameId(providerUserEmailAddress, { query: transactionQuery })
 
   let query: string
   let values: unknown[]
@@ -148,23 +155,11 @@ export async function upsertOAuthAccount(
     ]
   }
 
-  const persistence = options.authorizationId
-    ? persistAuthorizedOAuthAccount()
-    : write<OAuthAccount>(query, values)
-  const { rows } = await persistence
-  if (!rows[0]) throw createHttpError(500, 'Failed to upsert OAuth account')
-  if (rows[0].user_id) await invalidateVerifiedEmailCache(rows[0].user_id).catch(onError)
-  return rows[0]
-
-  async function persistAuthorizedOAuthAccount() {
-    await using transactionQuery = await beginBoundedTransaction({
-      connectionTimeoutMs: 10_000,
-      statementTimeoutMs: 2_000,
-    })
-    const result = await transactionQuery<OAuthAccount>(query, values)
-    const account = result.rows[0]
-    if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
-    if (!options.authorizationId || !options.authorizationClaimId) {
+  const { rows } = await transactionQuery<OAuthAccount>(query, values)
+  const account = rows[0]
+  if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
+  if (options.authorizationId) {
+    if (!options.authorizationClaimId) {
       throw new Error('authorizationClaimId is required with authorizationId')
     }
     await completeOAuthAuthorizationExchange(
@@ -174,9 +169,10 @@ export async function upsertOAuthAccount(
       account.account_id ?? account.provider_user_id,
       transactionQuery,
     )
-    await transactionQuery.commit()
-    return result
   }
+  await transactionQuery.commit()
+  if (account.user_id) await invalidateVerifiedEmailCache(account.user_id).catch(onError)
+  return account
 }
 
 export function getOAuthTokenPurpose(

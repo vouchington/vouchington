@@ -7,7 +7,7 @@ CREATE OR REPLACE VIEW view_urls AS
     urls.pathname,
     urls.search_params,
     urls.canonical_url_id,
-    ROW_TO_JSON(view_url_hostnames) AS hostname
+    (TO_JSONB(view_url_hostnames) - 'publicly_introduced_at')::json AS hostname
   FROM urls
   JOIN view_url_hostnames
     ON urls.hostname_id = view_url_hostnames.id
