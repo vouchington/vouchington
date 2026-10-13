@@ -337,7 +337,7 @@
       "values": ["approved", "rejected", "legal_process"]
     },
     "copyright_notice_email_thread_reference_kinds": {
-      "values": ["message_id", "reply_reference"]
+      "values": ["message_id", "in_reply_to", "references"]
     },
     "copyright_notice_form_screening_attempt_states": {
       "values": ["pending", "failed", "completed"]
@@ -29603,14 +29603,15 @@
         }
       }
     },
-    "copyright_notice_email_message_parents": {
+    "copyright_notice_email_message_ancestors": {
       "checkConstraints": {
-        "chk_copyright_email_message_parents__distinct": "CHECK ((reply_message_intake_id <> parent_message_intake_id))"
+        "chk_copyright_email_message_ancestors__distinct": "CHECK ((reply_message_intake_id <> ancestor_message_intake_id))",
+        "copyright_notice_email_message_ancestors_reference_kind_check": "CHECK ((reference_kind = ANY (ARRAY['in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))"
       },
       "columns": {
-        "parent_message_intake_id": {
+        "ancestor_message_intake_id": {
           "collation": null,
-          "comment": "Inbound parent intake resolved from a keyed RFC Message-ID during ingestion.",
+          "comment": "Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29619,9 +29620,20 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "reference_kind": {
+          "collation": null,
+          "comment": "Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "copyright_notice_email_thread_reference_kinds"
+        },
         "reply_message_intake_id": {
           "collation": null,
-          "comment": "Inbound reply intake, which owns at most one resolved parent edge.",
+          "comment": "Inbound reply intake that named the ancestor.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29631,18 +29643,18 @@
           "type": "uuid"
         }
       },
-      "comment": "Immutable resolved parent edge between inbound email intake messages; replies may arrive before parents.",
+      "comment": "Immutable resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token, including an ancestor that arrives later.",
       "foreignKeys": {
-        "fk_copyright_notice_email_message_parents__parent": {
-          "columns": ["parent_message_intake_id"],
-          "definition": "FOREIGN KEY (parent_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+        "fk_copyright_notice_email_message_ancestors__ancestor": {
+          "columns": ["ancestor_message_intake_id"],
+          "definition": "FOREIGN KEY (ancestor_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
-        "fk_copyright_notice_email_message_parents__reply": {
+        "fk_copyright_notice_email_message_ancestors__reply": {
           "columns": ["reply_message_intake_id"],
           "definition": "FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
@@ -29654,16 +29666,23 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "copyright_notice_email_message_parents_pkey": {
+        "copyright_notice_email_message_ancestors_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_parents_pkey ON public.copyright_notice_email_message_parents USING btree (reply_message_intake_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_ancestors_pkey ON public.copyright_notice_email_message_ancestors USING btree (reply_message_intake_id, ancestor_message_intake_id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "reply_message_intake_id",
               "descending": false,
               "expression": "reply_message_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "ancestor_message_intake_id",
+              "descending": false,
+              "expression": "ancestor_message_intake_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -29674,16 +29693,16 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_notice_email_message_parents__parent": {
+        "idx_copyright_notice_email_message_ancestors__ancestor": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_email_message_parents__parent ON public.copyright_notice_email_message_parents USING btree (parent_message_intake_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "parent_message_intake_id",
+              "column": "ancestor_message_intake_id",
               "descending": false,
-              "expression": "parent_message_intake_id",
+              "expression": "ancestor_message_intake_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -29698,19 +29717,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["reply_message_intake_id"],
-        "definition": "PRIMARY KEY (reply_message_intake_id)"
+        "columns": ["reply_message_intake_id", "ancestor_message_intake_id"],
+        "definition": "PRIMARY KEY (reply_message_intake_id, ancestor_message_intake_id)"
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_email_message_parents_immutable": "CREATE TRIGGER trigger_copyright_email_message_parents_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_message_parents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        "trigger_copyright_email_message_ancestors_immutable": "CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_message_ancestors FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
       },
       "uniqueConstraints": {}
     },
     "copyright_notice_email_thread_references": {
       "checkConstraints": {
         "copyright_notice_email_thread_references_lookup_token_check": "CHECK ((char_length(lookup_token) = 64))",
-        "copyright_notice_email_thread_references_reference_kind_check": "CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'reply_reference'::copyright_notice_email_thread_reference_kinds])))"
+        "copyright_notice_email_thread_references_reference_kind_check": "CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))"
       },
       "columns": {
         "copyright_notice_email_intake_id": {
@@ -29759,7 +29778,7 @@
         },
         "reference_kind": {
           "collation": null,
-          "comment": "Whether the token names this message or a referenced parent.",
+          "comment": "Whether the token is this message's Message-ID, an In-Reply-To token, or a References token.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

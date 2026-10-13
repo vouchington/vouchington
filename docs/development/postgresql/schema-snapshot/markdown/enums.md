@@ -482,7 +482,8 @@
 ## `copyright_notice_email_thread_reference_kinds`
 
 - `message_id`
-- `reply_reference`
+- `in_reply_to`
+- `references`
 
 ## `copyright_notice_form_screening_attempt_states`
 

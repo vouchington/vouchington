@@ -6,13 +6,13 @@ Keyed RFC Message-ID and In-Reply-To/References values used only for private cas
 
 Not partitioned — growth: unbounded.
 
-| Column                             | Type                                            | Nullable | Default                      | Identity | Generated | Collation | Comment                                                      |
-| ---------------------------------- | ----------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------ |
-| `id`                               | `uuid`                                          | no       | `uuidv7()`                   |          |           |           |                                                              |
-| `copyright_notice_email_intake_id` | `uuid`                                          | no       |                              |          |           |           | Inbound email whose private thread token was recorded.       |
-| `lookup_token`                     | `text`                                          | no       |                              |          |           |           | Keyed digest of a normalized RFC message reference.          |
-| `reference_kind`                   | `copyright_notice_email_thread_reference_kinds` | no       |                              |          |           |           | Whether the token names this message or a referenced parent. |
-| `created_at`                       | `timestamp with time zone`                      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                              |
+| Column                             | Type                                            | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                      |
+| ---------------------------------- | ----------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
+| `id`                               | `uuid`                                          | no       | `uuidv7()`                   |          |           |           |                                                                                              |
+| `copyright_notice_email_intake_id` | `uuid`                                          | no       |                              |          |           |           | Inbound email whose private thread token was recorded.                                       |
+| `lookup_token`                     | `text`                                          | no       |                              |          |           |           | Keyed digest of a normalized RFC message reference.                                          |
+| `reference_kind`                   | `copyright_notice_email_thread_reference_kinds` | no       |                              |          |           |           | Whether the token is this message's Message-ID, an In-Reply-To token, or a References token. |
+| `created_at`                       | `timestamp with time zone`                      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,7 +23,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `copyright_notice_email_thread_references_lookup_token_check`: `CHECK ((char_length(lookup_token) = 64))`
-- `copyright_notice_email_thread_references_reference_kind_check`: `CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'reply_reference'::copyright_notice_email_thread_reference_kinds])))`
+- `copyright_notice_email_thread_references_reference_kind_check`: `CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))`
 
 **Foreign keys:**
 
