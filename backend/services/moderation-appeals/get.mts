@@ -43,7 +43,7 @@ async function queryModerationAppealById(
   const { rows } = await executeQuery<ModerationAppealResponse>(
     `/* getModerationAppealById */\n    SELECT ${statement.text}`,
     statement.values,
-    options ?? { readOnly: defaultReadOnly },
+    { ...options, readOnly: defaultReadOnly },
   )
   const row = rows[0]
   return row ? addIsOverdue(row) : null

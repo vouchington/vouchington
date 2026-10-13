@@ -10,7 +10,8 @@ describe('moderation appeal primary-read routing', () => {
     const getSource = source('./get.mts')
     expect(getSource).toContain('return queryModerationAppealById(id, undefined, true)')
     expect(getSource).toContain('return queryModerationAppealById(id, options, false)')
-    expect(getSource).toContain('options ?? { readOnly: defaultReadOnly }')
+    // The selected route must override a caller's readOnly flag while retaining its transaction.
+    expect(getSource).toContain('{ ...options, readOnly: defaultReadOnly }')
     expect(getSource).toContain('await getModerationAppealByIdFromPrimary(id, options)')
   })
 
