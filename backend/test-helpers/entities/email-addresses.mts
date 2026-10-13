@@ -23,6 +23,18 @@ export async function addVerifiedEmailForUser(userId: string, email: string): Pr
   )
 }
 
+export async function setTestUserEmailAddressId(
+  userId: string,
+  email: string,
+  id: string,
+): Promise<void> {
+  await write(
+    sql`/* setTestUserEmailAddressId */
+      UPDATE user_email_addresses SET id = ${id}
+      WHERE user_id = ${userId} AND email_address = ${email}`,
+  )
+}
+
 /**
  * Give a user exclusive primary ownership of an email address, evicting any
  * other user currently holding it as primary. Used in seed-collision tests.
@@ -157,7 +169,7 @@ export async function getLatestEmailAddressLoginTokenHash(
     SELECT token
     FROM email_address_login_tokens
     WHERE email_address = ${emailAddress}
-    ORDER BY created_at DESC
+    ORDER BY id DESC
     LIMIT 1
   `),
   )

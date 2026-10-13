@@ -27,29 +27,21 @@ async function makeEmailAddressPrimary(
 
 export async function listEmailAddressesPage(
   userId: string,
-  options: { limit: number; after?: { tier: number; timestamp: string; name: string } },
+  options: { limit: number; after?: { tier: number; id: string } },
 ) {
   const query = sql`/* listEmailAddressesPage */
-    SELECT email_address, COALESCE(is_primary, FALSE) AS is_primary, created_at,
-      to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
+    SELECT id, email_address, COALESCE(is_primary, FALSE) AS is_primary, created_at
     FROM user_email_addresses
     WHERE user_id = ${userId}
   `
   if (options.after) {
     query.append(sql` AND (
       (is_primary::int) < ${options.after.tier}
-      OR ((is_primary::int) = ${options.after.tier}
-        AND uuid_extract_timestamp(id) > ${options.after.timestamp}::timestamptz)
-      OR ((is_primary::int) = ${options.after.tier}
-        AND uuid_extract_timestamp(id) = ${options.after.timestamp}::timestamptz
-        AND email_address > ${options.after.name})
+      OR ((is_primary::int) = ${options.after.tier} AND id > ${options.after.id}::uuid)
     )`)
   }
-  query.append(
-    sql` ORDER BY (is_primary::int) DESC,
-      uuid_extract_timestamp(id) ASC, email_address ASC LIMIT ${options.limit + 1}`,
-  )
-  const { rows } = await read<EmailAddress & { cursor_timestamp: string }>(query)
+  query.append(sql` ORDER BY (is_primary::int) DESC, id ASC LIMIT ${options.limit + 1}`)
+  const { rows } = await read<EmailAddress & { id: string }>(query)
   return {
     results: rows.slice(0, options.limit),
     hasNextPage: rows.length > options.limit,
@@ -58,7 +50,7 @@ export async function listEmailAddressesPage(
 
 export async function getPrimaryEmailAddress(userId: string): Promise<string | null> {
   const { rows } = await read<{ email_address: string }>(
-    sql`/* getPrimaryEmailAddress */ SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} ORDER BY is_primary DESC, uuid_extract_timestamp(id) ASC LIMIT 1`,
+    sql`/* getPrimaryEmailAddress */ SELECT email_address FROM user_email_addresses WHERE user_id = ${userId} ORDER BY (is_primary::int) DESC, id ASC LIMIT 1`,
   )
   return rows[0]?.email_address ?? null
 }

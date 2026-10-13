@@ -8,6 +8,7 @@ import {
   createRandomString,
   safeUsername,
   addVerifiedEmailForUser,
+  setTestUserEmailAddressId,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -16,7 +17,8 @@ import { createEmailVerificationToken } from '@services/my/email-address-verific
 import { connectOAuthAccountToUser } from '@services/oauth'
 
 import { updateUserFields } from '@services/users/update-fields'
-import { encodeScopedTierPreciseNameCursor } from '@modules/pagination'
+import { encodeCursor } from '@modules/pagination'
+import { v7 as uuidv7 } from 'uuid'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -113,13 +115,24 @@ describe('GET /api/v1/my/email-addresses', () => {
   })
 
   it('paginates email addresses with an owner-scoped cursor', async () => {
-    await addVerifiedEmailForUser(user.id, `tests+email-page-a-${randomSuffix()}@voucha.ai`)
-    await addVerifiedEmailForUser(user.id, `tests+email-page-b-${randomSuffix()}@voucha.ai`)
+    const pageUser = await createTestUser()
+    const laterName = `tests+email-page-z-${randomSuffix()}@voucha.ai`
+    const earlierName = `tests+email-page-a-${randomSuffix()}@voucha.ai`
+    await addVerifiedEmailForUser(pageUser.id, laterName)
+    await addVerifiedEmailForUser(pageUser.id, earlierName)
+    const sameMillisecond = Date.now()
+    const [earlierId, laterId] = [
+      uuidv7({ msecs: sameMillisecond }),
+      uuidv7({ msecs: sameMillisecond }),
+    ].toSorted()
+    await setTestUserEmailAddressId(pageUser.id, laterName, earlierId!)
+    await setTestUserEmailAddressId(pageUser.id, earlierName, laterId!)
     const request = createRequest()
-    await request.authenticateAs(user)
+    await request.authenticateAs(pageUser)
     const first = await request.get('/api/v1/my/email-addresses?limit=1').expect(200)
     expect(first.body.page_info.has_next_page).toBe(true)
     expect(first.body.results[0].is_primary).toBe(true)
+    expect(first.body.results[0]).not.toHaveProperty('id')
     expect(first.body.page_info.start_cursor).toEqual(expect.any(String))
 
     const otherUser = await createTestUser()
@@ -137,24 +150,32 @@ describe('GET /api/v1/my/email-addresses', () => {
       )
       .expect(200)
     expect(second.body.results[0].email_address).not.toBe(first.body.results[0].email_address)
+    expect(second.body.results[0].email_address).toBe(laterName)
     expect(second.body.results[0].is_primary).toBe(false)
+    const third = await request
+      .get(
+        `/api/v1/my/email-addresses?limit=1&after=${encodeURIComponent(second.body.page_info.end_cursor as string)}`,
+      )
+      .expect(200)
+    expect(third.body.results[0].email_address).toBe(earlierName)
   })
 
   it('rejects malformed and unsupported-tier email address cursors', async () => {
+    const cursorUser = await createTestUser()
     const request = createRequest()
-    await request.authenticateAs(user)
-    const unsupportedTierCursor = encodeScopedTierPreciseNameCursor(
-      2,
-      '2026-07-18T07:00:00.123456Z',
-      'tests+cursor@voucha.ai',
-      `email-addresses:${user.id}:primary-desc-created-asc-email-asc`,
-    )
+    await request.authenticateAs(cursorUser)
+    const scope = `email-addresses:${cursorUser.id}:primary-desc-id-asc`
+    const unsupportedTierCursor = encodeCursor({ tier: 2, id: cursorUser.id, scope })
 
     await request
       .get('/api/v1/my/email-addresses')
       .query({ after: unsupportedTierCursor })
       .expect(400)
     await request.get('/api/v1/my/email-addresses').query({ after: 'not-json' }).expect(400)
+    await request
+      .get('/api/v1/my/email-addresses')
+      .query({ after: encodeCursor({ tier: 0, id: 'not-a-uuid', scope }) })
+      .expect(400)
   })
 })
 

@@ -396,12 +396,11 @@ CREATE TABLE IF NOT EXISTS user_email_addresses (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_id_timestamp_email
+CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_id
   ON user_email_addresses (
     user_id,
     (is_primary::int) DESC,
-    (uuid_extract_timestamp(id)) ASC,
-    email_address ASC
+    id ASC
   );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -468,11 +467,6 @@ WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__logged_in
   ON email_address_login_tokens (email_address)
   WHERE logged_in_at IS NOT NULL;
-
--- index for cleanup by UUIDv7 creation time
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__id_timestamp
-  ON email_address_login_tokens ((uuid_extract_timestamp(id)));
 
 -- index for user lookup by email
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -552,11 +546,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens__active
   ON phone_number_login_tokens (phone_number, token)
   WHERE logged_in_at IS NULL;
-
--- index for cleanup by UUIDv7 creation time
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_phone_number_login_tokens__id_timestamp
-ON phone_number_login_tokens ((uuid_extract_timestamp(id)));
 
 -- index for user lookup by phone
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

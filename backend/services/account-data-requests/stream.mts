@@ -110,7 +110,7 @@ export function streamEmails(userId: string) {
       created_at
     FROM user_email_addresses
     WHERE user_id = ${userId}
-    ORDER BY created_at ASC
+    ORDER BY id ASC
   `)
 }
 
@@ -123,7 +123,7 @@ export function streamPhones(userId: string) {
       created_at
     FROM user_phone_numbers
     WHERE user_id = ${userId}
-    ORDER BY created_at ASC
+    ORDER BY id ASC
   `)
 }
 

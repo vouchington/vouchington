@@ -57,7 +57,7 @@ export const verifyEmailAddressLoginToken = async (emailAddress: string, token: 
     WHERE email_address = $1
       AND token = $2
       AND logged_in_at IS NULL
-      AND uuid_extract_timestamp(id) > CURRENT_TIMESTAMP - INTERVAL '${LOGIN_EXPIRATION}'
+      AND id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '${LOGIN_EXPIRATION}' + INTERVAL '1 millisecond')
     `,
     [validatedEmailAddress, hashEmailLoginToken(normalizedToken)],
   )
@@ -77,7 +77,7 @@ export const verifyPhoneNumberLoginToken = async (phoneNumber: string, token: st
     WHERE phone_number = $1
       AND token = $2
       AND logged_in_at IS NULL
-      AND uuid_extract_timestamp(id) > CURRENT_TIMESTAMP - INTERVAL '${LOGIN_EXPIRATION}'
+      AND id >= fn_min_uuidv7(CURRENT_TIMESTAMP - INTERVAL '${LOGIN_EXPIRATION}' + INTERVAL '1 millisecond')
     `,
     [validatedPhoneNumber, hashPhoneLoginToken(normalizedToken)],
   )
