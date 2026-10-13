@@ -48,14 +48,19 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
-  const adminIds = await getAdminUserIdsFromPosts([post])
-  const isAdmin = post.created_by_id ? adminIds.has(post.created_by_id) : false
   const authorId =
     !post.is_anonymous && post.created_by_id && post.created_by_id !== DELETED_USER_ID
       ? post.created_by_id
       : null
-  const isAuthorAdmin = authorId ? adminIds.has(authorId) : false
   if (authorId) ctx.set('Cache-Tag', userTag(authorId))
+  if (ctx.req.method === 'HEAD') {
+    ctx.response.empty()
+    return
+  }
+
+  const adminIds = await getAdminUserIdsFromPosts([post])
+  const isAdmin = post.created_by_id ? adminIds.has(post.created_by_id) : false
+  const isAuthorAdmin = authorId ? adminIds.has(authorId) : false
 
   const authorBioPromise = authorId ? getUserMarkdown(authorId) : Promise.resolve(null)
   const profileLinksPromise = authorId ? listProfileLinks(authorId) : Promise.resolve([])

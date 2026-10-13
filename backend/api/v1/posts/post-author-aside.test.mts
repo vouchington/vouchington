@@ -19,6 +19,34 @@ describe('post-author-aside', () => {
     await followUser(viewer, creator)
   })
 
+  describe('HEAD /api/v1/posts/:idOrSlug — author cache dependency', () => {
+    it('returns the visible author tag without a body', async () => {
+      const postId = await insertTestPost({
+        title: 'Visible Author Dependency',
+        slug: `visible-author-dependency-${crypto.randomUUID()}`,
+        createdById: creator.id,
+        markdown: 'content',
+      })
+      const response = await createRequest().head(`/api/v1/posts/${postId}`).expect(200)
+      expect(response.headers['cache-tag']).toBe(`user:${creator.id}`)
+      expect(response.text).toBeUndefined()
+    })
+
+    it('omits the tag for anonymous posts and rejects missing posts', async () => {
+      const postId = await insertTestPost({
+        title: 'Anonymous Author Dependency',
+        slug: `anonymous-author-dependency-${crypto.randomUUID()}`,
+        createdById: creator.id,
+        markdown: 'content',
+        isAnonymous: true,
+      })
+      const request = createRequest()
+      const response = await request.head(`/api/v1/posts/${postId}`).expect(200)
+      expect(response.headers['cache-tag']).toBeUndefined()
+      await request.head(`/api/v1/posts/${crypto.randomUUID()}`).expect(404)
+    })
+  })
+
   describe('GET /api/v1/posts/:idOrSlug — author_aside', () => {
     it('should include author_aside null for anonymous posts', async () => {
       const postId = await insertTestPost({

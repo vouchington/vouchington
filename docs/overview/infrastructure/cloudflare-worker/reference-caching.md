@@ -11,8 +11,8 @@ All public backend GET endpoints set `Cache-Control: public, max-age=N` headers 
 
 `CachedOrigin` keeps the path-derived entity tag and appends one valid `Cache-Tag` supplied by a
 trusted origin response. The backend post detail supplies its visible author's `user:<id>` tag.
-For a post-detail HTML cache fill, the web proxy reads that same backend response header and places
-it on the HTML response, so a user-tag purge after bio-language detection evicts both cached API
+For a post-detail HTML cache fill, the web proxy makes a lightweight HEAD request to read the same
+backend dependency header and places it on the HTML response, so a user-tag purge after bio-language detection evicts both cached API
 and HTML details. A failed dependency lookup marks the HTML response `Vary: *`; the Worker declines
 to cache it while the page can still render. Missing, malformed, duplicate, or multi-tag origin
 values leave the path-derived tag intact. Anonymous posts supply no author tag.

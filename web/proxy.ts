@@ -173,7 +173,7 @@ async function proxy(request: NextRequest) {
     ? NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } })
 
-  await tagPostDetailCacheFill(response, request, backendUrl)
+  await tagPostDetailCacheFill(response, request, backendUrl, getForwardedIpHeaders(request))
 
   // Set validated session cookies for authenticated sessions refreshed by the backend.
   // Anonymous sessions are handled by the Cloudflare Worker (Set-Cookie already sent).

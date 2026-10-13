@@ -18,7 +18,10 @@ describe('post detail HTML cache dependencies', () => {
   })
 
   const cacheFill = (pathname: string) =>
-    makeRequest({ pathname, headers: { 'x-voucha-request-kind': 'cache-fill' } }) as any
+    makeRequest({
+      pathname,
+      headers: { 'x-voucha-request-kind': 'cache-fill', 'cf-connecting-ip': '192.0.2.10' },
+    }) as any
 
   it('forwards the visible author tag from the backend detail response', async () => {
     fetchMock.mockResolvedValueOnce(
@@ -29,7 +32,11 @@ describe('post detail HTML cache dependencies', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:2900/api/v1/posts/post-id',
-      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+      expect.objectContaining({
+        method: 'HEAD',
+        cache: 'no-store',
+        headers: expect.objectContaining({ 'cf-connecting-ip': '192.0.2.10' }),
+      }),
     )
     expect(response.headers.get('Cache-Tag')).toBe('user:author-id')
   })
@@ -41,6 +48,20 @@ describe('post detail HTML cache dependencies', () => {
 
     expect(response.headers.get('Cache-Tag')).toBeNull()
     expect(response.headers.get('Vary')).toBeNull()
+  })
+
+  it('decodes encoded route segments before identifying the post and re-encodes the ID', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(null, { headers: { 'Cache-Tag': 'user:author-id' } }),
+    )
+
+    const response = await proxy(cacheFill('/%64iscussion/post%2Fid'))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:2900/api/v1/posts/post%2Fid',
+      expect.objectContaining({ method: 'HEAD' }),
+    )
+    expect(response.headers.get('Cache-Tag')).toBe('user:author-id')
   })
 
   it('prevents a shared cache fill when the author dependency lookup fails', async () => {

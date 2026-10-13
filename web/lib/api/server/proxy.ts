@@ -5,15 +5,17 @@ import { isValidCacheTag } from '@vouchington/utils/cache-tags'
 export async function getPostAuthorCacheTag(
   backendUrl: string,
   idOrSlug: string,
+  forwardedIpHeaders: Record<string, string>,
 ): Promise<{ ok: true; tag: string | null } | { ok: false }> {
   try {
-    const url = buildBackendApiUrl(backendUrl, `/api/v1/posts/${idOrSlug}`)
+    const url = buildBackendApiUrl(backendUrl, `/api/v1/posts/${encodeURIComponent(idOrSlug)}`)
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'HEAD',
       cache: 'no-store',
       headers: {
         ...buildWorkerSecretHeader(),
         ...buildWebClientInfoHeaders(),
+        ...forwardedIpHeaders,
       },
       signal: AbortSignal.timeout(3000),
     })
