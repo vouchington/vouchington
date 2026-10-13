@@ -5875,9 +5875,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
