@@ -23,14 +23,18 @@ registerScenarioContract('url-blocklist-hostnames', {
   expectations: [
     {
       kind: 'usesIndexes',
-      indexes: ['idx_url_hostnames__blocked', 'idx_url_hostnames__not_crawlable'],
+      indexes: ['idx_url_hostname_blocks__active_nonfeed'],
     },
-    // The URL policy projects each Bloom-repair source hostname into is_blocked. The index scans
-    // must process only those source hosts and the eleven flag hosts, plus one overlap filtered by
-    // the not-crawlable branch, never the thousands of otherwise unblocked seeded hostnames.
+    // URL-source domains are already streamed from blocklisted_domains. The hostname branch
+    // visits independent block history and non-crawlable hosts, not the projected URL-feed rows.
     {
       kind: 'maxProcessedRows',
       relation: 'url_hostnames',
+      max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'url_hostname_blocks',
       max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
     },
   ],

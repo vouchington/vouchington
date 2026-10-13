@@ -28,6 +28,12 @@ CREATE OR REPLACE TRIGGER trigger_url_hostname_blocks_updated_at
 
 CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__hostname ON url_hostname_blocks (url_hostname_id) WHERE lifted_at IS NULL;
 
+-- URL-source domains are streamed from blocklisted_domains; scan only independent hostname blocks.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__active_nonfeed
+  ON url_hostname_blocks (url_hostname_id)
+  WHERE lifted_at IS NULL AND blocked_source NOT IN ('url_blocklist', 'email_blocklist');
+
 CREATE UNIQUE INDEX idx_url_hostname_blocks__active_domain_source
   ON url_hostname_blocks (url_hostname_id, domain_blocklist_source_id)
   WHERE domain_blocklist_source_id IS NOT NULL AND lifted_at IS NULL;

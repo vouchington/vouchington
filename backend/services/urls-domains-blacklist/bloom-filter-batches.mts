@@ -28,7 +28,12 @@ export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
 
   for await (const row of createAsyncGeneratorFromCursor<{ hostname: string }>(
     sql`/* urlBlocklistBatchesFromDb:hostnames */
-      SELECT hostname FROM url_hostnames WHERE is_blocked
+      SELECT DISTINCT (
+        SELECT host.hostname FROM url_hostnames host WHERE host.id = block.url_hostname_id
+      ) AS hostname
+      FROM url_hostname_blocks block
+      WHERE block.lifted_at IS NULL
+        AND block.blocked_source NOT IN ('url_blocklist', 'email_blocklist')
       UNION ALL
       SELECT hostname FROM url_hostnames WHERE NOT is_crawlable AND NOT is_blocked
     `,
