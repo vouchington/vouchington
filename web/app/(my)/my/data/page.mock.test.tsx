@@ -52,6 +52,11 @@ describe('DataPage', () => {
     const { container } = render(await DataPage())
 
     expect(mockRequireCurrentUser).toHaveBeenCalled()
+    expect(container.querySelector('[data-pw="settings-page-header-title"]')).toHaveTextContent(
+      'Your Data',
+    )
+    expect(screen.getByRole('heading', { level: 1, name: 'Your Data' })).toBeVisible()
+    expect(screen.getByRole('heading', { level: 2, name: 'Delete Account' })).toBeVisible()
     expect(container.querySelector('[data-pw="data-request-section"]')).toHaveTextContent('user-1')
     expect(container.querySelector('[data-pw="delete-account-dialog"]')).toHaveTextContent('user-1')
     expect(screen.getByText('Delete Account')).toBeVisible()
