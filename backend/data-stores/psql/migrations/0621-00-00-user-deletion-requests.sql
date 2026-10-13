@@ -115,6 +115,22 @@ ALTER TABLE user_deletion_external_works
 ALTER TABLE user_deletion_external_works
   VALIDATE CONSTRAINT fk_user_deletion_external_works__provider_lineage;
 
+CREATE FUNCTION fn_reject_non_stripe_user_deletion_external_work() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.work_kind = 'stripe-customer' AND NOT EXISTS (
+    SELECT 1 FROM membership_provider_lineages lineage
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE lineage.id = NEW.membership_provider_lineage_id AND context.provider = 'stripe'
+  ) THEN
+    RAISE EXCEPTION 'Stripe customer deletion work requires a Stripe lineage' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_user_deletion_external_works_stripe_lineage
+BEFORE INSERT OR UPDATE ON user_deletion_external_works
+FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_user_deletion_external_work();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_external_works_updated_at
 BEFORE UPDATE ON user_deletion_external_works

@@ -827,7 +827,8 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
   stripe_event_id TEXT, note TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT membership_refunds_source_identity_check CHECK ((source = 'admin' AND issued_by_id IS NOT NULL AND stripe_idempotency_key IS NOT NULL AND admin_request_fingerprint IS NOT NULL) OR (source = 'stripe_dashboard' AND issued_by_id IS NULL AND stripe_idempotency_key IS NULL AND admin_request_fingerprint IS NULL)),
   CONSTRAINT fk_membership_refunds__operation_source FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id, stripe_idempotency_key)
+    REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__membership_id ON membership_refunds (membership_id);

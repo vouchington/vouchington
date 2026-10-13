@@ -99,6 +99,9 @@ describe('membership refund reconciliation schema', () => {
     await expect(insertTestLegacyUnlinkedRefundReceipt(operation.membershipSourceId)).resolves.toBe(
       1,
     )
+    await expect(
+      insertTestLinkedOperationRefundReceipt(operation, `wrong-${randomUUID()}`),
+    ).rejects.toMatchObject({ code: '23503' })
     await expect(insertTestLinkedOperationRefundReceipt(operation, requestKey)).resolves.toBe(1)
   })
 })
