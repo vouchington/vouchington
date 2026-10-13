@@ -27,6 +27,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}
     permissions:
       actions: read
       attestations: write

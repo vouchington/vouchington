@@ -55,6 +55,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.bedrock.test.mts',
         '**/*.s3.test.mts',
         '**/*.stripe.test.mts',
+        'backend/services/browser-crawl/crawl.integration.test.mts',
         'backend/data-stores/analytics/**/*.test.mts',
         'backend/services/analytics/**/*.test.mts',
         'backend/services/crawler-rss/index.redirect.test.mts',

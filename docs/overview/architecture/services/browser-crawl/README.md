@@ -53,6 +53,17 @@ connected to Lightpanda's cloud CDP endpoint. No local browser binary — see
   for a queue retry without touching referral-link health, since a Lightpanda outage says nothing
   about whether the target link is reachable.
 
+## Live cloud smoke check
+
+The retained `crawl.integration.test.mts` case belongs only to the credentialed
+`backend-lightpanda` project. Trusted backend and nightly workflows explicitly forward
+`LIGHTPANDA_TOKEN`; keyless unit projects do not collect this file. Selecting the cloud
+case without a nonblank token fails before connection. The case navigates to the suite's
+allowed example page and retains its status, content, and title assertions within a
+30-second case budget. It is an informational live-provider smoke check, not coverage or
+proof of every #2148 provider/capability variant. See the
+[canonical Vitest ownership model](../../../../development/ci/workflows/VITEST.md).
+
 ## Related
 
 - Caller/queue: [`@queues/crawl-browser`](../../queues/crawl-browser/README.md)
