@@ -1,4 +1,4 @@
-import { query as executeQuery, type QueryOptions } from '@data-stores/psql'
+import { read, type QueryOptions } from '@data-stores/psql'
 import { mapCommentRow } from '@modules/search-utils'
 import { isSlug, isUUID } from '@modules/utils'
 import createError from 'http-errors'
@@ -18,7 +18,7 @@ export async function getCommentAncestorsByAny(
         sql`/* getCommentAncestorsByAny:fragment */
           (SELECT post_id FROM post_slugs WHERE slug = ${idOrSlug.toLowerCase()} LIMIT 1)`,
       )
-  const { rows } = await executeQuery(
+  const { rows } = await read(
     `/* buildCommentAncestorsQuery */\n    WITH RECURSIVE ${statement.text}`,
     statement.values,
     options,

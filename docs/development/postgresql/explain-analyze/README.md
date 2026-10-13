@@ -298,7 +298,11 @@ completed-scenario list or captured scenarios differ from the registered manifes
 failed final scenario already emitted one plan. Cursor helper calls from the root PostgreSQL
 package and its cursor subpath are included once when both extractors find the same call. Dynamic
 notification recipient queries use a literal annotation for each caller so both reads appear in
-the inventory. An annotated statement with an interpolated first
+the inventory. The report also retains raw `PoolClient.query` reads in its counts and uncovered
+list. The current capture hook observes PostgreSQL wrapper calls, while EXPLAIN replays on a
+different connection; a raw client read of a session-local temporary table cannot be captured or
+replayed by this harness. The scheduled prompt skips such entries when choosing a scenario and
+keeps their coverage gap visible. An annotated statement with an interpolated first
 SQL token remains in the annotated-statement total but is not classified as a read: its verb
 cannot be proven statically. Move a fixed leading read verb to the execution callsite when its
 SQL builder is dynamic, preserving the executed SQL and parameters.

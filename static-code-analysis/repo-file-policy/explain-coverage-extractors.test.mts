@@ -5,6 +5,31 @@ import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 
 describe('EXPLAIN extractor overlap', () => {
+  it('keeps raw session-local PoolClient reads visible as uncovered', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-pool-client-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const fileName = 'backend/services/notifications/reconcile-batches.mts'
+      const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
+      const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
+      expect(report).toMatchObject({ annotatedStatements: 6, reads: 3, coveredReads: 0 })
+      expect(report.uncoveredReads.map(read => read.name)).toEqual([
+        'selectRssFeedItemNotificationRecipientBatch',
+        'selectPostNotificationRecipientBatch',
+        'selectCreatedNotificationBatch',
+      ])
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
   it('lists assembled reads only when their extracted SQL has a known read verb', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-assembled-'))
     try {

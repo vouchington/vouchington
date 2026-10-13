@@ -11,7 +11,11 @@ per run.
    using an artifact. The command rejects an artifact missing any registered scenario. Select one
    confirmed uncovered read on a user-facing path: feeds, posts, users, topics, communities, or
    search. Prefer these over workers. Skip ambiguous same-name reads and any read already covered
-   by an open PR.
+   by an open PR. The report retains raw `PoolClient.query` reads in its counts and uncovered list.
+   The current harness captures PostgreSQL wrapper calls and replays plans on a separate connection;
+   it cannot capture or replay a raw client read of a session-local temporary table. Skip those
+   entries when choosing a scenario, without treating them as covered or removing them from the
+   report. Choose another supported user-facing read; if none remains, report `Outcome: incomplete`.
 3. Add the smallest representative seed rows and a scenario that calls the real service. Register
    its `registerScenarioContract` budget at the measured value plus 20% for both plan-cache modes.
    The contract and scenario identity must remain in the owning EXPLAIN registry.
