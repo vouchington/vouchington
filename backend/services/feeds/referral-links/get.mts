@@ -102,6 +102,11 @@ export async function getReferralLinksFeed(
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
       AND NOT EXISTS (SELECT 1 FROM excluded_hostname_ids WHERE excluded_hostname_ids.hostname_id = u.hostname_id)
+      AND NOT EXISTS (
+        SELECT 1 FROM url_hostnames blocked_hostname
+        WHERE blocked_hostname.id = u.hostname_id
+          AND blocked_hostname.is_blocked
+      )
       AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = urpl.user_id)
       AND NOT EXISTS (SELECT 1 FROM excluded_topics WHERE excluded_topics.topic_id = urpl.referral_program_topic_id)
       AND `,

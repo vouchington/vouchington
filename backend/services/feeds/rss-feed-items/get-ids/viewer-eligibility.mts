@@ -40,9 +40,11 @@ export function appendRssFeedItemViewerEligibilityFilters(
   query.append(sql`
       AND NOT EXISTS (
         SELECT 1 FROM urls u_excl
+        JOIN url_hostnames blocked_hostname ON blocked_hostname.id = u_excl.hostname_id
         WHERE u_excl.id = `)
   query.append(rssFeedItemUrlId).append(sql`
-          AND u_excl.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
+          AND (u_excl.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
+               OR blocked_hostname.is_blocked)
       )
   `)
 }
