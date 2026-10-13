@@ -29982,7 +29982,7 @@
       },
       "comment": "Private UUID identities for keyed RFC message-reference digests; the digest survives while any live case or reply uses it.",
       "foreignKeys": {},
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_notice_email_thread_tokens_pkey": {
           "accessMethod": "btree",
@@ -135051,7 +135051,7 @@
     },
     "view_urls": {
       "comment": "URL response projection; callers enforce URL visibility and paid crawl-history access.",
-      "definition": " SELECT 'url'::text AS __entity_type,\n    urls.id,\n    urls.url,\n    urls.pathname,\n    urls.search_params,\n    urls.canonical_url_id,\n    row_to_json(view_url_hostnames.*) AS hostname\n   FROM (urls\n     JOIN view_url_hostnames ON ((urls.hostname_id = view_url_hostnames.id)));",
+      "definition": " SELECT 'url'::text AS __entity_type,\n    urls.id,\n    urls.url,\n    urls.pathname,\n    urls.search_params,\n    urls.canonical_url_id,\n    ((to_jsonb(view_url_hostnames.*) - 'publicly_introduced_at'::text))::json AS hostname\n   FROM (urls\n     JOIN view_url_hostnames ON ((urls.hostname_id = view_url_hostnames.id)));",
       "materialized": false
     },
     "view_user_list_items": {

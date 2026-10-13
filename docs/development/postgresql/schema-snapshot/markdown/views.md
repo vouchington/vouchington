@@ -1297,7 +1297,7 @@ URL response projection; callers enforce URL visibility and paid crawl-history a
     urls.pathname,
     urls.search_params,
     urls.canonical_url_id,
-    row_to_json(view_url_hostnames.*) AS hostname
+    ((to_jsonb(view_url_hostnames.*) - 'publicly_introduced_at'::text))::json AS hostname
    FROM (urls
      JOIN view_url_hostnames ON ((urls.hostname_id = view_url_hostnames.id)));
 ```
