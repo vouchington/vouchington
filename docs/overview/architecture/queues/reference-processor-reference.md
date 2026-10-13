@@ -14,7 +14,7 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | user-deletions                               | processUserDeletion                            | —                                        | 10               |
 | user-deletions                               | recoverUserDeletions                           | —                                        | 100              |
 | activitypub-inbox                            | processDelivery                                | —                                        | 10               |
-| activitypub-inbox                            | cleanupExpiredDeliveries                       | —                                        | 1                |
+| activitypub-inbox                            | cleanupExpiredDeliveries                       | —                                        | 100              |
 | activitypub-inbox                            | recoverDeliveries                              | —                                        | 100              |
 | activitypub-inbox                            | rearmFailedDeliveries                          | —                                        | 100              |
 | activitypub-delivery                         | distributeActivity                             | activitypub-distribute__<activityId>     | 10               |

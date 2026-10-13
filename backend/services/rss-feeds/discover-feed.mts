@@ -33,7 +33,7 @@ const CRAWL_DISCOVERY_WAIT_TIMEOUT_MS = 30_000
 const CRAWL_DISCOVERY_RATE_LIMIT_MS = 1_000
 const CRAWL_DISCOVERY_FETCH_TIMEOUT_MS = 10_000
 const CRAWL_DISCOVERY_MAX_RESPONSE_SIZE_BYTES = 256 * 1024
-const PRIORITY_HIGHEST = 0
+const PRIORITY_WAITING = 1
 
 // Ordered by preference (first match wins for each type category).
 const FEED_TYPE_ORDER = [
@@ -101,7 +101,7 @@ export async function discoverFeedUrlFromHtml(
         ignoreRobotsTxt: isRobotsTxtIgnoredForFeeds(),
         maxResponseSizeBytes: CRAWL_DISCOVERY_MAX_RESPONSE_SIZE_BYTES,
         preserveHttpRedirects: preserveHttp,
-        priority: PRIORITY_HIGHEST,
+        priority: PRIORITY_WAITING,
         rateLimitMs: CRAWL_DISCOVERY_RATE_LIMIT_MS,
         skipCanonicalUrl: true,
         skipChunks: true,

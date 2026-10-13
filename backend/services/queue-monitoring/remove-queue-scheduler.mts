@@ -6,7 +6,7 @@ import { removeScheduledJobScheduler } from '@modules/scheduled-job-manifest'
  * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/queue-monitoring/README.md`.
  */
 export async function removeQueueScheduler(queueName: string, schedulerId: string) {
-  const queue = createQueue(queueName)
+  const queue = createQueue(queueName, { priorityKind: 'ranked' })
   try {
     return await removeScheduledJobScheduler(queue, schedulerId)
   } finally {

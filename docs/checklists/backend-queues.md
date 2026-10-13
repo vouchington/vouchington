@@ -5,6 +5,14 @@ payload, retry policy, scheduler, backfill, or worker placement. Generic GlideMQ
 in the installed `glide-mq` skill; this page owns Voucha's package, durability, and validation
 contracts.
 
+## Priority kinds
+
+Declare one priority kind when creating each queue: `none` accepts only 0, while `ranked`
+accepts 1 through 2048 and defaults to 10. Never mix the two kinds in one queue. Reserve
+priority 1 for work a user is waiting on; use 100 for background cleanup, recovery, and
+backfills. In [glide-mq's priority order](https://github.com/avifenesh/glide-mq/blob/main/docs/USAGE.md),
+ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 jobs.
+
 ```mermaid
 flowchart LR
   P[Producer or flow] -->|durable IDs| Q[Queue]

@@ -71,7 +71,7 @@ describe('enqueueCrawlUrlAndWait', () => {
     const job = jobs.find(j => (j.data as { url_id?: string }).url_id === 'url-2')
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({
-      priority: 0,
+      priority: 1,
       removeOnComplete: { age: 60, count: 100 },
       ordering: { key: 'hostname-2', rateLimit: { max: 1, duration: 2345 } },
     })

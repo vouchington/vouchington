@@ -31,7 +31,9 @@ describe('post-publication notification recovery (real GlideMQ)', () => {
     await transaction.commit()
     const captured = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
     if (!captured) throw new Error('Expected publication dirty work')
-    const unavailable = createQueue(`unavailable-notifications-${randomUUID()}`)
+    const unavailable = createQueue(`unavailable-notifications-${randomUUID()}`, {
+      priorityKind: 'ranked',
+    })
     await closeAndUnregisterGlideMQInstance(unavailable)
     let notificationAttempts = 0
     await expect(
@@ -52,7 +54,9 @@ describe('post-publication notification recovery (real GlideMQ)', () => {
     ).resolves.toBeDefined()
     await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(false)
 
-    const recovered = createQueue<{ id: string }>(`recovered-notifications-${randomUUID()}`)
+    const recovered = createQueue<{ id: string }>(`recovered-notifications-${randomUUID()}`, {
+      priorityKind: 'ranked',
+    })
     try {
       await expect(
         processReconcilePostPublication(
@@ -65,13 +69,13 @@ describe('post-publication notification recovery (real GlideMQ)', () => {
           },
         ),
       ).resolves.toEqual({ reconciled: 1 })
-      expect((await recovered.getJobs('waiting')).map(job => job.data.id)).toContain(postId)
+      expect((await recovered.getJobs('delayed')).map(job => job.data.id)).toContain(postId)
       await expect(
         getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
       ).resolves.toBeUndefined()
       await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(true)
     } finally {
-      for (const job of await recovered.getJobs('waiting')) await job.remove()
+      for (const job of await recovered.getJobs('delayed')) await job.remove()
       await closeAndUnregisterGlideMQInstance(recovered)
     }
   })

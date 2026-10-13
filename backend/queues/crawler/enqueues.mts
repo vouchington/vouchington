@@ -18,7 +18,7 @@ const CRAWL_URL_JOB_RETRY_OPTIONS = {
   attempts: 3,
   backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
 }
-const PRIORITY_HIGHEST = 0
+const PRIORITY_WAITING = 1
 const CRAWL_URL_WAIT_TIMEOUT_MS = 30_000
 const CRAWL_URL_WAIT_COMPLETED_RETENTION = { age: 60, count: 100 }
 
@@ -125,7 +125,7 @@ export async function enqueueCrawlUrlAndWait(
     ignoreRobotsTxt = entry.options?.ignoreRobotsTxt,
     maxResponseSizeBytes = entry.options?.maxResponseSizeBytes,
     preserveHttpRedirects = entry.options?.preserveHttpRedirects,
-    priority = entry.options?.priority ?? PRIORITY_HIGHEST,
+    priority = entry.options?.priority ?? PRIORITY_WAITING,
     rateLimitMs = entry.options?.rateLimitMs ?? 1_000,
     skipCanonicalUrl = entry.options?.skipCanonicalUrl,
     skipChunks = entry.options?.skipChunks,

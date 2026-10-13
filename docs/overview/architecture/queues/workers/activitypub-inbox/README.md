@@ -27,8 +27,8 @@ failures expire seven days after the immutable first failure, including across m
 `cleanupExpiredDeliveries` runs every five minutes (hourly on staging; see the
 [storage policy](../../../backend/modules/activitypub-inbox-storage-policy/README.md)), deletes unverified rows before verified
 failures, skips active leases younger than thirty minutes, and commits at most twenty 500-row
-`FOR UPDATE SKIP LOCKED` batches. It runs ahead of delivery and recovery work so a saturated queue
-cannot delay reclaiming expired capacity. Each batch and successful-run storage snapshot is
+`FOR UPDATE SKIP LOCKED` batches. It runs at dispatcher priority 100, after ordinary delivery work
+at priority 10 when both are ready. Each batch and successful-run storage snapshot is
 emitted as structured JSON for CloudWatch metric filters and alarms.
 
 The dedup reservation, core Follow, Undo(Follow), Like, or Undo(Like) database effect, and fenced

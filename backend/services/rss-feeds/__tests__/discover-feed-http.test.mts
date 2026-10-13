@@ -60,7 +60,7 @@ describe('discoverFeedUrlFromHtml', () => {
         ignoreRobotsTxt: true,
         maxResponseSizeBytes: 256 * 1024,
         preserveHttpRedirects: false,
-        priority: 0,
+        priority: 1,
         rateLimitMs: 1000,
         skipCanonicalUrl: true,
         skipChunks: true,

@@ -21,6 +21,11 @@ const {
   worker.prototype.close = vi.fn<typeof import('glide-mq').Worker.prototype.close>()
   const queue = vi.fn<QueueConstructor>() as Mock<QueueConstructor> & QueueConstructor
   queue.prototype.close = vi.fn<typeof import('glide-mq').Queue.prototype.close>()
+  queue.prototype.add = vi.fn<typeof import('glide-mq').Queue.prototype.add>()
+  queue.prototype.addBulk = vi.fn<typeof import('glide-mq').Queue.prototype.addBulk>()
+  queue.prototype.addAndWait = vi.fn<typeof import('glide-mq').Queue.prototype.addAndWait>()
+  queue.prototype.upsertJobScheduler =
+    vi.fn<typeof import('glide-mq').Queue.prototype.upsertJobScheduler>()
   const flowProducer = vi.fn<FlowProducerConstructor>() as Mock<FlowProducerConstructor> &
     FlowProducerConstructor
   flowProducer.prototype.close = vi.fn<typeof import('glide-mq').FlowProducer.prototype.close>()
@@ -48,19 +53,21 @@ vi.mock<typeof import('@glidemq/speedkey')>(import('@glidemq/speedkey'), () => (
 const importGlideMqRegistry = () => import('@data-stores/valkey-core/glide-mq-registry')
 function createRejectingQueueStub<TData>(error: Error) {
   return {
+    priorityKind: 'ranked' as const,
     add(_name: string, _data: TData, _opts?: JobOptions) {
       return Promise.reject(error)
     },
     addBulk(_jobs: Array<{ name: string; data: TData; opts?: JobOptions }>) {
       return Promise.reject(error)
     },
-  } as Pick<Queue<TData>, 'add' | 'addBulk'>
+  } as Pick<Queue<TData>, 'add' | 'addBulk'> & { priorityKind: 'ranked' }
 }
 
 /** Queue stub that fails failCount times then resolves. */
 function createEventualSuccessQueueStub<TData>(failCount: number, successResult: unknown) {
   let calls = 0
   return {
+    priorityKind: 'ranked' as const,
     add(_name: string, _data: TData, _opts?: JobOptions) {
       calls++
       if (calls <= failCount) return Promise.reject(new Error('Reached maximum inflight requests'))
@@ -72,7 +79,10 @@ function createEventualSuccessQueueStub<TData>(failCount: number, successResult:
       return Promise.resolve([successResult])
     },
     getCalls: () => calls,
-  } as Pick<Queue<TData>, 'add' | 'addBulk'> & { getCalls: () => number }
+  } as Pick<Queue<TData>, 'add' | 'addBulk'> & {
+    priorityKind: 'ranked'
+    getCalls: () => number
+  }
 }
 
 describe('glide-mq-factory shared client injection', () => {
@@ -111,7 +121,7 @@ describe('glide-mq-factory shared client injection', () => {
       import('../glide-mq-factory.mts'),
       import('../glide-mq-shared-client.mts'),
     ])
-    createQueue('test-queue')
+    createQueue('test-queue', { priorityKind: 'ranked' })
     const queueOpts = mockQueue.mock.calls.at(-1)?.[1] as Record<string, unknown> | undefined
     expect(queueOpts?.client).toBe(workerQueueCommandClient)
   })
@@ -251,13 +261,10 @@ describe('glide-mq-factory', () => {
         retry: false,
         trackJobEnqueue: mockTrackJobEnqueue,
       })
-
       await expect(enqueue({ id: '1' })).rejects.toThrow('Reached maximum inflight requests')
-
       expect(stub.getCalls()).toBe(1)
       expect(captureException).toHaveBeenCalledTimes(1)
     })
-
     it('createBulkEnqueueFunction retries a transient error and succeeds when the queue recovers', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
@@ -268,15 +275,12 @@ describe('glide-mq-factory', () => {
         buildJob: input => ({ data: input }),
         trackJobEnqueue: mockTrackJobEnqueue,
       })
-
       const promise = enqueueBulk([{ id: '1' }])
       await vi.advanceTimersByTimeAsync(MAX_RETRY_DELAY_MS)
       await expect(promise).resolves.toEqual([{ id: 'bulk-1' }])
-
       expect(stub.getCalls()).toBe(2)
       expect(captureException).not.toHaveBeenCalled()
     })
-
     it('createBulkEnqueueFunction does not retry when retry: false', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
@@ -288,9 +292,7 @@ describe('glide-mq-factory', () => {
         retry: false,
         trackJobEnqueue: mockTrackJobEnqueue,
       })
-
       await expect(enqueueBulk([{ id: '1' }])).rejects.toThrow('Reached maximum inflight requests')
-
       expect(stub.getCalls()).toBe(1)
       expect(captureException).toHaveBeenCalledTimes(1)
     })

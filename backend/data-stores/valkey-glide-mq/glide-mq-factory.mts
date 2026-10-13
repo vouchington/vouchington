@@ -19,6 +19,7 @@ import {
   registerGlideMQInstance,
   unregisterGlideMQInstance,
 } from '@data-stores/valkey-core/glide-mq-registry'
+import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
 
 /**
  * A job's `stalledCount` never resets, so the (maxStalledCount + 1)th stall fails it permanently
@@ -37,17 +38,47 @@ type SharedWorkerOptions = Omit<WorkerOptions, 'connection' | 'commandClient' | 
    */
   dedicatedCommandClient?: boolean
 }
+export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
 
-export function createQueue<T = unknown>(name: string, options: SharedQueueOptions = {}): Queue<T> {
+export function createQueue<T = unknown>(
+  name: string,
+  options: SharedQueueOptions & { priorityKind: QueuePriorityKind },
+): PriorityQueue<T> {
+  const { priorityKind, ...queueOptions } = options
   const queue = new Queue<T>(name, {
     connection: workerQueueConnection,
     prefix: workerQueuePrefix,
     client: workerQueueCommandClient,
-    ...options,
+    ...queueOptions,
   })
-  registerGlideMQInstance(queue)
-  return queue
+  const originalAdd = queue.add
+  const originalAddBulk = queue.addBulk
+  const originalAddAndWait = queue.addAndWait
+  // ast-grep-ignore: backend-no-direct-scheduler-upsert -- intercept the queue's scheduler API to enforce priority before the manifest runtime calls it
+  const originalUpsertJobScheduler = queue.upsertJobScheduler
+  queue.add = (jobName, data, opts) =>
+    originalAdd.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
+  queue.addBulk = jobs =>
+    originalAddBulk.call(
+      queue,
+      jobs.map(job => ({
+        ...job,
+        opts: checkedPriorityOptions(name, priorityKind, job.opts),
+      })),
+    )
+  queue.addAndWait = (jobName, data, opts) =>
+    originalAddAndWait.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
+  // ast-grep-ignore: backend-no-direct-scheduler-upsert -- this guard wraps, rather than creates, scheduled jobs
+  queue.upsertJobScheduler = (schedulerName, schedule, template) =>
+    originalUpsertJobScheduler.call(queue, schedulerName, schedule, {
+      ...template,
+      opts: checkedPriorityOptions(name, priorityKind, template?.opts),
+    })
+  const priorityQueue = Object.assign(queue, { priorityKind })
+  registerGlideMQInstance(priorityQueue)
+  return priorityQueue
 }
+
 export function createWorker<D = unknown, R = unknown>(
   name: string,
   processor: Processor<D, R>,

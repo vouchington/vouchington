@@ -64,7 +64,9 @@ export async function flushQueues(
   client: ScanAndUnlinkKeysClient = workerQueueCommandClient,
 ): Promise<{ concern: 'queues'; keysRemoved: number | null }> {
   signal?.throwIfAborted()
-  const targets = getQueueFlushTargetNames().map(name => createQueue(name))
+  const targets = getQueueFlushTargetNames().map(name =>
+    createQueue(name, { priorityKind: 'ranked' }),
+  )
   let obliterateError: Error | undefined
 
   try {
