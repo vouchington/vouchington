@@ -6,15 +6,15 @@ Immutable private association between an email intake and its admitted or matche
 
 Not partitioned — growth: unbounded.
 
-| Column                                            | Type                                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                   |
-| ------------------------------------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
-| `id`                                              | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                           |
-| `copyright_notice_email_intake_id`                | `uuid`                                     | no       |                              |          |           |           | Inbound email associated with the case.                   |
-| `copyright_notice_id`                             | `uuid`                                     | no       |                              |          |           |           | Copyright case associated with the inbound email.         |
-| `copyright_notice_email_intake_recommendation_id` | `uuid`                                     | yes      |                              |          |           |           | Agent recommendation retained as provenance for the link. |
-| `link_kind`                                       | `copyright_notice_email_intake_link_kinds` | no       |                              |          |           |           | Whether the email opened the case or matched its thread.  |
-| `matched_reference_lookup`                        | `text`                                     | yes      |                              |          |           |           | Keyed digest that caused thread correlation.              |
-| `created_at`                                      | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                           |
+| Column                                            | Type                                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                 |
+| ------------------------------------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
+| `id`                                              | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                                                         |
+| `copyright_notice_email_intake_id`                | `uuid`                                     | no       |                              |          |           |           | Inbound email associated with the case.                                                 |
+| `copyright_notice_id`                             | `uuid`                                     | no       |                              |          |           |           | Copyright case associated with the inbound email.                                       |
+| `copyright_notice_email_intake_recommendation_id` | `uuid`                                     | yes      |                              |          |           |           | Agent recommendation retained as provenance for the link.                               |
+| `link_kind`                                       | `copyright_notice_email_intake_link_kinds` | no       |                              |          |           |           | Whether the email opened the case or matched its thread.                                |
+| `matched_token_id`                                | `uuid`                                     | yes      |                              |          |           |           | Private token identity that caused thread correlation; cleared when the case is erased. |
+| `created_at`                                      | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,18 +25,19 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_copy_noti_email_intak_notic_links__matched_reference_lookup`: `CHECK (((matched_reference_lookup IS NULL) OR (char_length(matched_reference_lookup) = 64)))`
 - `copyright_notice_email_intake_notice_links_link_kind_check`: `CHECK ((link_kind = ANY (ARRAY['initial'::copyright_notice_email_intake_link_kinds, 'thread'::copyright_notice_email_intake_link_kinds])))`
 
 **Foreign keys:**
 
 - `fk_copyright_notice_email_intake_notice_links__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_notice_links__matched_token`: `FOREIGN KEY (matched_token_id) REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_notice_links__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_notice_links__recommendation`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_email_intake_notice_links_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_notice_links_pkey ON public.copyright_notice_email_intake_notice_links USING btree (id)`
+- `idx_copyright_notice_email_intake_notice_links__matched_token`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token ON public.copyright_notice_email_intake_notice_links USING btree (matched_token_id) WHERE (matched_token_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_notice_links__notice`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__notice ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_email_intake_notice_links__recommendation`: `CREATE INDEX idx_copyright_notice_email_intake_notice_links__recommendation ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
 - `uq_copyr_notice_email_intake_notice_links__notice_id__intake_id`: `CREATE UNIQUE INDEX uq_copyr_notice_email_intake_notice_links__notice_id__intake_id ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, copyright_notice_email_intake_id)`

@@ -1231,7 +1231,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n"
     },
     "fn_copyright_retention_erasable_columns(table_name text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
@@ -1472,6 +1472,9 @@
     },
     "fn_reject_copyright_delivery_intent_transition()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_delivery_intent_states;\nBEGIN\n  next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.sent_at IS NOT NULL AND (NEW.sent_at IS DISTINCT FROM OLD.sent_at\n      OR NEW.amazon_ses_message_id IS DISTINCT FROM OLD.amazon_ses_message_id))\n    OR (OLD.bounced_at IS NOT NULL AND NEW.bounced_at IS DISTINCT FROM OLD.bounced_at)\n    OR (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (\n      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_copyright_email_thread_reference_without_token()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_thread_reference_without_token()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.token_id IS NULL AND\n    (TG_OP = 'INSERT' OR current_setting('app.copyright_retention_erasure', true) IS DISTINCT FROM 'on') THEN\n    RAISE EXCEPTION 'Copyright email thread reference token may be cleared only by retention erasure';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_human_actor()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_human_actor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN\n    RAISE EXCEPTION 'copyright human decisions require an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -29662,10 +29665,6 @@
     },
     "copyright_notice_email_intake_notice_links": {
       "checkConstraints": {
-        "chk_copy_noti_email_intak_notic_links__matched_reference_lookup": {
-          "definition": "CHECK (((matched_reference_lookup IS NULL) OR (char_length(matched_reference_lookup) = 64)))",
-          "validated": true
-        },
         "copyright_notice_email_intake_notice_links_link_kind_check": {
           "definition": "CHECK ((link_kind = ANY (ARRAY['initial'::copyright_notice_email_intake_link_kinds, 'thread'::copyright_notice_email_intake_link_kinds])))",
           "validated": true
@@ -29732,9 +29731,9 @@
           "nullable": false,
           "ordinalPosition": 5
         },
-        "matched_reference_lookup": {
-          "comment": "Keyed digest that caused thread correlation.",
-          "dataType": "text",
+        "matched_token_id": {
+          "comment": "Private token identity that caused thread correlation; cleared when the case is erased.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29751,6 +29750,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "fk_copyright_notice_email_intake_notice_links__matched_token": {
+          "columns": ["matched_token_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_thread_tokens",
           "validated": true
         },
         "fk_copyright_notice_email_intake_notice_links__notice": {
@@ -29792,6 +29799,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_email_intake_notice_links__matched_token": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token ON public.copyright_notice_email_intake_notice_links USING btree (matched_token_id) WHERE (matched_token_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "matched_token_id",
+              "descending": false,
+              "expression": "matched_token_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(matched_token_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_email_intake_notice_links__notice": {
@@ -31183,10 +31213,6 @@
     },
     "copyright_notice_email_thread_references": {
       "checkConstraints": {
-        "copyright_notice_email_thread_references_lookup_token_check": {
-          "definition": "CHECK ((char_length(lookup_token) = 64))",
-          "validated": true
-        },
         "copyright_notice_email_thread_references_reference_kind_check": {
           "definition": "CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))",
           "validated": true
@@ -31223,16 +31249,6 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "lookup_token": {
-          "comment": "Keyed digest of a normalized RFC message reference.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
         "reference_kind": {
           "comment": "Whether the token is this message's Message-ID, an In-Reply-To token, or a References token.",
           "dataType": "copyright_notice_email_thread_reference_kinds",
@@ -31242,9 +31258,19 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "token_id": {
+          "comment": "Private token identity; NULL only after the owning case is erased under the retention-erasure flag.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         }
       },
-      "comment": "Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.",
+      "comment": "Private UUID references to keyed RFC Message-ID and In-Reply-To/References tokens.",
       "foreignKeys": {
         "fk_copyright_notice_email_thread_references__intake": {
           "columns": ["copyright_notice_email_intake_id"],
@@ -31252,6 +31278,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "fk_copyright_notice_email_thread_references__token": {
+          "columns": ["token_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_thread_tokens",
           "validated": true
         }
       },
@@ -31279,19 +31313,19 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_notice_email_thread_references__lookup": {
+        "idx_copyright_notice_email_thread_references__token": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_email_thread_references__lookup ON public.copyright_notice_email_thread_references USING btree (lookup_token, id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_thread_references__token ON public.copyright_notice_email_thread_references USING btree (token_id, id) WHERE (token_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "lookup_token",
+              "collation": null,
+              "column": "token_id",
               "descending": false,
-              "expression": "lookup_token",
+              "expression": "token_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -31305,16 +31339,16 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(token_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
           "valid": true
         },
-        "uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind": {
+        "uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, lookup_token, reference_kind)",
+          "definition": "CREATE UNIQUE INDEX uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, token_id, reference_kind)",
           "immediate": true,
           "keys": [
             {
@@ -31327,12 +31361,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "lookup_token",
+              "collation": null,
+              "column": "token_id",
               "descending": false,
-              "expression": "lookup_token",
+              "expression": "token_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -31361,11 +31395,119 @@
       "triggers": {
         "trigger_copyright_email_thread_references_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_thread_references_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        },
+        "trigger_copyright_email_thread_references_require_token": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_thread_references_require_token BEFORE INSERT OR UPDATE ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_thread_reference_without_token()"
         }
       },
       "uniqueConstraints": {
-        "uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind": {
-          "columns": ["copyright_notice_email_intake_id", "lookup_token", "reference_kind"]
+        "uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind": {
+          "columns": ["copyright_notice_email_intake_id", "token_id", "reference_kind"]
+        }
+      }
+    },
+    "copyright_notice_email_thread_tokens": {
+      "checkConstraints": {
+        "chk_copyright_notice_email_thread_tokens__lookup_digest": {
+          "definition": "CHECK ((lookup_digest ~ '^[0-9A-Fa-f]{64}$'::text))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "lookup_digest": {
+          "comment": "Keyed hex64 digest of a normalized RFC message reference; retention erasure overwrites it only when no live reference remains.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Private UUID identities for keyed RFC message-reference digests; the digest survives while any live case or reply uses it.",
+      "foreignKeys": {},
+      "indexes": {
+        "copyright_notice_email_thread_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_thread_tokens_pkey ON public.copyright_notice_email_thread_tokens USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_copyright_notice_email_thread_tokens__lookup_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_notice_email_thread_tokens__lookup_digest ON public.copyright_notice_email_thread_tokens USING btree (lookup_digest)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "lookup_digest",
+              "descending": false,
+              "expression": "lookup_digest",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_thread_tokens_immutable": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_thread_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        }
+      },
+      "uniqueConstraints": {
+        "uq_copyright_notice_email_thread_tokens__lookup_digest": {
+          "columns": ["lookup_digest"]
         }
       }
     },

@@ -675,6 +675,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_email_thread_reference_without_token`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_thread_reference_without_token()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_human_actor`
 
 ```sql
