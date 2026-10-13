@@ -117,8 +117,8 @@ async function probeAdvisory(payload: Record<string, unknown>): Promise<string |
         'deployment and AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN are not the cause and do not ' +
         'need checking. Run the command above from the Vouchington worktree root, then continue ' +
         'the task in this session. Journaling does not need this worktree install: search for ' +
-        '`journal_append`, and when the server is not connected use the CLI fallback in the ' +
-        'blackboard skill and tell the user you are falling back.'
+        '`journal_append`, and when the server is not connected stop journaling and tell the ' +
+        'user the server is unavailable (see the blackboard skill).'
       )
     }
     return (
@@ -127,8 +127,8 @@ async function probeAdvisory(payload: Record<string, unknown>): Promise<string |
       'Verify the hosted agent-blackboard ' +
       'deployment is reachable and AGENT_BLACKBOARD_URL and ' +
       'AGENT_BLACKBOARD_TOKEN are exported and valid (see docs/development/agent-blackboard.md), ' +
-      'then start a fresh session. If the vouchington-tooling server is not connected, use the ' +
-      'CLI fallback in the blackboard skill and tell the user you are falling back.'
+      'then start a fresh session. If the vouchington-tooling server is not connected, stop ' +
+      'journaling and tell the user the server is unavailable (see the blackboard skill).'
     )
   }
   return undefined

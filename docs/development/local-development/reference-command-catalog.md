@@ -115,11 +115,10 @@ one-at-a-time operations owned by the canonical
 
 No repository command appends journal entries. Agents call the `journal_append` tool of the
 machine-registered `vouchington-tooling` MCP server (see
-[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)), or its machine-installed CLI
-fallback when the server is not connected, and read a session back with `journal_entries`. Both
-need an explicit session id, which `node dev/check-blackboard.mts` prints at SessionStart. See
+[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)), and read a session back with
+`journal_entries`. Both need an explicit session id, which `node dev/check-blackboard.mts` prints at SessionStart. See
 [docs/development/agent-blackboard.md](../agent-blackboard.md) for the hosted connection, the
-outbox, and the CLI fallback.
+and outbox.
 
 [`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts) resolves a coherent
 harness, agent, and session for the retrospective scripts when their CLI override is absent. Cursor

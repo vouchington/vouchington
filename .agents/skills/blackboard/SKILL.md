@@ -11,7 +11,7 @@ Claude Code and Codex load `vouchington-workflow:blackboard`. Read
 `node_modules/vouchington-tooling/skills/blackboard/SKILL.md` instead when that plugin is not
 installed (Claude cloud, an automated run) and in Grok, Cursor, and OpenCode. The canonical skill
 owns the `vouchington-tooling` MCP procedure (`journal_append`, `journal_entries`, `outbox_status`,
-`outbox_flush`, `session_ensure`, `snapshot_export`, `session_archive`), its **CLI fallback**, and
+`outbox_flush`, `session_ensure`, `snapshot_export`, `session_archive`) and
 the journaling policy; do not restate them here or reload it once read. If neither copy can be
 read, report the missing prerequisite and do not apply this overlay alone.
 
@@ -26,7 +26,7 @@ Retrospectives are saved only through `node dev/retrospective-save.mts`, never `
 Hooks do not journal on your behalf, so your contemporaneous entries are the only journal source.
 
 The SessionStart hook prints `Blackboard sessionId: <id>`. Pass it as the explicit `sessionId` of
-every tool, and as `--session-id` to the CLI. An id that the user or task assigns explicitly (for
+every tool. An id that the user or task assigns explicitly (for
 example a child id its assignment names) wins over the printed line. When the line is absent, take the id from your own
 harness only. Claude Code exports `CLAUDE_CODE_SESSION_ID` and Codex exports `CODEX_THREAD_ID`.
 Cursor and Grok shells export no session id, so read the worktree-local file their SessionStart
@@ -38,44 +38,30 @@ harness's variable or file.
 
 Use `interactive` mode in a human-attended session and `autonomous` mode in an automated run.
 
-## Falling back to the CLI
+## When the server is unavailable
 
-Search for `journal_append` by bare name before concluding the server is unavailable. When the
-server is not registered or not connected, use the canonical skill's CLI fallback: a machine-installed
-`vouchington` at a verified absolute path outside the worktree. Never resolve it through the
-worktree's `node_modules/.bin`, `pnpm exec`, or a repository-controlled `PATH`; `pnpm exec
-agent-blackboard` is not the fallback. A permission denial is not unavailability.
-
-- **Where the machine CLI lives.** Neither the CLI nor its Node is on `PATH`.
-  - vouchington-machines installs the CLI at
-    `$HOME/vouchington-machines/node_modules/vouchington-tooling/bin/vouchington.mjs`; set
-    `BLACKBOARD_CLI` to its realpath.
-  - Set `BLACKBOARD_NODE` to the absolute `command` of the `vouchington-tooling` entry that
-    machines registered: `mcpServers.vouchington-tooling.command` in `~/.claude.json`, or
-    `mcp_servers.vouchington-tooling.command` in `~/.codex/config.toml`. Read only that key, for
-    example `jq -r '.mcpServers["vouchington-tooling"].command' ~/.claude.json`; never print the
-    rest of either file.
-  - The canonical skill's verification (source, version, outside the worktree) and its `env -i`
-    rules still apply. This only says where to look.
-- **Tell whoever is watching.** An interactive agent tells the user when it falls back, in the
-  same turn: MCP is unavailable and the CLI is in use. An automated session states the fallback in
-  its final report.
-- **No trusted CLI either.** Report the blocker (an automated run follows Automated runs below);
-  do not run a repository-supplied executable.
+Search for `journal_append` by bare name before concluding the server is unavailable. A permission
+denial is not unavailability. There is no CLI fallback: machine configuration withholds
+`AGENT_BLACKBOARD_TOKEN` from every shell command, sandboxed or not, so only the MCP server can
+deliver. When the server is not registered or not connected, an interactive agent stops
+journaling and tells the user the server is unavailable and how to fix it: run `./dev/initialize`,
+then reconnect with `/mcp` in Claude Code or restart Codex. An automated run follows Automated runs
+below. Never run `vouchington`, `agent-blackboard`, or any repository-supplied executable to
+journal.
 
 ## Automated runs
 
-An automated session (Auto Harness, scheduled, or shepherd) may have neither the server nor a
-trusted machine CLI: no repository registers either, and an automation host only has them when its
-own home carries the machine configuration. When it has neither, the run continues its primary
+An automated session (Auto Harness, scheduled, or shepherd) may not have the server: no repository
+registers it, and an automation host only has it when its own home carries the machine
+configuration. When it does not, the run continues its primary
 work and does not stop at the first journal trigger. The canonical skill's "stop and report the
 blocker" and "continue primary work only after persistence succeeds" apply to attended sessions,
 not here.
 
 Report in the final report, not as a failure of the task:
 
-- that journaling was unavailable and why (server not connected, no trusted CLI, delivery or
-  readback failed, or the sandbox withheld the credential and no unsandboxed run was approved);
+- that journaling was unavailable and why (server not connected, or delivery or
+  readback failed);
 - any pending outbox state, with `pendingCount` and `worktreePendingCount`, or that none was
   written (autonomous mode has no outbox, so a failed delivery is an error to report, not retry);
 - each finding you would have journaled, in the one-line grammar below, so the caller can journal
@@ -151,16 +137,14 @@ A sandbox denial is expected and is not a recovery target. A missing or stale cr
 hosted delivery. In interactive mode the writer retains sanitized feedback in its durable outbox,
 visibly pending: do not silently drop it or invent another fallback. Ask the user to refresh the
 connection when needed, then restart the MCP client or call `outbox_flush`. Saturation and
-persistence failure require reporting the concrete blocker. The fallback CLI needs the token for
-delivery and readback: follow the canonical skill's per-run unsandboxed approval, and never read,
-print, copy, or export the token to get around the sandbox. An automated run reports instead of
+persistence failure require reporting the concrete blocker. Never read, print, copy, or export the
+token to get around the sandbox. An automated run reports instead of
 asking (see Automated runs).
 
 ## Reading journal entries back
 
 Call `journal_entries({ sessionId })`: it returns `{ sessionId, entries }`, every entry of the
-session with its envelope, oldest first. Filter `data.type === "journal"`. The CLI fallback is
-`journal entries --session-id <id>`. A zero-entry session is not an error. Do not replace validated
+session with its envelope, oldest first. Filter `data.type === "journal"`. A zero-entry session is not an error. Do not replace validated
 retrospective persistence with `journal_append`.
 
 ## Child identity for spawned agents

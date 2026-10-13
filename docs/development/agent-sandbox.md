@@ -173,8 +173,8 @@ probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
 The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
 this deny list, so the token stays hidden from shell commands while the server can still use it.
-The CLI fallback therefore needs a one-command unsandboxed run
-([CLI fallback](agent-blackboard.md#cli-fallback)). Cursor and OpenCode pass the agent's
+The credential therefore reaches only the MCP server, and there is no CLI fallback
+([Server unavailable](agent-blackboard.md#server-unavailable)). Cursor and OpenCode pass the agent's
 environment to shell commands, so a token exported to them is visible to the commands they run.
 
 The list itself belongs to vouchington-machines; the

@@ -15,7 +15,7 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are
 `pnpm exec vouchington retrospective-facts`, `pnpm exec vouchington retrospective-transcript`, and
-the `journal_entries` tool of the `vouchington-tooling` MCP server (or its CLI fallback; see the
+the `journal_entries` tool of the `vouchington-tooling` MCP server (see the
 [blackboard skill](../blackboard/SKILL.md)), called with the `sessionId` the SessionStart hook printed.
 Unanswerable evidence is `unknown — no journal`, never a guess.
 
