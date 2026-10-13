@@ -50,6 +50,7 @@ export interface PostCommunity {
 
 export interface AuthorAside {
   about_html: string
+  lingua_rs_detected_language: string | null
   profile_links: import('./user').ProfileLink[]
   is_following: boolean
 }

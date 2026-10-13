@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { insertTestPost, createTestUser, followUser, setUserMarkdown } from '@voucha/test-helpers'
+import {
+  insertTestPost,
+  createTestUser,
+  followUser,
+  setUserMarkdown,
+  setUserLanguageDetectionFieldsForTest,
+} from '@voucha/test-helpers'
 
 describe('post-author-aside', () => {
   let creator: PrivateUser
@@ -39,6 +45,7 @@ describe('post-author-aside', () => {
       const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
       expect(response.body.author_aside).toBeTruthy()
       expect(response.body.author_aside.is_following).toBe(true)
+      expect(response.body.author_aside.lingua_rs_detected_language).toBeNull()
     })
 
     it('should include author_aside.is_following=false when viewer is the author', async () => {
@@ -57,6 +64,7 @@ describe('post-author-aside', () => {
     it('should include author_aside with rendered about_html when author has bio', async () => {
       const bioCreator = await createTestUser()
       await setUserMarkdown(bioCreator.id, 'Hello **world**')
+      await setUserLanguageDetectionFieldsForTest(bioCreator.id, 'ar')
 
       const postId = await insertTestPost({
         title: 'Bio Aside Test',
@@ -67,6 +75,7 @@ describe('post-author-aside', () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
       expect(response.body.author_aside.about_html).toContain('<p>')
+      expect(response.body.author_aside.lingua_rs_detected_language).toBe('ar')
       expect(Array.isArray(response.body.author_aside.profile_links)).toBe(true)
     })
   })

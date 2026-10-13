@@ -219,6 +219,7 @@ export function PostForm({
           contentLocked={contentLocked}
           markdown={markdown}
           postType={postType}
+          language={language}
           previewHtml={preview.previewHtml}
           previewLoading={preview.previewLoading}
           reviewCharCount={reviewMetrics.charCount}

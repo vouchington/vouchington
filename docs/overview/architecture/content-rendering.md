@@ -214,10 +214,14 @@ text plus nullable `declared_language` and `lingua_rs_detected_language`, prefer
 language, and places `lang` and `dir` on the caller's semantic host without a wrapper. Blank text
 uses its UI-owned fallback without either attribute.
 
-`MarkdownContent` remains the boundary for rich post content. Reduced API projections that expose
-post title or markdown must carry both language fields, and pass the resolved language to the rich
-boundary. Native clients consume the same fields from `api-fixtures/v1` and apply direction at the
-individual text or HTML leaf, never to an enclosing row.
+`MarkdownContent` remains the boundary for rich post content. Every call passes `lang`. Null means
+the text has no declared or detected language yet, and the component sets `dir="auto"` without a
+`lang` attribute. `web-markdown-content-requires-lang` rejects a call that omits `lang`. Reduced
+API projections that expose post title or markdown must carry both language fields, and pass the
+resolved language to the rich boundary. Native clients consume the same fields from
+`api-fixtures/v1` and apply direction at the individual text or HTML leaf, never to an enclosing
+row. The post author aside renders the author's bio through `UserBioCopy` and
+`author_aside.lingua_rs_detected_language`.
 
 Community about text is a separate plain-text boundary, `CommunityAboutCopy`. It uses the same
 declared-then-detected rule with `default_language` and `lingua_rs_detected_language`, on both the

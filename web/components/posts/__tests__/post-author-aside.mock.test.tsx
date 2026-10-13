@@ -87,6 +87,7 @@ const author = {
 
 const makeAside = (overrides: Partial<AuthorAside> = {}): AuthorAside => ({
   about_html: '',
+  lingua_rs_detected_language: null,
   profile_links: [],
   is_following: false,
   ...overrides,
@@ -124,6 +125,25 @@ describe('PostAuthorAside', () => {
     )
     expect(screen.getByText('Hello world')).toBeDefined()
     expect(screen.getByText('Read more →')).toBeDefined()
+  })
+
+  it('marks the bio with the author detected language', () => {
+    const { container } = render(
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside({
+          about_html: '<p>نبذة</p>',
+          lingua_rs_detected_language: 'ar',
+        })}
+        postType='discussion'
+      />,
+    )
+
+    const bio = container.querySelector('[lang]')
+    expect(bio).toHaveAttribute('lang', 'ar')
+    expect(bio).toHaveAttribute('dir', 'rtl')
+    expect(bio).toHaveTextContent('نبذة')
   })
 
   it('adds outbound UTM params to external links in the bio', async () => {

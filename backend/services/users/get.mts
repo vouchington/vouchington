@@ -171,11 +171,17 @@ export const getSystemUser = async (): Promise<PrivateUser | null> => {
   return systemUser
 }
 
-export async function getUserMarkdown(userId: string): Promise<string | null> {
-  const { rows } = await read(
-    sql`/* getUserMarkdown */ SELECT markdown FROM users WHERE id = ${userId} AND deleted_at IS NULL LIMIT 1`,
+export async function getUserMarkdown(userId: string): Promise<{
+  markdown: string | null
+  lingua_rs_detected_language: string | null
+} | null> {
+  const { rows } = await read<{
+    markdown: string | null
+    lingua_rs_detected_language: string | null
+  }>(
+    sql`/* getUserMarkdown */ SELECT markdown, lingua_rs_detected_language FROM users WHERE id = ${userId} AND deleted_at IS NULL LIMIT 1`,
   )
-  return rows[0]?.markdown ?? null
+  return rows[0] ?? null
 }
 
 export async function isFollowingUser(viewerId: string, targetId: string): Promise<boolean> {

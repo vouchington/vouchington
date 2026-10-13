@@ -35,13 +35,21 @@ vi.mock(import('../markdown-content-enhancer'), () => ({
 
 describe('MarkdownContent', () => {
   it('renders HTML content via parsed React nodes when html prop is provided', () => {
-    render(<MarkdownContent html='<p>Hello <strong>world</strong></p>' />)
+    render(
+      <MarkdownContent
+        lang={null}
+        html='<p>Hello <strong>world</strong></p>'
+      />,
+    )
     expect(screen.getByText('world')).toBeInTheDocument()
   })
 
   it('renders safe HTML attributes without inline styles or event handlers', () => {
     const { container } = render(
-      <MarkdownContent html='<p class="body" data-kind="post" style="color:red" onclick="alert(1)"><a href="javascript:alert(1)">Hello</a><img src="data:image/png;base64,abc" alt="bad"></p>' />,
+      <MarkdownContent
+        lang={null}
+        html='<p class="body" data-kind="post" style="color:red" onclick="alert(1)"><a href="javascript:alert(1)">Hello</a><img src="data:image/png;base64,abc" alt="bad"></p>'
+      />,
     )
 
     const paragraph = container.querySelector('p')
@@ -57,7 +65,12 @@ describe('MarkdownContent', () => {
   })
 
   it('renders raw markdown text in pre element when only markdown is provided', () => {
-    const { container } = render(<MarkdownContent markdown='# Hello\n**bold**' />)
+    const { container } = render(
+      <MarkdownContent
+        lang={null}
+        markdown='# Hello\n**bold**'
+      />,
+    )
     const pre = container.querySelector('pre')
     expect(pre).toBeInTheDocument()
     expect(pre?.textContent).toContain('# Hello')
@@ -65,12 +78,17 @@ describe('MarkdownContent', () => {
   })
 
   it('renders nothing when neither html nor markdown is provided', () => {
-    const { container } = render(<MarkdownContent />)
+    const { container } = render(<MarkdownContent lang={null} />)
     expect(container.firstChild).toBeNull()
   })
 
   it('markdown fallback does not inject HTML or execute scripts (XSS safety)', () => {
-    const { container } = render(<MarkdownContent markdown='<script>alert("xss")</script>' />)
+    const { container } = render(
+      <MarkdownContent
+        lang={null}
+        markdown='<script>alert("xss")</script>'
+      />,
+    )
     expect(container.querySelector('script')).toBeNull()
     expect(container.textContent).toContain('<script>')
   })
@@ -78,6 +96,7 @@ describe('MarkdownContent', () => {
   it('prefers html over markdown when both are provided', () => {
     const { container } = render(
       <MarkdownContent
+        lang={null}
         html='<p>HTML</p>'
         markdown='markdown text'
       />,
@@ -89,6 +108,7 @@ describe('MarkdownContent', () => {
   it('applies className to rendered element', () => {
     const { container } = render(
       <MarkdownContent
+        lang={null}
         html='<p>test</p>'
         className='my-class'
       />,
@@ -99,6 +119,7 @@ describe('MarkdownContent', () => {
   it('renders MarkdownContentEnhancer when features.code is true', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<pre><code class="language-ts">const x = 1</code></pre>'
         features={{ code: true }}
       />,
@@ -112,6 +133,7 @@ describe('MarkdownContent', () => {
   it('renders MarkdownContentEnhancer when features.images is true', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<img src="/sideload/example" alt="test" />'
         features={{ images: true }}
       />,
@@ -125,6 +147,7 @@ describe('MarkdownContent', () => {
   it('renders MarkdownContentEnhancer with both features when both are true', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<p>content</p>'
         features={{ code: true, images: true }}
       />,
@@ -137,6 +160,7 @@ describe('MarkdownContent', () => {
   it('renders MarkdownContentEnhancer when features.utm is true', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<p><a href="https://example.com">external</a></p>'
         features={{ utm: true }}
       />,
@@ -151,6 +175,7 @@ describe('MarkdownContent', () => {
   it('passes sanitized HTML to MarkdownContentEnhancer', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<p onclick="alert(1)"><a href="javascript:alert(1)">External</a><script>alert(1)</script></p>'
         features={{ utm: true }}
       />,
@@ -164,13 +189,19 @@ describe('MarkdownContent', () => {
   })
 
   it('does not render MarkdownContentEnhancer when features are absent', () => {
-    render(<MarkdownContent html='<p>test</p>' />)
+    render(
+      <MarkdownContent
+        lang={null}
+        html='<p>test</p>'
+      />,
+    )
     expect(screen.queryByTestId('enhancer')).toBeNull()
   })
 
   it('does not render MarkdownContentEnhancer when features are all false', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<p>test</p>'
         features={{ code: false, images: false, utm: false }}
       />,
@@ -181,6 +212,7 @@ describe('MarkdownContent', () => {
   it('renders MarkdownContentEnhancer when features.eagerFirstImage is true', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<img src="/sideload/example" alt="test" />'
         features={{ eagerFirstImage: true }}
       />,
@@ -193,6 +225,7 @@ describe('MarkdownContent', () => {
   it('demotes headings in preview HTML before enhancement', () => {
     render(
       <MarkdownContent
+        lang={null}
         html='<h1 class="title">Top</h1><p data-example="<h1>">Attr</p><h2>Nested</h2>'
         features={{ utm: true }}
         preview
@@ -205,5 +238,28 @@ describe('MarkdownContent', () => {
     expect(enhancer.querySelector('h3')).toHaveClass('title')
     expect(enhancer.querySelector('p')?.getAttribute('data-example')).toBe('<h1>')
     expect(enhancer.querySelector('h4')?.textContent).toBe('Nested')
+  })
+
+  it('sets lang and dir from a known content language', () => {
+    const { container } = render(
+      <MarkdownContent
+        lang='ar'
+        html='<p>نبذة</p>'
+      />,
+    )
+    const content = container.querySelector('[lang]')
+    expect(content).toHaveAttribute('lang', 'ar')
+    expect(content).toHaveAttribute('dir', 'rtl')
+  })
+
+  it('omits lang and sets dir auto when the content language is unknown', () => {
+    const { container } = render(
+      <MarkdownContent
+        lang={null}
+        html='<p>Hello</p>'
+      />,
+    )
+    expect(container.querySelector('[lang]')).toBeNull()
+    expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'auto')
   })
 })

@@ -20,6 +20,7 @@ export function CommentReplyPreview({ previewHtml, previewLoading }: Props) {
       ) : previewHtml ? (
         <MarkdownContent
           html={previewHtml}
+          lang={null}
           className='prose prose-sm max-w-none dark:prose-invert'
           features={MARKDOWN_CONTENT_FEATURES_RICH}
         />
