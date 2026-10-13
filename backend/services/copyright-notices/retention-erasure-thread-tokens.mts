@@ -1,4 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
+import { lockCopyrightRetentionCase } from './retention-erasure-preservation.mts'
 
 /** Token IDs used by this case before its references are cleared. */
 function caseThreadTokenIdsSql(noticeId: string): SQLStatement {
@@ -21,6 +24,26 @@ export function caseThreadTokenDigestsSql(noticeId: string): SQLStatement {
     WHERE token.id IN (`
     .append(caseThreadTokenIdsSql(noticeId))
     .append(sql`) ORDER BY token.lookup_digest`)
+}
+
+/** Keep ingestion's token-before-parent order; abort before erasure if the case grew meanwhile. */
+export async function lockCopyrightRetentionCaseThreadTokens(
+  transaction: TransactionQuery,
+  noticeId: string,
+): Promise<boolean> {
+  const { rows: candidateTokens } = await transaction<{ lookup_digest: string }>(
+    caseThreadTokenDigestsSql(noticeId),
+  )
+  const lockedDigests = new Set(candidateTokens.map(row => row.lookup_digest))
+  await lockCopyrightEmailThreadTokens(transaction, [...lockedDigests])
+  await lockCopyrightRetentionCase(transaction, noticeId)
+  // A linked intake may have committed while the notice lock was still pending.
+  // This separate READ COMMITTED statement sees every case reference and matched
+  // notice-link token; deferral happens before any external storage deletion.
+  const { rows: currentTokens } = await transaction<{ lookup_digest: string }>(
+    caseThreadTokenDigestsSql(noticeId),
+  )
+  return currentTokens.every(row => lockedDigests.has(row.lookup_digest))
 }
 
 /** Keep a shared digest while any reference or notice link outside this case still owns it. */

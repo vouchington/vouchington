@@ -53,7 +53,9 @@ async function admitCopyrightEmailIntake(
       (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
-    WHERE intake.id = ${input.intakeId} FOR UPDATE OF intake
+    -- FK writers only need KEY SHARE on this intake. Keep staff decisions serialized
+    -- without blocking a token-first thread writer while awaiting its token lock.
+    WHERE intake.id = ${input.intakeId} FOR NO KEY UPDATE OF intake
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')

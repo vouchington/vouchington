@@ -74,6 +74,9 @@ deleting any bucket version. It clears the erased case's references and deletes 
 when no intake or artifact still references it. Immutable legal receipts remain.
 Thread-token erasure takes the same sorted digest locks as ingestion, clears the erased case's
 token FKs, and overwrites a digest only when no other live intake or link owns that token.
+It takes those token locks before the notice row lock. If a newly linked reference adds a case
+token before the notice lock, the sweep detects the new digest in a fresh read and defers that
+case before deleting any evidence; the next run takes the complete lock set.
 
 The current screening execution, rather than the newest result UUID or any historical clear result,
 owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)

@@ -2,10 +2,8 @@ import { beginBoundedTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
-import { lockCopyrightRetentionCase } from './retention-erasure-preservation.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
-import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
-import { caseThreadTokenDigestsSql } from './retention-erasure-thread-tokens.mts'
+import { lockCopyrightRetentionCaseThreadTokens } from './retention-erasure-thread-tokens.mts'
 import {
   COPYRIGHT_RETENTION_ERASURE,
   eraseCopyrightRetentionTableSql,
@@ -98,7 +96,9 @@ export async function eraseCopyrightRetentionCase(
   await transaction(sql`/* setCopyrightRetentionTimeouts */
     SELECT set_config('lock_timeout', '5s', true),
       set_config('idle_in_transaction_session_timeout', '120s', true)`)
-  await lockCopyrightRetentionCase(transaction, noticeId)
+  // Ingestion locks tokens before its FK parents. If the case gained another
+  // token while those locks were acquired, leave it for the next scheduled run.
+  if (!(await lockCopyrightRetentionCaseThreadTokens(transaction, noticeId))) return 'ineligible'
   const { rows: stillEligible } = await transaction<{ id: string }>(
     sql`/* recheckCopyrightRetentionEligibility */`
       .append(copyrightRetentionEligibleSql(options.now, options.cutoff))
@@ -108,13 +108,6 @@ export async function eraseCopyrightRetentionCase(
   const exclusiveObjects = await listCopyrightRetentionEvidenceKeys(noticeId, transaction)
   const keys = exclusiveObjects.map(row => row.key)
   await deleteCopyrightEvidenceObjectVersions(keys)
-  const { rows: threadTokens } = await transaction<{ lookup_digest: string }>(
-    caseThreadTokenDigestsSql(noticeId),
-  )
-  await lockCopyrightEmailThreadTokens(
-    transaction,
-    threadTokens.map(row => row.lookup_digest),
-  )
   await transaction(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
   )

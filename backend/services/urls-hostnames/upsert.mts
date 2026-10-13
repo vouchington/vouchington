@@ -63,7 +63,12 @@ export const upsertUrlHostnames = async (
   }
 
   // Write: insert only new hostnames (ON CONFLICT as safety net for replica lag/race conditions)
-  const { rows: newRows } = await write<{ id: string; hostname: string; is_blocked: boolean }>(
+  const { rows: newRows } = await write<{
+    id: string
+    hostname: string
+    is_blocked: boolean
+    inserted: boolean
+  }>(
     `/* upsertUrlHostnames */
     WITH input(hostname) AS (
       SELECT unnest($1::text[])
@@ -110,17 +115,19 @@ export const upsertUrlHostnames = async (
     ON CONFLICT (hostname) DO UPDATE SET
       hostname = EXCLUDED.hostname,
       publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
-    RETURNING id, hostname, is_blocked
+    RETURNING WITH (OLD AS prior) id, hostname, is_blocked, prior.id IS NULL AS inserted
   `,
     [missingHostnames, userId || null, provenance === 'public'],
     options,
   )
 
+  // A conflict can return an already blocked feed-only hostname after a replica miss.
+  // Only an actual insert can have inherited a parent block from this statement.
   // For newly-inserted hostnames that inherited a block from a parent hostname,
   // insert a url_hostname_blocks row so the trigger keeps url_hostnames.is_blocked in sync.
   const inheritedBlockedIds: string[] = []
-  for (const row of newRows as Array<{ id: string; hostname: string; is_blocked: boolean }>) {
-    if (row.is_blocked) inheritedBlockedIds.push(row.id)
+  for (const row of newRows) {
+    if (row.inserted && row.is_blocked) inheritedBlockedIds.push(row.id)
   }
 
   if (inheritedBlockedIds.length > 0) {

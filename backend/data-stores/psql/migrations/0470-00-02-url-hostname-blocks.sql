@@ -47,6 +47,16 @@ CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_insert()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  -- Lock every affected hostname even when it is already blocked. A concurrent
+  -- source removal must wait, then evaluate the remaining blocks in a fresh
+  -- READ COMMITTED statement.
+  PERFORM host.id FROM url_hostnames host
+  JOIN (
+    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ) affected ON affected.id = host.id
+  ORDER BY host.id FOR UPDATE OF host;
+
   WITH affected AS MATERIALIZED (
     SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
@@ -65,6 +75,16 @@ CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_insert
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_update()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  PERFORM host.id FROM url_hostnames host
+  JOIN (
+    SELECT url_hostname_id AS id FROM prior_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    UNION
+    SELECT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ) affected ON affected.id = host.id
+  ORDER BY host.id FOR UPDATE OF host;
+
   WITH affected AS MATERIALIZED (
     SELECT url_hostname_id AS id FROM prior_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
@@ -92,6 +112,13 @@ CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_update
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_delete()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
+  PERFORM host.id FROM url_hostnames host
+  JOIN (
+    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ) affected ON affected.id = host.id
+  ORDER BY host.id FOR UPDATE OF host;
+
   WITH affected AS MATERIALIZED (
     SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
