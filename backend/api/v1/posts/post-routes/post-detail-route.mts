@@ -26,6 +26,7 @@ import { labelAndMaskPosts } from '@services/content-provenance'
 import { getUrlEmbedByUrlId } from '@services/rss-feed-items'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
+import { userTag } from '@ts-shared/cache/cache-tags'
 import app from '../../../app.mts'
 import {
   getOptionalAuthAndRateLimit,
@@ -54,6 +55,7 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
       ? post.created_by_id
       : null
   const isAuthorAdmin = authorId ? adminIds.has(authorId) : false
+  if (authorId) ctx.set('Cache-Tag', userTag(authorId))
 
   const authorBioPromise = authorId ? getUserMarkdown(authorId) : Promise.resolve(null)
   const profileLinksPromise = authorId ? listProfileLinks(authorId) : Promise.resolve([])

@@ -31,6 +31,7 @@ describe('post-author-aside', () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
       expect(response.body.author_aside).toBeNull()
+      expect(response.headers['cache-tag']).toBeUndefined()
     })
 
     it('should include author_aside.is_following=true when viewer follows author', async () => {
@@ -46,6 +47,7 @@ describe('post-author-aside', () => {
       expect(response.body.author_aside).toBeTruthy()
       expect(response.body.author_aside.is_following).toBe(true)
       expect(response.body.author_aside.lingua_rs_detected_language).toBeNull()
+      expect(response.headers['cache-tag']).toBe(`user:${creator.id}`)
     })
 
     it('should include author_aside.is_following=false when viewer is the author', async () => {
@@ -76,6 +78,7 @@ describe('post-author-aside', () => {
       const response = await request.get(`/api/v1/posts/${postId}`).expect(200)
       expect(response.body.author_aside.about_html).toContain('<p>')
       expect(response.body.author_aside.lingua_rs_detected_language).toBe('ar')
+      expect(response.headers['cache-tag']).toBe(`user:${bioCreator.id}`)
       expect(Array.isArray(response.body.author_aside.profile_links)).toBe(true)
     })
   })

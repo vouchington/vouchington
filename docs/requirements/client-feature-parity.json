@@ -290,6 +290,36 @@
       }
     },
     {
+      "id": "post-author-bio-language",
+      "title": "Post author bio language and direction",
+      "domain": "Content",
+      "intents": [],
+      "requirements": ["docs/requirements/users/LOCALIZATION.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "markdown/html rendering & authoring"
+        },
+        {
+          "table": "C",
+          "surface": "post-author-bio-language"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/posts/post-author-aside.tsx"],
+          "behaviorTests": ["web/components/posts/__tests__/post-author-aside.mock.test.tsx"]
+        },
+        "swift": { "status": "none", "uiEvidence": [], "behaviorTests": [] },
+        "dotnet": { "status": "none", "uiEvidence": [], "behaviorTests": [] }
+      },
+      "gap": {
+        "summary": "Native post-detail author bios do not consume author_aside.lingua_rs_detected_language or set lang and dir on the bio leaf. The producer stages the nullable field in PR #2806; Swift and .NET adoption remains open.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/2819"
+      }
+    },
+    {
       "id": "lists",
       "title": "Lists CRUD",
       "domain": "Library",

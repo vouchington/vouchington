@@ -9,6 +9,11 @@ Caches other routes through configuration such as:
 
 All public backend GET endpoints set `Cache-Control: public, max-age=N` headers for logged-out users — this signals the response is safe to cache publicly. Cacheable audiences are dispatched to `CachedOrigin`, a separate `WorkerEntrypoint` that Cloudflare's Workers Cache (GA) sits in front of; on a platform HIT, `CachedOrigin` never runs. The worker overwrites the backend's `max-age` with its own edge TTL (`ANON_CACHE_TTL_SECONDS`, default 30s) via `public, max-age=${TTL}, stale-while-revalidate=${TTL * 2}, stale-if-error=86400` on cached responses. The 30-second anonymous TTL remains in place while the auth-transition hardening is staged; raising it to 300 seconds is a separate gated rollout. See [docs/overview/architecture/caching-strategy.md](../../architecture/caching-strategy.md) for the full tier/audience breakdown and [docs/overview/architecture/anon-html-edge-caching-csp.md](../../architecture/anon-html-edge-caching-csp.md) for how anon HTML caches despite its per-request CSP nonce.
 
+`CachedOrigin` keeps the path-derived entity tag and appends one valid `Cache-Tag` supplied by a
+trusted origin response. Post detail supplies its visible author's `user:<id>` tag, so a user-tag
+purge after bio-language detection also evicts cached post details. Missing, malformed, duplicate,
+or multi-tag origin values leave the path-derived tag intact. Anonymous posts supply no author tag.
+
 ### Staging cache canary
 
 `/infra/edge-cache-canary` is a non-discoverable validation route. In non-production it follows the

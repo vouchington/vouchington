@@ -254,6 +254,25 @@ describe('CachedOrigin.fetch', () => {
     expect(fallbackResponse.headers.get('Cache-Tag')).toBe('html')
   })
 
+  it('adds an origin dependency tag to a post detail cache entry', async () => {
+    let originTag = 'user:author-id'
+    globalThis.fetch = vi.fn<VitestLooseMock>(() =>
+      Promise.resolve(new Response('ok', { headers: { 'Cache-Tag': originTag } })),
+    ) as unknown as typeof fetch
+    const origin = buildOrigin(
+      { audience: 'anon', isRsc: false },
+      { BACKEND_ORIGIN: 'https://backend.example.com' },
+    )
+    const response = await origin.fetch(new Request('https://voucha.ai/api/v1/posts/post-id'))
+    expect(response.headers.get('Cache-Tag')).toBe('post:post-id,user:author-id')
+    originTag = 'user:author-id,post:other-post'
+    const malformed = await origin.fetch(new Request('https://voucha.ai/api/v1/posts/post-id'))
+    expect(malformed.headers.get('Cache-Tag')).toBe('post:post-id')
+    originTag = 'post:post-id'
+    const duplicate = await origin.fetch(new Request('https://voucha.ai/api/v1/posts/post-id'))
+    expect(duplicate.headers.get('Cache-Tag')).toBe('post:post-id')
+  })
+
   it('computes the TTL from ctx.props.audience, not from the request', async () => {
     globalThis.fetch = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('ok')),

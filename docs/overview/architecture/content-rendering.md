@@ -222,6 +222,9 @@ resolved language to the rich boundary. Native clients consume the same fields f
 `api-fixtures/v1` and apply direction at the individual text or HTML leaf, never to an enclosing
 row. The post author aside renders the author's bio through `UserBioCopy` and
 `author_aside.lingua_rs_detected_language`.
+When editing a post, the compose preview starts from the post's declared language. The post-detail
+API tags public cache entries with both the post and its visible author, so bio-language detection's
+user-tag purge refreshes the embedded author aside.
 
 Community about text is a separate plain-text boundary, `CommunityAboutCopy`. It uses the same
 declared-then-detected rule with `default_language` and `lingua_rs_detected_language`, on both the

@@ -1,4 +1,5 @@
 import { deriveCacheTags, type CacheTagRouteContext } from '@ts-shared/cache/cache-tags'
+import { isValidCacheTag } from '@vouchington/utils/cache-tags'
 import {
   buildCacheControlHeader,
   getCacheTtlSecondsForAudience,
@@ -60,6 +61,15 @@ export const finalizeCachedOriginResponse = (
   const tags = input.cacheTagOverride
     ? [input.cacheTagOverride]
     : deriveCacheTags(input.pathname, tagContext)
+  const originTag = originResponse.headers.get('Cache-Tag')
+  if (
+    !input.cacheTagOverride &&
+    originTag &&
+    isValidCacheTag(originTag) &&
+    !tags.includes(originTag)
+  ) {
+    tags.push(originTag)
+  }
   cacheHeaders.set('Cache-Tag', tags.join(','))
   return new Response(originResponse.body, {
     status: originResponse.status,
