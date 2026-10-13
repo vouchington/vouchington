@@ -193,7 +193,7 @@ export async function runAndCapture(
 export function writeResults() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const outputPath = join(OUTPUT_DIR, `results-${timestamp}.json`)
-  writeFileSync(outputPath, JSON.stringify(results, null, 2))
+  writeFileSync(outputPath, JSON.stringify({ results, completedScenarioIds }, null, 2))
   console.log(`\nResults written to: ${outputPath}`)
   console.log(`Total queries explained: ${results.length}`)
 }

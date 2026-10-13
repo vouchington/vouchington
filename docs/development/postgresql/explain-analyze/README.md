@@ -149,7 +149,9 @@ Calls each service function, captures the SQL queries, and replays them with
 `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON)`. Results are written to
 `backend/scripts/explain-analyze/output/results-<timestamp>.json`.
 The run fails if a scenario throws, captures no SQL, or cannot replay a captured query. Partial
-results are still written so CI artifacts retain the plans captured before the failure.
+results are still written so CI artifacts retain the plans captured before the failure. The JSON
+artifact contains both captured `results` and `completedScenarioIds`; a result from a failed plan
+mode does not mark its scenario complete.
 The runtime manifest requires the exact scenario identities in `scenario-manifest.mts`, so replacing
 a scenario cannot satisfy the ratchet merely by preserving its count. Required plan-shape gates also
 verify candidate-driven universal-topic search, projection-only RSS state reads, and index-ordered
@@ -291,8 +293,11 @@ ambiguous same-name reads, then groups the latter two by owning backend director
 suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
 `TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
 the annotated-statement total. Leading SQL comments after the annotation do not hide a read;
-the complete SQL text still has to match a capture exactly. A partial result artifact missing a
-registered scenario is rejected.
+the complete SQL text still has to match a capture exactly. The report rejects an artifact whose
+completed-scenario list or captured scenarios differ from the registered manifest, even when a
+failed final scenario already emitted one plan. Cursor helper calls from the root PostgreSQL
+package and its cursor subpath are included. An annotated statement with an interpolated first
+SQL token stays in the read inventory for review because its verb cannot be proven statically.
 Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 
 ```bash

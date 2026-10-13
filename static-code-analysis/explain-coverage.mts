@@ -1,12 +1,16 @@
-import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { extractExecutedPostgresSql } from 'no-mistakes'
 import { LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
 import { EXPLAIN_SCENARIO_MANIFEST } from '../backend/scripts/explain-analyze/scenario-manifest.mts'
-import { latestResultsPath, trackedRuntimeSources, type Source } from './explain-coverage-files.mts'
+import {
+  latestResultsPath,
+  readCompletedExplainResults,
+  trackedRuntimeSources,
+  type CapturedResult,
+  type Source,
+} from './explain-coverage-files.mts'
 
 type SqlFact = Awaited<ReturnType<typeof extractExecutedPostgresSql>>[number]
-type CapturedResult = { name: string; query_text: string; scenario_id: string }
 
 export interface UncoveredRead {
   name: string
@@ -34,6 +38,9 @@ export function isRead(sqlText: string | null): boolean {
     statement = withoutComment
   }
   if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
+  // The released extractor keeps an interpolated leading token as a placeholder. Its SQL
+  // verb is unknown, so retain the annotated statement for review rather than hiding it.
+  if (/^sql_placeholder_\d+\b/.test(statement)) return true
   return (
     /^WITH\b/i.test(statement) &&
     !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(
@@ -152,31 +159,23 @@ export async function reportCoverage(
   resultsPath: string,
   expectedScenarioIds: readonly string[] = EXPLAIN_SCENARIO_MANIFEST,
 ): Promise<CoverageReport> {
-  const results = JSON.parse(readFileSync(resultsPath, 'utf8')) as unknown
-  if (
-    !Array.isArray(results) ||
-    results.some(
-      result =>
-        typeof result?.name !== 'string' ||
-        typeof result?.query_text !== 'string' ||
-        typeof result?.scenario_id !== 'string',
-    )
-  ) {
-    throw new Error(`Invalid EXPLAIN results: ${resultsPath}`)
-  }
-  const capturedScenarioIds = new Set(results.map(result => result.scenario_id as string))
-  if (
-    expectedScenarioIds.some(id => !capturedScenarioIds.has(id)) ||
-    [...capturedScenarioIds].some(id => !expectedScenarioIds.includes(id))
-  )
-    throw new Error(`Incomplete EXPLAIN scenario artifact: ${resultsPath}`)
-  const facts = await extractExecutedPostgresSql({
-    sources,
-    importSpecifier: '@data-stores/psql',
-    executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-    executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
-  })
-  return buildCoverageReport(facts, results as CapturedResult[])
+  const results = readCompletedExplainResults(resultsPath, expectedScenarioIds)
+  const cursorNames = ['createAsyncGeneratorFromCursor', 'executeHandlerWithCursorInBatches']
+  const [rootFacts, cursorSubpathFacts] = await Promise.all([
+    extractExecutedPostgresSql({
+      sources,
+      importSpecifier: '@data-stores/psql',
+      executorNames: ['query', 'read', 'write', ...cursorNames],
+      executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
+      executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
+    }),
+    extractExecutedPostgresSql({
+      sources,
+      importSpecifier: '@data-stores/psql/cursors',
+      executorNames: cursorNames,
+    }),
+  ])
+  return buildCoverageReport([...rootFacts, ...cursorSubpathFacts], results)
 }
 
 if (import.meta.main) {

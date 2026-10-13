@@ -125,7 +125,7 @@ describe('writeResults', () => {
     const newFile = readdirSync(OUTPUT_DIR).find(name => !before.has(name))
     if (!newFile) throw new Error('writeResults did not create a new output file')
     const written = JSON.parse(readFileSync(join(OUTPUT_DIR, newFile), 'utf8'))
-    expect(written).toContainEqual(failing)
+    expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
     rmSync(join(OUTPUT_DIR, newFile))
   })
 })

@@ -23,14 +23,17 @@ read(\`/* reused */ SELECT id FROM things WHERE key = \${key}\`)
 `
       writeFileSync(
         resultsPath,
-        JSON.stringify([
-          {
-            name: 'reused',
-            query_text:
-              '/* reused */ WITH changed AS (UPDATE things SET seen = true RETURNING id) SELECT id FROM changed',
-            scenario_id: 'write-plan',
-          },
-        ]),
+        JSON.stringify({
+          results: [
+            {
+              name: 'reused',
+              query_text:
+                '/* reused */ WITH changed AS (UPDATE things SET seen = true RETURNING id) SELECT id FROM changed',
+              scenario_id: 'write-plan',
+            },
+          ],
+          completedScenarioIds: ['write-plan'],
+        }),
       )
       const report = await reportCoverage(
         [{ fileName: 'backend/services/things/query.mts', source }],
@@ -66,19 +69,22 @@ export async function getUsers() { return read('/* getUsers */ TABLE users') }
       )
       writeFileSync(
         resultsPath,
-        JSON.stringify([
-          {
-            name: 'getPosts:force_custom_plan',
-            query_text: '/* getPosts */ SELECT id FROM posts',
-            scenario_id: 'posts-plan',
-          },
-          {
-            name: 'getTopics:baseline:force_generic_plan',
-            query_text:
-              '/* getTopics */ WITH matching AS (SELECT id FROM topics) SELECT id FROM matching',
-            scenario_id: 'topics-plan',
-          },
-        ]),
+        JSON.stringify({
+          results: [
+            {
+              name: 'getPosts:force_custom_plan',
+              query_text: '/* getPosts */ SELECT id FROM posts',
+              scenario_id: 'posts-plan',
+            },
+            {
+              name: 'getTopics:baseline:force_generic_plan',
+              query_text:
+                '/* getTopics */ WITH matching AS (SELECT id FROM topics) SELECT id FROM matching',
+              scenario_id: 'topics-plan',
+            },
+          ],
+          completedScenarioIds: ['posts-plan', 'topics-plan'],
+        }),
       )
 
       const report = await reportCoverage(
@@ -121,18 +127,21 @@ read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
 `
       writeFileSync(
         resultsPath,
-        JSON.stringify([
-          {
-            name: 'getPostByAny:baseline:force_custom_plan',
-            query_text: "/* getPostByAny */ SELECT id FROM posts WHERE slug = 'a  b'",
-            scenario_id: 'post-plan',
-          },
-          {
-            name: 'getUnique:force_generic_plan',
-            query_text: "/* getUnique */ SELECT id FROM posts WHERE slug = 'a b'",
-            scenario_id: 'unique-plan',
-          },
-        ]),
+        JSON.stringify({
+          results: [
+            {
+              name: 'getPostByAny:baseline:force_custom_plan',
+              query_text: "/* getPostByAny */ SELECT id FROM posts WHERE slug = 'a  b'",
+              scenario_id: 'post-plan',
+            },
+            {
+              name: 'getUnique:force_generic_plan',
+              query_text: "/* getUnique */ SELECT id FROM posts WHERE slug = 'a b'",
+              scenario_id: 'unique-plan',
+            },
+          ],
+          completedScenarioIds: ['post-plan', 'unique-plan'],
+        }),
       )
       const report = await reportCoverage(
         [{ fileName: 'backend/services/posts/get.mts', source }],
@@ -143,6 +152,53 @@ read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
       expect(report.uncoveredReads.map(read => read.line)).toEqual([3, 4, 6])
       expect(report.ambiguousReads.map(read => read.line)).toEqual([5])
       expect(formatCoverageReport(report)).toContain('Ambiguous reads: 1')
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps dynamic leading reads and root/subpath cursor calls in the inventory', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-cursors-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [
+            {
+              name: 'cursorRoot',
+              query_text: '/* cursorRoot */ SELECT id FROM posts',
+              scenario_id: 'cursor-plan',
+            },
+          ],
+          completedScenarioIds: ['cursor-plan'],
+        }),
+      )
+      const report = await reportCoverage(
+        [
+          {
+            fileName: 'backend/services/posts/root.mts',
+            source: `import { read, createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+read(\`/* dynamicLeading */ \${fragment}\`)
+createAsyncGeneratorFromCursor(sql\`/* cursorRoot */ SELECT id FROM posts\`)
+`,
+          },
+          {
+            fileName: 'backend/services/posts/subpath.mts',
+            source: `import { executeHandlerWithCursorInBatches } from '@data-stores/psql/cursors'
+executeHandlerWithCursorInBatches(\`/* cursorSubpath */ SELECT id FROM posts\`, { batchSize: 1, handler: async () => {} })
+`,
+          },
+        ],
+        resultsPath,
+        ['cursor-plan'],
+      )
+      expect(report).toMatchObject({ annotatedStatements: 3, reads: 3, coveredReads: 1 })
+      expect(report.uncoveredReads.map(read => read.name)).toEqual([
+        'dynamicLeading',
+        'cursorSubpath',
+      ])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
@@ -173,7 +229,23 @@ read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
       const resultsPath = join(fixtureDir, 'results.json')
       writeFileSync(
         resultsPath,
-        JSON.stringify([{ name: 'lock', query_text: '/* lock */ SELECT 1', scenario_id: 'first' }]),
+        JSON.stringify({
+          results: [{ name: 'lock', query_text: '/* lock */ SELECT 1', scenario_id: 'first' }],
+          completedScenarioIds: ['first'],
+        }),
+      )
+      await expect(reportCoverage([], resultsPath, ['first', 'later'])).rejects.toThrow(
+        'Incomplete EXPLAIN scenario artifact',
+      )
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [
+            { name: 'lock', query_text: '/* lock */ SELECT 1', scenario_id: 'first' },
+            { name: 'late', query_text: '/* late */ SELECT 1', scenario_id: 'later' },
+          ],
+          completedScenarioIds: ['first'],
+        }),
       )
       await expect(reportCoverage([], resultsPath, ['first', 'later'])).rejects.toThrow(
         'Incomplete EXPLAIN scenario artifact',

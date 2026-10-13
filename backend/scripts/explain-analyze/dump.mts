@@ -98,7 +98,7 @@ function main() {
   const filePath = join(OUTPUT_DIR, latest)
   console.error(`Reading: ${filePath}`)
 
-  const results = JSON.parse(readFileSync(filePath, 'utf8')) as ExplainResult[]
+  const { results } = JSON.parse(readFileSync(filePath, 'utf8')) as { results: ExplainResult[] }
 
   console.log(`# EXPLAIN ANALYZE Results (${results.length} queries)`)
   console.log(`# Source: ${latest}\n`)
