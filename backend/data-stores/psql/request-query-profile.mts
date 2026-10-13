@@ -102,7 +102,7 @@ interface RequestQueryTimingInput {
   cursorBatches?: number
   pipelined?: boolean
 }
-const TRANSACTION_CONTROL_ANNOTATION = 'beginTransaction'
+const TRANSACTION_CONTROL_ANNOTATIONS = new Set(['beginTransaction', 'beginBoundedTransaction'])
 
 /** Original timing/exclusion rules apply identically to request and independent worker buckets. */
 export function recordRequestQueryTiming(input: RequestQueryTimingInput): void {
@@ -116,6 +116,6 @@ export function recordRequestQueryTiming(input: RequestQueryTimingInput): void {
     excludedFromRepeats:
       input.cursorBatches !== undefined ||
       input.pipelined === true ||
-      input.annotation === TRANSACTION_CONTROL_ANNOTATION,
+      (input.annotation !== null && TRANSACTION_CONTROL_ANNOTATIONS.has(input.annotation)),
   })
 }

@@ -5,7 +5,7 @@ export interface RequestQuery {
   endMs: number
   /**
    * Cursor-batch iteration and pipelined batches are one logical statement, not a repeat; so is
-   * transaction control (`beginTransaction`), which is not a lookup.
+   * transaction control (`beginTransaction` or `beginBoundedTransaction`), which is not a lookup.
    */
   excludedFromRepeats: boolean
 }
