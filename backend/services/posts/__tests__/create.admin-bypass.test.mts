@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createRandomString,
   createTestUser,
@@ -8,9 +8,14 @@ import {
 } from '@voucha/test-helpers'
 import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
+import { withOwnedPostCommitCompletions } from '@voucha/test-helpers/post-commit-completion'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
+import { spam_detection } from '@queues/spam-detection/queues'
+import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
-import * as entityListenerEnqueues from '@queues/entity-listeners/enqueues'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import type { ProcessPostCreatedJobData } from '@queues/entity-listeners/types'
 
@@ -43,7 +48,42 @@ describe('create.admin-bypass', () => {
     expect(
       await getClassifierRunRequestFacts(post.id, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
     ).toEqual([])
-    expect(await readClassifierRunDispatcherJobsForTest(post.id)).toEqual([])
+    // Admin bypass removes moderation/spam work, not the documented autotagging fan-out.
+    const taggingData = {
+      classifier: TAGGING_CLASSIFIER_SLUG,
+      postId: post.id,
+      rssFeedItemId: null,
+    }
+    expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([
+      { classifier_slug: TAGGING_CLASSIFIER_SLUG },
+    ])
+    const dispatcherJobs = await readClassifierRunDispatcherJobsForTest(post.id)
+    expect(dispatcherJobs).toHaveLength(1)
+    expect(dispatcherJobs[0]).toMatchObject({
+      id: classifierRunDispatcherJobId(taggingData),
+      name: 'classifier-run-dispatcher',
+    })
+    expect(dispatcherJobs[0]!.data).toEqual(taggingData)
+    expect(
+      (await readAllQueueJobs(openai_moderation_omni_single)).filter(
+        job =>
+          job.name === 'post' &&
+          job.data !== null &&
+          typeof job.data === 'object' &&
+          'id' in job.data &&
+          job.data.id === post.id,
+      ),
+    ).toEqual([])
+    expect(
+      (await readAllQueueJobs(spam_detection)).filter(
+        job =>
+          job.name === 'post' &&
+          job.data !== null &&
+          typeof job.data === 'object' &&
+          'id' in job.data &&
+          job.data.id === post.id,
+      ),
+    ).toEqual([])
   })
 
   it('createPost still requests community moderation for non-admin auto-approved publications', async () => {
@@ -74,14 +114,20 @@ describe('create.admin-bypass', () => {
 })
 
 async function createPostAndSettleCreatedEnqueue(actor: PrivateUser, input: CreatePostInput) {
-  const enqueue = vi.spyOn(entityListenerEnqueues, 'enqueueOnPostCreated')
-  try {
-    const post = await createPost(actor, WEB_PROVENANCE, input)
-    await Promise.all(enqueue.mock.results.map(result => result.value))
-    return post
-  } finally {
-    enqueue.mockRestore()
-  }
+  const slug = `admin-bypass-${crypto.randomUUID()}`
+  return withOwnedPostCommitCompletions(
+    new Set([slug]),
+    () => createPost(actor, WEB_PROVENANCE, { ...input, slug }),
+    async (post, completions) => {
+      expect(completions).toHaveLength(1)
+      expect(completions[0]).toMatchObject({ kind: 'created', postId: post.id, slug })
+      // The helper drains the actual producer settlement, including every rejected operation,
+      // before returning; the canonical test adapter also completes processPostCreated.
+      const settled = await completions[0]!.completion
+      expect(settled.operations).toHaveLength(2)
+      expect(settled.operations.every(operation => operation.status === 'fulfilled')).toBe(true)
+    },
+  )
 }
 
 async function findPostCreatedJobInNonFailedState(postId: string) {
