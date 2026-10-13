@@ -4,17 +4,20 @@ import type { Post, UpdatePostChanges } from '../types.mts'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import onError from '@modules/on-error'
+import { settlePostCommitEffects } from '../post-commit-completion.mts'
 
 export type PostCommitDeliveryDependencies = {
   enqueueOnPostUpdated: typeof enqueueOnPostUpdated
   invalidatePosts: typeof invalidate.posts
   onError: typeof onError
+  addEntityBloomKeys: typeof addEntityBloomKeys
 }
 
 const defaultPostCommitDeliveryDependencies: PostCommitDeliveryDependencies = {
   enqueueOnPostUpdated,
   invalidatePosts: invalidate.posts,
   onError,
+  addEntityBloomKeys,
 }
 
 export async function finalizePostUpdateAndDeliver(
@@ -34,15 +37,22 @@ export async function finalizePostUpdateAndDeliver(
   dependencies: Partial<PostCommitDeliveryDependencies> = {},
 ): Promise<Post> {
   const resolvedDependencies = { ...defaultPostCommitDeliveryDependencies, ...dependencies }
-  if (changes.slug && updatedPost.slug) {
-    void addEntityBloomKeys('posts', [normalizeKey(updatedPost.slug)])
+  const operations: (() => Promise<unknown>)[] = []
+  const slug = updatedPost.slug
+  if (changes.slug && slug) {
+    operations.push(() => resolvedDependencies.addEntityBloomKeys('posts', [normalizeKey(slug)]))
   }
-
-  await resolvedDependencies
-    .invalidatePosts(previousPost, updatedPost)
-    .catch(err => resolvedDependencies.onError(err instanceof Error ? err : new Error(String(err))))
-  if (shouldEnqueuePostUpdated)
-    void resolvedDependencies.enqueueOnPostUpdated(updatedPost.id, { contentChanged })
+  operations.push(() => resolvedDependencies.invalidatePosts(previousPost, updatedPost))
+  if (shouldEnqueuePostUpdated) {
+    operations.push(() =>
+      resolvedDependencies.enqueueOnPostUpdated(updatedPost.id, { contentChanged }),
+    )
+  }
+  await settlePostCommitEffects(
+    { postId: updatedPost.id, slug: updatedPost.slug, kind: 'updated' },
+    operations,
+    resolvedDependencies.onError,
+  )
 
   return updatedPost
 }

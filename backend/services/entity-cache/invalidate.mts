@@ -89,7 +89,7 @@ export const invalidate = {
       { cache: caches.posts, keys: postKeys },
       { cache: caches.posts_lookup, keys: [...getCacheKeys(postKeys).slugs] },
     ])
-    void enqueueBulkPurgeCacheTags(postKeys.map(postTag))
+    await enqueueBulkPurgeCacheTags(postKeys.map(postTag))
   }),
   communities: wrap(async (...keys: unknown[]): Promise<void> => {
     const communityKeys = await getCommunityCacheKeys(...keys)
