@@ -81,13 +81,16 @@ export async function withTestEntityListenerCompletion<T>(
       settledEnqueues = matchingEnqueues.length
       await Promise.all(pending)
     }
-    const matchingAdd = matchingAdds[0]
-    if (matchingAdds.length !== 1 || matchingAdd === undefined) {
+    if (matchingEnqueues.length !== 1) {
       throw new Error(
-        `Expected one '${jobName}' enqueue for ${entityId}, got ${matchingAdds.length}`,
+        `Expected one '${jobName}' logical enqueue for ${entityId}, got ${matchingEnqueues.length}`,
       )
     }
-    const job = await matchingAdd
+    const attempts = await Promise.allSettled(matchingAdds)
+    const successful = attempts.filter(result => result.status === 'fulfilled')
+    if (successful.length !== 1)
+      throw new Error(`Expected one successful '${jobName}' admission for ${entityId}`)
+    const job = successful[0]!.value
     if (!job) throw new Error(`The '${jobName}' enqueue was deduplicated for ${entityId}`)
     if (
       job.name !== jobName ||
@@ -101,9 +104,13 @@ export async function withTestEntityListenerCompletion<T>(
     const state = await job.getState()
     if (state !== 'completed') throw new Error(`The '${jobName}' job ${job.id} ended as ${state}`)
     await cleanup()
-    if (matchingAdds.length !== 1) {
+    const finalAttempts = await Promise.allSettled(matchingAdds)
+    if (
+      matchingEnqueues.length !== 1 ||
+      finalAttempts.filter(result => result.status === 'fulfilled').length !== 1
+    ) {
       throw new Error(
-        `Expected one '${jobName}' enqueue for ${entityId}, got ${matchingAdds.length}`,
+        `Expected one '${jobName}' logical enqueue and successful admission for ${entityId}`,
       )
     }
     return result
