@@ -105,7 +105,7 @@ jobs:
       # Full history keeps both parents of a pull request's merge commit (the docs-only check diffs
       # HEAD^1..HEAD) and the merge-queue range's merge base.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
+        timeout-minutes: 2
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
