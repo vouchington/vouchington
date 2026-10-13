@@ -1401,9 +1401,6 @@
     "fn_project_transparency_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  cohort RECORD;\n  delta_sign INTEGER := CASE WHEN TG_OP = 'DELETE' THEN -1 ELSE 1 END;\nBEGIN\n  FOR cohort IN EXECUTE format(\n    'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,\n      NULL::uuid AS community_id, $1::moderation_transparency_metrics AS metric, %I::text::moderation_transparency_categories AS category,\n      count(*)::integer AS count FROM %I\n      WHERE moderation_transparency_community_id IS NULL\n      GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])\n    USING TG_ARGV[2]\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, delta_sign * cohort.count);\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
     },
-    "fn_project_url_hostname_blocked()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_url_hostname_blocked()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostnames\n  SET is_blocked = EXISTS (\n    SELECT 1 FROM url_hostname_blocks\n    WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)\n      AND lifted_at IS NULL\n      AND blocked_source <> 'email_blocklist'\n  )\n  WHERE id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id);\n  RETURN NULL;\nEND;\n$function$\n"
-    },
     "fn_project_user_profile_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NEW.profile_image_id, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1671,6 +1668,9 @@
     "fn_update_copyright_delivery_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_update_domain_blocklist_hostname_block_source()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_domain_blocklist_hostname_block_source()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET blocked_source = CASE NEW.type\n    WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources\n    ELSE 'url_blocklist'::url_hostname_block_sources\n  END\n  WHERE block.domain_blocklist_source_id = NEW.id\n    AND block.lifted_at IS NULL\n    AND block.blocked_source IS DISTINCT FROM CASE NEW.type\n      WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources\n      ELSE 'url_blocklist'::url_hostname_block_sources\n    END;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_update_media_delivery_change_authority()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1706,6 +1706,15 @@
     },
     "fn_update_updated_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_delete()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_insert()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  )\n  UPDATE url_hostnames host SET is_blocked = TRUE\n  FROM affected WHERE host.id = affected.id AND NOT host.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_update()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  WITH affected AS MATERIALIZED (\n    SELECT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n    UNION\n    SELECT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_update_url_hostname_crawl_policy_changed_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -43179,6 +43188,9 @@
       "triggers": {
         "trigger_domain_blocklist_sources_updated_at": {
           "definition": "CREATE TRIGGER trigger_domain_blocklist_sources_updated_at BEFORE UPDATE ON public.domain_blocklist_sources FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_update_domain_blocklist_hostname_block_source": {
+          "definition": "CREATE TRIGGER trigger_update_domain_blocklist_hostname_block_source AFTER UPDATE OF type ON public.domain_blocklist_sources FOR EACH ROW WHEN ((old.type IS DISTINCT FROM new.type)) EXECUTE FUNCTION fn_update_domain_blocklist_hostname_block_source()"
         }
       },
       "uniqueConstraints": {
@@ -125069,8 +125081,14 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_sync_url_hostname_blocked": {
-          "definition": "CREATE TRIGGER trigger_sync_url_hostname_blocked AFTER INSERT OR DELETE OR UPDATE OF lifted_at ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked()"
+        "trigger_update_url_hostname_blocked_after_delete": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_delete AFTER DELETE ON public.url_hostname_blocks REFERENCING OLD TABLE AS deleted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_delete()"
+        },
+        "trigger_update_url_hostname_blocked_after_insert": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_insert AFTER INSERT ON public.url_hostname_blocks REFERENCING NEW TABLE AS inserted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_insert()"
+        },
+        "trigger_update_url_hostname_blocked_after_update": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_update AFTER UPDATE ON public.url_hostname_blocks REFERENCING OLD TABLE AS prior_blocks NEW TABLE AS updated_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_update()"
         },
         "trigger_url_hostname_blocks_updated_at": {
           "definition": "CREATE TRIGGER trigger_url_hostname_blocks_updated_at BEFORE UPDATE ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -125130,7 +125148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "attempt_threshold_hours": {
           "comment": "Hours to wait before retrying a failed crawl.",
@@ -125140,7 +125158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "consecutive_dns_failures": {
           "comment": "Number of consecutive DNS lookup failures for this hostname. Resets to 0 on any successful crawl. Resets to 1 (not incremented) when last_dns_failure_at is older than 7 days.",
@@ -125150,7 +125168,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "crawl_policy_changed_at": {
           "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
@@ -125160,7 +125178,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "crawl_swept_at": {
           "comment": "Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.",
@@ -125170,7 +125188,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "created_at": {
           "comment": null,
@@ -125180,7 +125198,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "created_by_id": {
           "comment": null,
@@ -125190,7 +125208,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -125200,7 +125218,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "hostname": {
           "comment": "Lowercase, unique hostname (e.g. example.com).",
@@ -125230,7 +125248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "is_crawlable": {
           "comment": "NOT NULL, default TRUE. TRUE permits crawling pages on this hostname; FALSE disables crawling.",
@@ -125240,7 +125258,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "is_emailable": {
           "comment": "Whether email addresses at this hostname are accepted.",
@@ -125250,7 +125268,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "last_dns_failure_at": {
           "comment": "When the most recent DNS lookup failure occurred for this hostname.",
@@ -125260,7 +125278,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
+        },
+        "publicly_introduced_at": {
+          "comment": "First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
@@ -125270,7 +125298,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reversed_hostname": {
           "comment": "Hostname labels reversed (e.g. com.example.www) for efficient subdomain prefix scans.",
@@ -125280,7 +125308,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "should_follow_link_rel": {
           "comment": "If TRUE, links to this hostname use rel=follow. Only for trusted sites.",
@@ -125290,7 +125318,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "should_ignore_robots_txt": {
           "comment": "Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.",
@@ -125300,7 +125328,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "should_skip_web_risk": {
           "comment": "Whether Google Web Risk checks are skipped for this hostname and subdomains.",
@@ -125310,7 +125338,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -125320,7 +125348,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -125330,7 +125358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "updated_at": {
           "comment": null,
@@ -125340,7 +125368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "votes_count_down": {
           "comment": null,
@@ -125350,7 +125378,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_count_none": {
           "comment": null,
@@ -125360,7 +125388,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_count_up": {
           "comment": null,
@@ -125370,7 +125398,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "votes_score_down": {
           "comment": null,
@@ -125380,7 +125408,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "votes_score_net": {
           "comment": null,
@@ -125390,7 +125418,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "votes_score_none": {
           "comment": null,
@@ -125400,7 +125428,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "votes_score_sort": {
           "comment": null,
@@ -125410,7 +125438,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_score_up": {
           "comment": null,
@@ -125420,7 +125448,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -125430,7 +125458,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -125440,7 +125468,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -125450,7 +125478,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -125460,7 +125488,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -125470,7 +125498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -141408,7 +141436,7 @@
     },
     "view_url_hostnames": {
       "comment": "Hostname response projection; callers restrict moderation filters and private capabilities.",
-      "definition": " SELECT 'hostname'::text AS __entity_type,\n    id,\n    hostname,\n    is_blocked,\n    is_crawlable,\n    should_skip_web_risk,\n    should_follow_link_rel,\n    topic_id,\n    votes_score_net,\n    votes_count_up,\n    votes_count_down\n   FROM url_hostnames;",
+      "definition": " SELECT 'hostname'::text AS __entity_type,\n    id,\n    hostname,\n    publicly_introduced_at,\n    is_blocked,\n    is_crawlable,\n    should_skip_web_risk,\n    should_follow_link_rel,\n    topic_id,\n    votes_score_net,\n    votes_count_up,\n    votes_count_down\n   FROM url_hostnames;",
       "materialized": false
     },
     "view_urls": {

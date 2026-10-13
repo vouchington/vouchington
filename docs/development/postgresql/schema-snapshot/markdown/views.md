@@ -1274,6 +1274,7 @@ Hostname response projection; callers restrict moderation filters and private ca
  SELECT 'hostname'::text AS __entity_type,
     id,
     hostname,
+    publicly_introduced_at,
     is_blocked,
     is_crawlable,
     should_skip_web_risk,

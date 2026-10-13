@@ -483,14 +483,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
  LANGUAGE plpgsql
 ```
 
-## `fn_project_url_hostname_blocked`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_url_hostname_blocked()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_user_profile_image_placement`
 
 ```sql
@@ -1205,6 +1197,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_domain_blocklist_hostname_block_source`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_domain_blocklist_hostname_block_source()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_media_delivery_change_authority`
 
 ```sql
@@ -1297,6 +1297,30 @@ CREATE OR REPLACE FUNCTION public.fn_update_transparency_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_insert`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_update`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

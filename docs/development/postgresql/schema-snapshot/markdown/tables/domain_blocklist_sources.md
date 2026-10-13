@@ -42,3 +42,4 @@ _none_
 **Triggers:**
 
 - `trigger_domain_blocklist_sources_updated_at`: `CREATE TRIGGER trigger_domain_blocklist_sources_updated_at BEFORE UPDATE ON public.domain_blocklist_sources FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_update_domain_blocklist_hostname_block_source`: `CREATE TRIGGER trigger_update_domain_blocklist_hostname_block_source AFTER UPDATE OF type ON public.domain_blocklist_sources FOR EACH ROW WHEN ((old.type IS DISTINCT FROM new.type)) EXECUTE FUNCTION fn_update_domain_blocklist_hostname_block_source()`

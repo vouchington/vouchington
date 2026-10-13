@@ -45,5 +45,7 @@ _none_
 
 **Triggers:**
 
-- `trigger_sync_url_hostname_blocked`: `CREATE TRIGGER trigger_sync_url_hostname_blocked AFTER INSERT OR DELETE OR UPDATE OF lifted_at ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked()`
+- `trigger_update_url_hostname_blocked_after_delete`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_delete AFTER DELETE ON public.url_hostname_blocks REFERENCING OLD TABLE AS deleted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_delete()`
+- `trigger_update_url_hostname_blocked_after_insert`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_insert AFTER INSERT ON public.url_hostname_blocks REFERENCING NEW TABLE AS inserted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_insert()`
+- `trigger_update_url_hostname_blocked_after_update`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_update AFTER UPDATE ON public.url_hostname_blocks REFERENCING OLD TABLE AS prior_blocks NEW TABLE AS updated_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_update()`
 - `trigger_url_hostname_blocks_updated_at`: `CREATE TRIGGER trigger_url_hostname_blocks_updated_at BEFORE UPDATE ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
