@@ -21,12 +21,12 @@ export function DataRequestSection({ userId }: Props) {
   return (
     <div className='space-y-3'>
       <div>
-        <h3
+        <h2
           className='text-base font-medium'
           data-pw='data-export-section-heading'
         >
           {t('extracted.data.dataRequestSection.dataExport_bdcea052')}
-        </h3>
+        </h2>
         <p className='text-sm text-muted-foreground'>
           {t('extracted.data.dataRequestSection.downloadACopyOfAllYour_9fa3612f')}
         </p>

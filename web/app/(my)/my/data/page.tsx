@@ -1,4 +1,5 @@
 import { Separator } from '@/components/ui/separator'
+import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import { DeleteAccountDialog } from './delete-account-dialog'
 import { DataRequestSection } from './data-request-section'
 import type { Metadata } from 'next'
@@ -16,6 +17,8 @@ export default async function DataPage() {
 
   return (
     <div className='space-y-6'>
+      <SettingsPageHeader title={t('extracted.my.settingsRoutes.yourData_0fdcada4')} />
+
       <section className='space-y-4'>
         <DataRequestSection userId={currentUser.id} />
       </section>
@@ -24,12 +27,12 @@ export default async function DataPage() {
 
       <section className='space-y-4'>
         <div>
-          <h3
+          <h2
             className='text-base font-medium text-destructive'
             data-pw='delete-account-section-heading'
           >
             {t('extracted.data.page.deleteAccount_c031bf99')}
-          </h3>
+          </h2>
           <p className='text-sm text-muted-foreground'>
             {t('extracted.data.page.permanentlyDeleteYourAccountAndRemove_d5db5587')}
           </p>

@@ -31,6 +31,14 @@ describe('DataRequestSection', () => {
     expect(queueMicrotaskSpy).not.toHaveBeenCalled()
   })
 
+  it('renders the export section as a level-two heading under the settings title', () => {
+    vi.stubGlobal('fetch', vi.fn<VitestLooseMock>().mockReturnValue(new Promise(() => {})))
+
+    render(<DataRequestSection userId='user-heading' />)
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Data Export' })).toBeVisible()
+  })
+
   it('clears stale failed error when a later fetch returns non-failed status', async () => {
     const fetchMock = vi.fn<VitestLooseMock>()
     vi.stubGlobal('fetch', fetchMock)
