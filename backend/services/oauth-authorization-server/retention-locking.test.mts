@@ -110,9 +110,13 @@ describe('OAuth retention replacement-chain locking', () => {
       codeVerifier: flow.verifier,
       redirectUri: flow.redirectUri,
     })
-    await exchangeOAuthRefreshToken({
+    const next = await exchangeOAuthRefreshToken({
       clientId: flow.client.client_id,
       refreshToken: tokens.refresh_token,
+    })
+    await exchangeOAuthRefreshToken({
+      clientId: flow.client.client_id,
+      refreshToken: next.refresh_token,
     })
     const window = createTestExpiryWindow()
     await prepareTestOAuthRetentionRows(flow.client.client_id, {
@@ -133,12 +137,12 @@ describe('OAuth retention replacement-chain locking', () => {
         skipped,
         'oauth_refresh_tokens',
         window,
-        2,
-        await lockExpiredOAuthRetentionFamilies(skipped, window, 2),
+        3,
+        await lockExpiredOAuthRetentionFamilies(skipped, window, 3),
       ),
     ).toBe(0)
     await skipped.commit()
-    expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(2)
+    expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(3)
     await predecessor.rollback()
     released = true
     await using resumed = await beginTransaction()
@@ -147,11 +151,75 @@ describe('OAuth retention replacement-chain locking', () => {
         resumed,
         'oauth_refresh_tokens',
         window,
-        2,
-        await lockExpiredOAuthRetentionFamilies(resumed, window, 2),
+        3,
+        await lockExpiredOAuthRetentionFamilies(resumed, window, 3),
       ),
-    ).toBe(2)
+    ).toBe(3)
     await resumed.commit()
+    expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(0)
+  })
+
+  it('drains a locked three-token refresh page in one bounded delete', async () => {
+    const owner = await createTestUserDirect()
+    const flow = await createTestApprovedOAuthAuthorization(owner)
+    const original = await exchangeOAuthAuthorizationCode({
+      clientId: flow.client.client_id,
+      code: flow.code,
+      codeVerifier: flow.verifier,
+      redirectUri: flow.redirectUri,
+    })
+    const first = await exchangeOAuthRefreshToken({
+      clientId: flow.client.client_id,
+      refreshToken: original.refresh_token,
+    })
+    await exchangeOAuthRefreshToken({
+      clientId: flow.client.client_id,
+      refreshToken: first.refresh_token,
+    })
+    const window = createTestExpiryWindow()
+    await prepareTestOAuthRetentionRows(flow.client.client_id, {
+      expiresAt: window.firstEligibleDate,
+      childExpiresAt: window.afterUpperBoundDate,
+      only: 'family',
+    })
+
+    await using removing = await beginTransaction()
+    const familyIds = await lockExpiredOAuthRetentionFamilies(removing, window, 3)
+    const pageLocked = Promise.withResolvers<void>()
+    const continueDelete = Promise.withResolvers<void>()
+    const observed = new Proxy(removing, {
+      async apply(target, thisArg, args) {
+        const result = await Reflect.apply(target, thisArg, args)
+        if (
+          typeof args[0] === 'string' &&
+          args[0].includes('lockOAuthRetentionFamilyRefreshPage')
+        ) {
+          pageLocked.resolve()
+          await continueDelete.promise
+        }
+        return result
+      },
+    })
+    const deletion = deleteExpiredOAuthRetentionTokens(
+      observed,
+      'oauth_refresh_tokens',
+      window,
+      3,
+      familyIds,
+      false,
+    )
+    try {
+      await pageLocked.promise
+      await using observer = await beginTransaction()
+      await expect(
+        lockTestOAuthRetentionPredecessor(flow.client.client_id, observer, 'key-share-nowait'),
+      ).rejects.toMatchObject({ code: '55P03' })
+      await observer.rollback()
+    } finally {
+      continueDelete.resolve()
+    }
+    expect(await deletion).toBe(3)
+    await removing.commit()
     expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(0)
   })
 

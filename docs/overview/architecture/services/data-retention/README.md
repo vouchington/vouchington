@@ -129,6 +129,9 @@ replacement with a surviving predecessor is retained until the predecessor can b
 avoiding foreign-key SET NULL waits on skipped locks.
 Refresh-token pages order by family generation within the bounded candidate page, so a
 replacement whose UUID sorts before its predecessor cannot repeatedly hide that chain root.
+Cleanup locks at most that page's refresh rows, then uses a fresh statement to delete only
+predecessor-free roots and their locked successors. One page drains a chain prefix without
+re-reading the shrinking page after each token; a skipped predecessor retains its descendants.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

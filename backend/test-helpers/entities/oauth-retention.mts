@@ -142,7 +142,9 @@ export async function lockTestOAuthRetentionRemainingAccessToken(
 export async function lockTestOAuthRetentionPredecessor(
   clientId: string,
   query: TransactionQuery,
+  mode: 'update' | 'key-share-nowait' = 'update',
 ): Promise<void> {
+  const lock = mode === 'update' ? 'FOR UPDATE OF token' : 'FOR KEY SHARE OF token NOWAIT'
   await query(
     `/* lockTestOAuthRetentionPredecessor */ SELECT token.id
      FROM oauth_refresh_tokens AS token
@@ -150,7 +152,7 @@ export async function lockTestOAuthRetentionPredecessor(
      JOIN oauth_grants AS grant_row ON grant_row.id = family.grant_id
      JOIN oauth_clients AS client ON client.id = grant_row.client_id
      WHERE client.client_id = $1 AND token.replaced_by_token_id IS NOT NULL
-     ORDER BY token.id FOR UPDATE OF token`,
+     ORDER BY token.id ${lock}`,
     [clientId],
   )
 }
