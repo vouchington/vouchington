@@ -86,11 +86,15 @@ class Relay(threading.Thread):
                     continue
                 try:
                     while data:
-                        written = os.write(target, data)
+                        try:
+                            written = os.write(target, data)
+                        except BlockingIOError:
+                            select.select([], [target], [])
+                            continue
                         if written == 0:
                             raise RuntimeError('Output write made no progress')
                         data = data[written:]
-                except BrokenPipeError:
+                except (BrokenPipeError, ConnectionResetError):
                     target = None  # Downstream closed; drain without leaking a sink FD.
         except BaseException as err:
             self.error = err

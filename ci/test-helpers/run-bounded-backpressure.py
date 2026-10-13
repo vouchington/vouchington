@@ -42,6 +42,8 @@ with tempfile.TemporaryDirectory(prefix='run-bounded-backpressure-') as director
     out_read, out_write = socket.socketpair()
     err_read, err_write = socket.socketpair()
     for writer in (out_write, err_write):
+        if sys.argv[2:] == ['nonblocking']:
+            writer.setblocking(False)
         writer.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024)
         assert writer.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF) < 8192
     wrapper = None
