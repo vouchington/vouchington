@@ -11,6 +11,7 @@ import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/servi
 import {
   deleteExpiredOAuthAuthorizationServerArtifacts,
   exchangeOAuthAuthorizationCode,
+  exchangeOAuthRefreshToken,
 } from './index.mts'
 
 describe('OAuth retention family phase', () => {
@@ -250,5 +251,41 @@ describe('OAuth retention family phase', () => {
         families: 0,
       })
     }
+  })
+
+  it('continues productive short batches through a refresh replacement chain', async () => {
+    const owner = await createTestUserDirect()
+    const flow = await createTestApprovedOAuthAuthorization(owner)
+    const initial = await exchangeOAuthAuthorizationCode({
+      clientId: flow.client.client_id,
+      code: flow.code,
+      codeVerifier: flow.verifier,
+      redirectUri: flow.redirectUri,
+    })
+    const first = await exchangeOAuthRefreshToken({
+      clientId: flow.client.client_id,
+      refreshToken: initial.refresh_token,
+    })
+    await exchangeOAuthRefreshToken({
+      clientId: flow.client.client_id,
+      refreshToken: first.refresh_token,
+    })
+    const window = createTestExpiryWindow()
+    await prepareTestOAuthRetentionRows(flow.client.client_id, {
+      expiresAt: window.firstEligibleDate,
+      childExpiresAt: window.afterUpperBoundDate,
+      only: 'family',
+    })
+
+    const before = await getTestOAuthRetentionRowCounts(flow.client.client_id)
+    expect(before).toMatchObject({ access: 3, refresh: 3, families: 1 })
+    const result = await deleteExpiredOAuthAuthorizationServerArtifacts(6, {
+      ...window,
+      maxBatches: 3,
+    })
+    const after = await getTestOAuthRetentionRowCounts(flow.client.client_id)
+    expect(result).toEqual({ deleted: 7, hasMore: false })
+    expect(before.total - after.total).toBe(7)
+    expect(after).toMatchObject({ access: 0, refresh: 0, families: 0 })
   })
 })

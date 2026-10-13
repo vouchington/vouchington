@@ -81,10 +81,7 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
     // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before the next one
     await query.commit()
     lastBatchFull = remaining === 0
-    if (redistributing) {
-      if (phase === OAUTH_RETENTION_DELETE_ORDER.length && remaining > 0) break
-      phase = 0
-    }
+    if (redistributing) phase = 0
     if (remaining === batchSize) break
   }
   return {
