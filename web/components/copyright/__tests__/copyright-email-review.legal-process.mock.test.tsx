@@ -76,6 +76,41 @@ describe('CopyrightEmailReview legal process', () => {
     ).toBeVisible()
   })
 
+  it('treats a duplicated Message-ID as a separate case', async () => {
+    mockGet.mockResolvedValue({
+      copyright_email_intake: { ...makeIntake(), review_path: 'duplicate_message_id' },
+    })
+    render(
+      <CopyrightEmailReview
+        data={makeQueuePage([{ ...makeQueueItem(), review_path: 'duplicate_message_id' }])}
+      />,
+    )
+    await selectIntake(intakeId)
+
+    expect(screen.getByText('Message-ID claimed by more than one intake.')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Approve structured intake' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Record as legal process' })).toBeVisible()
+  })
+
+  it('explains ancestors that reach more than one case', async () => {
+    mockGet.mockResolvedValue({
+      copyright_email_intake: { ...makeIntake(), review_path: 'ancestor_notice_conflict' },
+    })
+    render(
+      <CopyrightEmailReview
+        data={makeQueuePage([{ ...makeQueueItem(), review_path: 'ancestor_notice_conflict' }])}
+      />,
+    )
+    await selectIntake(intakeId)
+
+    expect(
+      screen.getByText(
+        'This thread reaches more than one case, so it was not linked automatically.',
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Reject email intake' })).toBeVisible()
+  })
+
   it('offers no legal-process action on a matched thread reply', async () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeMatchedIntake() })
     const matched = makeMatchedQueueItem()

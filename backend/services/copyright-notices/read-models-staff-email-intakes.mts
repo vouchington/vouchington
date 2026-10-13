@@ -5,6 +5,13 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
+import {
+  copyrightEmailAncestorNoticeConflictSql,
+  copyrightEmailDuplicateMessageIdSql,
+  copyrightEmailReplyReferenceSql,
+  copyrightEmailReviewPath,
+  type CopyrightEmailReviewPath,
+} from './email-thread-review-path.mts'
 
 export type CopyrightStaffEmailIntakeQueueItem = {
   id: string
@@ -12,7 +19,7 @@ export type CopyrightStaffEmailIntakeQueueItem = {
   // 'unparsed' until the SES worker records a parse; a stuck parse stays here for staff to see.
   parse_status: 'succeeded' | 'failed' | 'unparsed'
   recommendation_id: string | null
-  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
+  review_path: CopyrightEmailReviewPath
   linked_notice_id: string | null
   // Why staff see it: still unreviewed, or the reply to its declined intake failed or bounced.
   waiting_reason: 'awaiting_review' | 'reply_failed' | 'reply_bounced'
@@ -49,12 +56,13 @@ export async function searchCopyrightStaffEmailIntakes(
       to_char(
         intake.received_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS cursor_received_at,
-      EXISTS (
-        SELECT 1 FROM copyright_notice_email_thread_references reference
-        WHERE reference.copyright_notice_email_intake_id = intake.id
-          AND reference.reference_kind = 'reply_reference'
-      ) AS has_reply_reference
+      ) AS cursor_received_at, `
+  query.append(copyrightEmailDuplicateMessageIdSql())
+  query.append(sql` AS has_duplicate_message_id, `)
+  query.append(copyrightEmailAncestorNoticeConflictSql())
+  query.append(sql` AS has_ancestor_notice_conflict, `)
+  query.append(copyrightEmailReplyReferenceSql())
+  query.append(sql` AS has_reply_reference
     FROM copyright_notice_email_intakes intake
     LEFT JOIN copyright_notice_email_intake_parses parse
       ON parse.copyright_notice_email_intake_id = intake.id
@@ -64,7 +72,8 @@ export async function searchCopyrightStaffEmailIntakes(
     LEFT JOIN copyright_notice_delivery_work_items reply
       ON reply.copyright_notice_email_intake_id = intake.id
       AND reply.delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information') AND reply.state IN ('failed', 'bounced')
-    WHERE (`.append(copyrightEmailIntakeAwaitingReviewSql())
+    WHERE (`)
+  query.append(copyrightEmailIntakeAwaitingReviewSql())
   query.append(sql` OR reply.id IS NOT NULL)`)
   if (intakeIds) query.append(sql` AND intake.id = ANY(${intakeIds}::uuid[])`)
   const afterParameterOffset = query.values.length
@@ -104,6 +113,8 @@ export async function searchCopyrightStaffEmailIntakes(
     reply_state: 'failed' | 'bounced' | null
     reply_since: Date | null
     cursor_received_at: string
+    has_duplicate_message_id: boolean
+    has_ancestor_notice_conflict: boolean
     has_reply_reference: boolean
   }>(query)
   await transaction.commit()
@@ -119,12 +130,7 @@ export async function searchCopyrightStaffEmailIntakes(
       received_at: row.received_at,
       parse_status: row.parse_status,
       recommendation_id: row.recommendation_id,
-      review_path:
-        row.link_kind === 'thread'
-          ? 'matched_thread'
-          : row.has_reply_reference
-            ? 'unresolved_thread'
-            : 'initial',
+      review_path: copyrightEmailReviewPath(row),
       linked_notice_id: row.linked_notice_id,
       waiting_reason: row.reply_state ? `reply_${row.reply_state}` : 'awaiting_review',
       waiting_since: row.reply_since ?? row.received_at,

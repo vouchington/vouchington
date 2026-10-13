@@ -14,11 +14,13 @@ import {
   isValidCopyrightEmailLegalProcessReason,
 } from './copyright-email-legal-process-model'
 import { copyrightEmailActionError } from './copyright-email-review-decision'
+import { isSeparateCopyrightEmailCase } from './copyright-email-review-path'
 
-// Records an initial email intake as legal process (for example a subpoena) so it stops waiting
-// for review without a reply or a case. The reason is never echoed back: it is typed here, sent
-// once, and kept encrypted on the server. `onRecorded` receives the refreshed queue, or null when
-// the decision was recorded but the queue could not be reloaded.
+// Records a separate-case email intake as legal process (for example a subpoena) so it stops
+// waiting for review without a reply or a case. Duplicate Message-IDs and conflicting ancestor
+// cases use this path too. The reason is never echoed back: it is typed here, sent once, and kept
+// encrypted on the server. `onRecorded` receives the refreshed queue, or null when the decision
+// was recorded but the queue could not be reloaded.
 export function CopyrightEmailLegalProcessAction({
   detail,
   disabled,
@@ -33,7 +35,7 @@ export function CopyrightEmailLegalProcessAction({
   const [reason, setReason] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  if (detail.review_path !== 'initial') return null
+  if (!isSeparateCopyrightEmailCase(detail.review_path)) return null
   const length = copyrightEmailLegalProcessReasonLength(reason)
   const tooLong = length > maxLength
 

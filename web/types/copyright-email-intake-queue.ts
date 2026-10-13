@@ -1,10 +1,17 @@
+export type CopyrightEmailReviewPath =
+  | 'ancestor_notice_conflict'
+  | 'duplicate_message_id'
+  | 'initial'
+  | 'matched_thread'
+  | 'unresolved_thread'
+
 export type CopyrightEmailIntakeQueueItem = {
   id: string
   received_at: string
   // 'unparsed' means the inbound worker never recorded a parse; staff review the original email.
   parse_status: 'succeeded' | 'failed' | 'unparsed'
   recommendation_id: string | null
-  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
+  review_path: CopyrightEmailReviewPath
   linked_notice_id: string | null
   // Why staff see it: still unreviewed, or the reply to its declined intake failed or bounced.
   waiting_reason: 'awaiting_review' | 'reply_failed' | 'reply_bounced'

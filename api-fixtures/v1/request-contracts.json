@@ -2805,7 +2805,13 @@
                 ]
               },
               "review_path": {
-                "enum": ["initial", "matched_thread", "unresolved_thread"],
+                "enum": [
+                  "ancestor_notice_conflict",
+                  "duplicate_message_id",
+                  "initial",
+                  "matched_thread",
+                  "unresolved_thread"
+                ],
                 "type": "string"
               },
               "waiting_reason": {
@@ -16274,7 +16280,13 @@
           ]
         },
         "review_path": {
-          "enum": ["initial", "matched_thread", "unresolved_thread"],
+          "enum": [
+            "ancestor_notice_conflict",
+            "duplicate_message_id",
+            "initial",
+            "matched_thread",
+            "unresolved_thread"
+          ],
           "type": "string"
         },
         "ses_verdicts": {

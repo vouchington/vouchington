@@ -16,6 +16,13 @@ import {
   type CopyrightTimelineAudience,
 } from './timeline-visibility.mts'
 import { getEuParticipantNoticeDetail } from './read-models-territorial.mts'
+import {
+  copyrightEmailAncestorNoticeConflictSql,
+  copyrightEmailDuplicateMessageIdSql,
+  copyrightEmailReplyReferenceSql,
+  copyrightEmailReviewPath,
+  type CopyrightEmailReviewPath,
+} from './email-thread-review-path.mts'
 import type {
   CopyrightParticipantNoticeDetail,
   CopyrightPublicNotice,
@@ -30,7 +37,7 @@ export type {
 export type CopyrightStaffEmailIntake = {
   id: string
   received_at: Date
-  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
+  review_path: CopyrightEmailReviewPath
   linked_notice: {
     id: string
     targets: Array<{ id: string; placement_key: string }>
@@ -49,6 +56,26 @@ export async function getCopyrightStaffEmailIntake(
 ): Promise<CopyrightStaffEmailIntake | null> {
   assertNotSuspended(currentUser)
   if (!currentUserCanReviewCopyrightNotices(currentUser)) return null
+  const intakeQuery = sql`/* getCopyrightStaffEmailIntake */
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_media_type_id,
+        (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
+      intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
+      parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
+      recommendation.id AS recommendation_id, recommendation.structured_output_ciphertext,
+      link.link_kind, link.copyright_notice_id AS linked_notice_id, `
+  intakeQuery.append(copyrightEmailDuplicateMessageIdSql())
+  intakeQuery.append(sql` AS has_duplicate_message_id, `)
+  intakeQuery.append(copyrightEmailAncestorNoticeConflictSql())
+  intakeQuery.append(sql` AS has_ancestor_notice_conflict, `)
+  intakeQuery.append(copyrightEmailReplyReferenceSql())
+  intakeQuery.append(sql` AS has_reply_reference
+    FROM copyright_notice_email_intakes intake
+    LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
+    LEFT JOIN LATERAL (SELECT id, structured_output_ciphertext FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
+    LEFT JOIN copyright_notice_email_intake_notice_links link
+      ON link.copyright_notice_email_intake_id = intake.id
+    WHERE intake.id = ${intakeId}
+  `)
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
     id: string
@@ -70,26 +97,10 @@ export async function getCopyrightStaffEmailIntake(
     structured_output_ciphertext: string | null
     link_kind: 'initial' | 'thread' | null
     linked_notice_id: string | null
+    has_duplicate_message_id: boolean
+    has_ancestor_notice_conflict: boolean
     has_reply_reference: boolean
-  }>(sql`/* getCopyrightStaffEmailIntake */
-    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_media_type_id,
-        (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
-      intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
-      parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
-      recommendation.id AS recommendation_id, recommendation.structured_output_ciphertext,
-      link.link_kind, link.copyright_notice_id AS linked_notice_id,
-      EXISTS (
-        SELECT 1 FROM copyright_notice_email_thread_references reference
-        WHERE reference.copyright_notice_email_intake_id = intake.id
-          AND reference.reference_kind = 'reply_reference'
-      ) AS has_reply_reference
-    FROM copyright_notice_email_intakes intake
-    LEFT JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
-    LEFT JOIN LATERAL (SELECT id, structured_output_ciphertext FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
-    LEFT JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = intake.id
-    WHERE intake.id = ${intakeId}
-  `)
+  }>(intakeQuery)
   await transaction.commit()
   const row = rows[0]
   if (!row) return null
@@ -103,12 +114,7 @@ export async function getCopyrightStaffEmailIntake(
   const bodyText = decryptLive(row.body_ciphertext)
   const parserError = decryptLive(row.error_ciphertext)
   const structuredOutput = decryptLive(row.structured_output_ciphertext)
-  const reviewPath =
-    row.link_kind === 'thread'
-      ? 'matched_thread'
-      : row.has_reply_reference
-        ? 'unresolved_thread'
-        : 'initial'
+  const reviewPath = copyrightEmailReviewPath(row)
   const linkedNotice = row.linked_notice_id
     ? await getCopyrightEmailLinkedNotice(row.linked_notice_id)
     : null

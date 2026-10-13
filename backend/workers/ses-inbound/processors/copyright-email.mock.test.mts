@@ -108,7 +108,8 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       subject: 'Copyright notice',
       bodyText: 'Notice body',
       emailMessageId: '<copyright@example.test>',
-      replyRefs: ['<prior@example.test>'],
+      inReplyTo: [],
+      references: ['<prior@example.test>'],
       recipientEmails: ['dmca@inbound.voucha.ai'],
       attachments: [
         {
@@ -160,6 +161,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         fromEmail: 'claimant@example.test',
         fromName: 'Copyright claimant',
         messageId: '<copyright@example.test>',
+        inReplyTo: [],
         replyReferences: ['<prior@example.test>'],
         attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
       }),

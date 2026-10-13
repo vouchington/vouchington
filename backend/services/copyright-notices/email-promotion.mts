@@ -11,6 +11,7 @@ import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose, type CopyrightEmailIntake } from './email-intakes.mts'
 import { linkPendingCopyrightEmailRepliesInTransaction } from './email-thread-link-pending.mts'
+import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.mts'
 import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
@@ -56,7 +57,7 @@ async function admitCopyrightEmailIntake(
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')
-  await assertNotUnresolvedThreadReply(transaction, intake.id)
+  await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
     decision: string
@@ -106,24 +107,6 @@ async function admitCopyrightEmailIntake(
   const submissionId = await recordEmailPromotion(transaction, intake, notice.id, input, purpose)
   await transaction.commit()
   return { noticeId: notice.id, submissionId }
-}
-
-async function assertNotUnresolvedThreadReply(
-  transaction: TransactionQuery,
-  intakeId: string,
-): Promise<void> {
-  const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:unresolvedReply */
-    SELECT 1 FROM copyright_notice_email_thread_references reference
-    WHERE reference.copyright_notice_email_intake_id = ${intakeId}
-      AND reference.reference_kind = 'reply_reference'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = ${intakeId}
-          AND link.link_kind = 'thread'
-      )
-    LIMIT 1
-  `)
-  assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')
 }
 
 async function assertNoThreadCorrespondenceDecision(

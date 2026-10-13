@@ -10,7 +10,8 @@ export type ParsedSesInboundEmail = {
   subject: string
   bodyText: string
   emailMessageId: string | null
-  replyRefs: string[]
+  inReplyTo: string[]
+  references: string[]
   attachments?: ParsedMimeAttachment[]
   recipientEmails?: string[]
 }
@@ -79,7 +80,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     subject: normalizedSubject,
     bodyText: parts.getBodyText() || normalizedSubject,
     emailMessageId: messageId,
-    replyRefs: normalizeReplyReferences(inReplyTo, references),
+    inReplyTo: splitReferenceHeader(inReplyTo),
+    references: splitReferenceHeader(references),
     attachments: parts.getAttachments(),
     recipientEmails,
   }
@@ -123,11 +125,11 @@ function getHeaderAddresses(value: HeaderValue | undefined): string[] {
   return address?.value.flatMap(item => (item.address?.trim() ? [item.address.trim()] : [])) ?? []
 }
 
-function normalizeReplyReferences(inReplyTo: string, references: string): string[] {
+function splitReferenceHeader(value: string): string[] {
   return [
     ...new Set(
-      [inReplyTo, ...references.split(/[\s,]+/)].flatMap(value => {
-        const normalized = value.trim()
+      value.split(/[\s,]+/).flatMap(part => {
+        const normalized = part.trim()
         return normalized ? [normalized] : []
       }),
     ),

@@ -10,7 +10,7 @@ import { assertNoInitialIntakeThreadBarrier } from './email-rejection.mts'
 export const COPYRIGHT_EMAIL_LEGAL_PROCESS_REASON_MAX_LENGTH = 1_000
 
 /**
- * Records that an initial email intake is legal process, such as a §512(h) subpoena, and closes it
+ * Records that a separate-case email intake is legal process, such as a §512(h) subpoena, and closes it
  * without telling the sender.
  *
  * The decision is the intake's one review row: it records who decided and when, and the reason

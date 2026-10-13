@@ -322,7 +322,8 @@ but cannot create a restriction, correspondence, or legal case. A moderator must
 and agent output, then explicitly accept or reject it before a valid email submission can enter the
 case lifecycle, even when the recommendation is `potentially_valid`.
 
-On the staff email review page a moderator decides an initial intake with **Approve structured
+On the staff email review page a moderator decides an initial intake, a duplicated Message-ID, or a
+thread whose ancestors reach more than one case with **Approve structured
 intake**, **Request information**, **Reject email intake**, or **Record as legal process**. A request for information carries a
 required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
 a rejection it closes the intake without opening a case. The owner approves the reply wording.
@@ -349,7 +350,8 @@ reviewer, with no case, because the reply to a declined intake belongs to the in
 `reply_bounced` reply stays terminal. See the [API](../api/v1/copyright-notices/README.md) for the
 contract.
 
-An initial intake that is legal process, such as a §512(h) subpoena, is closed with **Record as
+An initial intake, a duplicated Message-ID, or a thread whose ancestors reach more than one case,
+when it is legal process such as a §512(h) subpoena, is closed with **Record as
 legal process** (`POST /api/v1/copyright-email-intakes/:id/legal-process`), because a rejection
 always replies to a known sender. It needs a short reason (not blank, at most 1,000 characters),
 which may name a legal matter, so it is encrypted like the review rationale and never logged or
@@ -360,14 +362,18 @@ restriction, or claimant-visible event. The intake leaves the email review page 
 [review-target sweep](#review-target-page), which count only undecided intakes. The decision is
 final: a second decision of any kind on the intake, repeated or different, is a `409`, and so is
 recording legal process on an intake that was already approved or rejected. The action is for
-initial intakes only. A reply to an existing case thread, or one waiting for its root case, is not
-offered it; those are classified as correspondence. The same staff roles as approve and reject may
+separate-case intakes: an initial email, a duplicated Message-ID (`duplicate_message_id`), or
+ancestors that reach more than one case (`ancestor_notice_conflict`). A reply already linked to a
+case, or one still waiting for its root case (`unresolved_thread`), is not offered it. The same
+staff roles as approve and reject may
 use it.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
 null; the agent cannot infer them. RFC `Message-ID`, `In-Reply-To`, and `References` values are
-encrypted and retained for case-scoped correspondence threading using keyed digests only. A matched reply keeps
+stored apart, encrypted, and retained for case-scoped correspondence threading using keyed digests only.
+An intake whose Message-ID is claimed by another intake, or whose ancestor edges reach more than one
+case, stays unlinked for staff review (`duplicate_message_id` or `ancestor_notice_conflict`). A matched reply keeps
 its original MIME evidence, still receives the same advisory structured extraction and recommendation, and waits
 for moderator classification; it cannot trigger a restriction or outbound message automatically. An approval normally names
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an

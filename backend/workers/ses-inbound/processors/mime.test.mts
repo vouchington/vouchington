@@ -50,7 +50,8 @@ describe('SES inbound MIME parsing', () => {
       emailMessageId: '<tests+incoming@voucha.ai>',
       recipientEmails: ['support@voucha.ai'],
       attachments: [],
-      replyRefs: ['<tests+reply@voucha.ai>', '<tests+first@voucha.ai>'],
+      inReplyTo: ['<tests+reply@voucha.ai>'],
+      references: ['<tests+first@voucha.ai>', '<tests+reply@voucha.ai>'],
     })
   })
 
@@ -103,7 +104,8 @@ describe('SES inbound MIME parsing', () => {
           sha256: expect.any(Buffer),
         },
       ],
-      replyRefs: [],
+      inReplyTo: [],
+      references: [],
     })
   })
 

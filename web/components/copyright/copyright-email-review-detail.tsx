@@ -20,6 +20,10 @@ import {
   isCompleteCopyrightEmailCorrespondenceDraft,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
+import {
+  copyrightEmailManualReviewNote,
+  isSeparateCopyrightEmailCase,
+} from './copyright-email-review-path'
 
 export function CopyrightEmailReviewDetail({
   detail,
@@ -61,6 +65,8 @@ export function CopyrightEmailReviewDetail({
   // Only an information request uses this message, so it lives here: the parent remounts this
   // component for each intake, which clears it, and a failed request keeps what staff typed.
   const [informationMessage, setInformationMessage] = useState('')
+  const separateCase = isSeparateCopyrightEmailCase(detail.review_path)
+  const manualReviewNote = copyrightEmailManualReviewNote(detail.review_path)
   const requiresFallback = !detail.recommendation && !manualFallbackReason.trim()
   return (
     <section className='space-y-3'>
@@ -82,7 +88,8 @@ export function CopyrightEmailReviewDetail({
         }
       />
       <CopyrightEmailRecommendation recommendation={detail.recommendation} />
-      {detail.review_path === 'initial' && draft && (
+      {manualReviewNote && <p className='text-sm text-muted-foreground'>{manualReviewNote}</p>}
+      {separateCase && draft && (
         <CopyrightEmailApprovalFields
           draft={draft}
           onChange={onChangeDraft}
@@ -102,20 +109,20 @@ export function CopyrightEmailReviewDetail({
           value={manualFallbackReason}
         />
       )}
-      {detail.review_path === 'initial' && (
+      {separateCase && (
         <CopyrightEmailInformationRequestField
           onChange={setInformationMessage}
           value={informationMessage}
         />
       )}
-      {detail.review_path === 'initial' && !detail.parsed_email && (
+      {separateCase && !detail.parsed_email && (
         <CopyrightEmailReplyAddressField
           onChange={onChangeReplyEmail}
           value={replyEmail}
         />
       )}
       <div className='flex flex-wrap gap-2'>
-        {detail.review_path === 'initial' ? (
+        {separateCase ? (
           <>
             <Button
               disabled={

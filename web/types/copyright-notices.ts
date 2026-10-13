@@ -194,4 +194,5 @@ export type { CopyrightStaffQueueReason } from './copyright-notice-queue'
 export type {
   CopyrightEmailIntakeQueueItem,
   CopyrightEmailIntakeQueuePage,
+  CopyrightEmailReviewPath,
 } from './copyright-email-intake-queue'

@@ -14,38 +14,41 @@ CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_thread_references__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
   lookup_token text NOT NULL CHECK (char_length(lookup_token) = 64),
-  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'reply_reference')),
+  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'in_reply_to', 'references')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)
 );
 
--- A message's intake row is immutable; this append-only edge is recorded when both sides exist.
-CREATE TABLE copyright_notice_email_message_parents (
-  reply_message_intake_id uuid PRIMARY KEY,
-  parent_message_intake_id uuid NOT NULL,
-  CONSTRAINT chk_copyright_email_message_parents__distinct CHECK (reply_message_intake_id <> parent_message_intake_id)
+-- A message's intake row is immutable. Each edge is recorded once, when one token resolves.
+CREATE TABLE copyright_notice_email_message_ancestors (
+  reply_message_intake_id uuid NOT NULL,
+  ancestor_message_intake_id uuid NOT NULL,
+  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('in_reply_to', 'references')),
+  PRIMARY KEY (reply_message_intake_id, ancestor_message_intake_id),
+  CONSTRAINT chk_copyright_email_message_ancestors__distinct CHECK (reply_message_intake_id <> ancestor_message_intake_id)
 );
-ALTER TABLE copyright_notice_email_message_parents
-  ADD CONSTRAINT fk_copyright_notice_email_message_parents__reply
+ALTER TABLE copyright_notice_email_message_ancestors
+  ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__reply
   FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
   ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_email_message_parents
-  VALIDATE CONSTRAINT fk_copyright_notice_email_message_parents__reply;
-ALTER TABLE copyright_notice_email_message_parents
-  ADD CONSTRAINT fk_copyright_notice_email_message_parents__parent
-  FOREIGN KEY (parent_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
+ALTER TABLE copyright_notice_email_message_ancestors
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__reply;
+ALTER TABLE copyright_notice_email_message_ancestors
+  ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor
+  FOREIGN KEY (ancestor_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
   ON DELETE RESTRICT NOT VALID;
-ALTER TABLE copyright_notice_email_message_parents
-  VALIDATE CONSTRAINT fk_copyright_notice_email_message_parents__parent;
-CREATE INDEX idx_copyright_notice_email_message_parents__parent
-  ON copyright_notice_email_message_parents (parent_message_intake_id);
-CREATE TRIGGER trigger_copyright_email_message_parents_immutable
-  BEFORE UPDATE OR DELETE ON copyright_notice_email_message_parents
+ALTER TABLE copyright_notice_email_message_ancestors
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor;
+CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor
+  ON copyright_notice_email_message_ancestors (ancestor_message_intake_id);
+CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable
+  BEFORE UPDATE OR DELETE ON copyright_notice_email_message_ancestors
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
-COMMENT ON TABLE copyright_notice_email_message_parents IS 'Immutable resolved parent edge between inbound email intake messages; replies may arrive before parents.';
-COMMENT ON COLUMN copyright_notice_email_message_parents.reply_message_intake_id IS 'Inbound reply intake, which owns at most one resolved parent edge.';
-COMMENT ON COLUMN copyright_notice_email_message_parents.parent_message_intake_id IS 'Inbound parent intake resolved from a keyed RFC Message-ID during ingestion.';
+COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Immutable resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token, including an ancestor that arrives later.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.reply_message_intake_id IS 'Inbound reply intake that named the ancestor.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.ancestor_message_intake_id IS 'Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_notice_links (
@@ -147,7 +150,7 @@ CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor
 COMMENT ON TABLE copyright_notice_email_thread_references IS 'Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.copyright_notice_email_intake_id IS 'Inbound email whose private thread token was recorded.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.lookup_token IS 'Keyed digest of a normalized RFC message reference.';
-COMMENT ON COLUMN copyright_notice_email_thread_references.reference_kind IS 'Whether the token names this message or a referenced parent.';
+COMMENT ON COLUMN copyright_notice_email_thread_references.reference_kind IS 'Whether the token is this message''s Message-ID, an In-Reply-To token, or a References token.';
 COMMENT ON TABLE copyright_notice_email_intake_notice_links IS 'Immutable private association between an email intake and its admitted or matched copyright case.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.copyright_notice_email_intake_id IS 'Inbound email associated with the case.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.copyright_notice_id IS 'Copyright case associated with the inbound email.';

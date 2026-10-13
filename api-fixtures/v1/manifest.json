@@ -13198,7 +13198,7 @@
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
       "bodyKind": "content",
-      "hash": "1ee21643428291a0c3b2c18dd19ef9aac13b34a5a9382f553d710dc497839103",
+      "hash": "6b03a4cd904759d29ee6794ed87cf1a80f7d3102e2126271b6ddfc9a62ef3b93",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13279,6 +13279,14 @@
                       "schema": {
                         "type": "union",
                         "variants": [
+                          {
+                            "type": "literal",
+                            "value": "ancestor_notice_conflict"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "duplicate_message_id"
+                          },
                           {
                             "type": "literal",
                             "value": "initial"

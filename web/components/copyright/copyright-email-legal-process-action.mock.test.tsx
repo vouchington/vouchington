@@ -5,7 +5,10 @@ import {
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailQueuePage as makeQueuePage,
 } from '@/test-helpers/components/copyright/copyright-email-review'
-import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
+import type {
+  CopyrightEmailIntakeQueuePage,
+  CopyrightEmailReviewPath,
+} from '@/types/copyright-notices'
 import { CopyrightEmailLegalProcessAction } from './copyright-email-legal-process-action'
 
 configure({ testIdAttribute: 'data-pw' })
@@ -15,9 +18,7 @@ vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
 const mockRecord = intakesClient.recordCopyrightEmailIntakeLegalProcess
 const mockList = intakesClient.listCopyrightEmailIntakes
 
-function renderAction(
-  overrides: { review_path?: 'initial' | 'unresolved_thread' | 'matched_thread' } = {},
-) {
+function renderAction(overrides: { review_path?: CopyrightEmailReviewPath } = {}) {
   const onRecorded = vi.fn<(queue: CopyrightEmailIntakeQueuePage | null) => void>()
   render(
     <CopyrightEmailLegalProcessAction
@@ -49,6 +50,15 @@ describe('CopyrightEmailLegalProcessAction', () => {
       renderAction({ review_path })
 
       expect(screen.queryByText('Legal process')).not.toBeInTheDocument()
+    },
+  )
+
+  it.each(['duplicate_message_id', 'ancestor_notice_conflict'] as const)(
+    'offers legal process for a %s review',
+    review_path => {
+      renderAction({ review_path })
+
+      expect(screen.getByRole('button', { name: 'Record as legal process' })).toBeVisible()
     },
   )
 

@@ -7,7 +7,6 @@ import {
   type CopyrightEmailSesVerdicts,
 } from './email-ses-verdicts.mts'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
@@ -20,6 +19,12 @@ import {
   recordCopyrightEmailThreadReferences,
   type CopyrightEmailThreadMatch,
 } from './email-threading.mts'
+import { validateCopyrightEmailParseInput } from './email-intake-parse-input.mts'
+import {
+  copyrightEmailReplyHeaders,
+  decryptCopyrightEmailReplyHeaders,
+  encryptCopyrightEmailReplyHeaders,
+} from './email-thread-references.mts'
 import {
   decryptAgentIntake,
   type AttachmentCiphertexts,
@@ -33,6 +38,7 @@ export type CopyrightEmailParseInput =
       subject: string
       bodyText: string
       messageId: string | null
+      inReplyTo?: string[]
       replyReferences: string[]
       attachments: CopyrightEmailAttachmentInput[]
     }
@@ -42,7 +48,7 @@ export async function recordCopyrightEmailParse(
   intake: CopyrightEmailIntake,
   input: CopyrightEmailParseInput,
 ): Promise<CopyrightEmailThreadMatch | null> {
-  validateParseInput(input)
+  validateCopyrightEmailParseInput(input)
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
   // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
@@ -61,11 +67,7 @@ export async function recordCopyrightEmailParse(
       ${input.status === 'succeeded' ? encryptSecret(input.subject, purpose) : null},
       ${input.status === 'succeeded' ? encryptSecret(input.bodyText, purpose) : null},
       ${input.status === 'succeeded' && input.messageId ? encryptSecret(input.messageId, purpose) : null},
-      ${
-        input.status === 'succeeded' && input.replyReferences.length > 0
-          ? encryptSecret(JSON.stringify(input.replyReferences), purpose)
-          : null
-      },
+      ${input.status === 'succeeded' ? encryptCopyrightEmailReplyHeaders(copyrightEmailReplyHeaders(input), purpose) : null},
       ${input.status === 'failed' ? encryptSecret(input.error, purpose) : null}
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
@@ -88,7 +90,8 @@ export async function recordCopyrightEmailParse(
   if (
     rowCount &&
     input.status === 'succeeded' &&
-    input.replyReferences.length === 0 &&
+    copyrightEmailReplyHeaders(input).inReplyTo.length === 0 &&
+    copyrightEmailReplyHeaders(input).references.length === 0 &&
     isCopyrightIntakeEnabled()
   ) {
     const { rows: verdicts } =
@@ -112,6 +115,12 @@ export async function recordCopyrightEmailParse(
   await transaction.commit()
   if (!rowCount && retainedThread?.status !== 'succeeded') return null
   if (rowCount && input.status !== 'succeeded') return null
+  const headers = retainedThread
+    ? decryptCopyrightEmailReplyHeaders(retainedThread.reply_references_ciphertext, purpose)
+    : input.status === 'succeeded'
+      ? copyrightEmailReplyHeaders(input)
+      : null
+  if (!headers) return null
   return await recordCopyrightEmailThreadReferences({
     intakeId: intake.id,
     messageId: retainedThread
@@ -121,15 +130,8 @@ export async function recordCopyrightEmailParse(
       : input.status === 'succeeded'
         ? input.messageId
         : null,
-    replyReferences: retainedThread
-      ? retainedThread.reply_references_ciphertext
-        ? (JSON.parse(
-            decryptSecret(retainedThread.reply_references_ciphertext, purpose),
-          ) as string[])
-        : []
-      : input.status === 'succeeded'
-        ? input.replyReferences
-        : [],
+    inReplyTo: headers.inReplyTo,
+    references: headers.references,
   })
 }
 export async function getCopyrightEmailIntakeForAgent(
@@ -164,37 +166,4 @@ export async function getCopyrightEmailIntakeForAgent(
   )
   await transaction.commit()
   return decryptAgentIntake(intake, attachments)
-}
-
-function validateParseInput(input: CopyrightEmailParseInput): void {
-  if (input.status === 'failed') {
-    assert(input.error.length > 0 && input.error.length <= 10_000, 422, 'Invalid parser failure')
-    return
-  }
-  assert(input.fromEmail.trim().length > 0 && input.fromEmail.length <= 320, 422, 'Invalid sender')
-  assert(!input.fromName || input.fromName.length <= 500, 422, 'Invalid sender name')
-  assert(input.subject.length > 0 && input.subject.length <= 10_000, 422, 'Invalid subject')
-  assert(input.bodyText.length > 0 && input.bodyText.length <= 2_000_000, 422, 'Invalid body')
-  assert(!input.messageId || input.messageId.length <= 10_000, 422, 'Invalid Message-ID')
-  assert(
-    input.replyReferences.length <= 100 &&
-      input.replyReferences.every(reference => reference.length > 0 && reference.length <= 10_000),
-    422,
-    'Invalid reply references',
-  )
-  assert(input.attachments.length <= 100, 422, 'Too many attachments')
-  assert(
-    input.attachments.every(
-      attachment =>
-        attachment.sha256.length === 32 &&
-        Number.isSafeInteger(attachment.byteSize) &&
-        attachment.byteSize >= 0 &&
-        attachment.mimeType.length > 0 &&
-        attachment.mimeType.length <= 255 &&
-        (!attachment.filename || attachment.filename.length <= 1024) &&
-        (!attachment.contentId || attachment.contentId.length <= 1024),
-    ),
-    422,
-    'Invalid attachment metadata',
-  )
 }

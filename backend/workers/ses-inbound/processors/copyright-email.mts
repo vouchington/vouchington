@@ -38,7 +38,8 @@ export async function processCopyrightInboundEmail(
       subject: email.subject,
       bodyText: email.bodyText,
       messageId: email.emailMessageId,
-      replyReferences: email.replyRefs,
+      inReplyTo: email.inReplyTo,
+      replyReferences: email.references,
       attachments: (email.attachments ?? []).map(attachment => ({
         filename: attachment.filename,
         contentId: attachment.contentId,

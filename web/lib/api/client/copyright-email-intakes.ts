@@ -1,6 +1,9 @@
 'use client'
 import { clientApi } from './instance'
-import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
+import type {
+  CopyrightEmailIntakeQueuePage,
+  CopyrightEmailReviewPath,
+} from '@/types/copyright-notices'
 // What Amazon SES recorded for the message. `unknown` means SES never reported the check.
 export type CopyrightEmailSesVerdict = 'pass' | 'fail' | 'gray' | 'processing_failed' | 'unknown'
 export type CopyrightEmailSesVerdicts = {
@@ -13,7 +16,7 @@ export type CopyrightEmailSesVerdicts = {
 export type CopyrightEmailIntake = {
   id: string
   received_at: string
-  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
+  review_path: CopyrightEmailReviewPath
   linked_notice: {
     id: string
     targets: Array<{ id: string; placement_key: string }>

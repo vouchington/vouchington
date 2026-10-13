@@ -277,7 +277,7 @@
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
-      "hash": "1ee21643428291a0c3b2c18dd19ef9aac13b34a5a9382f553d710dc497839103"
+      "hash": "6b03a4cd904759d29ee6794ed87cf1a80f7d3102e2126271b6ddfc9a62ef3b93"
     },
     "GET:/api/v1/copyright-eu-reports": {
       "fixtureIds": ["web.copyright.eu.transparency-report"],
