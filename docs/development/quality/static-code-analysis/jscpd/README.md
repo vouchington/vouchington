@@ -74,7 +74,9 @@ shorter than `minLines`, so the threshold bounds the scan as well as the report.
 TypeScript function pairs by AST similarity and reports a pair that reaches 85% as a `similar`
 clone. The comparison ignores identifier names and literal values, so a copied function that renames
 its variables, changes its literals, or adds or drops a line still counts. `minLines` applies to
-both kinds. Code outside a function, and SQL, Bash, and CSS, stay exact-only.
+both kinds and includes a string literal's lines in the function span. Keep a long unique query
+outside the function so two thin wrappers are not one clone. Code outside a function, and SQL,
+Bash, and CSS, stay exact-only.
 
 ## Lowering the Threshold
 
@@ -124,8 +126,10 @@ To add an exception when dedupe is out of scope:
    issue), and the owner accountable for removing it.
 3. Delete the row and the glob in the change that removes the duplication.
 
-| Glob | Reason | Owner |
-| ---- | ------ | ----- |
+| Glob                         | Reason                                                                                                                                                 | Owner                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| `**/bank-account-fields.tsx` | Parallel bank-account form. Similarity drops field names and literals, so it scores about 0.89 against the credit-card form and stays a separate flow. | `web/components/posts` |
+| `**/credit-card-fields.tsx`  | Parallel credit-card data-point form, the other half of the bank-account pair above.                                                                   | `web/components/posts` |
 
 ## Files
 

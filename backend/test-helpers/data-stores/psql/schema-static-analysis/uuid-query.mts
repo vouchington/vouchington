@@ -2,9 +2,7 @@
 import { read } from '../../../../data-stores/psql/index.mts'
 import type { UuidConventionViolation } from './conventions.mts'
 
-export async function getUuidConventionViolations(): Promise<UuidConventionViolation[]> {
-  const { rows } = await read<UuidConventionViolation>(
-    `/* getUuidConventionViolations */
+const uuidConventionViolationsSql = `/* getUuidConventionViolations */
       WITH public_tables AS (
         SELECT pg_class.oid, pg_class.relname
         FROM pg_class
@@ -77,8 +75,10 @@ export async function getUuidConventionViolations(): Promise<UuidConventionViola
       FROM uuid_columns
       WHERE column_name = 'id'
         AND column_default IS DISTINCT FROM 'uuidv7()'
-      ORDER BY table_name, column_name, problem`,
-  )
+      ORDER BY table_name, column_name, problem`
+
+export async function getUuidConventionViolations(): Promise<UuidConventionViolation[]> {
+  const { rows } = await read<UuidConventionViolation>(uuidConventionViolationsSql)
   return rows
 }
 /* v8 ignore stop */
