@@ -341,7 +341,7 @@ This extends the prelaunch relational-storage rule.
 - **Join on ids, never on text.** A string that comes from outside is a unique or generated column,
   never a primary or foreign key: a vendor or external-account id, an edge or cache key, a slug, an
   email address. Turn it into an id once, where it enters, and reference and join by that id from
-  then on. Keys are uuid ids, bigint lookup ids, or enums for fixed value sets. Hashtag text matching
+  then on. Common join-key choices are uuid ids, bigint lookup ids, or enums for fixed value sets. Hashtag text matching
   is an exception because the text itself is what is being matched. Looking up outside input by
   its unique text (a slug, a hostname, a login token) is fine; joining tables on that text is not.
   Existing code that breaks this rule is being fixed under
