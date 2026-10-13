@@ -74,22 +74,6 @@ export function copyrightEmailReplyReferenceSql(): SQLStatement {
   )`
 }
 
-/** True when `intakeId` already has another intake claiming the same Message-ID. */
-export function copyrightEmailIntakeMessageIdIsAmbiguousSql(intakeId: SQLStatement): SQLStatement {
-  const query = sql`EXISTS (
-    SELECT 1
-    FROM copyright_notice_email_thread_references claimed
-    JOIN copyright_notice_email_thread_references other_claim
-      ON other_claim.token_id = claimed.token_id
-     AND other_claim.reference_kind = 'message_id'
-     AND other_claim.copyright_notice_email_intake_id <> claimed.copyright_notice_email_intake_id
-    WHERE claimed.reference_kind = 'message_id'
-      AND claimed.copyright_notice_email_intake_id = `
-  query.append(intakeId)
-  query.append(sql`)`)
-  return query
-}
-
 /** True when one In-Reply-To or References token is a Message-ID claimed by two or more intakes. */
 export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStatement): SQLStatement {
   const query = sql`EXISTS (
