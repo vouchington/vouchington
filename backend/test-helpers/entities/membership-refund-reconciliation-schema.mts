@@ -12,17 +12,17 @@ export type TestAdministratorRefundOperation = {
   membershipSourceId: string
   userId: string
 }
-export async function createTestAdministratorRefundOperation(): Promise<TestAdministratorRefundOperation> {
-  const applicationId = `administrator-refund-${randomUUID()}`
-  const { rows } = await write<
-    Omit<TestAdministratorRefundOperation, 'applicationId'>
-  >(sql`/* createTestAdministratorRefundOperation */
+export async function createTestAdministratorRefundOperation(
+  applicationId = `administrator-refund-${randomUUID()}`,
+): Promise<TestAdministratorRefundOperation> {
+  const { rows } = await write<Omit<TestAdministratorRefundOperation, 'applicationId'>>(
+    sql`/* createTestAdministratorRefundOperation */
     WITH actor AS (
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), lineage AS (
       INSERT INTO membership_provider_lineages (
-        provider, environment, application_id, provider_lineage_id
-      ) VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`})
+        membership_provider_context_id, provider_lineage_id
+      ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`})
       RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
@@ -35,17 +35,18 @@ export async function createTestAdministratorRefundOperation(): Promise<TestAdmi
     )
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
-      'stripe', 'test', ${applicationId}, 'administrator_refund', ${`operation-${randomUUID()}`},
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'administrator_refund', ${`operation-${randomUUID()}`},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id, membership_source_id AS "membershipSourceId",
-      (SELECT user_id FROM binding) AS "userId"`)
+      (SELECT user_id FROM binding) AS "userId"`,
+  )
   return { applicationId, ...rows[0]! }
 }
 export async function claimTestAdministratorRefundOperation(operationId: string): Promise<number> {
@@ -113,14 +114,15 @@ export async function mutateTestAdministratorRefundRequest(requestId: string): P
 export async function createTestRefundOperationAttempt(
   operation: TestAdministratorRefundOperation,
   providerRefundId?: string,
+  contextApplicationId = operation.applicationId,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestRefundOperationAttempt */
     INSERT INTO membership_refund_operation_attempts (
-      membership_operation_id, provider, environment, application_id,
+      membership_operation_id, membership_provider_context_id,
       attempt_ordinal, provider_idempotency_key, provider_refund_id,
       amount_minor_units, currency_code
     ) VALUES (
-      ${operation.id}, 'stripe', 'test', ${operation.applicationId},
+      ${operation.id}, fn_upsert_membership_provider_context_id('stripe', 'test', ${contextApplicationId}),
       1, ${`attempt-${randomUUID()}`}, ${providerRefundId ?? null}, 100, 'usd'
     ) RETURNING id`)
   return rows[0]!.id
@@ -167,7 +169,6 @@ export async function createTestLinkedRefundReceiptRequest(
     )`)
   return { requestKey }
 }
-
 export async function insertTestLegacyUnlinkedRefundReceipt(
   membershipSourceId: string,
 ): Promise<number> {
@@ -181,7 +182,6 @@ export async function insertTestLegacyUnlinkedRefundReceipt(
     )`)
   return result.rowCount ?? 0
 }
-
 export async function insertTestLinkedOperationRefundReceipt(
   operation: TestAdministratorRefundOperation,
   requestKey: string,

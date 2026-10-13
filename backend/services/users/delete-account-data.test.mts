@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   claimRecoverableDataRequests,
@@ -14,8 +15,36 @@ import {
 } from '@voucha/test-helpers'
 import { deleteUser } from './delete.mts'
 import { processUserDeletionPhaseBatch } from './delete-phases.mts'
+import {
+  addTestSharedStripeCustomerSources,
+  countTestStripeCustomerDeletionWorks,
+} from '@voucha/test-helpers/entities/stripe-customer-deletion'
 
 describe('user deletion account-data phase', () => {
+  it('queues one Stripe customer cleanup across capped batches for two lineages', async () => {
+    const user = await createTestUser()
+    await addTestSharedStripeCustomerSources(user.id, `cus_${randomUUID()}`)
+    const deletion = await deleteUser(user, user)
+
+    await processUserDeletionPhaseBatch({
+      requestId: deletion.requestId,
+      userId: user.id,
+      processingAttemptId: deletion.processingAttemptId,
+      phase: 'account-data',
+      batchSize: 1,
+    })
+    await expect(countTestStripeCustomerDeletionWorks(deletion.requestId)).resolves.toBe(1)
+
+    await processUserDeletionPhaseBatch({
+      requestId: deletion.requestId,
+      userId: user.id,
+      processingAttemptId: deletion.processingAttemptId,
+      phase: 'account-data',
+      batchSize: 1,
+    })
+    await expect(countTestStripeCustomerDeletionWorks(deletion.requestId)).resolves.toBe(1)
+  })
+
   it('leaves a leased upload key pending until the provider effect settles', async () => {
     const user = await createTestUser()
     const exportRequest = await createDataRequest(user.id, user.id)

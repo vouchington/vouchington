@@ -68,12 +68,12 @@ export async function terminalizeKnownGooglePlaySource(options: {
   )
   const { rows } = await query<{ id: string }>(sql`/* insertGooglePlayPermanentLookupObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_record_id,
+      membership_provider_context_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
       expired_at, should_auto_renew
     ) VALUES (
-      'google_play', ${context.environment}, ${context.applicationId}, ${context.evidenceId},
+      fn_upsert_membership_provider_context_id('google_play', ${context.environment}, ${context.applicationId}), ${context.evidenceId},
       ${known.lineageId}, ${known.membershipProviderProductId}, ${known.membershipProductId},
       ${`lookup-missing:${options.purchaseTokenDigest}`}, ${options.providerOrder}, ${now}, 'direct',
       ${known.effectiveAt}, ${expiresAt}, ${now}, false
@@ -105,20 +105,23 @@ async function findKnownSource(
       prior.effective_at AS "effectiveAt", prior.expires_at AS "expiresAt"
     FROM membership_google_play_purchase_tokens token
     INNER JOIN membership_provider_lineages lineage ON lineage.id = token.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = token.membership_provider_context_id
     INNER JOIN membership_sources source ON source.membership_provider_lineage_id = lineage.id
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_observations prior ON prior.id = state.membership_provider_observation_id
-    WHERE token.environment = ${options.environment} AND token.application_id = ${options.applicationId}
+    WHERE context.environment = ${options.environment} AND context.application_id = ${options.applicationId}
       AND token.purchase_token_lookup_sha256 = ${options.purchaseTokenDigest}
-      AND lineage.provider = 'google_play' AND source.source_kind = 'direct'
+      AND token.fetched_at IS NOT NULL
+      AND context.provider = 'google_play' AND source.source_kind = 'direct'
       AND source.user_id IS NOT NULL AND (${options.userId}::UUID IS NULL OR source.user_id = ${options.userId}::UUID)
       AND state.expired_at IS NULL AND state.cancelled_at IS NULL
-      AND prior.provider = 'google_play' AND prior.membership_provider_lineage_id = lineage.id
+      AND prior.membership_provider_context_id = context.id
+      AND prior.membership_provider_lineage_id = lineage.id
       AND prior.effective_at <= CURRENT_TIMESTAMP
       AND NOT EXISTS (
         SELECT 1 FROM membership_google_play_purchase_tokens successor
-        WHERE successor.membership_provider_lineage_id = lineage.id
-          AND successor.linked_purchase_token_lookup_sha256 = token.purchase_token_lookup_sha256
+        WHERE successor.linked_purchase_token_id = token.id
+          AND successor.fetched_at IS NOT NULL
       ) LIMIT 1`)
   return rows[0] ?? null
 }

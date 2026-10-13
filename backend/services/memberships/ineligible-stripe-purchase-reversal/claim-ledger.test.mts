@@ -1,4 +1,7 @@
-import { claimTestIneligiblePurchaseReversalOperations } from '@voucha/test-helpers/membership-reversal-case-fixtures'
+import {
+  assertReversalClaimLeavesProviderContextUnlockedForTest,
+  claimTestIneligiblePurchaseReversalOperations,
+} from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -112,7 +115,10 @@ describe('family collision reversal ledger', () => {
       membershipProviderProductId: familySku.membership_provider_product_id,
       userId: user.id,
     })
-    const incomingSku = await createTestSku({ plan: 'plus' })
+    const incomingSku = await createTestSku({
+      plan: 'plus',
+      provider_application_id: `reversal-claim-${randomUUID()}`,
+    })
     const subscriptionId = `sub_family_proration_${randomUUID()}`
     const options = {
       customerId: `cus_family_proration_${randomUUID()}`,
@@ -121,6 +127,7 @@ describe('family collision reversal ledger', () => {
       incomingPlan: 'plus' as const,
       incomingStatus: 'active' as const,
       originatingInvoiceId: `in_family_proration_${randomUUID()}`,
+      providerApplicationId: incomingSku.provider_application_id,
       providerEnvironment: 'production' as const,
       sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
@@ -141,6 +148,12 @@ describe('family collision reversal ledger', () => {
       [target],
       snapshot,
     ))!
+    await assertReversalClaimLeavesProviderContextUnlockedForTest({
+      originatingInvoiceId: options.originatingInvoiceId,
+      providerApplicationId: incomingSku.provider_application_id,
+      providerEnvironment: options.providerEnvironment,
+      subscriptionId,
+    })
     await Promise.all(
       [initial.cancellation!, initial.reversals[0]!].map(operation =>
         failIneligiblePurchaseReversal(operation, new Error('retry after provider timeout')),

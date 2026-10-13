@@ -38,8 +38,8 @@ export async function publishStripeCatalogMapping({
   ) {
     await write(
       sql`/* publishStripeCatalogMapping: insert */
-        INSERT INTO membership_provider_products (membership_product_id, provider, environment, application_id, provider_product_id, sku_id, price_minor_units, currency_code)
-        VALUES (${membershipProductId}, 'stripe', ${context.environment}, ${context.applicationId}, ${providerProductId}, ${skuId}, ${amount}, 'usd')
+        INSERT INTO membership_provider_products (membership_product_id, membership_provider_context_id, provider_product_id, sku_id, price_minor_units, currency_code)
+        VALUES (${membershipProductId}, fn_upsert_membership_provider_context_id('stripe', ${context.environment}, ${context.applicationId}), ${providerProductId}, ${skuId}, ${amount}, 'usd')
         ON CONFLICT DO NOTHING`,
       { query },
     )
@@ -73,12 +73,16 @@ async function findStripeCatalogMappings(
 ): Promise<StripeCatalogMapping[]> {
   const { rows } = await write(
     sql`/* findStripeCatalogMappings */
-      SELECT id, membership_product_id, provider_product_id, sku_id, price_minor_units, currency_code, retired_at
-      FROM membership_provider_products
-      WHERE provider = 'stripe' AND environment = ${context.environment}
-        AND application_id = ${context.applicationId}
-        AND (provider_product_id = ${providerProductId} OR sku_id = ${skuId})
-      FOR NO KEY UPDATE`,
+      SELECT mapping.id, mapping.membership_product_id, mapping.provider_product_id,
+        mapping.sku_id, mapping.price_minor_units, mapping.currency_code, mapping.retired_at
+      FROM membership_provider_products mapping
+      INNER JOIN membership_provider_contexts provider_context
+        ON provider_context.id = mapping.membership_provider_context_id
+      WHERE provider_context.provider = 'stripe'
+        AND provider_context.environment = ${context.environment}
+        AND provider_context.application_id = ${context.applicationId}
+        AND (mapping.provider_product_id = ${providerProductId} OR mapping.sku_id = ${skuId})
+      FOR NO KEY UPDATE OF mapping`,
     { query },
   )
   return rows as StripeCatalogMapping[]

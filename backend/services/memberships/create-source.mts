@@ -71,13 +71,14 @@ export async function getMembershipProductIdForProviderSourceCreation(
     INNER JOIN membership_sources source ON source.id = source_state.membership_source_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     WHERE product.id = ${options.skuId}
       AND product.plan = ${options.plan}
       AND source.user_id = ${options.userId}
       AND source.source_kind = ${options.sourceKind}
-      AND lineage.provider = ${options.sourceIdentity.provider}
-      AND lineage.environment = ${options.sourceIdentity.environment}
-      AND lineage.application_id = ${options.sourceIdentity.applicationId}
+      AND context.provider = ${options.sourceIdentity.provider}
+      AND context.environment = ${options.sourceIdentity.environment}
+      AND context.application_id = ${options.sourceIdentity.applicationId}
       AND lineage.provider_lineage_id = ${options.sourceIdentity.providerLineageId}
     FOR SHARE OF product`)
   if (!retainedRows[0]) throw new InvalidMembershipGrantSkuError()

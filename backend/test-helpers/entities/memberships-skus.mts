@@ -37,9 +37,9 @@ export async function createTestSkuRecord(options: CreateTestSkuOptions = {}) {
   const product = await createOrGetActiveMembershipProduct(plan, interval, options.id)
   const { rows: providerProductRows } = await write(sql`/* createTestSku: Stripe product */
     INSERT INTO membership_provider_products (
-      membership_product_id, provider, environment, application_id, provider_product_id, price_minor_units, currency_code
-    ) VALUES (${product.id}, 'stripe', ${provider_environment}, ${provider_application_id}, ${stripe_price_id}, ${price_minor_units}, ${currency_code})
-    ON CONFLICT (provider, environment, application_id, provider_product_id, base_plan_id, offer_id, sku_id)
+      membership_product_id, membership_provider_context_id, provider_product_id, price_minor_units, currency_code
+    ) VALUES (${product.id}, fn_upsert_membership_provider_context_id('stripe', ${provider_environment}, ${provider_application_id}), ${stripe_price_id}, ${price_minor_units}, ${currency_code})
+    ON CONFLICT (membership_provider_context_id, provider_product_id, base_plan_id, offer_id, sku_id)
     DO UPDATE SET price_minor_units = EXCLUDED.price_minor_units, currency_code = EXCLUDED.currency_code, retired_at = NULL
     RETURNING id
   `)
@@ -77,11 +77,11 @@ export async function createTestNativeMembershipProviderProduct(options: {
 }): Promise<{ id: string }> {
   const { rows } = await write<{ id: string }>(sql`/* createTestNativeMembershipProviderProduct */
     INSERT INTO membership_provider_products (
-      membership_product_id, provider, environment, application_id, provider_product_id,
+      membership_product_id, membership_provider_context_id, provider_product_id,
       base_plan_id, offer_id, sku_id
     ) VALUES (
-      ${options.membershipProductId}, ${options.provider}, ${options.environment},
-      ${options.applicationId}, ${options.providerProductId}, ${options.basePlanId ?? null},
+      ${options.membershipProductId}, fn_upsert_membership_provider_context_id(${options.provider}, ${options.environment}, ${options.applicationId}),
+      ${options.providerProductId}, ${options.basePlanId ?? null},
       ${options.offerId ?? null}, ${options.skuId ?? null}
     )
     RETURNING id`)
@@ -107,10 +107,10 @@ export async function createRetiredTestSkuRecord(options: CreateTestSkuOptions =
   const product = productRows[0] as TestMembershipProduct
   const { rows: providerProductRows } = await write(sql`/* createRetiredTestSku: provider product */
     INSERT INTO membership_provider_products (
-      membership_product_id, provider, environment, application_id,
+      membership_product_id, membership_provider_context_id,
       provider_product_id, price_minor_units, currency_code, retired_at
     ) VALUES (
-      ${product.id}, 'stripe', ${providerEnvironment}, ${providerApplicationId},
+      ${product.id}, fn_upsert_membership_provider_context_id('stripe', ${providerEnvironment}, ${providerApplicationId}),
       ${stripePriceId}, ${priceMinorUnits}, ${currencyCode}, CURRENT_TIMESTAMP
     )
     RETURNING id`)

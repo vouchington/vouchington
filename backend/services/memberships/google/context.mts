@@ -2,6 +2,7 @@ import type { MembershipVerificationReasonCode } from '../verification-contract.
 
 export type GooglePlayVerificationContext = {
   verificationId: string
+  providerContextId: string
   userId: string
   purchaseIntentId: string | null
   evidenceId: string

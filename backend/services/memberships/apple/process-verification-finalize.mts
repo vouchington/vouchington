@@ -1,4 +1,5 @@
 import { finalizeClaimedMembershipVerification } from '../verification-work.mts'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AppleMembershipObservation } from './types.mts'
@@ -69,19 +70,26 @@ export async function createAppleVerificationLineage(
   observation: AppleMembershipObservation,
   query: QueryExecutor,
 ): Promise<string> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'apple_app_store',
+      environment: context.environment,
+      applicationId: context.applicationId,
+    },
+    query,
+  )
   const { rows } = await query(sql`/* createAppleVerificationLineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id, provider_account_id
+      membership_provider_context_id, provider_lineage_id, provider_account_id
     ) VALUES (
-      'apple_app_store', ${context.environment}, ${context.applicationId},
-      ${observation.providerLineageId}, ${observation.appAccountToken}
-    ) ON CONFLICT (provider, environment, application_id, provider_lineage_id) DO NOTHING
+      ${contextId}, ${observation.providerLineageId}, ${observation.appAccountToken}
+    ) ON CONFLICT (membership_provider_context_id, provider_lineage_id) DO NOTHING
     RETURNING id`)
   if (rows[0]) return (rows[0] as { id: string }).id
   const { rows: existingRows } = await query(sql`/* lockAppleVerificationLineage */
     SELECT id, provider_account_id FROM membership_provider_lineages
-    WHERE provider = 'apple_app_store' AND environment = ${context.environment}
-      AND application_id = ${context.applicationId} AND provider_lineage_id = ${observation.providerLineageId}
+    WHERE membership_provider_context_id = ${contextId}
+      AND provider_lineage_id = ${observation.providerLineageId}
     FOR UPDATE`)
   const existing = existingRows[0] as { id: string; provider_account_id: string | null } | undefined
   if (!existing) throw new AppleVerificationConflictError('wrong_account')
@@ -106,20 +114,23 @@ export async function acceptAppleVerificationObservation(
   observation: AppleMembershipObservation,
   query: QueryExecutor,
 ): Promise<string> {
-  const { rowCount } = await query(sql`/* acceptAppleVerificationEvidence */
+  const { rows: evidenceRows } = await query<{
+    membership_provider_context_id: string
+  }>(sql`/* acceptAppleVerificationEvidence */
     UPDATE membership_provider_evidence_records
     SET membership_provider_lineage_id = ${lineageId}, verified_at = CURRENT_TIMESTAMP
     WHERE id = ${context.evidenceId} AND membership_provider_lineage_id IS NULL
-      AND verified_at IS NULL AND rejected_at IS NULL`)
-  if (rowCount !== 1) throw new Error('Apple verification evidence was already finalized')
+      AND verified_at IS NULL AND rejected_at IS NULL
+    RETURNING membership_provider_context_id`)
+  if (!evidenceRows[0]) throw new Error('Apple verification evidence was already finalized')
   const { rows } = await query(sql`/* insertAppleVerificationObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_record_id,
+      membership_provider_context_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
       cancelled_at, expired_at, should_auto_renew
     ) VALUES (
-      'apple_app_store', ${context.environment}, ${context.applicationId}, ${context.evidenceId},
+      ${evidenceRows[0].membership_provider_context_id}, ${context.evidenceId},
       ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId},
       ${observation.providerRevision}, 0, ${observation.terminalAt}, ${observation.sourceKind},
       ${observation.effectiveAt}, ${observation.expiresAt},

@@ -1,3 +1,6 @@
+import { beginTransaction } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import { getLockedIneligiblePurchaseReversalCase } from '../services/memberships/ineligible-stripe-purchase-reversal/case-ledger.mts'
 import {
   claimIneligiblePurchaseReversalCaseForDiscovery,
   claimPersistedIneligiblePurchaseReversalCase,
@@ -42,4 +45,27 @@ export async function readTestStripeRefundHistory(
     reversalCaseId,
     target,
   })
+}
+
+export async function assertReversalClaimLeavesProviderContextUnlockedForTest(options: {
+  originatingInvoiceId: string
+  providerApplicationId: string
+  providerEnvironment: 'test' | 'production'
+  subscriptionId: string
+}): Promise<void> {
+  await using contextTransaction = await beginTransaction()
+  const { rows: contexts } =
+    await contextTransaction(sql`/* holdOwnedReversalProviderContextForTest */
+    SELECT id FROM membership_provider_contexts
+    WHERE provider = 'stripe' AND environment = ${options.providerEnvironment}
+      AND application_id = ${options.providerApplicationId}
+    FOR UPDATE NOWAIT`)
+  if (contexts.length !== 1) throw new Error('Expected the owned reversal provider context')
+
+  // The completed PostgreSQL lock query is the barrier: the claim runs while that row is held.
+  await using caseTransaction = await beginTransaction()
+  const reversalCase = await getLockedIneligiblePurchaseReversalCase(options, caseTransaction)
+  if (!reversalCase) throw new Error('Expected the owned reversal case')
+  await caseTransaction.rollback()
+  await contextTransaction.rollback()
 }

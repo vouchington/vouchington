@@ -6,35 +6,38 @@ Required provider cleanup intents. Completion gates the final internal deletion 
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
-| -------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| `id`                 | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
-| `request_id`         | `uuid`                              | no       |                              |          |           |           | Owning durable deletion request.                                                                                  |
-| `work_kind`          | `user_deletion_external_work_kinds` | no       |                              |          |           |           | Provider or internal side-effect category whose successful completion gates finalization.                         |
-| `work_key`           | `text`                              | yes      |                              |          |           |           | Provider idempotency key while work is pending; cleared after completion and retention cleanup.                   |
-| `relation_impact_id` | `uuid`                              | yes      |                              |          |           |           | Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned. |
-| `requested_at`       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | Timestamp when the durable external-work intent was recorded.                                                     |
-| `completed_at`       | `timestamp with time zone`          | yes      |                              |          |           |           | Timestamp when the external side effect completed successfully.                                                   |
-| `last_error_message` | `text`                              | yes      |                              |          |           |           | Truncated diagnostic from the latest failed external-work attempt.                                                |
-| `created_at`         | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
-| `updated_at`         | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
+| Column                           | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| -------------------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `request_id`                     | `uuid`                              | no       |                              |          |           |           | Owning durable deletion request.                                                                                  |
+| `work_kind`                      | `user_deletion_external_work_kinds` | no       |                              |          |           |           | Provider or internal side-effect category whose successful completion gates finalization.                         |
+| `work_key`                       | `text`                              | yes      |                              |          |           |           | Provider idempotency key while work is pending; cleared after completion and retention cleanup.                   |
+| `membership_provider_lineage_id` | `uuid`                              | yes      |                              |          |           |           | Stripe lineage whose customer is sanitized; provider identity is read through this retained lineage.              |
+| `relation_impact_id`             | `uuid`                              | yes      |                              |          |           |           | Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned. |
+| `requested_at`                   | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | Timestamp when the durable external-work intent was recorded.                                                     |
+| `completed_at`                   | `timestamp with time zone`          | yes      |                              |          |           |           | Timestamp when the external side effect completed successfully.                                                   |
+| `last_error_message`             | `text`                              | yes      |                              |          |           |           | Truncated diagnostic from the latest failed external-work attempt.                                                |
+| `created_at`                     | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
+| `updated_at`                     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
 - `user_deletion_external_works_request_id_relation_impact_id_key`: `UNIQUE (request_id, relation_impact_id)`
+- `user_deletion_external_works_request_id_work_kind_membershi_key`: `UNIQUE (request_id, work_kind, membership_provider_lineage_id)`
 - `user_deletion_external_works_request_id_work_kind_work_key_key`: `UNIQUE (request_id, work_kind, work_key)`
 
 **Check constraints:**
 
-- `user_deletion_external_works_check`: `CHECK ((((work_kind = 'entity-relation-effects'::user_deletion_external_work_kinds) AND (work_key IS NULL) AND ((completed_at IS NOT NULL) OR (relation_impact_id IS NOT NULL))) OR ((work_kind <> 'entity-relation-effects'::user_deletion_external_work_kinds) AND (relation_impact_id IS NULL) AND ((completed_at IS NOT NULL) OR (work_key IS NOT NULL)))))`
+- `user_deletion_external_works_check`: `CHECK ((((work_kind = 'entity-relation-effects'::user_deletion_external_work_kinds) AND (work_key IS NULL) AND (membership_provider_lineage_id IS NULL) AND ((completed_at IS NOT NULL) OR (relation_impact_id IS NOT NULL))) OR ((work_kind = 'stripe-customer'::user_deletion_external_work_kinds) AND (relation_impact_id IS NULL) AND (work_key IS NULL) AND (membership_provider_lineage_id IS NOT NULL)) OR ((work_kind = ANY (ARRAY['cloudflare-cache-tag'::user_deletion_external_work_kinds, 's3-export'::user_deletion_external_work_kinds])) AND (relation_impact_id IS NULL) AND (membership_provider_lineage_id IS NULL) AND ((completed_at IS NOT NULL) OR (work_key IS NOT NULL)))))`
 - `user_deletion_external_works_last_error_message_check`: `CHECK (((last_error_message IS NULL) OR (char_length(last_error_message) <= 2000)))`
 - `user_deletion_external_works_work_key_check`: `CHECK ((char_length(work_key) <= 1024))`
 - `user_deletion_external_works_work_kind_check`: `CHECK ((work_kind = ANY (ARRAY['cloudflare-cache-tag'::user_deletion_external_work_kinds, 'entity-relation-effects'::user_deletion_external_work_kinds, 's3-export'::user_deletion_external_work_kinds, 'stripe-customer'::user_deletion_external_work_kinds])))`
 
 **Foreign keys:**
 
+- `fk_user_deletion_external_works__provider_lineage`: `FOREIGN KEY (membership_provider_lineage_id) REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT`
 - `udew_relation_impact_fkey`: `FOREIGN KEY (request_id, relation_impact_id) REFERENCES user_deletion_relation_impacts(request_id, id) ON DELETE SET NULL (relation_impact_id)`
 - `user_deletion_external_works_request_id_fkey`: `FOREIGN KEY (request_id) REFERENCES user_deletion_requests(id) ON DELETE CASCADE`
 
@@ -42,11 +45,14 @@ Not partitioned — growth: unbounded.
 
 - `idx_user_deletion_external_works__completed_audit`: `CREATE INDEX idx_user_deletion_external_works__completed_audit ON public.user_deletion_external_works USING btree (request_id, id) WHERE ((completed_at IS NOT NULL) AND (work_key IS NOT NULL))`
 - `idx_user_deletion_external_works__pending`: `CREATE INDEX idx_user_deletion_external_works__pending ON public.user_deletion_external_works USING btree (request_id, id) WHERE (completed_at IS NULL)`
+- `idx_user_deletion_external_works__provider_lineage`: `CREATE INDEX idx_user_deletion_external_works__provider_lineage ON public.user_deletion_external_works USING btree (membership_provider_lineage_id) WHERE (membership_provider_lineage_id IS NOT NULL)`
 - `idx_user_deletion_external_works__relation_impact`: `CREATE INDEX idx_user_deletion_external_works__relation_impact ON public.user_deletion_external_works USING btree (relation_impact_id, request_id) WHERE (relation_impact_id IS NOT NULL)`
 - `user_deletion_external_works_pkey`: `CREATE UNIQUE INDEX user_deletion_external_works_pkey ON public.user_deletion_external_works USING btree (id)`
 - `user_deletion_external_works_request_id_relation_impact_id_key`: `CREATE UNIQUE INDEX user_deletion_external_works_request_id_relation_impact_id_key ON public.user_deletion_external_works USING btree (request_id, relation_impact_id)`
+- `user_deletion_external_works_request_id_work_kind_membershi_key`: `CREATE UNIQUE INDEX user_deletion_external_works_request_id_work_kind_membershi_key ON public.user_deletion_external_works USING btree (request_id, work_kind, membership_provider_lineage_id)`
 - `user_deletion_external_works_request_id_work_kind_work_key_key`: `CREATE UNIQUE INDEX user_deletion_external_works_request_id_work_kind_work_key_key ON public.user_deletion_external_works USING btree (request_id, work_kind, work_key)`
 
 **Triggers:**
 
+- `trigger_user_deletion_external_works_stripe_lineage`: `CREATE TRIGGER trigger_user_deletion_external_works_stripe_lineage BEFORE INSERT OR UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_user_deletion_external_work()`
 - `trigger_user_deletion_external_works_updated_at`: `CREATE TRIGGER trigger_user_deletion_external_works_updated_at BEFORE UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

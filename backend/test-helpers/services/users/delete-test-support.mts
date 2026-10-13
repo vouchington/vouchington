@@ -6,7 +6,6 @@ import {
 } from '../../../services/user-deletions/index.mts'
 import { processUserDeletionPhaseBatch } from '../../../services/users/delete-phases.mts'
 import { processUserDeletionExternalWork } from '../../../services/users/delete-phase-external-work.mts'
-
 type DrainUserDeletionDependencies = {
   deleteExportsFromS3?: (s3Keys: string[]) => Promise<unknown>
   sanitizeStripeCustomer?: (stripeCustomerId: string) => Promise<unknown>

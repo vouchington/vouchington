@@ -32,10 +32,11 @@ export async function leaseDueRefundReconciliation(
   const { rows } = await query(sql`/* leaseDueRefundReconciliation */
     SELECT operation.id, work.lease_token AS "leaseToken",
       reconciliation_attempt_ordinal AS "attemptOrdinal",
-      provider, environment AS "providerEnvironment", application_id AS "providerApplicationId",
+      context.provider, context.environment AS "providerEnvironment", context.application_id AS "providerApplicationId",
       provider_refund_id AS "providerRefundId",
       remaining_refundable_minor_units::TEXT AS "amountMinorUnits", currency_code AS currency
     FROM membership_operations operation
+    JOIN membership_provider_contexts context ON context.id = operation.membership_provider_context_id
     JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     WHERE operation.id = ${operationId} AND work.lease_token = ${leaseToken}
   `)
@@ -49,10 +50,10 @@ export async function recordRefundReconciliationAttempt(
 ): Promise<RefundReconciliationAttempt> {
   const { rows: insertedRows } = await write(sql`/* recordRefundReconciliationAttempt:insert */
     INSERT INTO membership_refund_operation_attempts (
-      membership_operation_id, provider, environment, application_id,
+      membership_operation_id, membership_provider_context_id,
       attempt_ordinal, provider_idempotency_key,
       amount_minor_units, currency_code
-    ) SELECT operation.id, provider, environment, application_id,
+    ) SELECT operation.id, operation.membership_provider_context_id,
       reconciliation_attempt_ordinal, ${providerIdempotencyKey},
       remaining_refundable_minor_units, currency_code
     FROM membership_operations operation
@@ -77,9 +78,6 @@ export async function recordRefundReconciliationAttempt(
       currency_code AS currency
     FROM membership_refund_operation_attempts
     WHERE membership_operation_id = ${lease.id}
-      AND provider = ${lease.provider}
-      AND environment = ${lease.providerEnvironment}
-      AND application_id = ${lease.providerApplicationId}
       AND provider_idempotency_key = ${providerIdempotencyKey}
   `)
   const existing = rows[0] as ReconciliationAttemptRow | undefined

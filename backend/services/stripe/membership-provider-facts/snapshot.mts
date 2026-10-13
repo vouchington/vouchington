@@ -155,9 +155,11 @@ async function getStripeProviderProductMappings(
   query: QueryExecutor,
 ): Promise<Map<string, StripeProviderProductMapping>> {
   const { rows } = await query(sql`/* getStripeProviderProductsForObservation */
-    SELECT id, membership_product_id, provider_product_id FROM membership_provider_products
-    WHERE provider = 'stripe' AND environment = ${subscription.livemode ? 'production' : 'test'}
-      AND application_id = ${applicationId}
+    SELECT product.id, product.membership_product_id, product.provider_product_id
+    FROM membership_provider_products product
+    JOIN membership_provider_contexts context ON context.id = product.membership_provider_context_id
+    WHERE context.provider = 'stripe' AND context.environment = ${subscription.livemode ? 'production' : 'test'}
+      AND context.application_id = ${applicationId}
       AND (provider_product_id = ${currentPriceId} OR provider_product_id = ${renewalPriceId ?? currentPriceId})`)
   return new Map(
     (rows as StripeProviderProductMapping[]).map(mapping => [mapping.provider_product_id, mapping]),

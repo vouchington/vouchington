@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { createIneligiblePurchaseReversalIdempotencyKey } from '../ineligible-stripe-purchase-reversal-idempotency.mts'
 import { reconcileFailedIneligiblePurchaseReversal } from '../ineligible-stripe-purchase-reversal-reconcile.mts'
 import type {
@@ -41,20 +42,28 @@ async function claimIneligiblePurchaseReversal(options: {
     options.subscriptionId,
     options.target,
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the locked claim reread
+  const providerContextId = await getOrCreateProviderContextId(
+    {
+      provider: 'stripe',
+      environment: options.providerEnvironment,
+      applicationId: options.providerApplicationId,
+    },
+    options.query,
+  )
   await options.query(sql`/* claimIneligiblePurchaseReversal:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     ) VALUES (
       ${options.membershipSourceId}, ${options.membershipProviderLineageId},
-      ${options.membershipLineageBindingId}, 'stripe', ${options.providerEnvironment},
-      ${options.providerApplicationId}, 'ineligible_purchase_reversal', ${idempotencyKey},
+      ${options.membershipLineageBindingId}, ${providerContextId}, 'ineligible_purchase_reversal', ${idempotencyKey},
       ${options.target.qualifyingAmountMinorUnits}, ${options.target.amountMinorUnits},
       ${options.target.currency}, ${options.periodStartedAt}, ${options.periodEndsAt},
       ${options.collisionAt}
-    ) ON CONFLICT (provider, environment, application_id, idempotency_key) DO NOTHING
+    ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
   `)
   const { rows } = await options.query(sql`/* claimIneligiblePurchaseReversal:lock */
     SELECT operation.id,
@@ -68,8 +77,7 @@ async function claimIneligiblePurchaseReversal(options: {
       operation.qualifying_allocation_minor_units::TEXT AS "qualifyingAllocationMinorUnits",
       operation.remaining_refundable_minor_units::TEXT AS "remainingRefundableMinorUnits"
     FROM membership_operations operation
-    WHERE operation.provider = 'stripe' AND operation.environment = ${options.providerEnvironment}
-      AND operation.application_id = ${options.providerApplicationId}
+    WHERE operation.membership_provider_context_id = ${providerContextId}::UUID
       AND operation.idempotency_key = ${idempotencyKey}
       AND operation.membership_lineage_binding_id = ${options.membershipLineageBindingId}
     FOR UPDATE

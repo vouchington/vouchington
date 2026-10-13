@@ -10,8 +10,9 @@ export async function getKnownGooglePlayCanonicalRoot(
     sql`/* getKnownGooglePlayCanonicalRoot */
       SELECT lineage.provider_lineage_id FROM membership_google_play_purchase_tokens token
       INNER JOIN membership_provider_lineages lineage ON lineage.id = token.membership_provider_lineage_id
-      WHERE token.environment = ${environment} AND token.application_id = ${applicationId}
-        AND token.purchase_token_lookup_sha256 = ${digest} AND lineage.provider = 'google_play' LIMIT 1`,
+      INNER JOIN membership_provider_contexts context ON context.id = token.membership_provider_context_id
+      WHERE context.environment = ${environment} AND context.application_id = ${applicationId}
+        AND token.purchase_token_lookup_sha256 = ${digest} AND context.provider = 'google_play' LIMIT 1`,
   )
   return rows[0]?.provider_lineage_id ?? null
 }

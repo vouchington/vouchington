@@ -45,10 +45,12 @@ export async function getStripePurchaseIntentOwner(options: {
     FROM membership_purchase_intents intent
     INNER JOIN membership_provider_products mapping
       ON mapping.id = intent.membership_provider_product_id
+    INNER JOIN membership_provider_contexts context
+      ON context.id = intent.membership_provider_context_id
     WHERE intent.id = ${options.purchaseIntentId}
       AND intent.user_id IS NOT NULL
-      AND intent.provider = 'stripe'
-      AND intent.environment = ${options.environment}
+      AND context.provider = 'stripe'
+      AND context.environment = ${options.environment}
       AND mapping.provider_product_id = ${options.providerProductId}
       AND intent.launched_at IS NOT NULL
       AND intent.failed_at IS NULL
@@ -89,18 +91,20 @@ export async function createMembershipPurchaseIntent(options: {
     await query<PurchaseIntentRow>(sql`/* createMembershipPurchaseIntent.insert */
     INSERT INTO membership_purchase_intents (
       user_id, idempotency_key, request_fingerprint, membership_provider_product_id,
-      membership_product_id, provider, environment, application_id
+      membership_product_id, membership_provider_context_id
     )
     SELECT ${options.userId}::UUID AS user_id, ${options.idempotencyKey}::UUID AS idempotency_key,
       ${fingerprint}, mapping.id,
-      product.id, mapping.provider, mapping.environment, mapping.application_id
+      product.id, mapping.membership_provider_context_id
     FROM membership_products product
     INNER JOIN membership_provider_products mapping ON mapping.membership_product_id = product.id
+    INNER JOIN membership_provider_contexts context
+      ON context.id = mapping.membership_provider_context_id
     WHERE product.id = ${options.productId}
       AND product.retired_at IS NULL
-      AND mapping.provider = ${options.provider}
-      AND mapping.environment = ${providerContext.environment}
-      AND mapping.application_id = ${providerContext.applicationId}
+      AND context.provider = ${options.provider}
+      AND context.environment = ${providerContext.environment}
+      AND context.application_id = ${providerContext.applicationId}
       AND mapping.retired_at IS NULL
     ORDER BY user_id ASC NULLS LAST, idempotency_key ASC NULLS LAST, mapping.id DESC
     LIMIT 1
@@ -164,18 +168,18 @@ async function getPurchaseIntent(
 ) {
   const { rows } = await query<PurchaseIntentRow>(sql`/* getMembershipPurchaseIntent */
     SELECT intent.id, intent.user_id, intent.request_fingerprint, intent.membership_product_id,
-      intent.provider, intent.environment, intent.application_id, intent.provider_checkout_url,
+      context.provider, context.environment, context.application_id, intent.provider_checkout_url,
       intent.launched_at, intent.failed_at, intent.failure_code, intent.expires_at,
       mapping.provider_product_id, mapping.base_plan_id, mapping.offer_id,
       mapping.sku_id, product.plan
     FROM membership_purchase_intents intent
     INNER JOIN membership_provider_products mapping ON mapping.id = intent.membership_provider_product_id
+    INNER JOIN membership_provider_contexts context ON context.id = intent.membership_provider_context_id
     INNER JOIN membership_products product ON product.id = intent.membership_product_id
     WHERE intent.user_id = ${userId} AND intent.idempotency_key = ${idempotencyKey}
     LIMIT 1`)
   return rows[0] ?? null
 }
-
 async function getConflictingPurchaseIntent(userId: string, query: QueryExecutor) {
   const { rows } = await query<{ expires_at: Date }>(sql`/* getConflictingPurchaseIntent */
     SELECT expires_at FROM membership_purchase_intents
@@ -184,7 +188,6 @@ async function getConflictingPurchaseIntent(userId: string, query: QueryExecutor
     LIMIT 1`)
   return rows[0] ?? null
 }
-
 function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint: string): void {
   if (row.request_fingerprint !== fingerprint)
     throw createCodedError(

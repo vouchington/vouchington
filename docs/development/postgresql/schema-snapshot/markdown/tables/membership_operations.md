@@ -6,30 +6,28 @@ Idempotent provider-operation ledger, including refund allocation snapshots.
 
 Not partitioned — growth: unbounded.
 
-| Column                              | Type                               | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
-| ----------------------------------- | ---------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`                                | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
-| `membership_source_id`              | `uuid`                             | no       |                              |          |           |           | Source against which the provider operation runs.                                                  |
-| `membership_provider_lineage_id`    | `uuid`                             | no       |                              |          |           |           | Provider lineage that owns the operated source.                                                    |
-| `membership_lineage_binding_id`     | `uuid`                             | no       |                              |          |           |           | Binding and owner captured when the provider operation was requested.                              |
-| `provider_refund_id`                | `text`                             | yes      |                              |          |           |           | Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying. |
-| `provider`                          | `membership_provider_kinds`        | no       |                              |          |           |           | Provider asked to perform the operation.                                                           |
-| `environment`                       | `membership_provider_environments` | no       |                              |          |           |           | Provider environment containing the operated resource.                                             |
-| `application_id`                    | `text`                             | no       |                              |          |           |           | Provider application, bundle, or tenant containing the operated resource.                          |
-| `operation_kind`                    | `membership_operation_kinds`       | no       |                              |          |           |           | Kind of cancellation or automatic refund operation.                                                |
-| `idempotency_key`                   | `text`                             | no       |                              |          |           |           | Provider-context-scoped idempotency key for this operation.                                        |
-| `qualifying_allocation_minor_units` | `bigint`                           | yes      |                              |          |           |           | Eligible allocation amount captured for refund operations.                                         |
-| `remaining_refundable_minor_units`  | `bigint`                           | yes      |                              |          |           |           | Unrefunded portion of the captured eligible allocation.                                            |
-| `currency_code`                     | `currency_codes`                   | yes      |                              |          |           |           | Currency of the captured refundable allocation.                                                    |
-| `period_started_at`                 | `timestamp with time zone`         | yes      |                              |          |           |           | Start of the qualifying refund period.                                                             |
-| `period_ends_at`                    | `timestamp with time zone`         | yes      |                              |          |           |           | End of the qualifying refund period.                                                               |
-| `collision_at`                      | `timestamp with time zone`         | yes      |                              |          |           |           | When conflicting entitlement collision handling began.                                             |
-| `reconciliation_attempt_ordinal`    | `integer`                          | no       | `0`                          |          |           |           | Monotonic ordinal allocated when a reconciliation lease is acquired.                               |
-| `requested_at`                      | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the operation was requested.                                                                  |
-| `completed_at`                      | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider operation completed.                                                             |
-| `failed_at`                         | `timestamp with time zone`         | yes      |                              |          |           |           | When the provider operation failed.                                                                |
-| `failure_message`                   | `text`                             | yes      |                              |          |           |           | Bounded failure detail for the operation.                                                          |
-| `created_at`                        | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
+| Column                              | Type                         | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
+| ----------------------------------- | ---------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `id`                                | `uuid`                       | no       | `uuidv7()`                   |          |           |           |                                                                                                    |
+| `membership_source_id`              | `uuid`                       | no       |                              |          |           |           | Source against which the provider operation runs.                                                  |
+| `membership_provider_lineage_id`    | `uuid`                       | no       |                              |          |           |           | Provider lineage that owns the operated source.                                                    |
+| `membership_lineage_binding_id`     | `uuid`                       | no       |                              |          |           |           | Binding and owner captured when the provider operation was requested.                              |
+| `provider_refund_id`                | `text`                       | yes      |                              |          |           |           | Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying. |
+| `membership_provider_context_id`    | `uuid`                       | no       |                              |          |           |           | Provider context constrained to the operated lineage.                                              |
+| `operation_kind`                    | `membership_operation_kinds` | no       |                              |          |           |           | Kind of cancellation or automatic refund operation.                                                |
+| `idempotency_key`                   | `text`                       | no       |                              |          |           |           | Provider-context-scoped idempotency key for this operation.                                        |
+| `qualifying_allocation_minor_units` | `bigint`                     | yes      |                              |          |           |           | Eligible allocation amount captured for refund operations.                                         |
+| `remaining_refundable_minor_units`  | `bigint`                     | yes      |                              |          |           |           | Unrefunded portion of the captured eligible allocation.                                            |
+| `currency_code`                     | `currency_codes`             | yes      |                              |          |           |           | Currency of the captured refundable allocation.                                                    |
+| `period_started_at`                 | `timestamp with time zone`   | yes      |                              |          |           |           | Start of the qualifying refund period.                                                             |
+| `period_ends_at`                    | `timestamp with time zone`   | yes      |                              |          |           |           | End of the qualifying refund period.                                                               |
+| `collision_at`                      | `timestamp with time zone`   | yes      |                              |          |           |           | When conflicting entitlement collision handling began.                                             |
+| `reconciliation_attempt_ordinal`    | `integer`                    | no       | `0`                          |          |           |           | Monotonic ordinal allocated when a reconciliation lease is acquired.                               |
+| `requested_at`                      | `timestamp with time zone`   | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the operation was requested.                                                                  |
+| `completed_at`                      | `timestamp with time zone`   | yes      |                              |          |           |           | When the provider operation completed.                                                             |
+| `failed_at`                         | `timestamp with time zone`   | yes      |                              |          |           |           | When the provider operation failed.                                                                |
+| `failure_message`                   | `text`                       | yes      |                              |          |           |           | Bounded failure detail for the operation.                                                          |
+| `created_at`                        | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -39,7 +37,6 @@ _none_
 **Check constraints:**
 
 - `membership_operations__provider_refund_id_valid`: `CHECK (((provider_refund_id IS NULL) OR (((char_length(provider_refund_id) >= 1) AND (char_length(provider_refund_id) <= 255)) AND (provider_refund_id = TRIM(BOTH FROM provider_refund_id)))))`
-- `membership_operations_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_operations_check`: `CHECK (((period_ends_at IS NULL) OR (period_started_at IS NOT NULL)))`
 - `membership_operations_check1`: `CHECK (((period_ends_at IS NULL) OR (period_ends_at >= period_started_at)))`
 - `membership_operations_check10`: `CHECK (((completed_at IS NULL) OR (completed_at >= requested_at)))`
@@ -55,7 +52,6 @@ _none_
 - `membership_operations_check9`: `CHECK ((num_nonnulls(completed_at, failed_at) <= 1))`
 - `membership_operations_failure_message_check`: `CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 2000))))`
 - `membership_operations_idempotency_key_check`: `CHECK ((((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 255)) AND (idempotency_key = TRIM(BOTH FROM idempotency_key))))`
-- `membership_operations_provider_check`: `CHECK ((provider <> 'admin'::membership_provider_kinds))`
 - `membership_operations_qualifying_allocation_minor_units_check`: `CHECK (((qualifying_allocation_minor_units >= 0) AND (qualifying_allocation_minor_units <= '9007199254740991'::bigint)))`
 - `membership_operations_reconciliation_attempt_ordinal_check`: `CHECK ((reconciliation_attempt_ordinal >= 0))`
 - `membership_operations_remaining_refundable_minor_units_check`: `CHECK (((remaining_refundable_minor_units >= 0) AND (remaining_refundable_minor_units <= '9007199254740991'::bigint)))`
@@ -63,7 +59,7 @@ _none_
 **Foreign keys:**
 
 - `fk_membership_operations__binding_lineage`: `FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id) REFERENCES membership_lineage_bindings(id, membership_provider_lineage_id) ON DELETE RESTRICT`
-- `fk_membership_operations__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, provider, environment, application_id) REFERENCES membership_provider_lineages(id, provider, environment, application_id) ON DELETE RESTRICT`
+- `fk_membership_operations__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT`
 - `fk_membership_operations__source_lineage`: `FOREIGN KEY (membership_source_id, membership_provider_lineage_id) REFERENCES membership_sources(id, membership_provider_lineage_id) ON DELETE RESTRICT`
 - `membership_operations_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `membership_operations_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
@@ -72,11 +68,11 @@ _none_
 
 - `idx_membership_operations__binding_id`: `CREATE INDEX idx_membership_operations__binding_id ON public.membership_operations USING btree (membership_lineage_binding_id, id DESC)`
 - `idx_membership_operations__currency_code`: `CREATE INDEX idx_membership_operations__currency_code ON public.membership_operations USING btree (currency_code)`
+- `idx_membership_operations__id_context`: `CREATE UNIQUE INDEX idx_membership_operations__id_context ON public.membership_operations USING btree (id, membership_provider_context_id)`
 - `idx_membership_operations__id_source`: `CREATE UNIQUE INDEX idx_membership_operations__id_source ON public.membership_operations USING btree (id, membership_source_id)`
 - `idx_membership_operations__lineage_id`: `CREATE INDEX idx_membership_operations__lineage_id ON public.membership_operations USING btree (membership_provider_lineage_id, id DESC)`
-- `idx_membership_operations__provider_idempotency`: `CREATE UNIQUE INDEX idx_membership_operations__provider_idempotency ON public.membership_operations USING btree (provider, environment, application_id, idempotency_key)`
-- `idx_membership_operations__provider_refund`: `CREATE UNIQUE INDEX idx_membership_operations__provider_refund ON public.membership_operations USING btree (provider, environment, application_id, provider_refund_id) WHERE (provider_refund_id IS NOT NULL)`
-- `idx_membership_operations__receipt_snapshot`: `CREATE UNIQUE INDEX idx_membership_operations__receipt_snapshot ON public.membership_operations USING btree (id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) NULLS NOT DISTINCT`
+- `idx_membership_operations__provider_idempotency`: `CREATE UNIQUE INDEX idx_membership_operations__provider_idempotency ON public.membership_operations USING btree (membership_provider_context_id, idempotency_key)`
+- `idx_membership_operations__provider_refund`: `CREATE UNIQUE INDEX idx_membership_operations__provider_refund ON public.membership_operations USING btree (membership_provider_context_id, provider_refund_id) WHERE (provider_refund_id IS NOT NULL)`
 - `idx_membership_operations__source_id`: `CREATE INDEX idx_membership_operations__source_id ON public.membership_operations USING btree (membership_source_id, id DESC)`
 - `membership_operations_pkey`: `CREATE UNIQUE INDEX membership_operations_pkey ON public.membership_operations USING btree (id)`
 

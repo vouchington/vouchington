@@ -69,6 +69,11 @@ export async function cleanupRefundReconciliationOperationsForTest(
 
   await using transaction = await beginTransaction()
   for (const operationId of operationIds) {
+    await transaction(sql`/* expireOwnedRefundReconciliationDispatcherTestLease */
+      UPDATE membership_operation_execution_work_items
+      SET leased_at = clock_timestamp() - INTERVAL '2 seconds',
+        lease_expires_at = clock_timestamp() - INTERVAL '1 second'
+      WHERE membership_operation_id = ${operationId} AND lease_token IS NOT NULL`)
     const token = await claimMembershipOperationExecutionWork(operationId, transaction, true)
     if (!token) continue
     await transaction(sql`/* completeRefundReconciliationDispatcherTestCleanup */
@@ -78,6 +83,25 @@ export async function cleanupRefundReconciliationOperationsForTest(
           WHERE work.membership_operation_id = operation.id AND work.lease_token = ${token})`)
   }
   await transaction.commit()
+}
+
+export async function prioritizeRefundReconciliationOperationsForTest(
+  operationIds: readonly string[],
+): Promise<void> {
+  if (operationIds.length === 0) return
+  const { rowCount } = await write(sql`/* prioritizeRefundReconciliationOperationsForTest */
+    WITH earliest AS (
+      SELECT available_at FROM membership_operation_execution_work_items
+      ORDER BY available_at LIMIT 1
+    ), owned AS (
+      SELECT id, ordinal FROM unnest(${operationIds}::uuid[]) WITH ORDINALITY AS selected(id, ordinal)
+    )
+    UPDATE membership_operation_execution_work_items work
+    SET available_at = earliest.available_at - (${operationIds.length} + 1 - owned.ordinal) * INTERVAL '1 second'
+    FROM earliest, owned
+    WHERE work.membership_operation_id = owned.id AND earliest.available_at <> '-infinity'::timestamptz`)
+  if (rowCount !== operationIds.length)
+    throw new Error('Unable to reserve due order for owned refund reconciliation operations')
 }
 
 export async function withLockedRefundOperationForTest<T>(

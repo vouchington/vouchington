@@ -57,10 +57,10 @@ export async function seedMembershipProducts(): Promise<void> {
          VALUES ${rows.join(', ')}
        )
        INSERT INTO membership_provider_products (
-         id, membership_product_id, provider, environment, application_id,
+         id, membership_product_id, membership_provider_context_id,
          provider_product_id, price_minor_units, currency_code
        )
-       SELECT mapping.id, product.id, 'stripe', 'production', 'voucha-web',
+       SELECT mapping.id, product.id, fn_upsert_membership_provider_context_id('stripe', 'production', 'voucha-web'),
          mapping.provider_product_id, mapping.price_minor_units, 'usd'
        FROM mapping_rows mapping
        INNER JOIN membership_products product

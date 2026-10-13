@@ -26,7 +26,7 @@ export async function getMembershipPendingState(userId: string) {
       reason_code: MembershipVerificationReasonCode | null
       next_processing_at: Date | null
     }>(sql`/* getMembershipPendingState.verifications */
-      SELECT verification.id, verification.provider,
+      SELECT verification.id, provider_context.provider,
         CASE
           WHEN verified_at IS NOT NULL THEN 'verified'
           WHEN conflicted_at IS NOT NULL THEN 'conflict'
@@ -35,6 +35,7 @@ export async function getMembershipPendingState(userId: string) {
         END AS status,
         result_code AS reason_code, CASE WHEN work.completed_at IS NULL THEN work.available_at END AS next_processing_at
       FROM membership_verifications verification
+      INNER JOIN membership_provider_contexts provider_context ON provider_context.id = verification.membership_provider_context_id
       JOIN membership_verification_processing_work_items work ON work.membership_verification_id = verification.id
       WHERE user_id = ${userId}
       ORDER BY verification.id DESC
@@ -49,9 +50,10 @@ export async function getMembershipPendingState(userId: string) {
         | 'collision_resolution'
       status: 'pending' | 'failed'
     }>(sql`/* getMembershipPendingState.operations */
-      SELECT operation.id, operation.provider, operation.operation_kind AS kind,
+      SELECT operation.id, provider_context.provider, operation.operation_kind AS kind,
         CASE WHEN operation.failed_at IS NULL THEN 'pending' ELSE 'failed' END AS status
       FROM membership_operations operation
+      INNER JOIN membership_provider_contexts provider_context ON provider_context.id = operation.membership_provider_context_id
       INNER JOIN membership_sources source ON source.id = operation.membership_source_id
       WHERE source.user_id = ${userId} AND operation.completed_at IS NULL
       ORDER BY operation.id DESC

@@ -10,18 +10,14 @@ BEGIN
 
   IF ROW(
     NEW.id,
-    NEW.provider,
-    NEW.environment,
-    NEW.application_id,
+    NEW.membership_provider_context_id,
     NEW.provider_event_id,
     NEW.evidence_lookup_sha256,
     NEW.encrypted_evidence,
     NEW.received_at
   ) IS DISTINCT FROM ROW(
     OLD.id,
-    OLD.provider,
-    OLD.environment,
-    OLD.application_id,
+    OLD.membership_provider_context_id,
     OLD.provider_event_id,
     OLD.evidence_lookup_sha256,
     OLD.encrypted_evidence,

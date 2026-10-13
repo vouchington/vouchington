@@ -69,7 +69,7 @@ async function getMembershipFact(
 ): Promise<MembershipFact | null> {
   const { rows } = await query(sql`/* getStripeMembershipProviderFact */
     SELECT membership.user_id, source.id AS membership_source_id, source.membership_provider_lineage_id,
-      lineage.application_id, lineage.environment, lineage.provider_lineage_id, lineage.provider_account_id, state.membership_product_id,
+      context.application_id, context.environment, lineage.provider_lineage_id, lineage.provider_account_id, state.membership_product_id,
       state.effective_at, state.expires_at, state.cancelled_at, state.expired_at, state.past_due_at, state.paused_at,
       state.should_auto_renew, event.received_at, event.is_live_mode,
       event.subscription_id, event.customer_id
@@ -77,10 +77,11 @@ async function getMembershipFact(
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     INNER JOIN stripe_events event ON event.stripe_event_id = ${options.stripeEventId}
     WHERE membership.id = ${options.membershipId}
       AND source.source_kind = 'direct'
-      AND lineage.provider = 'stripe'
+      AND context.provider = 'stripe'
     /* deadlock-safe: membership.id reaches one source and its one current state */
     FOR UPDATE OF source, state
   `)

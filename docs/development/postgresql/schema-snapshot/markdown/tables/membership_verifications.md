@@ -14,9 +14,7 @@ Not partitioned — growth: unbounded.
 | `request_fingerprint`                    | `text`                                 | no       |                              |          |           |           | SHA-256 digest of the canonical verification request for exact replay validation.          |
 | `membership_purchase_intent_id`          | `uuid`                                 | yes      |                              |          |           |           | Optional owner-matched launch that originated this verification.                           |
 | `membership_provider_evidence_record_id` | `uuid`                                 | no       |                              |          |           |           | Bounded encrypted evidence persisted before verification processing.                       |
-| `provider`                               | `membership_provider_kinds`            | no       |                              |          |           |           | Store or payment provider that issued the submitted evidence.                              |
-| `environment`                            | `membership_provider_environments`     | no       |                              |          |           |           | Provider environment in which the submitted evidence must verify.                          |
-| `application_id`                         | `text`                                 | no       |                              |          |           |           | Provider application, bundle, or tenant in which the submitted evidence must verify.       |
+| `membership_provider_context_id`         | `uuid`                                 | no       |                              |          |           |           | Provider context constrained to the submitted evidence and purchase intent.                |
 | `verified_at`                            | `timestamp with time zone`             | yes      |                              |          |           |           | When verification completed successfully.                                                  |
 | `conflicted_at`                          | `timestamp with time zone`             | yes      |                              |          |           |           | When verification completed with an automatically managed conflict.                        |
 | `rejected_at`                            | `timestamp with time zone`             | yes      |                              |          |           |           | When verification completed with a rejection.                                              |
@@ -31,22 +29,20 @@ _none_
 
 **Check constraints:**
 
-- `membership_verifications_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_verifications_check`: `CHECK ((num_nonnulls(verified_at, conflicted_at, rejected_at) <= 1))`
 - `membership_verifications_check1`: `CHECK (((num_nonnulls(verified_at, conflicted_at, rejected_at) = 0) = (result_code IS NULL)))`
-- `membership_verifications_provider_check`: `CHECK ((provider <> 'admin'::membership_provider_kinds))`
 - `membership_verifications_request_fingerprint_check`: `CHECK ((request_fingerprint ~ '^[a-f0-9]{64}$'::text))`
 
 **Foreign keys:**
 
-- `fk_membership_verifications__evidence_context`: `FOREIGN KEY (membership_provider_evidence_record_id, provider, environment, application_id) REFERENCES membership_provider_evidence_records(id, provider, environment, application_id) ON DELETE RESTRICT`
-- `fk_membership_verifications__purchase_intent_context`: `FOREIGN KEY (membership_purchase_intent_id, user_id, provider, environment, application_id) REFERENCES membership_purchase_intents(id, user_id, provider, environment, application_id) ON DELETE RESTRICT`
+- `fk_membership_verifications__evidence_context`: `FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_context_id) ON DELETE RESTRICT`
+- `fk_membership_verifications__purchase_intent_context`: `FOREIGN KEY (membership_purchase_intent_id, user_id, membership_provider_context_id) REFERENCES membership_purchase_intents(id, user_id, membership_provider_context_id) ON DELETE RESTRICT`
 - `membership_verifications_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_membership_verifications__evidence_id`: `CREATE INDEX idx_membership_verifications__evidence_id ON public.membership_verifications USING btree (membership_provider_evidence_record_id)`
-- `idx_membership_verifications__pending_microsoft_source_recovery`: `CREATE INDEX idx_membership_verifications__pending_microsoft_source_recovery ON public.membership_verifications USING btree (user_id, environment, application_id, request_fingerprint) WHERE ((provider = 'microsoft_store'::membership_provider_kinds) AND (verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
+- `idx_membership_verifications__pending_microsoft_source_recovery`: `CREATE INDEX idx_membership_verifications__pending_microsoft_source_recovery ON public.membership_verifications USING btree (user_id, membership_provider_context_id, request_fingerprint) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_verifications__purchase_intent_id`: `CREATE INDEX idx_membership_verifications__purchase_intent_id ON public.membership_verifications USING btree (membership_purchase_intent_id, id DESC) WHERE (membership_purchase_intent_id IS NOT NULL)`
 - `idx_membership_verifications__user_id`: `CREATE INDEX idx_membership_verifications__user_id ON public.membership_verifications USING btree (user_id, id DESC)`
 - `idx_membership_verifications__user_idempotency`: `CREATE UNIQUE INDEX idx_membership_verifications__user_idempotency ON public.membership_verifications USING btree (user_id, idempotency_key)`

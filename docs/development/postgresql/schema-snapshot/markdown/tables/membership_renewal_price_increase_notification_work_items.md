@@ -11,10 +11,6 @@ Not partitioned — growth: bounded.
 | `membership_id`                      | `uuid`                     | no       |                     |          |           |           | Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.    |
 | `generation`                         | `bigint`                   | no       | `1`                 |          |           |           | Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it. |
 | `membership_provider_observation_id` | `uuid`                     | no       |                     |          |           |           | Immutable authoritative observation that supplied this notice snapshot.                                                 |
-| `membership_provider_product_id`     | `uuid`                     | no       |                     |          |           |           | Provider product in the exact renewal observation snapshot.                                                             |
-| `price_minor_units`                  | `bigint`                   | no       |                     |          |           |           | Future renewal price in the currency minor unit.                                                                        |
-| `currency_code`                      | `currency_codes`           | no       |                     |          |           |           | Currency of the future renewal price.                                                                                   |
-| `effective_at`                       | `timestamp with time zone` | no       |                     |          |           |           | When the observed future price takes effect.                                                                            |
 | `lease_token`                        | `uuid`                     | yes      |                     |          |           |           | Opaque UUID fence for the current notice delivery owner.                                                                |
 | `leased_at`                          | `timestamp with time zone` | yes      |                     |          |           |           | When the current notice delivery lease began.                                                                           |
 | `lease_expires_at`                   | `timestamp with time zone` | yes      |                     |          |           |           | Deadline after which an unattempted notice may be reclaimed.                                                            |
@@ -30,7 +26,6 @@ _none_
 
 **Check constraints:**
 
-- `membership_renewal_price_increase_notif_price_minor_units_check`: `CHECK (((price_minor_units >= 0) AND (price_minor_units <= '9007199254740991'::bigint)))`
 - `membership_renewal_price_increase_notificat_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - `membership_renewal_price_increase_notification_generation_check`: `CHECK ((generation >= 1))`
 - `membership_renewal_price_increase_notification_work_item_check1`: `CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))`
@@ -40,17 +35,14 @@ _none_
 
 **Foreign keys:**
 
-- `fk_membership_renewal_notification_work__observation_snapshot`: `FOREIGN KEY (membership_provider_observation_id, membership_provider_product_id, price_minor_units, currency_code, effective_at) REFERENCES membership_provider_observations(id, renewal_membership_provider_product_id, renewal_price_minor_units, renewal_price_currency_code, renewal_effective_at) ON DELETE RESTRICT`
-- `membership_renewal_price_increase_notificati_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
+- `membership_renewal_price_incr_membership_provider_observat_fkey`: `FOREIGN KEY (membership_provider_observation_id) REFERENCES membership_provider_observations(id) ON DELETE RESTRICT`
 - `membership_renewal_price_increase_notificati_membership_id_fkey`: `FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available ON public.membership_renewal_price_increase_notification_work_items USING btree (available_at, membership_id) WHERE ((completed_at IS NULL) AND (delivery_attempted_at IS NULL))`
-- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__currency ON public.membership_renewal_price_increase_notification_work_items USING btree (currency_code)`
 - `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token`: `CREATE UNIQUE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__lease_token ON public.membership_renewal_price_increase_notification_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)`
 - `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__observation ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_observation_id)`
-- `idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product`: `CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__provider_product ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_provider_product_id)`
 - `membership_renewal_price_increase_notification_work_items_pkey`: `CREATE UNIQUE INDEX membership_renewal_price_increase_notification_work_items_pkey ON public.membership_renewal_price_increase_notification_work_items USING btree (membership_id)`
 
 **Triggers:**

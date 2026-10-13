@@ -57,10 +57,6 @@ export async function getCurrentRenewalPriceIncreaseDetails(
       AND work.membership_provider_observation_id = observation.id
       AND work.lease_token = ${claim.leaseToken}
       AND work.generation = ${claim.generation}::bigint AND work.lease_expires_at > clock_timestamp()
-      AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
-      AND work.price_minor_units = observation.renewal_price_minor_units
-      AND work.currency_code = observation.renewal_price_currency_code
-      AND work.effective_at = observation.renewal_effective_at
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
     LIMIT 1

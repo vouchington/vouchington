@@ -55,12 +55,20 @@ async function isLatestGooglePlayPurchaseToken(options: {
   const { rows } = await options.query<{
     current: boolean
   }>(sql`/* isLatestGooglePlayPurchaseToken */
-    SELECT NOT EXISTS (
-      SELECT 1 FROM membership_google_play_purchase_tokens successor
-      WHERE successor.environment = ${options.environment}
-        AND successor.application_id = ${options.applicationId}
-        AND successor.membership_provider_lineage_id = ${options.lineageId}
-        AND successor.linked_purchase_token_lookup_sha256 = ${tokenDigest(options.purchaseToken)}
+    SELECT EXISTS (
+      SELECT 1 FROM membership_google_play_purchase_tokens token
+      INNER JOIN membership_provider_contexts context ON context.id = token.membership_provider_context_id
+      WHERE token.membership_provider_lineage_id = ${options.lineageId}
+        AND context.provider = 'google_play'
+        AND context.environment = ${options.environment}
+        AND context.application_id = ${options.applicationId}
+        AND token.purchase_token_lookup_sha256 = ${tokenDigest(options.purchaseToken)}
+        AND token.fetched_at IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM membership_google_play_purchase_tokens successor
+          WHERE successor.linked_purchase_token_id = token.id
+            AND successor.fetched_at IS NOT NULL
+        )
     ) AS current`)
   return rows.at(0)?.current ?? false
 }
@@ -90,7 +98,7 @@ export async function persistVerifiedGooglePlayObservation(
   providerOrder: number,
   query: GooglePlayTransaction,
 ): Promise<{ lineageId: string; observationId: string }> {
-  const { lineageId, submittedTokenInserted } = await persistGooglePlayTokenLineage(
+  const { lineageId, submittedTokenFirstFetched } = await persistGooglePlayTokenLineage(
     { environment: context.environment, applicationId: context.applicationId, resolved },
     query,
   )
@@ -102,14 +110,17 @@ export async function persistVerifiedGooglePlayObservation(
   const latestOrder = Number(latest[0]?.providerOrder ?? 0)
   const submittedToken = resolved.tokens[0]
   const firstSuccessor =
-    submittedTokenInserted && submittedToken?.linkedToken
+    submittedTokenFirstFetched && submittedToken?.linkedToken
       ? ((
           await query<{ first: boolean }>(sql`/* firstGooglePlaySuccessor */
             SELECT NOT EXISTS (
               SELECT 1 FROM membership_google_play_purchase_tokens sibling
+              INNER JOIN membership_google_play_purchase_tokens predecessor
+                ON predecessor.id = sibling.linked_purchase_token_id
               WHERE sibling.membership_provider_lineage_id = ${lineageId}
-                AND sibling.linked_purchase_token_lookup_sha256 = ${tokenDigest(submittedToken.linkedToken)}
+                AND predecessor.purchase_token_lookup_sha256 = ${tokenDigest(submittedToken.linkedToken)}
                 AND sibling.purchase_token_lookup_sha256 <> ${tokenDigest(submittedToken.token)}
+                AND sibling.fetched_at IS NOT NULL
             ) AS first`)
         ).rows.at(0)?.first ?? false)
       : false

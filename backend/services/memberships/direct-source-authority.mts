@@ -46,8 +46,8 @@ export async function getDirectMembershipSourceAdmission(
   query: QueryExecutor = read,
 ): Promise<DirectMembershipSourceAdmission> {
   const { rows } = await query(sql`/* getDirectMembershipSourceAdmission */
-    SELECT source.source_kind, product.plan, membership.expires_at, lineage.provider, lineage.environment,
-      lineage.application_id, lineage.provider_lineage_id
+    SELECT source.source_kind, product.plan, membership.expires_at,
+      context.provider, context.environment, context.application_id, lineage.provider_lineage_id
     FROM memberships membership
     INNER JOIN membership_sources source ON source.id = membership.membership_source_id
     INNER JOIN membership_products product ON product.id = membership.membership_product_id
@@ -59,6 +59,7 @@ export async function getDirectMembershipSourceAdmission(
       ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    LEFT JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     WHERE membership.user_id = ${userId}
       AND membership.projection_ended_at IS NULL
       AND membership.cancelled_at IS NULL

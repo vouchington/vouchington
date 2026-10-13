@@ -35,9 +35,20 @@ export async function ensureGooglePlayAcknowledgement(options: {
   )
   await query(sql`/* ensureGooglePlayAcknowledgement */
     WITH admitted AS (INSERT INTO membership_google_play_acknowledgments (
-      membership_provider_evidence_record_id, membership_provider_lineage_id, environment, application_id, subscription_id, purchase_token_lookup_sha256, encrypted_purchase_token
-    ) VALUES (${options.evidenceId}, ${options.lineageId}, ${options.environment}, ${options.applicationId}, ${options.subscriptionId}, ${lookup}, ${encrypted})
-    ON CONFLICT (environment, application_id, purchase_token_lookup_sha256) DO UPDATE
+      membership_provider_evidence_record_id, membership_provider_lineage_id,
+      membership_provider_context_id, subscription_id, purchase_token_lookup_sha256,
+      encrypted_purchase_token
+    ) SELECT ${options.evidenceId}, ${options.lineageId}, token.membership_provider_context_id,
+        ${options.subscriptionId}, ${lookup}, ${encrypted}
+      FROM membership_google_play_purchase_tokens token
+      INNER JOIN membership_provider_contexts context ON context.id = token.membership_provider_context_id
+      WHERE token.membership_provider_lineage_id = ${options.lineageId}
+        AND token.purchase_token_lookup_sha256 = ${lookup}
+        AND token.fetched_at IS NOT NULL
+        AND context.provider = 'google_play'
+        AND context.environment = ${options.environment}
+        AND context.application_id = ${options.applicationId}
+    ON CONFLICT (membership_provider_context_id, purchase_token_lookup_sha256) DO UPDATE
       SET skipped_at = NULL, skip_reason = NULL
       WHERE membership_google_play_acknowledgments.skipped_at IS NOT NULL
         AND membership_google_play_acknowledgments.membership_provider_lineage_id = EXCLUDED.membership_provider_lineage_id
@@ -52,9 +63,16 @@ export async function ensureGooglePlayAcknowledgement(options: {
     subscription_id: string
   }>(sql`
     /* ensureGooglePlayAcknowledgement.identity */
-    SELECT id, membership_provider_lineage_id, subscription_id FROM membership_google_play_acknowledgments
-    WHERE environment = ${options.environment} AND application_id = ${options.applicationId}
-      AND purchase_token_lookup_sha256 = ${lookup} FOR KEY SHARE`)
+    SELECT acknowledgement.id, acknowledgement.membership_provider_lineage_id,
+      acknowledgement.subscription_id
+    FROM membership_google_play_acknowledgments acknowledgement
+    INNER JOIN membership_provider_contexts context
+      ON context.id = acknowledgement.membership_provider_context_id
+    WHERE context.provider = 'google_play'
+      AND context.environment = ${options.environment}
+      AND context.application_id = ${options.applicationId}
+      AND acknowledgement.purchase_token_lookup_sha256 = ${lookup}
+    FOR KEY SHARE OF acknowledgement`)
   if (
     rows[0]?.membership_provider_lineage_id !== options.lineageId ||
     rows[0].subscription_id !== options.subscriptionId
@@ -126,8 +144,9 @@ async function claimGoogleAcknowledgement(id: string): Promise<GoogleAcknowledge
       RETURNING work.membership_google_play_acknowledgment_id, work.lease_token
     ) SELECT acknowledgement.id, claimed.lease_token AS "leaseToken",
       acknowledgement.encrypted_purchase_token AS "encryptedPurchaseToken", acknowledgement.purchase_token_lookup_sha256 AS "purchaseTokenLookupSha256",
-      acknowledgement.application_id AS "applicationId", acknowledgement.subscription_id AS "subscriptionId"
-      FROM claimed JOIN membership_google_play_acknowledgments acknowledgement ON acknowledgement.id = claimed.membership_google_play_acknowledgment_id`)
+      context.application_id AS "applicationId", acknowledgement.subscription_id AS "subscriptionId"
+      FROM claimed JOIN membership_google_play_acknowledgments acknowledgement ON acknowledgement.id = claimed.membership_google_play_acknowledgment_id
+      INNER JOIN membership_provider_contexts context ON context.id = acknowledgement.membership_provider_context_id`)
   return rows[0] ?? null
 }
 function decryptPurchaseToken(claim: GoogleAcknowledgementClaim): string {

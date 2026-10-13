@@ -34,13 +34,16 @@ export async function getVerifiedProviderObservation(
     SELECT observation.source_kind, observation.membership_product_id,
       observation.effective_at, observation.expires_at, observation.cancelled_at,
       observation.expired_at, observation.past_due_at, observation.paused_at, observation.should_auto_renew,
-      observation.membership_provider_evidence_record_id, product.plan, lineage.provider, lineage.environment,
-      lineage.application_id, lineage.provider_lineage_id, lineage.provider_account_id
+      observation.membership_provider_evidence_record_id, product.plan,
+      context.provider, context.environment, context.application_id,
+      lineage.provider_lineage_id, lineage.provider_account_id
     FROM membership_provider_observations observation
     INNER JOIN membership_provider_evidence_records evidence
       ON evidence.id = observation.membership_provider_evidence_record_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = observation.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
     INNER JOIN membership_products product ON product.id = observation.membership_product_id
     WHERE observation.id = ${options.membershipProviderObservationId}
       AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL

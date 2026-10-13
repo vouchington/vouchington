@@ -12,8 +12,8 @@ export async function createMembershipProviderEvidence(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerificationEvidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
-    ) VALUES ('stripe', 'test', ${fixture.applicationId},
+      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+    ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}),
       ${randomUUID().replaceAll('-', '').padEnd(64, 'b')}, '\x01'::bytea) RETURNING id`)
   return rows[0]!.id
 }
@@ -27,9 +27,9 @@ export async function createMembershipVerification(
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerification */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_record_id, provider, environment, application_id
+      membership_provider_evidence_record_id, membership_provider_context_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${intentId}, ${evidenceId},
-      'stripe', 'test', ${fixture.applicationId}) RETURNING id`)
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId})) RETURNING id`)
   return rows[0]!.id
 }
 
@@ -41,9 +41,9 @@ export function createDuplicateMembershipVerification(
   return write(sql`/* rejectDuplicateMembershipVerificationIdempotencyKey */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
-      provider, environment, application_id
+      membership_provider_context_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${evidenceId},
-      'stripe', 'test', ${fixture.applicationId})`)
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}))`)
 }
 
 export function completeMembershipVerificationWithoutResult(
@@ -83,10 +83,10 @@ export function createCrossOwnerMembershipVerification(
     WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id)
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_record_id, provider, environment, application_id
+      membership_provider_evidence_record_id, membership_provider_context_id
     ) VALUES (
       (SELECT id FROM actor), ${randomUUID()},
-      ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, 'stripe', 'test', ${fixture.applicationId})`)
+      ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}))`)
 }
 
 export async function createMembershipAuditUser(): Promise<string> {

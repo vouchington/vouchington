@@ -18,11 +18,12 @@ export async function findRecoverableAppleNotificationJobs(): Promise<
     provider_lineage_id: string
     environment: AppleMembershipProviderEnvironment
   }>(sql`/* findRecoverableAppleNotificationJobs */
-    SELECT evidence.id, lineage.provider_lineage_id, evidence.environment
+    SELECT evidence.id, lineage.provider_lineage_id, context.environment
     FROM membership_provider_evidence_records evidence
+    INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = evidence.membership_provider_lineage_id
-    WHERE evidence.provider = 'apple_app_store'
+    WHERE context.provider = 'apple_app_store'
       AND evidence.provider_event_id IS NOT NULL
       AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
     ORDER BY evidence.received_at, evidence.id

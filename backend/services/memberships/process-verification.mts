@@ -8,7 +8,10 @@ import { deferMembershipVerificationUntilAdapterAvailable } from './verification
 
 export async function processMembershipVerification(verificationId: string): Promise<void> {
   const { rows } = await read<{ provider: string }>(sql`/* processMembershipVerification.provider */
-    SELECT provider FROM membership_verifications WHERE id = ${verificationId} LIMIT 1`)
+    SELECT context.provider
+    FROM membership_verifications verification
+    JOIN membership_provider_contexts context ON context.id = verification.membership_provider_context_id
+    WHERE verification.id = ${verificationId} LIMIT 1`)
   switch (rows[0]?.provider) {
     case 'apple_app_store':
       await processAppleMembershipVerification(verificationId)

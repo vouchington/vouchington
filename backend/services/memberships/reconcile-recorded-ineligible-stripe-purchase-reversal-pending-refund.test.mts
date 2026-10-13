@@ -121,7 +121,6 @@ describe('recorded ineligible Stripe purchase pending-refund reconciliation', ()
     ).resolves.toMatchObject({
       provider_refund_id: null,
       receipt_amount_minor_units: '0',
-      receipt_remaining_refundable_minor_units: '0',
     })
   })
 

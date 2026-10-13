@@ -2,8 +2,7 @@
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  environment membership_provider_environments NOT NULL,
-  application_id TEXT NOT NULL,
+  membership_provider_context_id UUID NOT NULL,
   publisher_user_id TEXT NOT NULL,
   collections_key_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_member_microso_store_credent__collections_key_lookup_sha256 CHECK (collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   encrypted_collections_key BYTEA NOT NULL,
@@ -15,15 +14,24 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   next_reconciliation_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
   CHECK (publisher_user_id = user_id::TEXT), CONSTRAINT chk_membersh_microsof_store_credenti__encrypted_collections_key CHECK (octet_length(encrypted_collections_key) BETWEEN 1 AND 65536),
   CONSTRAINT chk_membershi_microsoft_store_credentia__encrypted_purchase_key CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536)
 );
+ALTER TABLE membership_microsoft_store_credentials
+  ADD CONSTRAINT fk_membership_microsoft_store_credentials__provider_context
+  FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_microsoft_store_credentials
+  VALIDATE CONSTRAINT fk_membership_microsoft_store_credentials__provider_context;
+CREATE TRIGGER trigger_membership_microsoft_store_credentials_context
+  BEFORE INSERT OR UPDATE ON membership_microsoft_store_credentials
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('microsoft_store');
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_credentials_updated_at BEFORE UPDATE ON membership_microsoft_store_credentials FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__user_context ON membership_microsoft_store_credentials (user_id, environment, application_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__user_context ON membership_microsoft_store_credentials (user_id, membership_provider_context_id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__provider_context ON membership_microsoft_store_credentials (membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__due ON membership_microsoft_store_credentials (next_reconciliation_at, id);
-CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_microsoft_source_recovery ON membership_verifications (user_id, environment, application_id, request_fingerprint) WHERE provider = 'microsoft_store' AND verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_microsoft_source_recovery ON membership_verifications (user_id, membership_provider_context_id, request_fingerprint) WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_recovery_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton), cursor_source_id UUID, sweep_upper_bound_source_id UUID,
@@ -33,8 +41,7 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_recovery_cursors (
 CREATE OR REPLACE TRIGGER trigger_membership_microsoft_store_recovery_cursors_updated_at BEFORE UPDATE ON membership_microsoft_store_recovery_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE membership_microsoft_store_credentials IS 'Encrypted account-scoped Microsoft Store ID keys, usable to reconcile every Microsoft recurrence for the same user, environment, and application.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.user_id IS 'Voucha account owning the Store ID credentials.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.environment IS 'Microsoft Store test or production environment for the credential.';
-COMMENT ON COLUMN membership_microsoft_store_credentials.application_id IS 'Publisher application identity used for Store queries.';
+COMMENT ON COLUMN membership_microsoft_store_credentials.membership_provider_context_id IS 'Microsoft Store provider, environment, and publisher application identity used for Store queries.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.publisher_user_id IS 'Account-bound publisher user identifier in the Store ID ticket.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.collections_key_lookup_sha256 IS 'Digest used to recognize an unchanged Collections ID key without retaining plaintext.';
 COMMENT ON COLUMN membership_microsoft_store_credentials.encrypted_collections_key IS 'Encrypted Collections ID key used only for authoritative Store API queries.';

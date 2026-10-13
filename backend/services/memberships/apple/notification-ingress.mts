@@ -3,6 +3,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueProcessAppleNotification } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import type { AppleMembershipProviderEnvironment, AppleNotificationVerifier } from './types.mts'
 import { verifyAppleNotification } from './verify-notification.mts'
 
@@ -48,19 +49,27 @@ async function getOrCreateLineage(
   options: { environment: AppleMembershipProviderEnvironment; applicationId: string },
   providerLineageId: string,
 ): Promise<string> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'apple_app_store',
+      environment: options.environment,
+      applicationId: options.applicationId,
+    },
+    query,
+  )
   const { rows: insertedRows } = await query<{
     id: string
   }>(sql`/* ingestAppleNotification.lineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id
-    ) VALUES ('apple_app_store', ${options.environment}, ${options.applicationId}, ${providerLineageId})
-    ON CONFLICT (provider, environment, application_id, provider_lineage_id) DO NOTHING
+      membership_provider_context_id, provider_lineage_id
+    ) VALUES (${contextId}, ${providerLineageId})
+    ON CONFLICT (membership_provider_context_id, provider_lineage_id) DO NOTHING
     RETURNING id`)
   if (insertedRows[0]) return insertedRows[0].id
   const { rows } = await query<{ id: string }>(sql`/* ingestAppleNotification.existingLineage */
     SELECT id FROM membership_provider_lineages
-    WHERE provider = 'apple_app_store' AND environment = ${options.environment}
-      AND application_id = ${options.applicationId} AND provider_lineage_id = ${providerLineageId}
+    WHERE membership_provider_context_id = ${contextId}
+      AND provider_lineage_id = ${providerLineageId}
     FOR KEY SHARE`)
   const lineage = rows[0]
   if (!lineage) throw new Error('Apple notification lineage was not returned')
@@ -78,6 +87,14 @@ async function createOrGetEvidence(
     lineageId: string
   },
 ): Promise<{ id: string; inserted: boolean }> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'apple_app_store',
+      environment: options.environment,
+      applicationId: options.applicationId,
+    },
+    query,
+  )
   const encryptedEvidence = Buffer.from(
     encryptSecret(
       options.signedPayload,
@@ -88,20 +105,20 @@ async function createOrGetEvidence(
     id: string
   }>(sql`/* ingestAppleNotification.evidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, membership_provider_lineage_id, provider_event_id,
+      membership_provider_context_id, membership_provider_lineage_id, provider_event_id,
       evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      'apple_app_store', ${options.environment}, ${options.applicationId}, ${options.lineageId},
+      ${contextId}, ${options.lineageId},
       ${options.notificationId}, ${options.evidenceLookupSha256}, ${encryptedEvidence}
-    ) ON CONFLICT (provider, environment, application_id, provider_event_id)
+    ) ON CONFLICT (membership_provider_context_id, provider_event_id)
       WHERE provider_event_id IS NOT NULL DO NOTHING
     RETURNING id`)
   if (insertedRows[0]) return { id: insertedRows[0].id, inserted: true }
   const { rows } = await query<{ id: string; membership_provider_lineage_id: string }>(
     sql`/* ingestAppleNotification.existingEvidence */
       SELECT id, membership_provider_lineage_id FROM membership_provider_evidence_records
-      WHERE provider = 'apple_app_store' AND environment = ${options.environment}
-        AND application_id = ${options.applicationId} AND provider_event_id = ${options.notificationId}
+      WHERE membership_provider_context_id = ${contextId}
+        AND provider_event_id = ${options.notificationId}
       FOR KEY SHARE`,
   )
   const evidence = rows[0]

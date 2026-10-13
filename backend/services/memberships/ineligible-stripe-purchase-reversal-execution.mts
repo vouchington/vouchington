@@ -17,12 +17,9 @@ export async function completeIneligiblePurchaseReversal(
   await using transaction = await beginTransaction()
   await transaction(sql`/* completeIneligiblePurchaseReversal:receipt */
       INSERT INTO membership_automatic_refund_receipts (
-        membership_operation_id, provider, environment, application_id, operation_kind,
-        provider_refund_id, amount_minor_units, remaining_refundable_minor_units, currency_code
+        membership_operation_id, membership_provider_context_id, provider_refund_id, amount_minor_units, currency_code
       ) SELECT
-        operation.id, operation.provider, operation.environment, operation.application_id,
-        operation.operation_kind, ${receipt.providerRefundId}, ${receipt.amountMinorUnits},
-        operation.remaining_refundable_minor_units, operation.currency_code
+        operation.id, operation.membership_provider_context_id, ${receipt.providerRefundId}, ${receipt.amountMinorUnits}, operation.currency_code
       FROM membership_operations operation
       WHERE operation.id = ${reversal.id}
       ON CONFLICT (membership_operation_id) DO NOTHING

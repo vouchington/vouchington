@@ -7,9 +7,9 @@ export async function createTestMembershipProviderLineage(
 ): Promise<void> {
   await write(sql`/* createTestMembershipProviderLineage */
     INSERT INTO membership_provider_lineages (
-      provider, environment, application_id, provider_lineage_id, provider_account_id
+      membership_provider_context_id, provider_lineage_id, provider_account_id
     ) VALUES (
-      ${sourceIdentity.provider}, ${sourceIdentity.environment}, ${sourceIdentity.applicationId},
+      fn_upsert_membership_provider_context_id(${sourceIdentity.provider}, ${sourceIdentity.environment}, ${sourceIdentity.applicationId}),
       ${sourceIdentity.providerLineageId}, ${sourceIdentity.providerAccountId ?? null}
     )`)
 }
@@ -19,10 +19,11 @@ export async function getTestMembershipProviderLineageAccountId(
 ): Promise<string | null> {
   const { rows } = await read<{ provider_account_id: string | null }>(
     sql`/* getTestMembershipProviderLineageAccountId */
-      SELECT provider_account_id FROM membership_provider_lineages
-      WHERE provider = ${sourceIdentity.provider} AND environment = ${sourceIdentity.environment}
-        AND application_id = ${sourceIdentity.applicationId}
-        AND provider_lineage_id = ${sourceIdentity.providerLineageId}`,
+      SELECT lineage.provider_account_id FROM membership_provider_lineages lineage
+      JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
+      WHERE context.provider = ${sourceIdentity.provider} AND context.environment = ${sourceIdentity.environment}
+        AND context.application_id = ${sourceIdentity.applicationId}
+        AND lineage.provider_lineage_id = ${sourceIdentity.providerLineageId}`,
   )
   return rows[0]?.provider_account_id ?? null
 }

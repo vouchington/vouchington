@@ -11,9 +11,9 @@ export async function createExecutionLeaseOperation(idempotencyKey: string): Pro
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), lineage AS (
       INSERT INTO membership_provider_lineages (
-        provider, environment, application_id, provider_lineage_id
-      ) VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`})
-      RETURNING id
+        membership_provider_context_id, provider_lineage_id
+      ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`})
+      RETURNING id, membership_provider_context_id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
       SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor
@@ -25,15 +25,16 @@ export async function createExecutionLeaseOperation(idempotencyKey: string): Pro
     )
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
-      'stripe', 'test', ${applicationId}, 'automatic_refund', ${idempotencyKey},
+      lineage.membership_provider_context_id, 'automatic_refund', ${idempotencyKey},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
+    INNER JOIN lineage ON lineage.id = source.membership_provider_lineage_id
     RETURNING id`)
   return rows[0]!.id
 }

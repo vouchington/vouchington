@@ -73,10 +73,12 @@ async function loadSkuByStripePriceId(
       provider_product.provider_product_id AS stripe_price_id, p.retired_at, p.created_at, p.updated_at
     FROM membership_provider_products provider_product
     INNER JOIN membership_products p ON p.id = provider_product.membership_product_id
-    WHERE provider_product.provider = 'stripe'
+    INNER JOIN membership_provider_contexts context
+      ON context.id = provider_product.membership_provider_context_id
+    WHERE context.provider = 'stripe'
       AND provider_product.provider_product_id = ${stripePriceId}
-      AND provider_product.environment = ${context.environment}
-      AND provider_product.application_id = ${context.applicationId}
+      AND context.environment = ${context.environment}
+      AND context.application_id = ${context.applicationId}
       AND provider_product.retired_at IS NULL
       AND p.retired_at IS NULL
     LIMIT 1
@@ -99,10 +101,12 @@ export async function getSkuByStripePriceIdForLifecycle(
       provider_product.provider_product_id AS stripe_price_id, p.retired_at, p.created_at, p.updated_at
     FROM membership_provider_products provider_product
     INNER JOIN membership_products p ON p.id = provider_product.membership_product_id
-    WHERE provider_product.provider = ${sourceIdentity.provider}
+    INNER JOIN membership_provider_contexts context
+      ON context.id = provider_product.membership_provider_context_id
+    WHERE context.provider = ${sourceIdentity.provider}
       AND provider_product.provider_product_id = ${stripePriceId}
-      AND provider_product.environment = ${sourceIdentity.environment}
-      AND provider_product.application_id = ${sourceIdentity.applicationId}
+      AND context.environment = ${sourceIdentity.environment}
+      AND context.application_id = ${sourceIdentity.applicationId}
       AND (
         (provider_product.retired_at IS NULL AND p.retired_at IS NULL)
         OR EXISTS (
@@ -113,9 +117,7 @@ export async function getSkuByStripePriceIdForLifecycle(
             ON lineage.id = source.membership_provider_lineage_id
           WHERE source.user_id IS NOT NULL
             AND source.source_kind = 'direct'
-            AND lineage.provider = ${sourceIdentity.provider}
-            AND lineage.environment = ${sourceIdentity.environment}
-            AND lineage.application_id = ${sourceIdentity.applicationId}
+            AND lineage.membership_provider_context_id = provider_product.membership_provider_context_id
             AND lineage.provider_lineage_id = ${sourceIdentity.providerLineageId}
         )
       )
@@ -134,10 +136,12 @@ async function fetchSkusForActivePlans(context: StripeCatalogContext, query: Que
     INNER JOIN LATERAL (
       SELECT mapping.price_minor_units, mapping.currency_code, mapping.provider_product_id
       FROM membership_provider_products mapping
+      INNER JOIN membership_provider_contexts provider_context
+        ON provider_context.id = mapping.membership_provider_context_id
       WHERE mapping.membership_product_id = p.id
-        AND mapping.provider = 'stripe'
-        AND mapping.environment = ${context.environment}
-        AND mapping.application_id = ${context.applicationId}
+        AND provider_context.provider = 'stripe'
+        AND provider_context.environment = ${context.environment}
+        AND provider_context.application_id = ${context.applicationId}
         AND mapping.retired_at IS NULL
       ORDER BY mapping.id DESC
       LIMIT 1
@@ -170,7 +174,6 @@ function mapMembershipSku(row: unknown): MembershipSku | null {
 const getActivePlansCachedFn = activePlansCache.cacheGetByAny(async key =>
   fetchSkusForActivePlans(key),
 )
-
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
@@ -182,11 +185,9 @@ export async function getActivePlansCached(
   const skus = (await getActivePlansCachedFn({ ...context, value: 'active' })) ?? []
   return groupMembershipSkusByPlan(skus)
 }
-
 const getSkuByStripePriceIdCachedFn = skuByStripePriceIdCache.cacheGetByAny(key =>
   getSkuByStripePriceId(key.value, key),
 )
-
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.

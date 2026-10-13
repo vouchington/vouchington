@@ -25,9 +25,9 @@ export async function getLockedCurrentMembership(
     SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
   const { rows } = await query(sql`/* getLockedCurrentMembershipForIneligiblePurchase */
     SELECT membership.effective_at AS "effectiveAt", membership.expires_at AS "expiresAt",
-      product.plan, lineage.provider,
-      lineage.environment AS "providerEnvironment",
-      lineage.application_id AS "providerApplicationId",
+      product.plan, provider_context.provider,
+      provider_context.environment AS "providerEnvironment",
+      provider_context.application_id AS "providerApplicationId",
       lineage.provider_lineage_id AS "providerLineageId",
       source.source_kind AS "sourceKind"
     FROM memberships membership
@@ -41,6 +41,8 @@ export async function getLockedCurrentMembership(
       ON evidence.id = observation.membership_provider_evidence_record_id
     LEFT JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    LEFT JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
     WHERE membership.user_id = ${userId}
       AND membership.projection_ended_at IS NULL
       AND membership.cancelled_at IS NULL

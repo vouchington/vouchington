@@ -1,6 +1,7 @@
 export type MicrosoftStoreSourceRecoveryContext = {
   sourceId: string
   userId: string
+  providerContextId: string
   environment: 'test' | 'production'
   applicationId: string
   publisherUserId: string

@@ -13,7 +13,7 @@ type AttachTestStripeProductionProviderObservationOptions = {
 }
 
 type StripeProductionObservationTarget = {
-  application_id: string
+  membership_provider_context_id: string
   effective_at: Date
   expires_at: Date | null
   cancelled_at: Date | null
@@ -64,7 +64,7 @@ export async function attachTestStripeProductionProviderObservation(
   const { rows: targetRows } =
     await query(sql`/* attachTestStripeProductionProviderObservation: target */
       SELECT
-        provider_product.application_id,
+        provider_product.membership_provider_context_id,
         source_state.effective_at,
         source_state.expires_at,
         source_state.cancelled_at,
@@ -90,19 +90,17 @@ export async function attachTestStripeProductionProviderObservation(
         AND source_state.membership_product_id = membership.membership_product_id
       INNER JOIN membership_provider_lineages lineage
         ON lineage.id = source.membership_provider_lineage_id
-        AND lineage.provider = 'stripe'
-        AND lineage.environment = 'production'
+      INNER JOIN membership_provider_contexts provider_context
+        ON provider_context.id = lineage.membership_provider_context_id
+        AND provider_context.provider = 'stripe'
+        AND provider_context.environment = 'production'
       INNER JOIN membership_provider_products provider_product
         ON provider_product.id = ${options.membership_provider_product_id}
         AND provider_product.membership_product_id = source_state.membership_product_id
-        AND provider_product.provider = lineage.provider
-        AND provider_product.environment = lineage.environment
-        AND provider_product.application_id = lineage.application_id
+        AND provider_product.membership_provider_context_id = lineage.membership_provider_context_id
       LEFT JOIN membership_provider_products renewal_product
         ON renewal_product.id = ${options.renewal_membership_provider_product_id ?? null}
-        AND renewal_product.provider = lineage.provider
-        AND renewal_product.environment = lineage.environment
-        AND renewal_product.application_id = lineage.application_id
+        AND renewal_product.membership_provider_context_id = lineage.membership_provider_context_id
       WHERE membership.id = ${options.membership_id}
       FOR UPDATE OF source_state`)
   const target = targetRows[0] as StripeProductionObservationTarget | undefined
@@ -121,10 +119,10 @@ export async function attachTestStripeProductionProviderObservation(
   const { rows: evidenceRows } =
     await query(sql`/* attachTestStripeProductionProviderObservation: evidence */
       INSERT INTO membership_provider_evidence_records (
-        provider, environment, application_id, membership_provider_lineage_id,
+        membership_provider_context_id, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
       ) VALUES (
-        'stripe', 'production', ${target.application_id},
+        ${target.membership_provider_context_id},
         ${target.membership_provider_lineage_id}, ${evidenceLookupSha256},
         ${encryptedEvidence}, CURRENT_TIMESTAMP
       )
@@ -134,7 +132,7 @@ export async function attachTestStripeProductionProviderObservation(
   const { rows: observationRows } =
     await query(sql`/* attachTestStripeProductionProviderObservation: observation */
       INSERT INTO membership_provider_observations (
-        provider, environment, application_id, membership_provider_evidence_record_id,
+        membership_provider_context_id, membership_provider_evidence_record_id,
         membership_provider_lineage_id, membership_provider_product_id,
         membership_product_id, observed_price_minor_units, observed_price_currency_code,
         renewal_membership_provider_product_id, renewal_membership_product_id,
@@ -142,7 +140,7 @@ export async function attachTestStripeProductionProviderObservation(
         provider_revision, provider_order, source_kind,
         effective_at, expires_at, cancelled_at, expired_at, past_due_at, paused_at, should_auto_renew
       ) VALUES (
-        'stripe', 'production', ${target.application_id}, ${evidence.id},
+        ${target.membership_provider_context_id}, ${evidence.id},
         ${target.membership_provider_lineage_id}, ${options.membership_provider_product_id},
         ${target.membership_product_id}, ${target.observed_price_minor_units},
         ${target.observed_price_currency_code},
