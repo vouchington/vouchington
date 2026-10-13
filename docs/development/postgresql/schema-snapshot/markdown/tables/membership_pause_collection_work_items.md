@@ -6,17 +6,19 @@ In-flight sync of Stripe pause_collection to the user's open suspension. Complet
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                              |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
-| `user_id`          | `uuid`                     | no       |                     |          |           |           | User whose direct Stripe subscription should match the open suspension. One row per user.                            |
-| `requested_at`     | `timestamp with time zone` | no       |                     |          |           |           | Generation of the latest suspension or lift, truncated to milliseconds. A newer value supersedes an in-flight lease. |
-| `available_at`     | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Earliest time an unleased row may be claimed by the recovery dispatcher.                                             |
-| `lease_token`      | `uuid`                     | yes      |                     |          |           |           | Opaque fence for the worker that may call Stripe and delete this generation.                                         |
-| `leased_at`        | `timestamp with time zone` | yes      |                     |          |           |           | Time the current lease was taken.                                                                                    |
-| `lease_expires_at` | `timestamp with time zone` | yes      |                     |          |           |           | Time after which recovery may replace this lease.                                                                    |
-| `attempt_count`    | `integer`                  | no       | `0`                 |          |           |           | Leases acquired for the current requested_at. A newer suspension or lift resets it.                                  |
-| `created_at`       | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Time this user first had pause-collection work. Later generations update requested_at.                               |
-| `updated_at`       | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Last lease, supersession, or schedule change. Maintained by trigger.                                                 |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                              |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `user_id`              | `uuid`                     | no       |                     |          |           |           | User whose direct Stripe subscription should match the open suspension. One row per user.                            |
+| `requested_at`         | `timestamp with time zone` | no       |                     |          |           |           | Generation of the latest suspension or lift, truncated to milliseconds. A newer value supersedes an in-flight lease. |
+| `available_at`         | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Earliest time an unleased row may be claimed by the recovery dispatcher.                                             |
+| `lease_token`          | `uuid`                     | yes      |                     |          |           |           | Opaque fence for the worker that may call Stripe and delete this generation.                                         |
+| `leased_at`            | `timestamp with time zone` | yes      |                     |          |           |           | Time the current lease was taken.                                                                                    |
+| `lease_expires_at`     | `timestamp with time zone` | yes      |                     |          |           |           | Time after which recovery may replace this lease.                                                                    |
+| `attempt_count`        | `integer`                  | no       | `0`                 |          |           |           | Leases acquired for the current requested_at. A newer suspension or lift resets it.                                  |
+| `last_failed_at`       | `timestamp with time zone` | yes      |                     |          |           |           | Time of the latest Stripe failure for this generation. A newer suspension or lift clears it.                         |
+| `last_failure_message` | `text`                     | yes      |                     |          |           |           | Message from the latest Stripe failure for this generation. A newer suspension or lift clears it.                    |
+| `created_at`           | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Time this user first had pause-collection work. Later generations update requested_at.                               |
+| `updated_at`           | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Last lease, supersession, or schedule change. Maintained by trigger.                                                 |
 
 **Primary key:** `PRIMARY KEY (user_id)`
 
@@ -27,6 +29,7 @@ _none_
 
 - `membership_pause_collection_work_items_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - `membership_pause_collection_work_items_check`: `CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))`
+- `membership_pause_collection_work_items_check1`: `CHECK (((last_failed_at IS NULL) = (last_failure_message IS NULL)))`
 
 **Foreign keys:**
 

@@ -57277,6 +57277,10 @@
         "membership_pause_collection_work_items_check": {
           "definition": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
           "validated": true
+        },
+        "membership_pause_collection_work_items_check1": {
+          "definition": "CHECK (((last_failed_at IS NULL) = (last_failure_message IS NULL)))",
+          "validated": true
         }
       },
       "columns": {
@@ -57308,7 +57312,27 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
+          "ordinalPosition": 10
+        },
+        "last_failed_at": {
+          "comment": "Time of the latest Stripe failure for this generation. A newer suspension or lift clears it.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 8
+        },
+        "last_failure_message": {
+          "comment": "Message from the latest Stripe failure for this generation. A newer suspension or lift clears it.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         },
         "lease_expires_at": {
           "comment": "Time after which recovery may replace this lease.",
@@ -57358,7 +57382,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User whose direct Stripe subscription should match the open suspension. One row per user.",
