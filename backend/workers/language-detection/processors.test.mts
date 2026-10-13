@@ -211,6 +211,10 @@ describe('language detection processors', () => {
       expect(state.lingua_rs_detected_language).toBe('en')
       expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
       expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
+      await expect(processLanguageDetectionBackfill(fixture.job, [ownedId])).resolves.toEqual({
+        updated: 0,
+      })
+      await expect(getLanguageDetectionStateForTest(fixture.table, ownedId)).resolves.toEqual(state)
       await expect(getLanguageDetectionStateForTest(fixture.table, foreignId)).resolves.toEqual(
         foreignBefore,
       )
@@ -230,16 +234,26 @@ describe('language detection processors', () => {
         'This foreign profile is also written in English and must stay undetected when the backfill lists only the owned user.',
     })
 
+    const foreignBefore = await getLanguageDetectionStateForTest('users', foreignUserId)
+    expect(foreignBefore).toEqual({
+      lingua_rs_detected_language: null,
+      lingua_rs_input_sha256: null,
+      lingua_rs_detected_at: null,
+    })
     const result = await processLanguageDetectionBackfill('backfill_users', [userId])
 
-    expect(result.updated).toBeGreaterThan(0)
+    expect(result).toEqual({ updated: 1 })
     const state = await getLanguageDetectionStateForTest('users', userId)
     expect(state.lingua_rs_detected_language).toBe('en')
     expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
     expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
-    await expect(getLanguageDetectionStateForTest('users', foreignUserId)).resolves.toMatchObject({
-      lingua_rs_detected_language: null,
+    await expect(processLanguageDetectionBackfill('backfill_users', [userId])).resolves.toEqual({
+      updated: 0,
     })
+    await expect(getLanguageDetectionStateForTest('users', userId)).resolves.toEqual(state)
+    await expect(getLanguageDetectionStateForTest('users', foreignUserId)).resolves.toEqual(
+      foreignBefore,
+    )
   })
 
   it('ignores missing post rows', async () => {
