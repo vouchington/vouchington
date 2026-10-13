@@ -101,7 +101,7 @@ describe('membership refund reconciliation schema', () => {
     )
     await expect(
       insertTestLinkedOperationRefundReceipt(operation, `wrong-${randomUUID()}`),
-    ).rejects.toMatchObject({ code: '23503' })
+    ).rejects.toMatchObject({ code: '23514' })
     await expect(insertTestLinkedOperationRefundReceipt(operation, requestKey)).resolves.toBe(1)
   })
 })

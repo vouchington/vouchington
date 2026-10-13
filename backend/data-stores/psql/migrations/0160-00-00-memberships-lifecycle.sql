@@ -803,7 +803,6 @@ CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
   CHECK ((is_cancel_requested = FALSE AND provider_subscription_reference IS NULL) OR (is_cancel_requested = TRUE AND char_length(provider_subscription_reference) BETWEEN 1 AND 255 AND provider_subscription_reference = TRIM(provider_subscription_reference))),
   CONSTRAINT chk_members_adminis_refund_operati_request__request_fingerprint CHECK (char_length(request_fingerprint) = 64),
   CONSTRAINT chk_membe_admin_refund_operat_reques__administrator_request_key CHECK (char_length(administrator_request_key) BETWEEN 1 AND 255 AND administrator_request_key = TRIM(administrator_request_key)),
-  CONSTRAINT uq_maror__operation_key UNIQUE (membership_operation_id, administrator_request_key),
   CHECK (note IS NULL OR char_length(note) BETWEEN 1 AND 1000)
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -827,9 +826,27 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
   stripe_event_id TEXT, note TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT membership_refunds_source_identity_check CHECK ((source = 'admin' AND issued_by_id IS NOT NULL AND stripe_idempotency_key IS NOT NULL AND admin_request_fingerprint IS NOT NULL) OR (source = 'stripe_dashboard' AND issued_by_id IS NULL AND stripe_idempotency_key IS NULL AND admin_request_fingerprint IS NULL)),
   CONSTRAINT fk_membership_refunds__operation_source FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT,
-  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id, stripe_idempotency_key)
-    REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id)
+    REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE RESTRICT
 );
+-- The relationship uses the operation id; compare the external replay key at write time
+-- against the immutable request instead of making that text key part of a foreign key.
+CREATE FUNCTION fn_reject_membership_refund_request_key_mismatch() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE saved_request_key TEXT;
+BEGIN
+  IF NEW.source = 'admin' THEN
+    SELECT request.administrator_request_key INTO saved_request_key
+    FROM membership_administrator_refund_operation_requests request
+    WHERE request.membership_operation_id = NEW.membership_operation_id;
+    IF saved_request_key IS DISTINCT FROM NEW.stripe_idempotency_key THEN
+      RAISE EXCEPTION 'administrator refund receipt key does not match its request' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_refunds_request_key
+BEFORE INSERT OR UPDATE ON membership_refunds
+FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_request_key_mismatch();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_refunds__membership_id ON membership_refunds (membership_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
