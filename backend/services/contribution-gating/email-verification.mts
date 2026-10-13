@@ -23,20 +23,20 @@ async function getVerifiedEmailCandidatesBatch(
 
   const { rows } = await read<VerifiedEmailCandidate>(sql`/* getVerifiedEmailCandidatesBatch */
     WITH candidates AS (
-      SELECT user_id, email_address, email_domain_hostname_id, 0 AS provider_priority,
+      SELECT id AS source_id, user_id, email_address, email_domain_hostname_id, 0 AS provider_priority,
         CASE WHEN is_primary THEN 0 ELSE 1 END AS address_priority, created_at
       FROM user_email_addresses WHERE user_id = ANY(${userIds}::uuid[])
-      UNION ALL SELECT user_id, apple_user_email_address, email_domain_hostname_id, 1, 0, created_at FROM apple_accounts
+      UNION ALL SELECT NULL::UUID, user_id, apple_user_email_address, email_domain_hostname_id, 1, 0, created_at FROM apple_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND apple_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, google_user_email_address, email_domain_hostname_id, 2, 0, created_at FROM google_accounts
+      UNION ALL SELECT NULL::UUID, user_id, google_user_email_address, email_domain_hostname_id, 2, 0, created_at FROM google_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND google_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, linkedin_user_email_address, email_domain_hostname_id, 3, 0, created_at FROM linkedin_accounts
+      UNION ALL SELECT NULL::UUID, user_id, linkedin_user_email_address, email_domain_hostname_id, 3, 0, created_at FROM linkedin_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND linkedin_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, github_user_email_address, email_domain_hostname_id, 4, 0, created_at FROM github_accounts
+      UNION ALL SELECT NULL::UUID, user_id, github_user_email_address, email_domain_hostname_id, 4, 0, created_at FROM github_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND github_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, facebook_user_email_address, email_domain_hostname_id, 5, 0, created_at FROM facebook_accounts
+      UNION ALL SELECT NULL::UUID, user_id, facebook_user_email_address, email_domain_hostname_id, 5, 0, created_at FROM facebook_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND facebook_user_email_address IS NOT NULL
-      UNION ALL SELECT user_id, microsoft_user_email_address, email_domain_hostname_id, 6, 0, created_at FROM microsoft_accounts
+      UNION ALL SELECT NULL::UUID, user_id, microsoft_user_email_address, email_domain_hostname_id, 6, 0, created_at FROM microsoft_accounts
         WHERE user_id = ANY(${userIds}::uuid[]) AND microsoft_user_email_address IS NOT NULL
     )
     SELECT candidates.user_id, candidates.email_address, EXISTS (
@@ -48,7 +48,7 @@ async function getVerifiedEmailCandidatesBatch(
     FROM candidates
     INNER JOIN users ON users.id = candidates.user_id AND users.deleted_at IS NULL
     ORDER BY candidates.user_id, provider_priority, address_priority,
-      candidates.created_at, candidates.email_address
+      candidates.created_at, candidates.source_id NULLS LAST, candidates.email_address
   `)
 
   for (const row of rows) results.get(row.user_id)?.push(row)
