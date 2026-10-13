@@ -22,7 +22,7 @@ import {
   lockPostPublicationRssFeedScopes,
   lockTopicAliasPublicationScopes,
 } from '@services/post-publication'
-import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
+import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
@@ -201,7 +201,7 @@ async function expectPublisherTypeRevalidationFailure({
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id }),
     ).resolves.toBeUndefined()
-    const discoverabilityJobs = (await readAllQueueJobs(rssFeedDiscoverability)).filter(
+    const discoverabilityJobs = (await readAllQueueJobs(rssFeedMaintenance)).filter(
       job =>
         job.name === 'processEvaluateRssFeedDiscoverability' &&
         (job.data as { rssFeedId?: string }).rssFeedId === feed.id,

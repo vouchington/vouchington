@@ -1,5 +1,5 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { enqueueBulkTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
+import { enqueueBulkTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { createTopicRevision } from '@services/topic-revisions'

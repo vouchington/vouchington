@@ -7,7 +7,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import * as postPublication from '@services/post-publication'
-import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
+import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { updateTopicElectionVoteStats } from './vote-stats.mts'
 import { updateElectionStatsIfChanged } from '../shared/vote-stats-update.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
@@ -72,7 +72,7 @@ describe('topic vote stats side effects', () => {
 
     await updateTopicElectionVoteStats(topic.id)
 
-    const waiting = await readAllQueueJobs(rssFeedDiscoverability)
+    const waiting = await readAllQueueJobs(rssFeedMaintenance)
     expect(
       waiting.some(
         job =>

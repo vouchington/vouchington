@@ -39,26 +39,13 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/rss-feeds/workers').then(module => module.rss_feeds),
   },
   {
-    queueName: 'rss-feed-discoverability',
+    queueName: 'rss-feed-maintenance',
     load: () =>
-      import('@workers/rss-feed-discoverability/workers').then(
-        module => module.rssFeedDiscoverability,
-      ),
+      import('@workers/rss-feed-maintenance/workers').then(module => module.rssFeedMaintenance),
   },
   {
     queueName: 'crawl_embeds',
     load: () => import('@workers/crawl-embeds/workers').then(module => module.crawlEmbeds),
-  },
-  {
-    queueName: 'rss-feed-item-categories',
-    load: () =>
-      import('@workers/rss-feed-item-categories/workers').then(
-        module => module.rssFeedItemCategories,
-      ),
-  },
-  {
-    queueName: 'topic-aliases',
-    load: () => import('@workers/topic-aliases/workers').then(module => module.topicAliases),
   },
   {
     queueName: 'openai_moderation_omni_single',

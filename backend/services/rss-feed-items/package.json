@@ -38,7 +38,7 @@
     "@queues/language-detection": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
-    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/classifier-runs": "workspace:^",

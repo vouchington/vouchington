@@ -1,4 +1,4 @@
-import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { findRssFeedIdsByTopicIds } from './rss-feed-ids-by-topic-ids.mts'
 import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityRelation } from './upsert-helpers-types.mts'

@@ -1,7 +1,7 @@
 import { caches } from '@services/entity-cache/caches'
 import { refresh } from '../../entity-fetch/refresh.mts'
 import { notifications } from '@queues/notifications/queues'
-import { topicAliases } from '@queues/topic-aliases/queues'
+import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import type { PrivateUser } from '@services/users/types'
 import {
   createActivePostTopicAliasRelationForTest,
@@ -187,7 +187,7 @@ describe('topic alias post-cache invalidation', () => {
 
       // Prioritized jobs are not in `getJobs('waiting')` until a worker promotes them.
       const continuation = (
-        await topicAliases.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
+        await rssFeedMaintenance.searchJobs({ name: 'processInvalidatePostsForTopicAliases' })
       ).find(job => (job.data as { topicAliasIds?: string[] }).topicAliasIds?.includes(alias.id))
       expect(continuation?.data).toEqual({
         afterPostId: thirdPostId,

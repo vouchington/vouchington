@@ -36,7 +36,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
-    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/spam-detection": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/comments": "workspace:^",

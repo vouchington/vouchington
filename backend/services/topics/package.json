@@ -32,7 +32,7 @@
     "@modules/utils": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
-    "@queues/topic-aliases": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/batch-lookup": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

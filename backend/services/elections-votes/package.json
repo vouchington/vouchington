@@ -69,7 +69,7 @@
     "@modules/utils": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
-    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/entity-cache": "workspace:^",

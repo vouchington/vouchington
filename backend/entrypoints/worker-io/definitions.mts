@@ -41,16 +41,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/rss-feeds/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'rss-feed-item-categories',
+    queueName: 'rss-feed-maintenance',
     load: () =>
-      import('@queues/rss-feed-item-categories/enqueues/schedules').then(
+      import('@queues/rss-feed-maintenance/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
-  },
-  {
-    queueName: 'topic-aliases',
-    load: () =>
-      import('@queues/topic-aliases/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'emails',

@@ -20,11 +20,10 @@ import { scheduledJobManifest as oauthAuthorizationExchange } from '@queues/oaut
 import { scheduledJobManifest as postPublication } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as psql } from '@queues/psql/enqueues/schedules'
 import { scheduledJobManifest as rssFeeds } from '@queues/rss-feeds/enqueues/schedules'
-import { scheduledJobManifest as rssFeedItemCategories } from '@queues/rss-feed-item-categories/enqueues/schedules'
+import { scheduledJobManifest as rssFeedMaintenance } from '@queues/rss-feed-maintenance/enqueues/schedules'
 import { scheduledJobManifest as sesInbound } from '@queues/ses-inbound/enqueues/schedules'
 import { scheduledJobManifest as sitemaps } from '@queues/sitemaps/enqueues/schedules'
 import { scheduledJobManifest as storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/enqueues/schedules'
-import { scheduledJobManifest as topicAliases } from '@queues/topic-aliases/enqueues/schedules'
 import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
@@ -51,11 +50,10 @@ export const SCHEDULED_JOB_MANIFESTS = [
   postPublication,
   psql,
   rssFeeds,
-  rssFeedItemCategories,
+  rssFeedMaintenance,
   sesInbound,
   sitemaps,
   storyPostRelatedUrlProjections,
-  topicAliases,
   unfurlReferralLinks,
   urlsDomainsBlacklist,
   voteWeight,
