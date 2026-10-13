@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/react'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CommentNodeHeader } from '@/components/comments/comment-node-header'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import { commentPermalink, deletedCommentNode } from '@/storybook/comments/comment-story-data'
+
+vi.mock(import('@/components/shared/report-menu-item'), () => ({
+  ReportMenuKebab: () => <div data-pw='report-menu-kebab' />,
+}))
 
 const cases = [
   ['en', 0, '0 replies'],
