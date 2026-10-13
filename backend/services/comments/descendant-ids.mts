@@ -54,7 +54,12 @@ export async function getVisibleCommentDescendantIdsPage(
     FROM descendants`)
   if (options.afterId) query.append(sql` WHERE descendants.id > ${options.afterId}`)
   query.append(sql` ORDER BY descendants.id ASC LIMIT ${options.limit + 1}`)
-  const { rows } = await read<{ id: string }>(query)
+  const prefix = '/* getVisibleCommentDescendantIdsPage */\n    WITH RECURSIVE '
+  if (!query.text.startsWith(prefix)) throw new Error('Comment descendant SQL prefix changed')
+  const { rows } = await read<{ id: string }>(
+    `/* getVisibleCommentDescendantIdsPage */\n    WITH RECURSIVE ${query.text.slice(prefix.length)}`,
+    query.values,
+  )
   return {
     results: rows.slice(0, options.limit).map(row => row.id),
     hasNextPage: rows.length > options.limit,

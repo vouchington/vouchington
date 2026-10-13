@@ -31,6 +31,43 @@ export const getPostMetricsByAnyBatch = async (
   const idInputs = normalizedInputs.filter(i => i.isId)
   const slugInputs = normalizedInputs.filter(i => !i.isId)
 
+  const query = buildPostMetricsBatchQuery(idInputs, slugInputs)
+  const prefix = '/* getPostMetricsByAnyBatch */\n    WITH RECURSIVE '
+  if (!query.text.startsWith(prefix)) throw new Error('Post metrics SQL prefix changed')
+  const { rows } = await read(
+    `/* getPostMetricsByAnyBatch */\n    WITH RECURSIVE ${query.text.slice(prefix.length)}`,
+    query.values,
+    options,
+  )
+
+  // Build result array with nulls for missing entries
+  const results: Array<PostMetrics | null | undefined> = new Array(idsOrSlugs.length).fill(null)
+
+  for (const row of rows) {
+    const { input_order, ...metricsData } = row
+
+    results[input_order] = {
+      __entity_type: 'post_metrics',
+      id: metricsData.id,
+      count: {
+        descendants: Number(metricsData.count__descendants) || 0,
+        children: Number(metricsData.count__children) || 0,
+        ancestors: Number(metricsData.count__ancestors) || 0,
+      },
+      updated_at: metricsData.updated_at,
+      bookmarks: {
+        follow: Number(metricsData.bookmarks__follow) || 0,
+        save: Number(metricsData.bookmarks__save) || 0,
+      },
+    }
+  }
+
+  return results
+}
+
+type NormalizedInput = { value: string; isId: boolean; index: number }
+
+function buildPostMetricsBatchQuery(idInputs: NormalizedInput[], slugInputs: NormalizedInput[]) {
   const query = sql`/* getPostMetricsByAnyBatch */
     WITH RECURSIVE id_input AS (
       SELECT unnest(${idInputs.map(i => i.value)}::uuid[]) AS input_value,
@@ -147,29 +184,5 @@ export const getPostMetricsByAnyBatch = async (
     ) save_counts ON TRUE
     ORDER BY cp.input_order
   `)
-  const { rows } = await read(query, options)
-
-  // Build result array with nulls for missing entries
-  const results: Array<PostMetrics | null | undefined> = new Array(idsOrSlugs.length).fill(null)
-
-  for (const row of rows) {
-    const { input_order, ...metricsData } = row
-
-    results[input_order] = {
-      __entity_type: 'post_metrics',
-      id: metricsData.id,
-      count: {
-        descendants: Number(metricsData.count__descendants) || 0,
-        children: Number(metricsData.count__children) || 0,
-        ancestors: Number(metricsData.count__ancestors) || 0,
-      },
-      updated_at: metricsData.updated_at,
-      bookmarks: {
-        follow: Number(metricsData.bookmarks__follow) || 0,
-        save: Number(metricsData.bookmarks__save) || 0,
-      },
-    }
-  }
-
-  return results
+  return query
 }

@@ -91,10 +91,14 @@ export async function getCommunityOrThrow(
 
 /** Always queries by slug column — use when the value is a slug, even if it looks like a UUID. */
 export async function getCommunityBySlugOnly(slug: string): Promise<CommunityWithOwner | null> {
+  const query = selectCommunityWithOwner(sql`/* getCommunityBySlugOnly */ SELECT `).append(
+    sql` WHERE c.slug = ${slug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
+  )
+  const prefix = '/* getCommunityBySlugOnly */ SELECT '
+  if (!query.text.startsWith(prefix)) throw new Error('Community slug SQL prefix changed')
   const { rows } = await read(
-    selectCommunityWithOwner(sql`/* getCommunityBySlugOnly */ SELECT `).append(
-      sql` WHERE c.slug = ${slug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
-    ),
+    `/* getCommunityBySlugOnly */ SELECT ${query.text.slice(prefix.length)}`,
+    query.values,
   )
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
@@ -104,14 +108,28 @@ export async function getCommunity(
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<CommunityWithOwner | null> {
-  const query = isUUID(idOrSlug)
+  const byId = isUUID(idOrSlug)
+  const query = byId
     ? selectCommunityWithOwner(sql`/* getCommunityById */ SELECT `).append(
         sql` WHERE c.id = ${idOrSlug}`,
       )
     : selectCommunityWithOwner(sql`/* getCommunityBySlug */ SELECT `).append(
         sql` WHERE c.slug = ${idOrSlug.toLowerCase()}`,
       )
-  const { rows } = await read(query.append(sql` AND c.deleted_at IS NULL LIMIT 1`), options)
+  query.append(sql` AND c.deleted_at IS NULL LIMIT 1`)
+  const prefix = byId ? '/* getCommunityById */ SELECT ' : '/* getCommunityBySlug */ SELECT '
+  if (!query.text.startsWith(prefix)) throw new Error('Community SQL prefix changed')
+  const { rows } = byId
+    ? await read(
+        `/* getCommunityById */ SELECT ${query.text.slice(prefix.length)}`,
+        query.values,
+        options,
+      )
+    : await read(
+        `/* getCommunityBySlug */ SELECT ${query.text.slice(prefix.length)}`,
+        query.values,
+        options,
+      )
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
 }

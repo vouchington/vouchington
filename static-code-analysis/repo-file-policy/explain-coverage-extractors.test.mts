@@ -43,8 +43,11 @@ describe('EXPLAIN extractor overlap', () => {
       )
       const paths = [
         'backend/services/comments/ancestors.mts',
+        'backend/services/comments/descendant-ids.mts',
         'backend/services/bookmarks/counts.mts',
         'backend/services/bookmarks/query.mts',
+        'backend/services/communities/get.mts',
+        'backend/services/communities/load-with-viewer.mts',
         'backend/services/data-points/insights.mts',
         'backend/services/elections-votes/entity-relation/refresh-stats.mts',
         'backend/services/elections-votes/entity-relation/resolve-election-target.mts',
@@ -53,6 +56,7 @@ describe('EXPLAIN extractor overlap', () => {
         'backend/services/moderation-appeals/get.mts',
         'backend/services/notifications/reconcile-batches.mts',
         'backend/services/post-publication/shadow-audit.mts',
+        'backend/services/posts/metrics-batch.mts',
         'backend/services/remote-actors/list-followers-of-user.mts',
         'backend/services/topics/metrics-batch.mts',
         'backend/services/users/follow-context-queries.mts',
@@ -67,9 +71,15 @@ describe('EXPLAIN extractor overlap', () => {
       expect(report.uncoveredReads.map(read => read.name)).toEqual(
         expect.arrayContaining([
           'buildCommentAncestorsQuery',
+          'getVisibleCommentDescendantIdsPage',
           'getUserBookmarkCounts',
           'getEntityBookmarkCounts',
           'queryEntityBookmarksForRelations',
+          'getCommunityBySlugOnly',
+          'getCommunityById',
+          'getCommunityBySlug',
+          'getCommunityWithViewerById',
+          'getCommunityWithViewerBySlug',
           'getTopicDataPointInsights',
           'refreshEntityRelationVoteStatsById',
           'resolveEntityRelationElectionTargetById',
@@ -77,6 +87,7 @@ describe('EXPLAIN extractor overlap', () => {
           'getImagePlacementsForCopyright',
           'getModerationAppealById',
           'listPostPublicationShadowAuditCandidates',
+          'getPostMetricsByAnyBatch',
           'listRemoteFollowerInboxPage',
           'getTopicMetricsByAnyBatch',
           'getUserMetricsByAnyBatch',
