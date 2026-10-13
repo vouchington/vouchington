@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS membership_google_play_purchase_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
+  membership_provider_context_id UUID NOT NULL,
   purchase_token_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_membe_googl_play_purch_tokens__purchase_token_lookup_sha256 CHECK (purchase_token_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   encrypted_purchase_token BYTEA NOT NULL CONSTRAINT chk_member_google_play_purchas_tokens__encrypted_purchase_token CHECK (octet_length(encrypted_purchase_token) BETWEEN 1 AND 65536),
   membership_provider_lineage_id UUID NOT NULL,
@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS membership_google_play_purchase_tokens (
   CONSTRAINT uq_membership_google_play_purchase_tokens__id_lineage_context UNIQUE (id, membership_provider_lineage_id, membership_provider_context_id),
   CONSTRAINT fk_membership_google_play_purchase_tokens__predecessor FOREIGN KEY (linked_purchase_token_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_google_play_purchase_tokens(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT
 );
+ALTER TABLE membership_google_play_purchase_tokens
+  ADD CONSTRAINT fk_membership_google_play_purchase_tokens__provider_context
+  FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_google_play_purchase_tokens
+  VALIDATE CONSTRAINT fk_membership_google_play_purchase_tokens__provider_context;
 CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context
   BEFORE INSERT OR UPDATE ON membership_google_play_purchase_tokens
   FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('google_play');

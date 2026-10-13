@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
+  membership_provider_context_id UUID NOT NULL,
   publisher_user_id TEXT NOT NULL,
   collections_key_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_member_microso_store_credent__collections_key_lookup_sha256 CHECK (collections_key_lookup_sha256 ~ '^[a-f0-9]{64}$'),
   encrypted_collections_key BYTEA NOT NULL,
@@ -17,6 +17,11 @@ CREATE TABLE IF NOT EXISTS membership_microsoft_store_credentials (
   CHECK (publisher_user_id = user_id::TEXT), CONSTRAINT chk_membersh_microsof_store_credenti__encrypted_collections_key CHECK (octet_length(encrypted_collections_key) BETWEEN 1 AND 65536),
   CONSTRAINT chk_membershi_microsoft_store_credentia__encrypted_purchase_key CHECK (octet_length(encrypted_purchase_key) BETWEEN 1 AND 65536)
 );
+ALTER TABLE membership_microsoft_store_credentials
+  ADD CONSTRAINT fk_membership_microsoft_store_credentials__provider_context
+  FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE membership_microsoft_store_credentials
+  VALIDATE CONSTRAINT fk_membership_microsoft_store_credentials__provider_context;
 CREATE TRIGGER trigger_membership_microsoft_store_credentials_context
   BEFORE INSERT OR UPDATE ON membership_microsoft_store_credentials
   FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('microsoft_store');
