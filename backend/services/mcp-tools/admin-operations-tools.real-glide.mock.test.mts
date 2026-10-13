@@ -86,17 +86,29 @@ describe('registered operational writes on disposable CI boundaries', () => {
     },
   )
   it.each([
-    ['run_scheduled_job', 'kagi-smallweb-sync', 'scheduled_job_run'],
-    ['run_backfill', 'backfill_report_judgements', 'backfill_run'],
-  ])('enqueues %s and records requested/finished history', async (name, id, action) => {
-    expect(workerQueuePrefix).toBe(prefix)
-    const admin = await createTestUserDirect({ administrator: true })
-    expect((await invoke(admin, name!, { id })).isError).not.toBe(true)
-    await expectOperation(admin.id, action!)
-    const before = await readStaffActionHistory(admin.id)
-    expect((await invoke(admin, name!, { id: `missing-${admin.id}` })).isError).toBe(true)
-    expect(await readStaffActionHistory(admin.id)).toEqual(before)
-  })
+    ['scheduled', 'kagi-smallweb-sync', 'scheduled_job_run'],
+    ['backfill', 'backfill_report_judgements', 'backfill_run'],
+  ] as const)(
+    'enqueues run_operational_job %s and records requested/finished history',
+    async (option, id, action) => {
+      expect(workerQueuePrefix).toBe(prefix)
+      const admin = await createTestUserDirect({ administrator: true })
+      expect(
+        (await invoke(admin, 'run_operational_job', { option, arguments: { id } })).isError,
+      ).not.toBe(true)
+      await expectOperation(admin.id, action)
+      const before = await readStaffActionHistory(admin.id)
+      expect(
+        (
+          await invoke(admin, 'run_operational_job', {
+            option,
+            arguments: { id: `missing-${admin.id}` },
+          })
+        ).isError,
+      ).toBe(true)
+      expect(await readStaffActionHistory(admin.id)).toEqual(before)
+    },
+  )
   it('updates configuration with its own actor history, no-op semantics and validation guard', async () => {
     expect(workerQueuePrefix).toBe(prefix)
     const admin = await createTestUserDirect({ administrator: true })

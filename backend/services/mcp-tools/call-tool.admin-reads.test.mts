@@ -37,7 +37,10 @@ async function error(user: PrivateUser, name: string, args: unknown, status: num
 describe('registered administrative business reads', () => {
   it('returns growth, bounded AI costs and managed queue projections without staff writes', async () => {
     const admin = await createTestUser({ administrator: true })
-    const growth = await success(admin, 'get_growth_metrics', { range: 'today' })
+    const growth = await success(admin, 'read_admin_metrics', {
+      option: 'growth',
+      arguments: { range: 'today' },
+    })
     expect(growth).toMatchObject({
       range: 'today',
       period_start: expect.any(String),
@@ -46,14 +49,25 @@ describe('registered administrative business reads', () => {
       content_production: expect.any(Object),
       infrastructure: expect.any(Object),
     })
-    const costs = await success(admin, 'get_ai_costs', { limit: 1 })
+    const costs = await success(admin, 'read_admin_metrics', {
+      option: 'ai_costs',
+      arguments: { limit: 1 },
+    })
     expect(costs).toMatchObject({
       results: expect.any(Array),
       page_info: { has_next_page: expect.any(Boolean) },
     })
     expect((costs['results'] as unknown[]).length).toBeLessThanOrEqual(1)
-    await error(admin, 'get_ai_costs', { after: 'invalid-cursor' }, 400)
-    const queues = await success(admin, 'get_queue_stats', {})
+    await error(
+      admin,
+      'read_admin_metrics',
+      { option: 'ai_costs', arguments: { after: 'invalid-cursor' } },
+      400,
+    )
+    const queues = await success(admin, 'read_admin_metrics', {
+      option: 'queue_stats',
+      arguments: {},
+    })
     expect(queues).toMatchObject({ stats: expect.any(Object) })
     expect(await readStaffActionHistory(admin.id)).toEqual([])
   })
@@ -85,11 +99,10 @@ describe.each(['appeal', 'dispute'] as const)('registered %s staff reads', kind 
   it('reads the owned staff projection and a bounded cursor page without writes', async () => {
     const admin = await createTestUser({ administrator: true })
     const { id } = await createStaffResolutionFixture(kind, false)
-    const get = kind === 'appeal' ? 'get_moderation_appeal' : 'get_review_dispute'
-    const list = kind === 'appeal' ? 'list_moderation_appeals' : 'list_review_disputes'
+    const target = kind === 'appeal' ? 'read_moderation_appeal' : 'read_review_dispute'
     const scope =
       kind === 'appeal' ? 'appeals:pending:staff-all:id-desc' : 'disputes:pending:staff:all:id-desc'
-    const detail = await success(admin, get, { id })
+    const detail = await success(admin, target, { option: 'get', arguments: { id } })
     const detailProjections = {
       appeal: {
         appeal: {
@@ -103,10 +116,13 @@ describe.each(['appeal', 'dispute'] as const)('registered %s staff reads', kind 
       dispute: { dispute: { id, status: 'pending' } },
     }
     expect(detail).toMatchObject(detailProjections[kind])
-    const page = await success(admin, list, {
-      after: encodeScopedUuidCursor(id, scope),
-      limit: 1,
-      status: 'pending',
+    const page = await success(admin, target, {
+      option: 'list',
+      arguments: {
+        after: encodeScopedUuidCursor(id, scope),
+        limit: 1,
+        status: 'pending',
+      },
     })
     expect(page).toMatchObject({
       [`${kind}s`]: expect.any(Array),
@@ -115,8 +131,13 @@ describe.each(['appeal', 'dispute'] as const)('registered %s staff reads', kind 
     const cases = page[`${kind}s`] as { id: string }[]
     expect(cases.length).toBeLessThanOrEqual(1)
     for (const item of cases) expect(item.id.localeCompare(id)).toBeLessThan(0)
-    await error(admin, get, { id: randomUUID() }, 404)
-    await error(admin, list, { after: encodeScopedUuidCursor(id, `${scope}:wrong-scope`) }, 400)
+    await error(admin, target, { option: 'get', arguments: { id: randomUUID() } }, 404)
+    await error(
+      admin,
+      target,
+      { option: 'list', arguments: { after: encodeScopedUuidCursor(id, `${scope}:wrong-scope`) } },
+      400,
+    )
     expect(await readStaffActionHistory(admin.id)).toEqual([])
   })
 })

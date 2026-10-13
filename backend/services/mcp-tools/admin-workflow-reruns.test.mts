@@ -14,10 +14,10 @@ import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
 import type { PrivateUser } from '@services/users/types'
 
-const invoke = (user: PrivateUser, name: string, id: string) =>
+const invoke = (user: PrivateUser, name: string, id: string, option?: 'appeal' | 'dispute') =>
   callMcpTool(
     name,
-    { id },
+    option ? { option, arguments: { id } } : { id },
     { ...user, membership_plan: null },
     ['moderation:read', 'moderation:ai-rerun'],
     ADMIN_MCP_SERVER_CONFIG,
@@ -29,7 +29,7 @@ describe('registered AI rerun writes', () => {
     async kind => {
       const admin = await createTestUser({ administrator: true })
       const { id } = await createStaffResolutionFixture(kind, false)
-      const result = await invoke(admin, `rerun_${kind}_resolution_draft`, id)
+      const result = await invoke(admin, 'rerun_review_resolution_draft', id, kind)
       expect(result.isError).not.toBe(true)
       await expectStaffOperationHistory(admin.id, `${kind}_resolution_draft_rerun`)
       const jobs = await readAllQueueJobs(ai_agents)
@@ -77,12 +77,12 @@ describe('registered AI rerun writes', () => {
   })
 
   it.each([
-    'rerun_report_judgement',
-    'rerun_appeal_resolution_draft',
-    'rerun_dispute_resolution_draft',
-  ])('%s refuses an unknown target before history or enqueue', async name => {
+    ['rerun_report_judgement', undefined],
+    ['rerun_review_resolution_draft', 'appeal'],
+    ['rerun_review_resolution_draft', 'dispute'],
+  ] as const)('%s %s refuses an unknown target before history or enqueue', async (name, option) => {
     const admin = await createTestUser({ administrator: true })
-    const result = await invoke(admin, name, randomUUID())
+    const result = await invoke(admin, name, randomUUID(), option)
     expect(result.isError).toBe(true)
     const block = result.content[0]!
     if (block.type !== 'text') throw new Error('Expected typed error')

@@ -13,7 +13,7 @@ import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-rou
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 
-const TOOL = 'replay_copyright_action_intent'
+const TOOL = 'replay_copyright_intent'
 const pathArgs = { id: crypto.randomUUID(), intentId: crypto.randomUUID() }
 const RATIONALE_A = 'Staff reviewed the first failed action.'
 const RATIONALE_B = 'Staff reviewed the second failed action.'
@@ -23,7 +23,7 @@ function toolCall(args: Record<string, unknown>, id = 1) {
     jsonrpc: '2.0',
     id,
     method: 'tools/call',
-    params: { name: TOOL, arguments: args },
+    params: { name: TOOL, arguments: { option: 'action', arguments: args } },
   }
 }
 

@@ -82,14 +82,25 @@ describe('registered admin MCP writes', () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser()
     expect(
-      (await invoke(admin, 'suspend_user', { userId: target.id, reason: unique() })).isError,
+      (
+        await invoke(admin, 'set_user_suspension', {
+          option: 'suspend',
+          arguments: { userId: target.id, reason: unique() },
+        })
+      ).isError,
     ).not.toBe(true)
     expect((await getPrivateUserByAny(target.id))?.suspended_at).not.toBeNull()
     const history = await readStaffActionHistory(admin.id)
     expect(history).toEqual([
       expect.objectContaining({ action_type: 'suspend', target_user_id: target.id }),
     ])
-    expectTypedError(await invoke(admin, 'suspend_user', { userId: target.id }), 409)
+    expectTypedError(
+      await invoke(admin, 'set_user_suspension', {
+        option: 'suspend',
+        arguments: { userId: target.id },
+      }),
+      409,
+    )
     expect(await readStaffActionHistory(admin.id)).toEqual(history)
   })
 
@@ -97,7 +108,13 @@ describe('registered admin MCP writes', () => {
     const admin = await createTestUser({ administrator: true })
     const staff = await createTestUser({ administrator: true })
     for (const target of [admin, staff]) {
-      expectTypedError(await invoke(admin, 'suspend_user', { userId: target.id }), 422)
+      expectTypedError(
+        await invoke(admin, 'set_user_suspension', {
+          option: 'suspend',
+          arguments: { userId: target.id },
+        }),
+        422,
+      )
       expect((await getPrivateUserByAny(target.id))?.suspended_at).toBeNull()
     }
     expect(await readStaffActionHistory(admin.id)).toEqual([])
@@ -108,8 +125,12 @@ describe('registered admin MCP writes', () => {
     const target = await createTestUser()
     const id = await insertTestReportIntegrityFlag({ reportedUserId: target.id, reporterCount: 5 })
     expect(
-      (await invoke(admin, 'review_report_integrity_flag', { id, resolution: 'dismissed' }))
-        .isError,
+      (
+        await invoke(admin, 'review_integrity_flag', {
+          option: 'report',
+          arguments: { id, resolution: 'dismissed' },
+        })
+      ).isError,
     ).not.toBe(true)
     const state = await readStaffActionTarget('report_flag', id)
     expect(state).toMatchObject({ resolution: 'dismissed', resolved_by_id: admin.id })
@@ -118,7 +139,10 @@ describe('registered admin MCP writes', () => {
       expect.objectContaining({ action_type: 'report_integrity_flag_review' }),
     ])
     expectTypedError(
-      await invoke(admin, 'review_report_integrity_flag', { id, resolution: 'dismissed' }),
+      await invoke(admin, 'review_integrity_flag', {
+        option: 'report',
+        arguments: { id, resolution: 'dismissed' },
+      }),
       404,
     )
     expect(await readStaffActionTarget('report_flag', id)).toEqual(state)

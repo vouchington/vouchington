@@ -12,7 +12,7 @@ import { UUID_INPUT } from './create-admin-tool.mts'
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH = '/api/v1/copyright-email-intakes/:id/approvals'
 
 /**
- * The tool input for `approve_copyright_email_intake` is the REST approval body plus `intake_id`
+ * The `review_copyright_email_intake` approve option sends the REST approval body plus `intake_id`
  * (the route's `:id`). The shared parsers and the generated request contract still decide every
  * value, so this schema only needs to tell a caller what to send.
  */

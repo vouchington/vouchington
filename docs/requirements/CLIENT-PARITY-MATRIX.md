@@ -227,8 +227,10 @@ lists, participant case detail, and the existing review queue with contact redac
 are exclusive to the OAuth-only admin MCP and are not available to native agents on the user MCP. Copyright
 decision tools use the separate exact OAuth `copyright-notices:write` grant, which requires
 `copyright-notices:read`, and the default-off `copyright.mcpDecisionTools` switch. Umbrella grants
-cover neither copyright grant. These 17 staff tools remain admin MCP only: they introduce no
-native user-MCP capability or native staff screen. Consent and credential pickers use the
+cover neither copyright grant. These decision operations remain admin MCP only, registered as 14
+tools. `review_copyright_email_intake` (`approve`, `reject`), `review_copyright_email_correspondence`
+(`admit`, `reject`), and `replay_copyright_intent` (`delivery`, `action`) take the closed option
+envelope. They introduce no native user-MCP capability or native staff screen. Consent and credential pickers use the
 generated scope catalog and retain explicit selection for exact grants. Email approval takes the
 same caller-stated notice form as the staff REST route, with the recommendation as guidance only;
 admission uses server-owned recommendation fields rather than caller contact details; replies are
