@@ -140,11 +140,8 @@ is unavailable.
 
 ### Server unavailable
 
-There is no CLI fallback. This is policy: agents journal only through the MCP server. The token is
-meant for the server and is hidden from sandboxed or excluded shell commands (see the
-[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)), so an agent never
-runs a CLI to journal and never asks for an unsandboxed run to obtain the token. When the server is
-not available, an interactive agent stops journaling and tells the user:
+Agents journal through the MCP server. When it is not available, an interactive agent tells the
+user the fix, remediation first:
 
 - **Not registered:** run vouchington-machines' `./configure-agents.sh`, check it with
   `./diagnose-agents.sh --repo <checkout>` ([setup](#1-configure-the-machine)), then reconnect
@@ -152,6 +149,12 @@ not available, an interactive agent stops journaling and tells the user:
 - **Registered but disconnected:** reconnect (`/mcp` in Claude Code, or restart Codex).
 
 The worktree install does not affect the server.
+
+Last resort: the canonical `vouchington-workflow:blackboard` skill's CLI fallback is deprecated and
+being phased out. Use it only when the remediation above cannot restore the server, and tell the user
+(or the final report) that you fell back. The token is hidden from sandboxed Claude commands and Codex
+shell commands (see the [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)),
+so the fallback cannot deliver there; never ask for an unsandboxed run just to get the token.
 
 ### Automated sessions
 

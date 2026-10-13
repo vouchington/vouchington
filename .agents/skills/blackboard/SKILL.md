@@ -41,15 +41,18 @@ Use `interactive` mode in a human-attended session and `autonomous` mode in an a
 ## When the server is unavailable
 
 Search for `journal_append` by bare name before concluding the server is unavailable. A permission
-denial is not unavailability. There is no CLI fallback. This is policy: you journal only through the
-MCP server, the token is meant for the server and hidden from sandboxed or excluded shell commands,
-and you never run a CLI to journal or ask for an unsandboxed run to get the token. When the server is
-unavailable, an interactive agent stops journaling and tells the user the fix. If it is not
-registered, run vouchington-machines' `./configure-agents.sh`, check with
-`./diagnose-agents.sh --repo <checkout>`, then reconnect (`/mcp` in Claude Code, or restart Codex).
-If it is registered but disconnected, reconnect. See
+denial is not unavailability. Journal through the MCP server. When it is unavailable, an interactive
+agent tells the user the fix, remediation first. If it is not registered, run vouchington-machines'
+`./configure-agents.sh`, check with `./diagnose-agents.sh --repo <checkout>`, then reconnect (`/mcp`
+in Claude Code, or restart Codex). If it is registered but disconnected, reconnect. See
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md#server-unavailable). An
 automated run follows Automated runs below.
+
+Last resort: the canonical `vouchington-workflow:blackboard` skill's CLI fallback is deprecated and
+being phased out. Use it only when the remediation above cannot restore the server, and tell the user
+(or the final report) that you fell back. Sandboxed Claude commands and Codex shell commands do not
+receive `AGENT_BLACKBOARD_TOKEN`, so the fallback cannot deliver there; never ask for an unsandboxed
+run just to get the token.
 
 ## Automated runs
 
