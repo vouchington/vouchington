@@ -127,6 +127,42 @@ describe('validateRetrospective', () => {
     expect(errors).toContain('## Tool Findings requires exactly one assessment status')
   })
 
+  it.each([
+    ['Tool Findings', 'Status: not assessed (tool assessment unavailable in this fixture)'],
+    [
+      'Architecture Findings',
+      'Status: not assessed (architecture assessment unavailable in this fixture)',
+    ],
+  ])('accepts complete coverage once %s is assessed', (_section, status) => {
+    const markdown = doc()
+      .replace(
+        'Status: not assessed (tool assessment unavailable in this fixture)',
+        'Status: none observed (inspected scope)',
+      )
+      .replace(
+        'Status: not assessed (architecture assessment unavailable in this fixture)',
+        'Status: none observed (inspected scope)',
+      )
+    const partial = markdown.replace('Status: none observed (inspected scope)', status)
+    const complete = { ...COVERAGE, status: 'complete' }
+    expect(validateRetrospective(input(markdown, { feedbackCoverage: complete }))).toEqual({
+      errors: [],
+    })
+    expect(validateRetrospective(input(partial, { feedbackCoverage: complete })).errors).toContain(
+      'complete feedback coverage requires available assessed factual, tool, and architecture sources',
+    )
+  })
+
+  it('rejects complete coverage when an assessment section is missing', () => {
+    const markdown = doc().replace('## Architecture Findings', '## Other Findings')
+    const { errors } = validateRetrospective(
+      input(markdown, { feedbackCoverage: { ...COVERAGE, status: 'complete' } }),
+    )
+    expect(errors).toContain(
+      'complete feedback coverage requires available assessed factual, tool, and architecture sources',
+    )
+  })
+
   it('rejects complete coverage when an assessment was not performed', () => {
     const { errors } = validateRetrospective(
       input(doc(), { feedbackCoverage: { ...COVERAGE, status: 'complete' } }),
