@@ -1,17 +1,9 @@
-import { read } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { read, type QueryExecutor } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import type { ClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 
 /** How many of one claimant's notices ended in each misuse outcome. */
 export type ClaimantMisuseSummary = Record<ClaimantMisuseEvent['outcome'], number>
-
-type SummaryQuery = (statement: SQLStatement) => Promise<{
-  rows: Array<{
-    claimant_user_id: string
-    outcome: ClaimantMisuseEvent['outcome']
-    notices: number
-  }>
-}>
 
 /**
  * Staff-facing ledger summaries for claimant accounts. Counts notices, not events, so a notice
@@ -20,7 +12,7 @@ type SummaryQuery = (statement: SQLStatement) => Promise<{
  */
 export async function readClaimantMisuseSummaries(
   claimantUserIds: readonly string[],
-  query: SummaryQuery = statement => read(statement),
+  query: QueryExecutor = read,
 ): Promise<Map<string, ClaimantMisuseSummary>> {
   const summaries = new Map<string, ClaimantMisuseSummary>(
     claimantUserIds.map(id => [
@@ -34,7 +26,11 @@ export async function readClaimantMisuseSummaries(
     ]),
   )
   if (summaries.size === 0) return summaries
-  const { rows } = await query(sql`/* readClaimantMisuseSummaries */
+  const { rows } = await query<{
+    claimant_user_id: string
+    outcome: ClaimantMisuseEvent['outcome']
+    notices: number
+  }>(sql`/* readClaimantMisuseSummaries */
     SELECT notice.claimant_user_id, event.outcome,
       count(DISTINCT event.copyright_notice_id)::int AS notices
     FROM copyright_notices notice
