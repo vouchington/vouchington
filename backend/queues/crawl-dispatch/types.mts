@@ -23,3 +23,4 @@ export type CrawlHostnameDispatchCursor = {
   afterId?: string
   afterSweptAt?: string
 }
+export type BoilerplateRemovalJobs = 'boilerplate_removal_dispatcher' | 'boilerplate_removal'

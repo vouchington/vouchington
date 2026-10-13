@@ -4,8 +4,7 @@ import { scheduledJobManifest as activitypub } from '@queues/activitypub/enqueue
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
 import { scheduledJobManifest as bedrockEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { scheduledJobManifest as bloomFilters } from '@queues/bloom-filters/enqueues/schedules'
-import { scheduledJobManifest as crawlBoilerplateRemoval } from '@queues/crawl-boilerplate-removal/enqueues/schedules'
-import { scheduledJobManifest as crawlHostnames } from '@queues/crawl-hostnames/enqueues/schedules'
+import { scheduledJobManifest as crawlDispatch } from '@queues/crawl-dispatch/enqueues/schedules'
 import { scheduledJobManifest as crawlReferralLinks } from '@queues/crawl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as emails } from '@queues/emails/enqueues/schedules'
 import { scheduledJobManifest as entityListeners } from '@queues/entity-listeners/enqueues/schedules'
@@ -34,8 +33,7 @@ export const SCHEDULED_JOB_MANIFESTS = [
   aiAgents,
   bedrockEmbeddingsBatch,
   bloomFilters,
-  crawlBoilerplateRemoval,
-  crawlHostnames,
+  crawlDispatch,
   crawlReferralLinks,
   emails,
   entityListeners,

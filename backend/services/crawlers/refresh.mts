@@ -13,9 +13,9 @@ type CrawlerRefreshCandidateUrl = {
 export const searchHostnameIdsNeedingCrawlerRefresh = async (
   limit: number,
   queryOptions: QueryOptions = {},
+  hostnameId?: string,
 ): Promise<string[]> => {
-  const { rows } = await read(
-    sql`/* searchHostnameIdsNeedingCrawlerRefresh */
+  const query = sql`/* searchHostnameIdsNeedingCrawlerRefresh */
     SELECT h.id
     FROM url_hostnames h
     LEFT JOIN hostname_crawler_configurations c
@@ -23,6 +23,9 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
       AND c.deleted_at IS NULL
     WHERE NOT h.is_blocked
       AND h.is_crawlable
+  `
+  if (hostnameId) query.append(sql` AND h.id = ${hostnameId}::uuid`)
+  query.append(sql`
     GROUP BY h.id
     HAVING (
       NOT EXISTS (
@@ -33,10 +36,8 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     )
     ORDER BY h.id ASC
     LIMIT ${limit}
-  `,
-    undefined,
-    queryOptions,
-  )
+  `)
+  const { rows } = await read(query, undefined, queryOptions)
 
   return rows.map(row => row.id)
 }

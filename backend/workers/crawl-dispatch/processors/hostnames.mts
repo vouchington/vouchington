@@ -1,5 +1,5 @@
 import { getWeeklyHostnameRefreshBatchSize } from '@services/crawls/work-limits'
-import type { CrawlHostnamesJobs } from '@queues/crawl-hostnames/types'
+import type { CrawlHostnamesJobs } from '@queues/crawl-dispatch/types'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { refreshHostnameCrawler } from '@services/crawlers/refresh'
@@ -12,7 +12,7 @@ import {
   enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-hostnames/enqueues'
+} from '@queues/crawl-dispatch/enqueues/hostnames'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { Job } from 'glide-mq'
@@ -92,13 +92,15 @@ export async function processCrawlHostnamesJob(
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<unknown> {
   const deps = getDependencies(dependencies)
+  const deduplicationId =
+    typeof job.data?.deduplication_id === 'string' ? job.data.deduplication_id : undefined
   switch (job.name as CrawlHostnamesJobs) {
     case 'enqueueCrawlHostnamesDispatcher':
-      return enqueueCrawlHostnamesDispatcher()
+      return enqueueCrawlHostnamesDispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'enqueueCrawlTier1Dispatcher':
-      return enqueueCrawlTier1Dispatcher()
+      return enqueueCrawlTier1Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'enqueueCrawlTier2Dispatcher':
-      return enqueueCrawlTier2Dispatcher()
+      return enqueueCrawlTier2Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'crawl_hostnames_dispatcher':
       return processRetainedSweep(job, save =>
         deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),

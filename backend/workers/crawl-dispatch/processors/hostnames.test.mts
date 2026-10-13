@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { processCrawlHostnamesJob } from './processors.mts'
+import { processCrawlHostnamesJob } from './hostnames.mts'
 import type { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import type { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import type { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
@@ -7,7 +7,7 @@ import type {
   dispatchTier1CrawlUrls,
   dispatchTier2CrawlUrls,
 } from '@services/crawls/dispatch-tier-urls'
-import type { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-hostnames/enqueues'
+import type { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-dispatch/enqueues/hostnames'
 import type { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import type { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { refreshHostnameCrawler } from '@services/crawlers/refresh'

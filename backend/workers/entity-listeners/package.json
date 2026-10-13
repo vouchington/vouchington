@@ -24,7 +24,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
-    "@queues/crawl-boilerplate-removal": "workspace:^",
+    "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/language-detection": "workspace:^",

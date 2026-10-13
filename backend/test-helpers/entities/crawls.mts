@@ -6,6 +6,16 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CrawlerHtmlStructuredObject } from '@voucha/types/entities/crawl'
+import { v7 as uuidv7 } from 'uuid'
+
+export async function insertOldInvalidCrawlForTest(urlId: string): Promise<string> {
+  const id = uuidv7({ msecs: Date.now() - 31 * 24 * 60 * 60 * 1000 })
+  await write(sql`/* insertOldInvalidCrawlForTest */
+    INSERT INTO crawls (id, url_id, response_status_code, markdown, network_error)
+    VALUES (${id}, ${urlId}, 500, '', 'timeout')
+  `)
+  return id
+}
 
 /**
  * Count crawls for a URL

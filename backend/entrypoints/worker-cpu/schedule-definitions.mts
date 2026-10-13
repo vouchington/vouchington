@@ -12,16 +12,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/heartbeat/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'crawl_hostnames',
+    queueName: 'crawl-dispatch',
     load: () =>
-      import('@queues/crawl-hostnames/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'crawl_html_boilerplate_removal',
-    load: () =>
-      import('@queues/crawl-boilerplate-removal/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
+      import('@queues/crawl-dispatch/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'crawl_referral_links',

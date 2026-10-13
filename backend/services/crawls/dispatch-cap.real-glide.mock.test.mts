@@ -10,18 +10,18 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { crawlHostnamesQueue } from '@queues/crawl-hostnames/queues'
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { crawlUrls } from '@queues/crawler/queues'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlUrlsPerHostname } from './dispatch-per-hostname.mts'
-import type { CrawlDispatchCursor } from '@queues/crawl-hostnames/types'
+import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from './dispatch-tier-urls.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('bounded crawl URL dispatch', () => {
-  afterAll(() => Promise.all([crawlHostnamesQueue.close(), crawlUrls.close()]))
+  afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
   it.each([1, 2] as const)('resumes Tier %s past still-eligible queued URLs', async tier => {
     const owner = await createTestUser()
     const hostname = `bounded-tier-${randomUUID()}.example.com`

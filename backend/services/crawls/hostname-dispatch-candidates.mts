@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
-import type { CrawlHostnameDispatchCursor } from '@queues/crawl-hostnames/types'
+import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 
 export type HostnameDispatchCandidate = {
   id: string

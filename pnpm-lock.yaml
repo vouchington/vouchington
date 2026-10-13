@@ -786,12 +786,9 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../queues/bluesky-follow-propagation
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../queues/crawl-boilerplate-removal
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../queues/crawl-hostnames
+        version: link:../queues/crawl-dispatch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../queues/crawl-referral-links
@@ -1673,12 +1670,9 @@ importers:
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -1703,15 +1697,12 @@ importers:
       '@workers/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../workers/bedrock-embeddings-batch
-      '@workers/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../workers/crawl-boilerplate-removal
       '@workers/crawl-browser':
         specifier: workspace:^
         version: link:../../workers/crawl-browser
-      '@workers/crawl-hostnames':
+      '@workers/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../workers/crawl-hostnames
+        version: link:../../workers/crawl-dispatch
       '@workers/crawl-referral-links':
         specifier: workspace:^
         version: link:../../workers/crawl-referral-links
@@ -2848,7 +2839,19 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/crawl-boilerplate-removal:
+  backend/queues/crawl-browser:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/queues/crawl-dispatch:
     dependencies:
       '@data-stores/valkey':
         specifier: workspace:^
@@ -2866,38 +2869,11 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/crawl-browser:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/crawl-embeds:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/crawl-hostnames:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -5290,12 +5266,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-embeds':
         specifier: workspace:^
         version: link:../../queues/crawl-embeds
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -5551,9 +5527,9 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
+        version: link:../../queues/crawl-dispatch
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
@@ -8776,18 +8752,15 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
-      '@queues/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-embeds':
         specifier: workspace:^
         version: link:../../queues/crawl-embeds
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -11978,49 +11951,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/crawl-boilerplate-removal:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
-      '@services/boilerplate-removals':
-        specifier: workspace:^
-        version: link:../../services/boilerplate-removals
-      '@services/crawlers':
-        specifier: workspace:^
-        version: link:../../services/crawlers
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../../services/crawls
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
-      '@services/urls-hostnames':
-        specifier: workspace:^
-        version: link:../../services/urls-hostnames
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/workers/crawl-browser:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12073,6 +12003,67 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/workers/crawl-dispatch:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@jongleberry/vurst-html':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
+      '@queues/crawler':
+        specifier: workspace:^
+        version: link:../../queues/crawler
+      '@services/boilerplate-removals':
+        specifier: workspace:^
+        version: link:../../services/boilerplate-removals
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../../services/crawlers
+      '@services/crawls':
+        specifier: workspace:^
+        version: link:../../services/crawls
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@queues/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/crawl-referral-links
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
+      '@queues/unfurl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/unfurl-referral-links
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../../services/urls-hostnames
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/workers/crawl-embeds:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12090,43 +12081,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/crawl-hostnames:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
-      '@queues/crawler':
-        specifier: workspace:^
-        version: link:../../queues/crawler
-      '@services/crawlers':
-        specifier: workspace:^
-        version: link:../../services/crawlers
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../../services/crawls
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/crawl-referral-links
-      '@queues/find-your-friends':
-        specifier: workspace:^
-        version: link:../../queues/find-your-friends
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/unfurl-referral-links
 
   backend/workers/crawl-referral-links:
     dependencies:
@@ -12268,9 +12222,9 @@ importers:
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
+        version: link:../../queues/crawl-dispatch
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler

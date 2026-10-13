@@ -4,7 +4,7 @@ import {
   enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-hostnames/enqueues'
+} from '@queues/crawl-dispatch/enqueues/hostnames'
 import {
   enqueueAllEmbeddingReconciliationRoots,
   enqueueEmbeddingsBatchPollDispatcher,
@@ -38,7 +38,7 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'crawl-hostnames-dispatch',
-    queue_name: 'crawl_hostnames',
+    queue_name: 'crawl-dispatch',
     job_name: 'crawl_hostnames_dispatcher',
     description: 'Dispatch hostname crawl jobs from the hostnames source of truth',
     source_table: 'url_hostnames',
@@ -49,7 +49,7 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'crawl-tier1-dispatch',
-    queue_name: 'crawl_hostnames',
+    queue_name: 'crawl-dispatch',
     job_name: 'crawl_tier1_dispatcher',
     description: 'Dispatch tier-1 hostname crawl jobs from the hostnames source of truth',
     source_table: 'urls',
@@ -57,7 +57,7 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'crawl-tier2-dispatch',
-    queue_name: 'crawl_hostnames',
+    queue_name: 'crawl-dispatch',
     job_name: 'crawl_tier2_dispatcher',
     description: 'Dispatch tier-2 hostname crawl jobs from the hostnames source of truth',
     source_table: 'urls',

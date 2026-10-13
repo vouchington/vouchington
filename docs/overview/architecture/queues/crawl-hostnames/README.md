@@ -1,6 +1,6 @@
 # Crawl Hostnames System
 
-Source entrypoint: [backend/queues/crawl-hostnames/README.md](../../../../../backend/queues/crawl-hostnames/README.md)
+Source entrypoint: [backend/queues/crawl-dispatch/README.md](../../../../../backend/queues/crawl-dispatch/README.md)
 
 Handles hostname-level crawl orchestration.
 
@@ -10,7 +10,7 @@ See [Crawling Architecture](../../crawling.md) for the dispatcher flow and crawl
 
 ### Queues
 
-- `crawl_hostnames` - All hostname-level crawl operations
+- `crawl-dispatch` - All hostname-level crawl operations
   - `enqueueCrawlHostnamesDispatcher` - Hourly, requests the coalesced `crawl_hostnames_dispatcher` sweep; it enqueues bounded never-swept/overdue hostname pages with a retained sweep cursor
   - `crawl_urls_per_hostname_dispatcher` - Dispatches individual URL crawls for a hostname
   - `enqueueCrawlTier1Dispatcher` - Daily 2:30 AM, requests the coalesced `crawl_tier1_dispatcher` sweep (7-day cycle)

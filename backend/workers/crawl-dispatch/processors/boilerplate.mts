@@ -1,4 +1,4 @@
-import { getCrawlBoilerplateRemovalWorkLimit } from '@queues/crawl-boilerplate-removal/config'
+import { getCrawlBoilerplateRemovalWorkLimit } from '@queues/crawl-dispatch/config'
 import { getLatestHtmlByUrlIds } from '@services/crawls/get-html-by-url-ids'
 import {
   searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId,
@@ -16,7 +16,7 @@ import type { CrawlHtmlTempFile } from '@services/crawls/s3'
 import {
   filterValidUtf8HtmlFiles,
   selectHtmlFilesWithinByteBudget,
-} from './processors/html-file-selection.mts'
+} from './html-file-selection.mts'
 
 async function readHtmlFiles(files: CrawlHtmlTempFile[]): Promise<Buffer[]> {
   const htmlPages: Buffer[] = []
@@ -43,9 +43,12 @@ async function extractDomRemovalsExclusively(files: CrawlHtmlTempFile[]) {
   }
 }
 
-export const processBoilerplateRemovalDispatcher = (): Promise<ParentPathCandidate[]> => {
+export const processBoilerplateRemovalDispatcher = (
+  hostnameId?: string,
+): Promise<ParentPathCandidate[]> => {
   return searchParentPathsNeedingBoilerplateRemoval(
     getCrawlBoilerplateRemovalWorkLimit('batch_size'),
+    { hostnameId },
   )
 }
 
