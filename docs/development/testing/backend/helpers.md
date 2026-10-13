@@ -164,6 +164,22 @@ wait. See the [election-votes service](../../../overview/architecture/services/e
 Its test runs in `backend-data-stores`, retaining worker setup and data-store teardown even though
 the helper and test live together here.
 
+## Owned vote-route admissions
+
+Register `observeOwnedVoteRouteAdmissions` before invoking the owned route and register its
+returned cleanup with `onTestFinished`. Its ownership predicate selects actual queue-call payloads
+inside captured retry attempts; `requireAdmission(kind)` requires a concrete owned enqueue, not
+merely a returned route response. `observeOwnedPenaltyAdmissions` scopes by owned user IDs and
+observes admission settlement without claiming worker completion.
+
+Cleanup settles the growing set of owned retry attempts, including follow-up admissions started
+by workers during settlement. For queues with installed worker listeners, it keeps observing
+runnable `waiting`, `prioritized`, and `active` jobs until their exact job terminal receipt.
+Genuinely delayed or suspended work stays with canonical teardown; this does not prove completion
+of the production debounce interval. Worker-wide errors lack owned-job identity and are retained
+as diagnostics when an owned observation expires. Restore instrumentation only after settlement;
+`settleVoteRouteOperations` preserves the ordered, identity-distinct failure reasons.
+
 ## Owned queue-admission boundaries
 
 Register an owned admission observer before invoking the route or mutation, and register cleanup
