@@ -181,7 +181,7 @@ export const nativeUserProfilePostApiFixtureCases: ApiFixtureCase[] = [
       },
       { ...profileReviewPost, staff_provenance: { created_via: 'web', oauth_client: null } },
     ]),
-    consumers: [],
+    consumers: ['dotnet-core', 'swift-core', 'swift-ui'],
     migratedFrom: [],
   },
   {
