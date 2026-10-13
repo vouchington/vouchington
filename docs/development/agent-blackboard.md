@@ -106,8 +106,9 @@ pnpm exec agent-blackboard sessions get my-session-id
 Pass the explicit `{"type": ..., ...}` payload to `append`. The CLI's `--file foo.md` convenience
 wraps Markdown as `{markdown: ...}` without the `type` field required by later pipeline stages.
 These commands are for manual inspection by a person. An agent records journal entries with the MCP
-`journal_append` tool, never through the worktree's `node_modules/.bin`; the credential is withheld from
-shell commands (see [Server unavailable](#server-unavailable)).
+`journal_append` tool, never through the worktree's `node_modules/.bin`. Sandboxed Claude and Codex shell commands don't
+receive the credential; see the
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list) for each harness.
 
 ## MCP server, JS client, and CLI integration
 

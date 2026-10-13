@@ -172,7 +172,7 @@ probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
 
 The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
-this deny list, so the token stays hidden from shell commands while the server can still use it.
+this deny list, so the token stays hidden from sandboxed Claude and Codex shell commands while the server can still use it.
 The token is meant for the server; agents journal through it, and never ask for an unsandboxed run
 just to obtain the token ([Server unavailable](agent-blackboard.md#server-unavailable)). The exposure differs by harness: an
 unsandboxed Claude command still receives the denied variables, Codex hides them from its shell
