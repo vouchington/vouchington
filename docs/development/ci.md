@@ -10,6 +10,9 @@ The [EXPLAIN ANALYZE seed guide](postgresql/explain-analyze/README.md#1-seed-tes
 describes the incremental post-seed timing, PostgreSQL observer, and host/container resource files
 retained by the failed-run artifact. Use those records to locate a seed-step timeout before
 changing the seed workload or its bound.
+The `pnpm run explain:coverage` report is local-only analysis of completed EXPLAIN results;
+Nightly produces the artifact, while Tooling CI runs its classifier and artifact-validation
+tests. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).
 
 AST-grep scans honor the severity declared in each rule: errors block CI and warnings report staged
 cleanup work. Entrypoints must not use a bare `--error`, which would promote warning rollouts.

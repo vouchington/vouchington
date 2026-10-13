@@ -12,6 +12,10 @@ The test uses the configured analyzer rather than injecting a plugin; see the
 in the normal CI checker; [translation checks](reference-tests-translation-catalog-and-locale-checks.md)
 owns the small-fixture unit boundary.
 
+Run `pnpm exec vitest run --project static-analysis-tools static-code-analysis/repo-file-policy/explain-coverage.test.mts`
+for the local-only `pnpm run explain:coverage` classifier, exact query-shape matching, and partial
+artifact rejection. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).
+
 **Init column:** `monorepo` = `./dev/initialize monorepo` is sufficient. `web` = requires `./dev/initialize web` (Docker, DB, Valkey, `.env`, HTTPS certs, CF Worker env). A row marked `web` here is the tested/documented baseline, not necessarily a hard floor — some `web`-tagged commands only need DB/Valkey and would also pass under `./dev/initialize backend`; when in doubt, initialize `web`.
 
 **Sourcing `.env`:** `./dev/initialize` writes `.env` but does not export it into your shell. `./dev/tmux`'s service windows source it automatically. Before running a DB/Valkey-backed command in your own shell, run `source .env`; otherwise the data-store globalSetup fails with `DATABASE_URL is not set in the current shell`.

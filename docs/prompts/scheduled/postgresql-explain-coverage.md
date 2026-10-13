@@ -4,11 +4,14 @@ per run.
 1. Capture custom and generic plans using the steps in
    [the EXPLAIN prompt](postgresql-explain-analyze.md#capture-the-plans), passing the isolated
    `DATABASE_URL` and `VALKEY_URL` inline for each local command. Alternatively, download the
-   `explain-analyze-results` artifact from the newest `main` Nightly run. If neither is available,
-   report `Outcome: incomplete`.
+   `explain-analyze-results` artifact only from a successfully completed `main` Nightly run whose
+   head SHA matches the source checkout. A failed run can upload a partial artifact. If neither a
+   complete local run nor a matching successful artifact is available, report `Outcome: incomplete`.
 2. Run `pnpm run explain:coverage`, passing the downloaded `results-*.json` path after `--` when
-   using an artifact. Select one uncovered read on a user-facing path: feeds, posts, users, topics,
-   communities, or search. Prefer these over workers. Skip a read already covered by an open PR.
+   using an artifact. The command rejects an artifact missing any registered scenario. Select one
+   confirmed uncovered read on a user-facing path: feeds, posts, users, topics, communities, or
+   search. Prefer these over workers. Skip ambiguous same-name reads and any read already covered
+   by an open PR.
 3. Add the smallest representative seed rows and a scenario that calls the real service. Register
    its `registerScenarioContract` budget at the measured value plus 20% for both plan-cache modes.
    The contract and scenario identity must remain in the owning EXPLAIN registry.

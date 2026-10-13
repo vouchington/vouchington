@@ -1,19 +1,12 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { extractExecutedPostgresSql } from 'no-mistakes'
+import { LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
+import { EXPLAIN_SCENARIO_MANIFEST } from '../backend/scripts/explain-analyze/scenario-manifest.mts'
+import { latestResultsPath, trackedRuntimeSources, type Source } from './explain-coverage-files.mts'
 
 type SqlFact = Awaited<ReturnType<typeof extractExecutedPostgresSql>>[number]
-type Source = { fileName: string; source: string }
-
-const REPO_ROOT = resolve(import.meta.dirname, '..')
-const OUTPUT_DIR = join(REPO_ROOT, 'backend/scripts/explain-analyze/output')
-const RUNTIME_ROOTS = [
-  'backend/services',
-  'backend/modules',
-  'backend/workers',
-  'backend/data-stores',
-]
+type CapturedResult = { name: string; query_text: string; scenario_id: string }
 
 export interface UncoveredRead {
   name: string
@@ -27,13 +20,19 @@ export interface CoverageReport {
   reads: number
   coveredReads: number
   uncoveredReads: UncoveredRead[]
+  ambiguousReads: UncoveredRead[]
 }
 
 export function isRead(sqlText: string | null): boolean {
   if (!sqlText) return false
   const statement = sqlText.replace(/^\s*\/\*[\s\S]*?\*\//, '').trimStart()
   if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
-  return /^WITH\b/i.test(statement) && !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(statement)
+  return (
+    /^WITH\b/i.test(statement) &&
+    !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(
+      statement.replace(/\bFOR\s+(?:NO\s+KEY\s+)?UPDATE\b/gi, ''),
+    )
+  )
 }
 
 export function stripPlanCacheMode(name: string): string {
@@ -47,47 +46,65 @@ function groupForFile(fileName: string): string {
 
 export function buildCoverageReport(
   facts: readonly SqlFact[],
-  capturedNames: readonly string[],
+  results: readonly CapturedResult[],
 ): CoverageReport {
-  const covered = new Set(capturedNames.map(stripPlanCacheMode))
+  const captures = new Map<string, CapturedResult[]>()
+  for (const result of results) {
+    const annotation = result.query_text.match(LEADING_QUERY_ANNOTATION_PATTERN)?.[1]?.trim()
+    if (!annotation) continue
+    const name = stripPlanCacheMode(result.name)
+    if (name !== annotation && !name.startsWith(`${annotation}:`)) continue
+    const existing = captures.get(annotation) ?? []
+    existing.push(result)
+    captures.set(annotation, existing)
+  }
+  const annotationCounts = new Map<string, number>()
+  for (const fact of facts) {
+    if (fact.annotation && isRead(fact.sqlText))
+      annotationCounts.set(fact.annotation, (annotationCounts.get(fact.annotation) ?? 0) + 1)
+  }
   let annotatedStatements = 0
   let reads = 0
   let coveredReads = 0
   const uncoveredReads: UncoveredRead[] = []
+  const ambiguousReads: UncoveredRead[] = []
 
   for (const fact of facts) {
     if (!fact.annotation) continue
     annotatedStatements++
     if (!isRead(fact.sqlText)) continue
     reads++
-    if (covered.has(fact.annotation)) {
+    const matchingCaptures = captures.get(fact.annotation) ?? []
+    const exactMatch =
+      fact.complete &&
+      matchingCaptures.some(result => result.query_text.trim() === fact.sqlText?.trim())
+    const uniqueIncomplete = !fact.complete && (annotationCounts.get(fact.annotation) ?? 0) === 1
+    if (matchingCaptures.length > 0 && (exactMatch || uniqueIncomplete)) {
       coveredReads++
       continue
     }
-    uncoveredReads.push({
+    const entry = {
       name: fact.annotation,
       fileName: fact.fileName,
       line: fact.line,
       group: groupForFile(fact.fileName),
-    })
+    }
+    const destination =
+      matchingCaptures.length > 0 && !fact.complete ? ambiguousReads : uncoveredReads
+    destination.push(entry)
   }
 
-  return { annotatedStatements, reads, coveredReads, uncoveredReads }
+  return { annotatedStatements, reads, coveredReads, uncoveredReads, ambiguousReads }
 }
 
-export function formatCoverageReport(report: CoverageReport): string {
+function formatGroups(entries: readonly UncoveredRead[]): string[] {
   const groups = new Map<string, UncoveredRead[]>()
-  for (const read of report.uncoveredReads) {
+  for (const read of entries) {
     const group = groups.get(read.group) ?? []
     group.push(read)
     groups.set(read.group, group)
   }
-  const lines = [
-    `Annotated statements: ${report.annotatedStatements}`,
-    `Reads: ${report.reads}`,
-    `Covered reads: ${report.coveredReads}`,
-    `Uncovered reads: ${report.uncoveredReads.length}`,
-  ]
+  const lines: string[] = []
   for (const [group, reads] of [...groups].toSorted(
     ([leftName, left], [rightName, right]) =>
       right.length - left.length || leftName.localeCompare(rightName),
@@ -102,55 +119,57 @@ export function formatCoverageReport(report: CoverageReport): string {
       lines.push(`  ${read.name} — ${read.fileName}:${read.line}`)
     }
   }
-  return lines.join('\n')
+  return lines
 }
 
-function trackedRuntimeSources(): Source[] {
-  const files = execFileSync('git', ['ls-files', '-z', '--', ...RUNTIME_ROOTS], {
-    cwd: REPO_ROOT,
-    maxBuffer: 16 * 1024 * 1024,
-  })
-    .toString()
-    .split('\0')
-    .filter(Boolean)
-    .filter(
-      file =>
-        /\.(?:ts|mts|tsx|js)$/.test(file) &&
-        !/(?:\.test\.|\/__tests__\/|\/test-helpers\/|\/migration-runner\/)/.test(file),
-    )
-  return files.map(fileName => ({
-    fileName,
-    source: readFileSync(join(REPO_ROOT, fileName), 'utf8'),
-  }))
-}
-
-function latestResultsPath(): string {
-  const latest = readdirSync(OUTPUT_DIR)
-    .filter(name => /^results-.*\.json$/.test(name))
-    .toSorted()
-    .at(-1)
-  if (!latest) throw new Error('No EXPLAIN results found; run explain:run or pass a results path')
-  return join(OUTPUT_DIR, latest)
+export function formatCoverageReport(report: CoverageReport): string {
+  return [
+    `Annotated statements: ${report.annotatedStatements}`,
+    `Reads: ${report.reads}`,
+    `Covered reads: ${report.coveredReads}`,
+    `Uncovered reads: ${report.uncoveredReads.length}`,
+    `Ambiguous reads: ${report.ambiguousReads.length}`,
+    ...formatGroups(report.uncoveredReads),
+    ...(report.ambiguousReads.length > 0
+      ? [
+          '',
+          'Ambiguous captured names (review before adding a scenario)',
+          ...formatGroups(report.ambiguousReads),
+        ]
+      : []),
+  ].join('\n')
 }
 
 export async function reportCoverage(
   sources: Source[],
   resultsPath: string,
+  expectedScenarioIds: readonly string[] = EXPLAIN_SCENARIO_MANIFEST,
 ): Promise<CoverageReport> {
   const results = JSON.parse(readFileSync(resultsPath, 'utf8')) as unknown
-  if (!Array.isArray(results) || results.some(result => typeof result?.name !== 'string')) {
+  if (
+    !Array.isArray(results) ||
+    results.some(
+      result =>
+        typeof result?.name !== 'string' ||
+        typeof result?.query_text !== 'string' ||
+        typeof result?.scenario_id !== 'string',
+    )
+  ) {
     throw new Error(`Invalid EXPLAIN results: ${resultsPath}`)
   }
+  const capturedScenarioIds = new Set(results.map(result => result.scenario_id as string))
+  if (
+    expectedScenarioIds.some(id => !capturedScenarioIds.has(id)) ||
+    [...capturedScenarioIds].some(id => !expectedScenarioIds.includes(id))
+  )
+    throw new Error(`Incomplete EXPLAIN scenario artifact: ${resultsPath}`)
   const facts = await extractExecutedPostgresSql({
     sources,
     importSpecifier: '@data-stores/psql',
     executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
     executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
   })
-  return buildCoverageReport(
-    facts,
-    results.map(result => result.name as string),
-  )
+  return buildCoverageReport(facts, results as CapturedResult[])
 }
 
 if (import.meta.main) {

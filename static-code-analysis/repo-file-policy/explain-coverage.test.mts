@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { formatCoverageReport, reportCoverage } from '../explain-coverage.mts'
+import { formatCoverageReport, isRead, reportCoverage } from '../explain-coverage.mts'
 
 describe('EXPLAIN coverage', () => {
   it('reports uncovered reads from two runtime sources and one EXPLAIN result', async () => {
@@ -28,8 +28,17 @@ export async function getUsers() { return read('/* getUsers */ TABLE users') }
       writeFileSync(
         resultsPath,
         JSON.stringify([
-          { name: 'getPosts:force_custom_plan' },
-          { name: 'getTopics:force_generic_plan' },
+          {
+            name: 'getPosts:force_custom_plan',
+            query_text: '/* getPosts */ SELECT id FROM posts',
+            scenario_id: 'posts-plan',
+          },
+          {
+            name: 'getTopics:baseline:force_generic_plan',
+            query_text:
+              '/* getTopics */ WITH matching AS (SELECT id FROM topics) SELECT id FROM matching',
+            scenario_id: 'topics-plan',
+          },
         ]),
       )
 
@@ -42,6 +51,7 @@ export async function getUsers() { return read('/* getUsers */ TABLE users') }
           },
         ],
         resultsPath,
+        ['posts-plan', 'topics-plan'],
       )
 
       expect(report).toMatchObject({ annotatedStatements: 4, reads: 3, coveredReads: 2 })
@@ -53,7 +63,71 @@ export async function getUsers() { return read('/* getUsers */ TABLE users') }
           group: 'workers/accounts',
         },
       ])
-      expect(formatCoverageReport(report)).toContain('Uncovered reads: 1\n\nworkers/accounts (1)')
+      expect(formatCoverageReport(report)).toContain('Ambiguous reads: 0\n\nworkers/accounts (1)')
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('separates same-named query shapes without changing SQL literal whitespace', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-shapes-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      const source = `import { read } from '@data-stores/psql'
+read("/* getPostByAny */ SELECT id FROM posts WHERE slug = 'a  b'")
+read("/* getPostByAny */ SELECT id FROM posts WHERE slug = 'a b'")
+read("/* getPostByAny */ SELECT id FROM posts WHERE slug = 'sql_placeholder_1'")
+read(\`/* getPostByAny */ SELECT id FROM posts WHERE slug = \${slug}\`)
+read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
+`
+      writeFileSync(
+        resultsPath,
+        JSON.stringify([
+          {
+            name: 'getPostByAny:baseline:force_custom_plan',
+            query_text: "/* getPostByAny */ SELECT id FROM posts WHERE slug = 'a  b'",
+            scenario_id: 'post-plan',
+          },
+          {
+            name: 'getUnique:force_generic_plan',
+            query_text: "/* getUnique */ SELECT id FROM posts WHERE slug = 'a b'",
+            scenario_id: 'unique-plan',
+          },
+        ]),
+      )
+      const report = await reportCoverage(
+        [{ fileName: 'backend/services/posts/get.mts', source }],
+        resultsPath,
+        ['post-plan', 'unique-plan'],
+      )
+      expect(report).toMatchObject({ annotatedStatements: 5, reads: 5, coveredReads: 1 })
+      expect(report.uncoveredReads.map(read => read.line)).toEqual([3, 4, 6])
+      expect(report.ambiguousReads.map(read => read.line)).toEqual([5])
+      expect(formatCoverageReport(report)).toContain('Ambiguous reads: 1')
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('counts locking CTE reads and rejects incomplete artifacts', async () => {
+    expect(
+      isRead('/* lock */ WITH rows AS (SELECT id FROM jobs FOR UPDATE) SELECT id FROM rows'),
+    ).toBe(true)
+    expect(
+      isRead(
+        '/* write */ WITH rows AS (UPDATE jobs SET done = true RETURNING id) SELECT id FROM rows',
+      ),
+    ).toBe(false)
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-partial-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify([{ name: 'lock', query_text: '/* lock */ SELECT 1', scenario_id: 'first' }]),
+      )
+      await expect(reportCoverage([], resultsPath, ['first', 'later'])).rejects.toThrow(
+        'Incomplete EXPLAIN scenario artifact',
+      )
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }

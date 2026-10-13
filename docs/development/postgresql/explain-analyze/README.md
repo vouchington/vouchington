@@ -285,11 +285,13 @@ pnpm run explain:analyze
 
 ### 4. Find reads without a scenario
 
-`explain:coverage` compares annotated runtime SQL with captured query names. It reports the number
-of annotated statements, reads, covered reads, and uncovered reads, then groups uncovered reads
-by their owning backend directory. It counts `SELECT`, `TABLE`, and read-only `WITH` statements;
-writes stay in the annotated-statement total. Pass a downloaded CI results file when no local
-capture is available.
+`explain:coverage` compares annotated runtime SQL with captured query names and available exact
+query text. It reports annotated statements, reads, covered reads, confirmed uncovered reads, and
+ambiguous same-name reads, then groups the latter two by owning backend directory. A scenario
+suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
+`TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
+the annotated-statement total. A partial result artifact missing a registered scenario is rejected.
+Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 
 ```bash
 pnpm run explain:coverage
@@ -297,8 +299,9 @@ pnpm run explain:coverage -- /path/to/results.json
 ```
 
 The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
-sources. It removes only the custom/generic plan-cache suffix before matching a captured name to
-its annotation. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
+sources. When an annotation names multiple source statements, it counts an exact complete SQL
+match as covered and displays any incomplete matches separately as ambiguous. It never normalizes
+SQL literal whitespace or guessed placeholders. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
 uses the largest user-facing gaps to choose one new scenario per run.
 
 ### 5. Dump results for analysis

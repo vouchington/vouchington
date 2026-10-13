@@ -766,6 +766,11 @@ Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in
 its original pre-launch `CREATE TABLE`.
 
+`pnpm run explain:coverage` is a local-only, read-only report over completed EXPLAIN artifacts.
+Its `static-analysis-tools` fixture tests run in Tooling CI; the report itself is not a
+workflow gate because it needs a successful scenario artifact. The [EXPLAIN coverage guide](../../postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario)
+owns its invocation, scenario-manifest validation, and ambiguity policy.
+
 Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation shapes,
 `NOT IN` subqueries, `COUNT` for existence, `uuidv7(...)` in predicates, and the
 active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) live in
