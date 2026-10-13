@@ -192,6 +192,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'media-delivery-replay-scoped',
   'community-with-viewer',
   'comment-ancestors-batch',
+  'notification-block-set',
   'hostname-policies-batch',
   'messaging-eligibility-batch',
   'copyright-staff-case-batch',

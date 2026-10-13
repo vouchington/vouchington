@@ -30,6 +30,12 @@ Service for storing, listing, mutating, and reconciling per-user notifications i
 
 ## Notification Creation Rules
 
+### Conversation notifications
+
+- For direct messages, one indexed block/mute lookup checks every recipient against the sender in both directions. A live relation suppresses that recipient's notification; other participants still receive theirs.
+- The worker upserts eligible recipients in one statement per conversation message and queues push delivery with the returned recipient and notification IDs.
+- Modmail is official community communication and bypasses the block/mute lookup.
+
 ### Community notifications
 
 - Application decisions, real role changes, and ownership transfers are inserted in the same transaction as the state change; push is queued only after commit.

@@ -7,6 +7,7 @@ import {
   processConversationMessageNotification,
   processDeliverNotificationPushIntent,
   processReconcileNotificationPushIntents,
+  processFollowNotification,
 } from './processors.mts'
 import type { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import type { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
@@ -22,9 +23,11 @@ import {
   createTestDirectConversation,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestBlock,
 } from '@voucha/test-helpers'
 import { openModmailThread } from '@services/modmail/threads'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
+import { listNotifications } from '@services/notifications/list'
 
 const mockReconcileNotificationsForPost = vi.fn<typeof reconcileNotificationsForPost>()
 const mockReconcileNotificationsForRssFeedItem =
@@ -90,6 +93,18 @@ describe('processConversationMessageNotification', () => {
     const userIds = allArgs.map(a => a.userId)
     expect(userIds).toContain(subject.id)
     expect(userIds).not.toContain(owner.id)
+  })
+})
+
+describe('processFollowNotification', () => {
+  it('does not notify a user blocked by the follower', async () => {
+    const followee = await createTestUser()
+    const follower = await createTestUser()
+    await insertTestBlock(follower.id, followee.id)
+
+    await processFollowNotification({ followeeId: followee.id, followerId: follower.id })
+
+    expect((await listNotifications(followee.id)).results).toHaveLength(0)
   })
 })
 

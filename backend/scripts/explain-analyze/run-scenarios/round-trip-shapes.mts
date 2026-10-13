@@ -13,6 +13,7 @@ import {
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedUser } from '../run-support.mts'
 import { commentSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
+import { runNotificationBlockSet } from './notification-block-set.mts'
 
 async function runCommentAncestorsBatch(): Promise<void> {
   registerScenarioContract('comment-ancestors-batch', {
@@ -173,6 +174,7 @@ async function runUserAgentReadFirst(): Promise<void> {
 
 export async function runRoundTripShapeScenarios(): Promise<void> {
   await runCommentAncestorsBatch()
+  await runNotificationBlockSet()
   await runCommunityWithViewer()
   await runHostnamePolicies()
   await runMessagingEligibility()

@@ -1,5 +1,3 @@
-/* oxlint-disable max-lines -- Notification processor exports stay centralized for worker registration. */
-import { UnrecoverableError } from '@modules/queue-errors'
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
 import { deleteNotification } from '@services/notifications/mutations'
@@ -7,11 +5,8 @@ import { createFollowNotification } from '@services/notifications/create-follow-
 import { getFollowerInfoForNotification } from '@services/notifications/get-follower-info'
 import { createReferralSignupNotification } from '@services/notifications/create-referral-signup-notification'
 import { createReferralClickNotification } from '@services/notifications/create-referral-click-notification'
-import { createDirectMessageNotification } from '@services/notifications/create-direct-message-notification'
-import { createModmailNotification } from '@services/notifications/create-modmail-notification'
-import { getConversationNotificationContext } from '@services/notifications/get-conversation-notification-context'
 import { getPublicUserByAny } from '@services/users'
-import { isUserBlockedOrMuted } from '@services/entity-relations'
+import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations'
 import {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueDeliverNotificationPushIntent,
@@ -36,6 +31,7 @@ export {
   processCommunityActivityDigestDispatch,
 } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
+export { processConversationMessageNotification } from './processors/conversation.mts'
 export {
   processDeliverCopyrightNotice,
   processReconcileCopyrightDeliveryIntents,
@@ -126,7 +122,7 @@ export async function processFollowNotification(data: { followeeId: string; foll
   const follower = await getFollowerInfoForNotification(data.followerId)
   if (!follower) return
 
-  if (await isUserBlockedOrMuted(data.followeeId, data.followerId)) return
+  if (await areUsersBlockedOrMutedEitherWay(data.followeeId, data.followerId)) return
 
   const isReferralSignup = follower.referrer_user_id === data.followeeId
   const createdNotifications = await createFollowNotification(
@@ -161,45 +157,4 @@ export async function processReferralClickNotification(data: {
     data.landingUrl,
   )
   await dispatchCreatedNotificationPushes(createdNotifications)
-}
-
-export async function processConversationMessageNotification(
-  data: {
-    conversationId: string
-    messageId: string
-    senderId: string
-  },
-  dependencies?: Partial<NotificationProcessorDependencies>,
-) {
-  const context = await getConversationNotificationContext(data.conversationId, data.senderId)
-  if (!context) return
-
-  // Modmail is official community communication — block/mute must not suppress it.
-  let eligibleUserIds = context.participant_user_ids
-  if (context.channel_type === 'direct_message') {
-    const blockedFlags = await Promise.all(
-      eligibleUserIds.map(userId => isUserBlockedOrMuted(userId, data.senderId)),
-    )
-    eligibleUserIds = eligibleUserIds.filter((_, i) => !blockedFlags[i])
-  }
-
-  const notificationResults = await Promise.all(
-    eligibleUserIds.map(userId => {
-      switch (context.channel_type) {
-        case 'modmail': {
-          if (!context.community_slug) {
-            throw new UnrecoverableError('modmail conversation is missing community_slug')
-          }
-          const targetPath = `/messages/modmail/${context.community_slug}/${data.conversationId}`
-          return createModmailNotification(userId, data.conversationId, targetPath)
-        }
-        case 'direct_message':
-          return createDirectMessageNotification(userId, data.conversationId)
-        default:
-          throw new UnrecoverableError(`unknown channel_type: ${String(context.channel_type)}`)
-      }
-    }),
-  )
-  const allCreated = notificationResults.flat() as CreatedNotification[]
-  await dispatchCreatedNotificationPushes(allCreated, dependencies)
 }

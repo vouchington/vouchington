@@ -25,5 +25,5 @@ clients reset traversal on community or thread changes.
 - `getCommunitySavedReplies(communityId)` / `createSavedReply` / `deleteSavedReply` — manage templates
 
 Note: modmail intentionally bypasses block/mute checks. `processConversationMessageNotification`
-skips `isUserBlockedOrMuted` when `channel_type === 'modmail'` because modmail is official
+skips `getUserIdsBlockedOrMutedEitherWay` when `channel_type === 'modmail'` because modmail is official
 community communication and must reach the subject user regardless of their block settings.

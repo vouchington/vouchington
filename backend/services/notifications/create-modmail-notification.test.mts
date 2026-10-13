@@ -5,7 +5,7 @@ import {
   insertTestCommunityMember,
   createTestModmailThread,
 } from '@voucha/test-helpers'
-import { createModmailNotification } from './create-modmail-notification.mts'
+import { createModmailNotifications } from './create-modmail-notification.mts'
 
 async function setupCommunityAndThread(ownerId: string, subjectId: string) {
   const community = await insertTestCommunity({ createdById: ownerId })
@@ -24,8 +24,8 @@ describe('create-modmail-notification', () => {
     const subject = await createTestUser()
     const { community, thread } = await setupCommunityAndThread(owner.id, subject.id)
 
-    const result = await createModmailNotification(
-      owner.id,
+    const result = await createModmailNotifications(
+      [owner.id],
       thread.id,
       `/communities/${community.slug}/settings/moderation`,
     )
@@ -41,10 +41,10 @@ describe('create-modmail-notification', () => {
     const { community, thread } = await setupCommunityAndThread(owner.id, subject.id)
 
     const targetPath = `/communities/${community.slug}/settings/moderation`
-    const first = await createModmailNotification(owner.id, thread.id, targetPath)
+    const first = await createModmailNotifications([owner.id], thread.id, targetPath)
     expect(first).toHaveLength(1)
 
-    const second = await createModmailNotification(owner.id, thread.id, targetPath)
+    const second = await createModmailNotifications([owner.id], thread.id, targetPath)
     expect(second).toHaveLength(1)
     expect(second[0]!.user_id).toBe(owner.id)
   })

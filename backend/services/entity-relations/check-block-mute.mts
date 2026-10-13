@@ -18,8 +18,11 @@ const muteTable = getEntityRelationTableNameOrThrow({
  * Returns true if either user has blocked or muted the other.
  * Used to suppress notifications between users with a block/mute relation.
  */
-export async function isUserBlockedOrMuted(userId1: string, userId2: string): Promise<boolean> {
-  const query = sql`/* isUserBlockedOrMuted */ SELECT (EXISTS (SELECT 1 FROM `
+export async function areUsersBlockedOrMutedEitherWay(
+  userId1: string,
+  userId2: string,
+): Promise<boolean> {
+  const query = sql`/* areUsersBlockedOrMutedEitherWay */ SELECT (EXISTS (SELECT 1 FROM `
   query.append(blockTable)
   query.append(
     sql` WHERE ((subject_id = ${userId1} AND object_id = ${userId2}) OR (subject_id = ${userId2} AND object_id = ${userId1})) AND deleted_at IS NULL) OR EXISTS (SELECT 1 FROM `,
@@ -30,6 +33,28 @@ export async function isUserBlockedOrMuted(userId1: string, userId2: string): Pr
   )
   const { rows } = await read(query)
   return rows[0]?.blocked === true
+}
+
+/** Returns recipients with a live block or mute relation to the sender in either direction. */
+export async function getUserIdsBlockedOrMutedEitherWay(
+  senderId: string,
+  recipientIds: string[],
+): Promise<Set<string>> {
+  if (recipientIds.length === 0) return new Set()
+  const query = sql`/* getUserIdsBlockedOrMutedEitherWay */ SELECT user_id FROM (
+    SELECT CASE WHEN subject_id = ${senderId} THEN object_id ELSE subject_id END AS user_id FROM `
+  query.append(blockTable)
+  query.append(
+    sql` WHERE ((subject_id = ${senderId} AND object_id = ANY(${recipientIds}::uuid[])) OR (object_id = ${senderId} AND subject_id = ANY(${recipientIds}::uuid[]))) AND deleted_at IS NULL
+    UNION SELECT CASE WHEN subject_id = ${senderId} THEN object_id ELSE subject_id END AS user_id FROM `,
+  )
+  query.append(muteTable)
+  query.append(
+    sql` WHERE ((subject_id = ${senderId} AND object_id = ANY(${recipientIds}::uuid[])) OR (object_id = ${senderId} AND subject_id = ANY(${recipientIds}::uuid[]))) AND deleted_at IS NULL
+    ) blocked_or_muted`,
+  )
+  const { rows } = await read<{ user_id: string }>(query)
+  return new Set(rows.map(row => row.user_id))
 }
 
 /**

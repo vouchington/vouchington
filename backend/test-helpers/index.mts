@@ -1,5 +1,6 @@
 export * from './app-attestation.mts'
 export * from './entities/index.mts'
+export { createTestChatConversationWithParticipant } from './entities/conversations-chat.mts'
 export {
   countPostRelatedTopics,
   getTestRelationDeletedAt,

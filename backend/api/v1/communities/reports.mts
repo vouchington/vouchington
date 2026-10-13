@@ -19,7 +19,7 @@ import { listCommunityPendingModerationReports } from '@services/moderation-clai
 import { assertNotSuspended, isModerationStaff } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { findOrCreateDirectConversation } from '@services/messaging'
-import { isUserBlockedOrMuted } from '@services/entity-relations/check-block-mute'
+import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
 import { parseReportCursor } from '@services/moderation-reports/cursor'
 import { apiQuery } from '../../response-contract.mts'
@@ -151,7 +151,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId/modmail').post(async 
   const reporterUser = await getPrivateUserByAny(reporterUserId)
   ctx.assert(reporterUser, 422, 'Reporter account has been deleted')
   ctx.assert(
-    !(await isUserBlockedOrMuted(currentUser.id, reporterUserId)),
+    !(await areUsersBlockedOrMutedEitherWay(currentUser.id, reporterUserId)),
     422,
     'Cannot contact reporter: a block or mute exists between you',
   )
