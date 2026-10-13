@@ -101,9 +101,10 @@ for the detailed check and test reference.
 
 ## Form keyboard reference and local catalog
 
-Static CI runs `node ci/check-live-form-keyboard-reference.mts` once to inspect tracked index
+The canonical `pnpm run repo-file-policy` aggregate inspects tracked index
 blobs for obsolete form keyboard links and require the canonical helper reference and heading.
-Its unit tests use tiny synthetic Git indexes; untracked files neither fail nor satisfy the guard.
+Static CI runs it through the existing Repo Node static checks step. Its unit tests use tiny
+synthetic Git indexes; untracked files neither fail nor satisfy the guard.
 The static job also runs `node dev/localization/local-catalog.mts` once to compile the full local
 development catalog. CLI unit tests use finite worktree fixtures through `--worktree-root`.
 

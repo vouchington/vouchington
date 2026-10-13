@@ -247,4 +247,4 @@ executing product source.
 - <a id="adding-a-trustedcredentialed-ci-job"></a>[Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md)
 - <a id="ci-job-timeout-budgets"></a>[CI Job Timeout Budgets](reference-ci-ci-job-timeout-budgets.md)
 
-The static-code-analysis job owns the full local development catalog compilation (`node dev/localization/local-catalog.mts`) and tracked form keyboard reference audit (`node ci/check-live-form-keyboard-reference.mts`). Their unit tests exercise finite catalog and Git-index fixtures. See [the check inventory](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog).
+See [catalog compilation and the tracked form keyboard reference check](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog) for their static CI ownership.

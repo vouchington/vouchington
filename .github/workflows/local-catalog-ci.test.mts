@@ -8,14 +8,16 @@ describe('repository catalog and reference checks', () => {
       jobs: Record<string, { steps: { run?: string; 'timeout-minutes'?: number }[] }>
     }
     const steps = workflow.jobs['static-code-analysis']!.steps
-    for (const command of [
-      'node dev/localization/local-catalog.mts',
-      'node ci/check-live-form-keyboard-reference.mts',
-    ]) {
+    for (const command of ['node dev/localization/local-catalog.mts']) {
       const selected = steps.filter(step => step.run === command)
       expect(selected).toHaveLength(1)
       expect(selected[0]!['timeout-minutes']).toBeGreaterThan(0)
       expect(selected[0]!['timeout-minutes']).toBeLessThanOrEqual(2)
     }
+    const aggregate = steps.filter(step =>
+      step.run?.includes('--checks config-inventory-policy,repo-file-policy,'),
+    )
+    expect(aggregate).toHaveLength(1)
+    expect(aggregate[0]!['timeout-minutes']).toBeLessThanOrEqual(5)
   })
 })
