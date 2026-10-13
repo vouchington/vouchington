@@ -18,7 +18,7 @@ describe('reconcilePostVoteDrift', () => {
     creatorUser = await createTestUserDirect({
       username: `test-vd-${randomBytes(4).toString('hex')}`,
     })
-  }, 60_000)
+  }, 30_000)
 
   it('returns a vote-drift result for the posts table without throwing', async () => {
     const postId = await insertTestPost({
@@ -45,7 +45,7 @@ describe('reconcilePostVoteDrift', () => {
     expect(result.drifted).toBeGreaterThanOrEqual(0)
     expect(result.drifted).toBeLessThanOrEqual(result.sampled)
     expect(['string', 'undefined']).toContain(typeof result.sampleEntityId)
-  }, 60_000)
+  }, 30_000)
 
   it('flags drift when a stored counter is out of sync with its votes', async () => {
     const postId = await insertTestPost({
@@ -61,24 +61,20 @@ describe('reconcilePostVoteDrift', () => {
     // election-stats job does not run in tests), so the post is genuinely drifted.
     await insertTestPostVote(postId, voter.id, '1.2.3.6', 1)
 
-    await expect
-      .poll(
-        () =>
-          isTestPostVoteFixtureVisibleFromReplica({
-            postId,
-            voterId: voter.id,
-            voteScore: 1,
-            votesScoreUp: 0,
-            votesCountUp: 0,
-          }),
-        { timeout: 10_000, interval: 100 },
-      )
-      .toBe(true)
+    await expect(
+      isTestPostVoteFixtureVisibleFromReplica({
+        postId,
+        voterId: voter.id,
+        voteScore: 1,
+        votesScoreUp: 0,
+        votesCountUp: 0,
+      }),
+    ).resolves.toBe(true)
 
     const result = await reconcilePostVoteDrift(1, { samplePostIds: [postId] })
 
     expect(result).toMatchObject({ sampleEntityId: postId, drifted: 1 })
-  }, 60_000)
+  }, 30_000)
 
   it('does not count a legacy Clear zero ballot as Neutral drift', async () => {
     const postId = await insertTestPost({
@@ -92,24 +88,20 @@ describe('reconcilePostVoteDrift', () => {
     })
     await insertPostElectionVote(voter.id, postId, 0)
 
-    await expect
-      .poll(
-        () =>
-          isTestPostVoteFixtureVisibleFromReplica({
-            postId,
-            voterId: voter.id,
-            voteScore: 0,
-            votesScoreUp: 0,
-            votesCountUp: 0,
-          }),
-        { timeout: 10_000, interval: 100 },
-      )
-      .toBe(true)
+    await expect(
+      isTestPostVoteFixtureVisibleFromReplica({
+        postId,
+        voterId: voter.id,
+        voteScore: 0,
+        votesScoreUp: 0,
+        votesCountUp: 0,
+      }),
+    ).resolves.toBe(true)
 
     const result = await reconcilePostVoteDrift(1, { samplePostIds: [postId] })
 
     expect(result).toMatchObject({ sampled: 1, drifted: 0 })
-  }, 60_000)
+  }, 30_000)
 
   it('detects a historic Vouch stored at Like strength', async () => {
     const postId = await insertTestPost({
@@ -124,25 +116,21 @@ describe('reconcilePostVoteDrift', () => {
     await insertPostElectionVote(voter.id, postId, 1)
     await setPostElectionUpvoteStats(postId, 1, 1)
 
-    await expect
-      .poll(
-        () =>
-          isTestPostVoteFixtureVisibleFromReplica({
-            postId,
-            voterId: voter.id,
-            voteScore: 1,
-            votesScoreUp: 1,
-            votesCountUp: 1,
-          }),
-        { timeout: 10_000, interval: 100 },
-      )
-      .toBe(true)
+    await expect(
+      isTestPostVoteFixtureVisibleFromReplica({
+        postId,
+        voterId: voter.id,
+        voteScore: 1,
+        votesScoreUp: 1,
+        votesCountUp: 1,
+      }),
+    ).resolves.toBe(true)
 
     await expect(reconcilePostVoteDrift(1, { samplePostIds: [postId] })).resolves.toMatchObject({
       sampleEntityId: postId,
       drifted: 1,
     })
-  }, 60_000)
+  }, 30_000)
 
   it('ignores insignificant floating-point score differences', async () => {
     const postId = await insertTestPost({
@@ -157,23 +145,19 @@ describe('reconcilePostVoteDrift', () => {
     await insertPostElectionVote(voter.id, postId, 1)
     await setPostElectionUpvoteStats(postId, 2.0005, 1)
 
-    await expect
-      .poll(
-        () =>
-          isTestPostVoteFixtureVisibleFromReplica({
-            postId,
-            voterId: voter.id,
-            voteScore: 1,
-            votesScoreUp: 2.0005,
-            votesCountUp: 1,
-          }),
-        { timeout: 10_000, interval: 100 },
-      )
-      .toBe(true)
+    await expect(
+      isTestPostVoteFixtureVisibleFromReplica({
+        postId,
+        voterId: voter.id,
+        voteScore: 1,
+        votesScoreUp: 2.0005,
+        votesCountUp: 1,
+      }),
+    ).resolves.toBe(true)
 
     await expect(reconcilePostVoteDrift(1, { samplePostIds: [postId] })).resolves.toMatchObject({
       sampled: 1,
       drifted: 0,
     })
-  }, 60_000)
+  }, 30_000)
 })
