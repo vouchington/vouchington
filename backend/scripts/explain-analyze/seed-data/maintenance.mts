@@ -73,6 +73,8 @@ export const ANALYZE_TARGETS = [
     'api_keys',
     'blocklisted_domains',
     'bedrock_nova_multimodal_v1_embeddings',
+    'domain_blocklist_sources',
+    'user_agent_strings',
     'post_topic_alias_sources',
     'post_explicit_topic_categories',
     'post_images',
