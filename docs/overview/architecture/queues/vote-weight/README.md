@@ -1,6 +1,6 @@
 # Vote Weight System
 
-Source entrypoint: [backend/queues/vote-weight/README.md](../../../../../backend/queues/vote-weight/README.md)
+Source entrypoint: [backend/queues/vote-aggregation/README.md](../../../../../backend/queues/vote-aggregation/README.md)
 
 Job queue for recalculating user vote weights based on auth strength, account age, subscription tier, and admin status.
 

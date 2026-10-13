@@ -19,6 +19,10 @@ policy-managed queues.
 
 The [hostname crawl queue](crawl-hostnames/README.md) schedules bounded due-hostname sweeps hourly. Retained jobs preserve their cutoff and index position across capped continuations.
 
+## Vote aggregation
+
+[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity in one ranked-priority IO queue. The single worker dispatches by the unchanged job names and retains election ordering lanes.
+
 ## Contents
 
 - <a id="active-workers"></a>[Active Workers](reference-active-workers.md)

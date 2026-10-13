@@ -28,7 +28,7 @@
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@simplewebauthn/server": "^14.0.3",
     "@valkey/valkey-glide": "^2.5.3",

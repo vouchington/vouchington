@@ -11,7 +11,7 @@ export async function runWithOwnedPostElectionVoteStats(
   }>,
 ) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const statsQueue = (await import('../queues/elections/queues.mts')).elections
+  const statsQueue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
   const entityQueue = (await import('../queues/entity-listeners/queues.mts')).entitiesListeners
   const targets = new Map<string, Target>()
   const ends = new Map<string, End>()
@@ -88,7 +88,7 @@ export async function runWithOwnedPostElectionVoteStats(
     }
     return Reflect.apply(bulkReal, statsQueue, [jobs])
   })
-  const { elections } = await import('../workers/elections/workers.mts')
+  const { voteAggregation: elections } = await import('../workers/vote-aggregation/workers.mts')
   const { entitiesListeners } = await import('../workers/entity-listeners/workers.mts')
   elections.on('completed', onStatsDone)
   elections.on('failed', onStatsFail)

@@ -25,7 +25,7 @@ import { requireAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { upsertAgentModerationVotesWithTrainingEvidence } from '@services/elections-votes/agent-moderation/votes-with-training'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 
 const getAgentModerationElectionForRoute = (id: string) =>
   getAgentModerationElectionByIdCachedBatch([id]).then(elections => elections[0] ?? null)

@@ -105,9 +105,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'vote-weight',
+    queueName: 'vote-aggregation',
     load: () =>
-      import('@queues/vote-weight/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/vote-aggregation/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'kagi-smallweb',

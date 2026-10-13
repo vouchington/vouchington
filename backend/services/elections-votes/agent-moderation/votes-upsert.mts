@@ -5,7 +5,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,

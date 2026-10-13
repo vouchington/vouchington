@@ -82,7 +82,7 @@ Downstream systems triggered (all fire-and-forget):
 - For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and record the
   tagging request (`requestApprovedPostClassifierRuns`) followed by a stable-id classifier-run
   dispatcher. The dispatcher waits for the post embedding; the sweep covers the wait.
-- For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
+- For comments, refresh ancestor metrics through the `vote-aggregation` queue.
 
 > **Note:** Post revisions are tracked synchronously in the `createPost()` / `updatePost()` / `deletePost()` transactions, not via the entity-listeners queue.
 
@@ -111,13 +111,13 @@ Triggered by `enqueueOnPostUpdated(postId, { contentChanged })`.
 - On `contentChanged` with an approved community review, rerun the `community_moderation` queue.
 - Always rerun the `openai_moderation_omni_single` queue and process @mentions through the
   `post-mentions` queue.
-- For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
+- For comments, refresh ancestor metrics through the `vote-aggregation` queue.
 
 ## processPostDeleted
 
 Triggered by `enqueueOnPostDeleted(postId)`.
 
-- For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
+- For comments, refresh ancestor metrics through the `vote-aggregation` queue.
 
 Reconciliation uses `entity-reconciliation-work-config` page and run limits and reports `hasMore`.
 Capped queue continuations retain the exact window and the last successfully processed composite

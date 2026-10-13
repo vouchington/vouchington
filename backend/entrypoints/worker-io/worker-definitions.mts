@@ -13,19 +13,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/post-publication/workers').then(module => module.postPublication),
   },
   {
-    queueName: 'topic-ratings',
-    load: () => import('@workers/topic-ratings/workers').then(module => module.topicRatings),
-  },
-  {
-    queueName: 'elections',
-    load: () => import('@workers/elections/workers').then(module => module.elections),
-  },
-  {
-    queueName: 'entity-metrics-cache-refresh',
-    load: () =>
-      import('@workers/entity-metrics-cache-refresh/workers').then(
-        module => module.entityMetricsCacheRefresh,
-      ),
+    queueName: 'vote-aggregation',
+    load: () => import('@workers/vote-aggregation/workers').then(module => module.voteAggregation),
   },
   {
     queueName: 'cache-purge',
@@ -139,14 +128,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
   },
   {
-    queueName: 'vote-weight',
-    load: () => import('@workers/vote-weight/workers').then(module => module.voteWeight),
-  },
-  {
-    queueName: 'vote-integrity',
-    load: () => import('@workers/vote-integrity/workers').then(module => module.voteIntegrity),
-  },
-  {
     queueName: 'spam_detection',
     load: () =>
       import('@workers/spam-detection/workers').then(module => module.spamDetectionWorker),
@@ -175,10 +156,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'ses_inbound',
     load: () => import('@workers/ses-inbound/workers').then(module => module.sesInboundWorker),
-  },
-  {
-    queueName: 'report_integrity',
-    load: () => import('@workers/report-integrity/workers').then(module => module.reportIntegrity),
   },
   {
     queueName: 'bluesky-follow-propagation',

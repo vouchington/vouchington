@@ -6,7 +6,7 @@ import {
   getElectionVoteChoiceScore,
   withElectionVoteRequestLock,
 } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { createAdminTool, adminInput, UUID_INPUT } from './create-admin-tool.mts'
 
 function agentVoteTool(name: string, clear: boolean) {

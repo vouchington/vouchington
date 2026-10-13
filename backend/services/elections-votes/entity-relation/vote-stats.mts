@@ -8,7 +8,7 @@ import {
 import sql from 'sql-template-strings'
 import { invalidate } from '@services/entity-cache'
 import { recordPostTopicRelationPublicationChanges } from '@services/entity-relations'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import {
   aggregateElectionVoteStatsFromPrimary,
   aggregateElectionVoteStatsFromReplica,

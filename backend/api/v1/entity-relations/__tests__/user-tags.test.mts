@@ -17,7 +17,7 @@ import { getUserTagTopics } from '@services/topics/user-tag-topics'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { getEntityRelations } from '@services/entity-relations/query'
-import { elections } from '@queues/elections/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('user tag entity relations', () => {
@@ -188,6 +188,6 @@ describe('user tag entity relations', () => {
 })
 
 async function getQueuedElectionJobs(relationId: string) {
-  const jobs = await readAllQueueJobs(elections)
+  const jobs = await readAllQueueJobs(voteAggregation)
   return jobs.filter(job => (job.data as { electionId?: string }).electionId === relationId)
 }

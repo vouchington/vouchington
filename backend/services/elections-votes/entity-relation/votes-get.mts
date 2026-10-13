@@ -1,4 +1,4 @@
-import type { EntityRelationElectionTable } from '@queues/elections/types'
+import type { EntityRelationElectionTable } from '@queues/vote-aggregation/enqueues/types-elections'
 import {
   createVoteGetByUser,
   createVotesGetByElectionId,

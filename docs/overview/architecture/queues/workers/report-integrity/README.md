@@ -1,8 +1,8 @@
-# workers/report-integrity
+# Report Integrity Worker
 
-Source entrypoint: [backend/workers/report-integrity/README.md](../../../../../../backend/workers/report-integrity/README.md)
+Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Worker for the `report_integrity` queue. Processes `processReportIntegrityCheck` jobs enqueued
+The shared `vote-aggregation` worker processes `processReportIntegrityCheck` jobs enqueued
 fire-and-forget by `@services/moderation-reports/integrity` after each new moderation report.
 
 ## Job: processReportIntegrityCheck

@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import { createEntityRelationElectionTarget, entityRelationElectionTables } from './target.mts'
 
 const relationTableSelects = [...entityRelationElectionTables].map(

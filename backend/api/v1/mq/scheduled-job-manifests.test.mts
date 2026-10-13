@@ -91,7 +91,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
   'user-deletions/userDeletionRecovery',
-  'vote-weight/dailyVoteWeightRecalculation',
+  'vote-aggregation/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {

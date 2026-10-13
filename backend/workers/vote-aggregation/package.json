@@ -1,0 +1,34 @@
+{
+  "name": "@workers/vote-aggregation",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
+    "@services/report-integrity": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/vote-integrity": "workspace:^",
+    "@services/vote-weight": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@services/entity-cache": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

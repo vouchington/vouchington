@@ -8,9 +8,7 @@ import {
   bedrock_embeddings_batch_creation,
 } from '@queues/bedrock-embeddings-batch/queues'
 import * as openaiModerationQueues from '@queues/openai-moderation/queues'
-import * as topicRatingsQueues from '@queues/topic-ratings/queues'
-import { elections } from '@queues/elections/queues'
-import * as entityMetricsCacheRefreshQueues from '@queues/entity-metrics-cache-refresh/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { psql } from '@queues/psql/queues'
 import * as crawlerQueues from '@queues/crawler/queues'
 import * as crawlHostnamesQueues from '@queues/crawl-hostnames/queues'
@@ -34,8 +32,6 @@ import { postPublication } from '@queues/post-publication/queues'
 import { sitemaps } from '@queues/sitemaps/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
 import { storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/queues'
-import { voteIntegrityQueue } from '@queues/vote-integrity/queues'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
 import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
 import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -46,7 +42,6 @@ import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { language_detection as languageDetection } from '@queues/language-detection/queues'
 import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
-import { reportIntegrityQueue } from '@queues/report-integrity/queues'
 import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { sesInboundQueue } from '@queues/ses-inbound/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
@@ -58,9 +53,7 @@ const allQueues = [
   entitiesListeners,
   urlsDomainsBlacklist,
   userRssFeedImports,
-  ...Object.values(topicRatingsQueues),
-  elections,
-  ...Object.values(entityMetricsCacheRefreshQueues),
+  voteAggregation,
   psql,
   ...Object.values(crawlerQueues),
   ...Object.values(crawlHostnamesQueues),
@@ -88,8 +81,6 @@ const allQueues = [
   sitemaps,
   spam_detection,
   storyPostRelatedUrlProjections,
-  voteIntegrityQueue,
-  voteWeightQueue,
   aiAgentsQueue,
   spendCapRechecks,
   activitypubDelivery,
@@ -101,7 +92,6 @@ const allQueues = [
   crawlEmbedsQueue,
   languageDetection,
   oauthAuthorizationExchangeQueue,
-  reportIntegrityQueue,
   rssFeedDiscoverability,
   sesInboundQueue,
   unfurlReferralLinksQueue,

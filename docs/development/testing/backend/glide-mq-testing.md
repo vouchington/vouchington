@@ -218,8 +218,7 @@ expect(allJobs).toHaveLength(10)
 Workers are started in the vitest setup (`vitest.setup.glide-mq-workers.mts`):
 
 ```typescript
-import 'workers/topic-ratings/workers'
-import 'workers/elections/workers'
+import 'workers/vote-aggregation/workers'
 import 'workers/entity-listeners/workers'
 // etc.
 ```
@@ -232,8 +231,8 @@ for the flushed job IDs (not queue-wide `drained`):
 3. Processor runs
 4. Drain waits for that job ID's terminal state with a bounded wall-clock timeout
 
-A processor that enqueues another queue (for example `topic-ratings` nesting
-`entity-metrics-cache-refresh`) must not keep the parent job `active` until the
+A processor that enqueues another queue (for example `entity-listeners` enqueueing
+`vote-aggregation`) must not keep the parent job `active` until the
 child finishes. The shim therefore does not flush a nested `add`, matching production `Queue.add`.
 
 ## No BULLMQ_INLINE_MODE Needed

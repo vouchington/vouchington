@@ -30,7 +30,7 @@
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/notifications": "workspace:^",
-    "@queues/report-integrity": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/moderation-cases": "workspace:^",
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",

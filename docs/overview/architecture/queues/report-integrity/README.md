@@ -1,13 +1,13 @@
-# queues/report-integrity
+# Report Integrity Jobs
 
-Source entrypoint: [backend/queues/report-integrity/README.md](../../../../../backend/queues/report-integrity/README.md)
+Source entrypoint: [backend/queues/vote-aggregation/README.md](../../../../../backend/queues/vote-aggregation/README.md)
 
 Debounced queue for detecting mass-report campaigns after each new moderation report.
 
 ```mermaid
 flowchart LR
   report[Moderation report inserted] --> debounce[Debounce by entity type and id]
-  debounce --> queue[report_integrity queue]
+  debounce --> queue[vote-aggregation queue]
   queue --> detect[detectMassReportCampaign]
   detect --> threshold{Threshold exceeded?}
   threshold -- No --> done[No flag]

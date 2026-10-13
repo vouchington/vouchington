@@ -1,4 +1,4 @@
-import type { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import type { enqueueBulkRefreshPostMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import type { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import type {
   enqueueUpdateLandingPagesSitemapForReconciliation,

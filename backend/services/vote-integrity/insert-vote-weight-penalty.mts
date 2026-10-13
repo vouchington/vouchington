@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import sql from 'sql-template-strings'
 import { DEFAULT_PENALTY_MULTIPLIER } from './config.mts'
 

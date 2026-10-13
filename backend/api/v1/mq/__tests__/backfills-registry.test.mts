@@ -7,7 +7,7 @@ import {
 import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 
@@ -148,7 +148,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error('Vote-weight backfill missing')
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
-    await expect(readEnqueuedJob(voteWeightQueue, enqueued)).resolves.toMatchObject({
+    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
       name: 'processRecalculateVoteWeightDispatcher',
     })
   })

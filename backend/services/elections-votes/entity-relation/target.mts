@@ -2,7 +2,7 @@ import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations
 import type {
   EntityRelationElectionTable,
   EntityRelationElectionTarget,
-} from '@queues/elections/types'
+} from '@queues/vote-aggregation/enqueues/types-elections'
 
 export const entityRelationElectionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),

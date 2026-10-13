@@ -1,12 +1,12 @@
 # Elections Worker
 
-Source entrypoint: [backend/workers/elections/README.md](../../../../../../backend/workers/elections/README.md)
+Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Worker package for election vote-stat refresh jobs.
+Shared `vote-aggregation` worker handles election vote-stat refresh jobs.
 
 ## Exports
 
-- `elections` - worker instance for the `elections` queue. It validates the payload ordering key
+- `voteAggregation` - shared worker instance for the `vote-aggregation` queue. It validates the payload ordering key
   against queue ordering and requires a metadata-validated relation table for entity-relation jobs;
   it never scans tables to resolve an omitted target.
 

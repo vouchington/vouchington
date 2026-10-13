@@ -1,4 +1,4 @@
-import { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import { enqueueBulkRefreshPostMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import { getCommentAncestorIds } from '@services/comments'
 import { invalidate } from '@services/entity-cache/invalidate'
 

@@ -67,8 +67,8 @@ import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
 import {
   scheduledJobManifest as voteWeightManifest,
   upsertSchedules as registerVoteWeight,
-} from '@queues/vote-weight/enqueues/schedules'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
+} from '@queues/vote-aggregation/enqueues/schedules'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
@@ -84,7 +84,7 @@ const REGISTRATIONS = [
   [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
   [registerBlacklist, urlsDomainsBlacklist, blacklistManifest],
-  [registerVoteWeight, voteWeightQueue, voteWeightManifest],
+  [registerVoteWeight, voteAggregation, voteWeightManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {
