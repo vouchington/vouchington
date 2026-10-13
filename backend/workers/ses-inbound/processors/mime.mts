@@ -30,8 +30,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
   let sender: AddressObject | undefined
   let subject = ''
   let messageId: string | null = null
-  let references = ''
-  let inReplyTo = ''
+  let references: string[] = []
+  let inReplyTo: string[] = []
   let recipientEmails: string[] = []
   const parts = streamMailParts(parser)
   const headerLimiter = createMimeHeaderLimitStream()
@@ -41,8 +41,6 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
       sender = asAddress(headers.get('from'))
       subject = String(headers.get('subject') ?? '')
       messageId = String(headers.get('message-id') ?? '').trim() || null
-      references = String(headers.get('references') ?? '')
-      inReplyTo = String(headers.get('in-reply-to') ?? '')
       recipientEmails = [
         ...new Set(
           ['to', 'delivered-to', 'x-original-to'].flatMap(header =>
@@ -50,6 +48,15 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
           ),
         ),
       ]
+    })
+    parser.once('headerLines', lines => {
+      for (const header of lines as Array<{ key: string; line: string }>) {
+        if (header.key === 'references') {
+          references.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+        } else if (header.key === 'in-reply-to') {
+          inReplyTo.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+        }
+      }
     })
     parser.once('error', error => {
       rawMime.destroy()
@@ -80,8 +87,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     subject: normalizedSubject,
     bodyText: parts.getBodyText() || normalizedSubject,
     emailMessageId: messageId,
-    inReplyTo: splitReferenceHeader(inReplyTo),
-    references: splitReferenceHeader(references),
+    inReplyTo: [...new Set(inReplyTo)],
+    references: [...new Set(references)],
     attachments: parts.getAttachments(),
     recipientEmails,
   }
@@ -125,13 +132,29 @@ function getHeaderAddresses(value: HeaderValue | undefined): string[] {
   return address?.value.flatMap(item => (item.address?.trim() ? [item.address.trim()] : [])) ?? []
 }
 
-function splitReferenceHeader(value: string): string[] {
-  return [
-    ...new Set(
-      value.split(/[\s,]+/).flatMap(part => {
-        const normalized = part.trim()
-        return normalized ? [normalized] : []
-      }),
-    ),
-  ]
+function parseMessageIds(value: string): string[] {
+  const ids: string[] = []
+  let index = 0
+  while (index < value.length) {
+    while (index < value.length && /[\s,]/.test(value[index]!)) index += 1
+    if (index === value.length) break
+    const start = index
+    if (value[index] === '<') {
+      let quoted = false
+      let escaped = false
+      index += 1
+      while (index < value.length) {
+        const char = value[index++]!
+        if (escaped) escaped = false
+        else if (char === '\\' && quoted) escaped = true
+        else if (char === '"') quoted = !quoted
+        else if (char === '>' && !quoted) break
+      }
+      if (value[index - 1] === '>' && !quoted) ids.push(value.slice(start, index))
+    } else {
+      while (index < value.length && !/[\s,]/.test(value[index]!)) index += 1
+      ids.push(`<${value.slice(start, index)}>`)
+    }
+  }
+  return ids
 }

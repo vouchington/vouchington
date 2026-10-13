@@ -55,6 +55,29 @@ describe('SES inbound MIME parsing', () => {
     })
   })
 
+  it('preserves quoted message IDs across commas, folds, and multiple headers', async () => {
+    const raw = Buffer.from(
+      [
+        'From: sender@example.test',
+        'In-Reply-To: <"claim,part"@example.test> <next@example.test>',
+        'References: <root@example.test>',
+        ' <"quoted part,one"@example.test>',
+        'References: <"claim,part"@example.test>',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'Reply',
+      ].join('\r\n'),
+    )
+
+    const result = await parseSesInboundMime(Readable.from([raw]))
+    expect(result.inReplyTo).toEqual(['<"claim,part"@example.test>', '<next@example.test>'])
+    expect(result.references).toEqual([
+      '<root@example.test>',
+      '<"quoted part,one"@example.test>',
+      '<"claim,part"@example.test>',
+    ])
+  })
+
   it('rejects MIME without a sender address', async () => {
     const raw = Buffer.from('Subject: Missing sender\r\n\r\nBody')
 

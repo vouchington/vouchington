@@ -92,6 +92,14 @@ async function blockHostnameWithQuery(
   const escapedForLike = targetHostname.replace(/[%_\\]/g, char => `\\${char}`)
   const subdomainPattern = `%.${escapedForLike}`
 
+  // A staff block introduces the target and its subdomains to public hostname history.
+  await query(sql`/* blockHostname_introduceHostnames */
+      UPDATE url_hostnames
+      SET publicly_introduced_at = CURRENT_TIMESTAMP
+      WHERE publicly_introduced_at IS NULL
+        AND (id = ${hostnameId} OR hostname LIKE ${subdomainPattern} ESCAPE '\\')
+    `)
+
   await query(sql`/* blockHostname_blockTarget */
       INSERT INTO url_hostname_blocks (url_hostname_id, blocked_by_id, blocked_source)
       SELECT ${hostnameId}, ${adminUserId}, ${options.blockedSource ?? 'admin'}

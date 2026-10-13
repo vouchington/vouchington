@@ -37,6 +37,7 @@ export async function getUrlHostnameTopicId(hostnameId: string): Promise<string 
 export type TestUrlHostnameRow = {
   id: string
   hostname: string
+  publicly_introduced_at: Date | null
   is_blocked: boolean
   blocked_at: Date | null
   blocked_by_id: string | null
@@ -49,6 +50,7 @@ export async function getTestHostnameRow(
     SELECT
       uh.id,
       uh.hostname,
+      uh.publicly_introduced_at,
       uh.is_blocked,
       uhb.created_at AS blocked_at,
       uhb.blocked_by_id
