@@ -24,7 +24,8 @@ export function trackedRuntimeSources(): Source[] {
     .filter(
       file =>
         /\.(?:ts|mts|tsx|js)$/.test(file) &&
-        !/(?:\.test\.|\/__tests__\/|\/test-helpers\/|\/migration-runner\/)/.test(file),
+        !/(?:\.test\.|\/__tests__\/|\/test-helpers\/|\/migration-runner\/)/.test(file) &&
+        !/^backend\/data-stores\/psql\/explain-(?:analyze|prepared)\.mts$/.test(file),
     )
   return files.map(fileName => ({
     fileName,

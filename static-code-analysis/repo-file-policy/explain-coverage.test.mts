@@ -3,8 +3,47 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { formatCoverageReport, isRead, reportCoverage } from '../explain-coverage.mts'
+import { trackedRuntimeSources } from '../explain-coverage-files.mts'
 
 describe('EXPLAIN coverage', () => {
+  it('discovers application SQL without replay-only EXPLAIN infrastructure', () => {
+    const files = new Set(trackedRuntimeSources().map(source => source.fileName))
+    expect(files.has('backend/services/oauth-accounts/connect.mts')).toBe(true)
+    expect(files.has('backend/data-stores/psql/explain-analyze.mts')).toBe(false)
+    expect(files.has('backend/data-stores/psql/explain-prepared.mts')).toBe(false)
+  })
+
+  it('does not count a dynamic read as covered by a same-named write', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-reused-name-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      const source = `import { read, write } from '@data-stores/psql'
+write('/* reused */ WITH changed AS (UPDATE things SET seen = true RETURNING id) SELECT id FROM changed')
+read(\`/* reused */ SELECT id FROM things WHERE key = \${key}\`)
+`
+      writeFileSync(
+        resultsPath,
+        JSON.stringify([
+          {
+            name: 'reused',
+            query_text:
+              '/* reused */ WITH changed AS (UPDATE things SET seen = true RETURNING id) SELECT id FROM changed',
+            scenario_id: 'write-plan',
+          },
+        ]),
+      )
+      const report = await reportCoverage(
+        [{ fileName: 'backend/services/things/query.mts', source }],
+        resultsPath,
+        ['write-plan'],
+      )
+      expect(report).toMatchObject({ annotatedStatements: 2, reads: 1, coveredReads: 0 })
+      expect(report.ambiguousReads.map(read => read.name)).toEqual(['reused'])
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
   it('reports uncovered reads from two runtime sources and one EXPLAIN result', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-'))
     try {

@@ -67,7 +67,7 @@ export function buildCoverageReport(
   }
   const annotationCounts = new Map<string, number>()
   for (const fact of facts) {
-    if (fact.annotation && isRead(fact.sqlText))
+    if (fact.annotation)
       annotationCounts.set(fact.annotation, (annotationCounts.get(fact.annotation) ?? 0) + 1)
   }
   let annotatedStatements = 0

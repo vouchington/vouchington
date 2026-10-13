@@ -301,7 +301,8 @@ pnpm run explain:coverage -- /path/to/results.json
 ```
 
 The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
-sources. When an annotation names multiple source statements, it counts an exact complete SQL
+sources, excluding SQL issued only by the EXPLAIN replay infrastructure. When an annotation names
+multiple source statements, including writes, it counts an exact complete SQL
 match as covered and displays any incomplete matches separately as ambiguous. It never normalizes
 SQL literal whitespace or guessed placeholders. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
 uses the largest user-facing gaps to choose one new scenario per run.
