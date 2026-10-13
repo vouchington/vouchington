@@ -2,8 +2,11 @@
 # Reviewed existing per-item calls are tracked by #2523; remediation removes allow entries.
 effects:
   postgres:
-    functions: [read, write, query]
-    transactionFunctions: [client.query, query.client.query]
+    targets:
+      - { module: '@data-stores/psql', export: read }
+      - { module: '@data-stores/psql', export: write }
+      - { module: '@data-stores/psql', export: query }
+    transactionFunctions: [query, client.query, query.client.query]
     batchFunctions: [pipelineBatch, executeHandlerWithCursorInBatches]
   valkey:
     functions:
