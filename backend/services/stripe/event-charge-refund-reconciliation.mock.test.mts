@@ -89,8 +89,6 @@ describe('charge.refunded reconciliation receipt', () => {
   })
 
   it('enriches and wakes only the matching durable administrator attempt after receipt persistence', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-10-01T00:00:00.000Z'))
     const administrator = await createTestUser({ administrator: true })
     const chargeId = `ch_wch_matched_${randomUUID()}`
     const operation = await claimAdministratorRefundRequest({
@@ -118,7 +116,7 @@ describe('charge.refunded reconciliation receipt', () => {
     const lease = await leaseDueRefundReconciliation(operation.id)
     if (!lease) throw new Error('Expected administrator refund reconciliation lease')
     const attempt = await recordRefundReconciliationAttempt(lease, `provider-key-${randomUUID()}`)
-    await scheduleRefundReconciliationRetry(lease, new Date(Date.now() - 1), 'await receipt')
+    await scheduleRefundReconciliationRetry(lease, new Date(0), 'await receipt')
     const refundId = `re_wch_matched_${randomUUID()}`
     const admission = Promise.withResolvers<unknown>()
     const add = memberships.add
