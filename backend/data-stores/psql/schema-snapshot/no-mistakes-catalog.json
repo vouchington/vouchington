@@ -43834,29 +43834,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_email_address_login_tokens__id_timestamp": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_email_address_login_tokens__id_timestamp ON public.email_address_login_tokens USING btree (uuid_extract_timestamp(id))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": null,
-              "descending": false,
-              "expression": "uuid_extract_timestamp(id)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_email_address_login_tokens__logged_in": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -75414,29 +75391,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_phone_number_login_tokens__id_timestamp": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_phone_number_login_tokens__id_timestamp ON public.phone_number_login_tokens USING btree (uuid_extract_timestamp(id))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": null,
-              "descending": false,
-              "expression": "uuid_extract_timestamp(id)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "phone_number_login_tokens_phone_number_token_key": {
@@ -130223,10 +130177,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_user_email_addresses__user_primary_id_timestamp_email": {
+        "idx_user_email_addresses__user_primary_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_email_addresses__user_primary_id_timestamp_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, uuid_extract_timestamp(id), email_address)",
+          "definition": "CREATE INDEX idx_user_email_addresses__user_primary_id ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, id)",
           "immediate": true,
           "keys": [
             {
@@ -130249,20 +130203,11 @@
             },
             {
               "collation": null,
-              "column": null,
+              "column": "id",
               "descending": false,
-              "expression": "uuid_extract_timestamp(id)",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "email_address",
-              "descending": false,
-              "expression": "email_address",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],

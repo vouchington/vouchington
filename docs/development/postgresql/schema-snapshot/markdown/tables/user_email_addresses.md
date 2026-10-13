@@ -39,7 +39,7 @@ Not partitioned — growth: unbounded.
 - `idx_user_email_addresses__email_domain_hostname_id`: `CREATE INDEX idx_user_email_addresses__email_domain_hostname_id ON public.user_email_addresses USING btree (email_domain_hostname_id)`
 - `idx_user_email_addresses__email_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__email_primary ON public.user_email_addresses USING btree (email_address) WHERE (is_primary = true)`
 - `idx_user_email_addresses__user_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__user_primary ON public.user_email_addresses USING btree (user_id) WHERE (is_primary = true)`
-- `idx_user_email_addresses__user_primary_id_timestamp_email`: `CREATE INDEX idx_user_email_addresses__user_primary_id_timestamp_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, uuid_extract_timestamp(id), email_address)`
+- `idx_user_email_addresses__user_primary_id`: `CREATE INDEX idx_user_email_addresses__user_primary_id ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, id)`
 - `user_email_addresses_pkey`: `CREATE UNIQUE INDEX user_email_addresses_pkey ON public.user_email_addresses USING btree (id)`
 - `user_email_addresses_user_id_email_address_key`: `CREATE UNIQUE INDEX user_email_addresses_user_id_email_address_key ON public.user_email_addresses USING btree (user_id, email_address)`
 

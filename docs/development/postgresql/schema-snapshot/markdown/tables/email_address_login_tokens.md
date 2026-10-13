@@ -42,7 +42,6 @@ Not partitioned — growth: unbounded.
 - `email_address_login_tokens_pkey`: `CREATE UNIQUE INDEX email_address_login_tokens_pkey ON public.email_address_login_tokens USING btree (id)`
 - `email_address_login_tokens_token_key`: `CREATE UNIQUE INDEX email_address_login_tokens_token_key ON public.email_address_login_tokens USING btree (token)`
 - `idx_email_address_login_tokens__active`: `CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE (logged_in_at IS NULL)`
-- `idx_email_address_login_tokens__id_timestamp`: `CREATE INDEX idx_email_address_login_tokens__id_timestamp ON public.email_address_login_tokens USING btree (uuid_extract_timestamp(id))`
 - `idx_email_address_login_tokens__logged_in`: `CREATE INDEX idx_email_address_login_tokens__logged_in ON public.email_address_login_tokens USING btree (email_address) WHERE (logged_in_at IS NOT NULL)`
 - `idx_email_address_login_tokens__user_email_verify`: `CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (user_id IS NOT NULL)`
 
