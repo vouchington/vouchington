@@ -1,200 +1,138 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
+import { completeOwnedElectionAdmissions } from './election-vote-stats-admission-results.mts'
 import type { Job } from 'glide-mq'
-import { vi } from 'vitest'
-type Target = 'low' | 'high'
-type QueueKind = 'entity' | 'election'
-type End = { failed: boolean; error?: Error }
+import { onTestFinished } from 'vitest'
+import { observeOwnedElectionQueue } from './election-vote-stats-observer-source.mts'
+import { createElectionInstrumentation } from './election-vote-stats-instrumentation.mts'
+let active = false
+
+/** Retain original call-through logical duties; terminal transport follows the actual queue binding. */
 export async function runWithOwnedPostElectionVoteStats(
   prepare: () => Promise<{
     targets: { lowScoreId: string; highScoreId: string }
     actions: Array<() => Promise<unknown>>
   }>,
 ) {
-  const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const statsQueue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
-  const entityQueue = (await import('../queues/entity-listeners/queues.mts')).entitiesListeners
-  const targets = new Map<string, Target>()
-  const ends = new Map<string, End>()
-  const waiters = new Map<string, (end: End) => void>()
-  const entityJobs: Array<{ entityId: string; job: Promise<Job> }> = []
-  const admissions: Array<{ phase: 'creation' | 'votes'; ids: string[]; jobs: Promise<unknown> }> =
-    []
+  if (active) throw new Error('Overlapping owned election observation')
+  active = true
   const deadline = AbortSignal.timeout(25_000)
-  let phase: 'creation' | 'votes' = 'creation'
-  const end = (queue: QueueKind, job: Job | undefined, failed: boolean, error?: Error) => {
-    if (!job?.id) return
-    const event = { failed, error }
-    const key = `${queue}:${job.id}`
-    ends.set(key, event)
-    waiters.get(key)?.(event)
+  let entity: ReturnType<typeof observeOwnedElectionQueue> | undefined
+  let election: ReturnType<typeof observeOwnedElectionQueue> | undefined
+  let instrumentation: ReturnType<typeof createElectionInstrumentation> | undefined
+  let closing: Promise<void> | undefined
+  const assertOpen = () => {
+    if (closing) throw new Error('Owned election scope is closing')
   }
-  const onStatsDone = (job: Job) => {
-    if (job.name === 'processUpdateElectionVoteStats') end('election', job, false)
-  }
-  const onStatsFail = (job: Job | undefined, error: Error) => {
-    if (job?.name === 'processUpdateElectionVoteStats') end('election', job, true, error)
-  }
-  const onPostDone = (job: Job) => {
-    if (job.name === 'processPostCreated') end('entity', job, false)
-  }
-  const onPostFail = (job: Job | undefined, error: Error) => {
-    if (job?.name === 'processPostCreated') end('entity', job, true, error)
-  }
-  const wait = (queue: QueueKind, id: string) => {
-    const key = `${queue}:${id}`
-    const known = ends.get(key)
-    if (known) return Promise.resolve(known)
-    return new Promise<End>((resolve, reject) => {
-      const timeout = () => {
-        waiters.delete(key)
-        deadline.removeEventListener('abort', timeout)
-        reject(new Error(`Timed out observing owned ${queue} job ${id}`))
-      }
-      waiters.set(key, event => {
-        deadline.removeEventListener('abort', timeout)
-        waiters.delete(key)
-        resolve(event)
-      })
-      deadline.addEventListener('abort', timeout, { once: true })
-      if (deadline.aborted) timeout()
-    })
-  }
-  const add = entityQueue.add
-  const addSpy = vi.spyOn(entityQueue, 'add').mockImplementation((name, data, options) => {
-    const job = Reflect.apply(add, entityQueue, [name, data, options]) as Promise<Job>
-    if (name === 'processPostCreated') {
-      const entityId = (data as { id: string }).id
-      entityJobs.push({ entityId, job })
-      void job.catch(() => undefined)
-    }
-    return job
-  })
-  const context = new AsyncLocalStorage<(typeof admissions)[number]>()
-  const retryReal = retry.retryTransientEnqueue
-  const retrySpy = vi.spyOn(retry, 'retryTransientEnqueue').mockImplementation(fn => {
-    const item = { phase, ids: [] as string[], jobs: Promise.resolve() as Promise<unknown> }
-    const jobs = context.run(item, () => retryReal(fn))
-    item.jobs = jobs
-    void jobs.catch(() => undefined)
-    return jobs
-  })
-  const bulkReal = statsQueue.addBulk
-  const bulkSpy = vi.spyOn(statsQueue, 'addBulk').mockImplementation(jobs => {
-    const item = context.getStore()
-    const stats = jobs.filter(job => job.name === 'processUpdateElectionVoteStats')
-    if (item && stats.length && !admissions.includes(item)) {
-      item.ids = stats.map(job => (job.data as { electionId: string }).electionId)
-      admissions.push(item)
-    }
-    return Reflect.apply(bulkReal, statsQueue, [jobs])
-  })
-  const { voteAggregation: elections } = await import('../workers/vote-aggregation/workers.mts')
-  const { entitiesListeners } = await import('../workers/entity-listeners/workers.mts')
-  elections.on('completed', onStatsDone)
-  elections.on('failed', onStatsFail)
-  entitiesListeners.on('completed', onPostDone)
-  entitiesListeners.on('failed', onPostFail)
-  try {
+  const operation = Promise.resolve().then(async () => {
+    assertOpen()
+    const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
+    const statsQueue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
+    const entityQueue = (await import('../queues/entity-listeners/queues.mts')).entitiesListeners
+    assertOpen()
+    entity = observeOwnedElectionQueue(entityQueue)
+    election = observeOwnedElectionQueue(statsQueue)
+    await settleAll([entity.ready(), election.ready()])
+    assertOpen()
+    instrumentation = createElectionInstrumentation(entityQueue, statsQueue, retry)
+    instrumentation.install()
     const ready = await prepare()
-    targets.set(ready.targets.lowScoreId, 'low')
-    targets.set(ready.targets.highScoreId, 'high')
-    for (const id of targets.keys()) {
-      const attempts = entityJobs.filter(item => item.entityId === id)
-      if (!attempts.length) throw new Error(`No creator enqueue observed for ${id}`)
-      const jobs = await Promise.all(attempts.map(item => item.job))
-      for (const job of new Map(jobs.map(job => [job.id, job])).values()) {
-        const result = await wait('entity', job.id)
-        if (result.failed) throw new Error(`Creator job ${job.id} failed`, { cause: result.error })
-      }
-    }
-    const creation = admissions.filter(
-      item => item.phase === 'creation' && item.ids.some(id => targets.has(id)),
-    )
-    const createdCounts = new Map<string, number>()
-    for (const item of creation)
-      for (const id of item.ids.filter(id => targets.has(id)))
-        createdCounts.set(id, (createdCounts.get(id) ?? 0) + 1)
-    if (creation.length !== 2 || [...targets.keys()].some(id => createdCounts.get(id) !== 1))
-      throw new Error(
-        `Expected two creator stats enqueues; observed ${JSON.stringify([...createdCounts])}`,
+    return completeOwnedElectionAdmissions(ready, instrumentation, wait, () => {
+      assertOpen()
+    })
+  })
+  void operation.catch(retainRejection)
+  const close = () => (closing ??= dispose())
+  try {
+    onTestFinished(close)
+  } catch (err) {
+    const results = await Promise.allSettled([close()])
+    if (results[0]?.status === 'rejected')
+      throw new AggregateError(
+        [err, results[0].reason],
+        'Election registration and cleanup failed',
+        { cause: err },
       )
-    await Promise.all(creation.map(item => item.jobs))
-    phase = 'votes'
-    for (const action of ready.actions) await action()
-    const votes = admissions.filter(
-      item => item.phase === 'votes' && item.ids.some(id => targets.has(id)),
-    )
-    const voteCounts = new Map<string, number>()
-    for (const item of votes)
-      for (const id of item.ids.filter(id => targets.has(id)))
-        voteCounts.set(id, (voteCounts.get(id) ?? 0) + 1)
-    const low = ready.targets.lowScoreId
-    const high = ready.targets.highScoreId
-    if (votes.length !== 3 || voteCounts.get(low) !== 1 || voteCounts.get(high) !== 2)
-      throw new Error(
-        `Expected logical vote enqueues low=1/high=2; observed ${JSON.stringify([...voteCounts])}`,
-      )
-    await Promise.all(votes.map(item => item.jobs))
+    throw err
+  }
+  const [result] = await Promise.allSettled([operation])
+  const [cleanup] = await Promise.allSettled([close()])
+  const errors = result?.status === 'rejected' ? [result.reason] : []
+  if (cleanup?.status === 'rejected') errors.push(cleanup.reason)
+  if (errors.length === 1) throw errors[0]
+  if (errors.length)
+    throw new AggregateError(errors, 'Election operation and cleanup failed', { cause: errors[0] })
+  if (result?.status !== 'fulfilled') throw new Error('Missing election result')
+  return result.value
 
-    const owned = new Map<Target, Map<string, string>>([
-      ['low', new Map()],
-      ['high', new Map()],
-    ])
-    for (const item of [...creation, ...votes]) {
-      const jobs = await item.jobs
-      for (const job of Array.isArray(jobs) ? (jobs as Job<{ electionId: string }>[]) : []) {
-        if (job.name !== 'processUpdateElectionVoteStats') continue
-        const id = job.data.electionId
-        const target = targets.get(id)
-        if (target) owned.get(target)!.set(job.id, id)
-      }
-      for (const id of item.ids) {
-        const target = targets.get(id)
-        if (target && !owned.get(target)!.size)
-          throw new Error(`Unowned deduplicated ${target} stats enqueue`)
-      }
-    }
-    const ownedJobs = [...owned.values()].flatMap(group => [...group])
-    const completedJobs = await Promise.all(
-      ownedJobs.map(async ([jobId, electionId]) => {
-        const result = await wait('election', jobId)
-        if (result.failed) throw new Error(`Stats job ${jobId} failed`, { cause: result.error })
-        return { jobId, target: targets.get(electionId)! }
-      }),
-    )
-    return {
-      targets: ready.targets,
-      logicalAdmissions: { creation: creation.length, votes: votes.length },
-      ownedJobIds: ownedJobs.map(([id]) => id),
-      completedJobs,
-    }
-  } finally {
+  async function wait(kind: 'entity' | 'election', id: string) {
+    const observer = kind === 'entity' ? entity! : election!
+    const timeout = Promise.withResolvers<never>()
+    const abort = () => timeout.reject(new Error(`Timed out observing owned ${kind} job ${id}`))
+    deadline.addEventListener('abort', abort, { once: true })
+    if (deadline.aborted) abort()
     try {
-      await Promise.all(
-        entityJobs.map(async ({ job }) => {
-          const result = await job.catch(() => null)
-          if (result) await wait('entity', result.id).catch(() => undefined)
-        }),
-      )
-      await Promise.all(
-        admissions.map(async item => {
-          const result = await item.jobs.catch(() => null)
-          if (Array.isArray(result))
-            await Promise.all(
-              result
-                .filter(Boolean)
-                .map((job: Job) => wait('election', job.id).catch(() => undefined)),
-            )
-        }),
-      )
+      const end = await Promise.race([observer.wait(id), timeout.promise])
+      if (end.failed)
+        throw new Error(`Owned ${kind} job ${id} failed`, {
+          cause: Object.hasOwn(end, 'failureCause') ? end.failureCause : end.failedReason,
+        })
+      return end
     } finally {
-      elections.off('completed', onStatsDone)
-      elections.off('failed', onStatsFail)
-      entitiesListeners.off('completed', onPostDone)
-      entitiesListeners.off('failed', onPostFail)
-      addSpy.mockRestore()
-      bulkSpy.mockRestore()
-      retrySpy.mockRestore()
+      deadline.removeEventListener('abort', abort)
     }
   }
+  async function dispose() {
+    // Test timeout doesn't cancel producers: settle the full operation before unhooking.
+    await Promise.allSettled([operation])
+    const errors = (await instrumentation?.drain()) ?? []
+    const attempt = async (run: () => unknown) => {
+      try {
+        await run()
+      } catch (err) {
+        errors.push(err)
+      }
+    }
+    // Growing inventories retain every returned native identity, including late processor retries.
+    let entityCursor = 0
+    let admissionCursor = 0
+    do {
+      for (; entityCursor < (instrumentation?.entityJobs.length ?? 0); entityCursor++) {
+        const item = instrumentation!.entityJobs[entityCursor]!
+        const [settled] = await Promise.allSettled([item.job])
+        if (settled?.status === 'fulfilled' && settled.value)
+          await attempt(() => wait('entity', settled.value!.id))
+      }
+      for (; admissionCursor < (instrumentation?.admissions.length ?? 0); admissionCursor++) {
+        const item = instrumentation!.admissions[admissionCursor]!
+        const [settled] = await Promise.allSettled([item.jobs])
+        if (settled?.status === 'fulfilled' && Array.isArray(settled.value)) {
+          for (const job of settled.value as Job[]) {
+            if (!job?.id) {
+              errors.push(new Error('Owned result has no concrete job ID'))
+              continue
+            }
+            await attempt(() => wait('election', job.id))
+          }
+        }
+      }
+      errors.push(...((await instrumentation?.drain()) ?? []))
+    } while (
+      entityCursor < (instrumentation?.entityJobs.length ?? 0) ||
+      admissionCursor < (instrumentation?.admissions.length ?? 0)
+    )
+    errors.push(...(instrumentation?.restore() ?? []))
+    await attempt(() => entity?.close())
+    await attempt(() => election?.close())
+    active = false
+    if (errors.length)
+      throw new AggregateError(errors, 'Owned election cleanup failed', { cause: errors[0] })
+  }
+}
+async function settleAll(promises: Promise<unknown>[]) {
+  const results = await Promise.allSettled(promises)
+  const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+  if (errors.length)
+    throw new AggregateError(errors, 'Owned admissions failed', { cause: errors[0] })
+}
+function retainRejection(error: unknown) {
+  return error
 }
