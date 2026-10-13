@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { TestQueue, TestWorker } from 'glide-mq/testing'
 import { createTestQueueTerminalSource } from './glide-mq-vitest-terminal-source.mts'
-import { observeElectionTerminalSource } from '../backend/test-helpers/election-vote-stats-events.mts'
+import { observeElectionTerminalSource } from './election-vote-stats-events.mts'
 
 /** This is the public testing transport, not evidence of physical Valkey events. */
 describe('public TestQueue exact terminal source', () => {
