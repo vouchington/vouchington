@@ -222,6 +222,30 @@ describe('copyright email review path', () => {
     expect(reply.match).toBeNull()
     await expectManualReview(moderator, reply.intakeId, 'unresolved_thread')
   })
+
+  it('keeps a reply in manual review when a referenced Message-ID is duplicated', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const parentMessageId = copyrightEmailMessageId()
+    const ambiguousMessageId = copyrightEmailMessageId()
+    const parent = await recordThreadedCopyrightEmail({
+      messageId: parentMessageId,
+      replyReferences: [],
+    })
+    await recordThreadedCopyrightEmail({ messageId: ambiguousMessageId, replyReferences: [] })
+    await recordThreadedCopyrightEmail({ messageId: ambiguousMessageId, replyReferences: [] })
+    const reply = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      inReplyTo: [parentMessageId],
+      replyReferences: [ambiguousMessageId],
+    })
+
+    expect(reply.match).toBeNull()
+    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
+    await promoteCopyrightEmailIntake(
+      await copyrightEmailPromotionInput(moderator, parent.intakeId),
+    )
+    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
+  })
 })
 
 async function expectManualReview(

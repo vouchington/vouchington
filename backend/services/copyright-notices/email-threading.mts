@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import {
@@ -19,6 +19,13 @@ import {
 
 export type { CopyrightEmailThreadMatch } from './email-thread-match.mts'
 
+type CopyrightEmailIntakeNoticeLink = {
+  intakeId: string
+  noticeId: string
+  linkKind: 'initial' | 'thread'
+  matchedReference?: string | null
+}
+
 export async function recordCopyrightEmailThreadReferences(input: {
   intakeId: string
   messageId: string | null
@@ -37,30 +44,47 @@ export async function recordCopyrightEmailThreadReferences(input: {
     await recordCopyrightEmailAncestorEdges(transaction, input.intakeId)
   }
   const ambiguous = await copyrightEmailMessageIdIsAmbiguous(transaction, input.intakeId)
-  await transaction.commit()
-  if (ambiguous) return null
+  if (ambiguous) {
+    await transaction.commit()
+    return null
+  }
   const match = await findCopyrightEmailThreadMatch(
     input.intakeId,
     normalizedCopyrightEmailReplyValues(input),
+    transaction,
   )
   if (match) {
-    await linkCopyrightEmailIntakeToNotice({
-      intakeId: input.intakeId,
-      noticeId: match.noticeId,
-      linkKind: 'thread',
-      matchedReference: match.matchedReference,
-    })
+    await linkCopyrightEmailIntakeToNotice(
+      {
+        intakeId: input.intakeId,
+        noticeId: match.noticeId,
+        linkKind: 'thread',
+        matchedReference: match.matchedReference,
+      },
+      transaction,
+    )
   }
+  await transaction.commit()
   return match
 }
 
-export async function linkCopyrightEmailIntakeToNotice(input: {
-  intakeId: string
-  noticeId: string
-  linkKind: 'initial' | 'thread'
-  matchedReference?: string | null
-}): Promise<void> {
-  await using transaction = await beginTransaction()
+export async function linkCopyrightEmailIntakeToNotice(
+  input: CopyrightEmailIntakeNoticeLink,
+  transaction?: TransactionQuery,
+): Promise<void> {
+  if (transaction) {
+    await insertCopyrightEmailIntakeNoticeLink(transaction, input)
+    return
+  }
+  await using owned = await beginTransaction()
+  await insertCopyrightEmailIntakeNoticeLink(owned, input)
+  await owned.commit()
+}
+
+async function insertCopyrightEmailIntakeNoticeLink(
+  transaction: TransactionQuery,
+  input: CopyrightEmailIntakeNoticeLink,
+): Promise<void> {
   await transaction(sql`/* linkCopyrightEmailIntakeToNotice */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind,
@@ -78,5 +102,4 @@ export async function linkCopyrightEmailIntakeToNotice(input: {
       ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
     `)
   }
-  await transaction.commit()
 }

@@ -1,12 +1,27 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function findOutboundCopyrightEmailThreadMatch(references: string[]): Promise<{
+type OutboundCopyrightEmailThreadMatch = {
   noticeId: string
   matchedIntakeId: null
   matchedReference: string
-} | null> {
-  await using transaction = await beginTransaction()
+}
+
+export async function findOutboundCopyrightEmailThreadMatch(
+  references: string[],
+  transaction?: TransactionQuery,
+): Promise<OutboundCopyrightEmailThreadMatch | null> {
+  if (transaction) return readOutboundCopyrightEmailThreadMatch(references, transaction)
+  await using owned = await beginTransaction()
+  const match = await readOutboundCopyrightEmailThreadMatch(references, owned)
+  await owned.commit()
+  return match
+}
+
+async function readOutboundCopyrightEmailThreadMatch(
+  references: string[],
+  transaction: TransactionQuery,
+): Promise<OutboundCopyrightEmailThreadMatch | null> {
   const { rows } = await transaction<{
     noticeId: string
     matchedReference: string
@@ -21,7 +36,6 @@ export async function findOutboundCopyrightEmailThreadMatch(references: string[]
     ORDER BY copyright_notice_id, "matchedReference"
     LIMIT 2
   `)
-  await transaction.commit()
   if (rows.length !== 1) return null
   const row = rows[0]
   if (!row?.matchedReference) return null

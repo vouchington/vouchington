@@ -90,6 +90,25 @@ export function copyrightEmailIntakeMessageIdIsAmbiguousSql(intakeId: SQLStateme
   return query
 }
 
+/** True when one In-Reply-To or References token is a Message-ID claimed by two or more intakes. */
+export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStatement): SQLStatement {
+  const query = sql`EXISTS (
+    SELECT 1
+    FROM copyright_notice_email_thread_references reference
+    JOIN copyright_notice_email_thread_references first_claimant
+      ON first_claimant.lookup_token = reference.lookup_token
+     AND first_claimant.reference_kind = 'message_id'
+    JOIN copyright_notice_email_thread_references second_claimant
+      ON second_claimant.lookup_token = reference.lookup_token
+     AND second_claimant.reference_kind = 'message_id'
+     AND second_claimant.copyright_notice_email_intake_id <> first_claimant.copyright_notice_email_intake_id
+    WHERE reference.reference_kind IN ('in_reply_to', 'references')
+      AND reference.copyright_notice_email_intake_id = `
+  query.append(intakeId)
+  query.append(sql`)`)
+  return query
+}
+
 /** A reply still waiting for one root case. Duplicate and conflicting intakes are reviewable. */
 export async function assertCopyrightEmailUnresolvedReply(
   transaction: TransactionQuery,

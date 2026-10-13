@@ -1,6 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { copyrightEmailIntakeMessageIdIsAmbiguousSql } from './email-thread-review-path.mts'
+import {
+  copyrightEmailIntakeMessageIdIsAmbiguousSql,
+  copyrightEmailReferencedTokenIsAmbiguousSql,
+} from './email-thread-review-path.mts'
 
 /**
  * Links replies that arrived before a case, including chains. A reply whose ancestors are not all
@@ -40,6 +43,8 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
   )
   linkQuery.append(sql` OR `)
   linkQuery.append(copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
+  linkQuery.append(sql` OR `)
+  linkQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql`
       UNION
       SELECT edge.reply_message_intake_id

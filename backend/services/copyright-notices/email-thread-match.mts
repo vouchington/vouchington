@@ -1,9 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { findOutboundCopyrightEmailThreadMatch } from './email-threading-outbound.mts'
-import { copyrightEmailIntakeMessageIdIsAmbiguousSql } from './email-thread-review-path.mts'
+import { copyrightEmailReferencedTokenIsAmbiguousSql } from './email-thread-review-path.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
 
 export type CopyrightEmailThreadMatch = {
@@ -13,23 +13,47 @@ export type CopyrightEmailThreadMatch = {
 }
 
 type InboundAncestorMatch = {
-  status: 'none' | 'conflict' | 'match'
+  status: 'none' | 'blocked' | 'match'
   noticeId: string | null
   matchedIntakeId: string | null
   matchedLookup: string | null
 }
 
-/** One notice across ancestor edges and a sent outbound message. Conflicting ancestors match nothing. */
+type InboundAncestorRow = {
+  ancestorCount: number
+  noticeCount: number
+  unlinkedCount: number
+  noticeId: string | null
+  matchedIntakeId: string | null
+  matchedLookup: string | null
+  referencedAmbiguous: boolean
+}
+
+/**
+ * One notice across ancestor edges and a sent outbound message. A known unlinked ancestor,
+ * two cases, or a duplicated referenced Message-ID matches nothing, so outbound cannot claim it.
+ */
 export async function findCopyrightEmailThreadMatch(
   intakeId: string,
   references: string[],
+  transaction?: TransactionQuery,
 ): Promise<CopyrightEmailThreadMatch | null> {
   if (references.length === 0) return null
-  const [inbound, outbound] = await Promise.all([
-    findInboundCopyrightEmailThreadMatch(intakeId, references),
-    findOutboundCopyrightEmailThreadMatch(references),
-  ])
-  if (inbound.status === 'conflict') return null
+  if (transaction) return matchCopyrightEmailThread(intakeId, references, transaction)
+  await using owned = await beginTransaction()
+  const match = await matchCopyrightEmailThread(intakeId, references, owned)
+  await owned.commit()
+  return match
+}
+
+async function matchCopyrightEmailThread(
+  intakeId: string,
+  references: string[],
+  transaction: TransactionQuery,
+): Promise<CopyrightEmailThreadMatch | null> {
+  const inbound = await findInboundCopyrightEmailThreadMatch(intakeId, references, transaction)
+  if (inbound.status === 'blocked') return null
+  const outbound = await findOutboundCopyrightEmailThreadMatch(references, transaction)
   const inboundMatch = inbound.status === 'match' ? toInboundMatch(inbound, references) : null
   const matches = [inboundMatch, outbound].filter(
     (match): match is CopyrightEmailThreadMatch => match !== null,
@@ -42,6 +66,7 @@ export async function findCopyrightEmailThreadMatch(
 async function findInboundCopyrightEmailThreadMatch(
   intakeId: string,
   references: string[],
+  transaction: TransactionQuery,
 ): Promise<InboundAncestorMatch> {
   const lookups = references.map(reference =>
     hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, reference),
@@ -51,23 +76,32 @@ async function findInboundCopyrightEmailThreadMatch(
       SELECT ancestor.ancestor_message_intake_id
       FROM copyright_notice_email_message_ancestors ancestor
       WHERE ancestor.reply_message_intake_id = ${intakeId}
-        AND NOT `
-  matchQuery.append(
-    copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`ancestor.ancestor_message_intake_id`),
-  )
-  matchQuery.append(sql`
       UNION
       SELECT edge.ancestor_message_intake_id
       FROM ancestors parent
       JOIN copyright_notice_email_message_ancestors edge
         ON edge.reply_message_intake_id = parent.intake_id
-      WHERE NOT `)
-  matchQuery.append(
-    copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`edge.ancestor_message_intake_id`),
-  )
-  matchQuery.append(sql`
     )
-    SELECT link.copyright_notice_id AS "noticeId",
+    SELECT (SELECT count(*)::int FROM ancestors) AS "ancestorCount",
+      (
+        SELECT count(DISTINCT link.copyright_notice_id)::int
+        FROM ancestors
+        JOIN copyright_notice_email_intake_notice_links link
+          ON link.copyright_notice_email_intake_id = ancestors.intake_id
+      ) AS "noticeCount",
+      (
+        SELECT count(*)::int FROM ancestors
+        WHERE NOT EXISTS (
+          SELECT 1 FROM copyright_notice_email_intake_notice_links link
+          WHERE link.copyright_notice_email_intake_id = ancestors.intake_id
+        )
+      ) AS "unlinkedCount",
+      (
+        SELECT min(link.copyright_notice_id::text)::uuid
+        FROM ancestors
+        JOIN copyright_notice_email_intake_notice_links link
+          ON link.copyright_notice_email_intake_id = ancestors.intake_id
+      ) AS "noticeId",
       (
         SELECT min(direct_edge.ancestor_message_intake_id::text)::uuid
         FROM copyright_notice_email_message_ancestors direct_edge
@@ -76,11 +110,6 @@ async function findInboundCopyrightEmailThreadMatch(
          AND parent_message.reference_kind = 'message_id'
          AND parent_message.lookup_token = ANY(${lookups})
         WHERE direct_edge.reply_message_intake_id = ${intakeId}
-          AND NOT `)
-  matchQuery.append(
-    copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`direct_edge.ancestor_message_intake_id`),
-  )
-  matchQuery.append(sql`
       ) AS "matchedIntakeId",
       (
         SELECT min(parent_message.lookup_token)
@@ -90,32 +119,31 @@ async function findInboundCopyrightEmailThreadMatch(
          AND parent_message.reference_kind = 'message_id'
          AND parent_message.lookup_token = ANY(${lookups})
         WHERE direct_edge.reply_message_intake_id = ${intakeId}
-          AND NOT `)
-  matchQuery.append(
-    copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`direct_edge.ancestor_message_intake_id`),
-  )
-  matchQuery.append(sql`
-      ) AS "matchedLookup"
-    FROM ancestors
-    LEFT JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = ancestors.intake_id
-    GROUP BY link.copyright_notice_id
-    ORDER BY link.copyright_notice_id
-    LIMIT 2
-  `)
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    noticeId: string | null
-    matchedIntakeId: string | null
-    matchedLookup: string | null
-  }>(matchQuery)
-  await transaction.commit()
-  if (rows.length > 1)
-    return { status: 'conflict', noticeId: null, matchedIntakeId: null, matchedLookup: null }
-  const row = rows[0]
-  if (!row?.noticeId)
-    return { status: 'none', noticeId: null, matchedIntakeId: null, matchedLookup: null }
-  return { status: 'match', ...row }
+      ) AS "matchedLookup",
+      `
+  matchQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`${intakeId}`))
+  matchQuery.append(sql` AS "referencedAmbiguous"`)
+  const { rows } = await transaction<InboundAncestorRow>(matchQuery)
+  return toInboundAncestorMatch(rows[0])
+}
+
+function toInboundAncestorMatch(row: InboundAncestorRow | undefined): InboundAncestorMatch {
+  assert(row, 500, 'Copyright email thread match returned no row')
+  if (row.referencedAmbiguous || row.unlinkedCount > 0 || row.noticeCount !== 1) {
+    return {
+      status: row.ancestorCount === 0 && !row.referencedAmbiguous ? 'none' : 'blocked',
+      noticeId: null,
+      matchedIntakeId: null,
+      matchedLookup: null,
+    }
+  }
+  assert(row.noticeId, 500, 'Copyright email thread match has no notice')
+  return {
+    status: 'match',
+    noticeId: row.noticeId,
+    matchedIntakeId: row.matchedIntakeId,
+    matchedLookup: row.matchedLookup,
+  }
 }
 
 function toInboundMatch(
