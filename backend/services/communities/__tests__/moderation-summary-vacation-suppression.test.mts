@@ -27,7 +27,7 @@ describe('moderation summary vacation suppression', () => {
         role,
       })
       await setTestCommunityDigestVacationSuppression(community.id, recipient.id, suppress)
-      const now = new Date()
+      const now = new Date('2030-08-01T00:00:00.000Z')
       await insertTestCommunityVacation({
         communityId: community.id,
         userId: recipient.id,
@@ -55,4 +55,45 @@ describe('moderation summary vacation suppression', () => {
       expect(rows.some(row => row.name === community.name)).toBe(included)
     },
   )
+  it.each([
+    { label: 'before start', offset: -1, included: true },
+    { label: 'at start', offset: 0, included: false },
+    { label: 'before end', offset: 1999, included: false },
+    { label: 'at end', offset: 2000, included: true },
+  ] as const)('vacation $label includes community=$included', async ({ offset, included }) => {
+    const recipient = await createTestUser()
+    const community = await insertTestCommunity({ createdById: recipient.id })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: recipient.id,
+      role: 'owner',
+    })
+    await setTestCommunityDigestVacationSuppression(community.id, recipient.id, true)
+    const start = new Date('2030-07-31T23:59:59.000Z')
+    const end = new Date('2030-08-01T00:00:01.000Z')
+    await insertTestCommunityVacation({
+      communityId: community.id,
+      userId: recipient.id,
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+    })
+    const postId = await insertTestPost({
+      title: 'Vacation boundary summary',
+      slug: `vacation-summary-boundary-${recipient.id}`,
+      markdown: 'Pending review.',
+      createdById: recipient.id,
+      communityId: community.id,
+    })
+    await insertTestPendingCommunityPostReview({
+      communityId: community.id,
+      postId,
+      submittedById: recipient.id,
+    })
+    const rows = await getCommunityModerationSummaryCommunities(
+      recipient.id,
+      new Date(start.getTime() - 86_400_000),
+      new Date(start.getTime() + offset),
+    )
+    expect(rows.some(row => row.name === community.name)).toBe(included)
+  })
 })

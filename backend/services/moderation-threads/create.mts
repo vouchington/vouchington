@@ -9,6 +9,7 @@ import {
 import sql from 'sql-template-strings'
 import type { ModInternalThread } from './types.mts'
 import { getReportResolutionContext } from '@services/moderation-reports/resolve'
+import { addModParticipants } from './participants.mts'
 
 export async function openModInternalThread(
   currentUserId: string,
@@ -18,6 +19,7 @@ export async function openModInternalThread(
     postId?: string | null
   },
   queryOptions?: QueryOptions,
+  dependencies: { clock?: () => Date } = {},
 ): Promise<ModInternalThread> {
   const { communityId, reportId, postId } = options
   const hasReport = !!reportId
@@ -26,6 +28,8 @@ export async function openModInternalThread(
   if (hasReport === hasPost) {
     throw createError(422, 'Exactly one of reportId or postId must be set')
   }
+
+  const observedTime = observeModerationVacationTime(dependencies.clock)
 
   if (reportId) {
     const context = await getReportResolutionContext(reportId, communityId)
@@ -45,8 +49,8 @@ export async function openModInternalThread(
 
   const run = (query: TransactionQuery) =>
     hasReport
-      ? openModInternalThreadForReport(query, currentUserId, communityId, reportId!)
-      : openModInternalThreadForPost(query, currentUserId, communityId, postId!)
+      ? openModInternalThreadForReport(query, currentUserId, communityId, reportId!, observedTime)
+      : openModInternalThreadForPost(query, currentUserId, communityId, postId!, observedTime)
   if (queryOptions?.query || queryOptions?.client) return withTransactionOptions(queryOptions, run)
   await using transaction = await beginTransaction()
   const result = await run(transaction)
@@ -59,6 +63,7 @@ async function openModInternalThreadForReport(
   currentUserId: string,
   communityId: string,
   reportId: string,
+  observedTime: Date | null,
 ): Promise<ModInternalThread> {
   const { rows: convRows } = await query(sql`/* openModInternalThread:report */
     INSERT INTO conversations (
@@ -95,7 +100,7 @@ async function openModInternalThreadForReport(
     thread = existingRows[0] as ModInternalThread
   } else {
     thread = convRows[0] as ModInternalThread
-    await addModParticipants(query, thread.id, communityId)
+    await addModParticipants(query, thread.id, communityId, observedTime)
   }
 
   await upsertCallerParticipant(query, thread.id, currentUserId)
@@ -107,6 +112,7 @@ async function openModInternalThreadForPost(
   currentUserId: string,
   communityId: string,
   postId: string,
+  observedTime: Date | null,
 ): Promise<ModInternalThread> {
   const { rows: convRows } = await query(sql`/* openModInternalThread:post */
     INSERT INTO conversations (
@@ -143,44 +149,11 @@ async function openModInternalThreadForPost(
     thread = existingRows[0] as ModInternalThread
   } else {
     thread = convRows[0] as ModInternalThread
-    await addModParticipants(query, thread.id, communityId)
+    await addModParticipants(query, thread.id, communityId, observedTime)
   }
 
   await upsertCallerParticipant(query, thread.id, currentUserId)
   return thread
-}
-
-async function addModParticipants(
-  query: TransactionQuery,
-  conversationId: string,
-  communityId: string,
-): Promise<void> {
-  const { rows: modRows } = await query(sql`/* openModInternalThread:mods */
-    SELECT cm.user_id
-    FROM community_members cm
-    WHERE cm.community_id = ${communityId}
-      AND cm.role IN ('owner', 'moderator')
-      AND cm.removed_at IS NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM community_member_vacations v
-        WHERE v.community_id = cm.community_id
-          AND v.user_id      = cm.user_id
-          AND v.starts_at   <= now()
-          AND (v.ends_at IS NULL OR v.ends_at > now())
-      )
-  `)
-
-  if (modRows.length === 0) return
-
-  const typedModRows = modRows as Array<{ user_id: string }>
-  await query(sql`/* openModInternalThread:modParticipants */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    SELECT ${conversationId}::uuid AS conversation_id, user_id, 'admin'
-    FROM unnest(${typedModRows.map(row => row.user_id)}::uuid[]) AS input(user_id)
-    ORDER BY conversation_id ASC NULLS LAST, user_id ASC NULLS LAST
-    ON CONFLICT (conversation_id, user_id) WHERE (user_id IS NOT NULL) AND (removed_at IS NULL)
-    DO NOTHING
-  `)
 }
 
 async function upsertCallerParticipant(
@@ -193,4 +166,14 @@ async function upsertCallerParticipant(
     VALUES (${conversationId}, ${userId}, 'admin')
     ON CONFLICT DO NOTHING
   `)
+}
+
+function observeModerationVacationTime(clock: (() => Date) | undefined): Date | null {
+  if (!clock) return null
+  const observedTime = clock()
+  const milliseconds = observedTime.getTime()
+  if (!Number.isFinite(milliseconds)) {
+    throw new RangeError('Moderation vacation clock must return a valid Date')
+  }
+  return new Date(milliseconds)
 }
