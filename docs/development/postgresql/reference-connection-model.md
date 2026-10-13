@@ -65,6 +65,13 @@ flowchart LR
 ```
 
 Do not set `pipeline` on `getPsqlPoolConfiguration()` or the shared pool constructors. pg 8.23
-pipelining is a same-client submit, and this package enables it only inside `psql.pipelineBatch()`
-by toggling the flag on a checked-out client, then restoring it before release. Pool-wide
-pipelining would also apply to transactions, cursors, and COPY.
+pipelining is a same-client submit, and `@vouchington/postgres` enables it only for two bounded
+batches, each on a checked-out client whose flag it restores before release:
+
+- `psql.pipelineBatch()`.
+- The start of a transaction that `beginTransaction()` or `beginBoundedTransaction()` opens on its
+  own pooled client. `BEGIN` (plus the bounded `statement_timeout`) shares the first statement's
+  round trip, so a `BEGIN` failure surfaces from that statement or from `commit()`. A transaction
+  on a caller-supplied `PoolClient` still sends `BEGIN` on its own.
+
+Pool-wide pipelining would also apply to every later transaction statement, cursors, and COPY.
