@@ -11,6 +11,8 @@ export async function createCommunityActivityDigestBatch(input: {
   windowStart: Date
   windowEnd: Date
   afterUserId?: string
+  throughUserId?: string
+  now?: Date
 }): Promise<{
   created: Array<{ userId: string; notificationId: string }>
   nextUserId: string | null
@@ -20,12 +22,14 @@ export async function createCommunityActivityDigestBatch(input: {
   )
   const { rows: recipientRows, page } = await listCommunityActivityDigestRecipientPage(
     input.afterUserId,
+    input.throughUserId,
   )
   if (page.length === 0) return { created: [], nextUserId: null }
   const digestRows = await aggregateCommunityActivityDigestBatch({
     recipientIds: page.map(row => row.user_id),
     windowStart: input.windowStart,
     windowEnd: input.windowEnd,
+    now: input.now ?? new Date(),
     windowStartId: getMinUUIDv7ForDate(input.windowStart),
     windowEndId: getMinUUIDv7ForDate(input.windowEnd),
   })
