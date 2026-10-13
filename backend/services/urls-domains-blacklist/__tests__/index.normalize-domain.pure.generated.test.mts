@@ -29,6 +29,9 @@ describe('index.generated (normalizeDomain)', () => {
     expect(normalizeDomain('example.com/path')).toBeNull()
     expect(normalizeDomain('.leading-dot.com')).toBeNull()
     expect(normalizeDomain('-leading-dash.com')).toBeNull()
+    const longest = Array.from({ length: 4 }, () => 'a'.repeat(63)).join('.')
+    expect(normalizeDomain(longest)).toBe(longest)
+    expect(normalizeDomain(`${longest}.com`)).toBeNull()
   })
 
   it('normalizeDomain handles subdomains and hyphens', () => {

@@ -30,7 +30,9 @@ describe('sync-db', () => {
 
     const result = await syncDomainsWithDatabase(
       sourceId,
-      new Response(`# comment\nNew-A-${suffix}.com\nnew-a-${suffix}.com\nnew-b-${suffix}.com\n`),
+      new Response(
+        `# comment\n${Array.from({ length: 4 }, () => 'a'.repeat(63)).join('.')}.com\nNew-A-${suffix}.com\nnew-a-${suffix}.com\nnew-b-${suffix}.com\n`,
+      ),
       'url',
     )
 

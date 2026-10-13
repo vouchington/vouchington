@@ -9,6 +9,7 @@ export function normalizeDomain(line: string): string | null {
   if (trimmed.startsWith('#')) return null
 
   const domain = trimmed.toLowerCase()
+  if (domain.length > 255) return null
 
   // Basic domain format validation
   if (!DOMAIN_REGEX.test(domain)) return null
