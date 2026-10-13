@@ -1,11 +1,11 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** Reads the current pause-collection generation, if a work row exists. */
 export async function getTestMembershipPauseCollectionRequestedAt(
   userId: string,
 ): Promise<Date | null> {
-  const { rows } = await read<{ requested_at: Date }>(
+  const { rows } = await write<{ requested_at: Date }>(
     sql`/* getTestMembershipPauseCollectionRequestedAt */
       SELECT requested_at FROM membership_pause_collection_work_items
       WHERE user_id = ${userId}
@@ -26,7 +26,47 @@ export async function recordTestMembershipPauseCollectionWork(userId: string): P
       lease_token = NULL,
       leased_at = NULL,
       lease_expires_at = NULL,
-      attempt_count = 0
+      attempt_count = 0,
+      last_failed_at = NULL,
+      last_failure_message = NULL
+  `)
+}
+
+export type TestMembershipPauseCollectionWork = {
+  availableAt: Date
+  attemptCount: number
+  leaseToken: string | null
+  lastFailedAt: Date | null
+  lastFailureMessage: string | null
+}
+
+/** Reads one user's pause-collection work from the primary. */
+export async function getTestMembershipPauseCollectionWork(
+  userId: string,
+): Promise<TestMembershipPauseCollectionWork | null> {
+  const { rows } = await write<TestMembershipPauseCollectionWork>(
+    sql`/* getTestMembershipPauseCollectionWork */
+      SELECT available_at AS "availableAt",
+        attempt_count AS "attemptCount",
+        lease_token AS "leaseToken",
+        last_failed_at AS "lastFailedAt",
+        last_failure_message AS "lastFailureMessage"
+      FROM membership_pause_collection_work_items
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `,
+  )
+  return rows[0] ?? null
+}
+
+/** Moves one user's unleased availability to the epoch so it sorts ahead of other due rows. */
+export async function backdateTestMembershipPauseCollectionAvailableAt(
+  userId: string,
+): Promise<void> {
+  await write(sql`/* backdateTestMembershipPauseCollectionAvailableAt */
+    UPDATE membership_pause_collection_work_items
+    SET available_at = timestamptz '1970-01-01'
+    WHERE user_id = ${userId} AND lease_token IS NULL
   `)
 }
 
@@ -68,6 +108,8 @@ export async function installExpiredTestMembershipPauseCollectionLease(
       lease_token = uuidv7(),
       leased_at = timestamptz '1970-01-01',
       lease_expires_at = timestamptz '1970-01-02',
-      attempt_count = 0
+      attempt_count = 0,
+      last_failed_at = NULL,
+      last_failure_message = NULL
   `)
 }

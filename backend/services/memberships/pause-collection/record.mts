@@ -15,6 +15,8 @@ export async function recordMembershipPauseCollectionWork(
       lease_token = NULL,
       leased_at = NULL,
       lease_expires_at = NULL,
-      attempt_count = 0
+      attempt_count = 0,
+      last_failed_at = NULL,
+      last_failure_message = NULL
   `)
 }

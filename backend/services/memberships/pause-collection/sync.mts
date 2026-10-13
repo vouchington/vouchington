@@ -8,7 +8,7 @@ import {
   completeMembershipPauseCollection,
   confirmMembershipPauseCollectionLease,
   membershipPauseCollectionLeaseHeld,
-  releaseMembershipPauseCollection,
+  scheduleMembershipPauseCollectionRetry,
   type PauseCollectionClaim,
 } from './work.mts'
 
@@ -36,7 +36,13 @@ export async function syncMembershipPauseCollection(
     if (outcome === 'superseded') return
     await completeMembershipPauseCollection(owned)
   } catch (err) {
-    await releaseMembershipPauseCollection(owned)
+    const failureMessage = pauseCollectionFailureMessage(err)
+    const recorded = await scheduleMembershipPauseCollectionRetry({
+      ...owned,
+      attemptCount: claimed.attemptCount,
+      failureMessage,
+    })
+    if (recorded) logPauseCollectionStripeFailure(owned, claimed.attemptCount, stripeErrorCode(err))
     throw err
   }
 }
@@ -121,9 +127,30 @@ async function readStripeSubscription(subscriptionId: string): Promise<{
 }
 
 function isMissingStripeSubscription(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    (error as { code?: string }).code === 'resource_missing'
-  )
+  return stripeErrorCode(error) === 'resource_missing'
+}
+
+function stripeErrorCode(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return null
+  const code = (error as { code?: unknown }).code
+  return typeof code === 'string' && code.length > 0 ? code : null
+}
+
+function pauseCollectionFailureMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message.trim() : ''
+  const bounded = message.slice(0, 500)
+  return bounded.length > 0 ? bounded : 'Stripe pause collection update failed'
+}
+
+function logPauseCollectionStripeFailure(
+  input: { userId: string; requestedAt: string },
+  attemptCount: number,
+  stripeCode: string | null,
+): void {
+  console.error('Stripe pause collection update failed', {
+    userId: input.userId,
+    requestedAt: input.requestedAt,
+    attemptCount,
+    stripeErrorCode: stripeCode,
+  })
 }

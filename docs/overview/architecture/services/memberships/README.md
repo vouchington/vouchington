@@ -21,8 +21,9 @@ Business logic for user memberships (plans, billing, admin grants).
   and retry availability in `membership_operation_execution_work_items`. Completion deletes work
   atomically while immutable refund attempts and receipts remain
 - `membership_pause_collection_work_items` is one row per user while a suspension change still
-  needs the direct Stripe subscription's `pause_collection` to match. Completion deletes the row.
-  Granted memberships never become a Stripe update
+  needs the direct Stripe subscription's `pause_collection` to match. A Stripe failure records
+  `last_failed_at` and `last_failure_message` and delays `available_at`; a newer suspension or
+  lift clears them. Completion deletes the row. Granted memberships never become a Stripe update
 - `membership_google_play_acknowledgments` retains the encrypted purchase obligation and terminal
   result; its child work row owns the retry lease. Every retry refetches authoritative provider state
   before an acknowledgement side effect
@@ -189,7 +190,9 @@ suspended time. The period already paid is not refunded. Lifting the suspension 
 `pause_collection`, and billing resumes. The suspension or lift transaction writes
 `membership_pause_collection_work_items.requested_at` and clears any lease. Stripe runs only after
 that commit, from `syncMembershipPauseCollection`. A lost enqueue stays on the row;
-`dispatchMembershipPauseCollection` claims due rows every minute.
+`dispatchMembershipPauseCollection` claims due rows every minute. A Stripe failure clears the
+lease, records the failure, and sets `available_at` on the same backoff as refund reconciliation,
+capped at 24 hours, with no terminal give-up.
 
 The membership stays `active`. This path does not set `paused_at`, and it does not change
 `view_current_paid_memberships`, checkout, or Stripe billing mode. `paused` stays the projection

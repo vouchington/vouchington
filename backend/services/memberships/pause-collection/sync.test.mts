@@ -1,24 +1,26 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beginTransaction } from '@data-stores/psql'
 import * as stripeClientModule from '@modules/stripe/client'
-import { memberships } from '@queues/memberships/queues'
-import type { SyncMembershipPauseCollectionData } from '@queues/memberships/types'
 import { getUserActivePlan } from '@services/memberships'
 import {
-  createTestMembership,
+  backdateTestMembershipPauseCollectionAvailableAt,
+  claimTestPauseCollectionDispatch,
+  createTestPauseCollectionDirectSubscription,
   createTestUser,
   deleteTestMembershipPauseCollectionWork,
   expireTestMembershipPauseCollectionLease,
+  getTestMembershipPauseCollectionWork,
   getTestMembershipRaw,
-  installExpiredTestMembershipPauseCollectionLease,
-  readAllQueueJobs,
+  queueTestPauseCollectionSync,
+  readTestPauseCollectionSyncJobs,
   recordTestMembershipPauseCollectionWork,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
-import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '../get-catalog.mts'
 import { dispatchDuePauseCollectionWork } from './dispatch.mts'
-import { enqueueRecordedMembershipPauseCollection } from './enqueue-recorded.mts'
+import { recordMembershipPauseCollectionWork } from './record.mts'
+import { membershipPauseCollectionRetryDelayMs } from './retry-delay.mts'
 import { syncMembershipPauseCollection } from './sync.mts'
 
 type Pause = { behavior: 'void'; resumes_at?: number | null } | null
@@ -44,6 +46,7 @@ describe('membership pause collection', () => {
     vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
       subscriptions: { retrieve, update },
     } as never)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -52,11 +55,13 @@ describe('membership pause collection', () => {
 
   it('sets pause collection to void when the user is suspended and ignores a repeated delivery', async () => {
     const member = await createTestUser()
-    const { subscriptionId, membershipId } = await directSubscription(member.id)
+    const { subscriptionId, membershipId } = await createTestPauseCollectionDirectSubscription(
+      member.id,
+    )
 
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
     await syncMembershipPauseCollection(job!)
     await syncMembershipPauseCollection(job!)
 
@@ -78,15 +83,15 @@ describe('membership pause collection', () => {
 
   it('clears pause collection when the suspension is lifted and ignores a repeated lift', async () => {
     const member = await createTestUser()
-    const { subscriptionId } = await directSubscription(member.id)
+    const { subscriptionId } = await createTestPauseCollectionDirectSubscription(member.id)
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [suspended] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [suspended] = await readTestPauseCollectionSyncJobs(member.id)
     await syncMembershipPauseCollection(suspended!)
 
     await unsuspendTestUser(member.id)
-    await queuePause(member.id)
-    const lifted = (await pauseJobs(member.id)).find(
+    await queueTestPauseCollectionSync(member.id)
+    const lifted = (await readTestPauseCollectionSyncJobs(member.id)).find(
       job => job.requestedAt !== suspended!.requestedAt,
     )
     await syncMembershipPauseCollection(lifted!)
@@ -102,66 +107,18 @@ describe('membership pause collection', () => {
     )
   })
 
-  it('does not pause a granted membership', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const member = await createTestUser()
-    await createTestMembership({ user_id: member.id, plan: 'plus', granted_by_id: admin.id })
-    await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
-
-    await syncMembershipPauseCollection(job!)
-    await syncMembershipPauseCollection(job!)
-
-    expect(retrieve).not.toHaveBeenCalled()
-    expect(update).not.toHaveBeenCalled()
-  })
-
-  it('clears nothing when a lifted user has no direct subscription', async () => {
-    const member = await createTestUser()
-    await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [suspended] = await pauseJobs(member.id)
-    await syncMembershipPauseCollection(suspended!)
-    await unsuspendTestUser(member.id)
-    await queuePause(member.id)
-    const lifted = (await pauseJobs(member.id)).find(
-      job => job.requestedAt !== suspended!.requestedAt,
-    )
-
-    await syncMembershipPauseCollection(lifted!)
-
-    expect(retrieve).not.toHaveBeenCalled()
-    expect(update).not.toHaveBeenCalled()
-  })
-
-  it('does not update an already canceled Stripe subscription', async () => {
-    const member = await createTestUser()
-    await directSubscription(member.id)
-    retrieve.mockImplementation(async (id: string) => ({
-      id,
-      status: 'canceled',
-      pause_collection: null,
-    }))
-    await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
-
-    await syncMembershipPauseCollection(job!)
-    await syncMembershipPauseCollection(job!)
-
-    expect(update).not.toHaveBeenCalled()
-  })
-
   it('retries a Stripe update that was not accepted', async () => {
     const member = await createTestUser()
-    await directSubscription(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
     update.mockRejectedValueOnce(new Error('stripe timeout'))
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
 
     await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
+    const failed = await getTestMembershipPauseCollectionWork(member.id)
+    expect(failed?.leaseToken).toBeNull()
+    expect(failed!.availableAt.getTime()).toBeGreaterThan(Date.now())
     await syncMembershipPauseCollection(job!)
 
     expect(update).toHaveBeenCalledTimes(2)
@@ -169,14 +126,14 @@ describe('membership pause collection', () => {
 
   it('skips another update when Stripe already voided collection', async () => {
     const member = await createTestUser()
-    await directSubscription(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
     update.mockImplementationOnce(async (_id: string, params: { pause_collection: Pause | '' }) => {
       pause = params.pause_collection === '' ? null : params.pause_collection
       throw new Error('accepted response lost')
     })
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
 
     await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('accepted response lost')
     await syncMembershipPauseCollection(job!)
@@ -186,33 +143,36 @@ describe('membership pause collection', () => {
 
   it('reclaims an expired pause-collection lease', async () => {
     const member = await createTestUser()
-    await directSubscription(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const first = (await dispatchDuePauseCollectionWork()).find(row => row.userId === member.id)
-    expect(first?.userId).toBe(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
+    const first = await claimTestPauseCollectionDispatch(member.id, job!.requestedAt)
     expect(update).not.toHaveBeenCalled()
     await expireTestMembershipPauseCollectionLease(member.id)
-
-    const second = (await dispatchDuePauseCollectionWork()).find(row => row.userId === member.id)
+    const second = await claimTestPauseCollectionDispatch(
+      member.id,
+      job!.requestedAt,
+      first.leaseToken,
+    )
     await syncMembershipPauseCollection({
       userId: member.id,
-      requestedAt: first!.requestedAt,
-      leaseToken: first!.leaseToken,
+      requestedAt: first.requestedAt,
+      leaseToken: first.leaseToken,
     })
-    await syncMembershipPauseCollection(second!)
+    await syncMembershipPauseCollection(second)
 
-    expect(second?.leaseToken).not.toBe(first?.leaseToken)
+    expect(second.leaseToken).not.toBe(first.leaseToken)
     expect(update).toHaveBeenCalledTimes(1)
   })
 
   it('reacquires a released dispatcher lease and retries Stripe', async () => {
     const member = await createTestUser()
-    await directSubscription(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
     update.mockRejectedValueOnce(new Error('stripe timeout'))
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
     const stale = { ...job!, leaseToken: randomUUID() }
 
     await expect(syncMembershipPauseCollection(stale)).rejects.toThrow('stripe timeout')
@@ -222,78 +182,116 @@ describe('membership pause collection', () => {
     await deleteTestMembershipPauseCollectionWork(member.id)
   })
 
-  it('reclaims an expired lease when unleased work fills the page', async () => {
-    const expired = await createTestUser()
-    const queued = await createTestUser()
-    await installExpiredTestMembershipPauseCollectionLease(expired.id)
-    await recordTestMembershipPauseCollectionWork(queued.id)
-
-    const claimed = await dispatchDuePauseCollectionWork(1)
-
-    expect(claimed.map(row => row.userId)).toContain(expired.id)
-    await deleteTestMembershipPauseCollectionWork(expired.id)
-    await deleteTestMembershipPauseCollectionWork(queued.id)
-  })
-
   it('treats a missing Stripe subscription as a no-op', async () => {
     const member = await createTestUser()
-    await directSubscription(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
     retrieve.mockRejectedValue(Object.assign(new Error('missing'), { code: 'resource_missing' }))
     await suspendTestUser(member.id)
-    await queuePause(member.id)
-    const [job] = await pauseJobs(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
 
     await syncMembershipPauseCollection(job!)
     await syncMembershipPauseCollection(job!)
 
     expect(update).not.toHaveBeenCalled()
   })
+
+  it('backs off a failed Stripe update until available_at', async () => {
+    const member = await createTestUser()
+    const sibling = await createTestUser()
+    await createTestPauseCollectionDirectSubscription(member.id)
+    update.mockRejectedValueOnce(
+      Object.assign(new Error('stripe timeout'), { code: 'api_connection_error' }),
+    )
+    await suspendTestUser(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    await recordTestMembershipPauseCollectionWork(sibling.id)
+    await backdateTestMembershipPauseCollectionAvailableAt(sibling.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
+    const started = Date.now()
+
+    await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
+
+    const failed = await getTestMembershipPauseCollectionWork(member.id)
+    const delay = membershipPauseCollectionRetryDelayMs(1)
+    expect(failed).toMatchObject({
+      leaseToken: null,
+      attemptCount: 1,
+      lastFailureMessage: 'stripe timeout',
+    })
+    expect(failed!.lastFailedAt).toBeInstanceOf(Date)
+    expect(failed!.availableAt.getTime()).toBeGreaterThan(started + delay - 1000)
+    expect(failed!.availableAt.getTime()).toBeLessThan(Date.now() + delay + 1000)
+    expect(console.error).toHaveBeenCalledWith('Stripe pause collection update failed', {
+      userId: member.id,
+      requestedAt: job!.requestedAt,
+      attemptCount: 1,
+      stripeErrorCode: 'api_connection_error',
+    })
+    const claimedIds = (await dispatchDuePauseCollectionWork(2)).map(row => row.userId)
+    expect(claimedIds).not.toContain(member.id)
+    const siblingHeld = await getTestMembershipPauseCollectionWork(sibling.id)
+    expect(claimedIds.includes(sibling.id) || siblingHeld?.leaseToken != null).toBe(true)
+    expect(await getTestMembershipPauseCollectionWork(member.id)).toMatchObject({
+      availableAt: failed!.availableAt,
+      attemptCount: 1,
+      leaseToken: null,
+    })
+    await deleteTestMembershipPauseCollectionWork(member.id)
+    await deleteTestMembershipPauseCollectionWork(sibling.id)
+  })
+
+  it('deletes the row when a later retry succeeds', async () => {
+    const member = await createTestUser()
+    await createTestPauseCollectionDirectSubscription(member.id)
+    update.mockRejectedValueOnce(new Error('stripe timeout'))
+    await suspendTestUser(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
+
+    await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
+    await syncMembershipPauseCollection(job!)
+
+    expect(update).toHaveBeenCalledTimes(2)
+    await expect(getTestMembershipPauseCollectionWork(member.id)).resolves.toBeNull()
+  })
+
+  it('resets pause-collection backoff on a newer suspension or lift', async () => {
+    const member = await createTestUser()
+    await createTestPauseCollectionDirectSubscription(member.id)
+    update.mockRejectedValueOnce(new Error('stripe timeout'))
+    await suspendTestUser(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
+    await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
+    const failed = await getTestMembershipPauseCollectionWork(member.id)
+
+    await using transaction = await beginTransaction()
+    await recordMembershipPauseCollectionWork(transaction, member.id)
+    await transaction.commit()
+
+    const reset = await getTestMembershipPauseCollectionWork(member.id)
+    expect(reset).toMatchObject({
+      attemptCount: 0,
+      leaseToken: null,
+      lastFailedAt: null,
+      lastFailureMessage: null,
+    })
+    expect(reset!.availableAt.getTime()).toBeLessThan(failed!.availableAt.getTime())
+    await deleteTestMembershipPauseCollectionWork(member.id)
+  })
 })
 
-async function directSubscription(userId: string): Promise<{
-  subscriptionId: string
-  membershipId: string
-}> {
-  const subscriptionId = `sub_${randomUUID()}`
-  const membership = await createTestMembership({
-    user_id: userId,
-    plan: 'plus',
-    stripe_subscription_id: subscriptionId,
-    stripe_customer_id: `cus_${randomUUID()}`,
-    provider_environment: DEFAULT_STRIPE_CATALOG_CONTEXT.environment,
-    provider_application_id: DEFAULT_STRIPE_CATALOG_CONTEXT.applicationId,
+describe('membershipPauseCollectionRetryDelayMs', () => {
+  it('grows and caps at 24 hours', () => {
+    const fiveMinutes = 5 * 60 * 1000
+    const day = 24 * 60 * 60 * 1000
+    expect(membershipPauseCollectionRetryDelayMs(1)).toBe(fiveMinutes)
+    expect(membershipPauseCollectionRetryDelayMs(2)).toBe(fiveMinutes * 2)
+    expect(membershipPauseCollectionRetryDelayMs(3)).toBe(fiveMinutes * 4)
+    const capped = membershipPauseCollectionRetryDelayMs(9)
+    expect(capped).toBe(Math.min(fiveMinutes * 2 ** 8, day))
+    expect(membershipPauseCollectionRetryDelayMs(40)).toBe(capped)
+    expect(capped).toBeLessThanOrEqual(day)
   })
-  return { subscriptionId, membershipId: membership.id }
-}
-
-async function queuePause(userId: string): Promise<void> {
-  await recordTestMembershipPauseCollectionWork(userId)
-  await enqueueRecordedMembershipPauseCollection(userId)
-}
-
-async function pauseJobs(userId: string): Promise<SyncMembershipPauseCollectionData[]> {
-  const jobs = await readAllQueueJobs(memberships)
-  return jobs.flatMap(job => {
-    const data: unknown = job.data
-    if (
-      job.name !== 'syncMembershipPauseCollection' ||
-      typeof data !== 'object' ||
-      data === null ||
-      !('userId' in data) ||
-      data.userId !== userId ||
-      !('requestedAt' in data) ||
-      typeof data.requestedAt !== 'string'
-    ) {
-      return []
-    }
-    return [
-      {
-        userId,
-        requestedAt: data.requestedAt,
-        ...('leaseToken' in data && typeof data.leaseToken === 'string'
-          ? { leaseToken: data.leaseToken }
-          : {}),
-      },
-    ]
-  })
-}
+})

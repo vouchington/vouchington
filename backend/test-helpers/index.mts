@@ -128,6 +128,7 @@ export {
 export * from './community-activity-digest-dispatch.mts'
 export { createTestUnprojectedProviderObservation } from './entities/memberships/provider-observation-projection.mts'
 export * from './entities/membership-pause-collection.mts'
+export * from './membership-pause-collection-delivery.mts'
 export * from './membership-entitlement-effects.mts'
 export * from './vector-search-recall.mts'
 export * from './openai.mts'
