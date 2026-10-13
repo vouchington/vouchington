@@ -164,6 +164,20 @@ wait. See the [election-votes service](../../../overview/architecture/services/e
 Its test runs in `backend-data-stores`, retaining worker setup and data-store teardown even though
 the helper and test live together here.
 
+## `runWithOwnedPostElectionVoteStats`
+
+Attach this helper before creating its owned posts. It retains the actual creator and vote
+admission duties, then waits for their concrete job IDs. The public queue instance selects the
+terminal transport: the canonical testing alias uses public `TestQueue` completed/failed events;
+a physical queue uses actual `QueueEvents` with the normal connection and prefix. It never uses
+local Worker callbacks as proof that a different process completed a job.
+
+The testing adapter observes events from registration onward, without emulating historical
+streams. If a removed testing record has no public queue terminal event, the missing receipt
+remains a failure. Ordinary business cases are shim-backed; separate physical child-process
+controls verify the real stream. Cleanup settles registered producers before restoring
+instrumentation and closing event sources, retaining primary and late errors in order.
+
 ## Owned vote-route admissions
 
 Register `observeOwnedVoteRouteAdmissions` before invoking the owned route and register its
