@@ -34602,7 +34602,7 @@
     },
     "GET:/api/v1/my/messages/:conversationId/participants": {
       "bodyKind": "content",
-      "hash": "f7da53cd956201682ea5c1bd352422558d43bdab5c220dafc0d4f1b92b712d85",
+      "hash": "f4fe6da97181128e70dc261f9a8f7e51bb5ee0aeb1438a47564436d6e04b1468",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -34640,6 +34640,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
                     }
                   ]
                 }
@@ -34704,6 +34719,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -83631,7 +83670,7 @@
     },
     "POST:/api/v1/my/messages/:conversationId/participants": {
       "bodyKind": "content",
-      "hash": "d5c551d7c0536efe0be009101addf7f2edd265b28c2c9021022ade15bc6ba35e",
+      "hash": "0638aa6075912f48cd56967e5e88d365fb4447e2ace892632bd0f5a373db93e8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -83669,6 +83708,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
                     }
                   ]
                 }
@@ -83733,6 +83787,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -94803,7 +94881,7 @@
       "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/participants",
       "responseSchema": {
-        "hash": "a656be4e402c9351a5a3e4c9a46a9ffcf826b33b819ac9ad56256c1350a28022",
+        "hash": "d57ab802973ec4d7e9b1059f78bfca5045dfcc4eb1ce14c96c10897bb4ea9e66",
         "key": "native.messages.participants.default"
       },
       "route": {
@@ -94830,7 +94908,7 @@
         "user_id": "00000000-0000-7000-8000-000000000003"
       },
       "responseSchema": {
-        "hash": "c5875460dcfebc2f7209b892b8fdb03c8046aa28f8cd32359adb399e2217a5f1",
+        "hash": "ebf1651154ecb86c978f987939958a6e15cfad2953acee7b665d952a52afabf2",
         "key": "native.messages.participant-add.default"
       },
       "route": {

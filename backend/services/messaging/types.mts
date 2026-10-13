@@ -1,3 +1,5 @@
+import type { ImagePlacementTuple } from '@voucha/types/entities/user'
+
 export interface DirectConversation {
   id: string
   channel_type: 'direct_message'
@@ -18,6 +20,7 @@ export interface ConversationParticipant {
   removed_at: Date | null
   username: string | null
   profile_image_id: string | null
+  profile_image_placement: ImagePlacementTuple | null
 }
 
 export interface DirectMessage {
