@@ -30,6 +30,7 @@ each phase.
 | 14  | Topic provenance label                                       | topic-provenance-label             | Swift + .NET | None: web renders the public "via API", "via MCP" or "via {app}" badge on topic cards and the topic detail header, plus the staff channel and OAuth client; native clients decode neither `provenance` nor `staff_provenance` on topics.                                                                                                                                                                                              | 2     | [clients#206]                |
 | 15  | List provenance label                                        | list-provenance-label              | Swift + .NET | None: web renders the public "via API", "via MCP" or "via {app}" badge on the list detail page and the My lists page, plus the staff channel and OAuth client; native clients decode neither `provenance` nor `staff_provenance` on lists.                                                                                                                                                                                            | 2     | [clients#206]                |
 | 16  | RSS feed provenance label                                    | rss-feed-provenance-label          | Swift + .NET | None: web renders the public "via API", "via MCP" or "via {app}" badge on source list items, plus the staff channel and OAuth client; native clients decode neither `provenance` nor `staff_provenance` on RSS feeds.                                                                                                                                                                                                                 | 2     | [clients#206]                |
+| 17  | Authored-post moderation presentation                        | authored-post-moderation-status    | Swift + .NET | None on main: web gives rejected-post authors a removal notice, author-safe reason or fallback, and appeals action; staff can inspect the post while other viewers see unavailable content. Producer localization exposes four existing web messages for native use. Dependent native [clients#280] remains draft with the rejected-post slice; pending/review, late demotion, recovery, and archived visibility remain open.         | 2     | [clients#95]                 |
 
 ## Synchronization rule
 
@@ -45,5 +46,7 @@ any mapped capability differs from web.
 [clients#92]: https://github.com/vouchington/vouchington-clients/issues/92
 [clients#177]: https://github.com/vouchington/vouchington-clients/issues/177
 [clients#206]: https://github.com/vouchington/vouchington-clients/issues/206
+[clients#95]: https://github.com/vouchington/vouchington-clients/issues/95
+[clients#280]: https://github.com/vouchington/vouchington-clients/pull/280
 [vouchington#1229]: https://github.com/vouchington/vouchington/issues/1229
 [clients#197]: https://github.com/vouchington/vouchington-clients/issues/197

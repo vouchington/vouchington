@@ -3238,6 +3238,50 @@
       }
     },
     {
+      "id": "authored-post-moderation-status",
+      "title": "Authored post moderation presentation",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/POST-MODERATION.md",
+        "docs/requirements/moderation/reference-post-moderation-authorization-matrix.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "C",
+          "surface": "authored-post-moderation-status"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/posts/post-card/post-card-content.tsx",
+            "web/components/posts/post-detail-view.tsx",
+            "web/components/moderation/notices/content-removed-notice.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/posts/__tests__/post-card.rendering.part-3.mock.test.tsx",
+            "web/components/moderation/notices/__tests__/content-removed-notice.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native main does not present the web's rejected-post author notice, author-safe reason or fallback, appeals action, staff content, and other-viewer unavailable state. Producer localization exposes four existing web messages for Swift and .NET; the dependent native PR #280 remains draft with the rejected-post slice, while pending/review, late demotion, recovery, and archived visibility remain open.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/95"
+      }
+    },
+    {
       "id": "rss-feed-provenance-label",
       "title": "RSS feed provenance label",
       "domain": "Content",
