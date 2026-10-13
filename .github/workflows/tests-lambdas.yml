@@ -16,7 +16,7 @@ permissions:
 jobs:
   lambdas-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 13
+    timeout-minutes: 14
     permissions:
       actions: read
       contents: read
@@ -36,6 +36,7 @@ jobs:
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project lambdas --project lambdas-mocks
         timeout-minutes: 2
       - name: Preserve full lambdas LCOV
+        timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |

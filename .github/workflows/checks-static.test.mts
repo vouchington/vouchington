@@ -92,8 +92,8 @@ describe('checks-static workflow', () => {
   it('budgets each additive job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
       ['static-backend', 14],
-      ['static-lambdas', 15],
-      ['static-cloudflare', 10],
+      ['static-lambdas', 16],
+      ['static-cloudflare', 11],
     ])
 
     for (const [jobName, expectedBudget] of expectedBudgets) {

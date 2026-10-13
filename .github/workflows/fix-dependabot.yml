@@ -44,10 +44,13 @@ jobs:
       pr_number: ${{ steps.triage.outputs.pr_number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,6 +59,7 @@ jobs:
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node ci/source-run-state.mts
       - name: Decide transient retry
+        timeout-minutes: 2
         id: decide
         if: steps.source-state.outputs.current == 'true'
         env:
@@ -66,6 +70,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node ci/transient-retry/decide.mts
       - name: Rerun workflow on transient match
+        timeout-minutes: 2
         if: >-
           steps.source-state.outputs.current == 'true' &&
           steps.decide.outputs.decision == 'rerun'
@@ -82,6 +87,7 @@ jobs:
           echo "Matched rule: $MATCHED_RULE"
           node ci/revalidate-dependabot-rerun.mts
       - name: Triage and conditionally rerun
+        timeout-minutes: 2
         id: triage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,8 +176,11 @@ jobs:
       skip: ${{ steps.loop-breaker.outputs.skip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+        timeout-minutes: 2
         id: loop-breaker
         with:
           topic-key: ${{ needs.triage-and-rerun.outputs.pr_number }}
@@ -194,10 +203,13 @@ jobs:
       source-current: ${{ steps.source-state.outputs.current }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
 
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -207,6 +219,7 @@ jobs:
         run: node ci/source-run-state.mts
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         if: steps.source-state.outputs.current == 'true'
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
@@ -237,6 +250,7 @@ jobs:
       current: ${{ steps.pr.outputs.current }}
     steps:
       - name: Revalidate source run
+        timeout-minutes: 1
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -300,6 +314,7 @@ jobs:
 
           echo "current=true" >> "$GITHUB_OUTPUT"
       - name: Require the exact open Dependabot head
+        timeout-minutes: 1
         id: pr
         if: steps.source-state.outputs.current == 'true'
         env:
@@ -358,10 +373,12 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/comment-harness-session
+        timeout-minutes: 1
         with:
           target: ${{ needs.triage-and-rerun.outputs.pr_number }}
           session-id: ${{ needs.dispatch.outputs.session-id }}
@@ -402,6 +419,7 @@ jobs:
       THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - name: Revalidate source run
+        timeout-minutes: 1
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -465,6 +483,7 @@ jobs:
 
           echo "current=true" >> "$GITHUB_OUTPUT"
       - name: Comment failure on Dependabot PR
+        timeout-minutes: 1
         if: steps.source-state.outputs.current == 'true'
         run: |
           set -euo pipefail

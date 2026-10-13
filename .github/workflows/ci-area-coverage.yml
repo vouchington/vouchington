@@ -30,6 +30,7 @@ jobs:
       # layer's test merge, so HEAD^1..HEAD is exactly the layer under review. Not github.base_ref:
       # every layer of a stack reports the stack base there.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 2
           persist-credentials: false

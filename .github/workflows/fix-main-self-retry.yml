@@ -40,12 +40,15 @@ jobs:
       disposition: ${{ steps.disposition.outputs.disposition }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
           install-scripts: 'false'
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,6 +57,7 @@ jobs:
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node ci/source-run-state.mts
       - name: Decide transient retry
+        timeout-minutes: 2
         id: decide
         if: steps.source-state.outputs.current == 'true'
         env:
@@ -64,6 +68,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node ci/transient-retry/decide.mts
       - name: Rerun failed jobs on transient match
+        timeout-minutes: 2
         id: rerun-failed-jobs
         if: >-
           steps.source-state.outputs.current == 'true' &&
@@ -76,6 +81,7 @@ jobs:
           echo "Matched rule: $MATCHED_RULE"
           gh run rerun --repo "$GITHUB_REPOSITORY" --failed "$SOURCE_RUN_ID"
       - name: Check original escalation
+        timeout-minutes: 2
         id: escalate-state
         if: always()
         env:
@@ -94,6 +100,7 @@ jobs:
           )"
           echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
       - name: Set disposition output
+        timeout-minutes: 2
         id: disposition
         if: always()
         env:
@@ -124,6 +131,7 @@ jobs:
       issues: write
     steps:
       - name: Escalate to human — open or update issue
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           FIX_MAIN_RUN_ID: ${{ github.event.workflow_run.id }}

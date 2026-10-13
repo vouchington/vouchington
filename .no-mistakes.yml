@@ -3068,10 +3068,14 @@ rules:
         # across 67 GitHub-hosted successes in #2260.
         - job: '.github/workflows/checks-static.yml#static-backend'
           maxMinutes: 14
-        # Serial setup, dependency, image smoke, package build, and package smoke steps total 14m;
-        # the healthy ubuntu-24.04-arm run was 53s in #2313.
+        # Serial setup, dependency, image smoke, package build, and package smoke steps total 15m
+        # with the checkout deadline; retain one minute of provisioning headroom.
         - job: '.github/workflows/checks-static.yml#static-lambdas'
-          maxMinutes: 15
+          maxMinutes: 16
+        # Setup and Cloudflare checks total 10m with the checkout deadline; retain one minute
+        # of provisioning headroom.
+        - job: '.github/workflows/checks-static.yml#static-cloudflare'
+          maxMinutes: 11
         # A standalone Playwright run plans shards and produces one shared web build before shards
         # start: setup (5m), shard plan (1m), and the bounded 6m web build sum 12m plus 1m headroom.
         - job: '.github/workflows/tests-playwright.yml#shards'
@@ -3127,10 +3131,10 @@ rules:
         # Healthy maximum was 87 seconds across 37 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
           maxMinutes: 20
-        # Additive retry/upload step budgets sum 11m; healthy maximum was 91 seconds across 22
-        # GitHub-hosted successes in #2260.
+        # Additive retry/upload and coverage-copy step budgets sum 12m; retain two minutes of
+        # provisioning headroom after the new coverage-copy deadline.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
-          maxMinutes: 13
+          maxMinutes: 14
         # Fail-safe for backend/browser setup plus the bounded 6m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
           maxMinutes: 23

@@ -36,11 +36,13 @@ jobs:
       fix_request: ${{ steps.extract-fix.outputs.fix_request }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Extract /fix request
+        timeout-minutes: 2
         id: extract-fix
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -119,6 +121,7 @@ jobs:
           echo "accepted=true" >> "$GITHUB_OUTPUT"
 
       - name: Acknowledge with eyes reaction and run link
+        timeout-minutes: 2
         if: steps.extract-fix.outputs.accepted == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -161,10 +164,13 @@ jobs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
 
       - name: Capture trusted issue context
+        timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -194,6 +200,7 @@ jobs:
           }' issue.json > issue-context.json
 
       - name: Prepare prompt variables
+        timeout-minutes: 2
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           REQUEST_BODY: ${{ needs.gate.outputs.fix_request }}
@@ -203,6 +210,7 @@ jobs:
           printf '%s' "$REQUEST_BODY" > request-body.txt
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
@@ -259,10 +267,12 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/comment-harness-session
+        timeout-minutes: 1
         with:
           target: ${{ github.event.issue.number }}
           session-id: ${{ needs.dispatch.outputs.session-id }}
@@ -291,6 +301,7 @@ jobs:
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Comment failure on source issue
+        timeout-minutes: 1
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
