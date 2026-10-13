@@ -85,6 +85,24 @@ describe('validatePullRequest', () => {
     expect(result.errors).toEqual([])
     expect(result.warnings).toEqual([expect.stringContaining('#123 OPEN issue: Issue 123')])
     expect(gh.processDiffCommand).not.toHaveBeenCalled()
+    const calls = gh.runGh.mock.calls.map(([args]) => `${args[0]} ${args[1]}`)
+    expect(calls).not.toContain('pr view')
+    expect(calls).not.toContain('api graphql')
+  })
+
+  it('blocks a non-main base on create but not on update', async () => {
+    install()
+    const create = await validatePullRequest({ ...base, base: 'feature-parent' })
+    expect(create.errors).toEqual([expect.stringContaining('PRs must target main')])
+    const content = await validatePullRequest({
+      ...base,
+      base: 'feature-parent',
+      body: '## Summary\n\nx\n',
+    })
+    expect(content.errors.at(-1)).toContain('PRs must target main')
+    expect((await validatePullRequest({ ...base, base: 'feature-parent', pr: 7 })).errors).toEqual(
+      [],
+    )
   })
 
   it('reports an unresolvable closing reference', async () => {
@@ -99,6 +117,7 @@ describe('validatePullRequest', () => {
     expect(result.errors).toEqual([])
     expect(gh.processDiffCommand).toHaveBeenCalledOnce()
     expect(gh.runGh).toHaveBeenCalledWith(expect.arrayContaining(['pr', 'view', '7']))
+    expect(gh.runGh).toHaveBeenCalledWith(expect.arrayContaining(['api', 'graphql']))
   })
 })
 

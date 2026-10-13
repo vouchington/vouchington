@@ -1,6 +1,7 @@
 import { processDiffCommand, runGh } from 'vouchington-tooling/gh-cli'
 import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-projects'
 
+import { findHandRolledStackBaseBlock } from '../codex-hooks/policy/github-configured-base.mts'
 import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'
 import { formatReferencedIssueSummary } from '../pr-description/referenced-issue-summary.mts'
 import { createMilestoneAuditor } from '../pr-description/milestone-audit.mts'
@@ -46,22 +47,25 @@ export type PullRequestDefaults = {
 
 type PolicyResult = { errors: string[]; warnings?: string[] }
 
-// Create runs the body content policy, closing-ref resolution, and the milestone/project
-// completion audits (all need only the body and live issues). Update (`pr` set) adds the
-// checks that need the existing PR: closure provenance and the supersession audit.
+// Create (`pr` unset) matches the CLI `create`: the stack-base rule, the body content policy, and
+// closing-ref resolution. Update (`pr` set) matches `validate <pr>`: it adds the milestone and
+// project completion audits, closure provenance, and the supersession audit, which need a real PR.
 export async function validatePullRequest(input: PullRequestPolicyInput): Promise<PolicyResult> {
   const automationContext = input.mode === 'autonomous'
+  const stackBase =
+    input.pr === undefined
+      ? findHandRolledStackBaseBlock('create', ['--base', input.base], undefined)
+      : null
+  const baseErrors = stackBase === null ? [] : [stackBase.reason]
   // Content-policy failures need no GitHub call, so report them before touching gh.
   const content = validatePrBody(input.body, { automationContext })
-  if (!content.ok) return { errors: content.errors }
+  if (!content.ok) return { errors: [...content.errors, ...baseErrors] }
   const warnings: string[] = []
-  const repo = await currentRepo(runGh)
-  const options: IssueReferenceValidationOptions = {
-    automationContext,
-    milestoneAuditor: createMilestoneAuditor(runGh, repo),
-    projectAuditor: createProjectAuditor(runGh, repo),
-  }
+  const options: IssueReferenceValidationOptions = { automationContext }
   if (input.pr !== undefined) {
+    const repo = await currentRepo(runGh)
+    options.milestoneAuditor = createMilestoneAuditor(runGh, repo)
+    options.projectAuditor = createProjectAuditor(runGh, repo)
     const pr = String(input.pr)
     const prJson = await runGh([
       'pr',
@@ -98,7 +102,8 @@ export async function validatePullRequest(input: PullRequestPolicyInput): Promis
   const summary = formatReferencedIssueSummary(result.referencedIssues).trim()
   if (summary) warnings.push(summary)
   warnings.push(...result.advisories)
-  return warnings.length > 0 ? { errors: result.errors, warnings } : { errors: result.errors }
+  const errors = [...result.errors, ...baseErrors]
+  return warnings.length > 0 ? { errors, warnings } : { errors }
 }
 
 // The CLI never set a milestone, project, or label on create; agents did it by hand. These
