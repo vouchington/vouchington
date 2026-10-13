@@ -6,7 +6,7 @@ import {
 import {
   CLEANUP_SCHEDULER_ID,
   CLEANUP_CRON,
-  PRIORITY_DEFAULT,
+  PRIORITY_BACKGROUND,
   QUEUE_NAME,
   USER_DELETIONS_RECOVERY_INTERVAL_MS,
 } from '../config.mts'
@@ -25,7 +25,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
         removeOnComplete: 100,
         removeOnFail: 100,
-        priority: PRIORITY_DEFAULT,
+        priority: PRIORITY_BACKGROUND,
       } satisfies JobOptions,
     },
     operatorSurfaces: [
@@ -49,7 +49,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
         removeOnComplete: 100,
         removeOnFail: 100,
-        priority: 100,
+        priority: PRIORITY_BACKGROUND,
       } satisfies JobOptions,
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'account-data-request-recovery' }],
@@ -65,7 +65,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
         removeOnComplete: 100,
         removeOnFail: 100,
-        priority: 100,
+        priority: PRIORITY_BACKGROUND,
       } satisfies JobOptions,
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'user-deletion-recovery' }],

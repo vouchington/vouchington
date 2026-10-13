@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { enqueueBulkExportRequests, enqueueExportRequest } from './account-data-requests.mts'
+import {
+  enqueueBulkExportRequests,
+  enqueueCleanupExpiredExports,
+  enqueueExportRequest,
+} from './account-data-requests.mts'
 import { accountLifecycle } from '../queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
@@ -31,6 +35,14 @@ describe('account data request enqueues', () => {
       id: jobId,
       data,
       opts: { deduplication: { id: jobId, mode: 'simple' } },
+    })
+  })
+
+  it('runs operator-triggered export cleanup at background priority', async () => {
+    await enqueueCleanupExpiredExports()
+    const jobs = await readAllQueueJobs(accountLifecycle)
+    expect(jobs.find(job => job.name === 'processCleanupExpiredExports')).toMatchObject({
+      opts: { priority: 100 },
     })
   })
 })

@@ -1,5 +1,6 @@
 export const QUEUE_NAME = 'account-lifecycle'
 export const PRIORITY_DEFAULT = 10
+export const PRIORITY_BACKGROUND = 100
 export const LOCK_DURATION_MS = 600_000
 
 export const DATA_EXPORT_EXPIRY_DAYS = 7

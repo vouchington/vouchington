@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/queues/account-lifecycle/README.md](../../../../../backend/queues/account-lifecycle/README.md)
 
-The ranked `account-lifecycle` queue carries account export, expired-export cleanup, export recovery, user deletion, and deletion recovery. Each job keeps its existing payload, request/attempt identity, deduplication, retries, and schedule. Both recovery jobs use priority 100; normal processing and cleanup use priority 10. Lower numbers run first.
+The ranked `account-lifecycle` queue carries account export, expired-export cleanup, export recovery, user deletion, and deletion recovery. Each job keeps its existing payload, request/attempt identity, deduplication, retries, and schedule. Normal processing uses priority 10; cleanup and recovery use background priority 100. Lower numbers run first.
 
 The shared IO worker has concurrency two and ignores global scale. This caps simultaneous PostgreSQL and S3-heavy work at two across both families, whereas their former separate workers could run four total. Long exports may therefore delay deletion batches. The durable request rows and five-minute recovery schedules provide the source of truth for lost queue deliveries.
 

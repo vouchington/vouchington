@@ -5,7 +5,7 @@ import {
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { QUEUE_NAME, PRIORITY_DEFAULT } from '../config.mts'
+import { PRIORITY_BACKGROUND, QUEUE_NAME, PRIORITY_DEFAULT } from '../config.mts'
 import { accountLifecycle } from '../queues.mts'
 import type { AccountDataRequestsJobs, ExportRequestData } from './types-account-data-requests.mts'
 
@@ -135,7 +135,7 @@ export function enqueueRecoverExportRequests(): EnqueueReturnType {
   const jobId = `account-data-export-recovery__${Math.floor(Date.now() / RECOVERY_INTERVAL_MS)}`
   return enqueueRecoverExportRequestsJob({}, {
     jobId,
-    priority: 100,
+    priority: PRIORITY_BACKGROUND,
     deduplication: {
       id: 'account-data-export-recovery',
       mode: 'throttle',
@@ -145,7 +145,7 @@ export function enqueueRecoverExportRequests(): EnqueueReturnType {
 }
 
 export function enqueueCleanupExpiredExports(): EnqueueReturnType {
-  return enqueueCleanupExpiredExportsJob({}, { priority: PRIORITY_DEFAULT })
+  return enqueueCleanupExpiredExportsJob({}, { priority: PRIORITY_BACKGROUND })
 }
 
 function exportRequestJobId(data: Pick<ExportRequestData, 'requestId' | 'processingAttemptId'>) {
