@@ -50992,7 +50992,7 @@
           "referencedTable": "membership_google_play_purchase_tokens",
           "validated": true
         },
-        "membership_google_play_purcha_membership_provider_context__fkey": {
+        "fk_membership_google_play_purchase_tokens__provider_context": {
           "columns": ["membership_provider_context_id"],
           "definition": "FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
@@ -53339,7 +53339,7 @@
       },
       "comment": "Encrypted account-scoped Microsoft Store ID keys, usable to reconcile every Microsoft recurrence for the same user, environment, and application.",
       "foreignKeys": {
-        "membership_microsoft_store_cr_membership_provider_context__fkey": {
+        "fk_membership_microsoft_store_credentials__provider_context": {
           "columns": ["membership_provider_context_id"],
           "definition": "FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT",
           "onDelete": "restrict",

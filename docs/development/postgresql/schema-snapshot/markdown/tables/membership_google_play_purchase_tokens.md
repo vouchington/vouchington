@@ -33,7 +33,7 @@ Not partitioned — growth: unbounded.
 
 - `fk_membership_google_play_purchase_tokens__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT`
 - `fk_membership_google_play_purchase_tokens__predecessor`: `FOREIGN KEY (linked_purchase_token_id, membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_google_play_purchase_tokens(id, membership_provider_lineage_id, membership_provider_context_id) ON DELETE RESTRICT`
-- `membership_google_play_purcha_membership_provider_context__fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
+- `fk_membership_google_play_purchase_tokens__provider_context`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

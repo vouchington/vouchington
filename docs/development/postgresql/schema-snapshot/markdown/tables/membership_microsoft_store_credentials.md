@@ -42,7 +42,7 @@ _none_
 
 **Foreign keys:**
 
-- `membership_microsoft_store_cr_membership_provider_context__fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
+- `fk_membership_microsoft_store_credentials__provider_context`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 - `membership_microsoft_store_credentials_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
