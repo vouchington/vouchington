@@ -646,7 +646,7 @@
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeEditForm.editComment_4f346f77"},
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeEditForm.failedToSaveComment_78443791"},
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeEditForm.saving_dc85af8f"},
-{"descriptor":null,"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a"},
+{"descriptor":{"kind":"plural","numberParameters":["count"],"valueParameter":"count"},"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a"},
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeHeader.collapseCommentMetadataRow_8a8a973e"},
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeHeader.collapseCommentThread_24e66c3a"},
 {"descriptor":null,"id":"copy.extracted.comments.commentNodeHeader.expandCommentMetadataRow_4e8596a4"},

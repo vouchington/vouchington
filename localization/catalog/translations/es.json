@@ -646,7 +646,7 @@
 {"id":"copy.extracted.comments.commentNodeEditForm.editComment_4f346f77","value":"Editar comentario"},
 {"id":"copy.extracted.comments.commentNodeEditForm.failedToSaveComment_78443791","value":"Error al guardar comentario"},
 {"id":"copy.extracted.comments.commentNodeEditForm.saving_dc85af8f","value":"Guardando..."},
-{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":"{childrenCount} children"},
+{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":{"one":"{count} respuesta","other":"{count} respuestas"}},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentMetadataRow_8a8a973e","value":"Contraer fila de metadatos de comentario"},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentThread_24e66c3a","value":"Contraer hilo de comentarios"},
 {"id":"copy.extracted.comments.commentNodeHeader.expandCommentMetadataRow_4e8596a4","value":"Expandir fila de metadatos de comentario"},
