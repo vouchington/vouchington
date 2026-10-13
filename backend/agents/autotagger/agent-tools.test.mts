@@ -15,7 +15,7 @@ describe('buildAutotaggerAgentTools', () => {
     const [search, submit] = buildAutotaggerAgentTools([A, B])
 
     expect(search).toMatchObject({
-      name: 'search_topics',
+      name: 'lookup_candidate_topics',
       inputSchema: { required: ['query'], additionalProperties: false },
     })
     expect(submit).toMatchObject({

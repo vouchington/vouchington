@@ -20,79 +20,29 @@ describe('get-to-fetch', () => {
   const LIMIT = 10_000
 
   let neverFetchedId: string
-  let staleFetchedId: string
   let recentFetchedId: string
   let disabledId: string
-  let undiscoverableId: string
 
   beforeAll(async () => {
     await rssFeedCrawlConfig.waitForInitialization()
-    // Force flat-TTL mode for the existing tests so they don't depend on MV state
-    overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: false })
-
-    const [neverFetched, staleFetched, recentFetched, disabled, undiscoverable] = await Promise.all(
-      [
-        createTestRssFeed({}),
-        createTestRssFeed({}),
-        createTestRssFeed({}),
-        createTestRssFeed({}),
-        createTestRssFeed({}),
-      ],
-    )
+    const [neverFetched, recentFetched, disabled] = await Promise.all([
+      createTestRssFeed({}),
+      createTestRssFeed({}),
+      createTestRssFeed({}),
+    ])
 
     neverFetchedId = neverFetched.id
-    staleFetchedId = staleFetched.id
     recentFetchedId = recentFetched.id
     disabledId = disabled.id
-    undiscoverableId = undiscoverable.id
 
     await Promise.all([
-      updateRssFeedTiming(staleFetchedId, new Date(Date.now() - 2 * TTL_MS)),
       updateRssFeedTiming(recentFetchedId, new Date(Date.now() - TTL_MS / 2)),
       updateRssFeedById(disabledId, { is_enabled: false }),
-      updateRssFeedById(undiscoverableId, { is_enabled: true, discoverable: false }),
     ])
   })
 
   afterAll(async () => {
-    overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: true })
     await rssFeedCrawlConfig.close()
-  })
-
-  it('getRssFeedsToFetch includes feeds that have never been fetched', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    expect(feeds.map(f => f.id)).toContain(neverFetchedId)
-  })
-
-  it('getRssFeedsToFetch includes feeds last fetched beyond the TTL', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    expect(feeds.map(f => f.id)).toContain(staleFetchedId)
-  })
-
-  it('getRssFeedsToFetch excludes feeds last fetched within the TTL', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    expect(feeds.map(f => f.id)).not.toContain(recentFetchedId)
-  })
-
-  it('getRssFeedsToFetch excludes disabled feeds', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    expect(feeds.map(f => f.id)).not.toContain(disabledId)
-  })
-
-  it('getRssFeedsToFetch includes enabled feeds that are not discoverable', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    expect(feeds.map(f => f.id)).toContain(undiscoverableId)
-  })
-
-  it('getRssFeedsToFetch with ttl=0 skips the time filter and respects limit', async () => {
-    // ttl=0 disables the last_fetched_at filter; all enabled non-deleted feeds qualify
-    const feeds = await getRssFeedsToFetch({ ttl: 0, limit: 1 })
-    expect(feeds).toHaveLength(1)
-  })
-
-  it('getRssFeedsToFetch respects the limit', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: 2 })
-    expect(feeds.length).toBeLessThanOrEqual(2)
   })
 
   it('getRssFeedByIdToFetch returns feed when not recently fetched', async () => {
@@ -118,14 +68,6 @@ describe('get-to-fetch', () => {
   it('getRssFeedByIdToFetch returns null for disabled feed', async () => {
     const feed = await getRssFeedByIdToFetch(disabledId, { ttl: TTL_MS })
     expect(feed).toBeNull()
-  })
-
-  it('getRssFeedsToFetch result includes crawl_score and crawl_tier fields', async () => {
-    const feeds = await getRssFeedsToFetch({ ttl: TTL_MS, limit: LIMIT })
-    const feed = feeds.find(f => f.id === neverFetchedId)
-    expect(feed).toBeDefined()
-    expect(typeof feed?.crawl_score).toBe('number')
-    expect(typeof feed?.crawl_tier).toBe('number')
   })
 
   it('getRssFeedByIdToFetch returns feed_ignore_robots_txt=null by default', async () => {
@@ -175,7 +117,6 @@ describe('get-to-fetch', () => {
   describe('tiered mode', () => {
     beforeAll(async () => {
       // Refresh MV so test feeds are included in the tiered query.
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: true })
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
         capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget,
       })
@@ -184,7 +125,6 @@ describe('get-to-fetch', () => {
 
     afterAll(async () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: false })
     })
 
     it('capacity_budget caps the result count', async () => {

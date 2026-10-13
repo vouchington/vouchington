@@ -1,5 +1,5 @@
-import { Worker, type Job } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import type { Job } from 'glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { KAGI_SMALLWEB_ORDERING, QUEUE_NAME } from '@queues/kagi-smallweb/config'
 import { dispatchKagiSmallWeb } from '@services/kagi-smallweb'
@@ -27,8 +27,7 @@ export async function kagiSmallWebProcessor(job: Job): Promise<unknown> {
   }
 }
 
-export const kagiSmallWeb = new Worker(QUEUE_NAME, kagiSmallWebProcessor, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const kagiSmallWeb = createWorker(QUEUE_NAME, kagiSmallWebProcessor, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('kagiSmallWeb', { baseline: 5 }),
 })

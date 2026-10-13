@@ -48,7 +48,7 @@ export async function fetchRssFeed(
   const rssFeed = await getRssFeedByIdToFetch(rssFeedId, { ttl })
   if (!rssFeed) return []
   const feedUrl = overrideUrl ?? rssFeed.url
-  if (rssFeed.crawlable === false) {
+  if (!rssFeed.crawlable) {
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }

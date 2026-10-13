@@ -7,11 +7,11 @@ import {
 import { assertCanCreateCommunity } from '@services/communities/authorization'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
-import { getUserActivePlan } from '@services/memberships'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
+import { getLoadedMembershipPlan } from '@services/users'
 
 type Args = {
   idempotency_key: string
@@ -40,7 +40,7 @@ const tool: Tool<Args, Result> = {
     name: 'create_community',
     type: 'function',
     description:
-      'Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Reuse the same UUID idempotency_key and arguments to safely retry; the first result is replayed. Returns the community id, slug, visibility and creation time.',
+      'Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Returns the community id, slug, visibility and creation time.',
     parameters: {
       type: 'object',
       properties: {
@@ -126,7 +126,7 @@ const tool: Tool<Args, Result> = {
         post_approval_required_at: fields.post_approval_required_at === true,
       },
       beforeCreate: async () =>
-        assertWithinContributionActionLimit(user, await getUserActivePlan(user.id), 'community'),
+        assertWithinContributionActionLimit(user, getLoadedMembershipPlan(user), 'community'),
       execute: async query => {
         const community = await createCommunity(user.id, getRequestContentProvenance(), input, {
           query,

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -181,6 +181,7 @@ test.describe('List detail page — load more', () => {
   let loadMoreListId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const user = await createTestUser()
     const suffix = randomSuffix()
     const topicId = await insertTestTopic({
@@ -224,6 +225,7 @@ test.describe('Add to List dialog — mobile', () => {
   })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await insertTestList({
       ownerUserId: TEST_USER_ID,
       name: `PW Add-to-List ${randomSuffix()}`,

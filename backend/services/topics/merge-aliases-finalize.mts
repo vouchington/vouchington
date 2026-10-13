@@ -1,4 +1,4 @@
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
 import { enqueueBulkTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
@@ -17,7 +17,7 @@ export async function finalizeTopicAliasMerge(input: {
   movedAliasIds: string[]
 }) {
   const { merger, sourceTopic, destinationTopic, movedAliases, movedAliasIds } = input
-  void entityCacheBloomFilters.topics.add(movedAliases.map(normalizeKey))
+  void addEntityBloomKeys('topics', movedAliases.map(normalizeKey))
   await Promise.all([
     invalidate.topics(
       sourceTopic.id,

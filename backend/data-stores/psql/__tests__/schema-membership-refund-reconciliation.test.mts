@@ -25,13 +25,14 @@ describe('membership refund reconciliation schema', () => {
 
   it('leases due administrator refund operations and records retry state', async () => {
     const operation = await createTestAdministratorRefundOperation()
+    const dueAt = new Date('2030-01-01T00:05:00.000Z')
     await expect(claimTestAdministratorRefundOperation(operation.id)).resolves.toBe(1)
-    await expect(scheduleTestAdministratorRefundRetry(operation.id)).resolves.toBe(1)
+    await expect(scheduleTestAdministratorRefundRetry(operation.id, dueAt)).resolves.toBe(1)
 
     await expect(getTestAdministratorRefundRetryState(operation.id)).resolves.toEqual(
       expect.objectContaining({
         reconciliationAttemptOrdinal: 1,
-        reconciliationDueAt: expect.any(Date),
+        reconciliationDueAt: dueAt,
       }),
     )
     await expect(hasExpectedTestMembershipOperationReconciliationDueIndex()).resolves.toBe(true)
@@ -39,7 +40,7 @@ describe('membership refund reconciliation schema', () => {
 
   it('keeps administrator refund requests immutable and refund attempts append-only', async () => {
     const operation = await createTestAdministratorRefundOperation()
-    const requestId = await createTestAdministratorRefundRequest(operation.id)
+    const requestId = await createTestAdministratorRefundRequest(operation)
     await expect(mutateTestAdministratorRefundRequest(requestId)).rejects.toThrow(
       'membership_administrator_refund_operation_requests rows are append-only',
     )
@@ -73,7 +74,7 @@ describe('membership refund reconciliation schema', () => {
 
   it('accepts legacy unlinked receipts and structurally links new operation receipts', async () => {
     const operation = await createTestAdministratorRefundOperation()
-    const { requestKey } = await createTestLinkedRefundReceiptRequest(operation.id)
+    const { requestKey } = await createTestLinkedRefundReceiptRequest(operation)
     await expect(insertTestLegacyUnlinkedRefundReceipt(operation.membershipSourceId)).resolves.toBe(
       1,
     )

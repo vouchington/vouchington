@@ -5,7 +5,7 @@ import type { ProfileLink } from './profile-links-types.mts'
 export async function listProfileLinks(userId: string): Promise<ProfileLink[]> {
   const { rows } = await read<ProfileLink>(
     sql`/* listProfileLinks */ SELECT pl.id, pl.user_id, pl.link_type, pl.sort_order, pl.url_id, u.url, pl.handle, pl.name, pl.image_id, pl.created_at, pl.updated_at,
-      CASE WHEN placement.id IS NULL THEN NULL ELSE jsonb_build_object(
+      CASE WHEN public_delivery.placement_id IS NULL THEN NULL ELSE jsonb_build_object(
         'placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id
       ) END AS image_placement
         FROM user_profile_links pl
@@ -14,7 +14,10 @@ export async function listProfileLinks(userId: string): Promise<ProfileLink[]> {
           ON surface.user_profile_link_id = pl.id AND surface.surface_kind = 'user-profile-link-image'
         LEFT JOIN media_placements placement
           ON placement.id = surface.placement_id AND placement.retired_at IS NULL
-          AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+        LEFT JOIN view_publicly_projected_image_placements public_delivery
+          ON public_delivery.placement_id = placement.id
+          AND public_delivery.placement_revision = placement.revision
+          AND public_delivery.image_id = surface.image_id
         WHERE pl.user_id = ${userId}
         ORDER BY pl.sort_order ASC, pl.id ASC`,
   )

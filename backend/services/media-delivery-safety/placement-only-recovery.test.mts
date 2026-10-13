@@ -1,3 +1,5 @@
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   beginTransaction,
@@ -12,7 +14,6 @@ import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-s
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   advanceTestDeliveryPlacementRevision,
-  getTestDeliveryRepairMarker,
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import {
@@ -20,7 +21,6 @@ import {
   getTestPlacementRepairForeignKey,
   readTestPlacementDeliveryColumns,
 } from '@voucha/test-helpers/entities/placement-delivery-schema'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   processMediaDeliveryRegistryRecord,
   prepublishImagePlacementDenial,
@@ -55,35 +55,40 @@ describe('concrete image placement recovery', () => {
       imageId,
     }
     const key = getImagePlacementDeliveryKey(tuple)
-    expect(await getTestMediaDeliveryRecord(key)).toBeNull()
+    expect(await getTestMediaDeliveryRegistryRecordId(tuple)).toBeNull()
     const edge = installTestMediaDeliveryEdge()
     {
       await using transaction = await beginTransaction()
       await prepublishImagePlacementDenial({ ...tuple }, { query: transaction })
     }
-    expect(await getTestMediaDeliveryRecord(key)).toBeNull()
-    expect(await getTestDeliveryRepairMarker(key)).toBeNull()
+    expect(await getTestMediaDeliveryRegistryRecordId(tuple)).toBeNull()
     expect(edge.records.get(key)?.state).toBe('withheld')
     expect(edge.put.mock.calls.every(([record]) => record.state === 'withheld')).toBe(true)
 
     {
       await using transaction = await beginTransaction()
-      await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' }, { query: transaction })
-      await expect(publishStagedMediaDeliveryRecord(key)).rejects.toThrow('Missing staged')
+      const staged = await stageImagePlacementDeliveryRecord(
+        { ...tuple, state: 'allow' },
+        { query: transaction },
+      )
+      await expect(
+        publishStagedMediaDeliveryRecord(staged.mediaDeliveryRegistryRecordId),
+      ).rejects.toThrow('Missing staged')
       expect(edge.records.get(key)?.state).toBe('withheld')
     }
-    expect(await getTestMediaDeliveryRecord(key)).toBeNull()
-    expect(await getTestDeliveryRepairMarker(key)).toBeNull()
+    expect(await getTestMediaDeliveryRegistryRecordId(tuple)).toBeNull()
     const deniedGeneration = edge.records.get(key)!.generation
     {
       await using transaction = await beginTransaction()
       await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' }, { query: transaction })
       await transaction.commit()
     }
-    await publishStagedMediaDeliveryRecord(key)
+    const id = await getTestMediaDeliveryRegistryRecordId(tuple)
+    if (!id) throw new Error('Committed registry identity missing')
+    await publishStagedMediaDeliveryRecord(id)
     expect(edge.records.get(key)?.state).toBe('allow')
     expect(BigInt(edge.records.get(key)!.generation)).toBeGreaterThan(BigInt(deniedGeneration))
-    expect(await getTestMediaDeliveryRecord(key)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(id)).toMatchObject({
       desired_state: 'allow',
       state: 'completed',
     })
@@ -95,12 +100,10 @@ describe('concrete image placement recovery', () => {
       createTestDeliverySurface(),
     ])
     const tuple = { ...first.tuple, imageId: sibling.tuple.imageId }
-    const key = getImagePlacementDeliveryKey(tuple)
     const edge = installTestMediaDeliveryEdge()
     await recordImageDeliveryRepairMarker(tuple)
     expect(edge.put).not.toHaveBeenCalled()
-    expect(await getTestMediaDeliveryRecord(key)).toBeNull()
-    expect(await getTestDeliveryRepairMarker(key)).toBeNull()
+    expect(await getTestMediaDeliveryRegistryRecordId(tuple)).toBeNull()
   })
 
   it('denies a historical revision without substituting the current revision', async () => {
@@ -110,18 +113,18 @@ describe('concrete image placement recovery', () => {
     await advanceTestDeliveryPlacementRevision(transaction, fixture.tuple.placementId)
     await transaction.commit()
     await recordImageDeliveryRepairMarker(fixture.tuple)
-    await reconcileTestDeliveryRepairMarker(fixture.deliveryKey)
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    await reconcileTestDeliveryRepairMarker(fixture.mediaDeliveryRegistryRecordId)
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'withheld',
     })
-    await processMediaDeliveryRegistryRecord(fixture.deliveryKey)
+    await processMediaDeliveryRegistryRecord(fixture.mediaDeliveryRegistryRecordId)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('withheld')
   })
 
-  it('stores only the canonical delivery key and wakeup token, not owner tuple snapshots', async () => {
+  it('stores only the canonical registry id and wakeup token, not owner tuple snapshots', async () => {
     const columns = await readTestPlacementDeliveryColumns()
     expect(columns.media_delivery_repair_markers).toEqual([
-      'delivery_key',
+      'media_delivery_registry_record_id',
       'marker_token',
       'created_at',
       'updated_at',
@@ -155,18 +158,9 @@ describe('concrete image placement recovery', () => {
     ).rejects.toMatchObject({ code: '23503' })
   })
 
-  it('rejects repair keys without a committed registry parent', async () => {
-    const fixture = await createTestDeliverySurface()
-    await expect(
-      insertTestPlacementRepairKey(fixture.deliveryKey.toUpperCase()),
-    ).rejects.toMatchObject({ code: '23503' })
-    await expect(
-      insertTestPlacementRepairKey(
-        getImagePlacementDeliveryKey({
-          ...fixture.tuple,
-          revision: 2147483648,
-        }),
-      ),
-    ).rejects.toMatchObject({ code: '23503' })
+  it('rejects repair ids without a committed registry parent', async () => {
+    await expect(insertTestPlacementRepairKey(crypto.randomUUID())).rejects.toMatchObject({
+      code: '23503',
+    })
   })
 })

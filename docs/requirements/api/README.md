@@ -53,11 +53,17 @@ for endpoint-specific details; otherwise the README's inline section is canonica
 Use `response-helpers.mts` for standard route preambles:
 
 - `requireAuth(ctx, routeId)` resolves a required user, applies rate limiting, and returns
-  `PrivateUser`.
+  `PrivateUser`. The route limiter charges while the user is fetched (it reads only session-token
+  data), so the two are one serial step. Status precedence is unchanged: the limiter's 429 (and
+  the 429 for an anonymous caller) comes before the 401, then the signature error, then
+  suspension. Usage metering still runs after the user resolves. The same overlap applies to
+  `getOptionalAuthAndRateLimit`, `requireAuthForSuspendedException` and
+  `getOptionalProtocolAuthAndRateLimit`.
 - `getOptionalAuthAndRateLimit(ctx, routeId)` resolves an optional user, applies rate limiting, and
   returns `PrivateUser | null`.
 - `requireAuthAndRateLimit(ctx, canFn, routeId)` resolves a required user, authorizes, and applies
-  rate limiting, returning `PrivateUser`.
+  rate limiting, returning `PrivateUser`. It does not overlap: a `canFn` 403 comes before the
+  limiter, so forbidden requests are not charged.
 - `validateUUIDParam(ctx, name)` validates a UUID route parameter and throws 422 when invalid.
 - `parseJsonBody<T>(ctx, maxSize?)` parses a bounded JSON body, defaulting to `1mb`. Api-server
   rejects non-JSON media types for body-bearing mutation routes unless the route declares an

@@ -20,6 +20,13 @@ generator by path, so its default export carries a
 [production-exports guard](../quality/static-code-analysis/README.md#knip-production-exports)
 reports it as an export only tests use.
 
+Generated-SQL replay tests consume typed PostgreSQL facts from `no-mistakes` through the
+[insert replay guard](../../../backend/test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts).
+The upstream parser owns query scopes, effective predicate polarity and conjunctiveness, source
+spans, and procedural completeness; the guard applies Voucha's convergence, arbiter, and trigger
+policies. Parser errors and incomplete executable containers fail closed. Each sibling insert is checked independently,
+and a violation identifies the unsafe SQL rather than an unrelated sibling's guard.
+
 Forced view rebuilding drops only the managed ordinary and materialized declarations with PostgreSQL's
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
 progress, then recreates the files in dependency-safe passes. Its teardown is one server-side command,
@@ -59,7 +66,10 @@ when that view's own query passes `is_simple_subquery()`/`is_simple_union_all()`
 with no top-level `WITH` and no plain `UNION` (a `UNION ALL` list is fine). A view that fails this
 check gets materialized as its own unindexed subplan wherever it is joined, and any enclosing query
 that reads it once per output row (a batched-by-id lookup, a scalar subquery correlated to an outer
-id) pays that materialization once per row instead of once total. See
+id) pays that materialization once per row. Even one read with no key restriction derives every
+row of the view, so the cost grows with the table. Callers therefore read a `view_*` only by its
+key and pick the ids from indexed base tables first, as
+[R6](../postgres-schema-rules.md#r6--query-shape) requires. See
 [`view_public_post_eligibility`](../../../backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql) for the shape this
 forces (flat outer SELECT, `UNION ALL` only, no top-level CTE) and the rejected alternative shape it was measured
 against (#10785). Internal existence probes may use nested `MATERIALIZED` CTEs as optimizer
@@ -78,7 +88,9 @@ scope, deduplicating with an outer `COUNT(DISTINCT ...)` if the candidate union 
 duplicate ids. See `count__discussions` in
 [`2025-01-19-topic-metrics.sql`](../../../backend/data-stores/psql/views/2025-01-19-topic-metrics.sql) for a worked example, and
 `count__reviews`/`count__data_points` in the same file for the simpler case where the topic-side
-relation is already the direct join target.
+relation is already the direct join target. This candidate-bind shape is the pattern to follow for
+every search, list, page, and count: the candidate ids come from an indexed relation, and the view
+is read only by those ids.
 
 The alias-side candidate source in that worked example derives ids from
 `relation__post__category__topic_alias` alone (`deleted_at IS NULL AND votes_score_net > 0`), not
@@ -217,7 +229,7 @@ config-driven operations, and views. After migration the database contains:
   authorization currently reads role slugs rather than these granular grants.
 - **URL blacklist sources** (19 entries) — seeded by
   [`config-driven/0050-00-01-seed-blacklist-sources.mts`](../../../backend/data-stores/psql/config-driven/0050-00-01-seed-blacklist-sources.mts).
-  Required for the weekly blacklist-refresh cron and the request-path `isUrlBlocked` check.
+  Required for the weekly blacklist-refresh cron and the request-path hostname-policy check (`getHostnamePolicy`).
 - **Publisher-type topics** — `publisher-types` parent plus 8 children (`mainstream-media`,
   `public-media`, `corporate-media`, `blog`, `aggregator`, `forum`, `ugc-platform`, `review`) with
   aliases and parent–child relations, seeded by

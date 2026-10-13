@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   getCrawlCapacityBudget,
   getTierSlaMs,
-  isCrawlPrioritizationEnabled,
   isRobotsTxtIgnoredForFeeds,
   RSS_FEED_CRAWL_MAX_VALUES,
   rssFeedCrawlConfig,
@@ -16,18 +15,6 @@ describe('crawl-config', () => {
 
   afterAll(async () => {
     await rssFeedCrawlConfig.close()
-  })
-
-  describe('isCrawlPrioritizationEnabled', () => {
-    it('returns true by default', () => {
-      expect(isCrawlPrioritizationEnabled()).toBe(true)
-    })
-
-    it('returns false after setField to false', async () => {
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: false })
-      expect(isCrawlPrioritizationEnabled()).toBe(false)
-      overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { enabled: true })
-    })
   })
 
   describe('getTierSlaMs', () => {

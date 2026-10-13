@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { approvePublication } from '@services/communities/publications/moderate'
 import { setPinnedPosts } from '@services/communities/publications/pinned'
 import type { PrivateUser } from '@services/users/types'
@@ -9,7 +10,6 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -37,7 +37,7 @@ const call = (caller: Caller, name: string, args: Body) =>
   callStructuredMcpTool(caller, name, args, ['communities:read'])
 const idsOf = (posts: PostBody[]) => posts.map(post => post.id)
 
-describe('get_community_posts and get_community_pinned_posts — real DB', () => {
+describe('read_community.posts and read_community.pinned_posts — real DB', () => {
   const random = createRandomString(8)
   let owner: Caller
   let author: Caller
@@ -98,12 +98,16 @@ describe('get_community_posts and get_community_pinned_posts — real DB', () =>
   })
 
   const listPosts = (args: Body = {}, caller: Caller = author) =>
-    call(caller, 'get_community_posts', {
-      community_id: slug,
-      ...args,
-    }) as unknown as Promise<PostsPage>
+    call(
+      caller,
+      'read_community',
+      optionArgs('posts', {
+        community_id: slug,
+        ...args,
+      }),
+    ) as unknown as Promise<PostsPage>
 
-  describe('get_community_posts', () => {
+  describe('read_community.posts', () => {
     it('leaves pinned and unapproved posts out of the page and names the pins once', async () => {
       const first = await listPosts({ limit: 2 })
       const second = await listPosts({ limit: 2, after: first.page_info.end_cursor })
@@ -165,9 +169,13 @@ describe('get_community_posts and get_community_pinned_posts — real DB', () =>
     })
   })
 
-  describe('get_community_pinned_posts', () => {
+  describe('read_community.pinned_posts', () => {
     const listPinned = (caller: Caller, id = slug) =>
-      call(caller, 'get_community_pinned_posts', { community_id: id }) as unknown as Promise<{
+      call(
+        caller,
+        'read_community',
+        optionArgs('pinned_posts', { community_id: id }),
+      ) as unknown as Promise<{
         pinned_posts: PostBody[]
       }>
 
@@ -214,16 +222,18 @@ describe('get_community_posts and get_community_pinned_posts — real DB', () =>
   })
 
   describe('a private community', () => {
-    it.each(['get_community_posts', 'get_community_pinned_posts'])(
-      'is not found by %s for its member, owner and an administrator',
-      async name => {
+    it.each(['posts', 'pinned_posts'] as const)(
+      'is not found by read_community.%s for its member, owner and an administrator',
+      async option => {
         const community = await communityWithMembers({ visibility: 'private' })
         const post = await publish(community.id, owner, { broadcast: 'users', privacy: 'private' })
         await setPinnedPosts(owner, community.id, [post])
 
         for (const caller of [author, owner, admin]) {
           for (const community_id of [community.id, community.slug]) {
-            expect(await call(caller, name, { community_id })).toEqual(NOT_FOUND)
+            expect(
+              await call(caller, 'read_community', optionArgs(option, { community_id })),
+            ).toEqual(NOT_FOUND)
           }
         }
       },

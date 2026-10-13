@@ -30,7 +30,9 @@ export async function listUserActiveCommunityBans(
   }
 
   const query = sql`/* listUserActiveCommunityBans */
-    SELECT cb.*, c.slug AS community_slug
+    SELECT cb.id, cb.community_id, cb.user_id, cb.banned_by_id, cb.reason, cb.expires_at,
+      cb.created_at, cb.updated_at, cb.lifted_at, cb.lifted_by_id, cb.case_id,
+      c.slug AS community_slug
     FROM community_bans cb
     LEFT JOIN communities c ON c.id = cb.community_id
     WHERE cb.user_id = ${userId}
@@ -82,7 +84,8 @@ export async function searchCommunityBans(
   }
 
   const query = sql`/* searchCommunityBans */
-    SELECT *
+    SELECT id, community_id, user_id, banned_by_id, reason, expires_at,
+      created_at, updated_at, lifted_at, lifted_by_id, case_id
     FROM community_bans
     WHERE community_id = ${communityId}
   `

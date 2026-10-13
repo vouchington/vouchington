@@ -49,7 +49,7 @@ describe('cleanupSoftDeletedUsers hashtag source retention', () => {
     await expect(getPostHashtagSourceContributorIdsForTest(postId)).resolves.toEqual([
       DELETED_USER_ID,
     ])
-  }, 60_000)
+  })
 
   it('reassigns hashtag source contributors before hard-deleting users', async () => {
     const window = createTestRetentionWindow()
@@ -80,5 +80,5 @@ describe('cleanupSoftDeletedUsers hashtag source retention', () => {
     await expect(getPostHashtagSourceContributorIdsForTest(postId)).resolves.toEqual([
       DELETED_USER_ID,
     ])
-  }, 60_000)
+  })
 })

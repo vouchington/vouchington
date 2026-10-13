@@ -95,7 +95,10 @@ the stored-secret encryption keys.
   lease expires.
 - Automatic recovery claims unstarted dispatched work after five minutes and stale processing attempts
   after thirty minutes. Terminally failed exports remain legal records and require a new user
-  request; non-terminal worker failures keep `failed_at` unset so recovery can rotate their attempt.
+  request; non-terminal worker failures keep `failed_at` unset so recovery can rotate their attempt. Recovery
+  keeps an unstarted attempt's token, so the dispatcher removes a completed or failed queue record
+  under that token's job ID before it dispatches the attempt again; a failed or stalled export job
+  cannot block its own recovery.
 
 ## Related
 

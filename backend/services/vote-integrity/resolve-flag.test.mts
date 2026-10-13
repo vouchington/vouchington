@@ -29,7 +29,7 @@ describe('resolve-flag', () => {
       createTestUser({ administrator: true, username: randomUsername() }) as Promise<PrivateUser>,
       createTestUserDirect({ username: randomUsername() }) as Promise<PrivateUser>,
     ])
-  }, 60_000)
+  }, 5_000)
 
   function makePost(slug: string): Promise<string> {
     return insertTestPost({
@@ -52,7 +52,7 @@ describe('resolve-flag', () => {
       expect(resolved.resolved_at).not.toBeNull()
       expect(resolved.resolved_by_id).toBe(adminUser.id)
       expect(resolved.resolution).toBe('dismissed')
-    }, 60_000)
+    })
 
     it('throws 404 when trying to resolve an already-resolved flag', async () => {
       const postId = await makePost(randomSlug())
@@ -65,14 +65,14 @@ describe('resolve-flag', () => {
       await expect(resolveVoteIntegrityFlag(flag!.id, adminUser.id, 'penalized')).rejects.toThrow(
         Error,
       )
-    }, 60_000)
+    })
 
     it('throws 404 for unknown flag ID', async () => {
       const fakeId = uuidv7()
       await expect(resolveVoteIntegrityFlag(fakeId, adminUser.id, 'dismissed')).rejects.toThrow(
         Error,
       )
-    }, 60_000)
+    })
 
     it('createVoteIntegrityFlag deduplicates unresolved flags for same entity+type', async () => {
       const postId = await makePost(randomSlug())
@@ -84,7 +84,7 @@ describe('resolve-flag', () => {
       })
       expect(flag1).not.toBeNull()
       expect(flag2).toBeNull() // second insert is deduplicated
-    }, 60_000)
+    })
 
     it('creates a flag through a concrete relation target and preserves the response field', async () => {
       const topic = await createTestTopic({ user: creatorUser })
@@ -105,7 +105,7 @@ describe('resolve-flag', () => {
         id: flag!.id,
         entity_relation_id: relation.id,
       })
-    }, 60_000)
+    })
 
     it('creates and deduplicates flags for an agent moderation', async () => {
       const postId = await makePost(randomSlug())
@@ -136,6 +136,6 @@ describe('resolve-flag', () => {
         details: { source: 'test' },
       })
       expect(duplicate).toBeNull()
-    }, 60_000)
+    })
   })
 })

@@ -7,7 +7,7 @@ import { getTestPostImagePlacement } from './entities/post-images.mts'
 import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
-  listRecoverableMediaDeliveryRegistryKeys,
+  listRecoverableMediaDeliveryRegistryIds,
   stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'
 
@@ -15,7 +15,7 @@ export async function withTestMediaRecoveryBacklog<T>(
   userId: string,
   count: number,
   run: (fixture: {
-    deliveryKeys: string[]
+    recordIds: string[]
     scanBefore: string
     placements: Array<{ placementId: string; revision: number; imageId: string }>
   }) => Promise<T>,
@@ -44,45 +44,40 @@ export async function withTestMediaRecoveryBacklog<T>(
       stageImagePlacementDeliveryRecord({ ...placement, state: 'withheld' }),
     ),
   )
-  const deliveryKeys = records.map(record => record.deliveryKey).toSorted()
+  const recordIds = records.map(record => record.mediaDeliveryRegistryRecordId).toSorted()
   return run({
-    deliveryKeys,
+    recordIds,
     placements,
     scanBefore: await getMediaDeliveryRegistryScanBefore(),
   })
 }
 
 export async function setTestMediaRecoveryState(
-  deliveryKeys: readonly string[],
+  recordIds: readonly string[],
   input: {
     state: 'pending' | 'claimed' | 'completed' | 'failed'
     attempts: number
     at: string
     nextAttemptAt?: string
-    createdAt?: string
   },
 ): Promise<void> {
   await write(sql`/* setTestMediaRecoveryState */
-    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, delivery_attempt_count,
+    INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, delivery_attempt_count,
       claimed_at, completed_at, next_attempt_at, failure_message)
-    SELECT delivery_key, generation, ${input.state}::media_delivery_registry_change_types, ${input.attempts},
+    SELECT media_delivery_registry_record_id, generation, ${input.state}::media_delivery_registry_change_types, ${input.attempts},
       CASE WHEN ${input.state} = 'pending' THEN NULL ELSE ${input.at}::timestamptz END,
       CASE WHEN ${input.state} IN ('completed', 'failed') THEN ${input.at}::timestamptz ELSE NULL END,
       ${input.nextAttemptAt ?? null}::timestamptz, 'Owned recovery failure evidence'
     FROM view_media_delivery_registry_current_records
-    WHERE delivery_key = ANY(${deliveryKeys}::text[])
+    WHERE media_delivery_registry_record_id = ANY(${recordIds}::uuid[])
   `)
   if (input.state === 'claimed')
     await write(sql`/* setTestMediaRecoveryState:lease */
       UPDATE media_delivery_registry_projection_work_items
       SET lease_token = ${crypto.randomUUID()}::uuid, leased_at = ${input.at}::timestamptz,
         lease_expires_at = ${input.at}::timestamptz + interval '5 minutes', attempt_count = ${input.attempts}
-      WHERE delivery_key = ANY(${deliveryKeys}::text[])
+      WHERE media_delivery_registry_record_id = ANY(${recordIds}::uuid[])
     `)
-  if (input.createdAt)
-    await write(
-      sql`UPDATE media_delivery_registry_records SET created_at = ${input.createdAt}::timestamptz WHERE delivery_key = ANY(${deliveryKeys}::text[])`,
-    )
 }
 
 /**
@@ -94,7 +89,7 @@ export async function setTestMediaRecoveryState(
  */
 export async function fenceTestMediaDeliveryRegistry(input: {
   edgeHighWater?: string
-  reopenDeliveryKeys: readonly string[]
+  reopenRecordIds: readonly string[]
 }): Promise<void> {
   await using transaction = await beginTransaction()
   if (input.edgeHighWater !== undefined)
@@ -106,29 +101,29 @@ export async function fenceTestMediaDeliveryRegistry(input: {
   await transaction(sql`/* fenceTestMediaDeliveryRegistry:reopen */
     UPDATE media_delivery_registry_records
     SET generation = generation + 1
-    WHERE delivery_key = ANY(${input.reopenDeliveryKeys}::text[])
+    WHERE id = ANY(${input.reopenRecordIds}::uuid[])
   `)
   await transaction.commit()
 }
 
 export async function withLockedTestMediaDeliveryRecord<T>(
-  deliveryKey: string,
+  mediaDeliveryRegistryRecordId: string,
   run: () => Promise<T>,
 ): Promise<T> {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`SELECT delivery_key FROM view_media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey} FOR UPDATE`,
+    sql`SELECT id FROM media_delivery_registry_records WHERE id = ${mediaDeliveryRegistryRecordId}::uuid FOR UPDATE`,
   )
   return await run()
 }
 
 /** Real production queries restricted to explicitly owned records; no substituted persistence. */
-export function scopedTestMediaRecoveryDependencies(deliveryKeys: readonly string[]) {
+export function scopedTestMediaRecoveryDependencies(recordIds: readonly string[]) {
   return {
-    listRecoverableMediaDeliveryRegistryKeys: (
-      input: Parameters<typeof listRecoverableMediaDeliveryRegistryKeys>[0],
-    ) => listRecoverableMediaDeliveryRegistryKeys({ ...input, deliveryKeys }),
+    listRecoverableMediaDeliveryRegistryIds: (
+      input: Parameters<typeof listRecoverableMediaDeliveryRegistryIds>[0],
+    ) => listRecoverableMediaDeliveryRegistryIds({ ...input, recordIds }),
     failExpiredExhaustedMediaDeliveryRegistryRecords: (now: string) =>
-      failExpiredExhaustedMediaDeliveryRegistryRecords(now, deliveryKeys),
+      failExpiredExhaustedMediaDeliveryRegistryRecords(now, recordIds),
   }
 }

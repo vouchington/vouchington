@@ -1,11 +1,11 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { updateTopicRatingStats } from '@services/topics'
 import { TOPIC_RATINGS_QUEUE_NAME } from '@queues/topic-ratings/config'
 import type { TopicRatingsJobData } from '@queues/topic-ratings/types'
 
-export const topicRatings = new Worker(
+export const topicRatings = createWorker(
   TOPIC_RATINGS_QUEUE_NAME,
   (job: Job) => {
     const jobName = job.name as TopicRatingsJobData['name']
@@ -20,8 +20,7 @@ export const topicRatings = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('topicRatings', { baseline: 5 }),
   },
 )

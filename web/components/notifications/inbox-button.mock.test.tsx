@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { toast } from 'sonner'
+import { ApiError } from '@/lib/api/error'
 import { InboxButton } from './inbox-button'
 
 const mockPush = vi.fn<VitestLooseMock>()
@@ -223,6 +225,46 @@ describe('inbox-button', () => {
       await waitFor(() => {
         expect(mockMarkMyNotificationRead).toHaveBeenCalledWith(notificationId)
       })
+      expect(mockPush).toHaveBeenCalledWith('/posts/post-1')
+    })
+
+    it('opens the target for a suspended account without recording the read', async () => {
+      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue(summaryWithNotification)
+      mockMarkMyNotificationRead.mockRejectedValue(
+        new ApiError('Account suspended', 403, { code: 'ACCOUNT_SUSPENDED' }),
+      )
+      vi.mocked(toast.error).mockClear()
+      render(<InboxButton />)
+      await waitFor(() => {
+        expect(screen.getByText('1')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByText('Test notification'))
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/posts/post-1')
+      })
+      expect(mockMarkMyNotificationRead).toHaveBeenCalledWith(notificationId)
+      expect(toast.error).not.toHaveBeenCalled()
+      expect(screen.getByText('1')).toBeInTheDocument()
+    })
+
+    it('stays on the inbox when marking a notification read fails for another reason', async () => {
+      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue(summaryWithNotification)
+      mockMarkMyNotificationRead.mockRejectedValue(new Error('offline'))
+      vi.mocked(toast.error).mockClear()
+      render(<InboxButton />)
+      await waitFor(() => {
+        expect(screen.getByText('Test notification')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByText('Test notification'))
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to open notification.')
+      })
+      expect(mockPush).not.toHaveBeenCalled()
+      expect(screen.getByText('1')).toBeInTheDocument()
     })
 
     it('calls handleDeleteNotification when delete button is clicked (L114)', async () => {

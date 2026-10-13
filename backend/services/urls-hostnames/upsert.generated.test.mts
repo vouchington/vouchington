@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { upsertUrlHostnames } from './upsert.mts'
 import { getUrlHostnameById } from './get.mts'
-import { getHostnamePolicy } from './policies.mts'
+import { getLocalHostnamePolicy } from './policies.mts'
 
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -76,9 +76,9 @@ describe('upsert.generated', () => {
     expect(record!.is_blocked).toBe(true)
     expect(record!.should_skip_web_risk).toBe(false)
     await updateUrlHostnameBlocked(parentId, false)
-    expect(await getHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: true })
+    expect(await getLocalHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: true })
     await updateUrlHostname(parentId, { should_skip_web_risk: false })
-    expect(await getHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: false })
+    expect(await getLocalHostnamePolicy(child)).toMatchObject({ should_skip_web_risk: false })
   })
 
   it('upsertUrlHostnames updates existing hostname', async () => {

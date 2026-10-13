@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -8,7 +13,6 @@ import {
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import setBookmarkTool from '../set-bookmark.mts'
 
 const SCOPES = ['bookmarks:read', 'bookmarks:write'] as const
@@ -33,7 +37,7 @@ async function getBookmarks(user: { id: string }, entityType: string, entityId: 
   return response.body.bookmarks as Record<string, boolean>
 }
 
-describe('set_bookmark and remove_bookmark contract — real DB', () => {
+describe('manage_bookmark.set and manage_bookmark.remove contract — real DB', () => {
   const suspendedUserIds: string[] = []
 
   afterEach(async () => {
@@ -45,8 +49,18 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const topicId = await createTopic(caller.id)
     const args = { entity_type: 'topic', entity_id: topicId, predicate: 'follow' }
 
-    const first = await callStructuredMcpTool(caller, 'set_bookmark', args, SCOPES)
-    const second = await callStructuredMcpTool(caller, 'set_bookmark', args, SCOPES)
+    const first = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
+    const second = await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', args),
+      SCOPES,
+    )
     const request = createRequest()
     await request.authenticateAs(caller)
     const rest = await request.put(`/api/v1/bookmarks/topic/${topicId}/follow`).expect(200)
@@ -64,13 +78,17 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const caller = await createCaller()
     const topicId = await createTopic(caller.id)
     const args = { entity_type: 'topic', entity_id: topicId, predicate: 'follow' }
-    await callStructuredMcpTool(caller, 'set_bookmark', args, SCOPES)
+    await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('set', args), SCOPES)
 
-    expect(await callStructuredMcpTool(caller, 'remove_bookmark', args, SCOPES)).toEqual({
+    expect(
+      await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), SCOPES),
+    ).toEqual({
       success: true,
     })
     expect(await getBookmarks(caller, 'topic', topicId)).toEqual({})
-    expect(await callStructuredMcpTool(caller, 'remove_bookmark', args, SCOPES)).toEqual({
+    expect(
+      await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), SCOPES),
+    ).toEqual({
       success: true,
     })
   })
@@ -79,9 +97,19 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const caller = await createCaller()
     const topicId = await createTopic(caller.id)
     const base = { entity_type: 'topic', entity_id: topicId }
-    await callStructuredMcpTool(caller, 'set_bookmark', { ...base, predicate: 'follow' }, SCOPES)
+    await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', { ...base, predicate: 'follow' }),
+      SCOPES,
+    )
 
-    await callStructuredMcpTool(caller, 'set_bookmark', { ...base, predicate: p }, SCOPES)
+    await callStructuredMcpTool(
+      caller,
+      'manage_bookmark',
+      optionArgs('set', { ...base, predicate: p }),
+      SCOPES,
+    )
 
     expect(await getBookmarks(caller, 'topic', topicId)).toEqual({ [p]: true })
   })
@@ -95,8 +123,8 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
 
     await callRejectedMcpTool(
       caller,
-      'set_bookmark',
-      { entity_type: 'url_hostname', entity_id: hostnameId, predicate: 'mute' },
+      'manage_bookmark',
+      optionArgs('set', { entity_type: 'url_hostname', entity_id: hostnameId, predicate: 'mute' }),
       SCOPES,
     )
 
@@ -109,15 +137,19 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const topicId = await createTopic(caller.id)
     const args = { entity_type: 'topic', entity_id: topicId, predicate: 'follow' }
 
-    expect(await callRejectedMcpTool(caller, 'set_bookmark', args, ['bookmarks:read'])).toContain(
-      'Tool requires scopes bookmarks:read, bookmarks:write',
-    )
     expect(
-      await callRejectedMcpTool(caller, 'remove_bookmark', args, ['bookmarks:read']),
+      await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('set', args), [
+        'bookmarks:read',
+      ]),
+    ).toContain('Tool requires scopes bookmarks:read, bookmarks:write')
+    expect(
+      await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), [
+        'bookmarks:read',
+      ]),
     ).toContain('Tool requires scopes')
-    expect(await callRejectedMcpTool(free, 'set_bookmark', args, SCOPES)).toContain(
-      'requires a higher plan',
-    )
+    expect(
+      await callRejectedMcpTool(free, 'manage_bookmark', optionArgs('set', args), SCOPES),
+    ).toContain('requires a higher plan')
     expect(await getBookmarks(caller, 'topic', topicId)).toEqual({})
   })
 
@@ -125,13 +157,13 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const caller = await createCaller()
     const topicId = await createTopic(caller.id)
     const args = { entity_type: 'topic', entity_id: topicId, predicate: 'follow' }
-    await callStructuredMcpTool(caller, 'set_bookmark', args, SCOPES)
+    await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('set', args), SCOPES)
     const other = { ...args, entity_id: await createTopic(caller.id) }
     await suspendTestUser(caller.id)
     suspendedUserIds.push(caller.id)
 
-    await callRejectedMcpTool(caller, 'set_bookmark', other, SCOPES)
-    await callRejectedMcpTool(caller, 'remove_bookmark', args, SCOPES)
+    await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('set', other), SCOPES)
+    await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), SCOPES)
 
     expect(await getBookmarks(caller, 'topic', other.entity_id)).toEqual({})
     expect(await getBookmarks(caller, 'topic', topicId)).toEqual({ follow: true })
@@ -154,12 +186,12 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
   ])('refuses %s as invalid arguments', async (_label, args) => {
     const caller = await createCaller()
 
-    expect(await callRejectedMcpTool(caller, 'set_bookmark', args, SCOPES)).toContain(
-      'Invalid tool arguments',
-    )
-    expect(await callRejectedMcpTool(caller, 'remove_bookmark', args, SCOPES)).toContain(
-      'Invalid tool arguments',
-    )
+    expect(
+      await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('set', args), SCOPES),
+    ).toContain('Invalid tool arguments')
+    expect(
+      await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), SCOPES),
+    ).toContain('Invalid tool arguments')
   })
 
   it('refuses a predicate the entity type does not take, and an entity that is not there', async () => {
@@ -184,14 +216,14 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
     const post = await createTestPost({ user: caller, privacy: 'private', broadcast: 'users' })
     const args = { entity_type: 'post', entity_id: post.id, predicate: 'save' }
 
-    await callRejectedMcpTool(caller, 'set_bookmark', args, SCOPES)
+    await callRejectedMcpTool(caller, 'manage_bookmark', optionArgs('set', args), SCOPES)
     expect(await getBookmarks(caller, 'post', post.id)).toEqual({})
 
-    await callStructuredMcpTool(caller, 'set_bookmark', args, PRIVATE_SCOPES)
+    await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('set', args), PRIVATE_SCOPES)
     expect(await getBookmarks(caller, 'post', post.id)).toEqual({ save: true })
 
     // Clearing a relation reads and discloses nothing, so it needs no private grant.
-    await callStructuredMcpTool(caller, 'remove_bookmark', args, SCOPES)
+    await callStructuredMcpTool(caller, 'manage_bookmark', optionArgs('remove', args), SCOPES)
     expect(await getBookmarks(caller, 'post', post.id)).toEqual({})
   })
 
@@ -202,8 +234,8 @@ describe('set_bookmark and remove_bookmark contract — real DB', () => {
 
     await callRejectedMcpTool(
       caller,
-      'set_bookmark',
-      { entity_type: 'post', entity_id: post.id, predicate: 'save' },
+      'manage_bookmark',
+      optionArgs('set', { entity_type: 'post', entity_id: post.id, predicate: 'save' }),
       PRIVATE_SCOPES,
     )
 

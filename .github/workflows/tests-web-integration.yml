@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: '.nvmrc'
           package-manager-cache: false
@@ -72,7 +72,7 @@ jobs:
 
     services:
       postgres:
-        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        image: mirror.gcr.io/pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
         env:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
@@ -89,7 +89,7 @@ jobs:
           --health-start-interval 1s
           --tmpfs /var/lib/postgresql:rw,size=1g
       valkey:
-        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
         ports:
           - 6379
         options: >-
@@ -131,6 +131,7 @@ jobs:
           CI_PROJECT: web-integration
           CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
           VITEST_CI_REPORTERS: run
+          VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-integration-shard-${{ matrix.shard }}.junit.xml
         run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
@@ -178,7 +179,7 @@ jobs:
         if: failure()
         timeout-minutes: 1
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: web-integration-shard-${{ matrix.shard }}-artifacts

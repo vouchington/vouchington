@@ -35,3 +35,19 @@ revocations clear the trust-tier stamp and issue one JWT invalidation when the l
 ## Configuration
 
 See `config.mts` for `MASS_REPORT_THRESHOLD`, `MASS_REPORT_WINDOW_MINUTES`, and `NEW_ACCOUNT_AGE_DAYS`.
+
+## Internal selected flag batches
+
+The flag list service accepts an internal `ids` selection of at most 100 UUID entries. It
+validates, lowercases, deduplicates and sorts a fresh set, then applies that set together with
+status and cursor filters. An empty selection returns no rows; omitting `ids` retains the
+global list. Missing selected flags are omitted.
+
+Selected cursors bind SHA-256 of the canonical normalized set as well as resource, status and
+ordering. Reordered or duplicate-equivalent inputs continue the same selection; changing or
+omitting the selection rejects its cursor. Unfiltered scope serialization remains unchanged.
+The digest binds filter consistency; it does not authorize access.
+
+This option stays internal. REST handlers construct the existing status/cursor/limit options.
+Admin tools forward their arguments directly after validating schemas with
+`additionalProperties: false`; their public parameter sets and authorization are unchanged.

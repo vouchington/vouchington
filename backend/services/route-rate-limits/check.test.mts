@@ -13,6 +13,11 @@ import {
   closeScopedDynamicConfigContext,
 } from '@voucha/test-helpers/dynamic-config'
 
+const freshIp = () =>
+  randomUUID()
+    .replaceAll('-', '')
+    .replace(/(.{4})(?=.)/g, '$1:')
+
 describe('check', () => {
   let testUser: PrivateUser
   const rateLimitKeyCleanup = createRouteRateLimitKeyCleanup()
@@ -66,17 +71,12 @@ describe('check', () => {
     }
   })
 
-  // Every test below uses a fixed, hardcoded identity (unlike HTTP-layer route-rate-limit
-  // suites, which mint a fresh createRequest() per call and never need cleanup). Reset only the
-  // specific keys a test is about to write through rateLimitKeyCleanup.resetAndOwn(). It deletes
-  // stale state before use, snapshots ownership, and the guaranteed afterEach drains every owned
-  // scope even when an assertion throws. This avoids RateLimiter#invalidate(), whose prefix-wide
-  // SCAN+UNLINK would also wipe every concurrent fork's counters. See ./test-support.mts.
+  // Cleanup owns only this case’s fresh identity keys; never invalidate a shared prefix.
 
   describe('checkRouteRateLimit', () => {
     it('allows one-second OAuth completion polling for a full minute', async () => {
       const routeKey = 'POST:/api/v1/auth/oauth/authorizations/:flowId/complete'
-      const identities: RateLimitIdentities = { ip: `192.0.2.${randomUUID()}` }
+      const identities: RateLimitIdentities = { ip: freshIp() }
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
         anon_read: 180,
@@ -95,7 +95,7 @@ describe('check', () => {
     it('returns not limited when rate limiting is disabled', async () => {
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
 
-      const identities: RateLimitIdentities = { ip: '127.0.0.1' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
       const result = await checkRouteRateLimit('POST:/api/v1/posts', identities, testUser)
       expect(result.limited).toBe(false)
       expect(result.limit).toBe(0)
@@ -103,7 +103,7 @@ describe('check', () => {
 
     it('returns not limited when under threshold (authenticated user)', async () => {
       const routeKey = 'POST:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: '192.0.2.1', userId: testUser.id }
+      const identities: RateLimitIdentities = { ip: freshIp(), userId: testUser.id }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
       overrideDynamicConfigFieldsForTest(rateLimitConfig, {
@@ -120,7 +120,7 @@ describe('check', () => {
 
     it('returns not limited when under threshold (anonymous user)', async () => {
       const routeKey = 'POST:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: '192.0.2.2' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -136,7 +136,7 @@ describe('check', () => {
 
     it('blocks anonymous user when threshold exceeded', async () => {
       const routeKey = 'POST:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: '192.0.2.3' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -155,7 +155,7 @@ describe('check', () => {
 
     it('applies route multiplier to threshold', async () => {
       const routeKey = 'PUT:/api/v1/entity-relations/:id/vote'
-      const identities: RateLimitIdentities = { ip: '192.0.2.4' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -172,8 +172,8 @@ describe('check', () => {
     it('API key path uses only IP + apikey identity keys', async () => {
       const routeKey = 'POST:/api/v1/posts'
       const identities: RateLimitIdentities = {
-        ip: '192.0.2.5',
-        apiKeyId: 'testkey1',
+        ip: freshIp(),
+        apiKeyId: randomUUID(),
         // No deviceId/sessionId/userId — API key path
       }
 
@@ -193,8 +193,8 @@ describe('check', () => {
       const routeKey = 'POST:/api/v1/posts'
       // Two requests from different IPs but same device — device gets blocked on 2nd
       const deviceId = `device-most-restrictive-test-${randomUUID()}`
-      const ids1: RateLimitIdentities = { ip: '192.0.2.10', deviceId }
-      const ids2: RateLimitIdentities = { ip: '192.0.2.11', deviceId }
+      const ids1: RateLimitIdentities = { ip: freshIp(), deviceId }
+      const ids2: RateLimitIdentities = { ip: freshIp(), deviceId }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -216,7 +216,7 @@ describe('check', () => {
 
     it('GET route inferred as read category', async () => {
       const routeKey = 'GET:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: '192.0.2.6' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -231,7 +231,7 @@ describe('check', () => {
 
     it('session refresh uses read category (called on every page load)', async () => {
       const routeKey = 'PATCH:/api/v1/session'
-      const identities: RateLimitIdentities = { ip: '192.0.2.20' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -250,7 +250,7 @@ describe('check', () => {
     it('sensitive route uses sensitive category', async () => {
       // Purchase intent creation is registered as sensitive in ROUTE_REGISTRY.
       const routeKey = 'POST:/api/v1/membership-purchase-intents'
-      const identities: RateLimitIdentities = { ip: '192.0.2.7' }
+      const identities: RateLimitIdentities = { ip: freshIp() }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -266,7 +266,7 @@ describe('check', () => {
 
     it('applies attested_multiplier to anon threshold', async () => {
       const routeKey = 'POST:/api/v1/posts'
-      const identities: RateLimitIdentities = { ip: '192.0.2.30', deviceClass: 'attested' }
+      const identities: RateLimitIdentities = { ip: freshIp(), deviceClass: 'attested' }
 
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
         enabled: true,
@@ -279,7 +279,7 @@ describe('check', () => {
       const result = await checkRouteRateLimit(routeKey, identities, null)
       expect(result.limit).toBe(40) // ceil(10 * 4)
     })
-  }, 60_000)
+  }, 30_000)
 
   describe('getAttestedMultiplier', () => {
     afterEach(() => {

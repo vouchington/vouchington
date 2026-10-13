@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { createTestUser, insertTestPost } from '../../../backend/test-helpers/index.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -9,6 +9,7 @@ let targetUserId = ''
 let targetPostId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
 
   const target = await createTestUser({ username: `rpt-submit-target-${suffix}` })

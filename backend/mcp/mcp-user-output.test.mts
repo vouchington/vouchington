@@ -1,4 +1,6 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getUserTool from './get-user.mts'
 import { mcpUserSchema, USER_PAGE_LIMIT } from './mcp-user-output.mts'
@@ -33,8 +35,8 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
 }
 
 const TOOLS = [
-  ['get_user', getUserTool, '/api/v1/users/{idOrSlug}'],
-  ['search_users', searchUsersTool, '/api/v1/users'],
+  ['read_users', getUserTool, '/api/v1/users/{idOrSlug}'],
+  ['read_users', searchUsersTool, '/api/v1/users'],
 ] as const
 
 describe('user read tool output schemas', () => {
@@ -61,14 +63,14 @@ describe('user read tool output schemas', () => {
   it.each(TOOLS)('publishes %s as a closed found-or-not-found object', (name, tool) => {
     const [found, notFound] = branches(tool)
 
-    expect(tool.schema.name).toBe(name)
+    expect(getRegisteredToolByName(name)?.schema.name).toBe(name)
     expect(found!['additionalProperties']).toBe(false)
     expect(found!['required']).toEqual(Object.keys(propertiesOf(found!)))
     expect(propertiesOf(notFound!)).toEqual({
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(tool.meta?.outputSchema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns the user as one entry and the matches as a page', () => {
@@ -97,11 +99,15 @@ describe('user read tool output schemas', () => {
     expect(tool.meta?.title).toBeTruthy()
   })
 
-  it('bounds the search_users page size like the REST route', () => {
+  it('bounds the read_users.search page size like the REST route', () => {
     const properties = searchUsersTool.schema.parameters?.['properties'] as Record<string, unknown>
 
     expect(USER_PAGE_LIMIT).toEqual({ min: 1, max: 25, default: 10 })
-    expect(properties['limit']).toMatchObject({ type: 'integer', minimum: 1, maximum: 25 })
+    expect(properties['limit']).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 25,
+    })
     expect(searchUsersTool.schema.description).toContain('at most 25')
     expect(searchUsersTool.schema.parameters?.['required']).toEqual(['q'])
   })

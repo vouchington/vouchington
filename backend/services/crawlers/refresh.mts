@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { getOrCreateCrawlerForHostname } from './create-crawler.mts'
@@ -20,8 +21,8 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
     LEFT JOIN hostname_crawler_configurations c
       ON c.hostname_id = h.id
       AND c.deleted_at IS NULL
-    WHERE (h.is_blocked IS NULL OR h.is_blocked = false)
-      AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
+    WHERE NOT h.is_blocked
+      AND h.is_crawlable
     GROUP BY h.id
     HAVING (
       NOT EXISTS (
@@ -46,14 +47,15 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
   queryOptions: QueryOptions = {},
   excludeUrlIds: string[] = [],
 ): Promise<CrawlerRefreshCandidateUrl[]> => {
+  const minCrawlId = getMinUUIDv7ForParentHistory(hostnameId)
   const query = sql`/* searchCrawlerRefreshUrlCandidatesByHostnameId */
     SELECT u.id, u.url
     FROM urls u
-    LEFT JOIN crawls c ON c.url_id = u.id
+    LEFT JOIN crawls c ON c.url_id = u.id AND c.id >= ${minCrawlId}::uuid
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE u.hostname_id = ${hostnameId}
-      AND (h.is_blocked IS NULL OR h.is_blocked = false)
-      AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
+      AND NOT h.is_blocked
+      AND h.is_crawlable
   `
   if (excludeUrlIds.length > 0) {
     query.append(sql` AND NOT (u.id = ANY(${excludeUrlIds}::UUID[]))`)
@@ -81,7 +83,7 @@ export async function refreshHostnameCrawler(
   hostnameId: string,
 ): Promise<RefreshHostnameCrawlerResult> {
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId)
-  if (!hostname || hostname.is_blocked || hostname.is_crawlable === false) {
+  if (!hostname || hostname.is_blocked || !hostname.is_crawlable) {
     return {
       hostname_id: hostnameId,
       hostname_crawler_configuration_id: null,

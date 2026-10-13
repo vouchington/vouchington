@@ -13,9 +13,23 @@ interface RouteRateLimitExtras {
   identityMode?: 'ip-only'
 }
 
+type RouteRateLimitResult = Awaited<ReturnType<typeof checkRouteRateLimit>>
+
+// The limiter step's outcome, held until settleRouteRateLimit applies it. `null` means the
+// limiter is disabled, so nothing is applied or metered.
+export type RouteRateLimitCheck = { result: RouteRateLimitResult; userId: string | null } | null
+
 declare module '@jongleberry/api-server' {
   interface Context {
     applyRouteRateLimit(routeKey: string, extras?: RouteRateLimitExtras): Promise<void>
+    // Limiter step: needs session-token data only (no PostgreSQL), so it can overlap the user
+    // fetch. It charges the limiter but sets no headers and throws no 429.
+    prepareRouteRateLimit(
+      routeKey: string,
+      extras?: RouteRateLimitExtras,
+    ): Promise<RouteRateLimitCheck>
+    // Applies the limiter headers/429, then meters usage (which reuses `ctx.currentUser`).
+    settleRouteRateLimit(routeKey: string, check: RouteRateLimitCheck): Promise<void>
   }
 }
 
@@ -25,16 +39,32 @@ const extensions = {
     routeKey: string,
     extras?: RouteRateLimitExtras,
   ): Promise<void> {
-    if (!isRouteRateLimitEnabled()) return
+    await this.settleRouteRateLimit(routeKey, await this.prepareRouteRateLimit(routeKey, extras))
+  },
+
+  async settleRouteRateLimit(
+    this: Context,
+    routeKey: string,
+    check: RouteRateLimitCheck,
+  ): Promise<void> {
+    if (!check) return
+    applyRateLimitResult(this, check.result)
+    await meterRestUsage(this, routeKey, check.userId)
+  },
+
+  async prepareRouteRateLimit(
+    this: Context,
+    routeKey: string,
+    extras?: RouteRateLimitExtras,
+  ): Promise<RouteRateLimitCheck> {
+    if (!isRouteRateLimitEnabled()) return null
 
     // Pre-compute session data once so identity resolution does not trigger a
     // second JWT/Valkey check. Route rate limiting uses signed session claims
     // and does not load the private user record on the hot path.
     if (extras?.identityMode === 'ip-only') {
       const result = await checkRouteRateLimit(routeKey, { ip: this.ip ?? 'unknown' }, null)
-      applyRateLimitResult(this, result)
-      await meterRestUsage(this, routeKey, null)
-      return
+      return { result, userId: null }
     }
 
     const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(this, extras)
@@ -55,15 +85,12 @@ const extensions = {
 
     if (extras?.email) identities.email = extras.email
 
-    applyRateLimitResult(this, await checkRouteRateLimit(routeKey, identities, null))
-    await meterRestUsage(this, routeKey, sessionData.uid ?? null)
+    const result = await checkRouteRateLimit(routeKey, identities, null)
+    return { result, userId: sessionData.uid ?? null }
   },
 }
 
-function applyRateLimitResult(
-  ctx: Context,
-  result: Awaited<ReturnType<typeof checkRouteRateLimit>>,
-): void {
+function applyRateLimitResult(ctx: Context, result: RouteRateLimitResult): void {
   if (result.limit > 0) {
     ctx.set('X-RateLimit-Limit', String(result.limit))
     ctx.set('X-RateLimit-Remaining', String(result.remaining))

@@ -209,6 +209,6 @@ describe('crawl-url.redirects', () => {
       } finally {
         dateNow.mockRestore()
       }
-    }, 60_000)
+    }, 30_000)
   })
 })

@@ -72,7 +72,7 @@ jobs:
 
     services:
       postgres:
-        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        image: mirror.gcr.io/pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
         env:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
@@ -89,7 +89,7 @@ jobs:
           --health-start-interval 1s
           --tmpfs /var/lib/postgresql:rw,size=1g
       valkey:
-        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
         ports:
           - 6379
         options: >-
@@ -145,7 +145,7 @@ jobs:
             -p "127.0.0.1:$OTEL_GRPC_PORT:4317" \
             -v "$PWD/dev/otel/collector-config-ci.yaml:/etc/otelcol-contrib/config.yaml:ro" \
             -v "$RUNNER_TEMP/otel-output:/otel-output" \
-            otel/opentelemetry-collector-contrib:0.153.0
+            mirror.gcr.io/otel/opentelemetry-collector-contrib:0.153.0
           sleep 2
           if [ "$(docker inspect -f '{{.State.Running}}' "$COLLECTOR_NAME")" != "true" ]; then
             docker logs "$COLLECTOR_NAME" || true
@@ -196,6 +196,9 @@ jobs:
         # tail on top of it. Merge-queue shards still recording passes were killed at 9 minutes
         # with ~50 tests left at ~80 passes per 2.5 minutes (#1185), so 12 covers that tail.
         # Assertion failures still fail the step.
+        # run-bounded kills the process group one minute under this ceiling. timeout-minutes did
+        # not: shard 5 stayed in this step until the 23-minute job cap and the log was dropped
+        # (run 37726973537, job 113148144881).
         timeout-minutes: 12
         env:
           GIT_COMMIT: ${{ github.sha }}
@@ -209,7 +212,7 @@ jobs:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
           set -euo pipefail
-          pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
+          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
           # trace.zip only for a test's first retry attempt, so its presence under
           # test-results/ is a direct signal that something retried in this shard —
@@ -232,7 +235,7 @@ jobs:
         if: ${{ always() && inputs.otel_enabled }}
         timeout-minutes: 1
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: playwright-otel-output-shard-${{ matrix.shard }}
@@ -248,7 +251,7 @@ jobs:
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: playwright-junit-shard-${{ matrix.shard }}
@@ -259,7 +262,7 @@ jobs:
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: playwright-test-results-shard-${{ matrix.shard }}
@@ -270,7 +273,7 @@ jobs:
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           overwrite: true
           name: wrangler-logs-${{ matrix.shard }}

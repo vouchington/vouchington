@@ -104,7 +104,7 @@ describe('authorization', () => {
       // mutualFollower ↔ contentOwner (both directions)
       await insertEntityRelation('relation__user__follow__user', mutualFollower.id, contentOwner.id)
       await insertEntityRelation('relation__user__follow__user', contentOwner.id, mutualFollower.id)
-    }, 60_000)
+    }, 5_000)
     it('everyone - returns true for anonymous', async () => {
       expect(await currentUserCanViewUserContent(null, contentOwner.id, 'everyone')).toBe(true)
     })

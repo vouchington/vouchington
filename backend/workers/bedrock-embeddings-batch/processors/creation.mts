@@ -4,6 +4,7 @@ import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   processBatchCreation,
   processImageBatchCreation,
+  type BatchCreationDependencies,
 } from '@services/bedrock-embeddings-batch/utils'
 import { streamPendingTopics } from '@services/bedrock-embeddings-batch/entities/topics'
 import { streamPendingPosts } from '@services/bedrock-embeddings-batch/entities/posts'
@@ -26,21 +27,31 @@ const textStreams = {
   crawl_chunks: streamPendingCrawlChunks,
 }
 
-export function processEmbeddingCreationJob(job: EmbeddingCreationJob, jobType: BatchJobType) {
+export function processEmbeddingCreationJob(
+  job: EmbeddingCreationJob,
+  jobType: BatchJobType,
+  dependencies?: BatchCreationDependencies,
+) {
   const cursor = parseEmbeddingScanCursor(job.data)
   const reEnqueue = (next?: EmbeddingScanCursor, delayMs?: number) =>
     delayEmbeddingCreationJob(job, next, delayMs)
   if (jobType === 'images')
-    return processImageBatchCreation({
+    return processImageBatchCreation(
+      {
+        cursor,
+        reEnqueue,
+        streamPending: options => streamPendingImages({ ...options, cursor }),
+        addImageToBatch,
+      },
+      dependencies,
+    )
+  return processBatchCreation(
+    {
       cursor,
       reEnqueue,
-      streamPending: options => streamPendingImages({ ...options, cursor }),
-      addImageToBatch,
-    })
-  return processBatchCreation({
-    cursor,
-    reEnqueue,
-    jobType,
-    streamPending: options => textStreams[jobType]({ ...options, cursor }),
-  })
+      jobType,
+      streamPending: options => textStreams[jobType]({ ...options, cursor }),
+    },
+    dependencies,
+  )
 }

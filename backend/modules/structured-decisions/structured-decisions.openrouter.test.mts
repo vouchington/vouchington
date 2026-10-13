@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createStructuredDecisionClient } from './structured-decisions.mts'
 
+// Non-gating smoke check of the OpenRouter Decisions endpoint against the live API. The request we
+// build and the decoding of the native Noul, Choice and Score answers are gated by a recorded
+// response in structured-decisions.replay.test.mts. See docs/development/tests.md#live-provider-smoke-checks.
 describe('OpenRouter Decisions', () => {
   it('preserves native Jev Noul, Choice, and Score fields', async () => {
     const apiKey = process.env.OPENROUTER_API_KEY?.trim() ?? ''

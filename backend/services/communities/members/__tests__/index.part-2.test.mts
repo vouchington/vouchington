@@ -11,6 +11,7 @@ import {
 import { joinCommunity } from '../join.mts'
 
 import { archiveCommunity } from '../../archive.mts'
+import { getCommunityOrThrow } from '../../get.mts'
 
 import { leaveCommunity } from '../leave.mts'
 
@@ -67,7 +68,7 @@ describe('index', () => {
         userId: user.id,
         role: 'member',
       })
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
+      await updateMemberRole(owner.id, publicCommunity, user.id, 'moderator')
       const updated = await getCommunityMember(publicCommunity.id, user.id)
       expect(updated?.role).toBe('moderator')
       const response = await listNotifications(user.id)
@@ -88,7 +89,7 @@ describe('index', () => {
         userId: user.id,
         role: 'moderator',
       })
-      await updateMemberRole(owner.id, publicCommunity.id, user.id, 'moderator')
+      await updateMemberRole(owner.id, publicCommunity, user.id, 'moderator')
       expect(Object.values((await listNotifications(user.id)).notifications)).not.toEqual(
         expect.arrayContaining([expect.objectContaining({ entity_type: 'community_role_change' })]),
       )
@@ -108,7 +109,7 @@ describe('index', () => {
         role: 'member',
       })
       await expect(
-        updateMemberRole(mod.id, publicCommunity.id, member.id, 'moderator'),
+        updateMemberRole(mod.id, publicCommunity, member.id, 'moderator'),
       ).rejects.toMatchObject({ status: 403 })
     })
 
@@ -133,13 +134,18 @@ describe('index', () => {
       await archiveCommunity(archivedCommunity.id, owner.id)
 
       await expect(
-        updateMemberRole(owner.id, archivedCommunity.id, target.id, 'moderator'),
+        updateMemberRole(
+          owner.id,
+          await getCommunityOrThrow(archivedCommunity.id),
+          target.id,
+          'moderator',
+        ),
       ).rejects.toMatchObject({ status: 403, message: 'Community is archived' })
     })
 
     it('owner cannot change their own role', async () => {
       await expect(
-        updateMemberRole(owner.id, publicCommunity.id, owner.id, 'moderator'),
+        updateMemberRole(owner.id, publicCommunity, owner.id, 'moderator'),
       ).rejects.toMatchObject({ status: 422 })
     })
 
@@ -156,7 +162,7 @@ describe('index', () => {
       })
       const { roleChangeEmailEnqueue } = await updateMemberRole(
         owner.id,
-        publicCommunity.id,
+        publicCommunity,
         user.id,
         'moderator',
       )
@@ -191,7 +197,7 @@ describe('index', () => {
       })
       const { roleChangeEmailEnqueue } = await updateMemberRole(
         owner.id,
-        publicCommunity.id,
+        publicCommunity,
         user.id,
         'member',
       )
@@ -229,7 +235,7 @@ describe('index', () => {
       })
       const { roleChangeEmailEnqueue } = await updateMemberRole(
         owner.id,
-        publicCommunity.id,
+        publicCommunity,
         user.id,
         'moderator',
       )

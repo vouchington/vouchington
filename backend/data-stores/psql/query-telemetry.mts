@@ -1,4 +1,5 @@
 import { emitAnalytics } from './analytics-emit.mts'
+import { recordRequestQueryTiming } from './request-query-profile.mts'
 
 export type QueryPoolLabel = 'read' | 'write' | 'client'
 
@@ -41,6 +42,7 @@ function maybeLogTestQueryFailure(input: QueryTimingInput): void {
  */
 export function recordQueryTiming(input: QueryTimingInput): void {
   maybeLogTestQueryFailure(input)
+  recordRequestQueryTiming(input)
 
   const backend = process.env.ANALYTICS_BACKEND
   if (!backend || backend === 'disabled') return

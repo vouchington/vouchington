@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { currentUserCanModerateCommunity, getCommunityMember } from '@services/communities'
+import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import {
   allocateCommunityAgentPromptSlot,
   getCommunityAgentPrompt,
@@ -11,8 +11,6 @@ import {
   validateUUIDParam,
 } from '../../../response-helpers.mts'
 
-import { getCommunityOrThrow } from './shared.mts'
-
 app
   .route('/api/v1/communities/:idOrSlug/agent-prompts/:promptId/allocations')
   .post(async (ctx: Context) => {
@@ -22,8 +20,7 @@ app
     )
 
     const { idOrSlug, promptId } = ctx.params as { idOrSlug: string; promptId: string }
-    const community = await getCommunityOrThrow(ctx, idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(
       currentUserCanModerateCommunity(currentUser, community, membership),

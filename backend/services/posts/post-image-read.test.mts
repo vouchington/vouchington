@@ -4,8 +4,14 @@ import {
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
+  allowTestPostImageDelivery,
+  getTestPostImagePlacement,
+  markImageModerationFlagged,
+  setImageOpenAIModerationResults,
+  completeTestMediaDeliveryRecord,
 } from '@voucha/test-helpers'
 import { getPostImages } from './post-image-read.mts'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 describe('getPostImages edge enforcement modes', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -33,5 +39,49 @@ describe('getPostImages edge enforcement modes', () => {
     }
     const images = await getPostImages(postId)
     expect(images.some(image => image.image_id === imageId)).toBe(visible)
+  })
+
+  it('requires a usable image and completed current delivery for each exact placement', async () => {
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
+    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
+    const user = await createTestUserDirect()
+    const createPost = () =>
+      insertTestPost({
+        title: `Exact delivery ${crypto.randomUUID()}`,
+        slug: `exact-delivery-${crypto.randomUUID()}`,
+        createdById: user.id,
+        markdown: 'An image reused by independently authorized placements.',
+      })
+    const first = await createPost()
+    const second = await createPost()
+    const imageId = await insertTestImage(user.id)
+    await insertTestPostImage({ postId: first, imageId })
+    await insertTestPostImage({ postId: second, imageId })
+    await allowTestPostImageDelivery({ postId: first, imageId })
+    expect((await getPostImages(first)).map(image => image.image_id)).toEqual([imageId])
+    expect(await getPostImages(second)).toEqual([])
+
+    await markImageModerationFlagged(imageId)
+    expect(await getPostImages(first)).toEqual([])
+    await setImageOpenAIModerationResults(imageId, [], false)
+    expect((await getPostImages(first)).map(image => image.image_id)).toEqual([imageId])
+
+    const placement = await getTestPostImagePlacement(first, imageId)
+    expect(placement).not.toBeNull()
+    const tuple = {
+      placementId: placement!.placement_id,
+      revision: placement!.placement_revision,
+      imageId,
+    }
+    await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
+    expect(await getPostImages(first)).toEqual([])
+    const restored = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
+    expect(await getPostImages(first)).toEqual([])
+    await completeTestMediaDeliveryRecord(restored.mediaDeliveryRegistryRecordId)
+    expect((await getPostImages(first)).map(image => image.image_id)).toEqual([imageId])
+    expect(await getPostImages(second)).toEqual([])
   })
 })

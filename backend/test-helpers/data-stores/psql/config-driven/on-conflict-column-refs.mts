@@ -1,126 +1,108 @@
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-// Test-time judge for TypeScript-generated config-driven SQL
-// (`generated-ddl-insert-invariants.mts`). Tracked `.sql` files use no-mistakes
-// `postgres-idempotent-insert`.
+import type {
+  PostgresSqlExpression,
+  PostgresSqlExpressionChild,
+  PostgresSqlName,
+} from 'no-mistakes'
 
-/**
- * AST helpers for recognizing self-references, `EXCLUDED.<col>` references, and NULL-proof
- * predicates in a parsed `ON CONFLICT` clause. Split out of on-conflict-arbiter.mts, which
- * imports these instead of defining them locally, so on-conflict-generated-arbiter.mts's own
- * generated-column dependency harvest (#11068) can reuse `collectColumnRefs` without a third
- * copy.
- */
+export type ExpressionNode = PostgresSqlExpression | PostgresSqlExpressionChild
 
-function isColumnRef(node: unknown): node is { ColumnRef: { fields: unknown[] } } {
-  return isRecord(node) && isRecord(node.ColumnRef) && Array.isArray(node.ColumnRef.fields)
+export function columnName(name: PostgresSqlName): string | undefined {
+  return name.parts.at(-1)?.identity
 }
 
-function isExcludedColumnRef(fields: unknown[]): boolean {
-  const first = fields.length === 2 ? fields[0] : undefined
-  return isRecord(first) && isRecord(first.String) && first.String.sval === 'excluded'
+function directColumn(node: ExpressionNode): PostgresSqlName | undefined {
+  if (node.root.kind === 'columnReference') return node.root.name
+  if (node.root.kind !== 'parenthesized') return undefined
+  const child = node.children.find(part => part.role === 'parenthesizedExpression')
+  return child === undefined ? undefined : directColumn(child)
 }
 
-function columnRefName(node: unknown): string | undefined {
-  if (!isColumnRef(node)) return undefined
-  const last = node.ColumnRef.fields.at(-1)
-  return isRecord(last) && isRecord(last.String) && typeof last.String.sval === 'string'
-    ? last.String.sval
-    : undefined
+function isExcluded(name: PostgresSqlName): boolean {
+  return name.parts.length === 2 && name.parts[0]?.identity === 'excluded'
 }
 
-/** Whether `val` is a bare (non-`EXCLUDED`) reference to `column`. */
-export function isBareSelfReference(val: unknown, column: string): boolean {
+export function selfReferenceColumn(node: ExpressionNode): string | undefined {
+  const name = directColumn(node)
+  return name === undefined || isExcluded(name) ? undefined : columnName(name)
+}
+
+export function excludedColumnRefName(node: ExpressionNode): string | undefined {
+  const name = directColumn(node)
+  return name !== undefined && isExcluded(name) ? columnName(name) : undefined
+}
+
+export function isBareSelfReference(node: ExpressionNode, column: string): boolean {
+  return selfReferenceColumn(node) === column
+}
+
+export function isExcludedReferenceToColumn(node: ExpressionNode, column: string): boolean {
+  return excludedColumnRefName(node) === column
+}
+
+export function isNullLiteral(node: ExpressionNode): boolean {
+  return node.root.kind === 'literal' && node.root.value.kind === 'null'
+}
+
+function conjunctiveProof(
+  node: ExpressionNode | null,
+  match: (part: ExpressionNode) => string | undefined,
+  out: Set<string>,
+): void {
+  if (node === null || !node.childrenComplete) return
+  if (node.root.kind === 'parenthesized') {
+    const expression = node.children.find(child => child.role === 'parenthesizedExpression')
+    if (expression !== undefined) conjunctiveProof(expression, match, out)
+    return
+  }
+  if (node.root.kind === 'binary' && node.root.operator.toUpperCase() === 'AND') {
+    for (const child of node.children) conjunctiveProof(child, match, out)
+    return
+  }
+  const column = match(node)
+  if (column !== undefined) out.add(column)
+}
+
+function nullTestColumn(node: ExpressionNode, negated: boolean): string | undefined {
+  if (node.root.kind !== 'nullTest' || node.root.negated !== negated) return undefined
+  const operand = node.children.find(child => child.role === 'nullOperand')
+  return operand === undefined ? undefined : selfReferenceColumn(operand)
+}
+
+export function collectNullProvenColumns(
+  predicate: PostgresSqlExpression | null,
+  out: Set<string>,
+): void {
+  conjunctiveProof(predicate, node => nullTestColumn(node, false), out)
+}
+
+export function isDistinctFromExcluded(node: PostgresSqlExpression, column: string): boolean {
+  if (node.root.kind !== 'distinctness' || node.root.negated) return false
+  const left = node.children.find(child => child.role === 'distinctLeft')
+  const right = node.children.find(child => child.role === 'distinctRight')
   return (
-    isColumnRef(val) && !isExcludedColumnRef(val.ColumnRef.fields) && columnRefName(val) === column
+    left !== undefined &&
+    right !== undefined &&
+    ((isBareSelfReference(left, column) && isExcludedReferenceToColumn(right, column)) ||
+      (isBareSelfReference(right, column) && isExcludedReferenceToColumn(left, column)))
   )
 }
 
-/** Whether `val` is `EXCLUDED.<column>`. */
-export function isExcludedReferenceToColumn(val: unknown, column: string): boolean {
-  return (
-    isColumnRef(val) && isExcludedColumnRef(val.ColumnRef.fields) && columnRefName(val) === column
-  )
-}
-
-/** The column name of an `EXCLUDED.<col>` reference, or undefined for any other node. */
-export function excludedColumnRefName(node: unknown): string | undefined {
-  if (!isColumnRef(node) || !isExcludedColumnRef(node.ColumnRef.fields)) return undefined
-  return columnRefName(node)
-}
-
-/** Collects every non-`EXCLUDED` column name referenced anywhere under `node`. */
-export function collectColumnRefs(node: unknown, out: Set<string>): void {
-  if (Array.isArray(node)) {
-    for (const item of node) collectColumnRefs(item, out)
-    return
-  }
-  if (isColumnRef(node)) {
-    if (!isExcludedColumnRef(node.ColumnRef.fields)) {
-      const column = columnRefName(node)
-      if (column !== undefined) out.add(column)
-    }
-    return
-  }
-  if (!isRecord(node)) return
-  for (const value of Object.values(node)) collectColumnRefs(value, out)
-}
-
-// Only descends through a conjunctive (AND-only) chain — an OR branch does not hold for every
-// row the arbiter could have matched, so a column proven NULL under one OR arm is not provably
-// NULL in general.
-export function collectNullProvenColumns(node: unknown, out: Set<string>): void {
-  if (!isRecord(node)) return
-  const boolExpr = node.BoolExpr
-  if (isRecord(boolExpr) && boolExpr.boolop === 'AND_EXPR' && Array.isArray(boolExpr.args)) {
-    for (const arg of boolExpr.args) collectNullProvenColumns(arg, out)
-    return
-  }
-  const nullTest = node.NullTest
-  if (isRecord(nullTest) && nullTest.nulltesttype === 'IS_NULL') {
-    const column = columnRefName(nullTest.arg)
-    if (column !== undefined) out.add(column)
-  }
-}
-
-export function isNullLiteral(val: unknown): boolean {
-  return isRecord(val) && isRecord(val.A_Const) && val.A_Const.isnull === true
-}
-
-/** Whether `node` is `t.<column> IS DISTINCT FROM EXCLUDED.<column>` (or the symmetric form). */
-export function isDistinctFromExcluded(node: unknown, column: string): boolean {
-  if (!isRecord(node) || !isRecord(node.A_Expr) || node.A_Expr.kind !== 'AEXPR_DISTINCT') {
-    return false
-  }
-  const { lexpr, rexpr } = node.A_Expr
-  return (
-    (isBareSelfReference(lexpr, column) && isExcludedReferenceToColumn(rexpr, column)) ||
-    (isBareSelfReference(rexpr, column) && isExcludedReferenceToColumn(lexpr, column))
-  )
-}
-
-// Mirrors collectNullProvenColumns' AND-only descent, proving EXCLUDED.<col> IS NOT NULL instead.
-export function collectExcludedNotNullColumns(node: unknown, out: Set<string>): void {
-  if (!isRecord(node)) return
-  const boolExpr = node.BoolExpr
-  if (isRecord(boolExpr) && boolExpr.boolop === 'AND_EXPR' && Array.isArray(boolExpr.args)) {
-    for (const arg of boolExpr.args) collectExcludedNotNullColumns(arg, out)
-    return
-  }
-  const nullTest = node.NullTest
-  if (isRecord(nullTest) && nullTest.nulltesttype === 'IS_NOT_NULL') {
-    const excludedColumn = excludedColumnRefName(nullTest.arg)
-    if (excludedColumn !== undefined) out.add(excludedColumn)
-  }
-}
-
-/** Whether the WHERE clause proves `t.<column> IS NULL AND EXCLUDED.<column> IS NOT NULL`. */
-export function isNullUntilProvenNonNull(node: unknown, column: string): boolean {
+export function isNullUntilProvenNonNull(
+  predicate: PostgresSqlExpression | null,
+  column: string,
+): boolean {
   const nullProven = new Set<string>()
-  collectNullProvenColumns(node, nullProven)
+  collectNullProvenColumns(predicate, nullProven)
   if (!nullProven.has(column)) return false
   const excludedNotNull = new Set<string>()
-  collectExcludedNotNullColumns(node, excludedNotNull)
+  conjunctiveProof(
+    predicate,
+    node => {
+      if (node.root.kind !== 'nullTest' || !node.root.negated) return undefined
+      const operand = node.children.find(child => child.role === 'nullOperand')
+      return operand === undefined ? undefined : excludedColumnRefName(operand)
+    },
+    excludedNotNull,
+  )
   return excludedNotNull.has(column)
 }

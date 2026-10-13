@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { removeListItem } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -6,7 +7,7 @@ import {
   SUCCESS_RESULT_SCHEMA,
   type ListItemToolArgs,
 } from './list-tool-support.mts'
-import type { Tool, ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { selectApiByArgument } from './select-api-by-argument.mts'
 
 const ENDPOINTS: Record<string, ToolApiEndpoint> = {
@@ -14,14 +15,11 @@ const ENDPOINTS: Record<string, ToolApiEndpoint> = {
   rss_feed_item: { method: 'DELETE', path: '/api/v1/lists/:id/items/rss-feed-items/:entityId' },
 }
 
-const tool: Tool<ListItemToolArgs, { success: true }> = {
+const tool: MergedToolSource<ListItemToolArgs, { success: true }> = {
   schema: {
-    name: 'remove_list_item',
-    type: 'function',
     description:
       "Remove a post or an RSS feed item from a list the current user owns. Removing an item that is not on the list fails as not found, and another user's list cannot be changed.",
     parameters: LIST_ITEM_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

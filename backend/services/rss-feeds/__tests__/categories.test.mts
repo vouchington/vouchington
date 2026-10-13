@@ -14,7 +14,7 @@ describe('rss-feed categories', () => {
   beforeAll(async () => {
     const feed = await createTestRssFeed({})
     rssFeedId = feed.id
-  }, 60_000)
+  }, 5_000)
 
   describe('upsertRssFeedCategories', () => {
     it('inserts normalized category rows for a feed', async () => {
@@ -24,7 +24,7 @@ describe('rss-feed categories', () => {
       const texts = rows.map(r => r.category_text)
       expect(texts).toContain('business')
       expect(texts).toContain('news')
-    }, 30_000)
+    })
 
     it('deduplicates categories (case-insensitive)', async () => {
       const feed = await createTestRssFeed({})
@@ -32,14 +32,14 @@ describe('rss-feed categories', () => {
       const rows = await getRssFeedCategories(feed.id)
       const techRows = rows.filter(r => r.category_text === 'technology')
       expect(techRows).toHaveLength(1)
-    }, 30_000)
+    })
 
     it('is idempotent on conflict — does not error on duplicate upsert', async () => {
       const feed = await createTestRssFeed({})
       await upsertRssFeedCategories(feed.id, ['Comedy'])
       // Re-upsert same categories — should not throw
       await expect(upsertRssFeedCategories(feed.id, ['Comedy'])).resolves.not.toThrow()
-    }, 30_000)
+    })
 
     it('updates topic_id on conflict when a matching topic is created after the initial upsert', async () => {
       const feed = await createTestRssFeed({})
@@ -58,14 +58,14 @@ describe('rss-feed categories', () => {
       const after = await getRssFeedCategories(feed.id)
       const afterRow = after.find(r => r.category_text === uniqueCategory)
       expect(afterRow?.topic_id).toBe(topic.id)
-    }, 30_000)
+    })
 
     it('does nothing for empty input', async () => {
       const feed = await createTestRssFeed({})
       await expect(upsertRssFeedCategories(feed.id, [])).resolves.not.toThrow()
       const rows = await getRssFeedCategories(feed.id)
       expect(rows).toHaveLength(0)
-    }, 30_000)
+    })
 
     it('handles nested Apple subcategory texts', async () => {
       const feed = await createTestRssFeed({})
@@ -75,7 +75,7 @@ describe('rss-feed categories', () => {
       const texts = rows.map(r => r.category_text)
       expect(texts).toContain('news')
       expect(texts).toContain('tech news')
-    }, 30_000)
+    })
 
     it('removes categories dropped from the feed on the next upsert', async () => {
       const feed = await createTestRssFeed({})
@@ -85,7 +85,7 @@ describe('rss-feed categories', () => {
       const rows = await getRssFeedCategories(feed.id)
       const texts = rows.map(r => r.category_text)
       expect(texts).toEqual(['news'])
-    }, 30_000)
+    })
   })
 
   describe('deleteRssFeedCategories', () => {
@@ -95,12 +95,12 @@ describe('rss-feed categories', () => {
       await deleteRssFeedCategories(feed.id)
       const rows = await getRssFeedCategories(feed.id)
       expect(rows).toHaveLength(0)
-    }, 30_000)
+    })
 
     it('is a no-op for a feed with no categories', async () => {
       const feed = await createTestRssFeed({})
       await expect(deleteRssFeedCategories(feed.id)).resolves.not.toThrow()
-    }, 30_000)
+    })
   })
 
   describe('backfillCategoriesForTopicAlias', () => {
@@ -119,7 +119,7 @@ describe('rss-feed categories', () => {
 
       const after = await getRssFeedCategories(feed.id)
       expect(after.find(r => r.category_text === slug)?.topic_id).toBe(topic.id)
-    }, 30_000)
+    })
 
     it('returns 0 when no rows match', async () => {
       const topic = await createTestTopic({
@@ -128,7 +128,7 @@ describe('rss-feed categories', () => {
       })
       const count = await backfillCategoriesForTopicAlias(topic.id)
       expect(count).toBe(0)
-    }, 30_000)
+    })
   })
 
   describe('getRssFeedCategories', () => {
@@ -138,12 +138,12 @@ describe('rss-feed categories', () => {
       const rows = await getRssFeedCategories(feed.id)
       const texts = rows.map(r => r.category_text)
       expect(texts).toEqual([...texts].toSorted())
-    }, 30_000)
+    })
 
     it('returns empty array for a feed with no categories', async () => {
       const feed = await createTestRssFeed({})
       const rows = await getRssFeedCategories(feed.id)
       expect(rows).toHaveLength(0)
-    }, 30_000)
+    })
   })
 })

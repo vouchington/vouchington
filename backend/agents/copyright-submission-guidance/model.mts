@@ -97,7 +97,6 @@ and at most six risk_notes. Use present, missing, or unclear; mark present with 
 concise gap. These are review prompts, not a determination. Risk kinds are ${COPYRIGHT_LEGAL_HOLD_RISK_KINDS.join(', ')}. Use an empty risk_notes array when none
 apply. A human makes every decision.`
 
-/* v8 ignore start -- thin provider wrapper, exercised through the injected model caller. */
 export const callCopyrightSubmissionGuidanceModel: CopyrightSubmissionGuidanceModelCaller = (
   kind,
   input,
@@ -123,4 +122,3 @@ export const callCopyrightSubmissionGuidanceModel: CopyrightSubmissionGuidanceMo
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

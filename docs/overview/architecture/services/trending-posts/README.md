@@ -54,3 +54,7 @@ Each result includes:
 - Posts service: [docs/overview/architecture/services/posts/README.md](../posts/README.md)
 - Entity relations: [docs/overview/architecture/services/entity-relations/README.md](../entity-relations/README.md)
 - API route: [docs/requirements/api/v1/trending-posts/README.md](../../../../requirements/api/v1/trending-posts/README.md)
+
+## Cursor boundary implementation
+
+The page query resolves an existing cursor post through a primary-key lookup of at most one row and evaluates its hot score with the same statement `NOW()` used for page candidates. The page limit remains bounded and the lookup adds no database roundtrip. The [API live-pagination contract](../../../../requirements/api/v1/trending-posts/README.md#live-pagination) owns cursor semantics and traversal limitations.

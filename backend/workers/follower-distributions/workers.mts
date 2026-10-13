@@ -8,6 +8,9 @@ import * as processors from './processors.mts'
 export const followerDistributionsWorker = createWorker(
   QUEUE_NAME,
   (job: Job) => {
+    if (job.name === 'processFollowerDistribution') {
+      return processors.processFollowerDistribution(job)
+    }
     const fn = processors[job.name as FollowerDistributionJobs]
     if (!fn || typeof fn !== 'function') {
       throw new Error(`Follower distribution job ${job.name} not found`)

@@ -6,6 +6,7 @@ import {
 } from '@services/stripe/events'
 import { claimRecoverableStripeEvents } from '@services/stripe/recovery'
 import { enqueueBulkProcessStripeEvents } from '@queues/memberships/enqueues'
+import { enqueueOrReactivateBulkProcessStripeEvents } from '@queues/memberships/enqueues/stripe-events'
 import { handleStripeEvent } from '@services/stripe-event-processing'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
@@ -59,7 +60,7 @@ export async function recoverStripeEvents(
 ): Promise<{ enqueued: number }> {
   const claimEvents = dependencies?.claimRecoverableStripeEvents ?? claimRecoverableStripeEvents
   const enqueueEvents =
-    dependencies?.enqueueBulkProcessStripeEvents ?? enqueueBulkProcessStripeEvents
+    dependencies?.enqueueBulkProcessStripeEvents ?? enqueueOrReactivateBulkProcessStripeEvents
   const events = await claimEvents()
   if (events.length > 0) await enqueueEvents(events)
   return { enqueued: events.length }

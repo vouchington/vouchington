@@ -1,8 +1,7 @@
 import assert from 'http-assert'
-import { isAdminUser } from '@services/users'
+import { isAdminUser, getLoadedMembershipPlan } from '@services/users'
 import { updatePost, type UpdatePostChanges } from '@services/posts'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
-import { getUserActivePlan } from '@services/memberships'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
 import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
@@ -55,7 +54,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       changes.categories !== undefined ||
       changes.title !== undefined ||
       changes.markdown !== undefined
-        ? await getUserActivePlan(user.id)
+        ? getLoadedMembershipPlan(user)
         : null
     return {
       success: true,

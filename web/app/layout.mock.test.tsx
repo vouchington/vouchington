@@ -1,5 +1,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import type { User } from '@/types/user'
 import RootLayout from './layout'
@@ -11,20 +13,21 @@ vi.mock(import('@/lib/i18n/load-server-messages'), () => ({
   ssrLocalizationRevisionHtmlProps: () => ({}),
 }))
 
+// Layout tests retain request locale resolution and use the checked-in catalog fixture.
+vi.mock(import('@/lib/i18n/get-translations'), () => ({
+  getTranslations: async () => {
+    const locale = await getResolvedUiLocale()
+    return createTranslator(locale, await loadJsonMessages(locale))
+  },
+}))
+
 interface HeaderBag {
   get: (key: string) => string | null
 }
 
 type CookieBag = { get: (key: string) => { value: string } | undefined }
 type ReactModule = typeof import('react')
-type MonoFontModule = typeof import('geist/font/mono')
-type SansFontModule = typeof import('geist/font/sans')
-type SidebarModule = typeof import('@/components/ui/sidebar')
 type HeadersModule = typeof import('next/headers')
-type AuthProviderModule = typeof import('@/lib/auth/auth-provider')
-type ThemeContextModule = typeof import('@/lib/preferences/theme-context')
-type ListStyleContextModule = typeof import('@/lib/preferences/list-style-context')
-type FeedStyleContextModule = typeof import('@/lib/preferences/feed-style-context')
 type ThemeScriptModule = typeof import('@/lib/preferences/theme-script')
 type SonnerModule = typeof import('sonner')
 type AsideProviderModule = typeof import('@/lib/aside-provider')
@@ -45,11 +48,11 @@ vi.mock<ReactModule>(import('react'), async importOriginal => {
 })
 vi.mock(
   import('geist/font/mono'),
-  () => ({ GeistMono: { variable: 'geist-mono' } }) as unknown as MonoFontModule,
+  () => ({ GeistMono: { variable: 'geist-mono' } }) as unknown as typeof import('geist/font/mono'),
 )
 vi.mock(
   import('geist/font/sans'),
-  () => ({ GeistSans: { variable: 'geist-sans' } }) as unknown as SansFontModule,
+  () => ({ GeistSans: { variable: 'geist-sans' } }) as unknown as typeof import('geist/font/sans'),
 )
 vi.mock(
   import('@/components/ui/sidebar'),
@@ -57,7 +60,7 @@ vi.mock(
     ({
       SidebarProvider: ({ children }: { children: ReactNode }) => children,
       SidebarInset: ({ children }: { children: ReactNode }) => children,
-    }) as unknown as SidebarModule,
+    }) as unknown as typeof import('@/components/ui/sidebar'),
 )
 vi.mock(import('@/components/app-sidebar'), () => ({
   AppSidebar: () => <aside />,
@@ -84,28 +87,28 @@ vi.mock(
   () =>
     ({
       AuthProvider: ({ children }: { children: ReactNode }) => children,
-    }) as unknown as AuthProviderModule,
+    }) as unknown as typeof import('@/lib/auth/auth-provider'),
 )
 vi.mock(
   import('@/lib/preferences/theme-context'),
   () =>
     ({
       ThemeProvider: ({ children }: { children: ReactNode }) => children,
-    }) as unknown as ThemeContextModule,
+    }) as unknown as typeof import('@/lib/preferences/theme-context'),
 )
 vi.mock(
   import('@/lib/preferences/list-style-context'),
   () =>
     ({
       ListStyleProvider: ({ children }: { children: ReactNode }) => children,
-    }) as unknown as ListStyleContextModule,
+    }) as unknown as typeof import('@/lib/preferences/list-style-context'),
 )
 vi.mock(
   import('@/lib/preferences/feed-style-context'),
   () =>
     ({
       FeedStyleProvider: ({ children }: { children: ReactNode }) => children,
-    }) as unknown as FeedStyleContextModule,
+    }) as unknown as typeof import('@/lib/preferences/feed-style-context'),
 )
 vi.mock(
   import('@/lib/preferences/theme-script'),

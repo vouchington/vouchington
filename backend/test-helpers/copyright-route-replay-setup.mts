@@ -1,3 +1,6 @@
+import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { afterEach, beforeEach, vi } from 'vitest'
 import {
   createTestUser,
   getTestPostImagePlacement,
@@ -6,7 +9,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers/entities/image-surface-placements'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/index.mts'
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
@@ -15,30 +18,31 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 
 export async function createFailedMediaDeliveryReplayFixture() {
   const fixture = await createCopyrightReplayFixture()
-  const deliveryKey = await failFixtureMediaDelivery(fixture)
-  return { ...fixture, deliveryKey }
+  const mediaDeliveryRegistryRecordId = await failFixtureMediaDelivery(fixture)
+  return { ...fixture, mediaDeliveryRegistryRecordId }
 }
 
-async function failFixtureMediaDelivery(
+export async function failFixtureMediaDelivery(
   fixture: Awaited<ReturnType<typeof createCopyrightReplayFixture>>,
 ): Promise<string> {
   const placement = await applyCopyrightActionAndLoadPlacement(fixture)
-  const deliveryKey = getImagePlacementDeliveryKey({
+  const staged = await stageImagePlacementDeliveryRecord({
     placementId: placement.placement_id,
     revision: placement.placement_revision,
     imageId: fixture.imageId,
+    state: 'withheld',
   })
-  await markTestMediaDeliveryRecordFailed(deliveryKey)
-  return deliveryKey
+  await markTestMediaDeliveryRecordFailed(staged.mediaDeliveryRegistryRecordId)
+  return staged.mediaDeliveryRegistryRecordId
 }
 
 export async function createCopyrightReplayFixture() {
-  const [claimant, moderator, nonModerator] = await Promise.all([
+  const [claimant, moderator, nonModerator] = await settleReplayFixtureOperations([
     createTestUser(),
     createTestUser({ extraRoles: ['moderator'] }),
     createTestUser(),
   ])
-  const [postId, imageId] = await Promise.all([
+  const [postId, imageId] = await settleReplayFixtureOperations([
     insertTestPost({
       title: `Copyright action replay ${crypto.randomUUID()}`,
       slug: `copyright-action-replay-${crypto.randomUUID()}`,
@@ -96,6 +100,7 @@ export async function createCopyrightReplayFixture() {
     nonModerator,
     noticeId: notice.id,
     postId,
+    placementId: placement.placement_id,
   }
 }
 
@@ -106,4 +111,40 @@ async function applyCopyrightActionAndLoadPlacement(
   const placement = await getTestPostImagePlacement(fixture.postId, fixture.imageId)
   if (!placement) throw new Error('copyright media delivery placement disappeared')
   return placement
+}
+
+/** Mock only the external AWS transports; retain real internal publication and database writes. */
+export function useTestMediaDeliveryReplayProviders(): void {
+  beforeEach(() => {
+    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
+    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
+    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_MODE', 'enforce')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+}
+
+/** Settle every started fixture/read operation before preserving its original failure identity. */
+export async function settleReplayFixtureOperations<T extends readonly unknown[]>(operations: {
+  [K in keyof T]: Promise<T[K]>
+}): Promise<T> {
+  const results = await Promise.allSettled(operations)
+  const failures: unknown[] = []
+  for (const result of results) {
+    if (
+      result.status === 'rejected' &&
+      !failures.some(reason => Object.is(reason, result.reason))
+    ) {
+      failures.push(result.reason)
+    }
+  }
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1) throw new AggregateError(failures, 'Replay fixture operations failed')
+  return results.map(result => (result as PromiseFulfilledResult<unknown>).value) as unknown as T
 }

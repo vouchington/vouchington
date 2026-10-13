@@ -68,12 +68,21 @@ async function withRecordedDnsFailure<T>(run: () => Promise<T>): Promise<T> {
       pending.push(result)
       return result
     })
-  try {
-    return await run()
-  } finally {
-    await Promise.all(pending)
-    spy.mockRestore()
+  const [runResult] = await Promise.allSettled([Promise.resolve().then(run)])
+  // Drain every real DNS-counter write before restoring the callthrough observer.
+  const results = await Promise.allSettled(pending)
+  const restored = await Promise.allSettled([Promise.resolve().then(() => spy.mockRestore())])
+  const failures = [...results, ...restored].flatMap(result =>
+    result.status === 'rejected' ? [result.reason] : [],
+  )
+  if (failures.length > 0) {
+    throw new AggregateError(
+      runResult.status === 'rejected' ? [runResult.reason, ...failures] : failures,
+      'DNS failure recording failed',
+    )
   }
+  if (runResult.status === 'rejected') throw runResult.reason
+  return runResult.value
 }
 
 let user: PrivateUser
@@ -145,7 +154,7 @@ describe('crawl-url.errors', () => {
       const stats = await getTestHostnameDnsStats(url!.hostname.id)
       expect(stats!.consecutive_dns_failures).toBe(0)
       expect(stats!.last_dns_failure_at).toBeNull()
-    }, 60_000)
+    }, 30_000)
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof countCrawlsForUrl)

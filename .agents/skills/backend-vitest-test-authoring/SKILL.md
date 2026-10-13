@@ -27,7 +27,10 @@ fixture, and dirty-database patterns.
    mutations, and make assertions safe on a dirty, parallel database.
 4. Mock only external provider boundaries — see
    [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the exact boundary and naming
-   rules.
+   rules. Gate a provider integration on a recorded response replayed through the SDK's `fetch`
+   (see [recorded provider responses](../../../docs/development/testing/backend/helpers.md#recorded-provider-responses));
+   a live-provider test is a non-gating smoke check
+   ([rules](../../../docs/development/tests.md#live-provider-smoke-checks)).
 5. Run the exact file in its owning project before broader backend validation. If DB/Valkey setup is
    missing, follow [`local-site-testing`](../local-site-testing/SKILL.md) instead of bypassing the
    integration boundary.
@@ -40,8 +43,8 @@ fixture, and dirty-database patterns.
    `withDominantPostFixtures()` so it is cleaned up even when the test fails. See
    [tests.md § Persistent dominant fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#persistent-dominant-fixtures-require-deterministic-cleanup).
 8. A compiler-backed contract test must reuse the memoized `loadBackendProgram()` or build one
-   `buildVirtualProgramMatrix(import.meta, sources)` per test file, and use the matching
-   constant from `cold-build-budget.mts`, never a new local timeout constant. Do not wrap matrix
+   `buildVirtualProgramMatrix(import.meta, sources)` per test file, and retain its
+   reviewed explicit consuming-hook budget, never a new local timeout constant. Do not wrap matrix
    construction in another API-fixture helper; the consuming test owns its direct `beforeAll`
    build. Every derived cache backed by `loadBackendProgram()` must call it before its own cache
    lookup and scope cached results to the returned opaque generation; this preserves one shared

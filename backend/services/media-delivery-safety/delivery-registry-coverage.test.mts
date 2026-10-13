@@ -48,7 +48,9 @@ async function gapsFor(...fixtures: Fixture[]) {
 }
 
 async function publish(fixture: Fixture): Promise<void> {
-  await expect(processMediaDeliveryRegistryRecord(fixture.deliveryKey)).resolves.toBe('completed')
+  await expect(
+    processMediaDeliveryRegistryRecord(fixture.mediaDeliveryRegistryRecordId),
+  ).resolves.toBe('completed')
 }
 
 describe('media delivery edge enforcement coverage query', () => {
@@ -95,7 +97,7 @@ describe('media delivery edge enforcement coverage query', () => {
 
   it('returns a record that exhausted delivery as failed with its reason', async () => {
     const fixture = await createTestDeliverySurface()
-    await markTestMediaDeliveryRecordFailed(fixture.deliveryKey)
+    await markTestMediaDeliveryRecordFailed(fixture.mediaDeliveryRegistryRecordId)
 
     expect(await gapsFor(fixture)).toEqual([
       expect.objectContaining({
@@ -146,7 +148,7 @@ describe('media delivery edge enforcement coverage query', () => {
     await stageImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'withheld' })
     await publish(fixture)
 
-    expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
+    expect(await getTestMediaDeliveryRecord(fixture.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'withheld',
       state: 'completed',
     })

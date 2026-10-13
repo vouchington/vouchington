@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { getCommunityMember, getCommunityOrThrow } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityAiAgents,
   disableCommunityAutoTaggerAgent,
@@ -12,8 +12,7 @@ import {
 app.route('/api/v1/communities/:idOrSlug/ai-agents').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/ai-agents')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
   ctx.assert(
     currentUserCanManageCommunityAiAgents(currentUser, community, membership),
     403,
@@ -22,7 +21,7 @@ app.route('/api/v1/communities/:idOrSlug/ai-agents').get(async (ctx: Context) =>
   validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/ai-agents', {
     path: ctx.params,
   })
-  const agents = await searchCommunityAutoTaggerAgents(currentUser, community.id, membership)
+  const agents = await searchCommunityAutoTaggerAgents(currentUser, { community, membership })
 
   ctx.json({ community_ai_agents: agents })
 })
@@ -38,8 +37,8 @@ app
       path: ctx.params,
     })
     const { idOrSlug, agentSlug } = ctx.params as { idOrSlug: string; agentSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const agent = await enableCommunityAutoTaggerAgent(currentUser, community.id, agentSlug)
+    const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
+    const agent = await enableCommunityAutoTaggerAgent(currentUser, loaded, agentSlug)
 
     ctx.json({ community_ai_agent: agent })
   })
@@ -52,8 +51,8 @@ app
       path: ctx.params,
     })
     const { idOrSlug, agentSlug } = ctx.params as { idOrSlug: string; agentSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-    const agent = await disableCommunityAutoTaggerAgent(currentUser, community.id, agentSlug)
+    const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
+    const agent = await disableCommunityAutoTaggerAgent(currentUser, loaded, agentSlug)
 
     ctx.json({ community_ai_agent: agent })
   })

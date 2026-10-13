@@ -41,6 +41,7 @@ export type CopyrightFormIntakeRecord = {
 
 export async function createCopyrightFormIntake(
   input: CreateCopyrightFormIntakeInput,
+  options: { now?: Date } = {},
 ): Promise<{ intake: CopyrightFormIntakeRecord; isDuplicate: boolean }> {
   assertStructuredNoticeStatutoryFields(input.request)
   const requestSha256 = createHash('sha256').update(stableRequestJson(input.request)).digest()
@@ -69,7 +70,8 @@ export async function createCopyrightFormIntake(
     return { intake: existing, isDuplicate: true }
   }
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
-  const now = new Date()
+  const now = options.now ?? new Date()
+  if (!Number.isFinite(now.getTime())) throw new TypeError('Copyright form clock must be valid')
   const targets: CopyrightNoticeTargetInput[] = []
   for (const target of input.request.claimantTargets) {
     // oxlint-disable-next-line no-await-in-loop -- use the same filing transaction for the visibility and target snapshot.

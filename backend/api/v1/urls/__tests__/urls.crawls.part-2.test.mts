@@ -19,7 +19,7 @@ describe('URLs Routes - crawl detail og_image_sideload', () => {
     admin = await createTestUser({ administrator: true })
     proUser = await createTestUser()
     await createTestMembership({ user_id: proUser.id, plan: 'pro' })
-  }, 60_000)
+  }, 5_000)
 
   it.each([
     ['plus', 'active', 200],
@@ -176,7 +176,7 @@ describe('URLs Routes - crawl detail og_image_sideload', () => {
 
       expect(response.body.og_image_sideload).toMatch(/^https?:\/\/[^/]+\/sideload\//)
       expect(response.body.og_image_sideload).toContain('w=400')
-    }, 60_000)
+    })
 
     it('does not expose an og_image_sideload to paid users', async () => {
       const random = Math.random().toString(36).slice(2, 8)
@@ -199,7 +199,7 @@ describe('URLs Routes - crawl detail og_image_sideload', () => {
       const response = await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(200)
 
       expect(response.body).not.toHaveProperty('og_image_sideload')
-    }, 60_000)
+    })
 
     it('returns null og_image_sideload when crawl has no og:image', async () => {
       const random = Math.random().toString(36).slice(2, 8)
@@ -221,6 +221,6 @@ describe('URLs Routes - crawl detail og_image_sideload', () => {
       const response = await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(200)
 
       expect(response.body).not.toHaveProperty('og_image_sideload')
-    }, 60_000)
+    })
   })
 })

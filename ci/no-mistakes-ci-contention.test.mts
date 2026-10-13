@@ -41,8 +41,7 @@ describe('no-mistakes CI contention policy', () => {
       {
         path: '.github/workflows/static-code-analysis.yml',
         job: 'no-mistakes',
-        command:
-          'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+        command: 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
       },
       {
         path: '.github/workflows/static-code-analysis.yml',
@@ -58,6 +57,11 @@ describe('no-mistakes CI contention policy', () => {
         path: '.github/workflows/static-code-analysis.yml',
         job: 'no-mistakes',
         command: 'node ci/check-storybook-browser-optimize-deps.mts',
+      },
+      {
+        path: '.github/workflows/static-code-analysis.yml',
+        job: 'no-mistakes',
+        command: 'node ci/check-classifier-golden-imports.mts',
       },
     ])
   })
@@ -117,8 +121,8 @@ describe('no-mistakes CI contention policy', () => {
     writeFileSync(
       join(input.root, '.github/workflows/static-code-analysis.yml'),
       staticAnalysisWorkflow.replace(
-        'check --tsconfig tsconfig.json',
-        'check --tsconfig other.json',
+        'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
+        'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig other.json',
       ),
     )
     expect(checkNoMistakesTestPolicy(input)).toEqual([

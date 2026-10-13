@@ -3,8 +3,8 @@ export type ViewHostname = {
   id: string
   hostname: string
   topic_id: string | null
-  is_blocked: boolean | null
-  is_crawlable: boolean | null
+  is_blocked: boolean
+  is_crawlable: boolean
   should_skip_web_risk: boolean
   should_follow_link_rel: boolean | null
   votes_score_net: number

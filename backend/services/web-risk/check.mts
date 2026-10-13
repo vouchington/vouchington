@@ -1,61 +1,83 @@
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import { isPublicHostname } from '@modules/utils/urls'
-import undici from 'undici'
 import { getDomain } from 'tldts'
-import { isUrlBlocked } from '@services/urls-domains-blacklist'
-import { getHostnamePolicy } from '@services/urls-hostnames/policies'
+import { getHostnamePolicies, getHostnamePolicy } from '@services/urls-domains-blacklist/domains'
+import {
+  getLocalHostnamePolicy,
+  normalizeHostnameForPolicy,
+  type HostnamePolicy,
+} from '@services/urls-hostnames/policies'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { blockHostname } from '@services/hostname-blocking/block-hostname'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
-import { createWebRiskState, type WebRiskState } from './state.mts'
+import { createWebRiskState, type ProviderGate, type WebRiskState } from './state.mts'
 import { isWebRiskEnabled } from './config.mts'
-
-const WEB_RISK_LOOKUP_URL = 'https://webrisk.googleapis.com/v1/uris:search'
-const THREAT_TYPES = [
-  'MALWARE',
-  'SOCIAL_ENGINEERING',
-  'UNWANTED_SOFTWARE',
-  'SOCIAL_ENGINEERING_EXTENDED_COVERAGE',
-] as const
-const SHORT_FAILURE_COOLDOWN_SECONDS = 10
-
-export type WebRiskThreat = {
-  threatTypes: string[]
-  expireTime: string | null
-}
-
-export class WebRiskRateLimitError extends Error {
-  override name = 'WebRiskRateLimitError'
-}
+import {
+  checkWebRiskUrl,
+  hasWebRiskApiKey,
+  SHORT_FAILURE_COOLDOWN_SECONDS,
+  WebRiskRateLimitError,
+  type WebRiskThreat,
+} from './provider.mts'
 
 const productionState = createWebRiskState()
 export const assertUrlAllowedByWebRisk = createWebRiskChecker(productionState)
 
-/** Binds the real preflight/provider pipeline to one persistent Web Risk state owner. */
-export function createWebRiskChecker(state: WebRiskState) {
-  return async function assertUrlAllowedByWebRisk(url: string): Promise<void> {
-    let parsed: URL
-    try {
-      parsed = new URL(url)
-    } catch {
-      return
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
-    if (!isPublicHostname(parsed.hostname)) return
+/** Hostname policies already read for a batch of URLs, keyed by `normalizeHostnameForPolicy`. */
+type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
 
-    if (await isUrlBlocked(parsed.hostname)) {
+type WebRiskCheckOptions = { policies?: PrecomputedHostnamePolicies }
+
+const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false }
+
+/** Parses only the public http(s) URLs this service checks; anything else is out of scope. */
+export function parseWebRiskUrl(url: string): URL | null {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+  if (!isPublicHostname(parsed.hostname)) return null
+  return parsed
+}
+
+/**
+ * Binds the real preflight/provider pipeline to one persistent Web Risk state owner.
+ *
+ * Serial depth per URL: one concurrent step (hostname policy read, plus the clean-verdict and
+ * cooldown pipeline when the provider is active), then the local rate-limit charge, then the
+ * provider call. Pass `policies` to skip the policy read for hostnames already resolved.
+ */
+export function createWebRiskChecker(state: WebRiskState) {
+  return async function assertUrlAllowedByWebRisk(
+    url: string,
+    options: WebRiskCheckOptions = {},
+  ): Promise<void> {
+    const parsed = parseWebRiskUrl(url)
+    if (!parsed) return
+
+    const providerActive = isWebRiskEnabled() && hasWebRiskApiKey()
+    const known = options.policies?.get(normalizeHostnameForPolicy(parsed.hostname))
+    const needsGate = providerActive && !known?.is_blocked && !known?.should_skip_web_risk
+    // Settled together so a blocked or skipped URL never surfaces a Valkey error from the gate.
+    const [policyResult, gateResult] = await Promise.allSettled([
+      known ?? getHostnamePolicy(parsed.hostname),
+      needsGate ? state.readProviderGate(parsed) : NO_PROVIDER_GATE,
+    ])
+    if (policyResult.status === 'rejected') throw policyResult.reason
+    const policy = policyResult.value
+
+    if (policy.is_blocked) {
       throw createHttpError(400, `Domain is blocked: ${parsed.hostname}`)
     }
 
-    if (!isWebRiskEnabled()) return
-    if (!hasWebRiskApiKey()) return
-
-    const policy = await getHostnamePolicy(parsed.hostname)
+    if (!providerActive) return
     if (policy.should_skip_web_risk) return
-    if (await state.hasCleanCachedVerdict(parsed)) return
-    if (await state.isProviderCoolingDown()) return
+    if (gateResult.status === 'rejected') throw gateResult.reason
+    if (gateResult.value.cleanCached || gateResult.value.coolingDown) return
     if (await state.isLocallyRateLimited()) return
 
     let threat: WebRiskThreat | null
@@ -77,7 +99,7 @@ export function createWebRiskChecker(state: WebRiskState) {
     }
 
     const blockedDomain = getRegistrableDomain(parsed.hostname)
-    const blockPolicy = await getHostnamePolicy(blockedDomain)
+    const blockPolicy = await getLocalHostnamePolicy(blockedDomain)
     if (blockPolicy.should_skip_web_risk) return
 
     await blockWebRiskDomain(blockedDomain, parsed.toString(), threat)
@@ -85,69 +107,22 @@ export function createWebRiskChecker(state: WebRiskState) {
   }
 }
 
-/* no-mistakes: integration=google-web-risk */
-export async function checkWebRiskUrl(
-  url: URL,
-  state: WebRiskState = productionState,
-): Promise<WebRiskThreat | null> {
-  const apiKey = getWebRiskApiKey()
-  if (!apiKey) throw new Error('Google Web Risk API key is not configured')
-
-  const requestUrl = new URL(WEB_RISK_LOOKUP_URL)
-  requestUrl.searchParams.set('uri', url.toString())
-  requestUrl.searchParams.set('key', apiKey)
-  for (const threatType of THREAT_TYPES) {
-    requestUrl.searchParams.append('threatTypes', threatType)
-  }
-
-  const response = await undici
-    .fetch(requestUrl, {
-      dispatcher: getExternalRequestDispatcher(),
-      signal: AbortSignal.timeout(5000),
-    })
-    .catch(err => {
-      throw new Error('Google Web Risk lookup request failed', { cause: err })
-    })
-
-  if (response.status === 429 || response.status === 403) {
-    // Ambient and package `Response` declarations have version-skewed types but describe the same
-    // Undici-backed WHATWG runtime object (see http-dispatchers.mts), so this cast has no
-    // behavioral effect. Needed for programs that also load the "dom" lib (playwright,
-    // integration-tests), where the ambient global `Response` resolves to lib.dom's incompatible
-    // type instead of undici's — the two types don't overlap enough for a direct assertion.
-    await state.setProviderCooldownFromResponse(response as unknown as Response)
-    await response.body?.cancel()
-    throw new WebRiskRateLimitError(`Google Web Risk lookup rate limited (HTTP ${response.status})`)
-  }
-  if (response.status >= 500) {
-    await response.body?.cancel()
-    throw new Error(`Google Web Risk lookup returned HTTP ${response.status}`)
-  }
-  if (!response.ok) {
-    await response.body?.cancel()
-    throw new Error(`Google Web Risk lookup returned HTTP ${response.status}`)
-  }
-
-  let data: unknown
-  try {
-    data = await response.json()
-  } catch (err) {
-    throw new Error('Google Web Risk lookup returned invalid JSON', { cause: err })
-  }
-  return parseWebRiskThreat(data)
+/**
+ * Checks many URLs against one batched hostname policy read, so N URLs cost one policy query
+ * instead of N. Pass `policies` when the caller already read them.
+ */
+export async function assertUrlsAllowedByWebRisk(
+  urls: string[],
+  options: WebRiskCheckOptions = {},
+): Promise<void> {
+  const uniqueUrls = [...new Set(urls)]
+  const policies = options.policies ?? (await readPolicies(uniqueUrls))
+  await Promise.all(uniqueUrls.map(url => assertUrlAllowedByWebRisk(url, { policies })))
 }
 
-function parseWebRiskThreat(data: unknown): WebRiskThreat | null {
-  const threat = ((data ?? {}) as Record<string, unknown>).threat as Record<string, unknown> | null
-  if (!threat) return null
-  const threatTypes = Array.isArray(threat.threatTypes)
-    ? threat.threatTypes.filter((value): value is string => typeof value === 'string')
-    : []
-  if (threatTypes.length === 0) return null
-  return {
-    threatTypes,
-    expireTime: typeof threat.expireTime === 'string' ? threat.expireTime : null,
-  }
+async function readPolicies(urls: string[]): Promise<PrecomputedHostnamePolicies> {
+  const hostnames = urls.flatMap(url => parseWebRiskUrl(url)?.hostname ?? [])
+  return getHostnamePolicies(hostnames)
 }
 
 async function blockWebRiskDomain(
@@ -166,14 +141,6 @@ async function blockWebRiskDomain(
     webRiskThreatTypes: threat.threatTypes,
     webRiskExpireAt: threat.expireTime,
   })
-}
-
-function getWebRiskApiKey(): string | undefined {
-  return process.env.GOOGLE_WEB_RISK_API_KEY?.trim() || undefined
-}
-
-function hasWebRiskApiKey(): boolean {
-  return Boolean(getWebRiskApiKey())
 }
 
 function getRegistrableDomain(hostname: string): string {

@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   createTestMembership,
   createTestRssFeedItemWithUrl,
@@ -11,10 +12,32 @@ import {
   insertTestUserReferralProgramLink,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 
 describe('MCP RSS and feed edge contracts', () => {
+  it('forwards REST rss_feeds and media_type array filters', async () => {
+    const reader = { ...(await createTestUser()), membership_plan: null }
+    const topic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    const item = await createTestRssFeedItemWithUrl(feedId)
+    const matching = await callStructuredMcpTool(
+      reader,
+      'read_rss_feed_item',
+      optionArgs('list', { rss_feeds: [feedId], media_type: ['article'] }),
+      ['rss-feed-items:read'],
+    )
+    expect(matching.results).toContainEqual(expect.objectContaining({ id: item.id }))
+    const otherTopic = await createTestTopic()
+    const otherFeedId = await createTestRssFeedWithTiming(otherTopic.id)
+    const excluded = await callStructuredMcpTool(
+      reader,
+      'read_rss_feed_item',
+      optionArgs('list', { rss_feeds: [otherFeedId], media_type: ['article'] }),
+      ['rss-feed-items:read'],
+    )
+    expect(excluded.results).toEqual([])
+  })
+
   it('keeps followed RSS items visible with a stale community filter like REST', async () => {
     const reader = { ...(await createTestUser()), membership_plan: null }
     const topic = await createTestTopic()
@@ -24,8 +47,8 @@ describe('MCP RSS and feed edge contracts', () => {
     const community = `missing-${crypto.randomUUID()}`
     const mcp = await callStructuredMcpTool(
       reader,
-      'get_rss_feed_item_feed',
-      { feed_type: 'follow_rss_feeds', community },
+      'read_feed',
+      optionArgs('rss_items', { feed_type: 'follow_rss_feeds', community }),
       ['feeds:read'],
     )
     expect(mcp.results).toContainEqual(
@@ -53,8 +76,8 @@ describe('MCP RSS and feed edge contracts', () => {
     })
     const mcp = await callStructuredMcpTool(
       reader,
-      'get_referral_link_feed',
-      { feed_type: 'follow_users' },
+      'read_feed',
+      optionArgs('referral_links', { feed_type: 'follow_users' }),
       ['feeds:read'],
     )
     expect(mcp.results).toContainEqual(
@@ -89,8 +112,8 @@ describe('MCP RSS and feed edge contracts', () => {
     }
     const mcp = await callStructuredMcpTool(
       reader,
-      'get_rss_feed_item_follow_context',
-      { rss_feed_item_id: item.id },
+      'read_rss_feed_item',
+      optionArgs('follow_context', { rss_feed_item_id: item.id }),
       ['rss-feed-items:read'],
     )
     expect(mcp).toMatchObject({
@@ -106,22 +129,25 @@ describe('MCP RSS and feed edge contracts', () => {
     const missingId = crypto.randomUUID()
     const crawls = await callStructuredMcpTool(
       paid,
-      'list_rss_feed_crawls',
-      { rss_feed_id: missingId },
+      'read_rss_feed',
+      optionArgs('crawls', { rss_feed_id: missingId }),
       ['rss-feeds:read'],
     )
     expect(crawls).toEqual({ success: false, error: 'RSS feed not found' })
     const crawl = await callStructuredMcpTool(
       paid,
-      'get_rss_feed_crawl',
-      { rss_feed_id: missingId, crawl_id: crypto.randomUUID() },
+      'read_rss_feed',
+      optionArgs('crawl', { rss_feed_id: missingId, crawl_id: crypto.randomUUID() }),
       ['rss-feeds:read'],
     )
     expect(crawl).toEqual({ success: false, error: 'RSS feed not found' })
-    for (const name of ['get_rss_feed_item_follow_context', 'get_rss_feed_item_votes']) {
-      const result = await callStructuredMcpTool(paid, name, { rss_feed_item_id: missingId }, [
-        'rss-feed-items:read',
-      ])
+    for (const option of ['follow_context', 'votes'] as const) {
+      const result = await callStructuredMcpTool(
+        paid,
+        'read_rss_feed_item',
+        optionArgs(option, { rss_feed_item_id: missingId }),
+        ['rss-feed-items:read'],
+      )
       expect(result).toEqual({ success: false, error: 'RSS feed item not found' })
     }
     const request = createRequest()

@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { detectBanEvasionForMember } from '@services/communities/ban-evasion'
 
 type BanEvasionJobData = { communityId: string; userId: string; postId?: string }
@@ -13,9 +13,8 @@ export async function handleBanEvasionJob(job: Job<BanEvasionJobData>): Promise<
   return { success: true }
 }
 
-export const banEvasionWorker = new Worker('ban_evasion', handleBanEvasionJob, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const banEvasionWorker = createWorker('ban_evasion', handleBanEvasionJob, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('banEvasion', { baseline: 5 }),
   limiter: { max: 5, duration: 1000 },
 })

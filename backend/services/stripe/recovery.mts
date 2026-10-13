@@ -9,13 +9,17 @@ export type RecoverableStripeEvent = {
   isLiveMode: boolean
 }
 
-export async function claimRecoverableStripeEvents(): Promise<RecoverableStripeEvent[]> {
+/** `stripeEventRecordIds` limits the claim to those events, so a test can own the rows it recovers. */
+export async function claimRecoverableStripeEvents(
+  stripeEventRecordIds?: readonly string[],
+): Promise<RecoverableStripeEvent[]> {
   const dispatchTimeout = getStripeWorkLimit('dispatch_timeout_minutes')
   const pageSize = getStripeWorkLimit('recovery_batch_size')
   const { rows } = await write(sql`/* claimRecoverableStripeEvents */
     WITH candidates AS (
       SELECT stripe_event_id FROM stripe_event_processing_work_items
       WHERE processed_at IS NULL AND ignored_at IS NULL AND available_at <= clock_timestamp()
+        AND (${stripeEventRecordIds ?? null}::uuid[] IS NULL OR stripe_event_id = ANY(${stripeEventRecordIds ?? null}::uuid[]))
         AND ((leased_at IS NULL AND dispatched_at < clock_timestamp() - ${dispatchTimeout}::integer * INTERVAL '1 minute')
           OR lease_expires_at <= clock_timestamp() OR failed_at IS NOT NULL)
       ORDER BY stripe_event_id LIMIT ${pageSize} FOR UPDATE SKIP LOCKED

@@ -1,13 +1,13 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { isUUID } from '@modules/utils'
 import {
   getRssFeedItemElectionVotesByElectionId,
   getRssFeedItemElectionVotesByUserForEntity,
 } from '@services/elections-votes/rss-feed-item'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { isAdminUser } from '@services/users/authorization'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
@@ -33,10 +33,8 @@ const followUsersSchema = closedObject({
   users: { type: 'array', items: closedObject({ id: pickProperties('BasicUser', ['id']).id! }) },
 })
 
-export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
+export const getRssFeedItemFollowContextTool: MergedToolSource<DetailArgs, FollowResult> = {
   schema: {
-    name: 'get_rss_feed_item_follow_context',
-    type: 'function',
     description:
       'For an RSS item, list up to five users you follow who voted positively or negatively, with the total for each side. Uses the same follow and vote visibility policy as REST.',
     parameters: {
@@ -44,7 +42,6 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
       properties: { rss_feed_item_id: { type: 'string', format: 'uuid' } },
       required: ['rss_feed_item_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -64,38 +61,27 @@ export const getRssFeedItemFollowContextTool: Tool<DetailArgs, FollowResult> = {
       if (!isUUID(args.rss_feed_item_id) || !(await getRssFeedItemById(args.rss_feed_item_id))) {
         return { success: false, error: 'RSS feed item not found' }
       }
-      const [positive, negative] = await Promise.all([
-        getFollowedUsersByElectionVote(
-          currentUser,
-          args.rss_feed_item_id,
-          'rss_feed_item_votes',
-          1,
-        ),
-        getFollowedUsersByElectionVote(
-          currentUser,
-          args.rss_feed_item_id,
-          'rss_feed_item_votes',
-          -1,
-        ),
-      ])
+      const followContext = await getVoteFollowContextBatch(
+        currentUser,
+        args.rss_feed_item_id,
+        'rss_feed_item_votes',
+      )
       return {
         success: true,
         positive_by_following: {
-          total: positive.total,
-          users: positive.users.map(user => ({ id: user.id })),
+          total: followContext.positiveByFollowing.total,
+          users: followContext.positiveByFollowing.users.map(user => ({ id: user.id })),
         },
         negative_by_following: {
-          total: negative.total,
-          users: negative.users.map(user => ({ id: user.id })),
+          total: followContext.negativeByFollowing.total,
+          users: followContext.negativeByFollowing.users.map(user => ({ id: user.id })),
         },
       }
     },
 }
 
-export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
+export const getRssFeedItemVotesTool: MergedToolSource<VotesArgs, VotesResult> = {
   schema: {
-    name: 'get_rss_feed_item_votes',
-    type: 'function',
     description:
       'List votes on an RSS item. As on REST, administrators see all votes and other callers see only their own. Returns at most 100 per page with page_info.end_cursor.',
     parameters: {
@@ -107,7 +93,6 @@ export const getRssFeedItemVotesTool: Tool<VotesArgs, VotesResult> = {
       },
       required: ['rss_feed_item_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

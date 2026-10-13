@@ -1,9 +1,9 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache'
 import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notifications/enqueues'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-item-categories/enqueues'
@@ -16,6 +16,11 @@ type RssFeedItemEnqueueRow = Pick<
   ExistingRssFeedItemRow | UpsertedRssFeedItemRow,
   'id' | 'guid' | 'has_embedding'
 >
+
+type PostUpsertEnqueueOptions = {
+  existingRowsForFanout?: RssFeedItemEnqueueRow[]
+  languageDetectionRows?: RssFeedItemEnqueueRow[]
+}
 
 export const enqueueMissingRssFeedItemEmbeddings = async (
   rows: Array<Pick<RssFeedItemEnqueueRow, 'id' | 'has_embedding'>>,
@@ -36,14 +41,12 @@ export async function enqueueRssFeedItemCategorySnapshotReconciliationBestEffort
   }
 }
 
-export const enqueueRssFeedItemPostUpsertJobs = async (
+/** Exposes admission of the detached language jobs without delaying the row-returning caller. */
+export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
-  options: {
-    existingRowsForFanout?: RssFeedItemEnqueueRow[]
-    languageDetectionRows?: RssFeedItemEnqueueRow[]
-  } = {},
+  options: PostUpsertEnqueueOptions = {},
 ) => {
   const allRowsWithGuids = mergeRssFeedItemRows(itemsToUpsert, existingRows, upsertedRows)
   const fanoutRowsWithGuids = mergeRssFeedItemRows(
@@ -51,7 +54,8 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
     options.existingRowsForFanout ?? existingRows,
     upsertedRows,
   )
-  void entityCacheBloomFilters.rss_feed_items.add(
+  void addEntityBloomKeys(
+    'rss_feed_items',
     fanoutRowsWithGuids.map(row => normalizeKey(row.id)),
   )
   await Promise.all([
@@ -59,12 +63,29 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
     invalidateRssFeedItemsInChunks(fanoutRowsWithGuids.map(row => row.id)),
     enqueueRssFeedItemNotificationReconciliationInChunks(fanoutRowsWithGuids.map(row => row.id)),
   ])
-  void enqueueRssFeedItemLanguageDetection(options.languageDetectionRows ?? upsertedRows)
+  const languageDetectionEnqueue = enqueueRssFeedItemLanguageDetection(
+    options.languageDetectionRows ?? upsertedRows,
+  )
 
-  return allRowsWithGuids.map(row => ({
-    id: row.id,
-    has_embedding: row.has_embedding,
-  }))
+  return {
+    rows: allRowsWithGuids.map(row => ({ id: row.id, has_embedding: row.has_embedding })),
+    languageDetectionEnqueue,
+  }
+}
+
+export const enqueueRssFeedItemPostUpsertJobs = async (
+  itemsToUpsert: RssFeedItemWithHash[],
+  existingRows: RssFeedItemEnqueueRow[],
+  upsertedRows: UpsertedRssFeedItemRow[],
+  options: PostUpsertEnqueueOptions = {},
+) => {
+  const { rows } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+    itemsToUpsert,
+    existingRows,
+    upsertedRows,
+    options,
+  )
+  return rows
 }
 
 function mergeRssFeedItemRows(
@@ -114,14 +135,12 @@ async function invalidateRssFeedItemsInChunks(rssFeedItemIds: string[]) {
 }
 
 async function enqueueRssFeedItemLanguageDetection(rows: RssFeedItemEnqueueRow[]) {
-  for (const row of rows) {
-    try {
-      // eslint-disable-next-line no-await-in-loop -- Sequential enqueues limit queue fanout pressure.
-      await enqueueLanguageDetection('rss_feed_item', row.id)
-    } catch (err) {
-      onError(toError(err))
-    }
-  }
+  await enqueueChunks(
+    rows.map(row => row.id),
+    async ids => {
+      await enqueueBulkLanguageDetection('rss_feed_item', ids)
+    },
+  )
 }
 
 async function enqueueChunks<T>(items: T[], enqueue: (chunk: T[]) => unknown | Promise<unknown>) {

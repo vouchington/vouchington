@@ -64,7 +64,7 @@ const dataPoints: readonly CardTopicDataPointFixture[] = [
   },
 ]
 
-describe('compare_topics tool — real DB', () => {
+describe('read_topic.compare tool — real DB', () => {
   let user: PrivateUser
   let topicIdA: string
   let topicIdB: string

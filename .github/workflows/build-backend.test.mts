@@ -120,7 +120,7 @@ describe('backend image workflow', () => {
     const buildJob = readBuildBackendWorkflow().jobs?.build
     expect(buildJob?.services?.valkey).toMatchObject({ ports: [6379] })
     expect(buildJob?.services?.valkey?.image).toMatch(
-      /^valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
+      /^mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
     )
     expect(buildJob?.services?.valkey?.options).toContain('valkey-cli ping')
 

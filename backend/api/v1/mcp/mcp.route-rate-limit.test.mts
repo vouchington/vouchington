@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createApiKey } from '@services/api-keys'
 import { checkUsageQuota } from '@services/route-rate-limits'
@@ -24,7 +25,7 @@ type ToolResponse = {
   result: { isError?: boolean; content: Array<{ text: string }>; structuredContent?: unknown }
 }
 
-// `POST /api/v1/reports` is a sensitive route with a one-hour window, so a limited call waits it out.
+// Reports advertise the sensitive route’s one-hour retry window; this test never waits it out.
 const REPORT_WINDOW_SECONDS = 3600
 const REFUSAL = {
   status: 429,
@@ -111,51 +112,47 @@ describe('MCP tool calls and their REST route rate limit', () => {
     rateLimitConfig.unsubscribe()
     original = { route: routeRateLimitConfig.getFields(), user: rateLimitConfig.getFields() }
     author = await createTestUser()
-  })
+  }, 5_000)
 
   afterEach(() => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, original.route)
     overrideDynamicConfigFieldsForTest(rateLimitConfig, original.user)
-  })
+  }, 5_000)
 
   afterAll(async () => {
     await closeScopedDynamicConfigContext([routeRateLimitConfig, rateLimitConfig])
-  })
+  }, 5_000)
 
   it.each([
     ['REST, MCP, then REST', ['rest', 'mcp', 'rest']],
     ['MCP, MCP, then REST', ['mcp', 'mcp', 'rest']],
-  ] as const)(
-    'shares one report budget between both protocols (%s)',
-    async (_order, calls) => {
-      admitSensitiveCalls(3)
-      const { user, token } = await callerWithToken()
-      const rest = createRequest()
-      await rest.authenticateAs(user)
+  ] as const)('shares one report budget between both protocols (%s)', async (_order, calls) => {
+    admitSensitiveCalls(3)
+    const { user, token } = await callerWithToken()
+    const rest = createRequest()
+    await rest.authenticateAs(user)
 
-      const admitted = async (protocol: 'rest' | 'mcp') => {
-        const entityId = await newPostId()
-        if (protocol === 'rest') return (await reportOverRest(rest, entityId)).status === 201
-        return (await reportOverMcp(token, entityId)).result.isError === undefined
-      }
-      for (const protocol of calls) expect(await admitted(protocol)).toBe(true)
+    const admitted = async (protocol: 'rest' | 'mcp') => {
+      const entityId = await newPostId()
+      if (protocol === 'rest') return (await reportOverRest(rest, entityId)).status === 201
+      return (await reportOverMcp(token, entityId)).result.isError === undefined
+    }
+    for (const protocol of calls) expect(await admitted(protocol)).toBe(true)
 
-      const limitedRest = await reportOverRest(rest, await newPostId()).expect(429)
-      const limitedMcp = await reportOverMcp(token, await newPostId())
-      expect(limitedRest.headers['retry-after']).toBe(String(REPORT_WINDOW_SECONDS))
-      expect(refusalOf(limitedMcp)).toEqual(REFUSAL)
-      // The refused calls never ran, so only the three admitted reports exist.
-      expect(await countTestModerationReportsByReporter(user.id)).toBe(3)
-      const reportEvents = (await readTestMcpCallAuditEvents(user.id)).filter(
-        event => event.tool_name === 'create_content_report',
-      )
-      expect(reportEvents.map(event => event.outcome)).toEqual([
-        ...calls.filter(protocol => protocol === 'mcp').map(() => 'accepted'),
-        'rate_limited',
-      ])
-    },
-    60_000,
-  )
+    const limitedRest = await reportOverRest(rest, await newPostId()).expect(429)
+    const limitedMcp = await reportOverMcp(token, await newPostId())
+    expect(limitedRest.headers['retry-after']).toBe(String(REPORT_WINDOW_SECONDS))
+    expect(refusalOf(limitedMcp)).toEqual(REFUSAL)
+    // The refused calls never ran, so only the three admitted reports exist.
+    expect(await countTestModerationReportsByReporter(user.id)).toBe(3)
+    const reportEvents = (await readTestMcpCallAuditEvents(user.id)).filter(
+      event => event.tool_name === 'create_content_report',
+    )
+    expect(reportEvents.map(event => event.outcome)).toEqual([
+      ...calls.filter(protocol => protocol === 'mcp').map(() => 'accepted'),
+      'rate_limited',
+    ])
+  })
 
   it('charges every call of a JSON-RPC batch, not the HTTP request', async () => {
     admitSensitiveCalls(4)
@@ -174,7 +171,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     // Three of the four admitted calls are spent, so exactly one more report is admitted.
     await reportOverRest(rest, await newPostId()).expect(201)
     await reportOverRest(rest, await newPostId()).expect(429)
-  }, 60_000)
+  })
 
   it('refuses only the calls of a batch that exceed the budget', async () => {
     admitSensitiveCalls(2)
@@ -197,7 +194,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
       'accepted',
       'rate_limited',
     ])
-  }, 60_000)
+  })
 
   it('does not charge usage quota when its only call is refused', async () => {
     admitSensitiveCalls(0)
@@ -209,7 +206,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(false)
-  }, 60_000)
+  })
 
   it('charges one usage unit for a batch with a refused and an admitted call', async () => {
     admitSensitiveCalls(1)
@@ -225,7 +222,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 2, windowSeconds: 900 })).limited,
     ).toBe(false)
-  }, 60_000)
+  })
 
   it('keeps duplicate-id route refusals at their message positions', async () => {
     admitSensitiveCalls(1)
@@ -240,7 +237,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(true)
-  }, 60_000)
+  })
 
   it('leaves a tool without a REST twin on the transport bucket alone', async () => {
     admitSensitiveCalls(0)
@@ -254,7 +251,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     })
 
     const response = await mcpPost(token, [
-      toolCall(1, 'get_topic_metrics', { topic_id: topicId }),
+      toolCall(1, 'read_topic', optionArgs('metrics', { topic_id: topicId })),
       reportCall(2, await newPostId()),
     ]).expect(200)
 
@@ -265,7 +262,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
       'accepted',
       'rate_limited',
     ])
-  }, 60_000)
+  })
 
   it('charges the calls of an API key to the key own budget', async () => {
     admitSensitiveCalls(2)
@@ -278,7 +275,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     expect((await reportOverMcp(rawKey, await newPostId())).result.isError).toBeUndefined()
     expect(refusalOf(await reportOverMcp(rawKey, await newPostId()))).toEqual(REFUSAL)
     expect(await countTestModerationReportsByReporter(user.id)).toBe(2)
-  }, 60_000)
+  })
 
   it('charges no route for a call that is refused before it runs', async () => {
     admitSensitiveCalls(1)
@@ -293,5 +290,5 @@ describe('MCP tool calls and their REST route rate limit', () => {
     expect((await reportOverMcp(token, await newPostId())).result.isError).toBeUndefined()
     expect(refusalOf(await reportOverMcp(token, await newPostId()))).toEqual(REFUSAL)
     expect(await countTestModerationReportsByReporter(user.id)).toBe(1)
-  }, 60_000)
+  })
 })

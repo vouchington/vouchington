@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"object":"list","data":[{"id":"EARLIER_REFUND_ID","object":"refund","amount":EARLIER_REFUND_AMOUNT,"balance_transaction":"txn_replay_earlier","charge":"CHARGE_ID","created":1893369750,"currency":"usd","destination_details":null,"metadata":{},"payment_intent":"pi_replay_payment","reason":"requested_by_customer","receipt_number":null,"source_transfer_reversal":null,"status":"succeeded","transfer_reversal":null}],"has_more":false,"url":"/v1/refunds"}

@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs'
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { backendCredentialedProjectNames } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 
-// The exact `vitest run --project ...` command is asserted against the shared project list in
-// ci/transient-retry/backend-credentialed-config-agreement.test.mts.
 const workflow = readFileSync('.github/workflows/tests-backend-credentialed.yml', 'utf8')
 
 function jobSection(jobName: string): string {
@@ -37,21 +36,42 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
     expect(credentialedJob).toContain(
-      "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-    expect(credentialedJob).toContain(
       'VITEST_JUNIT_OUTPUT_FILE: backend-credentialed-test-report.junit.xml',
     )
-    const fallback = stepSection(
-      credentialedJob,
-      'Upload full backend-credentialed LCOV to GitHub (attempt 1)',
-    )
-    expect(fallback).toContain('uses: ./.github/actions/upload-full-lcov')
-    expect(fallback).toContain('suite: backend-credentialed')
-    expect(fallback).toContain('continue-on-error: true')
-    expect(credentialedJob).toContain('Upload full backend-credentialed LCOV to GitHub (attempt 2)')
     for (const project of backendCredentialedProjectNames) {
       expect(workflow).not.toContain(`${project}-tests:`)
+    }
+  })
+
+  // The Anthropic project needs the federated token, which only branch runs mint, so it has its own
+  // step that pull-request runs skip; the two steps together run every credentialed project.
+  it('runs exactly the shared credentialed Vitest projects, in any order', () => {
+    const job = jobSection('backend-credentialed-tests')
+    const runText = [
+      stepSection(job, 'Run backend credentialed tests'),
+      stepSection(job, 'Run Anthropic credentialed tests'),
+    ].join('\n')
+    const projectFlags = [...runText.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
+
+    expect(projectFlags.toSorted()).toEqual([...backendCredentialedProjectNames].toSorted())
+  })
+
+  it('passes the repository diagnostics opt-in to both credentialed test steps', () => {
+    const parsed = load(workflow) as {
+      jobs: Record<
+        string,
+        {
+          env?: Record<string, string>
+          steps: Array<{ name?: string; env?: Record<string, string> }>
+        }
+      >
+    }
+    const job = parsed.jobs['backend-credentialed-tests']!
+    expect(job.env?.VITEST_DIAGNOSTICS).toBe("${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}")
+    for (const name of ['Run backend credentialed tests', 'Run Anthropic credentialed tests']) {
+      const step = job.steps.find(candidate => candidate.name === name)
+      expect(step).toBeDefined()
+      expect(step?.env).not.toHaveProperty('VITEST_DIAGNOSTICS')
     }
   })
 
@@ -64,5 +84,101 @@ describe('backend credentialed test workflow', () => {
     expect(workflow).toContain('OPENAI_API_KEY:\n        required: false')
     expect(workflow).toContain('OPENROUTER_API_KEY:\n        required: false')
     expect(workflow).toContain('STRIPE_SECRET_KEY:\n        required: false')
+  })
+
+  // Live provider calls are smoke checks, not a gate. Recorded-response fixtures in the unit suites
+  // gate the same behavior and own its coverage (docs/development/tests.md#live-provider-smoke-checks).
+  it('publishes no coverage, so the area coverage gate never depends on live providers', () => {
+    expect(workflow).not.toContain('publish_coverage')
+    expect(workflow).not.toContain('upload-full-lcov')
+    expect(workflow).not.toContain('coverage-full')
+    expect(workflow.match(/VITEST_COVERAGE_ENABLED: .*/g)).toEqual([
+      "VITEST_COVERAGE_ENABLED: 'false'",
+      "VITEST_COVERAGE_ENABLED: 'false'",
+    ])
+  })
+
+  it('reports a failure as a warning and a summary without hiding the failed job', () => {
+    const credentialedJob = jobSection('backend-credentialed-tests')
+    const report = stepSection(credentialedJob, 'Report non-gating smoke check failure')
+
+    // `failure()` is required: without a status function the condition adds an implicit `success()`
+    // and the step would be skipped on exactly the failure it reports.
+    expect(report).toContain('if: ${{ failure() && (')
+    expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
+    expect(report).toContain("steps.anthropic-token.outcome == 'failure'")
+    expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
+    expect(report).toContain('::warning title=Live provider smoke check failed::')
+    expect(report).toContain('>> "$GITHUB_STEP_SUMMARY"')
+    // The test steps stay hard failures: a red job keeps the Nightly alert and the check visible.
+    expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain(
+      'continue-on-error',
+    )
+    expect(stepSection(credentialedJob, 'Run Anthropic credentialed tests')).not.toContain(
+      'continue-on-error',
+    )
+  })
+
+  // One provider's failure must not hide another's signal. Each later provider step carries a status
+  // function, so it runs after an earlier failure, and an explicit outcome check, so it runs only
+  // when what it needs exists. The federation exchange sits after the other providers' tests, so a
+  // failed exchange cannot skip them either.
+  it('runs the Anthropic steps whether or not the other providers passed', () => {
+    const credentialedJob = jobSection('backend-credentialed-tests')
+    const mint = stepSection(credentialedJob, 'Mint Anthropic federation token')
+    const anthropic = stepSection(credentialedJob, 'Run Anthropic credentialed tests')
+
+    expect(mint).toContain(
+      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.migrate.outcome == 'success' }}",
+    )
+    expect(anthropic).toContain(
+      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.anthropic-token.outcome == 'success' }}",
+    )
+    expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain('if:')
+    expect(credentialedJob.indexOf('id: credentialed-tests')).toBeLessThan(
+      credentialedJob.indexOf('id: anthropic-token'),
+    )
+  })
+})
+
+type AreaJob = {
+  needs?: string | string[]
+  with?: Record<string, unknown>
+  steps?: Array<{ uses?: string; with?: { results?: string } }>
+}
+const backendJobs = (
+  load(readFileSync('.github/workflows/backend.yml', 'utf8')) as {
+    jobs: Record<string, AreaJob>
+  }
+).jobs
+const needsOf = (id: string): string[] => [backendJobs[id]?.needs ?? []].flat()
+
+describe('backend area wiring for the live-provider smoke checks', () => {
+  it('runs the credentialed job but keeps it out of the required gate and its results', () => {
+    const gate = backendJobs.backend!
+    const results = JSON.parse(String(gate.steps?.[0]?.with?.results)) as Record<string, unknown>
+
+    expect(backendJobs['test-backend-credentialed']).toBeDefined()
+    expect(needsOf('backend')).not.toContain('test-backend-credentialed')
+    expect(results).not.toHaveProperty('test-backend-credentialed')
+  })
+
+  it('keeps live-provider results out of the coverage gate and the Codecov upload', () => {
+    const uploads = JSON.parse(String(backendJobs.codecov!.with?.uploads)) as Array<{
+      flag: string
+    }>
+
+    expect(backendJobs['test-backend-credentialed']!.with).not.toHaveProperty('publish_coverage')
+    expect(needsOf('coverage')).not.toContain('test-backend-credentialed')
+    expect(needsOf('codecov')).not.toContain('test-backend-credentialed')
+    expect(uploads.map(upload => upload.flag)).not.toContain('backend-credentialed')
+  })
+
+  it('is ignored by pr-shepherd, which blocks on every failing pull-request check', () => {
+    const { ignoreChecks } = load(readFileSync('.pr-shepherdrc.yml', 'utf8')) as {
+      ignoreChecks: string[]
+    }
+
+    expect(ignoreChecks).toContain('test-backend-credentialed / backend-credentialed-tests')
   })
 })

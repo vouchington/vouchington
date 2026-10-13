@@ -2,9 +2,9 @@ import {
   extractLooseMarkdownTableRows,
   extractMarkdownTables,
   markdownNodeText,
+  markdownLiteralSpans,
   markdownSectionBetweenHeadings,
   parseGfmMarkdown,
-  walkMarkdown,
   type MarkdownNode,
   type PositionedMarkdownTable,
 } from 'vouchington-tooling/markdown'
@@ -47,15 +47,19 @@ export function findTableCells(section: string, firstCellText: string): string[]
   return extractTableRowCells(section).find(cells => cells[0] === firstCellText) ?? null
 }
 
-export function extractInlineCodeTokens(node: MarkdownNode | undefined): string[] {
+export function extractInlineCodeTokens(source: string, node: MarkdownNode | undefined): string[] {
   const tokens: string[] = []
   if (!node) return tokens
-  walkMarkdown(node, child => {
-    if (child.type !== 'inlineCode') return
-    if (typeof child.value !== 'string') return
-    if (!/^[a-z_]+$/.test(child.value)) return
-    tokens.push(child.value)
-  })
+  const start = node.position?.start.offset
+  const end = node.position?.end.offset
+  if (start === undefined || end === undefined) {
+    throw new Error('Selected policy paragraph is missing Markdown source offsets')
+  }
+  for (const span of markdownLiteralSpans(source)) {
+    if (span.kind !== 'inline-code') continue
+    if (span.position.start.offset < start || span.position.end.offset > end) continue
+    if (/^[a-z_]+$/.test(span.value)) tokens.push(span.value)
+  }
   return tokens
 }
 

@@ -16,8 +16,7 @@ function clearanceTool(
 ) {
   return createAdminTool<StaffClearanceDecision & { id: string }>({
     name,
-    description:
-      'Change staff post clearance with a stable reason and audited decision. Agent actions do not create training feedback.',
+    description: 'Change staff post clearance with a stable reason and audited decision.',
     scope,
     api: mutationEndpoint,
     parameters: adminInput(

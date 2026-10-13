@@ -26,10 +26,13 @@ const RenewalPriceIncreaseEmail: PreviewableEmailComponent<
     const { locale, copy, body } = getRenewalPriceIncreaseContent(props)
 
     return (
-      <Html>
+      <Html lang={locale}>
         <Head />
         <Preview>{copy.preview}</Preview>
-        <Body style={styles.main}>
+        <Body
+          lang={locale}
+          style={styles.main}
+        >
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>

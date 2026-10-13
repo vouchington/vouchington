@@ -22,6 +22,8 @@ Queue system for OpenAI omni moderation jobs.
   `quarantine_pending_at` marker blocks ordinary image lookup
 - every minute, re-derive due T+5/T+20 retries and the T+30 fail-closed review transition from
   PostgreSQL; queue jobs have one attempt because PostgreSQL owns retry state
+- on an OpenAI 429, requeue the job after the provider's `Retry-After` without consuming a queue
+  attempt or a ledger attempt (see the [worker](../workers/openai-moderation/README.md#provider-rate-limits))
 
 ## Related
 

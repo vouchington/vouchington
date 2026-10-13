@@ -1,5 +1,6 @@
-import { searchListItems, type ListItem } from '@services/lists'
-import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
+import { searchListItems } from '@services/lists'
+import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { loadReadableList } from './list-read-access.mts'
 import {
@@ -9,7 +10,7 @@ import {
   toMcpListItem,
   type McpListItem,
 } from './mcp-list-output.mts'
-import { resolveReadableThread } from './mcp-post-access.mts'
+import { resolveReadableThreads } from './mcp-post-access.mts'
 import { pageInputProperties, pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -20,33 +21,26 @@ type ToolArgs = {
   media_type?: string
   limit?: number
   after?: string
+  read?: boolean
 }
 
 type ToolResult = McpPage<McpListItem> | typeof LIST_NOT_FOUND | InvalidCursorResult
 
 const { default: defaultLimit, max } = LIST_PAGE_LIMIT
 
-/** A post on a list is listed only when the MCP post read policy lets the caller read it. */
-async function isListable(currentUser: BasicUser, item: ListItem): Promise<boolean> {
-  if (item.item_type !== 'post') return true
-  return (await resolveReadableThread(currentUser, item.entity_id)) !== null
-}
-
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_list_items',
-    type: 'function',
-    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (get_post or get_rss_feed_item). The list must be readable as get_list describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the items on a list, newest first: each is a post or an RSS feed item, with the item_type and entity_id to read it with (read_posts (option details) or read_rss_feed_item (option details)). The list must be readable as read_my_lists (option get) describes; otherwise this returns { success: false, error: "List not found" }. A post the caller cannot read, such as a private or deleted post, is left out, so a page can hold fewer items than limit while page_info.has_next_page is still true: keep paging until it is false. media_type keeps only RSS feed items of that media type. Returns at most ${max} items per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {
         list_id: { type: 'string', format: 'uuid', description: 'The ID of the list.' },
         media_type: { type: 'string', description: 'Only RSS feed items of this media type' },
+        read: { type: 'boolean', description: 'Filter RSS feed items by your read state.' },
         ...pageInputProperties('Items', LIST_PAGE_LIMIT),
       },
       required: ['list_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -66,13 +60,20 @@ const tool: Tool<ToolArgs, ToolResult> = {
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
           mediaType: args.media_type,
+          ...(args.read !== undefined && { read: args.read, currentUserId: currentUser.id }),
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT
-      const listable = await Promise.all(page.results.map(item => isListable(currentUser, item)))
+      // One batch read for the whole page, never a lookup per item.
+      const postItems = page.results.filter(item => item.item_type === 'post')
+      const threads = await resolveReadableThreads(
+        currentUser,
+        postItems.map(item => item.entity_id),
+      )
+      const hidden = new Set(postItems.filter((_, index) => !threads[index]))
       return {
         success: true,
-        results: page.results.filter((_, index) => listable[index]).map(toMcpListItem),
+        results: page.results.filter(item => !hidden.has(item)).map(toMcpListItem),
         // The cursor comes from the unfiltered page, so it advances past every hidden item.
         page_info: page.page_info,
       }

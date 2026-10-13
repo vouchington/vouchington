@@ -5,7 +5,7 @@ import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
 
-describe('get_topic_insights tool — real DB', () => {
+describe('read_data_points.topic_insights tool — real DB', () => {
   let user: PrivateUser
   let topicId: string
   const suffix = crypto.randomUUID().slice(0, 8)

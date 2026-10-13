@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/workers/bloom-filters/README.md](../../../../../../backend/workers/bloom-filters/README.md)
 
-Worker package for populating, rebuilding, and backfilling Bloom filters.
+Worker package for admin and failure-triggered Bloom rebuilds. Missed additions are repaired by the existing entity-listener reconciliation window; no full rebuild is scheduled.
 
 ## Exports
 

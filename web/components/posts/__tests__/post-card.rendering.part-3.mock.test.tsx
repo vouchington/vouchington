@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { render, screen } from '@testing-library/react'
 
 import { PostCard } from '../post-card'
@@ -39,7 +40,6 @@ vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
   EntityBookmarkButton: () => <button type='button'>Save</button>,
 }))
-
 vi.mock(import('@/components/shared/post-image'), () => {
   const Img = 'img' as const
 

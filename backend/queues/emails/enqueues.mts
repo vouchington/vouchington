@@ -1,4 +1,8 @@
-import { createEnqueueFunction as createGlideMqEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import {
+  createBulkEnqueueFunction as createGlideMqBulkEnqueueFunction,
+  createEnqueueFunction as createGlideMqEnqueueFunction,
+} from '@data-stores/valkey-glide-mq'
+import type { JobOptions } from 'glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type {
   EmailJobs,
@@ -19,6 +23,7 @@ import type {
 } from './types.mts'
 import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { emails } from './queues.mts'
+import { getEmailSendJobOptions } from './enqueues/job-options.mts'
 
 export const enqueueSendCommunityInviteEmail =
   createEnqueueFunction<ProcessSendCommunityInviteEmailVariables>('processSendCommunityInviteEmail')
@@ -78,21 +83,40 @@ const enqueueSendCopyrightNoticeEmailJob = createGlideMqEnqueueFunction({
   jobName: 'processSendCopyrightNoticeEmail',
 })
 
+/** One batched add of `enqueueSendCopyrightNoticeEmail` jobs, each with its own dedup id. */
+export const enqueueBulkSendCopyrightNoticeEmails = createGlideMqBulkEnqueueFunction<
+  string,
+  ProcessSendCopyrightNoticeEmailVariables,
+  'processSendCopyrightNoticeEmail'
+>({
+  queue: emails,
+  queueName: QUEUE_NAME,
+  jobName: 'processSendCopyrightNoticeEmail',
+  buildJob: intentId => ({
+    data: { intentId } satisfies ProcessSendCopyrightNoticeEmailVariables,
+    opts: copyrightNoticeEmailJobOptions(intentId),
+  }),
+})
+
+function copyrightNoticeEmailJobOptions(intentId: string): Partial<JobOptions> {
+  return {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_DEFAULT,
+    deduplication: {
+      id: `copyright-delivery:${intentId}:email`,
+      mode: 'throttle',
+      ttl: 5 * 60 * 1000,
+    },
+  }
+}
+
 export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturnType {
   return enqueueSendCopyrightNoticeEmailJob(
     { intentId } satisfies ProcessSendCopyrightNoticeEmailVariables,
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-      deduplication: {
-        id: `copyright-delivery:${intentId}:email`,
-        mode: 'throttle',
-        ttl: 5 * 60 * 1000,
-      },
-    },
+    copyrightNoticeEmailJobOptions(intentId),
   )
 }
 
@@ -152,6 +176,6 @@ function createEnqueueFunction<V extends Record<string, unknown>>(jobName: Email
   })
 
   return (input: EmailJobInput, variables: V, priority?: number): EnqueueReturnType => {
-    return enqueue({ input, variables }, { priority: priority ?? PRIORITY_DEFAULT })
+    return enqueue({ input, variables }, getEmailSendJobOptions(jobName, priority))
   }
 }

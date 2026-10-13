@@ -1,6 +1,9 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 // Route replay assertions are service-owned test support, not route registration.
-import { expect } from 'vitest'
+import { expect, onTestFinished, vi } from 'vitest'
+import * as mediaReplayEnqueues from '@queues/notifications/enqueues/media-delivery-registry'
+import { notifications } from '@queues/notifications/queues'
+import { readEnqueuedJob } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   countTestCopyrightLifecycleEvents,
@@ -9,6 +12,7 @@ import {
 import { processCopyrightActionIntent } from '../services/copyright-notices/index.mts'
 import { replayFailedMediaDeliveryRegistryRecords } from '../services/media-delivery-safety/index.mts'
 import {
+  settleReplayFixtureOperations,
   createCopyrightReplayFixture,
   createFailedMediaDeliveryReplayFixture,
 } from './copyright-route-replay-setup.mts'
@@ -54,20 +58,37 @@ export async function verifyCopyrightActionReplayRoute(): Promise<true> {
 }
 
 export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
-  const [fixture, foreign] = await Promise.all([
+  const [fixture, foreign] = await settleReplayFixtureOperations([
     createFailedMediaDeliveryReplayFixture(),
     createFailedMediaDeliveryReplayFixture(),
   ])
   const nonModeratorRequest = createRequest()
   await nonModeratorRequest.authenticateAs(fixture.nonModerator)
   await nonModeratorRequest.post('/api/v1/copyright-media-delivery/replays').expect(403)
-  const replayOwned = (deliveryKeys: readonly string[]) =>
+  const acceptedReplay = vi.spyOn(mediaReplayEnqueues, 'enqueueReplayMediaDeliveryRegistry')
+  onTestFinished(() => acceptedReplay.mockRestore())
+  const moderatorRequest = createRequest()
+  await moderatorRequest.authenticateAs(fixture.moderator)
+  const response = await moderatorRequest
+    .post('/api/v1/copyright-media-delivery/replays')
+    .expect(202)
+  expect(response.body).toEqual({})
+  expect(acceptedReplay).toHaveBeenCalledExactlyOnceWith({ actorUserId: fixture.moderator.id })
+  const accepted = acceptedReplay.mock.results[0]
+  if (accepted?.type !== 'return') throw new Error('Replay route did not accept its real queue job')
+  const job = await readEnqueuedJob(notifications, await accepted.value)
+  expect(job).toMatchObject({
+    name: 'processReplayMediaDeliveryRegistry',
+    data: { actorUserId: fixture.moderator.id },
+  })
+  expect(job.data).not.toHaveProperty('after')
+  const replayOwned = (recordIds: readonly string[]) =>
     replayFailedMediaDeliveryRegistryRecords({
       actorUserId: fixture.moderator.id,
-      deliveryKeys,
+      recordIds,
     })
-  expect(await replayOwned([fixture.deliveryKey])).toBe(1)
-  expect(await replayOwned([fixture.deliveryKey])).toBe(0)
+  expect(await replayOwned([fixture.mediaDeliveryRegistryRecordId])).toMatchObject({ replayed: 1 })
+  expect(await replayOwned([fixture.mediaDeliveryRegistryRecordId])).toMatchObject({ replayed: 0 })
   await expectOneReplayAudit(fixture, 'media_delivery_registry_replayed')
   expect(
     await countTestCopyrightLifecycleEvents({

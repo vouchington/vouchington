@@ -4,7 +4,7 @@ import { selectStaffTargets } from '../services/copyright-notices/read-models-st
 /** Reads only staff target fields through the production projection. */
 export async function readTestCopyrightStaffTargetProjection(noticeId: string) {
   await using transaction = await beginTransaction()
-  const targets = await selectStaffTargets(noticeId, transaction)
+  const targets = (await selectStaffTargets([noticeId], transaction)).get(noticeId) ?? []
   await transaction.commit()
   return targets
 }

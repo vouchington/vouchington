@@ -33,32 +33,44 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         nextContinuationToken: 'next',
       })
       .mockResolvedValueOnce({ objectKeys: ['copyright-incoming/ses-copyright-b'] })
-    type ReconcileDependencies = NonNullable<Parameters<typeof reconcileSesInboundEmails>[0]>
+    type ReconcileDependencies = NonNullable<Parameters<typeof reconcileSesInboundEmails>[1]>
     const enqueueOrRetry = vi
       .fn<NonNullable<ReconcileDependencies['enqueueOrRetryBulkSesInboundProcess']>>()
       .mockResolvedValue(0)
 
     await expect(
-      reconcileSesInboundEmails({
-        listCopyrightSesInboundObjects: listCopyrightObjects,
-        enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
-      }),
-    ).resolves.toEqual({ enqueued: 2 })
+      reconcileSesInboundEmails(
+        {},
+        {
+          listCopyrightSesInboundObjects: listCopyrightObjects,
+          enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
+          readRetainedFailedSesInboundProcessJobs: async () => [],
+        },
+      ),
+    ).resolves.toEqual({ enqueued: 2, hasMore: false })
 
     expect(listCopyrightObjects).toHaveBeenNthCalledWith(1, undefined)
     expect(listCopyrightObjects).toHaveBeenNthCalledWith(2, 'next')
-    expect(enqueueOrRetry).toHaveBeenNthCalledWith(1, [
-      {
-        sesMessageId: 'ses-copyright-a',
-        objectKey: 'copyright-incoming/ses-copyright-a',
-      },
-    ])
-    expect(enqueueOrRetry).toHaveBeenNthCalledWith(2, [
-      {
-        sesMessageId: 'ses-copyright-b',
-        objectKey: 'copyright-incoming/ses-copyright-b',
-      },
-    ])
+    expect(enqueueOrRetry).toHaveBeenNthCalledWith(
+      1,
+      [
+        {
+          sesMessageId: 'ses-copyright-a',
+          objectKey: 'copyright-incoming/ses-copyright-a',
+        },
+      ],
+      [],
+    )
+    expect(enqueueOrRetry).toHaveBeenNthCalledWith(
+      2,
+      [
+        {
+          sesMessageId: 'ses-copyright-b',
+          objectKey: 'copyright-incoming/ses-copyright-b',
+        },
+      ],
+      [],
+    )
   })
 
   it('ingests a notice and a reply, preserving the raw email before source cleanup', async () => {

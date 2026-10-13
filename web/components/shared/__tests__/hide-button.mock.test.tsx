@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 
 vi.mock(import('@/lib/api/client/bookmarks'), () => ({
   bookmarkEntity: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
@@ -84,9 +84,8 @@ describe('HideButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Hide' }))
-    await waitFor(() => {
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
-    })
+    await act(async () => vi.mocked(bookmarkEntity).mock.results.at(-1)!.value)
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('dispatches rss-item-hidden CustomEvent after successful hide', async () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
@@ -97,9 +96,8 @@ describe('HideButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Hide' }))
-    await waitFor(() => {
-      expect(bookmarkEntity).toHaveBeenCalled()
-    })
+    await act(async () => vi.mocked(bookmarkEntity).mock.results.at(-1)!.value)
+    expect(bookmarkEntity).toHaveBeenCalled()
     const hideEvent = dispatchSpy.mock.calls.find(
       ([e]) => e instanceof CustomEvent && e.type === 'rss-item-hidden',
     )
@@ -116,9 +114,10 @@ describe('HideButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Unhide' }))
-    await waitFor(() => {
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('toggles aria-pressed from false to true on hide click', async () => {
     render(
@@ -130,10 +129,9 @@ describe('HideButton', () => {
     const button = screen.getByRole('button', { name: 'Hide' })
     expect(button.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(button)
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Unhide' }).getAttribute('aria-pressed')).toBe(
-        'true',
-      )
+    expect(screen.getByRole('button', { name: 'Unhide' }).getAttribute('aria-pressed')).toBe('true')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
   })
   it('renders the eye-off icon', () => {
@@ -155,9 +153,10 @@ describe('HideButton', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Unhide' }))
-    await waitFor(() => {
-      expect(unbookmarkEntity).toHaveBeenCalled()
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(unbookmarkEntity).toHaveBeenCalled()
     const hideEvent = dispatchSpy.mock.calls.find(
       ([e]) => e instanceof CustomEvent && e.type === 'rss-item-hidden',
     )
@@ -174,10 +173,11 @@ describe('HideButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide' }))
 
-    await waitFor(() => {
-      expect(dropdownPreventDefault).toHaveBeenCalled()
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(dropdownPreventDefault).toHaveBeenCalled()
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('prevents menu close and unhides from HideMenuItem', async () => {
     render(
@@ -190,10 +190,11 @@ describe('HideButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Unhide' }))
 
-    await waitFor(() => {
-      expect(dropdownPreventDefault).toHaveBeenCalled()
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(dropdownPreventDefault).toHaveBeenCalled()
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('uses controlled active state for HideButton toggles', async () => {
     const onActiveChange = vi.fn<VitestLooseMock>()
@@ -208,10 +209,11 @@ describe('HideButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide' }))
 
-    await waitFor(() => {
-      expect(onActiveChange).toHaveBeenCalledWith(true)
-      expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
+    await act(async () => {
+      await vi.mocked(bookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(onActiveChange).toHaveBeenCalledWith(true)
+    expect(bookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('uses controlled active state for HideMenuItem toggles', async () => {
     const onActiveChange = vi.fn<VitestLooseMock>()
@@ -226,10 +228,11 @@ describe('HideButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Unhide' }))
 
-    await waitFor(() => {
-      expect(onActiveChange).toHaveBeenCalledWith(false)
-      expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
+    await act(async () => {
+      await vi.mocked(unbookmarkEntity).mock.results.at(-1)!.value
     })
+    expect(onActiveChange).toHaveBeenCalledWith(false)
+    expect(unbookmarkEntity).toHaveBeenCalledWith('rss_feed_item', 'item-1', 'hide')
   })
   it('uses controlled pending state for HideButton', () => {
     render(
@@ -282,10 +285,14 @@ describe('HideButton', () => {
         />,
       )
     })
-    reject(new Error('network'))
-    await waitFor(() => {
-      expect(onActiveChange).not.toHaveBeenCalled()
-      expect(onPendingChange).not.toHaveBeenCalled()
+    await act(async () => {
+      reject(new Error('network'))
+      await vi
+        .mocked(bookmarkEntity)
+        .mock.results.at(-1)!
+        .value.catch(() => undefined)
     })
+    expect(onActiveChange).not.toHaveBeenCalled()
+    expect(onPendingChange).not.toHaveBeenCalled()
   })
 })

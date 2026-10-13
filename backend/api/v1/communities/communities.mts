@@ -24,7 +24,6 @@ import {
   attachWrittenCommunityProvenance,
 } from '@services/content-provenance'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { getUserActivePlan } from '@services/memberships'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
@@ -161,8 +160,8 @@ app
     body.member_invites_allowed_at = raw.member_invites_allowed_at ? new Date() : null
     body.post_approval_required_at = raw.post_approval_required_at ? new Date() : null
     validateCreateCommunityInput(body)
+    const membershipPlan = currentUser.membership_plan ?? null
     // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-    const membershipPlan = await getUserActivePlan(currentUser.id)
     await verifyCaptchaOrAttestation(ctx, raw, { actionTag: 'communities.create' })
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'community')
 

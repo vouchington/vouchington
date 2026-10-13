@@ -21,11 +21,14 @@ export async function createUnparsedCopyrightEmailIntake(receivedAt = new Date()
 }
 
 // A received copyright email whose MIME parse succeeded, so it awaits staff review.
-export async function createParsedCopyrightEmailIntake(receivedAt = new Date()) {
+export async function createParsedCopyrightEmailIntake(
+  receivedAt = new Date(),
+  fromEmail = `claimant-${crypto.randomUUID()}@example.test`,
+) {
   const intake = await createUnparsedCopyrightEmailIntake(receivedAt)
   await recordCopyrightEmailParse(intake, {
     status: 'succeeded',
-    fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+    fromEmail,
     subject: 'Copyright complaint',
     bodyText: 'This is a copyright complaint.',
     messageId: `<${crypto.randomUUID()}@example.test>`,

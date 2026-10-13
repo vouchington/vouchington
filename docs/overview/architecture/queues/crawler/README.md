@@ -19,7 +19,9 @@ See [Crawling Architecture](../../crawling.md) for the routing and exclusivity m
 - On fetch/host crawl failure, enqueues alternative URLs from the same hostname as retry candidates
 - Local persistence and S3 upload failures use the job's bounded retry budget without fan-out
 - Successful jobs return only a small crawl reference (`url_id`, `crawl_id`, `response_status_code`) to GlideMQ; the full crawl row remains in PostgreSQL and raw HTML remains in S3
-- 429 rate-limit errors with `Retry-After` are re-enqueued with the server-specified delay instead of using generic exponential backoff
+- 429 rate-limit errors with `Retry-After` are re-enqueued with the server-specified delay instead of using generic exponential backoff, up to 3 replacements per crawl
+  - Each replacement is enqueued from inside the previous replacement while that job still holds its dedup id, and GlideMQ skips an add under an id whose job is waiting or active. The dedup id therefore includes the retry count, `crawl_url_ratelimit__<urlId>__<n>`.
+  - If the replacement add returns no job (an equivalent replacement already holds that id), the job throws so GlideMQ retries it. It never completes without a replacement, which would drop the URL and leave an `enqueueCrawlUrlAndWait` caller with a `null` result. The [durable transition matrix](../workers/crawler/README.md#durable-transition-matrix) covers each failure point of the chain.
 - `Retry-After: 0` re-enqueues the original job with no per-job delay, but the crawler still sets a 1s per-hostname Valkey lock so subsequent same-hostname jobs may defer briefly in preflight
 - Rate limiting is enforced per-hostname using glide-mq's `ordering.rateLimit` (not per-job `delay`), with the effective delay computed from `url_hostnames.requests_per_second_limit` and the domain's `Crawl-delay` (whichever is larger)
 

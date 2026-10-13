@@ -1,3 +1,5 @@
+import onError from '@modules/on-error'
+import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import { read } from '@data-stores/psql'
 import { EMBEDDINGS_TABLE } from './config.mts'
 import { EMBEDDING_BLOOM_READY_KEY, embeddingBloomFilter } from './bloom-filter/bloom-filter.mts'
@@ -35,6 +37,14 @@ export const lookupExistingEmbeddings = async (
   const bloomResults = enabled
     ? await embeddingBloomFilter.mexistsIfReady(EMBEDDING_BLOOM_READY_KEY, hexHashes)
     : hexHashes.map(() => true)
+
+  if (enabled && bloomResults.some(result => result === null)) {
+    try {
+      await enqueueRebuildBloomFilter({ filter: 'embedding' })
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
+    }
+  }
 
   // null = filter missing (fall through to DB), true = maybe present, false = definitely absent
   const itemsToQuery = contentSha256s.filter((_, i) => bloomResults[i] !== false)

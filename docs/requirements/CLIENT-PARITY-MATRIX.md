@@ -154,17 +154,36 @@ The hosted OAuth consent screen always appears. Every mutating user-MCP tool req
 Free member's in-app agent receives read tools only; there is no native exception. Native app
 implementation is tracked by [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
+The approved MCP consolidation in #2356
+keeps the two OAuth resources. #2431
+checks tool-local schema references and records client/model-context findings before production
+tool names or input envelopes change. [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
+tracks native adoption as a dependent of the producer: the approved mapping uses a closed
+`{option, arguments}` envelope for merged tools and validates each option's structured result.
+#2493 first factors repeated schemas into tool-local `$defs`, moves shared guidance to server
+instructions, and rejects unknown fields in declared input objects. Tool names stay unchanged;
+public-read and scoped-operation boundaries remain intact, with REST audit exceptions recorded
+in the producer PR. Native adoption continues through the same dependent client issue.
+
+#2495 applies the approved 25 user merge groups: 71 source tools become 25 option tools,
+with 44 kept tools, for 69 user tools total. Merged calls require the exact `{option, arguments}`
+envelope; kept tools retain flat inputs. Native consumers adopt the current names and options from
+the generated [MCP catalog](../overview/architecture/mcp/catalog.md), without aliases. Each selected
+option retains the existing runtime guards, REST route charges and structured output contract.
+The producer lands first; [vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218)
+continues to own native adoption and supported-platform validation.
+
 Native agents receive MCP tool schemas and results, including the same authorization, plan, scope,
 rate-limit, quota, audit, and untrusted-content handling as other user-MCP clients. This includes
-the current paged contracts: `get_topic_details` returns parents and one bounded page of children
-through `hierarchy`, `children_after`, and `children_limit`; `search_posts`, `search_topics`,
-`get_trending_posts`, and `get_trending_topics` support `after` and `limit` and return `page_info`.
+the current paged contracts: `read_topic(details)` returns parents and one bounded page of children
+through `hierarchy`, `children_after`, and `children_limit`; `read_posts(search)`, `discover_topics(search)`,
+`read_posts(trending)`, and `discover_topics(trending)` support `after` and `limit` and return `page_info`.
 The absorbed `search_posts_semantic`, `search_topics_semantic`, and `search_topics_text` remain
-removed. `search_posts` accepts `new`, `best`, `hot`, `relevance`, and `following_new`; limits are
+removed. `read_posts(search)` accepts `new`, `best`, `hot`, `relevance`, and `following_new`; limits are
 clamped to 100 and malformed cursors return `{ success: false, error: "Invalid cursor" }`.
 
-`search_posts` applies the MCP post read policy on every surface, so its author cannot see their own
-private, audience-limited or unapproved posts, and a `similar_post_id` seed that `get_post` refuses
+`read_posts(search)` applies the MCP post read policy on every surface, so its author cannot see their own
+private, audience-limited or unapproved posts, and a `similar_post_id` seed that `read_posts(details)` refuses
 returns an empty page. Native agents receive this behavior through user MCP; the client switch is
 part of [vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
 
@@ -192,11 +211,12 @@ OAuth app management and administrator verification remain web-only. Native deli
 
 Administrator MCP access is OAuth-only: `mcp.admin:*` scopes accept only the `oauth` surface and
 `POST /api/v1/my/api-keys` rejects them for every owner. API-key pickers therefore drop the
-administrator audience choice, which the `api-key` surface filter already does for a catalogue
-consumer. The native manifest and catalog no longer carry the `native.credentials.adminAudience`
-and `native.credentials.audience` claims. A native client that still offers an administrator
-API-key audience drops that choice the next time it reworks the picker; Vouchington does not wait
-on it.
+administrator audience choice and reject `mcp.admin:*` selections even if an inconsistent
+catalogue marks one as API-key eligible. The paired native repair is tracked by
+[vouchington-clients#177](https://github.com/vouchington/vouchington-clients/issues/177).
+The native manifest and catalog no longer carry the `native.credentials.adminAudience`
+and `native.credentials.audience` claims; user/API audience values remain available as metadata.
+Land the native picker repair with this catalog cleanup before native release.
 
 The API-key storage column is `scopes` and uses the same generated enum as OAuth grants. API v1
 continues accepting and returning `permissions` as catalogue scope strings; client DTOs and pickers
@@ -303,8 +323,8 @@ rename or an unverify shows on the next request. A post marked anonymous sends `
 viewer who cannot see its author. Administrators and moderators also receive `staff_provenance`
 (`created_via` and, when the post came through an OAuth client, `oauth_client` with `client_id`,
 `client_name`, `metadata_url` and `verified`); the client is omitted for anonymous posts they
-cannot attribute. The REST read routes and the MCP `get_post`, `get_post_ancestors`,
-`get_post_descendants`, `get_community_posts` and `get_community_pinned_posts` tools carry the
+cannot attribute. The REST read routes and the MCP `read_posts(details)`, `read_posts(ancestors)`,
+`read_posts(descendants)`, `read_community(posts)` and `read_community(pinned_posts)` tools carry the
 public label, and so do the post in the `POST /api/v1/posts`,
 `POST /api/v1/communities/:idOrSlug/posts` and `PATCH /api/v1/posts/:idOrSlug` responses and in the
 MCP `create_post` and `update_post` results. MCP never carries `staff_provenance`.
@@ -315,9 +335,9 @@ and `lists` sidecar maps, on the list, detail, create and update routes, the tre
 recommended routes, the hostname and fediverse routes and the user collections. Slim records, such
 as the community on a post, trending communities and global search results, and entities nested in
 another entity, such as the `topic` of a `ViewRssFeed`, carry neither field. Creating an RSS feed
-returns ids and a slug, so it carries neither. The MCP `get_community`, `search_communities`,
-`get_list`, `get_my_lists`, `create_list`, `update_list`, `get_topic_details`, `get_rss_feed` and
-`search_rss_feeds` tools carry the public label and never the staff block.
+returns ids and a slug, so it carries neither. The MCP `read_community(details)`, `discover_communities(search)`,
+`read_my_lists(get)`, `read_my_lists(list)`, `create_list`, `update_list`, `read_topic(details)`, `read_rss_feed(details)` and
+`discover_rss_feeds(search)` tools carry the public label and never the staff block.
 
 Swift and .NET must decode both optional fields on all five entities and render the badge beside
 the post type badge on posts and on the cards and detail headers of communities, topics, lists and
@@ -375,7 +395,7 @@ already lists the simulate and test-run `reason` removal; this repository does n
 
 ## Semantic post search candidate window
 
-#1549 keeps REST post search and MCP `search_posts` on the same approximate, capped candidate
+#1549 keeps REST post search and MCP `read_posts(search)` on the same approximate, capped candidate
 window. Existing response fields and opaque cursors stay the same; pagination ends at the window,
 and facets count only its candidates. Web, Swift and .NET can continue using `has_next_page` and
 the server cursor without decoder changes. Hybrid results can omit matches outside the window;

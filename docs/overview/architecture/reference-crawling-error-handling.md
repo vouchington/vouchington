@@ -31,8 +31,9 @@ External spam/malware domain lists are synced weekly:
 
 `checkDomainBlacklisted()` logic:
 
-- **Bloom filter `false`** (definitely not blacklisted): only checks `url_hostnames` flags
-- **Bloom filter `true`/unavailable**: runs full query including `blocklisted_domains`
+- **Feature flag off**: one full query (`url_hostnames` flags plus `blocklisted_domains`), no Bloom read
+- **Bloom filter `false`** (definitely not blacklisted): only the `url_hostnames` flags read, which ran concurrently with the Bloom read
+- **Bloom filter `true`/unavailable**: also reads `blocklisted_domains`
 
 ## RSS Feed Crawling
 
@@ -41,10 +42,8 @@ flowchart TD
   S[01:00 UTC scheduler refresh-rss-feed-crawl-tiers] --> J[refreshMaterializedView]
   J --> V[mv_rss_feed_crawl_tiers]
   V --> D[dispatchRssFeeds every minute]
-  D -->|tiered mode| T[Due feeds by tier SLA]
-  D -->|flat fallback| F[Enabled feeds by flat TTL]
+  D -->|tiered dispatch| T[Due feeds by tier SLA]
   T --> Q[enqueue fetchRssFeed]
-  F --> Q
   Q --> R[fetchRssFeed]
 ```
 

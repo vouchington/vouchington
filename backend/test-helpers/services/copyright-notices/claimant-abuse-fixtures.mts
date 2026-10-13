@@ -1,7 +1,8 @@
 import sql from 'sql-template-strings'
 import { beginTransaction, write } from '@data-stores/psql'
 import { checkAutomaticWithholdingCaps } from '../../../services/copyright-notices/automatic-withholding-caps.mts'
-import { getPendingCopyrightStaffCase } from '../../../services/copyright-notices/read-models-staff-case.mts'
+import { readClaimantMisuseSummaries } from '../../../services/copyright-notices/claimant-misuse-summary.mts'
+import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 
 /**
  * Appends an audited change to a config key that only the calling test reads, stamped `daysAgo`
@@ -37,7 +38,7 @@ export async function eraseTestCopyrightClaimantAccount(noticeId: string): Promi
 /** The claimant block of a notice's staff case, with the misuse ledger summary a moderator sees. */
 export async function readTestStaffCaseClaimant(noticeId: string) {
   await using transaction = await beginTransaction()
-  const staffCase = await getPendingCopyrightStaffCase(noticeId, transaction)
+  const staffCase = (await getPendingCopyrightStaffCases([noticeId], transaction)).get(noticeId)
   return staffCase?.claimant
 }
 
@@ -49,4 +50,9 @@ export async function checkTestAutomaticWithholdingCaps(
   const reason = await checkAutomaticWithholdingCaps(transaction, input)
   await transaction.commit()
   return reason
+}
+
+/** The misuse ledger summary of one claimant account, read as staff see it. */
+export async function readTestClaimantMisuseSummary(claimantUserId: string) {
+  return (await readClaimantMisuseSummaries([claimantUserId])).get(claimantUserId)!
 }

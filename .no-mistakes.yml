@@ -248,6 +248,8 @@ tests:
         include:
           - web/**/*.test.ts
           - web/**/*.test.tsx
+        setup_files:
+          - web/test-helpers/vitest.setup.web.mts
         exclude:
           - '**/node_modules/**'
           - '**/.git/**'
@@ -843,9 +845,11 @@ rules:
       unknownCalls: ignore
       targets:
         - moduleExport: { module: no-mistakes, export: analyzeProject }
+        - moduleExport: { module: no-mistakes, export: analyzeTypeScriptModules }
         - moduleExport: { module: no-mistakes, export: check }
         - moduleExport: { module: no-mistakes, export: ciTopology }
         - moduleExport: { module: no-mistakes, export: ciTopologyImpact }
+        - moduleExport: { module: no-mistakes, export: dependencies }
         - moduleExport: { module: no-mistakes, export: importUsages }
         - moduleExport: { module: no-mistakes, export: resolveCheck }
         - moduleExport: { module: no-mistakes, export: symbols }
@@ -1459,11 +1463,6 @@ rules:
       workspaceYaml: pnpm-workspace.yaml
       dependabotPath: .github/dependabot.yml
       lockfilePath: pnpm-lock.yaml
-      temporaryGroups:
-        - selectors:
-            - knip@6.40.0
-          reason: Knip 6.40.0 includes upstream fix #2083 for manifest export negations needed by #1360 production-export enforcement.
-          eligibleForRemovalAt: '2026-10-08T16:07:14Z'
 
   - name: tracked package.json files are workspace members
     rule: package-json-workspace-coverage
@@ -1798,6 +1797,7 @@ rules:
             - types.mts
             - workers.mts
             - processors.mts
+            - work-limits.mts
             - test-support.mts
           allowedSubdirs:
             - workers
@@ -1991,6 +1991,7 @@ rules:
         backend-activitypub-capacity: [backend, postgres-schema]
         backend-mocks: [backend]
         backend-real-glide-mq: [backend]
+        backend-embedding-creation-capacity: [backend]
         backend-no-data-mocks: [backend]
         backend-modules: [backend]
         backend-test-helpers: [backend]
@@ -2127,6 +2128,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2181,6 +2183,7 @@ rules:
     rule: postgres-lock-ordering
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2217,6 +2220,7 @@ rules:
     rule: postgres-no-generated-column-writes
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2419,6 +2423,7 @@ rules:
     rule: postgres-no-offset
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2438,6 +2443,7 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -2447,16 +2453,44 @@ rules:
         - '**/*.test.*'
         - '**/__tests__/**'
         - '**/test-helpers/**'
-        - backend/scripts/**
+        - backend/scripts/seeds/**
+        - backend/data-stores/psql/migration-runner/**
 
-  - name: do not wrap set operations in correlated EXISTS
+  - name: development runtime helper queries identify executed statements
+    rule: postgres-require-query-annotation
+    scope: repository
+    options:
+      unanalyzableSql: ignore
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames: [TransactionQuery, QueryExecutor]
+      include:
+        - backend/test-helpers/entities/create-test-entities.mts
+        - backend/test-helpers/entities/rss-feeds.mts
+        - backend/test-helpers/entities/topics/core.mts
+        - backend/test-helpers/entities/urls.mts
+        - backend/test-helpers/entities/users-direct.mts
+
+  - name: reject unsafe PostgreSQL query shapes
     rule: postgres-sql-shape-policy
     scope: repository
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
-      bannedShapes: [correlated-exists-set-operation, not-in-subquery, count-for-existence]
+      bannedShapes:
+        [
+          correlated-exists-set-operation,
+          not-in-subquery,
+          count-for-existence,
+          banned-function-call,
+        ]
+      shapeOptions:
+        bannedFunctionCall:
+          functions:
+            - name: uuidv7
+              clauses: [where, join-on, having]
+              hint: 'bound ids with fn_min_uuidv7(...) or getMinUUIDv7ForDate'
       sqlInclude:
         - backend/data-stores/psql/config-driven/**/*.sql
         - backend/data-stores/psql/views/**/*.sql
@@ -2771,6 +2805,7 @@ rules:
     scope: repository
     exclude: ['**/test-helpers/**']
     options:
+      unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]

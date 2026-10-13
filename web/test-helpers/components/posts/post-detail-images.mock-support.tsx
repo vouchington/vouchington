@@ -3,40 +3,30 @@ import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import type { Post } from '@/types/posts'
 import { PostDetailView } from '@/components/posts/post-detail-view'
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockUseAuth = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
-vi.mock(
-  import('next/dynamic'),
-  () =>
-    ({
-      default: (loader: () => Promise<unknown>) => {
-        const src = loader.toString()
-        if (src.includes('post-image-lightbox'))
-          return ({
-            open,
-            startIndex,
-            onOpenChange,
-          }: {
-            open: boolean
-            startIndex: number
-            onOpenChange: (value: boolean) => void
-          }) =>
-            open ? (
-              <div data-start-index={startIndex}>
-                <Button
-                  type='button'
-                  onClick={() => onOpenChange(false)}
-                >
-                  Close lightbox
-                </Button>
-              </div>
-            ) : null
-        return () => null
-      },
-    }) as unknown as typeof import('next/dynamic'),
-)
+vi.mock(import('@/components/posts/post-image-lightbox'), () => ({
+  PostImageLightbox: ({
+    open,
+    startIndex,
+    onOpenChange,
+  }: Parameters<typeof import('@/components/posts/post-image-lightbox').PostImageLightbox>[0]) =>
+    open ? (
+      <div data-start-index={startIndex}>
+        <Button
+          type='button'
+          onClick={() => onOpenChange(false)}
+        >
+          Close lightbox
+        </Button>
+      </div>
+    ) : (
+      <span hidden />
+    ),
+}))
 
 vi.mock(
   import('next/navigation'),
@@ -89,6 +79,10 @@ vi.mock(import('@/components/shared/follower-share-actions'), () => ({
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
   ReportMenuKebab: () => <Button type='button'>Report</Button>,
+}))
+
+vi.mock(import('@/components/posts/post-detail-overflow-menu'), () => ({
+  PostDetailOverflowMenu: () => <span hidden />,
 }))
 
 vi.mock(

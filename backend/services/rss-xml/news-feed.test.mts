@@ -23,14 +23,16 @@ function extractDescriptions(xml: string): string[] {
 
 describe('news feed sanitization', () => {
   const scriptScheme = `javascript:`
+  let sourceTopicSlug: string
   let topicId: string
   let feedId: string
 
   beforeAll(async () => {
     const user = await createTestUserDirect({ username: `rssnews${randomHex()}` })
+    sourceTopicSlug = `rss-news-test-${randomHex()}`
     topicId = await insertTestTopic({
       name: `RSS News Test ${randomHex()}`,
-      slug: `rss-news-test-${randomHex()}`,
+      slug: sourceTopicSlug,
       createdById: user.id,
     })
     feedId = await insertTestRssFeed({ topicId, title: `Test News Feed ${randomHex()}` })
@@ -65,7 +67,7 @@ describe('news feed sanitization', () => {
     expect(result).toContain('Safe content')
     expect(result).not.toContain('<script')
     expect(result).not.toContain('alert')
-  }, 30_000)
+  })
 
   it('strips event handlers from descriptions', async () => {
     const html = '<img src="x" onerror="alert(1)"><p>Normal text</p>'
@@ -75,7 +77,7 @@ describe('news feed sanitization', () => {
     expect(result).toContain('Normal text')
     expect(result).not.toContain('onerror')
     expect(result).not.toContain('alert')
-  }, 30_000)
+  })
 
   it('removes javascript: URLs from descriptions', async () => {
     const html = `<a href="${scriptScheme}alert(1)">click me</a><p>Safe</p>`
@@ -84,7 +86,7 @@ describe('news feed sanitization', () => {
 
     expect(result).toContain('Safe')
     expect(result).not.toContain(scriptScheme)
-  }, 30_000)
+  })
 
   it('preserves safe HTML in descriptions', async () => {
     const html = '<p>Normal <strong>bold</strong> and <em>italic</em> text</p>'
@@ -94,13 +96,13 @@ describe('news feed sanitization', () => {
     expect(result).toContain('<p>')
     expect(result).toContain('<strong>bold</strong>')
     expect(result).toContain('<em>italic</em>')
-  }, 30_000)
+  })
 
   it('returns empty string for empty content', async () => {
     const sanitized = await sanitizeRssHtml(Buffer.from('', 'utf8'))
     const result = sanitized.html.toString('utf8')
     expect(result).toBe('')
-  }, 30_000)
+  })
 
   it('strips style attributes', async () => {
     const html = '<p style="color:red">Styled text</p>'
@@ -109,7 +111,7 @@ describe('news feed sanitization', () => {
 
     expect(result).toContain('Styled text')
     expect(result).not.toContain('style=')
-  }, 30_000)
+  })
 
   it('removes iframe elements', async () => {
     const html = '<iframe src="https://evil.com"></iframe><p>After iframe</p>'
@@ -119,7 +121,7 @@ describe('news feed sanitization', () => {
     expect(result).toContain('After iframe')
     expect(result).not.toContain('<iframe')
     expect(result).not.toContain('evil.com')
-  }, 30_000)
+  })
 
   it('adds nofollow to links', async () => {
     const html = '<a href="https://example.com">link</a>'
@@ -127,12 +129,15 @@ describe('news feed sanitization', () => {
     const result = sanitized.html.toString('utf8')
 
     expect(result).toContain('rel="nofollow noopener"')
-  }, 30_000)
+  })
 
   it('creates items with sanitized descriptions in feed XML', async () => {
-    await createItemWithContent('<p>Clean news content</p>')
+    await createItemWithContent('<p>Clean news content</p><script>alert("owned-script")</script>')
 
-    const xml = await buildNewsFeed({})
+    const xml = await buildNewsFeed({ sourceTopicSlugs: [sourceTopicSlug] })
+
+    expect(xml).toContain('Clean news content')
+    expect([...xml.matchAll(/<item>/g)]).toHaveLength(1)
 
     // Should contain at least one description block
     const descriptions = extractDescriptions(xml)
@@ -142,7 +147,7 @@ describe('news feed sanitization', () => {
     for (const desc of descriptions) {
       expect(desc).not.toContain('<script')
     }
-  }, 60_000)
+  })
 
   it('uses media:description for news feed XML descriptions', async () => {
     const random = randomHex()
@@ -162,10 +167,10 @@ describe('news feed sanitization', () => {
       contentSha256: createHash('sha256').update(random).digest(),
     })
 
-    const xml = await buildNewsFeed({ limit: 10 })
+    const xml = await buildNewsFeed({ sourceTopicSlugs: [sourceTopicSlug], limit: 10 })
 
     expect(xml).toContain('YouTube XML description')
-  }, 60_000)
+  })
 
   it('filters by multiple source topic slugs with one source feed lookup', async () => {
     const user = await createTestUserDirect({ username: `rsssourcemulti${randomHex()}` })
@@ -194,14 +199,19 @@ describe('news feed sanitization', () => {
     await updateRssFeedTiming(feedA, new Date())
     await updateRssFeedTiming(feedB, new Date())
 
-    await createFeedItem(feedA, `Batched Source Item A ${randomHex()}`)
-    await createFeedItem(feedB, `Batched Source Item B ${randomHex()}`)
+    const titleA = `Batched Source Item A ${randomHex()}`
+    const titleB = `Batched Source Item B ${randomHex()}`
+    await createFeedItem(feedA, titleA)
+    await createFeedItem(feedB, titleB)
 
     const xml = await buildNewsFeed({ sourceTopicSlugs: [sourceSlugA, sourceSlugB], limit: 10 })
 
     expect(xml).toContain('Batched Source Item A')
     expect(xml).toContain('Batched Source Item B')
-  }, 60_000)
+    expect(xml).toContain(titleA)
+    expect(xml).toContain(titleB)
+    expect([...xml.matchAll(/<item>/g)]).toHaveLength(2)
+  })
 })
 
 async function createFeedItem(rssFeedId: string, title: string): Promise<string> {

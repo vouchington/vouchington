@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
+  createTestMembership,
   createTestUser,
   createTestUserWithAge,
   overrideDynamicConfigFieldsForTest,
@@ -94,6 +95,17 @@ describe('GET /api/v1/my/contribution-status', () => {
     } finally {
       overrideDynamicConfigFieldsForTest(contributionLimitConfig, testContributionLimitFields())
     }
+  })
+
+  it('reports the paid tier from the membership loaded for the request user', async () => {
+    const paidUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    await createTestMembership({ user_id: paidUser.id, plan: 'plus' })
+    const request = createRequest()
+    await request.authenticateAs(paidUser)
+
+    const response = await request.get('/api/v1/my/contribution-status?action=review').expect(200)
+
+    expect(response.body.action_limit).toMatchObject({ action: 'review', tier: 'plus' })
   })
 
   it('keeps admission independent from the retired action-window counter', async () => {

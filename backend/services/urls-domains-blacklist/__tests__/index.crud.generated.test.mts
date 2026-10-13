@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import {
-  isUrlBlocked,
+  getHostnamePolicy,
   upsertBlacklistSources,
   getAllBlacklistSources,
   getBlacklistSourceById,
@@ -17,13 +17,17 @@ import {
   getDomainBlacklistSourcesSequenceCurrentValue,
 } from '@voucha/test-helpers'
 
+async function isBlocked(hostname: string): Promise<boolean> {
+  return (await getHostnamePolicy(hostname)).is_blocked
+}
+
 describe('index.generated (CRUD and isUrlBlocked)', () => {
   const suffix = Array.from({ length: 8 }, () =>
     String.fromCodePoint(97 + Math.floor(Math.random() * 26)),
   ).join('')
 
   it('isUrlBlocked returns false for non-blacklisted domain', async () => {
-    const result = await isUrlBlocked('example.com')
+    const result = await isBlocked('example.com')
     expect(result).toBe(false)
   })
 
@@ -34,7 +38,7 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
     // Ensure domain is also in bloom filter if it happens to exist (parallel tests)
     await addDomainsToBloomFilter([domain])
 
-    const result = await isUrlBlocked(domain)
+    const result = await isBlocked(domain)
     expect(result).toBe(true)
   })
 
@@ -45,7 +49,7 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
     // Ensure domain is also in bloom filter if it happens to exist (parallel tests)
     await addDomainsToBloomFilter([domain])
 
-    const result = await isUrlBlocked(domain.toUpperCase())
+    const result = await isBlocked(domain.toUpperCase())
     expect(result).toBe(true)
   })
 
@@ -56,7 +60,7 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
     const hostnameMap = await upsertUrlHostnames(null, [domain])
     await updateUrlHostnameBlocked(hostnameMap.get(domain)!, true)
 
-    await expect(isUrlBlocked(`www.${domain}`)).resolves.toBe(true)
+    await expect(isBlocked(`www.${domain}`)).resolves.toBe(true)
   })
 
   it('isUrlBlocked checks email blacklist type correctly', async () => {
@@ -72,7 +76,7 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
     await insertTestDomainBlacklist(domain, emailSourceName)
 
     // Should NOT be blocked for URLs (only email type should block)
-    const result = await isUrlBlocked(domain)
+    const result = await isBlocked(domain)
     expect(result).toBe(false)
   })
 

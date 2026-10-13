@@ -34,6 +34,17 @@ describe('UserProfileHeader', () => {
     expect(el.getAttribute('data-html')).toBe('<p>Hello world</p>')
     expect(el.getAttribute('data-classname')).toContain('line-clamp-4')
     expect(el.getAttribute('data-features')).toBe('{"utm":true}')
+    expect(el.hasAttribute('data-lang')).toBe(false)
+  })
+
+  it('marks the profile bio with the detected content language', () => {
+    render(
+      <UserProfileHeader
+        user={{ ...baseUser, lingua_rs_detected_language: 'ar-SA' }}
+        aboutHtml='<p>نبذة</p>'
+      />,
+    )
+    expect(screen.getByTestId('markdown-content')).toHaveAttribute('data-lang', 'ar')
   })
 
   it('does not render MarkdownContent when aboutHtml is null', () => {

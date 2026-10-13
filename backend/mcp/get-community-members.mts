@@ -1,8 +1,8 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { searchCommunityMembers, type CommunityMemberRole } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import {
   COMMUNITY_NOT_FOUND,
   COMMUNITY_PAGE_LIMIT,
@@ -47,11 +47,9 @@ type ToolResult =
 
 const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_community_members',
-    type: 'function',
-    description: `List the members of a public community by its UUID or slug, as a signed-out reader sees the roster: the owner and moderators always, and regular members only when the community lets the public see them (member_roster_visibility: public). Returns at most ${max} members per page and page_info.end_cursor; pass it as after to get the next page. A private, deleted or unknown community returns { success: false, error: "Community not found" }. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the members of a public community by its UUID or slug, as a signed-out reader sees the roster: the owner and moderators always, and regular members only when the community lets the public see them (member_roster_visibility: public). Returns at most ${max} members per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {
@@ -65,7 +63,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['community_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

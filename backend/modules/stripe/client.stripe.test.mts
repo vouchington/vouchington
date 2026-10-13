@@ -3,9 +3,11 @@ import { getStripeClient } from './client.mts'
 
 describe('stripe.client', () => {
   /**
-   * Credentialed happy-path test for Stripe connectivity.
-   * Calls a read-only endpoint (balance.retrieve) — no data is created.
-   * Other Stripe tests are in *.mock.test.mts (mocked client).
+   * Non-gating smoke check of Stripe connectivity against the live API.
+   * Calls a read-only endpoint (balance.retrieve) — no data is created. The client wiring (the
+   * stripe-enabled transport and the secret key) is gated by a recorded response in
+   * client.replay.test.mts.
+   * See docs/development/tests.md#live-provider-smoke-checks.
    */
 
   it(

@@ -1,3 +1,4 @@
+import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey } from '@services/api-keys'
 import { createUserReferralLink } from '@services/user-referral-program-links'
@@ -28,14 +29,12 @@ const READ = [
   'reference-data:read',
 ] as const satisfies readonly ApiScope[]
 const TOOLS = [
-  'get_trending_communities',
-  'get_trending_referral_programs',
-  'get_topic_referral_program',
+  'discover_communities',
+  'discover_topics',
+  'read_topic',
   'get_my_referral_links',
   'search_web',
-  'list_countries',
-  'list_currencies',
-  'get_platform_stats',
+  'read_reference_data',
 ]
 
 function postMcp(token: string, body: unknown) {
@@ -94,9 +93,13 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     })
     const token = await issueCredential(kind, owner, READ)
 
-    const state = await readTool(token, 'get_topic_referral_program', {
-      topic_id: program.referralProgramId,
-    })
+    const state = await readTool(
+      token,
+      'read_topic',
+      optionArgs('referral_program', {
+        topic_id: program.referralProgramId,
+      }),
+    )
     const mine = await readTool(token, 'get_my_referral_links', {
       referral_program_id: program.referralProgramId,
     })
@@ -114,11 +117,23 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
     const user = await createTestUser()
     const token = await issueCredential(kind, user, READ)
 
-    const communities = await readTool(token, 'get_trending_communities', { limit: 1 })
-    const programs = await readTool(token, 'get_trending_referral_programs', { limit: 1 })
-    const countries = await readTool(token, 'list_countries')
-    const currencies = await readTool(token, 'list_currencies', { limit: 2 })
-    const stats = await readTool(token, 'get_platform_stats')
+    const communities = await readTool(
+      token,
+      'discover_communities',
+      optionArgs('trending', { limit: 1 }),
+    )
+    const programs = await readTool(
+      token,
+      'discover_topics',
+      optionArgs('trending_referral_programs', { limit: 1 }),
+    )
+    const countries = await readTool(token, 'read_reference_data', optionArgs('countries', {}))
+    const currencies = await readTool(
+      token,
+      'read_reference_data',
+      optionArgs('currencies', { limit: 2 }),
+    )
+    const stats = await readTool(token, 'read_reference_data', optionArgs('platform_stats', {}))
 
     expect(communities).toMatchObject({ success: true, page_info: expect.any(Object) })
     expect(programs).toMatchObject({ success: true, page_info: expect.any(Object) })
@@ -199,9 +214,9 @@ describe('trending, referral, search and reference-data read tools over MCP HTTP
   it.each(KINDS)('%s is rejected once its owner is suspended', async kind => {
     const user = await createTestUser()
     const token = await issueCredential(kind, user, READ)
-    await readTool(token, 'list_countries')
+    await readTool(token, 'read_reference_data', optionArgs('countries', {}))
     await suspendTestUser(user.id)
 
-    await postMcp(token, toolCall('list_countries', {})).expect(401)
+    await postMcp(token, toolCall('read_reference_data', optionArgs('countries', {}))).expect(401)
   })
 })

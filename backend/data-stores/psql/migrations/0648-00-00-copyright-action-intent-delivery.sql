@@ -52,38 +52,44 @@ COMMENT ON COLUMN copyright_notice_action_work_items.available_at IS 'Earliest d
 -- never authorize another asset or a stale revision.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_records (
-  delivery_key text PRIMARY KEY CHECK (char_length(delivery_key) BETWEEN 1 AND 512),
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
   placement_id uuid NOT NULL REFERENCES media_placements(id) ON DELETE RESTRICT,
   placement_revision integer NOT NULL CHECK (placement_revision >= 0),
   image_id uuid NOT NULL,
   desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
-  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  latest_change_id uuid,
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT media_delivery_registry_records_exact_key
-    CHECK (delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id))
+  UNIQUE (placement_id, placement_revision, image_id)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_projection_work_items (
-  delivery_key text PRIMARY KEY REFERENCES media_delivery_registry_records(delivery_key) ON DELETE CASCADE,
+  media_delivery_registry_record_id uuid PRIMARY KEY REFERENCES media_delivery_registry_records(id) ON DELETE CASCADE,
   generation bigint NOT NULL CHECK (generation >= 0),
+  failed_change_id uuid,
   lease_token uuid,
   leased_at timestamptz,
   lease_expires_at timestamptz,
   attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 5),
   available_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CHECK (failed_change_id IS NULL OR lease_token IS NULL),
   CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at > leased_at))
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_media_delivery_registry_projection_work_items__available
-  ON media_delivery_registry_projection_work_items(available_at, delivery_key) WHERE lease_token IS NULL;
+  ON media_delivery_registry_projection_work_items(available_at, media_delivery_registry_record_id) WHERE lease_token IS NULL AND failed_change_id IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_media_delivery_registry_projection_work_items__expired
-  ON media_delivery_registry_projection_work_items(lease_expires_at, delivery_key) WHERE lease_token IS NOT NULL;
-COMMENT ON TABLE media_delivery_registry_projection_work_items IS 'Current edge projection ownership; deleted on terminal publication while immutable transitions survive.';
-COMMENT ON COLUMN media_delivery_registry_projection_work_items.delivery_key IS 'Exact delivery authority being projected.';
+  ON media_delivery_registry_projection_work_items(lease_expires_at, media_delivery_registry_record_id) WHERE lease_token IS NOT NULL AND failed_change_id IS NULL;
+CREATE INDEX idx_media_delivery_registry_projection_work_items__failed
+  ON media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, failed_change_id)
+  WHERE failed_change_id IS NOT NULL;
+COMMENT ON TABLE media_delivery_registry_projection_work_items IS 'Derived current-generation projection ownership and failed replay membership; immutable transitions remain authoritative.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.failed_change_id IS 'Exact authoritative failed transition requiring operator replay; null for active projection work.';
+COMMENT ON COLUMN media_delivery_registry_projection_work_items.media_delivery_registry_record_id IS 'Retained delivery authority being projected.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.generation IS 'Current nontransactional edge authority generation.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.lease_token IS 'Opaque worker ownership token, never an entity reference.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.leased_at IS 'Database time the current lease began.';
@@ -95,7 +101,7 @@ CREATE TYPE media_delivery_registry_change_types AS ENUM ('pending', 'claimed', 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE media_delivery_registry_changes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  delivery_key text NOT NULL REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT,
+  media_delivery_registry_record_id uuid NOT NULL REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT,
   generation bigint NOT NULL CHECK (generation >= 0),
   change_type media_delivery_registry_change_types NOT NULL,
   desired_state media_delivery_desired_states NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
@@ -108,11 +114,24 @@ CREATE TABLE media_delivery_registry_changes (
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
   next_attempt_at timestamptz,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT uq_media_registry_changes__record_generation_id
+    UNIQUE (media_delivery_registry_record_id, generation, id),
+  CONSTRAINT uq_media_registry_changes__record_id
+    UNIQUE (media_delivery_registry_record_id, id),
   CHECK ((change_type = 'pending' AND claimed_at IS NULL AND completed_at IS NULL)
     OR (change_type = 'claimed' AND claimed_at IS NOT NULL AND completed_at IS NULL)
     OR (change_type IN ('completed', 'failed') AND completed_at IS NOT NULL))
 );
-CREATE INDEX idx_media_delivery_registry_changes__latest ON media_delivery_registry_changes(delivery_key, id DESC);
+ALTER TABLE media_delivery_registry_projection_work_items
+  ADD CONSTRAINT fk_media_projection_failed_change FOREIGN KEY (media_delivery_registry_record_id, generation, failed_change_id)
+  REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, generation, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE media_delivery_registry_projection_work_items VALIDATE CONSTRAINT fk_media_projection_failed_change;
+ALTER TABLE media_delivery_registry_records
+  ADD CONSTRAINT fk_media_registry_records__latest_change
+  FOREIGN KEY (id, latest_change_id)
+  REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE media_delivery_registry_records VALIDATE CONSTRAINT fk_media_registry_records__latest_change;
+CREATE INDEX idx_media_delivery_registry_changes__latest ON media_delivery_registry_changes(media_delivery_registry_record_id, id DESC);
 CREATE INDEX idx_media_delivery_registry_changes__actor ON media_delivery_registry_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE OR DELETE ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
@@ -123,7 +142,7 @@ CREATE FUNCTION fn_update_media_delivery_change_authority() RETURNS trigger LANG
 DECLARE current_generation bigint; current_desired_state media_delivery_desired_states;
 BEGIN
   SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records
-    WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;
+    WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;
   IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;
   NEW.desired_state := current_desired_state;
   RETURN NEW;
@@ -135,17 +154,34 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_project_media_delivery_projection() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  -- The BEFORE trigger retains the authority lock and rejects stale generations.
+  -- Accepted transitions advance current state in that lock order, never UUID order.
+  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id
+    WHERE id = NEW.media_delivery_registry_record_id;
   IF NEW.change_type = 'pending' THEN
-    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)
-      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))
-    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,
+    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)
+      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))
+    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
-      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at
+      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL
     WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation
       OR media_delivery_registry_projection_work_items.lease_token IS NULL;
-  ELSIF NEW.change_type IN ('completed', 'failed') THEN
+  ELSIF NEW.change_type = 'failed' THEN
+    INSERT INTO media_delivery_registry_projection_work_items
+      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)
+    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,
+      NEW.delivery_attempt_count, clock_timestamp())
+    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET
+      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
+      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;
+  ELSIF NEW.change_type = 'claimed' THEN
+    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL
+      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id
+        AND generation = NEW.generation AND failed_change_id IS NOT NULL;
+  ELSIF NEW.change_type = 'completed' THEN
     DELETE FROM media_delivery_registry_projection_work_items
-      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;
+      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;
   END IF;
   RETURN NEW;
 END;
@@ -155,18 +191,20 @@ FOR EACH ROW EXECUTE FUNCTION fn_project_media_delivery_projection();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE VIEW view_media_delivery_registry_current_records AS
-SELECT record.delivery_key, record.placement_id, record.placement_revision, record.image_id,
+SELECT record.id AS media_delivery_registry_record_id,
+  concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key, record.placement_id, record.placement_revision, record.image_id,
   change.desired_state, record.generation, record.created_at, record.updated_at,
   change.id AS latest_change_id, change.change_type::text AS state,
   change.delivery_attempt_count, change.claimed_at, change.projected_at, change.invalidated_at,
   change.completed_at, change.failure_message, change.next_attempt_at
 FROM media_delivery_registry_records record
+-- Keep the exact current-transition probe correlated when eligibility views compose this view.
 JOIN LATERAL (SELECT * FROM media_delivery_registry_changes history
-  WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation
-  ORDER BY history.id DESC LIMIT 1) change ON true;
+  WHERE history.media_delivery_registry_record_id = record.id AND history.id = record.latest_change_id
+    AND history.generation = record.generation LIMIT 1) change ON true;
 COMMENT ON TABLE media_delivery_registry_changes IS 'Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.';
 COMMENT ON VIEW view_media_delivery_registry_current_records IS 'Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.';
-COMMENT ON COLUMN media_delivery_registry_changes.delivery_key IS 'Concrete exact edge-delivery authority whose transition this records.';
+COMMENT ON COLUMN media_delivery_registry_changes.media_delivery_registry_record_id IS 'Retained delivery authority whose transition this records.';
 COMMENT ON COLUMN media_delivery_registry_changes.generation IS 'Nontransactional authority generation fencing stale acknowledgements.';
 COMMENT ON COLUMN media_delivery_registry_changes.desired_state IS 'Exact edge state selected by this authority generation, retained after later changes and republishing.';
 COMMENT ON COLUMN media_delivery_registry_changes.change_type IS 'Typed edge-delivery transition.';
@@ -181,8 +219,8 @@ COMMENT ON COLUMN media_delivery_registry_changes.next_attempt_at IS 'Earliest r
 
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_media_registry_fk
-  FOREIGN KEY (media_delivery_registry_record_delivery_key)
-  REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT NOT VALID;
+  FOREIGN KEY (media_delivery_registry_record_id)
+  REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_media_registry_fk;
 
@@ -217,8 +255,6 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_registry_generation();
 COMMENT ON COLUMN media_delivery_registry_records.generation IS
   'Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.';
 
-CREATE INDEX idx_media_delivery_registry_records__placement
-  ON media_delivery_registry_records (placement_id);
 CREATE INDEX idx_media_delivery_registry_records__image
   ON media_delivery_registry_records (image_id);
 
@@ -227,17 +263,18 @@ BEFORE UPDATE ON media_delivery_registry_records
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE media_delivery_registry_records IS 'Durable exact image-placement delivery outbox; image and placement parents are retained.';
-COMMENT ON COLUMN media_delivery_registry_records.delivery_key IS 'Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.';
+COMMENT ON COLUMN media_delivery_registry_records.id IS 'Stable retained delivery authority identity for an exact placement revision and image binding.';
 COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Typed placement authority; never inferred from image existence.';
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
 COMMENT ON COLUMN media_delivery_registry_records.image_id IS 'Immutable image bound to the exact public-use placement.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.';
+COMMENT ON COLUMN media_delivery_registry_records.latest_change_id IS 'Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.';
 
 CREATE FUNCTION fn_create_media_delivery_generation_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN
-    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)
-      VALUES (NEW.delivery_key, NEW.generation, 'pending');
+    INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type)
+      VALUES (NEW.id, NEW.generation, 'pending');
   END IF;
   RETURN NEW;
 END;

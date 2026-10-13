@@ -1,9 +1,28 @@
-import { afterEach, expect, it, vi, describe } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v7 as uuidv7 } from 'uuid'
 import { derivePublicJwk, encodeJwkSetForEnv, signSessionJwt, verifySessionJwt } from '../index.mts'
 
+const fixedNow = process.env.VOUCH_PROOF_NOW
+  ? Date.parse(process.env.VOUCH_PROOF_NOW)
+  : Date.UTC(2026, 0, 31, 23, 59, 59)
+
+if (
+  !Number.isFinite(fixedNow) ||
+  (process.env.VOUCH_PROOF_NOW !== undefined && !process.env.VOUCH_PROOF_NOW.endsWith('Z'))
+) {
+  throw new Error('VOUCH_PROOF_NOW must be a finite UTC timestamp ending in Z')
+}
+
 describe('index', () => {
+  beforeEach(() => {
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(fixedNow)
+  })
+  afterEach(() => vi.useRealTimers())
   const makeIds = () => ({ did: uuidv7(), sid: uuidv7(), uid: uuidv7() })
 
   async function generatePrivateJwk(kid: string): Promise<jose.JWK> {

@@ -16,6 +16,10 @@ matching) instead of a global snapshot of shared state. Measure a singleton ledg
 connection that locks that ledger row and performs the owned write. A `sequence.groupOrder` sequential barrier
 remains available for the rare case that genuinely cannot be made parallel-safe.
 
+Project test and hook budgets obey the [suite hard cap](tests.md#test-suite-rules).
+Enforcing that cap is separate from the five-second defaults rollout in #2149; it does not
+change server startup or transport deadlines.
+
 Every project must declare an explicit `testTimeout` and `hookTimeout`, enforced by
 `dev/vitest-config.test.mts`. Follow the [suite rules](tests.md#test-suite-rules) when choosing
 budgets for a new project or a per-test override. Existing project budgets are being reduced in
@@ -108,7 +112,7 @@ per-project values:
 
 - Root inheritance default (`pool: 'threads'`): [`vitest.config.mts`](../../vitest.config.mts)
 - Backend forks: [`test-helpers/vitest-config/backend-core-projects.mts`](../../test-helpers/vitest-config/backend-core-projects.mts), [`test-helpers/vitest-config/backend-data-projects.mts`](../../test-helpers/vitest-config/backend-data-projects.mts)
-- Backend credentialed provider probes (also the source of the `backend` and per-provider `backend-<provider>` groups in `ci/run-vitest-project-group.mts` and of the transient-retry classifier's credentialed boundary): [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../test-helpers/vitest-config/backend-credentialed-projects.mts)
+- Backend credentialed provider probes (also the source of the `backend` and per-provider `backend-<provider>` groups in `ci/run-vitest-project-group.mts`): [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../test-helpers/vitest-config/backend-credentialed-projects.mts)
 - Web / lambdas / Cloudflare: [`test-helpers/vitest-config/web-projects.mts`](../../test-helpers/vitest-config/web-projects.mts)
 - Tooling: [`test-helpers/vitest-config/tooling-projects.mts`](../../test-helpers/vitest-config/tooling-projects.mts)
 - Storybook browser: [`test-helpers/vitest-config/storybook-browser-project.mts`](../../test-helpers/vitest-config/storybook-browser-project.mts)
@@ -158,3 +162,8 @@ cell or `vitest doctor` recommendation is faster on a clean machine.
 
 Do not set `fileParallelism: false` or a literal `maxWorkers` to chase speed; that ban is at the
 top of this page.
+
+The embedding creation capacity project uses the documented rare group-order barrier: group 0
+runs its exact global-accounting contract before the ordinary group 1. Both groups use the same
+normal shard database; no per-file database or worker pin is introduced. The production quota
+reader remains unfiltered, and the fixture guard only coordinates that file's cooperating runs.

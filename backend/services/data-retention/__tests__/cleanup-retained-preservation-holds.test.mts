@@ -80,5 +80,5 @@ describe('legal preservation holds and final user purge', () => {
         released_at: expect.any(Date),
       }),
     ])
-  }, 60_000)
+  })
 })

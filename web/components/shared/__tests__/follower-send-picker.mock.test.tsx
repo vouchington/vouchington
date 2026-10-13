@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PublicUser } from '@/types/user'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FollowerSendPicker } from '../follower-send-picker'
@@ -90,13 +90,14 @@ describe('FollowerSendPicker', () => {
     await search('')
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
 
-    await waitFor(() => {
-      expect(fetchFollowerUsers).toHaveBeenLastCalledWith('user-1', {
-        after: 'cursor-1',
-        q: undefined,
-        limit: 5,
-        signal: expect.any(AbortSignal),
-      })
+    await act(async () => {
+      await vi.mocked(fetchFollowerUsers).mock.results[1]!.value
+    })
+    expect(fetchFollowerUsers).toHaveBeenLastCalledWith('user-1', {
+      after: 'cursor-1',
+      q: undefined,
+      limit: 5,
+      signal: expect.any(AbortSignal),
     })
     await screen.findByText('beta')
     expect(screen.getAllByText('alpha')).toHaveLength(1)
@@ -130,12 +131,13 @@ describe('FollowerSendPicker', () => {
 
     await search('')
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
-    await waitFor(() => expect(fetchFollowerUsers).toHaveBeenCalledTimes(2))
+    expect(fetchFollowerUsers).toHaveBeenCalledTimes(2)
 
     await search('beta')
-    await act(async () =>
-      resolveNextPage(page([{ account_type: null, id: 'stale', username: 'stale' }], false, null)),
-    )
+    await act(async () => {
+      resolveNextPage(page([{ account_type: null, id: 'stale', username: 'stale' }], false, null))
+      await vi.mocked(fetchFollowerUsers).mock.results[1]!.value
+    })
 
     expect(screen.getByText('beta')).toBeInTheDocument()
     expect(screen.queryByText('stale')).not.toBeInTheDocument()

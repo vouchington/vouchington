@@ -1242,7 +1242,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgment_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_google_play_acknowledgment_work_items (membership_google_play_acknowledgment_id, completed_at)\n  VALUES (NEW.id, COALESCE(NEW.acknowledged_at, NEW.skipped_at));\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_media_delivery_generation_change()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type)\n      VALUES (NEW.delivery_key, NEW.generation, 'pending');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_media_delivery_generation_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type)\n      VALUES (NEW.id, NEW.generation, 'pending');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_create_membership_operation_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.completed_at IS NULL THEN\n    INSERT INTO membership_operation_execution_work_items (membership_operation_id)\n    VALUES (NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1271,9 +1271,6 @@
     "fn_field_changes(before_fields jsonb, after_fields jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n"
     },
-    "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.is_flagged_by_openai_omni_moderation = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM view_media_delivery_registry_current_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
-    },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
     },
@@ -1297,6 +1294,9 @@
     },
     "fn_membership_grant_remaining_duration(grant_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
+    },
+    "fn_min_uuidv7(p_at timestamp with time zone)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)\n RETURNS uuid\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT (lpad(to_hex(floor(extract(epoch FROM p_at) * 1000)::bigint), 12, '0') || '70008000000000000000')::uuid\n$function$\n"
     },
     "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
@@ -1335,7 +1335,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_mark_topic_alias_category_mapping_dirty()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  dirty_alias_id UUID;\n  dirty_alias TEXT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.topic_id IS NULL THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'UPDATE' THEN\n    IF NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id THEN\n      RETURN NEW;\n    END IF;\n    dirty_alias_id := NEW.id;\n    dirty_alias := NEW.alias;\n  ELSIF TG_OP = 'DELETE' THEN\n    IF OLD.topic_id IS NULL THEN\n      RETURN OLD;\n    END IF;\n    dirty_alias_id := OLD.id;\n    dirty_alias := OLD.alias;\n  END IF;\n\n  INSERT INTO topic_alias_category_mapping_reconciliations (topic_alias_id, alias)\n  VALUES (dirty_alias_id, dirty_alias)\n  ON CONFLICT (topic_alias_id) DO UPDATE\n  SET alias = EXCLUDED.alias,\n      generation = topic_alias_category_mapping_reconciliations.generation + 1;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_media_delivery_projection()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(delivery_key, generation, attempt_count, available_at)\n      VALUES (NEW.delivery_key, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (delivery_key) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type IN ('completed', 'failed') THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE delivery_key = NEW.delivery_key AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_media_delivery_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- The BEFORE trigger retains the authority lock and rejects stale generations.\n  -- Accepted transitions advance current state in that lock order, never UUID order.\n  UPDATE media_delivery_registry_records SET latest_change_id = NEW.id\n    WHERE id = NEW.media_delivery_registry_record_id;\n  IF NEW.change_type = 'pending' THEN\n    INSERT INTO media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, attempt_count, available_at)\n      VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.delivery_attempt_count, COALESCE(NEW.next_attempt_at, clock_timestamp()))\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET generation = EXCLUDED.generation,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at, failed_change_id = NULL\n    WHERE media_delivery_registry_projection_work_items.generation <> EXCLUDED.generation\n      OR media_delivery_registry_projection_work_items.lease_token IS NULL;\n  ELSIF NEW.change_type = 'failed' THEN\n    INSERT INTO media_delivery_registry_projection_work_items\n      (media_delivery_registry_record_id, generation, failed_change_id, attempt_count, available_at)\n    VALUES (NEW.media_delivery_registry_record_id, NEW.generation, NEW.id,\n      NEW.delivery_attempt_count, clock_timestamp())\n    ON CONFLICT (media_delivery_registry_record_id) DO UPDATE SET\n      generation = EXCLUDED.generation, failed_change_id = EXCLUDED.failed_change_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,\n      attempt_count = EXCLUDED.attempt_count, available_at = EXCLUDED.available_at;\n  ELSIF NEW.change_type = 'claimed' THEN\n    UPDATE media_delivery_registry_projection_work_items SET failed_change_id = NULL\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id\n        AND generation = NEW.generation AND failed_change_id IS NOT NULL;\n  ELSIF NEW.change_type = 'completed' THEN\n    DELETE FROM media_delivery_registry_projection_work_items\n      WHERE media_delivery_registry_record_id = NEW.media_delivery_registry_record_id AND generation = NEW.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_moderation_transparency_agent_delete_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_moderation_transparency_agent_delete_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      moderation_transparency_community_id AS community_id,\n      'automated_moderation'::text AS metric,\n      moderation_transparency_category AS category, count(*)::integer AS count\n    FROM deleted_agent_moderations\n    WHERE moderation_transparency_category IS NOT NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, -cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
@@ -1470,7 +1470,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasure()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column text;\n  old_actor jsonb;\n  new_actor jsonb;\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (to_jsonb(OLD) - TG_ARGV) IS DISTINCT FROM (to_jsonb(NEW) - TG_ARGV) THEN\n    RAISE EXCEPTION 'copyright legal records are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  FOREACH actor_column IN ARRAY TG_ARGV LOOP\n    old_actor := to_jsonb(OLD) -> actor_column;\n    new_actor := to_jsonb(NEW) -> actor_column;\n    IF old_actor IS DISTINCT FROM new_actor\n      AND (old_actor = 'null'::jsonb OR new_actor <> 'null'::jsonb) THEN\n      RAISE EXCEPTION 'copyright legal record actors may only be erased' USING ERRCODE = 'check_violation';\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_lifecycle_event_source_notice()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_delivery_key IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.delivery_key = NEW.media_delivery_registry_record_delivery_key\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1620,7 +1620,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n"
     },
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
@@ -1641,7 +1641,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_media_delivery_change_authority()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE delivery_key = NEW.delivery_key FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_media_delivery_registry_generation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_registry_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT'\n    OR NEW.desired_state IS DISTINCT FROM OLD.desired_state\n    OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    NEW.generation := nextval('media_delivery_registry_generation_sequence');\n  ELSE\n    NEW.generation := OLD.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1653,7 +1653,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_moderation_report_transparency_scope()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    IF NEW.community_id IS NOT NULL THEN\n      NEW.moderation_transparency_community_id := NEW.community_id;\n    ELSIF NEW.post_id IS NOT NULL THEN\n      SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_update_notification_publication_target()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -6530,6 +6530,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_api_keys__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__updated_at_id_active ON public.api_keys USING btree (updated_at, ((id)::text)) INCLUDE (key_hash) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_api_keys__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -7832,6 +7864,38 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash ON public.bedrock_nova_multimodal_v1_embeddings USING btree (updated_at, encode(content_sha256, 'hex'::text))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "encode(content_sha256, 'hex'::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -8051,6 +8115,47 @@
               "column": "domain",
               "descending": false,
               "expression": "domain",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_blocklisted_domains__updated_at_domain_source_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_blocklisted_domains__updated_at_domain_source_id ON public.blocklisted_domains USING btree (updated_at, domain, ((source_id)::text))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "domain",
+              "descending": false,
+              "expression": "domain",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(source_id::text)",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
@@ -14687,6 +14792,38 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_communities__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -33522,7 +33659,7 @@
           "validated": true
         },
         "copyright_lifecycle_event_source_shape": {
-          "definition": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_delivery_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_delivery_key IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
+          "definition": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_id, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
           "validated": true
         },
         "copyright_notice_lifecycle_changes_check": {
@@ -33751,9 +33888,9 @@
           "nullable": true,
           "ordinalPosition": 20
         },
-        "media_delivery_registry_record_delivery_key": {
+        "media_delivery_registry_record_id": {
           "comment": "Media delivery registry record replayed by this event.",
-          "dataType": "text",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -33837,10 +33974,10 @@
           "validated": true
         },
         "copyright_lifecycle_event_media_registry_fk": {
-          "columns": ["media_delivery_registry_record_delivery_key"],
+          "columns": ["media_delivery_registry_record_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         },
@@ -34262,21 +34399,21 @@
         "idx_copyright_notice_lifecycle_changes__media_registry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_record_delivery_key) WHERE (media_delivery_registry_record_delivery_key IS NOT NULL)",
+          "definition": "CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON public.copyright_notice_lifecycle_changes USING btree (media_delivery_registry_record_id) WHERE (media_delivery_registry_record_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "media_delivery_registry_record_delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "media_delivery_registry_record_delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": "(media_delivery_registry_record_delivery_key IS NOT NULL)",
+          "predicate": "(media_delivery_registry_record_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -48211,7 +48348,7 @@
         "idx_images__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -48224,12 +48361,12 @@
               "orderingSupported": true
             },
             {
-              "collation": null,
-              "column": "id",
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
@@ -49641,14 +49778,18 @@
     "mcp_call_audit_events": {
       "checkConstraints": {
         "mcp_call_audit_events_check": {
-          "definition": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
+          "definition": "CHECK (((tool_option IS NULL) OR (tool_name IS NOT NULL)))",
           "validated": true
         },
         "mcp_call_audit_events_check1": {
-          "definition": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+          "definition": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
           "validated": true
         },
         "mcp_call_audit_events_check2": {
+          "definition": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+          "validated": true
+        },
+        "mcp_call_audit_events_check3": {
           "definition": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
           "validated": true
         },
@@ -49670,6 +49811,10 @@
         },
         "mcp_call_audit_events_tool_name_check": {
           "definition": "CHECK ((tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'::text))",
+          "validated": true
+        },
+        "mcp_call_audit_events_tool_option_check": {
+          "definition": "CHECK ((tool_option ~ '^[A-Za-z0-9_.-]{1,64}$'::text))",
           "validated": true
         }
       },
@@ -49702,7 +49847,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "correlation_id": {
           "comment": "Server-minted id shared by every row written for one HTTP request; returned to the caller in the X-Correlation-Id response header.",
@@ -49752,7 +49897,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "outcome": {
           "comment": "Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.",
@@ -49762,7 +49907,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "resource": {
           "comment": "Protected resource URL of the MCP surface that received the call.",
@@ -49793,6 +49938,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 9
+        },
+        "tool_option": {
+          "comment": "Declared literal option of a registered merged tool, or NULL for flat tools and unknown selectors; arbitrary caller text is never stored.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
         }
       },
       "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Only validated copyright decision rationales are encrypted; arbitrary arguments, results, tokens, keys, and headers are never stored.",
@@ -50073,16 +50228,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "delivery_key": {
-          "comment": "Concrete exact edge-delivery authority whose transition this records.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
         "desired_state": {
           "comment": "Exact edge state selected by this authority generation, retained after later changes and republishing.",
           "dataType": "media_delivery_desired_states",
@@ -50133,6 +50278,16 @@
           "nullable": true,
           "ordinalPosition": 10
         },
+        "media_delivery_registry_record_id": {
+          "comment": "Retained delivery authority whose transition this records.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
         "next_attempt_at": {
           "comment": "Earliest retry time for this pending transition.",
           "dataType": "timestamp with time zone",
@@ -50156,20 +50311,20 @@
       },
       "comment": "Append-only edge delivery transitions. Current workflow state is the latest transition in the current authority generation.",
       "foreignKeys": {
+        "media_delivery_registry_chang_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_delivery_registry_records",
+          "validated": true
+        },
         "media_delivery_registry_changes_changed_by_id_fkey": {
           "columns": ["changed_by_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "retained_user_identities",
-          "validated": true
-        },
-        "media_delivery_registry_changes_delivery_key_fkey": {
-          "columns": ["delivery_key"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["delivery_key"],
-          "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
       },
@@ -50200,16 +50355,16 @@
         "idx_media_delivery_registry_changes__latest": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (delivery_key, id DESC)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_changes__latest ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id DESC)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -50251,6 +50406,79 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "uq_media_registry_changes__record_generation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_generation_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, generation, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_media_registry_changes__record_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_media_registry_changes__record_id ON public.media_delivery_registry_changes USING btree (media_delivery_registry_record_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -50272,7 +50500,14 @@
           "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_media_registry_changes__record_generation_id": {
+          "columns": ["media_delivery_registry_record_id", "generation", "id"]
+        },
+        "uq_media_registry_changes__record_id": {
+          "columns": ["media_delivery_registry_record_id", "id"]
+        }
+      }
     },
     "media_delivery_registry_projection_work_items": {
       "checkConstraints": {
@@ -50281,6 +50516,10 @@
           "validated": true
         },
         "media_delivery_registry_projection_work_items_check": {
+          "definition": "CHECK (((failed_change_id IS NULL) OR (lease_token IS NULL)))",
+          "validated": true
+        },
+        "media_delivery_registry_projection_work_items_check1": {
           "definition": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at > leased_at))))",
           "validated": true
         },
@@ -50298,7 +50537,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "available_at": {
           "comment": "Earliest time an idle projection can be claimed.",
@@ -50308,17 +50547,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
-        "delivery_key": {
-          "comment": "Exact delivery authority being projected.",
-          "dataType": "text",
+        "failed_change_id": {
+          "comment": "Exact authoritative failed transition requiring operator replay; null for active projection work.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
+          "nullable": true,
+          "ordinalPosition": 3
         },
         "generation": {
           "comment": "Current nontransactional edge authority generation.",
@@ -50338,7 +50577,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "lease_token": {
           "comment": "Opaque worker ownership token, never an entity reference.",
@@ -50348,7 +50587,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "leased_at": {
           "comment": "Database time the current lease began.",
@@ -50358,16 +50597,34 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
+        },
+        "media_delivery_registry_record_id": {
+          "comment": "Retained delivery authority being projected.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
         }
       },
-      "comment": "Current edge projection ownership; deleted on terminal publication while immutable transitions survive.",
+      "comment": "Derived current-generation projection ownership and failed replay membership; immutable transitions remain authoritative.",
       "foreignKeys": {
-        "media_delivery_registry_projection_work_items_delivery_key_fkey": {
-          "columns": ["delivery_key"],
+        "fk_media_projection_failed_change": {
+          "columns": ["media_delivery_registry_record_id", "generation", "failed_change_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["media_delivery_registry_record_id", "generation", "id"],
+          "referencedTable": "media_delivery_registry_changes",
+          "validated": true
+        },
+        "media_delivery_registry_proje_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
@@ -50376,7 +50633,7 @@
         "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, delivery_key) WHERE (lease_token IS NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE ((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -50389,17 +50646,17 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": "(lease_token IS NULL)",
+          "predicate": "((lease_token IS NULL) AND (failed_change_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -50408,7 +50665,7 @@
         "idx_media_delivery_registry_projection_work_items__expired": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, delivery_key) WHERE (lease_token IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE ((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -50421,17 +50678,58 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
-          "predicate": "(lease_token IS NOT NULL)",
+          "predicate": "((lease_token IS NOT NULL) AND (failed_change_id IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_projection_work_items__failed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_projection_work_items__failed ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id, generation, failed_change_id) WHERE (failed_change_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
+              "descending": false,
+              "expression": "media_delivery_registry_record_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "failed_change_id",
+              "descending": false,
+              "expression": "failed_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(failed_change_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -50440,16 +50738,16 @@
         "media_delivery_registry_projection_work_items_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_projection_work_items_pkey ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -50463,7 +50761,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"]
+        "columns": ["media_delivery_registry_record_id"]
       },
       "relationKind": "table",
       "triggers": {},
@@ -50471,16 +50769,8 @@
     },
     "media_delivery_registry_records": {
       "checkConstraints": {
-        "media_delivery_registry_records_delivery_key_check": {
-          "definition": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
-          "validated": true
-        },
         "media_delivery_registry_records_desired_state_check": {
           "definition": "CHECK ((desired_state = ANY (ARRAY['allow'::media_delivery_desired_states, 'withheld'::media_delivery_desired_states])))",
-          "validated": true
-        },
-        "media_delivery_registry_records_exact_key": {
-          "definition": "CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))",
           "validated": true
         },
         "media_delivery_registry_records_generation_check": {
@@ -50496,22 +50786,12 @@
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7
-        },
-        "delivery_key": {
-          "comment": "Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.",
-          "dataType": "text",
           "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
+          "nullable": true,
+          "ordinalPosition": 8
         },
         "desired_state": {
           "comment": "Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.",
@@ -50533,6 +50813,16 @@
           "nullable": false,
           "ordinalPosition": 6
         },
+        "id": {
+          "comment": "Stable retained delivery authority identity for an exact placement revision and image binding.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
         "image_id": {
           "comment": "Immutable image bound to the exact public-use placement.",
           "dataType": "uuid",
@@ -50542,6 +50832,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "latest_change_id": {
+          "comment": "Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
         },
         "placement_id": {
           "comment": "Typed placement authority; never inferred from image existence.",
@@ -50571,7 +50871,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         }
       },
       "comment": "Durable exact image-placement delivery outbox; image and placement parents are retained.",
@@ -50582,6 +50882,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["placement_id", "image_id"],
           "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
+        "fk_media_registry_records__latest_change": {
+          "columns": ["id", "latest_change_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["media_delivery_registry_record_id", "id"],
+          "referencedTable": "media_delivery_registry_changes",
           "validated": true
         },
         "media_delivery_registry_records_placement_id_fkey": {
@@ -50617,10 +50925,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_media_delivery_registry_records__placement": {
+        "media_delivery_registry_recor_placement_id_placement_revisi_key": {
           "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id)",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_recor_placement_id_placement_revisi_key ON public.media_delivery_registry_records USING btree (placement_id, placement_revision, image_id)",
           "immediate": true,
           "keys": [
             {
@@ -50631,28 +50939,46 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "placement_revision",
+              "descending": false,
+              "expression": "placement_revision",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
             }
           ],
           "live": true,
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": false,
+          "unique": true,
           "valid": true
         },
         "media_delivery_registry_records_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -50666,7 +50992,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"]
+        "columns": ["id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -50680,7 +51006,11 @@
           "definition": "CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "media_delivery_registry_recor_placement_id_placement_revisi_key": {
+          "columns": ["placement_id", "placement_revision", "image_id"]
+        }
+      }
     },
     "media_delivery_repair_markers": {
       "checkConstraints": {},
@@ -50695,16 +51025,6 @@
           "nullable": false,
           "ordinalPosition": 3
         },
-        "delivery_key": {
-          "comment": "Exact immutable delivery URL identity; coalesces outstanding repair work.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
         "marker_token": {
           "comment": "Monotonic wakeup identity allocated on coalescing; acknowledgement deletes only its observed token.",
           "dataType": "bigint",
@@ -50714,6 +51034,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
+        },
+        "media_delivery_registry_record_id": {
+          "comment": "Retained delivery authority identity; coalesces outstanding repair work.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
         },
         "updated_at": {
           "comment": null,
@@ -50728,11 +51058,11 @@
       },
       "comment": "Committed registry-backed wakeup for pre-commit edge denial recovery; drained by the existing media delivery reconciler.",
       "foreignKeys": {
-        "media_delivery_repair_markers_delivery_key_fkey": {
-          "columns": ["delivery_key"],
+        "media_delivery_repair_markers_media_delivery_registry_reco_fkey": {
+          "columns": ["media_delivery_registry_record_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["delivery_key"],
+          "referencedColumns": ["id"],
           "referencedTable": "media_delivery_registry_records",
           "validated": true
         }
@@ -50741,7 +51071,7 @@
         "idx_media_delivery_repair_markers__oldest": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, delivery_key)",
+          "definition": "CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, media_delivery_registry_record_id)",
           "immediate": true,
           "keys": [
             {
@@ -50754,12 +51084,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -50773,16 +51103,16 @@
         "media_delivery_repair_markers_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (delivery_key)",
+          "definition": "CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (media_delivery_registry_record_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "delivery_key",
+              "collation": null,
+              "column": "media_delivery_registry_record_id",
               "descending": false,
-              "expression": "delivery_key",
+              "expression": "media_delivery_registry_record_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -50796,7 +51126,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["delivery_key"]
+        "columns": ["media_delivery_registry_record_id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -65359,6 +65689,16 @@
           "nullable": false,
           "ordinalPosition": 11
         },
+        "community_id": {
+          "comment": "Community that owns this report. NULL when the report is not community-scoped. Deleting the community clears this reference and leaves the transparency snapshot intact.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -65397,7 +65737,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "escalated_by_id": {
           "comment": "The moderator who escalated this report.",
@@ -65407,7 +65747,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "hostname_id": {
           "comment": "Reported URL hostname; set when entity is url_hostname.",
@@ -65430,14 +65770,14 @@
           "ordinalPosition": 1
         },
         "moderation_transparency_community_id": {
-          "comment": "Immutable community scope stamped from the reported post for global-transparency exclusion.",
+          "comment": "Immutable community scope stamped for global-transparency exclusion. Not a foreign key, so the snapshot survives community deletion.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "note": {
           "comment": "Optional free-text note from the reporter.",
@@ -65447,7 +65787,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "original_reason": {
           "comment": "Immutable reporter-selected reason when this report row was created.",
@@ -65507,7 +65847,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "resolved_by_id": {
           "comment": "Moderator who resolved the report.",
@@ -65517,7 +65857,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "reviewed_at": {
           "comment": "Timestamp when a moderator reviewed the report.",
@@ -65548,6 +65888,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "moderation_cases",
+          "validated": true
+        },
+        "moderation_reports_community_id_fkey": {
+          "columns": ["community_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
           "validated": true
         },
         "moderation_reports_created_via_oauth_client_id_fkey": {
@@ -65616,6 +65964,47 @@
         }
       },
       "indexes": {
+        "idx_moderation_reports__active_community_user_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_community_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id, community_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reporter_user_id",
+              "descending": false,
+              "expression": "reporter_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_moderation_reports__active_hostname_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -65715,7 +66104,7 @@
         "idx_moderation_reports__active_user_unique": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_moderation_reports__active_user_unique ON public.moderation_reports USING btree (reporter_user_id, reported_user_id) WHERE ((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NULL) AND (moderation_transparency_community_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -65738,7 +66127,7 @@
             }
           ],
           "live": true,
-          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL))",
+          "predicate": "((reviewed_at IS NULL) AND (reported_user_id IS NOT NULL) AND (community_id IS NULL) AND (moderation_transparency_community_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -65762,6 +66151,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_reports__community_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__community_id ON public.moderation_reports USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(community_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -82293,6 +82705,47 @@
               "expression": "post_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "slug",
+              "descending": false,
+              "expression": "slug",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_slugs__updated_at_post_id_slug": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_slugs__updated_at_post_id_slug ON public.post_slugs USING btree (updated_at, ((post_id)::text), slug)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(post_id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             },
             {
@@ -114104,6 +114557,29 @@
           "unique": true,
           "valid": true
         },
+        "idx_rss_feed_item_categories__rss_feed_item_id__mapped": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_categories__rss_feed_item_id__mapped ON public.rss_feed_item_categories USING btree (rss_feed_item_id) INCLUDE (topic_alias_id, category_text) WHERE (topic_alias_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(topic_alias_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_item_categories__topic_alias_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -116511,6 +116987,38 @@
           ],
           "live": true,
           "predicate": "((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__updated_at_id_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__updated_at_id_active ON ONLY public.rss_feed_items USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -120681,6 +121189,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_topic_aliases__updated_at_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_aliases__updated_at_id ON public.topic_aliases USING btree (updated_at, ((id)::text))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_aliases__updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -123803,7 +124343,7 @@
         "idx_topics__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
+          "definition": "CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -123816,12 +124356,12 @@
               "orderingSupported": true
             },
             {
-              "collation": null,
-              "column": "id",
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
@@ -124225,7 +124765,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 11
         },
         "attempt_threshold_hours": {
@@ -124246,7 +124786,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
+        },
+        "crawl_swept_at": {
+          "comment": "Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12
         },
         "created_at": {
           "comment": null,
@@ -124256,7 +124806,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "created_by_id": {
           "comment": null,
@@ -124266,7 +124816,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -124276,7 +124826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "hostname": {
           "comment": "Lowercase, unique hostname (e.g. example.com).",
@@ -124299,23 +124849,23 @@
           "ordinalPosition": 1
         },
         "is_blocked": {
-          "comment": "Whether this hostname is blocked from being used on the site (e.g. spam). Trigger-maintained from url_hostname_blocks — do not write directly in app code.",
+          "comment": "NOT NULL, default FALSE. TRUE blocks this hostname from being used on the site (e.g. spam); FALSE permits it. Trigger-maintained from url_hostname_blocks — do not write directly in app code.",
           "dataType": "boolean",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 3
         },
         "is_crawlable": {
-          "comment": "Whether pages on this hostname can be crawled.",
+          "comment": "NOT NULL, default TRUE. TRUE permits crawling pages on this hostname; FALSE disables crawling.",
           "dataType": "boolean",
-          "defaultExpression": null,
+          "defaultExpression": "true",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 4
         },
         "is_emailable": {
@@ -124336,7 +124886,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
@@ -124356,7 +124906,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "should_follow_link_rel": {
           "comment": "If TRUE, links to this hostname use rel=follow. Only for trusted sites.",
@@ -124386,7 +124936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -124396,7 +124946,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -124416,7 +124966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "votes_count_down": {
           "comment": null,
@@ -124426,7 +124976,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "votes_count_none": {
           "comment": null,
@@ -124436,7 +124986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "votes_count_up": {
           "comment": null,
@@ -124446,7 +124996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "votes_score_down": {
           "comment": null,
@@ -124456,7 +125006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "votes_score_net": {
           "comment": null,
@@ -124466,7 +125016,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_score_none": {
           "comment": null,
@@ -124476,7 +125026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "votes_score_sort": {
           "comment": null,
@@ -124486,7 +125036,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_score_up": {
           "comment": null,
@@ -124496,7 +125046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -124506,7 +125056,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -124516,7 +125066,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -124526,7 +125076,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -124536,7 +125086,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -124546,7 +125096,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -124572,7 +125122,7 @@
         "idx_url_hostnames__blocked": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__blocked ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE (is_blocked = true)",
+          "definition": "CREATE INDEX idx_url_hostnames__blocked ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE is_blocked",
           "immediate": true,
           "keys": [
             {
@@ -124586,7 +125136,48 @@
             }
           ],
           "live": true,
-          "predicate": "(is_blocked = true)",
+          "predicate": "is_blocked",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__crawl_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__crawl_due ON public.url_hostnames USING btree (age_threshold_days, crawl_swept_at NULLS FIRST, id) INCLUDE (hostname) WHERE (is_crawlable AND (NOT is_blocked))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "age_threshold_days",
+              "descending": false,
+              "expression": "age_threshold_days",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "crawl_swept_at",
+              "descending": false,
+              "expression": "crawl_swept_at",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(is_crawlable AND (NOT is_blocked))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -124661,6 +125252,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__not_crawlable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__not_crawlable ON public.url_hostnames USING btree (hostname) INCLUDE (is_blocked) WHERE (NOT is_crawlable)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "hostname",
+              "descending": false,
+              "expression": "hostname",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(NOT is_crawlable)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__reversed_hostname__text_pattern_ops": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -124710,7 +125324,7 @@
         "idx_url_hostnames__top_sort": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((is_blocked IS NOT TRUE) AND (votes_count_up > 0))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))",
           "immediate": true,
           "keys": [
             {
@@ -124733,7 +125347,7 @@
             }
           ],
           "live": true,
-          "predicate": "((is_blocked IS NOT TRUE) AND (votes_count_up > 0))",
+          "predicate": "((NOT is_blocked) AND (votes_count_up > 0))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -124742,7 +125356,7 @@
         "idx_url_hostnames__top_sort_by_topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((is_blocked IS NOT TRUE) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
+          "definition": "CREATE INDEX idx_url_hostnames__top_sort_by_topic ON public.url_hostnames USING btree (topic_id, votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -124774,7 +125388,7 @@
             }
           ],
           "live": true,
-          "predicate": "((is_blocked IS NOT TRUE) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
+          "predicate": "((NOT is_blocked) AND (votes_count_up > 0) AND (topic_id IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -124798,6 +125412,70 @@
           ],
           "live": true,
           "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__updated_at_id_blocked": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__updated_at_id_blocked ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE is_blocked",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "is_blocked",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostnames__updated_at_id_not_crawlable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__updated_at_id_not_crawlable ON public.url_hostnames USING btree (updated_at, ((id)::text)) WHERE ((NOT is_crawlable) AND (NOT is_blocked))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
+              "descending": false,
+              "expression": "(id::text)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((NOT is_crawlable) AND (NOT is_blocked))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -125167,7 +125845,7 @@
         "idx_urls__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, id)",
+          "definition": "CREATE INDEX idx_urls__updated_at_id_active ON public.urls USING btree (updated_at, ((id)::text))",
           "immediate": true,
           "keys": [
             {
@@ -125180,12 +125858,12 @@
               "orderingSupported": true
             },
             {
-              "collation": null,
-              "column": "id",
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
@@ -136216,7 +136894,7 @@
         "idx_users__updated_at_id_active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, id) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -136229,12 +136907,12 @@
               "orderingSupported": true
             },
             {
-              "collation": null,
-              "column": "id",
+              "collation": "pg_catalog.\"default\"",
+              "column": null,
               "descending": false,
-              "expression": "id",
+              "expression": "(id::text)",
               "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
+              "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
             }
           ],
@@ -140124,12 +140802,12 @@
   "views": {
     "mv_rss_feed_crawl_tiers": {
       "comment": "Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.",
-      "definition": " WITH canonical_follows AS (\n         SELECT COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,\n            f.subject_id AS user_id\n           FROM relation__user__follow__rss_feed f\n             JOIN rss_feeds rf ON rf.id = f.object_id\n          WHERE f.deleted_at IS NULL\n          GROUP BY (COALESCE(rf.canonical_rss_feed_id, rf.id)), f.subject_id\n        ), active_paid_memberships AS (\n         SELECT view_current_paid_memberships.user_id,\n            view_current_paid_memberships.plan\n           FROM view_current_paid_memberships\n        ), follow_counts AS (\n         SELECT cf.rss_feed_id,\n            sum(\n                CASE apm.plan\n                    WHEN 'plus'::membership_plan_slugs THEN 2\n                    WHEN 'pro'::membership_plan_slugs THEN 3\n                    ELSE 1\n                END)::integer AS weighted_follower_count\n           FROM canonical_follows cf\n             LEFT JOIN active_paid_memberships apm ON apm.user_id = cf.user_id\n          GROUP BY cf.rss_feed_id\n        ), scored AS (\n         SELECT rf.id AS rss_feed_id,\n            ln(1::double precision + COALESCE(fc.weighted_follower_count, 0)::double precision) + COALESCE(t.votes_score_net, 0::double precision) AS crawl_score\n           FROM rss_feeds rf\n             JOIN topics t ON t.id = rf.topic_id\n             LEFT JOIN follow_counts fc ON fc.rss_feed_id = rf.id\n          WHERE rf.deleted_at IS NULL AND rf.is_enabled = true\n        ), ranked AS (\n         SELECT scored.rss_feed_id,\n            scored.crawl_score,\n            cume_dist() OVER (ORDER BY scored.crawl_score DESC) AS pct_rank\n           FROM scored\n        )\n SELECT rss_feed_id,\n    crawl_score,\n        CASE\n            WHEN pct_rank <= 0.001::double precision THEN 1\n            WHEN pct_rank <= 0.01::double precision THEN 2\n            WHEN pct_rank <= 0.05::double precision THEN 3\n            WHEN pct_rank <= 0.20::double precision THEN 4\n            ELSE 5\n        END::smallint AS crawl_tier\n   FROM ranked;",
+      "definition": " WITH feed_inputs AS MATERIALIZED (\n         SELECT rss_feeds.id,\n            rss_feeds.canonical_rss_feed_id,\n            rss_feeds.topic_id,\n            rss_feeds.deleted_at,\n            rss_feeds.is_enabled\n           FROM rss_feeds\n        ), canonical_follows AS (\n         SELECT COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,\n            f.subject_id AS user_id\n           FROM relation__user__follow__rss_feed f\n             JOIN feed_inputs rf ON rf.id = f.object_id\n          WHERE f.deleted_at IS NULL\n          GROUP BY (COALESCE(rf.canonical_rss_feed_id, rf.id)), f.subject_id\n        ), active_paid_memberships AS (\n         SELECT view_current_paid_memberships.user_id,\n            view_current_paid_memberships.plan\n           FROM view_current_paid_memberships\n        ), follow_counts AS (\n         SELECT cf.rss_feed_id,\n            sum(\n                CASE apm.plan\n                    WHEN 'plus'::membership_plan_slugs THEN 2\n                    WHEN 'pro'::membership_plan_slugs THEN 3\n                    ELSE 1\n                END)::integer AS weighted_follower_count\n           FROM canonical_follows cf\n             LEFT JOIN active_paid_memberships apm ON apm.user_id = cf.user_id\n          GROUP BY cf.rss_feed_id\n        ), scored AS (\n         SELECT rf.id AS rss_feed_id,\n            ln(1::double precision + COALESCE(fc.weighted_follower_count, 0)::double precision) + COALESCE(t.votes_score_net, 0::double precision) AS crawl_score\n           FROM feed_inputs rf\n             JOIN topics t ON t.id = rf.topic_id\n             LEFT JOIN follow_counts fc ON fc.rss_feed_id = rf.id\n          WHERE rf.deleted_at IS NULL AND rf.is_enabled = true\n        ), ranked AS (\n         SELECT scored.rss_feed_id,\n            scored.crawl_score,\n            cume_dist() OVER (ORDER BY scored.crawl_score DESC) AS pct_rank\n           FROM scored\n        )\n SELECT rss_feed_id,\n    crawl_score,\n        CASE\n            WHEN pct_rank <= 0.001::double precision THEN 1\n            WHEN pct_rank <= 0.01::double precision THEN 2\n            WHEN pct_rank <= 0.05::double precision THEN 3\n            WHEN pct_rank <= 0.20::double precision THEN 4\n            ELSE 5\n        END::smallint AS crawl_tier\n   FROM ranked;",
       "materialized": true
     },
     "mv_top_hashtags": {
       "comment": "Rolling 30-day top-hashtag recommendations from public posts and discoverable RSS items. Refreshes are debounce-enqueued from content, moderation, and topic lifecycle events and hourly as a safety net.",
-      "definition": " WITH eligible_post_hashtags AS (\n         SELECT source.topic_alias_id,\n            source.authored_token,\n            source.post_id AS content_id,\n            'post'::text AS content_kind,\n            p.created_at AS content_published_at,\n            'user:'::text || source.contributor_user_id::text AS contributor_user_id\n           FROM post_topic_alias_sources source\n             JOIN posts p ON p.id = source.post_id\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id\n             JOIN relation__post__category__topic_alias relation ON relation.subject_id = source.post_id AND relation.object_id = source.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision\n          WHERE p.post_type <> 'topic_recommendation'::post_types AND (EXISTS ( SELECT 1\n                   FROM users contributor\n                  WHERE contributor.id = source.contributor_user_id AND contributor.platform_account_kind IS NULL AND contributor.deleted_at IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM users post_creator\n                  WHERE post_creator.id = p.created_by_id AND post_creator.platform_account_kind IS NULL)) AND NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions suspension\n                  WHERE suspension.user_id = source.contributor_user_id AND suspension.lifted_at IS NULL)) AND p.id >= uuidv7('-30 days'::interval)\n        ), eligible_rss_hashtags AS (\n         SELECT category.topic_alias_id,\n            category.category_text AS authored_token,\n            category.rss_feed_item_id AS content_id,\n            'rss_feed_item'::text AS content_kind,\n            item.published_at AS content_published_at,\n            'rss:'::text || identity.url_hostname_id::text AS contributor_user_id\n           FROM rss_feed_item_categories category\n             JOIN rss_feed_items item ON item.id = category.rss_feed_item_id\n             JOIN rss_feed_item_guids identity ON identity.id = item.id\n          WHERE category.topic_alias_id IS NOT NULL AND item.deleted_at IS NULL AND item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval) AND (EXISTS ( SELECT 1\n                   FROM rss_feed_item_sources source\n                     JOIN rss_feeds feed ON feed.id = source.rss_feed_id\n                     JOIN topics feed_topic ON feed_topic.id = feed.topic_id\n                  WHERE source.rss_feed_item_id = item.id AND feed.deleted_at IS NULL AND feed.is_enabled = true AND feed.is_discoverable = true AND feed_topic.deleted_at IS NULL AND feed_topic.merged_into_topic_id IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM relation__rss_feed_item__category__topic_alias relation\n                  WHERE relation.subject_id = item.id AND relation.object_id = category.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision))\n        ), occurrences AS (\n         SELECT eligible_post_hashtags.topic_alias_id,\n            eligible_post_hashtags.authored_token,\n            eligible_post_hashtags.content_id,\n            eligible_post_hashtags.content_kind,\n            eligible_post_hashtags.content_published_at,\n            eligible_post_hashtags.contributor_user_id\n           FROM eligible_post_hashtags\n        UNION ALL\n         SELECT eligible_rss_hashtags.topic_alias_id,\n            eligible_rss_hashtags.authored_token,\n            eligible_rss_hashtags.content_id,\n            eligible_rss_hashtags.content_kind,\n            eligible_rss_hashtags.content_published_at,\n            eligible_rss_hashtags.contributor_user_id\n           FROM eligible_rss_hashtags\n        ), casing_frequency AS (\n         SELECT occurrences.topic_alias_id,\n            occurrences.authored_token,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id, occurrences.authored_token\n        ), casing AS (\n         SELECT DISTINCT ON (casing_frequency.topic_alias_id) casing_frequency.topic_alias_id,\n            casing_frequency.authored_token AS display_hashtag\n           FROM casing_frequency\n          ORDER BY casing_frequency.topic_alias_id, casing_frequency.item_count DESC, casing_frequency.latest_content_at DESC, casing_frequency.latest_content_id DESC, casing_frequency.authored_token\n        ), aggregate AS (\n         SELECT occurrences.topic_alias_id,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id\n        )\n SELECT aggregate.topic_alias_id,\n    casing.display_hashtag,\n    aggregate.item_count,\n    aggregate.contributor_count,\n    aggregate.latest_content_at,\n    aggregate.latest_content_id\n   FROM aggregate\n     JOIN casing USING (topic_alias_id)\n  WHERE aggregate.contributor_count >= 3;",
+      "definition": " WITH eligible_post_hashtags AS (\n         SELECT source.topic_alias_id,\n            source.authored_token,\n            source.post_id AS content_id,\n            'post'::text AS content_kind,\n            p.created_at AS content_published_at,\n            'user:'::text || source.contributor_user_id::text AS contributor_user_id\n           FROM post_topic_alias_sources source\n             JOIN posts p ON p.id = source.post_id\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id\n             JOIN relation__post__category__topic_alias relation ON relation.subject_id = source.post_id AND relation.object_id = source.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision\n          WHERE p.post_type <> 'topic_recommendation'::post_types AND (EXISTS ( SELECT 1\n                   FROM users contributor\n                  WHERE contributor.id = source.contributor_user_id AND contributor.platform_account_kind IS NULL AND contributor.deleted_at IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM users post_creator\n                  WHERE post_creator.id = p.created_by_id AND post_creator.platform_account_kind IS NULL)) AND NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions suspension\n                  WHERE suspension.user_id = source.contributor_user_id AND suspension.lifted_at IS NULL)) AND p.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND source.post_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND relation.subject_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval)\n        ), eligible_rss_hashtags AS (\n         SELECT category.topic_alias_id,\n            category.category_text AS authored_token,\n            category.rss_feed_item_id AS content_id,\n            'rss_feed_item'::text AS content_kind,\n            item.published_at AS content_published_at,\n            'rss:'::text || identity.url_hostname_id::text AS contributor_user_id\n           FROM rss_feed_item_categories category\n             JOIN rss_feed_items item ON item.id = category.rss_feed_item_id\n             JOIN rss_feed_item_guids identity ON identity.id = item.id\n          WHERE category.topic_alias_id IS NOT NULL AND category.rss_feed_item_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND item.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND identity.id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND item.deleted_at IS NULL AND item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval) AND (EXISTS ( SELECT 1\n                   FROM rss_feed_item_sources source\n                     JOIN rss_feeds feed ON feed.id = source.rss_feed_id\n                     JOIN topics feed_topic ON feed_topic.id = feed.topic_id\n                  WHERE source.rss_feed_item_id = item.id AND source.rss_feed_item_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND feed.deleted_at IS NULL AND feed.is_enabled = true AND feed.is_discoverable = true AND feed_topic.deleted_at IS NULL AND feed_topic.merged_into_topic_id IS NULL)) AND (EXISTS ( SELECT 1\n                   FROM relation__rss_feed_item__category__topic_alias relation\n                  WHERE relation.subject_id = item.id AND relation.subject_id >= fn_min_uuidv7(CURRENT_TIMESTAMP - '30 days'::interval) AND relation.object_id = category.topic_alias_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision))\n        ), occurrences AS (\n         SELECT eligible_post_hashtags.topic_alias_id,\n            eligible_post_hashtags.authored_token,\n            eligible_post_hashtags.content_id,\n            eligible_post_hashtags.content_kind,\n            eligible_post_hashtags.content_published_at,\n            eligible_post_hashtags.contributor_user_id\n           FROM eligible_post_hashtags\n        UNION ALL\n         SELECT eligible_rss_hashtags.topic_alias_id,\n            eligible_rss_hashtags.authored_token,\n            eligible_rss_hashtags.content_id,\n            eligible_rss_hashtags.content_kind,\n            eligible_rss_hashtags.content_published_at,\n            eligible_rss_hashtags.contributor_user_id\n           FROM eligible_rss_hashtags\n        ), casing_frequency AS (\n         SELECT occurrences.topic_alias_id,\n            occurrences.authored_token,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id, occurrences.authored_token\n        ), casing AS (\n         SELECT DISTINCT ON (casing_frequency.topic_alias_id) casing_frequency.topic_alias_id,\n            casing_frequency.authored_token AS display_hashtag\n           FROM casing_frequency\n          ORDER BY casing_frequency.topic_alias_id, casing_frequency.item_count DESC, casing_frequency.latest_content_at DESC, casing_frequency.latest_content_id DESC, casing_frequency.authored_token\n        ), aggregate AS (\n         SELECT occurrences.topic_alias_id,\n            count(DISTINCT (occurrences.content_kind || ':'::text) || occurrences.content_id::text) AS item_count,\n            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id\n        )\n SELECT aggregate.topic_alias_id,\n    casing.display_hashtag,\n    aggregate.item_count,\n    aggregate.contributor_count,\n    aggregate.latest_content_at,\n    aggregate.latest_content_id\n   FROM aggregate\n     JOIN casing USING (topic_alias_id)\n  WHERE aggregate.contributor_count >= 3;",
       "materialized": true
     },
     "view_community_list_items": {
@@ -140149,12 +140827,12 @@
     },
     "view_embedded_topics": {
       "comment": "Compact topic references embedded in current entity responses.",
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    is_noindexed,\n    should_allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_topic_id AS rewards_program_id,\n    referral_program_topic_id AS referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE t2.id = topics.referral_program_topic_id AND t2.deleted_at IS NULL AND t2.merged_into_topic_id IS NULL\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    is_noindexed,\n    should_allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_topic_id AS rewards_program_id,\n    referral_program_topic_id AS referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE t2.id = topics.referral_program_topic_id AND t2.deleted_at IS NULL AND t2.merged_into_topic_id IS NULL\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE deleted_at IS NULL AND merged_into_topic_id IS NULL;",
       "materialized": false
     },
     "view_embedded_users": {
       "comment": "Compact public user references without private account fields.",
-      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN use_display_name_from = 'facebook'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', fa.facebook_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE fa.user_id = users.id)\n            WHEN use_display_name_from = 'apple'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', aa.apple_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE aa.user_id = users.id)\n            WHEN use_display_name_from = 'google'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', ga.google_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE ga.user_id = users.id)\n            WHEN use_display_name_from = 'x'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', xa.x_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE xa.user_id = users.id)\n            WHEN use_display_name_from = 'linkedin'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', la.linkedin_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE la.user_id = users.id)\n            WHEN use_display_name_from = 'microsoft'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', ma.microsoft_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE ma.user_id = users.id)\n            WHEN use_display_name_from = 'github'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', gha.github_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE gha.user_id = users.id)\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    ARRAY[]::text[] AS roles,\n        CASE\n            WHEN platform_account_kind = 'system'::platform_account_kinds THEN\n            CASE\n                WHEN (EXISTS ( SELECT 1\n                   FROM agents\n                  WHERE agents.system_user_id = users.id AND agents.deleted_at IS NULL)) THEN 'ai_agent'::text\n                ELSE 'system'::text\n            END\n            WHEN platform_account_kind = 'official'::platform_account_kinds OR (EXISTS ( SELECT 1\n               FROM user_roles\n                 JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n              WHERE user_roles.user_id = users.id AND (user_role_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))) THEN 'official'::text\n            ELSE NULL::text\n        END AS account_type\n   FROM users\n  WHERE deleted_at IS NULL;",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN use_display_name_from = 'facebook'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', fa.facebook_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE fa.user_id = users.id)\n            WHEN use_display_name_from = 'apple'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', aa.apple_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE aa.user_id = users.id)\n            WHEN use_display_name_from = 'google'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', ga.google_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE ga.user_id = users.id)\n            WHEN use_display_name_from = 'x'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', xa.x_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE xa.user_id = users.id)\n            WHEN use_display_name_from = 'linkedin'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', la.linkedin_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE la.user_id = users.id)\n            WHEN use_display_name_from = 'microsoft'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', ma.microsoft_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE ma.user_id = users.id)\n            WHEN use_display_name_from = 'github'::user_display_name_sources THEN ( SELECT jsonb_build_object('name', gha.github_user_data ->> 'name'::text) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE gha.user_id = users.id)\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    ARRAY[]::text[] AS roles,\n        CASE\n            WHEN platform_account_kind = 'system'::platform_account_kinds THEN\n            CASE\n                WHEN (EXISTS ( SELECT 1\n                   FROM agents\n                  WHERE agents.system_user_id = users.id AND agents.deleted_at IS NULL)) THEN 'ai_agent'::text\n                ELSE 'system'::text\n            END\n            WHEN platform_account_kind = 'official'::platform_account_kinds OR (EXISTS ( SELECT 1\n               FROM user_roles\n                 JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n              WHERE user_roles.user_id = users.id AND (user_role_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))) THEN 'official'::text\n            ELSE NULL::text\n        END AS account_type\n   FROM users\n  WHERE deleted_at IS NULL;",
       "materialized": false
     },
     "view_entity_relation_votes": {
@@ -140164,7 +140842,7 @@
     },
     "view_media_delivery_registry_current_records": {
       "comment": "Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.",
-      "definition": " SELECT record.delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.delivery_key,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.delivery_key = record.delivery_key AND history.generation = record.generation\n          ORDER BY history.id DESC\n         LIMIT 1) change ON true;",
+      "definition": " SELECT record.id AS media_delivery_registry_record_id,\n    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,\n    record.placement_id,\n    record.placement_revision,\n    record.image_id,\n    change.desired_state,\n    record.generation,\n    record.created_at,\n    record.updated_at,\n    change.id AS latest_change_id,\n    change.change_type::text AS state,\n    change.delivery_attempt_count,\n    change.claimed_at,\n    change.projected_at,\n    change.invalidated_at,\n    change.completed_at,\n    change.failure_message,\n    change.next_attempt_at\n   FROM media_delivery_registry_records record\n     JOIN LATERAL ( SELECT history.id,\n            history.media_delivery_registry_record_id,\n            history.generation,\n            history.change_type,\n            history.desired_state,\n            history.changed_by_id,\n            history.delivery_attempt_count,\n            history.claimed_at,\n            history.projected_at,\n            history.invalidated_at,\n            history.completed_at,\n            history.failure_message,\n            history.next_attempt_at,\n            history.created_at\n           FROM media_delivery_registry_changes history\n          WHERE history.media_delivery_registry_record_id = record.id AND history.id = record.latest_change_id AND history.generation = record.generation\n         LIMIT 1) change ON true;",
       "materialized": false
     },
     "view_memberships": {
@@ -140184,12 +140862,17 @@
     },
     "view_posts": {
       "comment": "Current post response projection; callers enforce publication, deletion and audience access.",
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.updated_by_id) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE post_slugs.post_id = posts.id\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN posts.post_type = 'review'::post_types THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON prtr.topic_id = review_topics.id\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON t_cat.id = rel_cat.object_id AND t_cat.deleted_at IS NULL\n                      WHERE rel_cat.subject_id = prtr.topic_id AND rel_cat.deleted_at IS NULL AND rel_cat.votes_score_net > 0::double precision\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON true\n              WHERE prtr.post_id = posts.id), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM ( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE rel.subject_id = posts.id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON topics.id = top5.object_id), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM ( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE post_topic_alias_sources.post_id = posts.id\n                  ORDER BY post_topic_alias_sources.topic_alias_id, (\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END)) source\n             JOIN topic_aliases alias ON alias.id = source.topic_alias_id), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON topic.id = explicit.topic_id\n                  WHERE explicit.post_id = posts.id\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE source.post_id = posts.id AND source.source = 'explicit'::post_topic_alias_source_types) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM post_images\n             JOIN image_placements image_placement ON image_placement.post_id = post_images.post_id AND image_placement.image_id = post_images.image_id\n             JOIN media_placements placement ON placement.id = image_placement.placement_id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id)\n          WHERE post_images.post_id = posts.id), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN openai_moderation.disposition IS NULL THEN NULL::boolean\n            ELSE openai_moderation.disposition <> 'pass'::post_moderation_disposition_types\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN posts.post_type = 'topic_recommendation'::post_types THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE vuh.id = ptr.hostname_id\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id\n                      WHERE ptrh.post_id = ptr.post_id), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE urls.id = ptr.example_referral_url_id), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON urls.id = submitted.url_id\n                      WHERE submitted.post_id = ptr.post_id), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN ptr.reviewed_at IS NULL THEN 'pending'::text\n                        WHEN ptr.created_topic_id IS NOT NULL THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE t.id = ptr.created_topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE ptr.post_id = posts.id\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM posts\n     JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id\n          WHERE version.post_id = posts.id AND version.content_sha256 = posts.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'::text AND disposition.source = 'openai_omni'::post_moderation_sources\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON true\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE post_locks.post_id = posts.id AND post_locks.lifted_at IS NULL\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON true\n  WHERE posts.deleted_at IS NULL;",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = posts.updated_by_id) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE post_slugs.post_id = posts.id\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN posts.post_type = 'review'::post_types THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON prtr.topic_id = review_topics.id\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON t_cat.id = rel_cat.object_id AND t_cat.deleted_at IS NULL\n                      WHERE rel_cat.subject_id = prtr.topic_id AND rel_cat.deleted_at IS NULL AND rel_cat.votes_score_net > 0::double precision\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON true\n              WHERE prtr.post_id = posts.id), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM ( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE rel.subject_id = posts.id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON topics.id = top5.object_id), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM ( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE post_topic_alias_sources.post_id = posts.id\n                  ORDER BY post_topic_alias_sources.topic_alias_id, (\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END)) source\n             JOIN topic_aliases alias ON alias.id = source.topic_alias_id), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON topic.id = explicit.topic_id\n                  WHERE explicit.post_id = posts.id\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE source.post_id = posts.id AND source.source = 'explicit'::post_topic_alias_source_types) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE post_images_1.post_id = posts.id\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM selected_post_images post_images\n             JOIN image_placements image_placement ON image_placement.post_id = post_images.post_id AND image_placement.image_id = post_images.image_id\n             JOIN media_placements placement ON placement.id = image_placement.placement_id AND placement.retired_at IS NULL\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = post_images.image_id\n          WHERE post_images.post_id = posts.id), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN openai_moderation.disposition IS NULL THEN NULL::boolean\n            ELSE openai_moderation.disposition <> 'pass'::post_moderation_disposition_types\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN posts.post_type = 'topic_recommendation'::post_types THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE vuh.id = ptr.hostname_id\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id\n                      WHERE ptrh.post_id = ptr.post_id), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE urls.id = ptr.example_referral_url_id), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON urls.id = submitted.url_id\n                      WHERE submitted.post_id = ptr.post_id), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN ptr.reviewed_at IS NULL THEN 'pending'::text\n                        WHEN ptr.created_topic_id IS NOT NULL THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE t.id = ptr.created_topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE ptr.post_id = posts.id\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM posts\n     JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id\n          WHERE version.post_id = posts.id AND version.content_sha256 = posts.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'::text AND disposition.source = 'openai_omni'::post_moderation_sources\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON true\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE post_locks.post_id = posts.id AND post_locks.lifted_at IS NULL\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON true\n  WHERE posts.deleted_at IS NULL;",
       "materialized": false
     },
     "view_public_post_eligibility": {
       "comment": "Canonical anonymous discovery eligibility for authored posts. Keep equivalent to buildPublicPostEligibilityFilter; integration tests compare both owners.",
       "definition": " SELECT candidate_post.id AS post_id,\n    candidate_post.post_type\n   FROM posts candidate_post\n     JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)\n     LEFT JOIN user_suspensions root_suspension ON root_suspension.user_id = root_post.created_by_id AND root_suspension.lifted_at IS NULL\n     LEFT JOIN user_suspensions candidate_suspension ON candidate_suspension.user_id = candidate_post.created_by_id AND candidate_suspension.lifted_at IS NULL\n  WHERE candidate_post.deleted_at IS NULL AND candidate_post.approved_at IS NOT NULL AND candidate_post.archived_at IS NULL AND candidate_suspension.user_id IS NULL AND root_post.deleted_at IS NULL AND root_post.approved_at IS NOT NULL AND root_post.archived_at IS NULL AND root_post.privacy = 'public'::privacy_types AND root_post.broadcast = 'everyone'::broadcast_types AND (root_post.community_id IS NULL OR (EXISTS ( WITH publication AS MATERIALIZED (\n                 SELECT 1 AS \"?column?\"\n                   FROM communities publication_community\n                     JOIN community_post_reviews publication_review ON publication_review.community_id = publication_community.id AND publication_review.post_id = root_post.id AND publication_review.approved_at IS NOT NULL AND publication_review.rejected_at IS NULL AND publication_review.unpublished_at IS NULL\n                  WHERE publication_community.id = root_post.community_id AND publication_community.deleted_at IS NULL AND publication_community.archived_at IS NULL AND publication_community.visibility = 'public'::privacy_types\n                )\n         SELECT 1\n           FROM publication))) AND (root_post.post_type <> 'story'::post_types OR (EXISTS ( WITH story_publication AS MATERIALIZED (\n                 SELECT 1 AS \"?column?\"\n                   FROM story_posts post_story\n                     JOIN stories publication_story ON publication_story.id = post_story.story_id AND publication_story.deleted_at IS NULL\n                     JOIN rss_feed_items story_item ON story_item.story_id = publication_story.id AND story_item.deleted_at IS NULL\n                  WHERE post_story.post_id = root_post.id AND (EXISTS ( WITH source_publication AS MATERIALIZED (\n                                 SELECT 1 AS \"?column?\"\n                                   FROM rss_feed_item_sources story_source\n                                     JOIN rss_feeds story_feed ON story_feed.id = story_source.rss_feed_id\n                                  WHERE story_source.rss_feed_item_id = story_item.id AND story_feed.deleted_at IS NULL AND story_feed.is_enabled = true AND story_feed.is_discoverable = true\n                                )\n                         SELECT 1\n                           FROM source_publication))\n                )\n         SELECT 1\n           FROM story_publication))) AND root_suspension.user_id IS NULL;",
+      "materialized": false
+    },
+    "view_publicly_projected_image_placements": {
+      "comment": "Usable images with completed allowed delivery in the current registry generation; read by the exact placement, revision and image tuple.",
+      "definition": " SELECT registry.placement_id,\n    registry.placement_revision,\n    registry.image_id\n   FROM view_media_delivery_registry_current_records registry\n     JOIN images image ON image.id = registry.image_id\n  WHERE image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL AND image.quarantine_pending_at IS NULL AND image.is_flagged_by_openai_omni_moderation = false AND image.openai_omni_moderation_results IS NOT NULL AND image.openai_omni_moderation_created_at IS NOT NULL AND registry.desired_state = 'allow'::media_delivery_desired_states AND registry.state = 'completed'::text;",
       "materialized": false
     },
     "view_rss_feed_current_states": {
@@ -140214,7 +140897,7 @@
     },
     "view_topics": {
       "comment": "Current topic response projection; callers enforce topic lifecycle and visibility.",
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.is_noindexed,\n    topics.should_allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    topics.rewards_program_topic_id AS rewards_program_id,\n    topics.referral_program_topic_id AS referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN view_url_hostnames.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = topics.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = topics.updated_by_id) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM topics\n     LEFT JOIN view_url_hostnames ON view_url_hostnames.id = topics.hostname_id\n  WHERE topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL;",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.is_noindexed,\n    topics.should_allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds AND surface.topic_id = topics.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    topics.rewards_program_topic_id AS rewards_program_id,\n    topics.referral_program_topic_id AS referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN view_url_hostnames.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = topics.created_by_id) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE eu.id = topics.updated_by_id) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM topics\n     LEFT JOIN view_url_hostnames ON view_url_hostnames.id = topics.hostname_id\n  WHERE topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL;",
       "materialized": false
     },
     "view_url_hostnames": {
@@ -140239,7 +140922,7 @@
     },
     "view_users_private": {
       "comment": "Private account projection for the authenticated owner or explicitly authorized staff; never a public user response.",
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', fa.facebook_user_data ->> 'name'::text, 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE fa.user_id = users.id) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM user_roles\n             LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n          WHERE user_roles.user_id = users.id) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    users.should_import_hacker_news_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', aa.apple_user_data ->> 'name'::text, 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE aa.user_id = users.id) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', ga.google_user_data ->> 'name'::text, 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE ga.user_id = users.id) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', xa.x_user_data ->> 'name'::text, 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE xa.user_id = users.id) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', la.linkedin_user_data ->> 'name'::text, 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE la.user_id = users.id) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', ma.microsoft_user_data ->> 'name'::text, 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE ma.user_id = users.id) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', gha.github_user_data ->> 'name'::text, 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE gha.user_id = users.id) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE e.id = users.id) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN users.verification_status = 'verified'::identity_verification_statuses AND users.is_verified_badge_visible = true THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN users.verified_first_name IS NOT NULL AND users.verified_last_name_initial IS NOT NULL THEN ((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE bla.user_id = users.id AND bla.disconnect_requested_at IS NULL) AS bluesky_account\n   FROM users\n     LEFT JOIN user_email_addresses ON user_email_addresses.user_id = users.id AND user_email_addresses.is_primary = true\n     LEFT JOIN user_phone_numbers ON user_phone_numbers.user_id = users.id AND user_phone_numbers.is_primary = true\n     LEFT JOIN view_current_paid_memberships paid_membership ON paid_membership.user_id = users.id\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE user_suspensions.user_id = users.id AND user_suspensions.lifted_at IS NULL\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON true\n  WHERE users.deleted_at IS NULL;",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', fa.facebook_user_data ->> 'name'::text, 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE fa.user_id = users.id) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_role_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM user_roles\n             LEFT JOIN user_role_types ON user_role_types.id = user_roles.role_type_id\n          WHERE user_roles.user_id = users.id) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM image_surface_placements surface\n             JOIN media_placements placement ON placement.id = surface.placement_id\n             JOIN view_publicly_projected_image_placements public_delivery ON public_delivery.placement_id = placement.id AND public_delivery.placement_revision = placement.revision AND public_delivery.image_id = surface.image_id\n          WHERE surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds AND surface.user_id = users.id AND placement.retired_at IS NULL\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.should_receive_third_party_marketing,\n    users.should_import_hacker_news_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', aa.apple_user_data ->> 'name'::text, 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE aa.user_id = users.id) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', ga.google_user_data ->> 'name'::text, 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE ga.user_id = users.id) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', xa.x_user_data ->> 'name'::text, 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE xa.user_id = users.id) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', la.linkedin_user_data ->> 'name'::text, 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE la.user_id = users.id) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', ma.microsoft_user_data ->> 'name'::text, 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE ma.user_id = users.id) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', gha.github_user_data ->> 'name'::text, 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE gha.user_id = users.id) AS github_account,\n    ( SELECT e.account_type\n           FROM view_embedded_users e\n          WHERE e.id = users.id) AS account_type,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.is_verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN users.verification_status = 'verified'::identity_verification_statuses AND users.is_verified_badge_visible = true THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN users.verified_first_name IS NOT NULL AND users.verified_last_name_initial IS NOT NULL THEN ((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.is_engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.is_moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.is_fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE bla.user_id = users.id AND bla.disconnect_requested_at IS NULL) AS bluesky_account\n   FROM users\n     LEFT JOIN user_email_addresses ON user_email_addresses.user_id = users.id AND user_email_addresses.is_primary = true\n     LEFT JOIN user_phone_numbers ON user_phone_numbers.user_id = users.id AND user_phone_numbers.is_primary = true\n     LEFT JOIN view_current_paid_memberships paid_membership ON paid_membership.user_id = users.id\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE user_suspensions.user_id = users.id AND user_suspensions.lifted_at IS NULL\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON true\n  WHERE users.deleted_at IS NULL;",
       "materialized": false
     },
     "view_users_public": {

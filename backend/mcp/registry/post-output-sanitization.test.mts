@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from './index.mts'
+import { userMergedAccountGroups } from './user-merged-account-tools.mts'
+import { userMergedParticipationGroups } from './user-merged-participation-tools.mts'
+import { userMergedReadingGroups } from './user-merged-reading-tools.mts'
 
 /** Find post-shaped records anywhere in a tool's inline output contract. */
 function containsPost(schema: unknown): boolean {
@@ -13,9 +16,22 @@ function containsPost(schema: unknown): boolean {
 
 describe('registered MCP post outputs', () => {
   it('routes every post or recommendation shape through a sanitizing transform', () => {
-    const postTools = ALL_TOOLS.filter(
-      tool => tool.meta?.surfaces?.includes('mcp') && containsPost(tool.meta.outputSchema),
-    )
+    const groups = [
+      ...userMergedAccountGroups,
+      ...userMergedParticipationGroups,
+      ...userMergedReadingGroups,
+    ]
+    const postTools = ALL_TOOLS.filter(tool => tool.meta?.surfaces?.includes('mcp'))
+      .flatMap(tool => {
+        const group = groups.find(group => group.name === tool.schema.name)
+        const options = group?.options ?? [{ option: null, source: tool }]
+        return options.map(({ option, source }) => ({
+          name: option ? `${tool.schema.name}(${option})` : tool.schema.name,
+          function: source.function,
+          outputSchema: source.meta?.outputSchema,
+        }))
+      })
+      .filter(tool => containsPost(tool.outputSchema))
     expect(postTools.length).toBeGreaterThan(0)
     for (const tool of postTools) {
       const implementation = String(tool.function)
@@ -25,8 +41,8 @@ describe('registered MCP post outputs', () => {
       const inlineSearch =
         /\bsanitizePromptInjection\b/.test(implementation) &&
         /\bwrapExternalContent\b/.test(implementation)
-      expect({ tool: tool.schema.name, sanitized: shared || inlineSearch }).toEqual({
-        tool: tool.schema.name,
+      expect({ tool: tool.name, sanitized: shared || inlineSearch }).toEqual({
+        tool: tool.name,
         sanitized: true,
       })
     }

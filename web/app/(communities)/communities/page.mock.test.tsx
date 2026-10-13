@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeCommunitiesSearchResponse, makeCommunity } from '@/test-helpers/api-responses'

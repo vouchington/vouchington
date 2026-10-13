@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
@@ -103,4 +103,20 @@ export async function readCopyrightEmailIntakeNoticeLinks(
     WHERE copyright_notice_email_intake_id = ${intakeId}
     ORDER BY copyright_notice_id`)
   return rows
+}
+
+/** Writer-observed event time for exactly one owned declined-intake reply. */
+export async function readCopyrightEmailIntakeReplyTiming(intakeId: string, intentId: string) {
+  const { rows } = await write<{
+    failed_at: Date | null
+    bounced_at: Date | null
+    observed_at: Date
+  }>(sql`/* readCopyrightEmailIntakeReplyTiming */
+    SELECT failed_at, bounced_at, CURRENT_TIMESTAMP AS observed_at
+    FROM copyright_notice_delivery_work_items
+    WHERE id = ${intentId} AND copyright_notice_email_intake_id = ${intakeId}
+      AND delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information')`)
+  const timing = rows[0]
+  if (!timing) throw new Error('Owned copyright email reply was not found')
+  return timing
 }

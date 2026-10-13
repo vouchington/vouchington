@@ -14,7 +14,8 @@
     "oxc",
     "typescript",
     "unicorn",
-    "import"
+    "import",
+    "node"
   ],
   "rules": {
     "playwright/consistent-spacing-between-blocks": "error",

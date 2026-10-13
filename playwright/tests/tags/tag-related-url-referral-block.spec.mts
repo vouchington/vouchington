@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -15,6 +15,7 @@ test.describe('Related Links (URL tags) — referral block', () => {
   let optionName: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     fixture = await insertTestReferralProgram(randomSuffix())
     optionName = `${fixture.hostname}${fixture.urlPath}`
   })

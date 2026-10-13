@@ -24,7 +24,7 @@ describe('index', () => {
 
     await createTestMembership({ user_id: plusUser.id, plan: 'plus' })
     await createTestMembership({ user_id: proUser.id, plan: 'pro' })
-  }, 60_000)
+  }, 5_000)
 
   describe('URLs Routes', () => {
     describe('GET /api/v1/urls', () => {
@@ -225,7 +225,7 @@ describe('index', () => {
         expect(response.body.latest_crawl).not.toHaveProperty('markdown')
         expect(response.body.latest_crawl).not.toHaveProperty('links')
         expect(response.body.latest_crawl).not.toHaveProperty('meta_tags')
-      }, 60_000)
+      })
 
       it('should return crawl history access for pro users', async () => {
         const random = Math.random().toString(36).slice(2, 8)

@@ -3,10 +3,11 @@ import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { addPostRating, updatePostRating, deletePostRating } from '@services/posts/post-ratings'
-import { currentUserCanUpdatePost } from '@services/posts/authorization'
+import {
+  currentUserCanUpdatePost,
+  getAuthorizedPostContributionMembershipPlan,
+} from '@services/posts/authorization'
 import { assertNotSuspended } from '@services/users'
-import { getUserActivePlan } from '@services/memberships'
-import { assertCanContribute } from '@services/contribution-gating/assert'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getRouteAccessPost } from './get-route-access-post.mts'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
@@ -25,9 +26,7 @@ type UpdatePostRatingBody = {
 app.route('/api/v1/posts/:idOrSlug/ratings').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/ratings')
   assertNotSuspended(currentUser)
-  // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
@@ -63,9 +62,7 @@ app.route('/api/v1/posts/:idOrSlug/ratings').post(async (ctx: Context) => {
 app.route('/api/v1/posts/:idOrSlug/ratings/:topicId').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId')
   assertNotSuspended(currentUser)
-  // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')

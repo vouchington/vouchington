@@ -19,7 +19,7 @@ describe('GET /api/v1/web-search', () => {
 
   beforeAll(async () => {
     authUser = await createTestUser()
-  }, 60_000)
+  }, 5_000)
 
   it('anonymous: returns results, sets Cache-Control public, anon limit enforced', async () => {
     const token = randomUUID().replace(/-/g, '')
@@ -133,9 +133,21 @@ describe('GET /api/v1/web-search', () => {
       },
     ])
 
+    const allowedHostname = `api-ws-control-${randomUUID()}.com`
+    const allowedHostnameId = await insertTestUrlHostname({
+      hostname: allowedHostname,
+      is_crawlable: true,
+    })
+    const allowedUrlId = await insertTestUrl({
+      url: `https://${allowedHostname}/${token}/page`,
+      hostnameId: allowedHostnameId,
+    })
     const request = createRequest()
     const response = await request.get(`/api/v1/web-search?query=${token}`).expect(200)
 
+    expect(
+      response.body.results.some((r: { url: { id: string } }) => r.url.id === allowedUrlId),
+    ).toBe(true)
     expect(
       response.body.results.find((r: { url: { id: string } }) => r.url.id === urlId),
     ).toBeUndefined()
@@ -147,7 +159,7 @@ describe('GET /api/v1/web-search', () => {
       hostname: `api-ws-paging-${randomUUID()}.com`,
       is_crawlable: true,
     })
-    await insertTestUrl({
+    const urlId = await insertTestUrl({
       url: `https://api-ws-paging-${randomUUID()}.com/${token}/page`,
       hostnameId,
     })
@@ -155,6 +167,7 @@ describe('GET /api/v1/web-search', () => {
     const request = createRequest()
     const response = await request.get(`/api/v1/web-search?query=${token}`).expect(200)
 
+    expect(response.body.results.map((r: { url: { id: string } }) => r.url.id)).toEqual([urlId])
     expect(response.body.page_info.has_next_page).toBe(false)
   })
 })

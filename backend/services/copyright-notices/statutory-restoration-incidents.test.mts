@@ -14,7 +14,7 @@ import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import type { PrivateUser } from '@services/users/types'
 import { processCopyrightActionIntent, resolveCopyrightLegalHold } from './index.mts'
-import { readClaimantMisuseSummary } from './claimant-misuse-summary.mts'
+import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
 import {
   openHeldCounterNoticeRestore,
@@ -58,7 +58,7 @@ describe('statutory restoration and repeat-infringer incidents', () => {
     const scene = await openScene()
     const accountId = scene.claimant.id
     expect((await readIncident(accountId, scene.notice.id))?.is_operative).toBe(true)
-    const ledgerBefore = await readClaimantMisuseSummary(accountId)
+    const ledgerBefore = await readTestClaimantMisuseSummary(accountId)
 
     await expect(applyRestore(scene)).resolves.toBe('applied')
 
@@ -68,7 +68,7 @@ describe('statutory restoration and repeat-infringer incidents', () => {
     await expect(readTestLiftReversalFacts(scene.restriction.id)).resolves.toMatchObject(
       noReversalSource,
     )
-    await expect(readClaimantMisuseSummary(accountId)).resolves.toEqual(ledgerBefore)
+    await expect(readTestClaimantMisuseSummary(accountId)).resolves.toEqual(ledgerBefore)
   })
 
   it('opens no repeat-infringer review when one of two incidents was restored this way', async () => {

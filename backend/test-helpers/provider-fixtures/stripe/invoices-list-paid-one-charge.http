@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"object":"list","data":[{"id":"INVOICE_ID","object":"invoice","amount_due":1000,"amount_paid":1000,"amount_remaining":0,"billing_reason":"subscription_create","collection_method":"charge_automatically","created":1893369600,"currency":"usd","customer":"CUSTOMER_ID","livemode":false,"parent":{"type":"subscription_details","subscription_details":{"subscription":"SUBSCRIPTION_ID","metadata":{}}},"payments":{"object":"list","data":[{"id":"inpay_replay_1","object":"invoice_payment","amount_paid":1000,"amount_requested":1000,"created":1893369600,"currency":"usd","invoice":"INVOICE_ID","is_default":true,"livemode":false,"payment":{"type":"charge","charge":"CHARGE_ID"},"status":"paid","status_transitions":{"canceled_at":null,"paid_at":1893369600}}],"has_more":false,"url":"/v1/invoice_payments?invoice=INVOICE_ID"},"status":"paid","total":1000}],"has_more":false,"url":"/v1/invoices"}

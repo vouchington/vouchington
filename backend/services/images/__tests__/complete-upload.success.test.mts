@@ -193,20 +193,21 @@ describe('completeImageUpload - success path', () => {
       expect.objectContaining({ id: image_id, upload_staged_at: expect.any(Date) }),
     )
 
-    // Verify metadata extraction was enqueued for the worker using the production options
+    // Verify metadata extraction was enqueued for the worker using the production options. There
+    // is deliberately no custom jobId: it would outlive the job and block the hourly recovery.
     const [queuedJob] = await imagesQueue.searchJobs({ data: { id: image_id } })
     expect(queuedJob).toMatchObject({
       name: 'extract-metadata',
       data: { id: image_id },
       opts: {
         priority: 5,
-        jobId: `extract-image-metadata-${image_id}`,
         deduplication: {
           id: `extract-image-metadata-${image_id}`,
           mode: 'simple',
         },
       },
     })
+    expect(queuedJob?.opts.jobId).toBeUndefined()
 
     // Verify database row reflects processing + persisted hash
     const updatedImage = await getImageById(image_id)

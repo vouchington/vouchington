@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
@@ -29,6 +29,7 @@ const AMEX_TOPIC_SLUG = 'american-express-gold' // uuid: 019c64e6-f713-7bf3-8b1e
 let contributorId: string
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
   if (!contributor) throw new Error('Failed to create tag vote contributor')
   contributorId = contributor.id

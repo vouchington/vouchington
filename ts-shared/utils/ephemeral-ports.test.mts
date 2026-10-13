@@ -3,7 +3,54 @@ import { describe, expect, it } from 'vitest'
 import {
   EphemeralListenerAttemptsExhaustedError,
   listenOnEphemeralPort,
+  listenOnLoopbackEphemeralPort,
 } from './ephemeral-ports.mts'
+
+function loopbackServer() {
+  return {
+    address: () => ({ address: '127.0.0.1', family: 'IPv4', port: 4047 }),
+    close: (callback: (error?: Error) => void) => callback(),
+  } as unknown as net.Server
+}
+
+function bindError(code: string): Error {
+  return Object.assign(new Error(`listen ${code}`), { code })
+}
+
+describe('listenOnLoopbackEphemeralPort', () => {
+  it('prefers IPv6 loopback', async () => {
+    const hosts: string[] = []
+    await expect(
+      listenOnLoopbackEphemeralPort(loopbackServer(), {
+        listen: async (_server, host) => void hosts.push(host),
+      }),
+    ).resolves.toEqual({ host: '::1', port: 4047 })
+    expect(hosts).toEqual(['::1'])
+  })
+
+  it('falls back to IPv4 loopback when the host has no IPv6 support', async () => {
+    const hosts: string[] = []
+    const listen = async (_server: net.Server, host: string) => {
+      hosts.push(host)
+      if (host === '::1') throw bindError('EAFNOSUPPORT')
+    }
+    await expect(listenOnLoopbackEphemeralPort(loopbackServer(), { listen })).resolves.toEqual({
+      host: '127.0.0.1',
+      port: 4047,
+    })
+    expect(hosts).toEqual(['::1', '127.0.0.1'])
+  })
+
+  it('rethrows other IPv6 bind failures', async () => {
+    await expect(
+      listenOnLoopbackEphemeralPort(loopbackServer(), {
+        listen: async () => {
+          throw bindError('EADDRINUSE')
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'EADDRINUSE' })
+  })
+})
 
 describe('listenOnEphemeralPort', () => {
   it('binds a real server to a plain ephemeral port with no predicate', async () => {

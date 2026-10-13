@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 import { assertValidCreateTopicRecommendationInput } from './shared.mts'
 import type { CreateTopicRecommendationInput, TopicRecommendationPost } from './types.mts'
 import { createPostModerationContent } from '@services/posts/content'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { enqueueOnPostCreated } from '@queues/entity-listeners/enqueues'
 import assert from 'http-assert'
@@ -57,7 +57,7 @@ export async function createTopicRecommendation(
 
   if (options.skipCreatedEvents) return post
 
-  void entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
+  void addEntityBloomKeys('posts', [normalizeKey(post.id)])
   void enqueueOnPostCreated(post.id)
 
   return post
@@ -76,7 +76,7 @@ export async function prepareTopicRecommendation(
   return {
     response: post,
     finalize: async () => {
-      void entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
+      void addEntityBloomKeys('posts', [normalizeKey(post.id)])
       void enqueueOnPostCreated(post.id)
     },
   }

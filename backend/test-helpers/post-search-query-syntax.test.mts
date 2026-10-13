@@ -1,16 +1,13 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { loadModule, parseSync } from '@libpg-query/parser'
+import { describe, expect, it } from 'vitest'
+import { parsePostgresSql } from 'no-mistakes'
 import { buildPostSearchQuery } from '../services/posts/search/query-builder.mts'
 import type { PostSearchSort } from '../services/posts/search/types.mts'
 
 describe('post search SQL composition', () => {
-  beforeAll(async () => {
-    await loadModule()
-  })
   const sorts: PostSearchSort[] = ['new', 'best', 'hot', 'relevance', 'following_new']
   for (const sort of sorts) {
     for (const mode of ['plain', 'semantic', 'hybrid']) {
-      it(`parses the ${mode} ${sort} query with selected expressions and joins`, () => {
+      it(`parses the ${mode} ${sort} query with selected expressions and joins`, async () => {
         const query = buildPostSearchQuery(undefined, {
           sort,
           limit: 26,
@@ -20,7 +17,8 @@ describe('post search SQL composition', () => {
           }),
           ...(mode === 'hybrid' && { text_search_query: 'fixture' }),
         })
-        expect(() => parseSync(query.text)).not.toThrow()
+        const facts = await parsePostgresSql({ sql: query.text })
+        expect(facts.diagnostics).toEqual([])
       })
     }
   }

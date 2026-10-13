@@ -142,14 +142,16 @@ export async function runWithOwnedPostElectionVoteStats(
     ])
     for (const item of [...creation, ...votes]) {
       const jobs = await item.jobs
-      for (const [index, id] of item.ids.entries()) {
+      for (const job of Array.isArray(jobs) ? (jobs as Job<{ electionId: string }>[]) : []) {
+        if (job.name !== 'processUpdateElectionVoteStats') continue
+        const id = job.data.electionId
         const target = targets.get(id)
-        if (!target) continue
-        const job = Array.isArray(jobs) ? (jobs[index] as Job | null | undefined) : undefined
-        if (!job) {
-          if (!owned.get(target)!.size)
-            throw new Error(`Unowned deduplicated ${target} stats enqueue`)
-        } else owned.get(target)!.set(job.id, id)
+        if (target) owned.get(target)!.set(job.id, id)
+      }
+      for (const id of item.ids) {
+        const target = targets.get(id)
+        if (target && !owned.get(target)!.size)
+          throw new Error(`Unowned deduplicated ${target} stats enqueue`)
       }
     }
     const ownedJobs = [...owned.values()].flatMap(group => [...group])

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -45,6 +45,7 @@ const card = (page: Page, { slug }: SeededPost) =>
   page.getByTestId('post-card-root').and(page.locator(`[data-post-slug="${slug}"]`))
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   // Fresh per entry: users.username and post slugs are globally unique.
   suffix = randomSuffix()
   username = `pw-provenance-${suffix}`

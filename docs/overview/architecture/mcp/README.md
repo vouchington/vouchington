@@ -85,12 +85,13 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for both committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for all three committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
 
-| Artifact                                                           | Contents                                                                                                      |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json) | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
-| [`catalog.md`](catalog.md)                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
+| Artifact                                                                           | Contents                                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)                 | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
+| [`catalog.md`](catalog.md)                                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
+| [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json) | Versioned MCP result cases with tool arguments and structured results validated against the catalog schemas   |
 
 The live check asserts that each server's catalog equals what `tools/list` returns to a caller
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
@@ -140,7 +141,7 @@ category path described in [Tags](../../../requirements/content/TAGS.md). Its re
 returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
 tables that persist a row identifier.
 
-`set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
+`manage_bookmark(set)`, `manage_bookmark(remove)`, and the five list write tools follow the same delegated-authority
 model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md). `remove_entity_relation` and
 the referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md). Post creation, replies, edits, archive and deletion use [Post and Comment Write Tools](post-comment-write-tools.md). Community creation, joining, leaving and applying, content reports, review disputes and moderation appeals use [Community, Report, Dispute and Appeal Tools](community-report-appeal-write-tools.md). The read tools are in [Hostname, List and User Read Tools](hostname-list-user-read-tools.md), [Trending, Referral, Search and Reference Read Tools](search-reference-read-tools.md), [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md), and [Own Profile, Notification, Preference and Recommendation Read Tools](own-data-read-tools.md).
 
@@ -160,4 +161,4 @@ these reasons:
 
 A tool result that includes member-authored or third-party text must mark that text with
 `wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model; for
-example, `get_topic_details` marks topic markdown and `search_posts` and `get_post` mark posts.
+example, `read_topic(details)` marks topic markdown and `read_posts(search)` and `read_posts(details)` mark posts.

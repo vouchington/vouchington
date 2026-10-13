@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { createTestLandingPage } from '../../../backend/test-helpers/index.mts'
@@ -11,6 +11,7 @@ test.describe('Admin landing page analytics', () => {
   let landingPageId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const { landingPageId: pageId } = await createTestLandingPage(
       TEST_USER_ID,
       'Playwright Admin Analytics Test',

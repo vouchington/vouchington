@@ -111,7 +111,6 @@ the information appears complete enough for a human legal review. A declaration 
 the sender actually made it; otherwise return null. Return short exact source excerpts for every
 extracted value so the moderator can verify the parse. Do not recommend takedown.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callCopyrightEmailIntakeModel: CopyrightEmailIntakeModelCaller = (
   input,
   safetyIdentifier,
@@ -133,4 +132,3 @@ export const callCopyrightEmailIntakeModel: CopyrightEmailIntakeModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

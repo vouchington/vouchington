@@ -209,9 +209,11 @@ describe('no-mistakes forbidden-calls config', () => {
         targets: [
           ...[
             'analyzeProject',
+            'analyzeTypeScriptModules',
             'check',
             'ciTopology',
             'ciTopologyImpact',
+            'dependencies',
             'importUsages',
             'resolveCheck',
             'symbols',

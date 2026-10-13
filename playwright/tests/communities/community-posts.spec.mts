@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
@@ -35,6 +35,7 @@ test.describe('Community Posts', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     COMMUNITY_SLUG = `pw-community-posts-${suffix}`
     // The communities API defaults to name ASC; this keeps the fresh fixture first on dirty DBs.

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -45,6 +45,7 @@ test.describe('Content Language Rendering', () => {
   let suffix = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     // A beforeAll can re-run in the same worker process when Playwright's
     // fullyParallel scheduler hands the worker a second test from this file —
     // module scope is preserved across that re-entry. Generating the suffix

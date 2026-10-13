@@ -118,16 +118,19 @@ vi.mock(
         html,
         className,
         features,
+        lang,
       }: {
         html: string
         className?: string
         features?: Record<string, boolean>
+        lang?: string
       }) => (
         <div
           data-testid='markdown-content'
           data-html={html}
           data-classname={className ?? ''}
           data-features={features !== undefined ? JSON.stringify(features) : ''}
+          {...(lang ? { 'data-lang': lang } : {})}
         />
       ),
     }) as unknown as typeof import('@/components/shared/markdown-content'),

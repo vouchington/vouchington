@@ -1,6 +1,6 @@
-import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import Link from 'next/link'
-import { MarkdownContent } from '@/components/shared/markdown-content'
+import { ProxiedImage as Image } from '@/components/shared/proxied-image'
+import { UserBioCopy } from '@/components/users/user-bio-copy'
 
 interface PublicLandingPageHeaderProps {
   canonicalHref: string
@@ -9,6 +9,7 @@ interface PublicLandingPageHeaderProps {
   subtitle?: string | null
   title: string
   userMarkdown?: string | null
+  detectedLanguage?: string | null
   username?: string | null
 }
 
@@ -19,6 +20,7 @@ export function PublicLandingPageHeader({
   subtitle,
   title,
   userMarkdown,
+  detectedLanguage,
   username,
 }: PublicLandingPageHeaderProps) {
   return (
@@ -53,8 +55,9 @@ export function PublicLandingPageHeader({
           {subtitle ? <p className='text-base text-muted-foreground'>{subtitle}</p> : null}
         </div>
         {userMarkdown ? (
-          <MarkdownContent
+          <UserBioCopy
             markdown={userMarkdown}
+            detectedLanguage={detectedLanguage}
             className='max-w-2xl text-sm text-muted-foreground'
           />
         ) : null}

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
+import { expect, test, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -23,6 +23,7 @@ const PRIVATE_POST_COLLECTION_BROWSER_ADAPTER: PrivatePostCollectionBrowserAdapt
 const claims = getPrivatePostCollectionBrowserClaims(PRIVATE_POST_COLLECTION_BROWSER_ADAPTER)
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const continuation = claims.find(isContinuationClaim)
   if (!continuation) throw new Error('Missing private-post browser continuation scenario')
   const suffix = randomSuffix()

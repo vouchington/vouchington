@@ -27,7 +27,6 @@ appears overbroad; recommend reverse when it appears unsupported; otherwise reco
 This recommendation never authorizes a takedown, restoration, or other action. A human moderator
 must make every decision. Return concise JSON only.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callCopyrightAppealRecommendationModel: CopyrightAppealRecommendationModelCaller = (
   input,
   safetyIdentifier,
@@ -49,4 +48,3 @@ export const callCopyrightAppealRecommendationModel: CopyrightAppealRecommendati
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

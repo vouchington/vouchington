@@ -4,8 +4,8 @@ import {
   type CollaborativeTopicLimits,
 } from './collaborative-topic-relations.mts'
 import { getRssFeedItemById } from './get.mts'
-import { elections } from '@queues/elections/queues'
-import { promoteDelayedJobs } from '@voucha/test-helpers/queue-jobs'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
+import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { upsertRssFeedItemCategories } from './categories.mts'
 import { createTopicAliases } from '@services/topics/aliases'
 import { addUrl } from '@services/urls/upsert'
@@ -55,29 +55,29 @@ async function getItemCategoryTopicIds(itemId: string): Promise<string[]> {
   return (item?.categories ?? []).map(c => c.topic?.id).filter((id): id is string => Boolean(id))
 }
 
-// applyCollaborativeTopicRelations enqueues its vote-stats recompute fire-and-forget (see its own
-// doc comment); the view column backing getItemCategoryTopicIds is gated on that recompute having
-// landed, so every call site here must wait for it before reading category/vote-gated data back.
-// Poll the observable read instead of listening on the worker's job-completion event --
-// backend/services/* must never depend on backend/workers/* (workers/AGENTS.md: workers depend on
-// services, never the reverse; mirrors the precedent in
-// backend/services/users/__tests__/create.test.mts). Waiting for every written relation's
-// object_id to appear (rather than e.g. a total-length match) stays correct even when the item
-// already has unrelated pre-existing categories tagged outside this call.
+// Vote writes intentionally schedule a debounced refresh. Wait for the actual elections worker
+// completion for only the relations returned here, then read the vote-gated view once.
 async function applyAndAwaitVoteStats(
   itemId: string,
   limits: CollaborativeTopicLimits,
 ): Promise<EntityRelation[]> {
   const relations = await applyCollaborativeTopicRelations(itemId, limits)
   const newTopicIds = relations.map(relation => relation.object_id)
-  // The recompute is debounced (`ELECTIONS_DEFAULTS.recomputeDelayMs`) and its enqueue is
-  // fire-and-forget, so each poll releases whatever has been parked since the last one.
-  await expect
-    .poll(async () => {
-      await promoteDelayedJobs(elections, { name: 'processUpdateElectionVoteStats' })
-      return getItemCategoryTopicIds(itemId)
-    })
-    .toEqual(expect.arrayContaining(newTopicIds))
+  await Promise.all(
+    relations.map(relation => {
+      if (!relation.id) throw new Error('Collaborative relation is missing its persisted ID')
+      const target = createEntityRelationElectionTarget(
+        relation.id,
+        'relation__rss_feed_item__category__topic',
+      )
+      return onceElectionVoteStatsCompleted({
+        electionId: target.entityRelationId,
+        orderingKey: 'entity_relation',
+        relationTable: target.relationTable,
+      })
+    }),
+  )
+  expect(await getItemCategoryTopicIds(itemId)).toEqual(expect.arrayContaining(newTopicIds))
   return relations
 }
 

@@ -73,20 +73,24 @@ A unique index on `rss_feed_id` enables `REFRESH MATERIALIZED VIEW CONCURRENTLY`
 
 ### Dispatcher
 
-`getRssFeedsToFetch()` (tiered mode when enabled) LEFT JOINs against `mv_rss_feed_crawl_tiers` — no per-dispatch percentile ranking. Feeds not yet present in the MV (newly created, not yet refreshed) default to tier 5 via `COALESCE(crawl_tier, 5)` and are still dispatched, so a freshly created feed is never missed before the next nightly refresh:
+`getRssFeedsToFetch()` LEFT JOINs against `mv_rss_feed_crawl_tiers` — no per-dispatch percentile ranking. Feeds not yet present in the MV (newly created, not yet refreshed) default to tier 5 via `COALESCE(crawl_tier, 5)` and are still dispatched, so a freshly created feed is never missed before the next nightly refresh:
 
 - **Due bucket**: feeds whose `last_fetched_at` is older than their tier SLA, ordered by `crawl_score DESC`.
 - **Backfill bucket**: feeds not yet due but last fetched at least the tier-1 SLA ago, ordered by time-until-deadline ASC then `crawl_score DESC`.
 - Total capped at `capacity_budget` (default 100) when no explicit limit is passed; an explicit `limit` caps to `min(limit, capacity_budget)`.
 
+Both buckets share one candidate read. A due feed takes priority group 1 and no deadline;
+otherwise an eligible backfill feed takes group 2 and its tier deadline. The scoring refresh
+likewise shares one materialized feed input between canonical redirect resolution and scoring.
+The [EXPLAIN scenarios](../../../../development/postgresql/explain-analyze/README.md#covered-service-queries)
+budget these reads together with the 30-day hashtag window.
+
 ### Configuration
 
 SLAs and `capacity_budget` live in the `rss-feed-crawl-config` DynamicConfig key and are editable
 through `/admin/dynamic-config` (see `crawl-config.mts`). SLA fields are capped at 7 days and
-`capacity_budget` is capped at 10,000 feeds per dispatcher run. Crawl prioritization can be
-disabled entirely via `enabled: false`, which reverts `getRssFeedsToFetch` to the flat TTL query.
-Tier percentile thresholds and the score formula are baked into the MV SQL and are not
-runtime-tunable.
+`capacity_budget` is capped at 10,000 feeds per dispatcher run. Tier percentile thresholds and the
+score formula are baked into the MV SQL and are not runtime-tunable.
 
 ## Deletion
 

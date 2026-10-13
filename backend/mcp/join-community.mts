@@ -37,7 +37,7 @@ const tool: Tool<Args, Result> = {
 
 async function join(userId: string, communityIdOrSlug: string): Promise<Result> {
   const community = await getCommunityOrThrow(communityIdOrSlug)
-  await joinCommunity(userId, community.id)
+  await joinCommunity(userId, community)
   return { success: true, community_id: community.id }
 }
 

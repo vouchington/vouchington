@@ -63,6 +63,10 @@ narrowly-scoped allowlist addition if the match is a legitimate false positive.
 
 ## Web route localization map
 
+The normal `node ci/check-live-web-route-localization.mts` command owns whole-catalog route
+bounds and representative-copy verdicts once in static CI. Its small-fixture tests cover the
+same verifier; see [translation checks](../../reference-tests-translation-catalog-and-locale-checks.md).
+
 [`i18n-extract/route-selector-map.mts`](../../../../static-code-analysis/i18n-extract/route-selector-map.mts) makes one
 `no-mistakes` `analyzeProject` call, built in
 [`i18n-extract/route-graph-analysis.mts`](../../../../static-code-analysis/i18n-extract/route-graph-analysis.mts). It requests a
@@ -103,6 +107,9 @@ for the detailed check and test reference.
 `pnpm run no-mistakes`; required static-analysis CI and the required CI static-analysis
 matrix run the same check. See [CI static analysis](../../ci.md#static-analysis-static-code-analysisyml)
 and [local static analysis](../../tests.md#linters-and-static-analysis).
+The monorepo check selects each importer’s owning TypeScript config. Do not force the root
+`--tsconfig`: it lacks package aliases such as the web `@/*` mapping and would hide reachable
+imports from graph checks. Use an explicit package config only for an intentionally scoped query.
 
 - **Reachability**: every included Markdown document must be discoverable from a tracked
   `AGENTS.md` link, directly or through `README.md` indexes, at a maximum graph depth of three
@@ -243,6 +250,17 @@ The `backend-no-direct-scheduler-upsert` AST-grep rule keeps recurring jobs in t
 GlideMQ's `upsertJobScheduler`, `getRepeatableJobs`, or `removeJobScheduler` directly. `no-mistakes` 0.42.0 then enforces that every scheduled-job
 manifest is reachable from both the API catalog and a worker runtime, and that every worker module
 is reachable from a runtime definition root.
+
+The warning-severity `backend-no-single-enqueue-in-loop` AST-grep rule flags a call to an
+`enqueue[A-Z]*` function (directly or as a member such as `deps.enqueueFoo`) inside a `for`,
+`for-in`/`for-of`, `while`, or `do` statement, or inside a `map`, `forEach`, or `flatMap` callback
+argument (including a bare `rows.map(enqueueFoo)` reference), in backend production code. A bulk enqueue (`enqueueBulk*`, built with
+`createBulkEnqueueFunction`) adds the whole batch in one Valkey round trip and keeps each job's own
+dedup id, `jobId`, priority, and delay in its `buildJob`. Tests and test helpers are exempt. It is a
+warning so the remaining single-enqueue loops stay visible without failing CI while each is
+converted or documented; a loop that must stay sequential (for example a reactivation helper that
+reads the retained job first) takes an `ast-grep-ignore` comment with the reason. Function names
+that already add one batch per iteration (`enqueue*Batch`) also match the name pattern.
 
 Four narrow `required-entrypoint-reachability` instances independently require Valkey pub/sub,
 rate-limiter, GlideMQ root, and direct GlideMQ factory consumers to load the actual
@@ -414,7 +432,7 @@ The table below covers checks that live under `static-code-analysis/`:
 | [`jscpd/`](../../../../static-code-analysis/jscpd/)                                                         | Clone-size CLI gate plus tracked-file dead-code baseline guard. See the [jscpd gates](jscpd/README.md) for the clone threshold, dead-code entries and ratchet, ignore globs, and exceptions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | [`run-node-checks.mts`](../../../../static-code-analysis/run-node-checks.mts)                               | Batches all repo-local Node static checks; run via `node run-node-checks.mts --checks <comma-list>` in CI. `vouchington-tooling/shared-context` spawns `git ls-files` once per invocation and shares the tracked-file list across every check; `repo-file-policy` runs in a dedicated `worker_threads` Worker ([`repo-file-policy-worker.mts`](../../../../static-code-analysis/repo-file-policy-worker.mts) / [`repo-file-policy-worker-client.mts`](../../../../static-code-analysis/repo-file-policy-worker-client.mts)) so its heavier synchronous parsing doesn't block the other checks, and the parent passes its already-resolved `repoRoot`/`isInsideGitRepo`/tracked-file list into the worker via `workerData` instead of the worker re-spawning `git` for itself (issue #9050).                                                                                                                                                                                                                                                                                                                                                                                                                |
 | [`run-tooling-dependency-cruiser.mts`](../../../../static-code-analysis/run-tooling-dependency-cruiser.mts) | Owns the repo-tooling dependency-cruiser roots shared by local scripts, CI, and `ci-local`; callers may select content caching but cannot restate or omit roots.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [`repo-file-policy/`](../../../../static-code-analysis/repo-file-policy/)                                   | Repo-wide application-specific policy for route/admin surfaces, Vitest placement, living-docs package pins, schema-doc drift, client parity, public-source deployment/maintainer literals (generic `account:` 12-digit fields report only with a same-file AWS event discriminator; `/home/` exemptions are the closed Linux user and application-segment lists), and remaining PostgreSQL invariants such as stored polymorphic targets, currency storage, annotations, and stale allowlists. Test-source Git SHA pins plus generic Markdown, constraint, migration ADD COLUMN, config-driven DDL, file-universe, GitHub Actions persistent-workspace, and CI compiler-gate checks run through `no-mistakes` or `vouchington-tooling`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| [`repo-file-policy/`](../../../../static-code-analysis/repo-file-policy/)                                   | Repo-wide application-specific policy for route/admin surfaces, Vitest placement, living-docs package pins, schema-doc drift, client parity, public-source deployment/maintainer literals (generic `account:` 12-digit fields report only with a same-file AWS event discriminator; `/home/` exemptions are the closed Linux user and application-segment lists), and remaining PostgreSQL invariants such as stored polymorphic targets, currency storage and stale allowlists. Test-source Git SHA pins plus generic Markdown, constraint, migration ADD COLUMN, config-driven DDL, file-universe, GitHub Actions persistent-workspace, and CI compiler-gate checks run through `no-mistakes` or `vouchington-tooling`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | [`scc-complexity/`](../../../../static-code-analysis/scc-complexity/)                                       | Runs pinned `scc` once over the repository. Test/spec files, fixtures, and `test-helpers` directories are excluded. Every remaining tracked file must stay at or under complexity 50. There is no tooling baseline.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | [`targeted-guardrails/`](../../../../static-code-analysis/targeted-guardrails/)                             | Narrow regression guardrails for known review misses that are cross-file doc/source sync checks, not single-file AST shapes: the Cloudflare Worker staging basic-auth exempt path/method source/runbook sync guard, the Cloudflare Worker rate-limit Env binding reference-document sync guard, and the Cloudflare Worker production CSP reference sync guard. The nullable helper option-default and nullable web server entity-fetch heuristics that used to live here as hand-rolled AST walkers were migrated to the `nullable-options` pack rule and `server-entity-fetch-return-null` AST-grep YAML rule (single-file syntactic patterns fit the AST-grep tier; see [`../ast-grep-rules/`](../../../../ast-grep-rules/) and the shipped `vouchington-tooling` pack).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
@@ -433,8 +451,8 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists enable the configured TypeScript, Unicorn, and Import rules. Keep
-`typescript`, `unicorn`, and `import` present in every inherited-config copy; `structured-config-policy` enforces parity.
+The root and nested plugin lists enable the configured TypeScript, Unicorn, Import, and Node rules. Keep
+`typescript`, `unicorn`, `import`, and `node` present in every inherited-config copy; `structured-config-policy` enforces parity.
 [`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
 checks every concrete tracked config against the installed analyzer, including inherited rules and
 overrides and disabled rule declarations, so another missing builtin plugin fails CI.
@@ -544,16 +562,22 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `not-to-unresolvable`.
 
 `no-mistakes` enforces `postgres-require-query-annotation` for backend TypeScript runtime
-code, excluding tests, test helpers, and scripts. `postgres-no-offset` applies to that same
-runtime scope and to tracked migrations, views, and config-driven SQL. The
+code, excluding tests, test helpers, seed scripts, and the migration runner, with a separate
+entry for the five development-runtime helpers. Other backend scripts remain covered.
+The annotation, pagination, lock-ordering, and protected-column-write entries explicitly set
+`unanalyzableSql: ignore` to preserve their existing handling of unrecoverable statements.
+Recovered SQL still undergoes the ordinary annotation, OFFSET, ordering, and column-write checks.
+`postgres-no-offset` excludes all backend scripts and applies to tracked migrations, views,
+and config-driven SQL. The
 `postgres-generated-column-predicates` runtime entry excludes tests plus only seed scripts and
 the migration runner; it scans other backend scripts, and a second entry explicitly scans the five
 development-runtime helpers and the same schema SQL sources. Both entries list the config-driven
 generated `created_at` columns because election DDL is TypeScript rather than migration SQL.
-The repository annotation guard remains because parity in #1586 found that the released
-analyzer misses SQL assigned to a function-scoped `var` inside a conditional block and
-executed afterward. The existing runtime-guard fixture protects this case; remove the
-duplicate annotation check after the package-owned rule covers it.
+The package-owned annotation rule handles function-scoped `var` SQL initialized inside
+conditional blocks. The duplicate repository walker and its query-binding helpers have been
+removed. Schema-allowlist freshness remains a separate local check, using
+`vouchington-tooling/pg-schema-snapshot` to extract static string pairs; its local AST walker
+and parser dependency have been removed.
 
 Every `postgres-*` rule that scans executor calls, in `.no-mistakes.yml` and in the nested
 `.oxlintrc.json` files, sets `importSpecifier: '@data-stores/psql'` explicitly. `no-mistakes` does
@@ -637,6 +661,9 @@ Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness ch
 
 Tests for static-analysis tooling should be covered by semantic Vitest projects in `vitest.config.mts`, not by a catch-all repo bucket.
 
+The Vitest Web project declares its real Web-only setup through `setup_files` in
+`.no-mistakes.yml`, so shared unit-test mocks do not apply to API or integration projects.
+
 The publication writer inventory uses `vouchington-tooling/post-publication-inventory` for source
 analysis. Product configuration supplies the approved capture modules and symbols, eligibility tables,
 and writer conventions; the local checker owns the tracked inventory and its diagnostics. The reader
@@ -647,15 +674,19 @@ the local checker owns the tracked inventory and diagnostics.
 
 SQL text guards under `repo-file-policy/` share PostgreSQL comment, quote, literal, and
 statement handling through `sql-scanner.mts`, a re-export of `vouchington-tooling/sql-scanner`.
-Guards that need migration `CREATE TABLE` metadata, or a full parse of a fragment, use
-`sql-ast.mts`, a re-export of `vouchington-tooling/sql-ast` (`@libpg-query/parser@18`).
-`extractPolymorphicTargetTables` stays local because it looks for `entity_type` / `entity_id`.
+Monetary storage, polymorphic targets, UUIDv7 timestamps, and moderation-history guards consume
+released `no-mistakes` SQL source facts. Product-specific table/column policy remains local;
+the aggregate awaits their asynchronous entrypoints and diagnostics retain source locations.
+UUIDv7 checks inspect the required root function call rather than promoting a nested call from
+an unrelated expression. Generated-DDL replay guards also await released SQL facts for trigger
+events and literal EXECUTE payloads. Remaining runtime/generated-DDL consumers still use
+`vouchington-tooling/sql-ast` while their replay fact requirements are completed upstream.
 Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column` owns migration ADD
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in
 its original pre-launch `CREATE TABLE`.
 
 Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation shapes,
-`NOT IN` subqueries, `COUNT` for existence, and the
+`NOT IN` subqueries, `COUNT` for existence, `uuidv7(...)` in predicates, and the
 active-topic filter (`deleted_at IS NULL` and `merged_into_topic_id IS NULL`) live in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) as `postgres-idempotent-insert`,
 `postgres-sql-shape-policy`, and `postgres-required-predicates`. Suppress with
@@ -803,6 +834,15 @@ the rules.
 explicit radix. A full-repo scan on 2026-10-03 found no existing violations. The
 [`radix-oxlint` fixture](../../../../static-code-analysis/oxlint-plugin/radix-oxlint.test.mts)
 asserts that severity and rejects a missing radix while accepting decimal and hexadecimal calls.
+
+`node/no-path-concat` is enforced at error level in the same root config. `__dirname` and
+`__filename` must be joined with `path.join` or `path.resolve`. A full-repo scan on 2026-10-12
+found no existing violations. Nested Oxlint configs restate the root `plugins` array, including
+`node`, because `extends` does not inherit plugins. Enabling that plugin also turns on the
+suspicious-category `node/no-exports-assign` rule; the same scan found no `exports` assignments.
+The [`node-path-concat-oxlint` fixture](../../../../static-code-analysis/oxlint-plugin/node-path-concat-oxlint.test.mts)
+rejects separator concatenation, including template literals, and accepts `path.join` plus an
+extension suffix such as `__filename + '.map'`.
 
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**`
 under [`../.oxlintrc.json`](../../../../.oxlintrc.json). Its four test-helper/test-file exclusions keep

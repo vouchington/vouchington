@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { createTestLandingPage } from '../../../backend/test-helpers/index.mts'
@@ -12,6 +12,7 @@ test.describe('Landing Page Analytics', () => {
   let analyticsSlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const { slug } = await createTestLandingPage(TEST_USER_ID, 'Playwright Analytics Test')
     analyticsSlug = slug
   })

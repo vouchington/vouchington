@@ -118,8 +118,8 @@ describe('backfill-bloom-filter.generated', () => {
   it('warmUpEntityCacheBloomFilters treats key existence errors as missing filters', async () => {
     await Promise.all(Object.values(entityCacheBloomFilters).map(bf => bf.delete()))
 
-    const originalKeyExists = entityCacheBloomFilters.posts.keyExists
-    entityCacheBloomFilters.posts.keyExists = () =>
+    const originalIsReady = entityCacheBloomFilters.posts.isReady
+    entityCacheBloomFilters.posts.isReady = () =>
       Promise.reject(suppressedError('test keyExists failure'))
 
     try {
@@ -128,15 +128,15 @@ describe('backfill-bloom-filter.generated', () => {
       const exists = await entityCacheBloomFilters.posts.exists('definitely-not-a-real-post-id')
       expect(exists).not.toBeNull()
     } finally {
-      entityCacheBloomFilters.posts.keyExists = originalKeyExists
+      entityCacheBloomFilters.posts.isReady = originalIsReady
     }
   })
 
   it('warmUpEntityCacheBloomFilters handles enqueue failures for missing filters', async () => {
     await Promise.all(Object.values(entityCacheBloomFilters).map(bf => bf.rebuild(['sentinel'])))
 
-    const originalKeyExists = entityCacheBloomFilters.posts.keyExists
-    entityCacheBloomFilters.posts.keyExists = () => Promise.resolve(false)
+    const originalIsReady = entityCacheBloomFilters.posts.isReady
+    entityCacheBloomFilters.posts.isReady = () => Promise.resolve(false)
     const enqueueSpy = vi
       .spyOn(bloomFilterEnqueues, 'enqueueBackfillBloomFilter')
       .mockRejectedValueOnce(suppressedError('test enqueue failure'))
@@ -145,7 +145,7 @@ describe('backfill-bloom-filter.generated', () => {
       await expect(warmUpEntityCacheBloomFilters()).resolves.toBeUndefined()
       expect(enqueueSpy).toHaveBeenCalledWith({ entityType: 'posts' })
     } finally {
-      entityCacheBloomFilters.posts.keyExists = originalKeyExists
+      entityCacheBloomFilters.posts.isReady = originalIsReady
       enqueueSpy.mockRestore()
     }
   })

@@ -1,3 +1,5 @@
+import type { QueryExecutor } from './types.mts'
+
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
 export const sharedDbScopeTables = {
   listCopyrightStaffQueue: 'copyright_notices',
@@ -15,7 +17,7 @@ export const sharedDbScopeTables = {
   searchUnmaterializedDsaStatementRestrictionIds: 'copyright_restrictions',
   searchRecoverableDsaStatementSubmissionIds: 'copyright_dsa_statement_submissions',
   replayFailedMediaDeliveryRegistryRecords: 'media_delivery_registry_records',
-  listRecoverableMediaDeliveryRegistryKeys: 'media_delivery_registry_records',
+  listRecoverableMediaDeliveryRegistryIds: 'media_delivery_registry_records',
   stageAllCurrentImagePlacementDeliveryRecords: 'media_delivery_registry_records',
   reconcileMediaDeliveryRepairMarkers: 'media_delivery_repair_markers',
   cleanupRetainedMediaBindings: 'retained_image_placement_bindings',
@@ -55,6 +57,7 @@ export type SharedDbScopeEvent = {
   table: (typeof sharedDbScopeTables)[SharedDbScopeOperation]
   scope: SharedDbScope
   keysetRead?: SharedDbKeysetRead
+  transaction?: QueryExecutor
 }
 export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 
@@ -65,12 +68,14 @@ export function observeSharedDbScope(
   operation: SharedDbScopeOperation,
   scope: SharedDbScope,
   keysetRead?: SharedDbKeysetRead,
+  transaction?: QueryExecutor,
 ): void {
   ;(globalThis as unknown as ObserverHost)[observerKey]?.({
     operation,
     table: sharedDbScopeTables[operation],
     scope,
     ...(keysetRead ? { keysetRead } : {}),
+    ...(transaction ? { transaction } : {}),
   })
 }
 

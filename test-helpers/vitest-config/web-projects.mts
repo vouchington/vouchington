@@ -41,12 +41,8 @@ const webIntegrationProject: TestProjectConfiguration = {
     environment: 'node',
     globalSetup: './integration-tests/web/helpers/global-setup.mts',
     testTimeout: 30_000,
-    // Global setup boots 4 real processes (backend, image lambda, Next.js, and the
-    // cloudflare worker via scripts/wrangler/start.mts, which auto-restarts wrangler
-    // on an unexpected crash) and seeds the DB — kept above the CI step's tight
-    // 5-minute budget (tests-web-integration.yml) to absorb slower cold starts on a
-    // contended local dev host running multiple worktrees concurrently.
-    hookTimeout: 90_000,
+    // Global setup starts the stack before cases run; hooks retain the suite cap.
+    hookTimeout: 30_000,
   },
 }
 export const webProjects: TestProjectConfiguration[] = [

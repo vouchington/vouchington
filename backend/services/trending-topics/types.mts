@@ -7,6 +7,8 @@ export type TrendingTopicsOptions = {
   minScore?: number
   limit: number
   after?: string
+  /** Reference instant for the lookback window; omitted uses the current wall clock. */
+  referenceTime?: Date
 }
 
 export type TrendingTopicMetric = {

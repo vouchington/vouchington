@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock(import('@/lib/api/server/rss-feed-categories'), () => ({

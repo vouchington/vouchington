@@ -1,4 +1,5 @@
 import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { getAutomaticEnforcementSince } from './automatic-withholding-since.mts'
 import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 import {
@@ -22,7 +23,8 @@ export async function searchPendingCopyrightEnforcementAssessmentIds(
     'Invalid copyright enforcement cursor',
     'searchPendingCopyrightEnforcementAssessmentIds',
     'enforcementAssessment',
-    pendingCopyrightEnforcementSql('DISTINCT assessment.id AS id', automaticSince),
+    sql`/* searchPendingCopyrightEnforcementAssessmentIds */
+      `.append(pendingCopyrightEnforcementSql('DISTINCT assessment.id AS id', automaticSince)),
     statement => write(statement),
   )
 }

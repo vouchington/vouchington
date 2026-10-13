@@ -2,7 +2,7 @@ import { beginTransaction } from '@voucha/test-helpers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '@services/copyright-notices'
-import { getPendingCopyrightStaffCase } from '@services/copyright-notices/read-models-staff-case'
+import { getPendingCopyrightStaffCases } from '@services/copyright-notices/read-models-staff-case'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
 import { captureTestLogOutput } from '@voucha/test-helpers/services/copyright-notices/capture-log-output'
@@ -72,7 +72,7 @@ describe('copyright staff information request email', () => {
     ).resolves.toBe(1)
 
     await using transaction = await beginTransaction()
-    const staffCase = await getPendingCopyrightStaffCase(noticeId, transaction)
+    const staffCase = (await getPendingCopyrightStaffCases([noticeId], transaction)).get(noticeId)
     expect(staffCase?.delivery_intents).toContainEqual(
       expect.objectContaining({
         id: intent?.id,

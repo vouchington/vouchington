@@ -1,0 +1,7 @@
+HTTP/1.1 400 Bad Request
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+stripe-should-retry: false
+
+{"error":{"code":"parameter_missing","doc_url":"https://stripe.com/docs/error-codes/parameter-missing","message":"Missing required param: currency.","param":"currency","request_log_url":"https://dashboard.stripe.com/test/logs/req_replay_fixture?t=1790000000","type":"invalid_request_error"}}

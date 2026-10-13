@@ -2,7 +2,7 @@ import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-reg
 
 export type ImageDeliveryRecord = {
   state?: string
-  delivery_key: string
+  media_delivery_registry_record_id: string
   desired_state: MediaDeliveryRegistryState
   placement_id: string
   placement_revision: number

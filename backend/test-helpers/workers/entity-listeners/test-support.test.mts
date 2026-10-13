@@ -7,7 +7,7 @@ describe('onceEntityListenerCompleted', () => {
   it('resolves when the matching job already completed before the listener registered', async () => {
     const entityId = crypto.randomUUID()
     const queue = getOrCreateQueue(QUEUE_NAME)
-    const job = await queue.add('processPostCreated', { id: entityId })
+    const job = await queue.enqueue('processPostCreated', { id: entityId })
     const record = queue.jobs.get(job!.id)
     expect(record).toBeDefined()
     record!.state = 'completed'

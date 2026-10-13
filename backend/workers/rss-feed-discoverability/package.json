@@ -27,7 +27,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/rss-feed-discoverability": "workspace:^",
     "@services/rss-feeds": "workspace:^",
-    "glide-mq": "^0.17.0"
-  },
-  "devDependencies": {}
+    "glide-mq": "^0.18.0"
+  }
 }

@@ -59,7 +59,7 @@ export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
     return key
   }
 
-  function check(url: string): Promise<void> {
+  function check(url: string, options?: Parameters<typeof actualCheck>[1]): Promise<void> {
     windowKeys()
     cooldownKey()
     try {
@@ -69,7 +69,7 @@ export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
     }
     // A request can cross the UTC month boundary while its preflight awaits real stores.
     return own(
-      actualCheck(url).finally(() => {
+      actualCheck(url, options).finally(() => {
         windowKeys()
       }),
     )

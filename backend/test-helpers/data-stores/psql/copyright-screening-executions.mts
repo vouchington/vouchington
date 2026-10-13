@@ -1,6 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getPendingCopyrightStaffCase } from '../../../services/copyright-notices/read-models-staff-case.mts'
+import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 import {
   lockCopyrightFormReview,
   startCopyrightFormScreening,
@@ -81,7 +81,8 @@ export async function admitTestCopyrightBeforeScreening<T>(
 
 export async function readTestCopyrightStaffScreening(noticeId: string) {
   await using transaction = await beginTransaction()
-  const result = (await getPendingCopyrightStaffCase(noticeId, transaction))?.form_review?.screening
+  const staffCases = await getPendingCopyrightStaffCases([noticeId], transaction)
+  const result = staffCases.get(noticeId)?.form_review?.screening
   await transaction.commit()
   return result
 }

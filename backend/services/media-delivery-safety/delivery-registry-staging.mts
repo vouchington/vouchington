@@ -2,7 +2,6 @@ import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 
 /** @public Post-image registry staging seam exercised against real PostgreSQL placements. */
 export async function stagePostImagePlacementDeliveryRecords(
@@ -12,10 +11,9 @@ export async function stagePostImagePlacementDeliveryRecords(
   const query = options.query ?? write
   await query(sql`/* stagePostImagePlacementDeliveryRecords */
     INSERT INTO media_delivery_registry_records (
-      delivery_key, placement_id, placement_revision, image_id, desired_state
+      placement_id, placement_revision, image_id, desired_state
     )
-    SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-      placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
+    SELECT placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
     FROM image_placements binding
     JOIN media_placements placement ON placement.id = binding.placement_id
     JOIN images image ON image.id = binding.image_id
@@ -25,7 +23,8 @@ export async function stagePostImagePlacementDeliveryRecords(
       AND image.is_flagged_by_openai_omni_moderation = FALSE
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
-    ON CONFLICT (delivery_key) DO UPDATE
+    ORDER BY placement.id, placement.revision, binding.image_id
+    ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
     SET desired_state = EXCLUDED.desired_state
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
   `)
@@ -39,27 +38,34 @@ export async function stageImagePlacementDeliveryRecord(
     state: MediaDeliveryRegistryState
   },
   options: QueryOptions & { forceGeneration?: boolean } = {},
-): Promise<{ deliveryKey: string; generation: string }> {
-  const deliveryKey = getImagePlacementDeliveryKey(input)
+): Promise<{ mediaDeliveryRegistryRecordId: string; generation: string }> {
   const query = options.query ?? write
   const forceGeneration = options.forceGeneration ?? false
-  const { rows } = await query<{ generation: string }>(sql`/* stageImagePlacementDeliveryRecord */
+  const { rows } = await query<{
+    id: string
+    generation: string
+  }>(sql`/* stageImagePlacementDeliveryRecord */
     INSERT INTO media_delivery_registry_records (
-      delivery_key, placement_id, placement_revision, image_id, desired_state
-    ) VALUES (${deliveryKey}, ${input.placementId}, ${input.revision},
+      placement_id, placement_revision, image_id, desired_state
+    ) VALUES (${input.placementId}, ${input.revision},
       ${input.imageId}, ${input.state})
-    ON CONFLICT (delivery_key) DO UPDATE
+    ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
     SET desired_state = EXCLUDED.desired_state,
       generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
         ELSE media_delivery_registry_records.generation END
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
       OR ${forceGeneration}
-    RETURNING generation
+    RETURNING id, generation
   `)
-  if (rows[0]) return { deliveryKey, generation: rows[0].generation }
-  const { rows: currentRows } = await query<{ generation: string }>(sql`
+  if (rows[0]) return { mediaDeliveryRegistryRecordId: rows[0].id, generation: rows[0].generation }
+  const { rows: currentRows } = await query<{ id: string; generation: string }>(sql`
     /* stageImagePlacementDeliveryRecord:current */
-    SELECT generation FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
+    SELECT id, generation FROM media_delivery_registry_records
+    WHERE placement_id = ${input.placementId}::uuid AND placement_revision = ${input.revision}
+      AND image_id = ${input.imageId}::uuid
   `)
-  return { deliveryKey, generation: currentRows[0]!.generation }
+  return {
+    mediaDeliveryRegistryRecordId: currentRows[0]!.id,
+    generation: currentRows[0]!.generation,
+  }
 }

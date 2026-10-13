@@ -1,6 +1,6 @@
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { FollowButton } from '../follow-button'
 
@@ -71,7 +71,10 @@ describe('FollowButton change callback', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledWith(true))
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
+    })
+    expect(onChange).toHaveBeenCalledWith(true)
   })
 
   it('does not notify the parent when follow fails', async () => {
@@ -88,7 +91,10 @@ describe('FollowButton change callback', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
 
-    await waitFor(() => expect(mockToastError).toHaveBeenCalled())
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
+    })
+    expect(mockToastError).toHaveBeenCalled()
     expect(onChange).not.toHaveBeenCalled()
   })
 })

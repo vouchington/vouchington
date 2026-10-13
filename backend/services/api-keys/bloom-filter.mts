@@ -26,7 +26,12 @@ const BLOOM_READY_KEY = 'bloom-filter:api-keys:ready'
  */
 export async function checkApiKeyBloomFilter(keyHash: Buffer): Promise<boolean | null> {
   try {
-    return await getApiKeyBloomFilter().existsIfReady(BLOOM_READY_KEY, keyHash.toString('hex'))
+    const result = await getApiKeyBloomFilter().existsIfReady(
+      BLOOM_READY_KEY,
+      keyHash.toString('hex'),
+    )
+    if (result === null) await enqueueRebuildBloomFilter({ filter: 'api-keys' })
+    return result
   } catch {
     return null
   }
@@ -46,8 +51,7 @@ export async function addKeyHashToBloomFilter(keyHash: Buffer): Promise<void> {
     try {
       const removed = await bloomValkeyClient.unlink([BLOOM_READY_KEY])
       if (removed > 0) {
-        /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-        void enqueueRebuildBloomFilter({ filter: 'api-keys' })
+        await enqueueRebuildBloomFilter({ filter: 'api-keys' })
       }
     } catch (unlinkErr) {
       onError(unlinkErr instanceof Error ? unlinkErr : new Error(String(unlinkErr)))

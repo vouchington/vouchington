@@ -11,6 +11,29 @@ export type SesInboundProcessJobData = {
   objectKey: string
 }
 
+export type SesInboundReconcileJobData = { continuationToken?: string }
+
+export function assertSesInboundReconcileJobData(
+  data: unknown,
+): asserts data is SesInboundReconcileJobData {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    throw new Error('SES inbound reconcile job data must be an object')
+  }
+  const entries = Object.entries(data)
+  if (entries.some(([key]) => key !== 'continuationToken')) {
+    throw new Error('SES inbound reconcile job data has an unknown field')
+  }
+  const token = (data as SesInboundReconcileJobData).continuationToken
+  if (
+    token !== undefined &&
+    (typeof token !== 'string' || token.length === 0 || token.length > 1024)
+  ) {
+    throw new Error(
+      'SES inbound continuation token must be a non-empty string of at most 1024 characters',
+    )
+  }
+}
+
 export type SesInboundProcessJobOptions = {
   attempts: 3
   backoff: {

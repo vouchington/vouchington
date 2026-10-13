@@ -75,6 +75,5 @@ describe('entity-relation ordinary official voting', () => {
         choice: 'confirm',
       })
     },
-    60_000,
   )
 })

@@ -15,3 +15,9 @@ via a thin service layer that:
 
 - Queue: [`@queues/language-detection`](../../language-detection/README.md)
 - Service: [`@services/language-detection`](../../../services/language-detection/README.md)
+
+Backfill dispatch accepts an optional owned entity-ID set for all six job names.
+The set restricts each real cursor query before batching; omission retains the
+normal repository-wide worker dispatch, and an empty set performs no detection
+after validating the job name. Scoped dispatch preserves each stream's eligibility
+predicates and the same detector, guarded writes, and entity-cache invalidation.

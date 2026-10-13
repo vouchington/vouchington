@@ -65,8 +65,9 @@ Feature-gated UI should enable the flag only for the current browser context wit
 
 A `test.beforeAll` hook can run more than once in the same worker process — `fullyParallel`
 scheduling can hand a worker a second test from the same file, re-entering the hook with module
-scope preserved. Call [`randomSuffix()`](../../../../../playwright/helpers/random-id.mts) as the first statement _inside_
-the hook, not at module or `describe` scope: a suffix hoisted above the hook keeps the same value
+scope preserved. Call [`randomSuffix()`](../../../../../playwright/helpers/random-id.mts) immediately after the first-statement
+`protectPlaywrightHookTimeouts(test.info())` guard, still _inside_ the hook, not at module or
+`describe` scope: a suffix hoisted above the hook keeps the same value
 across a re-entry and seeds the same slug/name twice, which throws on any globally unique DB column
 (e.g. `post_slugs_pkey`).
 
@@ -104,11 +105,13 @@ is dedicated to the credentialed flow.
 The credentialed suite uses a separate config (`playwright.credentialed.config.mts`) and is
 **not** part of the `playwright/tests/` selection/sharding logic. It runs as the
 `test-playwright-credentialed` CI job, which is gated on `trusted-secret-context` (trusted
-PRs and main pushes only).
+PRs and main pushes only). The job is informational: the `web` gate does not wait on it, so a
+failure never blocks a merge ([live-provider smoke checks](../../../tests.md#live-provider-smoke-checks)).
 
-| Spec                                                                                                 | What it tests                                      | Credential required                           |
-| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------- |
-| [`credentialed/image-upload.spec.mts`](../../../../../playwright/credentialed/image-upload.spec.mts) | Real S3 presigned PUT (CORS allow-list validation) | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
+| Spec                                                                                                                               | What it tests                                                                     | Credential required                           |
+| ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
+| [`credentialed/image-upload.spec.mts`](../../../../../playwright/credentialed/image-upload.spec.mts)                               | Real S3 presigned PUT (CORS allow-list validation)                                | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
+| [`credentialed/rss-modal-sideloaded-images.spec.mts`](../../../../../playwright/credentialed/rss-modal-sideloaded-images.spec.mts) | Signed `/sideload/` image in the RSS item modal, decoded through the image lambda | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
 
 ### Sidebar Starts Open
 

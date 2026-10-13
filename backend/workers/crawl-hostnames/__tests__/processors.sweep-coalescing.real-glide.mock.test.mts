@@ -12,6 +12,7 @@ import {
 import { crawlHostnamesQueue } from '@queues/crawl-hostnames/queues'
 import {
   enqueueBulkCrawlHostname,
+  enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
 } from '@queues/crawl-hostnames/enqueues'
@@ -37,6 +38,14 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importO
 const sweepStartedAt = '2026-07-17T00:00:00.000Z'
 const PROMOTION_INTERVAL_MS = 100
 const fixtures = [
+  {
+    label: 'hostnames',
+    queue: crawlHostnamesQueue,
+    manifest: crawlManifest,
+    schedulerId: 'crawl_hostnames_dispatcher',
+    work: 'crawl_hostnames_dispatcher',
+    root: enqueueCrawlHostnamesDispatcher,
+  },
   {
     label: 'tier1',
     queue: crawlHostnamesQueue,
@@ -112,7 +121,7 @@ describe('periodic sweep coalescing', () => {
       async (job: Job) => {
         if (job.name !== fixture.work) {
           const result =
-            fixture.label === 'tier1' || fixture.label === 'tier2'
+            fixture.label === 'tier1' || fixture.label === 'tier2' || fixture.label === 'hostnames'
               ? await processCrawlHostnamesJob(job)
               : await fixture.root()
           if (++roots >= 2) repeated.resolve()

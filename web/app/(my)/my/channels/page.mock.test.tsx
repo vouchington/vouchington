@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, expect, it, vi } from 'vitest'
 import { registerFollowedRssFeedPageTests } from '@/test-helpers/app/my/followed-rss-feed-page'
 

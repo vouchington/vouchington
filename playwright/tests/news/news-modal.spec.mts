@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { requireTestValue } from '../../helpers/assertions.mts'
@@ -16,6 +16,7 @@ test.describe('News page modal and layout checks', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor) throw new Error('Failed to create news modal contributor')
     contributorId = contributor.id

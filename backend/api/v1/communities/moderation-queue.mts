@@ -2,11 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import {
-  getCommunityOrThrow,
-  getCommunityMember,
-  currentUserCanModerateCommunity,
-} from '@services/communities'
+import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import { isModerationStaff } from '@services/users'
 import {
   searchCommunityModerationQueue,
@@ -28,8 +24,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
   // Resolve community first so membership lookup uses the UUID (not slug)
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   // Site staff can access any community queue; regular users must be members
   const isStaff = isModerationStaff(currentUser)

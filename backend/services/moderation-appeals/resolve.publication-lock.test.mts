@@ -68,13 +68,24 @@ describe('resolveModerationAppealAccept publication lock', () => {
     await rowLocked.promise
 
     const publicationLocked = Promise.withResolvers<void>()
+    let barrierSignaled = false
     const lockPostPublication = postPublication.lockPostPublication
-    vi.spyOn(postPublication, 'lockPostPublication').mockImplementation(async (...args) => {
-      await lockPostPublication(...args)
-      publicationLocked.resolve()
-    })
-    const resolving = resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
+    vi.spyOn(postPublication, 'lockPostPublication').mockImplementation(
+      async (query, lockedPostId) => {
+        await lockPostPublication(query, lockedPostId)
+        if (lockedPostId !== postId) return
+        barrierSignaled = true
+        publicationLocked.resolve()
+      },
+    )
+    let resolving: ReturnType<typeof resolveModerationAppealAccept> | undefined
     try {
+      await using unrelated = await beginTransaction()
+      await postPublication.lockPostPublication(unrelated, crypto.randomUUID())
+      await unrelated.commit()
+      expect(barrierSignaled).toBe(false)
+
+      resolving = resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
       await Promise.race([
         publicationLocked.promise,
         resolving.then(() => {
@@ -87,8 +98,9 @@ describe('resolveModerationAppealAccept publication lock', () => {
     } finally {
       releaseRow.resolve()
       vi.restoreAllMocks()
+      await holder
+      if (resolving) await Promise.allSettled([resolving])
     }
-    await holder
     await expect(resolving).resolves.toMatchObject({ status: 'resolved' })
   })
 })

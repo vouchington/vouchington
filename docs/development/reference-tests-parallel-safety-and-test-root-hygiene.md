@@ -126,7 +126,7 @@ of mutating the shared production mapping — see [Test Helpers § Shared member
 ### Live GlideMQ workers must not leak across isolate:false files
 
 `backend-data-stores` runs `pool: 'forks'` with `isolate: false`, so importing a
-`new Worker(...)` singleton starts a real consumer for every later file in that fork. This is not a
+`createWorker(...)` singleton starts a real consumer for every later file in that fork. This is not a
 timing race: the in-memory test shim's `add()` (`test-helpers/glide-mq-vitest-flush-wait.mts`)
 blocks until every attached worker drains the job to a terminal state before resolving. So once a
 worker is attached to a queue in the fork, `getJobs('waiting')` on that queue is _deterministically_
@@ -215,8 +215,8 @@ the _next_ test's `beforeEach` to call `vi.useRealTimers()` is not a fix — it 
 moment that test is skipped, filtered out, or is the last one in the file, and it does nothing for
 `isolate: false` cross-file leakage in the meantime. This has already caused two incidents
 (#8328 hardened one shared-hook consumer against an already-fake clock; #8330 fixed one specific test
-that only restored real timers on its happy path) — this guard prevents a _third_ occurrence instead of
-special-casing another specific test.
+that only restored real timers on its happy path). The guard detects a fake-timer controller that
+remains installed when a test finishes.
 
 This is a global `afterEach` invariant, not a static/lint rule, because the defect is purely about
 runtime state: a correct `beforeEach`/`afterEach` pair and a stray `vi.useFakeTimers()` call are
@@ -232,6 +232,12 @@ pure check logic lives in `test-helpers/vitest-fake-timer-guard.ts` (unit-tested
 as the thin wrapper. Fork-leak growth detection lives in `vouchington-tooling/vitest-diagnostics`;
 `test-helpers/vitest.setup.fork-leak-detection.mts` is that wrapper and
 `test-helpers/vitest-fork-leak-detection.mts` keeps the per-fork singleton.
+
+When a spy wraps a fake timer global, call `vi.restoreAllMocks()` before `vi.useRealTimers()` in
+cleanup. A spy's individual `mockRestore()` leaves its restore callback registered for Vitest's
+later file-end restoration. That callback can reinstall the captured fake function after real
+timers have been restored, even while `vi.isFakeTimers()` reports `false`. Drain the registered
+restorers before restoring real timer globals so the next file can use real callbacks.
 
 ### Unexpected route-test 500s print the server error
 
@@ -564,7 +570,8 @@ excluded. Keep the builder under its direct value import name: value-import alia
 and property/destructuring extraction are banned because AST-grep cannot trace an extracted
 function value to its eventual call site. Type-only aliases remain allowed.
 
-`backend/test-helpers/api-fixtures/cold-build-budget.mts` retains
-`COLD_VIRTUAL_PROGRAM_TIMEOUT_MS` for one independent virtual schema-extraction program.
+The schema-extraction test retains its explicit 15,000 ms `beforeAll` budget for one independent
+virtual program. Keep that budget visible at the consuming hook so the timeout-cap analyzer can
+verify it without resolving an imported constant.
 The full API discovery and OpenAPI timeout tiers are removed with their producers. Do not
 reintroduce compiler discovery as a fixture or runtime-request acceptance gate.

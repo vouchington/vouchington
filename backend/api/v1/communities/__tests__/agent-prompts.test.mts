@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -133,6 +133,43 @@ describe('Community Agent Prompts Routes', () => {
 
       expect(res.body.community_agent_prompt).toHaveProperty('id')
       expect(res.body.community_agent_prompt.is_slot_allocated).toBe(false)
+    })
+
+    it('creates the prompt without repeating the prompt annotation', async () => {
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+      vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+
+      try {
+        const user = await createTestUser()
+        const community = await insertTestCommunity({
+          createdById: user.id,
+          slug: `ap-post-query-profile-${createRandomString(8)}`,
+        })
+        await insertTestCommunityMember({
+          communityId: community.id,
+          userId: user.id,
+          role: 'owner',
+        })
+
+        const request = createRequest()
+        await request.authenticateAs(user)
+        const res = await request
+          .post(`/api/v1/communities/${community.slug}/agent-prompts`)
+          .set('Content-Type', 'application/json')
+          .send({ prompt: 'Flag spam content' })
+          .expect(201)
+
+        expect(res.body.community_agent_prompt).toHaveProperty('id')
+        const profileLines = stderr.mock.calls
+          .map(([chunk]) => String(chunk))
+          .filter(line => line.includes('route=POST /api/v1/communities/'))
+          .filter(line => line.includes('/agent-prompts '))
+        expect(profileLines).toHaveLength(1)
+        expect(profileLines[0]).not.toContain('createCommunityAgentPrompt')
+      } finally {
+        stderr.mockRestore()
+        vi.unstubAllEnvs()
+      }
     })
 
     it('returns 422 when prompt is missing', async () => {

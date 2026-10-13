@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -7,6 +7,7 @@ import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 let topicId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   const topic = await insertTestTopic(`Settings Boundary ${suffix}`, `settings-boundary-${suffix}`)
   topicId = topic.id

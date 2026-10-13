@@ -55,12 +55,8 @@ describe('RSS feed item category relation retries', () => {
 
   it('does not rewrite an unchanged hashtag category relation on repeated ingestion', async () => {
     await upsertRssFeedItemCategories([{ rss_feed_item_id: rssFeedItemId, categories: [hashtag] }])
-    await expect
-      .poll(async () => {
-        const item = await getRssFeedItemById(rssFeedItemId)
-        return item?.categories?.some(category => category.hashtag?.key === hashtag)
-      })
-      .toBe(true)
+    const item = await getRssFeedItemById(rssFeedItemId)
+    expect(item?.categories?.some(category => category.hashtag?.key === hashtag)).toBe(true)
 
     const aliasId = await getTopicAliasIdForTest(hashtag)
     expect(aliasId).not.toBeNull()
@@ -123,12 +119,8 @@ describe('RSS feed item category relation retries', () => {
     await expect(
       getEntityRelation('relation__rss_feed_item__category__topic_alias', rssFeedItemId, aliasId!),
     ).resolves.toEqual([expect.objectContaining({ deleted_at: null })])
-    await expect
-      .poll(async () => {
-        const item = await getRssFeedItemById(rssFeedItemId)
-        return item?.categories?.some(category => category.hashtag?.key === hashtag)
-      })
-      .toBe(true)
+    const item = await getRssFeedItemById(rssFeedItemId)
+    expect(item?.categories?.some(category => category.hashtag?.key === hashtag)).toBe(true)
   })
 
   it('restores missing categorizer votes on existing category relations', async () => {

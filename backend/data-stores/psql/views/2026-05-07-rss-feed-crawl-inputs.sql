@@ -7,14 +7,18 @@
 DROP MATERIALIZED VIEW IF EXISTS mv_rss_feed_crawl_tiers;
 
 CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS
-  WITH canonical_follows AS (
+  WITH feed_inputs AS MATERIALIZED (
+    -- Redirect resolution and scoring share one feed read, without filtering redirect sources.
+    SELECT id, canonical_rss_feed_id, topic_id, deleted_at, is_enabled FROM rss_feeds
+  ),
+  canonical_follows AS (
     -- Route followers on permanently-redirected source feeds through canonical_rss_feed_id,
     -- then retain each user's demand once per canonical feed.
     SELECT
       COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,
       f.subject_id AS user_id
     FROM relation__user__follow__rss_feed f
-    JOIN rss_feeds rf ON rf.id = f.object_id
+    JOIN feed_inputs rf ON rf.id = f.object_id
     WHERE f.deleted_at IS NULL
     GROUP BY COALESCE(rf.canonical_rss_feed_id, rf.id), f.subject_id
   ),
@@ -41,7 +45,7 @@ CREATE MATERIALIZED VIEW mv_rss_feed_crawl_tiers AS
       rf.id AS rss_feed_id,
       LN(1 + COALESCE(fc.weighted_follower_count, 0)::DOUBLE PRECISION)
         + COALESCE(t.votes_score_net, 0)::DOUBLE PRECISION AS crawl_score
-    FROM rss_feeds rf
+    FROM feed_inputs rf
     JOIN topics t ON t.id = rf.topic_id
     LEFT JOIN follow_counts fc ON fc.rss_feed_id = rf.id
     WHERE rf.deleted_at IS NULL

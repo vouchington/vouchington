@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -8,6 +8,7 @@ test.describe('Submit a Source — single-URL redirect', () => {
   let mockTopicSlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     mockTopicSlug = `test-rss-source-mock-${suffix}`
     await insertTestTopic(`Mock RSS Source ${suffix}`, mockTopicSlug, 'rss_feed')

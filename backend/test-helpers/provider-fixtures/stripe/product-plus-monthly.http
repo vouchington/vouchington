@@ -1,0 +1,6 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+
+{"id":"prod_plus_monthly","object":"product","active":true,"attributes":[],"created":1790000000,"default_price":null,"description":null,"images":[],"livemode":false,"marketing_features":[],"metadata":{"voucha_catalog_lookup_key":"voucha_membership_v1_plus_monthly_usd","voucha_catalog_version":"v1"},"name":"Voucha Plus Monthly","package_dimensions":null,"shippable":null,"statement_descriptor":null,"tax_code":null,"type":"service","unit_label":null,"updated":1790000000,"url":null}

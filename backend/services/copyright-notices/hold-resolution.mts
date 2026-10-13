@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { CopyrightHoldResolutionKind, CopyrightLegalHoldResolutionRecord } from './types.mts'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import {
   replayEligibleCopyrightRestoreIntentsInTransaction,
@@ -27,7 +27,7 @@ export async function resolveCopyrightLegalHold(
   await using transaction = await beginTransaction()
   const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
   await transaction.commit()
-  for (const intentId of result.intentIds) void enqueueApplyCopyrightAction(intentId)
+  void enqueueBulkApplyCopyrightActions(result.intentIds)
   return result.resolution
 }
 

@@ -7,6 +7,8 @@ import { getWebRiskHostnameAuditForTest, updateUrlHostnameBlocked } from '@vouch
 import { withGoogleWebRiskTest } from '@voucha/test-helpers/web-risk-state'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
+const PROBE_URL = new URL('https://web-risk-gate.test/')
+
 describe('Google Web Risk checks', () => {
   it('skips Google calls when the feature flag is disabled', () =>
     withGoogleWebRiskTest(async context => {
@@ -95,7 +97,9 @@ describe('Google Web Risk checks', () => {
       await expect(context.fixture.check(secondUrl)).resolves.toBeUndefined()
 
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
-      await expect(context.fixture.state.isProviderCoolingDown()).resolves.toBe(true)
+      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
+        coolingDown: true,
+      })
       expect(await context.fixture.ttl(context.fixture.cooldownKey())).toBeGreaterThan(55_000)
       await expect(context.fixture.countWindow(context.fixture.windowKeys()[1])).resolves.toBe(1)
     }))
@@ -117,7 +121,9 @@ describe('Google Web Risk checks', () => {
       await expect(
         context.fixture.check(`https://request-failure-${crypto.randomUUID()}.test/page`),
       ).resolves.toBeUndefined()
-      await expect(context.fixture.state.isProviderCoolingDown()).resolves.toBe(true)
+      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
+        coolingDown: true,
+      })
       expect(await context.fixture.ttl(context.fixture.cooldownKey())).toBeGreaterThan(5000)
       await context.fixture.check(`https://cooldown-${crypto.randomUUID()}.test/page`)
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
@@ -133,7 +139,9 @@ describe('Google Web Risk checks', () => {
       ).resolves.toBeUndefined()
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
       await expect(response.body!.getReader().read()).resolves.toMatchObject({ done: true })
-      await expect(context.fixture.state.isProviderCoolingDown()).resolves.toBe(true)
+      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
+        coolingDown: true,
+      })
     }))
 
   it('fails open on Google client errors', () =>
@@ -146,7 +154,9 @@ describe('Google Web Risk checks', () => {
       ).resolves.toBeUndefined()
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
       await expect(response.body!.getReader().read()).resolves.toMatchObject({ done: true })
-      await expect(context.fixture.state.isProviderCoolingDown()).resolves.toBe(true)
+      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
+        coolingDown: true,
+      })
     }))
 
   it('fails open on invalid Google JSON', () =>
@@ -157,7 +167,9 @@ describe('Google Web Risk checks', () => {
         context.fixture.check(`https://bad-json-${crypto.randomUUID()}.test/page`),
       ).resolves.toBeUndefined()
       expect(context.fetchSpy).toHaveBeenCalledTimes(1)
-      await expect(context.fixture.state.isProviderCoolingDown()).resolves.toBe(true)
+      await expect(context.fixture.state.readProviderGate(PROBE_URL)).resolves.toMatchObject({
+        coolingDown: true,
+      })
     }))
 
   it('blocks the registrable domain after a positive Google verdict', () =>
@@ -219,8 +231,8 @@ describe('Google Web Risk checks', () => {
       expect(await context.fixture.ttl(key)).toBeGreaterThan(7 * 24 * 60 * 60 * 1000 - 5000)
       await context.fixture.invalidateCleanVerdict(url)
       await expect(
-        context.fixture.own(context.fixture.state.hasCleanCachedVerdict(url)),
-      ).resolves.toBe(false)
+        context.fixture.own(context.fixture.state.readProviderGate(url)),
+      ).resolves.toMatchObject({ cleanCached: false })
       context.fetchSpy.mockResolvedValueOnce(UndiciResponse.json({}))
 
       await context.fixture.check(url.toString())

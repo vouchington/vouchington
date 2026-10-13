@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -13,6 +13,7 @@ test.describe('Source settings tab — persona boundary', () => {
   let sourceTopicUrlSlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const moderator = await createSiteModeratorUser()
     moderatorId = moderator.id
 

@@ -1,13 +1,30 @@
 import assert from 'http-assert'
 import extract from '@modules/markdown-extraction'
 import { extractDomain } from '@ts-shared/utils/urls'
-import { isUrlBlocked } from '@services/urls-domains-blacklist/domains'
-import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
+import {
+  getHostnamePolicies,
+  normalizeHostnameForPolicy,
+} from '@services/urls-domains-blacklist/domains'
+import { assertUrlsAllowedByWebRisk, parseWebRiskUrl } from '@services/web-risk/check'
+
+/**
+ * One batched policy read covers the display domains and the hostnames Web Risk will check, so
+ * neither the per-domain blocklist check nor the per-URL check queries again.
+ */
+async function assertDomainsAndUrlsAllowed(domains: string[], urls: string[]): Promise<void> {
+  const webRiskHostnames = urls.flatMap(url => parseWebRiskUrl(url)?.hostname ?? [])
+  const policies = await getHostnamePolicies([...domains, ...webRiskHostnames])
+  for (const domain of domains) {
+    const blocked = policies.get(normalizeHostnameForPolicy(domain))?.is_blocked === true
+    assert(!blocked, 400, `Domain is blocked: ${domain}`)
+  }
+  await assertUrlsAllowedByWebRisk(urls, { policies })
+}
 
 export async function assertNoBlockedDomains(markdown: string): Promise<void> {
   const { link_urls, image_urls } = await extract(markdown)
-  const allUrls = [...link_urls, ...image_urls]
-  const domainsToCheck = [
+  const allUrls = [...new Set([...link_urls, ...image_urls])]
+  const domains = [
     ...new Set(
       allUrls.flatMap(url => {
         const domain = extractDomain(url)
@@ -15,20 +32,11 @@ export async function assertNoBlockedDomains(markdown: string): Promise<void> {
       }),
     ),
   ]
-
-  const results = await Promise.all(
-    domainsToCheck.map(async domain => ({ domain, blocked: await isUrlBlocked(domain) })),
-  )
-  for (const result of results) {
-    assert(!result.blocked, 400, `Domain is blocked: ${result.domain}`)
-  }
-  await Promise.all([...new Set(allUrls)].map(url => assertUrlAllowedByWebRisk(url)))
+  await assertDomainsAndUrlsAllowed(domains, allUrls)
 }
 
 export async function assertUrlNotBlocked(url: string): Promise<void> {
   const domain = extractDomain(url)
   if (domain === 'unknown') return
-  const blocked = await isUrlBlocked(domain)
-  assert(!blocked, 400, `Domain is blocked: ${domain}`)
-  await assertUrlAllowedByWebRisk(url)
+  await assertDomainsAndUrlsAllowed([domain], [url])
 }

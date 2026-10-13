@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
@@ -14,6 +14,7 @@ test.describe('Admin Source Crawl Pages', () => {
   let crawlId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const topic = await insertTestTopic(
       `Source Crawl Test Topic ${suffix}`,

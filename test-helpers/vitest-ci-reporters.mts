@@ -47,7 +47,9 @@ export function ciReporters(): VitestReporters | undefined {
   switch (process.env.VITEST_CI_REPORTERS) {
     case undefined:
     case '':
-      return undefined
+      return process.env.VITEST_DIAGNOSTICS === '1'
+        ? ['default', createVitestFileProgressReporter()]
+        : undefined
     case 'run':
       return [
         'minimal',
@@ -58,7 +60,7 @@ export function ciReporters(): VitestReporters | undefined {
         'junit',
         'hanging-process',
         createVitestTeardownOverrunReporter(),
-        ...(process.env.VITEST_FILE_PROGRESS === '1' ? [createVitestFileProgressReporter()] : []),
+        ...(process.env.VITEST_DIAGNOSTICS === '1' ? [createVitestFileProgressReporter()] : []),
       ]
     default:
       throw new Error(

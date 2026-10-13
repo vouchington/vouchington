@@ -109,7 +109,6 @@ describe('user tag authorization and voting', () => {
 
       expect(vote.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
     },
-    60_000,
   )
 
   it('rejects missing and suspended targets for adds', async () => {

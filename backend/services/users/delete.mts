@@ -1,3 +1,4 @@
+import { settleUserDeletionOperations } from './settle-deletion-operations.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -26,23 +27,39 @@ import {
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
-async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string): Promise<void> {
-  await query(sql`/* deleteUser:lockUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+type LockContentionObserver = (event: { lock: 'user-lifecycle' }) => undefined
+
+async function lockUserDeletionLifecycle(
+  query: TransactionQuery,
+  userId: string,
+  onLockContention?: LockContentionObserver,
+): Promise<void> {
+  const { rows } = await query<{ acquired: boolean }>(sql`/* deleteUser:tryLockUser */
+    SELECT pg_try_advisory_xact_lock(hashtextextended(${userId}, 0)) AS acquired
   `)
+  const [lock] = rows
+  if (!lock) throw new Error('User lifecycle lock query returned no result')
+  if (!lock.acquired) {
+    onLockContention?.({ lock: 'user-lifecycle' })
+    await query(sql`/* deleteUser:lockUser */
+      SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+    `)
+  }
   await lockAuthorPublicationLifecycle(query, userId)
 }
 
 type DeleteUserDependencies = {
   purgeCacheTags: (tags: readonly string[]) => Promise<unknown>
+  onLockContention: LockContentionObserver
 }
 
 async function establishUserDeletionRequest(
   query: TransactionQuery,
   user: PrivateUser,
   requestedById: string,
+  onLockContention?: LockContentionObserver,
 ) {
-  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById)
+  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById, onLockContention)
   const request = await createUserDeletionRequest(target.id, requestedById, {
     priorUsername: target.username,
     query,
@@ -54,8 +71,9 @@ async function lockAndGetUserDeletionTarget(
   query: TransactionQuery,
   userId: string,
   requestedById: string,
+  onLockContention?: LockContentionObserver,
 ): Promise<UserDeletionTarget> {
-  await lockUserDeletionLifecycle(query, userId)
+  await lockUserDeletionLifecycle(query, userId, onLockContention)
   await lockUserProfileImageOwners([userId], query)
   return lockUserDeletionRows(query, userId, requestedById)
 }
@@ -110,8 +128,9 @@ async function attemptImmediateUserDeletionCacheEviction(
   const tags = getUserDeletionCacheTags(target)
   try {
     await purge(tags)
-    await Promise.all(
+    await settleUserDeletionOperations(
       tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
+      'User deletion cache receipts failed',
     )
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
@@ -142,20 +161,25 @@ export async function deleteUser(
 
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- the copyright check must follow the deletion lock and precede the privacy fence
-  const deletion = await establishUserDeletionRequest(query, user, requestedById)
+  const deletion = await establishUserDeletionRequest(
+    query,
+    user,
+    requestedById,
+    dependencies.onLockContention,
+  )
   await assertCopyrightEvidenceAllowsDeletion(query, user.id)
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()
 
-  await Promise.all([
-    invalidate.users(deletion.target.id, deletion.target.username),
-    attemptImmediateUserDeletionCacheEviction(
-      deletion.request.id,
-      deletion.target,
-      dependencies.purgeCacheTags ?? purgeCacheTags,
-    ),
-  ])
-  enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
+  const purge = dependencies.purgeCacheTags ?? purgeCacheTags
+  await settleUserDeletionOperations(
+    [
+      invalidate.users(deletion.target.id, deletion.target.username),
+      attemptImmediateUserDeletionCacheEviction(deletion.request.id, deletion.target, purge),
+    ],
+    'User deletion follow-ups failed',
+  )
+  await enqueueDeleteUserBookmarkBloomFilterBestEffort(user.id)
   try {
     await enqueueUserDeletion({
       requestId: deletion.request.id,

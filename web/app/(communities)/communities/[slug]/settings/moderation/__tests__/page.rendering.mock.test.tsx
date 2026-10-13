@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { configure, render, screen } from '@testing-library/react'
 import {

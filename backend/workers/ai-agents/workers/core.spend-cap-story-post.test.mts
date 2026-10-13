@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DelayedError, type Job, type Worker } from 'glide-mq'
+import { DelayedError, type Job } from 'glide-mq'
 import {
   createTestUrlWithHostname,
   createTestUserDirect,
@@ -72,10 +72,6 @@ function mockJob(postId: string, force = false): Job<AIAgentJobData> {
   } as unknown as Job<AIAgentJobData>
 }
 
-function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
-}
-
 function createDailyTotalLoader(totalMicrounits: number): () => Promise<DailyAiCostTotal> {
   return () => Promise.resolve({ totalMicrounits, hasUnpricedRows: false, day: '2026-08-16' })
 }
@@ -103,13 +99,12 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     })
 
     const job = mockJob(result.post.id)
-    const worker = mockWorker()
     const processAIAgent = vi
       .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
       .mockResolvedValue('ok')
     const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
 
-    const result2 = await processAIAgentWorkerJob(job, worker, {
+    const result2 = await processAIAgentWorkerJob(job, {
       waitForSpendCapConfig: () => Promise.resolve(),
       getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
       getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
@@ -128,13 +123,12 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     const result = await createStoryPost(story.id, testUser)
 
     const job = mockJob(result.post.id)
-    const worker = mockWorker()
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
     const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
-      processAIAgentWorkerJob(job, worker, {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
@@ -161,13 +155,12 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     })
 
     const job = mockJob(result.post.id, true)
-    const worker = mockWorker()
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
     const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
     const registerSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
-      processAIAgentWorkerJob(job, worker, {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
         getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),

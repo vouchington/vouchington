@@ -25,17 +25,18 @@ async function* streamIdBatches(
  * Streams post IDs eligible for language detection.
  * Idempotent: runBatch skips rows whose saved input key still matches current content.
  */
-export function streamPostsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+export function streamPostsNeedingLanguageDetection(
+  entityIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamPostsNeedingLanguageDetection */
+  const query = sql`/* streamPostsNeedingLanguageDetection */
         SELECT id FROM posts
         WHERE deleted_at IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+      `
+  if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }
@@ -43,21 +44,18 @@ export function streamPostsNeedingLanguageDetection(): AsyncGenerator<string[], 
 /**
  * Streams rss_feed_item IDs eligible for language detection.
  */
-export function streamRssFeedItemsNeedingLanguageDetection(): AsyncGenerator<
-  string[],
-  void,
-  unknown
-> {
+export function streamRssFeedItemsNeedingLanguageDetection(
+  entityIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamRssFeedItemsNeedingLanguageDetection */
+  const query = sql`/* streamRssFeedItemsNeedingLanguageDetection */
         SELECT id FROM rss_feed_items
         WHERE deleted_at IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+      `
+  if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }
@@ -67,11 +65,11 @@ export function streamRssFeedItemsNeedingLanguageDetection(): AsyncGenerator<
  * Only selects completed crawls that have saved detector input — placeholder
  * rows created by createCrawl() have empty inputs and null completed_at.
  */
-export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+export function streamCrawlsNeedingLanguageDetection(
+  entityIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamCrawlsNeedingLanguageDetection */
+  const query = sql`/* streamCrawlsNeedingLanguageDetection */
         SELECT id FROM crawls
         WHERE completed_at IS NOT NULL
           AND (
@@ -79,10 +77,11 @@ export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[],
             OR COALESCE(title, '') != ''
             OR COALESCE(language, '') != ''
           )
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+      `
+  if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }
@@ -90,21 +89,18 @@ export function streamCrawlsNeedingLanguageDetection(): AsyncGenerator<string[],
 /**
  * Streams community IDs eligible for language detection.
  */
-export function streamCommunitiesNeedingLanguageDetection(): AsyncGenerator<
-  string[],
-  void,
-  unknown
-> {
+export function streamCommunitiesNeedingLanguageDetection(
+  entityIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamCommunitiesNeedingLanguageDetection */
+  const query = sql`/* streamCommunitiesNeedingLanguageDetection */
         SELECT id FROM communities
         WHERE deleted_at IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+      `
+  if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }
@@ -133,18 +129,19 @@ export function streamUsersNeedingLanguageDetection(
 /**
  * Streams topic IDs eligible for language detection.
  */
-export function streamTopicsNeedingLanguageDetection(): AsyncGenerator<string[], void, unknown> {
+export function streamTopicsNeedingLanguageDetection(
+  entityIds?: readonly string[],
+): AsyncGenerator<string[], void, unknown> {
   const batchSize = getLanguageDetectionWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamTopicsNeedingLanguageDetection */
+  const query = sql`/* streamTopicsNeedingLanguageDetection */
         SELECT id FROM topics
         WHERE deleted_at IS NULL
           AND merged_into_topic_id IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
+      `
+  if (entityIds) query.append(sql` AND id = ANY(${entityIds}::uuid[])`)
+  query.append(sql` ORDER BY id`)
+  return streamIdBatches(
+    createAsyncGeneratorFromCursor<{ id: string }>(query, { batchSize: batchSize }),
     batchSize,
   )
 }

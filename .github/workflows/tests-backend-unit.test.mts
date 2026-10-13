@@ -84,7 +84,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
     expect(workflow).toContain(backendCommand)
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
@@ -92,7 +92,8 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('--coverage')
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
-    expect(vitestConfig).not.toContain('sequence: { groupOrder')
+    expect(vitestConfig).toContain('sequence: { groupOrder: 0 }')
+    expect(vitestConfig).toContain('sequence: { groupOrder: 1 }')
     expect(vitestConfig).not.toContain('fileParallelism: false')
     expect(vitestConfig).toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
@@ -192,7 +193,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
   })
 
-  it('streams each file start and a background memory and disk sample on the test step log', () => {
+  it('runs backend diagnostics only when explicitly enabled', () => {
     const runStep = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
       step => step.name === 'Run backend tests',
     )
@@ -201,7 +202,15 @@ describe('backend uncredentialed Docker test workflow', () => {
     const vitestAt = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run --bail=3')
 
     expect(runStep?.env?.VITEST_CI_REPORTERS).toBe('run')
-    expect(runStep?.env?.VITEST_FILE_PROGRESS).toBe('1')
+    expect(runStep?.env?.VITEST_DIAGNOSTICS).toBe(
+      "${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}",
+    )
+    expect(runStep?.env).not.toHaveProperty('VITEST_FILE_PROGRESS')
+    expect(script).toContain('if [ "$VITEST_DIAGNOSTICS" = 1 ]; then')
+    expect(script).toContain(
+      'start_sampler sample_runner_resources 15\n  start_sampler sample_postgres_waits 0.5',
+    )
+    expect(script).toContain('start_sampler sample_runner_pressure 2\nfi')
     expect(script).toContain("resource_prefix='[backend-unit-resources]'")
     expect(script).toContain('printf \'%s %s\\n\' "$1" "$line"')
     expect(script).toContain('} 2>&1 | prefix_lines "$resource_prefix"')
@@ -256,5 +265,25 @@ describe('backend uncredentialed Docker test workflow', () => {
     // The repository cache policy permits only the pnpm store and Playwright browsers; a
     // remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
+  })
+
+  // Real fresh-server acceptance belongs after migrate, before test/worker execution.
+  it('runs retained relation bootstrap acceptance exactly once between migrate and tests', () => {
+    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
+    const command = 'node scripts/data-retention/check-retained-relation-bootstrap.mts'
+    const matches = steps.filter(step => step.run === command)
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.if).toBeUndefined()
+    const migrate = steps.findIndex(step => step.run === 'node data-stores/psql/migrate.mts')
+    const acceptance = steps.findIndex(step => step.run === command)
+    const tests = steps.findIndex(step => step.name === 'Run backend tests')
+    expect(migrate).toBeGreaterThanOrEqual(0)
+    expect(acceptance).toBeGreaterThan(migrate)
+    expect(tests).toBeGreaterThan(acceptance)
+    const upload = steps.find(step => step.name === 'Upload retained relation bootstrap receipt')
+    expect(upload?.if).toBe('always()')
+    expect(upload?.with?.path).toBe('artifacts/retained-relation-bootstrap.json')
+    expect(upload?.with?.['retention-days']).toBe(1)
+    expect(upload?.with?.overwrite).toBe(true)
   })
 })

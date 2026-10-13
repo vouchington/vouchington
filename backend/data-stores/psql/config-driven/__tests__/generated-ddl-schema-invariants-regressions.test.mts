@@ -1,15 +1,11 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { initSqlAst } from 'vouchington-tooling/sql-ast'
+import { describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import { findFirstUuidv7CreatedAtViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts'
 
 describe('config-driven generated DDL schema invariant regressions', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
-  it('rejects a UUIDv7-keyed table whose created_at is not derived from id', () => {
+  it('rejects a UUIDv7-keyed table whose created_at is not derived from id', async () => {
     expect(
-      findFirstUuidv7CreatedAtViolation(
+      await findFirstUuidv7CreatedAtViolation(
         'CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now());',
       ),
     ).toBe(
@@ -17,13 +13,13 @@ describe('config-driven generated DDL schema invariant regressions', () => {
         'because vote_edges.id is a UUIDv7 primary key',
     )
     expect(
-      findFirstUuidv7CreatedAtViolation(
+      await findFirstUuidv7CreatedAtViolation(
         'CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), ' +
           'created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);',
       ),
     ).toBeNull()
     expect(
-      findFirstUuidv7CreatedAtViolation(
+      await findFirstUuidv7CreatedAtViolation(
         'CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7());',
       ),
     ).toBeNull()
@@ -31,18 +27,18 @@ describe('config-driven generated DDL schema invariant regressions', () => {
       // A composite primary key means id is not itself the primary key, so this is not
       // a "UUIDv7 table" by this check's own anti-circularity definition, even though
       // created_at is stored rather than generated.
-      findFirstUuidv7CreatedAtViolation(
+      await findFirstUuidv7CreatedAtViolation(
         'CREATE TABLE entity_relations (subject_id UUID, object_id UUID, ' +
           'id UUID DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now(), ' +
           'PRIMARY KEY (subject_id, object_id));',
       ),
     ).toBeNull()
-    expect(findFirstUuidv7CreatedAtViolation('not valid sql')).toBeNull()
+    expect(await findFirstUuidv7CreatedAtViolation('not valid sql')).toBeNull()
     expect(
       // A CREATE TABLE nested inside a DO block body is opaque to the top-level parser
       // (the whole dollar-quoted body is one string token), so this violation is only
       // reachable by scanning DO block bodies as their own candidate statements.
-      findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
+      await findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'vote_edges') THEN
     CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now());
   END IF;
@@ -52,7 +48,7 @@ END $$;`),
         'because vote_edges.id is a UUIDv7 primary key',
     )
     expect(
-      findFirstUuidv7CreatedAtViolation(
+      await findFirstUuidv7CreatedAtViolation(
         `DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'vote_edges') THEN
     CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), ` +
@@ -65,7 +61,7 @@ END $$;`,
       // A CREATE TABLE run via a dynamically EXECUTEd literal is opaque one level deeper
       // still: the DO block body scan sees only the EXECUTE statement, not the table DDL
       // inside its string argument.
-      findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
+      await findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'vote_edges') THEN
     EXECUTE 'CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now())';
   END IF;
@@ -78,7 +74,7 @@ END $$;`),
       // A DO-block candidate statement carrying a PostgreSQL table modifier (UNLOGGED,
       // TEMP/TEMPORARY) must still be recognized as a CREATE TABLE, mirroring the same
       // modifier alternation `generated-ddl-guard-helpers.mts`'s top-level guard already uses.
-      findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
+      await findFirstUuidv7CreatedAtViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'vote_edges') THEN
     CREATE UNLOGGED TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now());
   END IF;
@@ -87,5 +83,117 @@ END $$;`),
       'vote_edges.created_at must be GENERATED ALWAYS AS (uuid_extract_timestamp(id)) ' +
         'because vote_edges.id is a UUIDv7 primary key',
     )
+  })
+
+  it('preserves direct root functions and single-column table primary keys', async () => {
+    const violation =
+      'vote_edges.created_at must be GENERATED ALWAYS AS (uuid_extract_timestamp(id)) ' +
+      'because vote_edges.id is a UUIDv7 primary key'
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE public.vote_edges (id uuid DEFAULT (uuidv7())::uuid, ' +
+          'created_at timestamptz DEFAULT now(), PRIMARY KEY (id));',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid DEFAULT uuidv7(), other uuid, ' +
+          'created_at timestamptz DEFAULT now(), PRIMARY KEY (id, other));',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges ("ID" uuid DEFAULT uuidv7(), id uuid, ' +
+          'created_at timestamptz DEFAULT now(), PRIMARY KEY (id));',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz GENERATED ALWAYS AS ((uuid_extract_timestamp((id)))) STORED);',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id::uuid)) STORED);',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT coalesce(uuidv7(), null), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBeNull()
+  })
+
+  it('distinguishes quoted shadow columns and functions from unquoted identities', async () => {
+    const violation =
+      'vote_edges.created_at must be GENERATED ALWAYS AS (uuid_extract_timestamp(id)) ' +
+      'because vote_edges.id is a UUIDv7 primary key'
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges ("ID" uuid, id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          '"CREATED_AT" timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED, ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT "UUIDV7"(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT uuidv7(), ' +
+          'created_at timestamptz GENERATED ALWAYS AS ("UUID_EXTRACT_TIMESTAMP"(id)) STORED);',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges ("id" uuid PRIMARY KEY DEFAULT "uuidv7"(), ' +
+          '"created_at" timestamptz GENERATED ALWAYS AS ("uuid_extract_timestamp"("id")) STORED);',
+      ),
+    ).toBeNull()
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id uuid PRIMARY KEY DEFAULT pg_catalog.uuidv7(), ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBe(violation)
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TABLE vote_edges (id bigint PRIMARY KEY DEFAULT 1, ' +
+          'created_at timestamptz DEFAULT now());',
+      ),
+    ).toBeNull()
+  })
+
+  it('fails closed on dynamic EXECUTE while ignoring a trigger function reference', async () => {
+    expect(await findFirstUuidv7CreatedAtViolation('DO $$ BEGIN EXECUTE ddl; END $$;')).toBe(
+      'EXECUTE statements must use literal SQL payloads',
+    )
+    expect(
+      await findFirstUuidv7CreatedAtViolation(
+        'CREATE TRIGGER touched BEFORE UPDATE ON vote_edges ' +
+          'FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();',
+      ),
+    ).toBeNull()
+  })
+
+  it('does not lose a table hidden in unrepresented procedural control flow', async () => {
+    const sql = `DO $$ BEGIN
+  FOR counter IN 1..2 LOOP
+    CREATE TABLE vote_edges (id UUID PRIMARY KEY DEFAULT uuidv7(), created_at TIMESTAMPTZ DEFAULT now());
+  END LOOP;
+END $$;`
+    expect(await findFirstUuidv7CreatedAtViolation(sql)).not.toBeNull()
   })
 })

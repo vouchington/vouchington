@@ -21,8 +21,8 @@ type McpReadToolGatingSuite = {
   scopes: readonly ApiScope[]
   /** Each tool, the one scope it needs and a valid call. */
   tools: readonly (readonly [name: string, scope: ApiScope, args: object])[]
-  /** Names of the tools that take `limit`, which accepts 1 through 25. */
-  pagedTools: readonly string[]
+  /** Tool names and, for merged tools, the options that accept `limit` from 1 through 25. */
+  pagedTools: readonly (readonly [name: string, option?: string])[]
   /** A tool and arguments that omit one it requires. */
   requiredArguments: readonly (readonly [name: string, args: object])[]
 }
@@ -35,7 +35,12 @@ type McpReadToolGatingSuite = {
  */
 export function registerMcpReadToolGatingTests(suite: McpReadToolGatingSuite): void {
   const { scopes: familyScopes, tools, pagedTools, requiredArguments } = suite
-  const paged = tools.filter(([name]) => pagedTools.includes(name))
+  const paged = tools.filter(([name, , args]) =>
+    pagedTools.some(
+      ([pagedName, option]) =>
+        pagedName === name && (args as { option?: string }).option === option,
+    ),
+  )
   const unrelated = UNRELATED_SCOPES.filter(scope => !familyScopes.includes(scope)).slice(0, 2)
 
   describe('gating', () => {
@@ -116,13 +121,20 @@ export function registerMcpReadToolGatingTests(suite: McpReadToolGatingSuite): v
     )
 
     it.each(paged)('bounds the page size of %s to 1 through 25', async (name, scope, args) => {
+      const withLimit = (limit: number) =>
+        'option' in args &&
+        'arguments' in args &&
+        typeof args.arguments === 'object' &&
+        args.arguments !== null
+          ? { ...args, arguments: { ...args.arguments, limit } }
+          : { ...args, limit }
       for (const limit of [1, 25]) {
-        await expect(call(name, { ...args, limit }, [scope])).resolves.toMatchObject({
+        await expect(call(name, withLimit(limit), [scope])).resolves.toMatchObject({
           structuredContent: { success: expect.any(Boolean) },
         })
       }
       for (const limit of [0, 26, 100, 1.5, -1]) {
-        await expect(call(name, { ...args, limit }, [scope])).rejects.toMatchObject({
+        await expect(call(name, withLimit(limit), [scope])).rejects.toMatchObject({
           code: INVALID_PARAMS,
         })
       }

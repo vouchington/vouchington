@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createElement } from 'react'
 
 const { mockTranslate } = vi.hoisted(() => ({
   mockTranslate: (key: string) => key,
@@ -6,6 +7,32 @@ const { mockTranslate } = vi.hoisted(() => ({
 
 vi.mock(import('@/lib/i18n/get-translations'), () => ({
   getTranslations: async () => mockTranslate,
+}))
+
+vi.mock(import('@/components/shared/follower-share-actions'), () => ({
+  FollowerShareActions: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/shared/report-menu-item'), () => ({
+  ReportMenuItem: () => createElement('span', { hidden: true }),
+  ReportInlineButton: () => createElement('span', { hidden: true }),
+  ReportMenuKebab: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
+  default: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/tags/add-tag-form'), () => ({
+  AddTagForm: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
+  EntityBookmarkButton: () => createElement('span', { hidden: true }),
+}))
+vi.mock(import('@/components/shared/markdown-code-block-highlighter'), () => ({
+  highlightCodeBlocks: vi
+    .fn<typeof import('@/components/shared/markdown-code-block-highlighter').highlightCodeBlocks>()
+    .mockResolvedValue(undefined),
 }))
 
 import { generateMetadata as articles } from '@/app/(posts)/articles/page'

@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -52,7 +52,7 @@ describe('enqueueElectionUpdatesForUser', () => {
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await elections.getJob(unrelatedJobId)
     expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
-  }, 60_000)
+  })
 
   it('enqueues a post election update for the voted post id', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -83,7 +83,7 @@ describe('enqueueElectionUpdatesForUser', () => {
         concurrency: 100,
       },
     })
-  }, 60_000)
+  })
 
   it('enqueues a user-vouch election update for the voted user id', async () => {
     const voter = await createTestUserDirect({ username: randomUsername() })
@@ -107,10 +107,10 @@ describe('enqueueElectionUpdatesForUser', () => {
         concurrency: 100,
       },
     })
-  }, 60_000)
+  })
 
   it('resolves for a non-existent user without enqueueing a matching job', async () => {
-    const fakeId = '00000000-0000-7000-8000-000000000001'
+    const fakeId = randomUUID()
     const unrelatedUser = await createTestUserDirect({ username: randomUsername() })
     const unrelatedPostId = await insertTestPost({
       title: `Unrelated vote weight enqueue test ${randomHex()}`,
@@ -129,5 +129,5 @@ describe('enqueueElectionUpdatesForUser', () => {
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await elections.getJob(unrelatedJobId)
     expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
-  }, 60_000)
+  })
 })

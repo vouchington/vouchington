@@ -6,14 +6,14 @@ Committed registry-backed wakeup for pre-commit edge denial recovery; drained by
 
 Not partitioned — growth: bounded.
 
-| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                             |
-| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
-| `delivery_key` | `text`                     | no       |                     |          |           |           | Exact immutable delivery URL identity; coalesces outstanding repair work.                           |
-| `marker_token` | `bigint`                   | no       |                     |          |           |           | Monotonic wakeup identity allocated on coalescing; acknowledgement deletes only its observed token. |
-| `created_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
-| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
+| Column                              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                             |
+| ----------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `media_delivery_registry_record_id` | `uuid`                     | no       |                     |          |           |           | Retained delivery authority identity; coalesces outstanding repair work.                            |
+| `marker_token`                      | `bigint`                   | no       |                     |          |           |           | Monotonic wakeup identity allocated on coalescing; acknowledgement deletes only its observed token. |
+| `created_at`                        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
+| `updated_at`                        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
 
-**Primary key:** `PRIMARY KEY (delivery_key)`
+**Primary key:** `PRIMARY KEY (media_delivery_registry_record_id)`
 
 **Unique constraints:**
 _none_
@@ -23,12 +23,12 @@ _none_
 
 **Foreign keys:**
 
-- `media_delivery_repair_markers_delivery_key_fkey`: `FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT`
+- `media_delivery_repair_markers_media_delivery_registry_reco_fkey`: `FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_media_delivery_repair_markers__oldest`: `CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, delivery_key)`
-- `media_delivery_repair_markers_pkey`: `CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (delivery_key)`
+- `idx_media_delivery_repair_markers__oldest`: `CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, media_delivery_registry_record_id)`
+- `media_delivery_repair_markers_pkey`: `CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (media_delivery_registry_record_id)`
 
 **Triggers:**
 

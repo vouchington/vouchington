@@ -3,6 +3,7 @@ import { v7 } from 'uuid'
 import {
   beginTransaction,
   countTestUserDeletionEntityRelationVotes,
+  countUserDeletionRequestsForTest,
   createTestUser,
   getEntityRelation,
   insertEntityRelation,
@@ -13,6 +14,7 @@ import {
   getTopicAliasIdForTest,
   setTestEntityRelationIdAndScore,
   startPausedTestUserDeletionWriter,
+  startPausedTestUserSoftDeletion,
   withTestEntityRelationVoteCandidateCascade,
 } from '@voucha/test-helpers'
 import { upsertEntityRelationElectionVotes } from '../elections-votes/entity-relation/votes-upsert.mts'
@@ -238,15 +240,27 @@ describe('deleteUser entity-relation vote cleanup', () => {
       )
     })
 
+    const contention = Promise.withResolvers<void>()
     let deletionAccepted = false
-    const deletion = deleteUser(deletingVoter, deletingVoter).then(attempt => {
+    const deletion = deleteUser(deletingVoter, deletingVoter, {
+      onLockContention: () => {
+        contention.resolve()
+        return undefined
+      },
+    }).then(attempt => {
       deletionAccepted = true
+      contention.reject(new Error('Deletion completed without lock contention'))
       return attempt
     })
-    await new Promise<void>(resolve => setImmediate(resolve))
-    expect(deletionAccepted).toBe(false)
+    void deletion.catch(contention.reject)
+    try {
+      await contention.promise
+      expect(deletionAccepted).toBe(false)
+    } finally {
+      writer.release()
+      await Promise.allSettled([writer.completed, deletion])
+    }
 
-    writer.release()
     await writer.completed
     const attempt = await deletion
     await expect(
@@ -261,5 +275,24 @@ describe('deleteUser entity-relation vote cleanup', () => {
     await drainUserDeletionForTest(attempt)
 
     await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(0)
+  })
+
+  it('rolls back when the synchronous deletion-lock contention observer throws', async () => {
+    const user = await createTestUser()
+    const holder = await startPausedTestUserSoftDeletion(user.id)
+    const observerError = new Error('lock observer failed')
+    try {
+      await expect(
+        deleteUser(user, user, {
+          onLockContention: () => {
+            throw observerError
+          },
+        }),
+      ).rejects.toBe(observerError)
+      await expect(countUserDeletionRequestsForTest(user.id)).resolves.toBe(0)
+    } finally {
+      holder.release()
+      await holder.completed
+    }
   })
 })

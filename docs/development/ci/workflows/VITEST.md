@@ -9,6 +9,14 @@ merge-group diff, and a selected area runs its full suites; CI never selects ind
 [`ci/vitest/project-ownership-registry.mts`](../../../../ci/vitest/project-ownership-registry.mts) derives
 the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../ci.md#area-test-suites).
 
+With `VITEST_DIAGNOSTICS=1`, backend data-store setup emits synchronous phase start and completion
+records. Failures emit a phase record even when diagnostics are off. The records identify imports,
+seeding, each dynamic configuration, and bloom warmups before a test file is assigned. With
+diagnostics enabled, inspect the last open phase when file-progress logs have not started. Setup
+drains every started parallel operation before reporting distinct failures;
+subscription-client connection bounds belong to the installed Valkey dependency. The setup owner is
+[`vitest.setup.data-stores.mts`](../../../../test-helpers/vitest.setup.data-stores.mts).
+
 Credentialed projects must use workflow, job, or step `if:` gates so untrusted PRs from forks, Dependabot, or Renovate do not receive API keys, repository secrets, or OIDC-assumed cloud roles. Test suites must skip when their required env vars are absent.
 
 Each area's path filters must trigger the owning workflow when a project’s source files, test
@@ -18,16 +26,21 @@ not treated as docs-only.
 
 Reporter policy:
 
-- Local Vitest commands should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent.
+- Local Vitest commands without diagnostics should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent. With `VITEST_DIAGNOSTICS=1`, the local run uses Vitest's default reporter alongside file progress so failures stay visible.
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
+- Routine Vitest diagnostics are silent by default. Set `VITEST_DIAGNOSTICS=1` for local runs or
+  the `VITEST_DIAGNOSTICS` repository variable for backend-unit, credentialed backend, web-api,
+  web-integration, and PostgreSQL schema CI runs. The backend-unit workflow also accepts a
+  `diagnostics` boolean for a manual dispatch or reusable workflow call. This enables file progress,
+  setup and teardown timings, and backend runner samples. Failures, JUnit output, summaries, timeout
+  diagnostics, and Storybook browser progress markers remain active.
 - `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
   `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
   active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
-  `tests-backend-unit.yml` also sets `VITEST_FILE_PROGRESS=1`, which appends a reporter that
-  prints each test file when a worker starts it and when it finishes. The `minimal` reporter
-  prints nothing per file, so a shard that dies would otherwise leave no file in the log.
-- The same step streams three background samples to the shard log. `[backend-unit-resources]`
+  With diagnostics enabled, the backend-unit reporter prints each test file when a worker starts it
+  and when it finishes.
+- With diagnostics enabled, the backend-unit step streams three background samples to the shard log. `[backend-unit-resources]`
   records memory, disk and the largest processes every 15 seconds. `[backend-unit-pg-waits]` runs
   [`ci/backend-unit-pg-waits.sql`](../../../../ci/backend-unit-pg-waits.sql) every half second and
   prints a row only for a blocked or blocking backend, or one statement that has run for 1.5 seconds
@@ -54,57 +67,63 @@ coverage but did not write LCOV fails its parent case.
 
 <!-- BEGIN GENERATED: vitest-ownership -->
 
-| Vitest project                     | Workflow                         | Job                               | Credential requirement           |
-| ---------------------------------- | -------------------------------- | --------------------------------- | -------------------------------- |
-| `ts-shared`                        | `tests-ts-shared.yml`            | `ts-shared`                       | None                             |
-| `dev-tools`                        | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `static-analysis-tools`            | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `static-analysis-ast-grep`         | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `ci-tools`                         | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `github-actions`                   | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `git-hooks`                        | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `playwright-helpers`               | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `i18n-extract-codemod`             | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `docker-deploy`                    | `tests-tooling.yml`              | `tooling`                         | None                             |
-| `i18n-route-bounds`                | `tests-tooling.yml`              | `i18n-route-bounds`               | None                             |
-| `lambdas-portability`              | `tests-portability.yml`          | Linux portability                 | None                             |
-| `cloudflare-worker-portability`    | `tests-portability.yml`          | Linux portability                 | None                             |
-| `backend/data-stores/analytics`    | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend/services/analytics`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-modules`                  | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-no-data-mocks`            | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-test-helpers`             | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-contract-artifacts`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend-email-templates`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
-| `backend/analytics-integration`    | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-data-stores`              | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-platform-stats-cache`     | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-mocks`                    | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-real-glide-mq`            | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
-| `backend-postgres-schema`          | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
-| `backend-activitypub-capacity`     | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
-| `backend-aws`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role                   |
-| `backend-bedrock`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role + Bedrock         |
-| `backend-openai`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`                 |
-| `backend-openrouter`               | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`             |
-| `backend-stripe`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`              |
-| `backend-anthropic`                | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | ANTHROPIC_AUTH_TOKEN (federated) |
-| `web`                              | `tests-web.yml`                  | `web-tests` (sharded)             | None                             |
-| `web-storybook`                    | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-storybook-component-coverage` | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-storybook-browser`            | `storybook.yml`                  | `storybook`                       | None                             |
-| `web-api`                          | `tests-web-api.yml`              | `web-api-tests` (sharded)         | None                             |
-| `web-integration`                  | `tests-web-integration.yml`      | `web-integration-tests` (sharded) | None                             |
-| `lambdas`                          | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
-| `lambdas-mocks`                    | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
-| `cloudflare-worker`                | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
-| `cloudflare-worker-mocks`          | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
+| Vitest project                        | Workflow                         | Job                               | Credential requirement           |
+| ------------------------------------- | -------------------------------- | --------------------------------- | -------------------------------- |
+| `ts-shared`                           | `tests-ts-shared.yml`            | `ts-shared`                       | None                             |
+| `dev-tools`                           | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `static-analysis-tools`               | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `static-analysis-ast-grep`            | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `ci-tools`                            | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `github-actions`                      | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `git-hooks`                           | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `playwright-helpers`                  | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `i18n-extract-codemod`                | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `docker-deploy`                       | `tests-tooling.yml`              | `tooling`                         | None                             |
+| `i18n-route-bounds`                   | `tests-tooling.yml`              | `i18n-route-bounds`               | None                             |
+| `lambdas-portability`                 | `tests-portability.yml`          | Linux portability                 | None                             |
+| `cloudflare-worker-portability`       | `tests-portability.yml`          | Linux portability                 | None                             |
+| `backend/data-stores/analytics`       | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend/services/analytics`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-modules`                     | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-no-data-mocks`               | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-test-helpers`                | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-contract-artifacts`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend-email-templates`             | `tests-backend-modules.yml`      | `backend-modules`                 | None                             |
+| `backend/analytics-integration`       | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-data-stores`                 | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-platform-stats-cache`        | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-mocks`                       | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-real-glide-mq`               | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-embedding-creation-capacity` | `tests-backend-unit.yml`         | `backend-tests`                   | None                             |
+| `backend-postgres-schema`             | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
+| `backend-activitypub-capacity`        | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                             |
+| `backend-aws`                         | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role                   |
+| `backend-bedrock`                     | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role + Bedrock         |
+| `backend-openai`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`                 |
+| `backend-openrouter`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`             |
+| `backend-stripe`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`              |
+| `backend-anthropic`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | ANTHROPIC_AUTH_TOKEN (federated) |
+| `web`                                 | `tests-web.yml`                  | `web-tests` (sharded)             | None                             |
+| `web-storybook`                       | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-storybook-component-coverage`    | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-storybook-browser`               | `storybook.yml`                  | `storybook`                       | None                             |
+| `web-api`                             | `tests-web-api.yml`              | `web-api-tests` (sharded)         | None                             |
+| `web-integration`                     | `tests-web-integration.yml`      | `web-integration-tests` (sharded) | None                             |
+| `lambdas`                             | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
+| `lambdas-mocks`                       | `tests-lambdas.yml`              | `lambdas-tests`                   | None                             |
+| `cloudflare-worker`                   | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
+| `cloudflare-worker-mocks`             | `tests-cloudflare-worker.yml`    | `cloudflare-worker-tests`         | None                             |
 
 <!-- END GENERATED -->
 
 Current conventions for future credentialed suites all use
 `tests-backend-credentialed.yml` / `backend-credentialed-tests`:
 
-- Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. That list owns each project's name and `include` globs. The transient-retry classifier and the runner groups derive from it.
+- Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. That list owns each project's name and `include` globs. The runner groups derive from it.
+- A credentialed suite is an informational smoke check: it is not in the `backend` gate and publishes no coverage. Gate the same behavior with a recorded-response fixture test in a unit project, named so it does not match the project's `include` glob ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)).
 
 If a Playwright or web-integration test starts requiring external credentials, gate the credential setup with `if:` and make the suite skip when the env vars are absent.
+
+Embedding creation capacity runs first through the normal project group-order barrier on its
+assigned shard, using the existing PostgreSQL/Valkey services and migration. Remaining selected
+projects then use the same persistent database. JUnit and LCOV remain the ordinary shard outputs.

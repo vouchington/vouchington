@@ -52,7 +52,6 @@ export const sendEmail = (options: SendEmailOptions) => {
     return Promise.resolve({ $metadata: {}, MessageId: 'vitest-placeholder' })
   }
 
-  /* c8 ignore start -- AWS transport wiring; raw MIME construction is covered separately. */
   if (options.headers) {
     const command = new SendRawEmailCommand({
       RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf8') },
@@ -69,7 +68,6 @@ export const sendEmail = (options: SendEmailOptions) => {
     promise.catch(onError)
     return promise
   }
-  /* c8 ignore stop */
 
   const input = {
     Destination: {
@@ -114,7 +112,9 @@ function getSESClient(): CreateSESClient {
     client = new CreateSESClient({
       credentials: getSesClientCredentials(),
       // SES sends have no idempotency token. Retrying after an ambiguous response timeout can
-      // deliver the same email twice, so callers own any deliberate retry as a new attempt.
+      // deliver the same email twice, so callers own any deliberate retry as a new attempt. A
+      // `Throttling` rejection (HTTP 400, "Maximum sending rate exceeded") is the exception: SES
+      // refused it before sending, so the email queue's `wrapHttpForRetry` retries it.
       maxAttempts: 1,
       region: AWS_REGION,
       requestHandler: createAwsRequestHandler(),

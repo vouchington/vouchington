@@ -13,7 +13,7 @@ describe('resolveReportIntegrityFlag', () => {
 
   beforeAll(async () => {
     adminUser = await createTestUserDirect({ username: randomUsername() })
-  }, 60_000)
+  }, 5_000)
 
   it('accepts only the non-penalty PATCH resolution at the service boundary', () => {
     expectTypeOf(resolveReportIntegrityFlag)
@@ -34,7 +34,7 @@ describe('resolveReportIntegrityFlag', () => {
     expect(resolved.resolved_at).not.toBeNull()
     expect(resolved.resolved_by_id).toBe(adminUser.id)
     expect(resolved.resolution).toBe('dismissed')
-  }, 60_000)
+  })
 
   it('throws 404 when resolving an already-resolved flag', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
@@ -48,11 +48,11 @@ describe('resolveReportIntegrityFlag', () => {
     await expect(resolveReportIntegrityFlag(flagId, adminUser.id, 'dismissed')).rejects.toThrow(
       'Report integrity flag not found or already resolved',
     )
-  }, 60_000)
+  })
 
   it('throws 404 for a completely unknown flag ID', async () => {
     await expect(resolveReportIntegrityFlag(uuidv7(), adminUser.id, 'dismissed')).rejects.toThrow(
       'Report integrity flag not found or already resolved',
     )
-  }, 60_000)
+  })
 })

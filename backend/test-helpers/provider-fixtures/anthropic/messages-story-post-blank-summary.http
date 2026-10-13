@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_01ReplayFixtureStoryBlank
+
+{"id":"msg_01ReplayFixtureStoryBlank","type":"message","role":"assistant","model":"claude-haiku-5-5-20261001","content":[{"type":"text","text":"{\"title\":\"Storm Cuts Power To 40,000 Homes\",\"ai_summary_markdown\":\"   \"}"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":21,"cache_creation_input_tokens":150,"cache_read_input_tokens":340,"cache_creation":{"ephemeral_5m_input_tokens":100,"ephemeral_1h_input_tokens":50},"output_tokens":17,"service_tier":"standard"}}

@@ -36,17 +36,19 @@ The [pure config regression tests](../../ci/playwright-test-timeout-config.test.
 
 A separate credentialed suite lives under `playwright/credentialed/` and uses
 `playwright.credentialed.config.mts`. It tests features that require real cloud credentials:
-real S3 presigned PUT uploads (CORS validation) and real OpenAI chat responses. Run it locally with:
+real S3 presigned PUT uploads (CORS validation) and sideloaded images served through the image lambda. Run it locally with:
 
 ```bash
 source .env
 pnpm exec playwright test --config playwright.credentialed.config.mts
 ```
 
-Individual specs skip themselves when credentials are absent (`S3_AWS_ACCESS_KEY_ID`,
-`AWS_ACCESS_KEY_ID`, or `OPENAI_API_KEY`), so the command is safe to run without credentials.
+A spec fails when its credentials are absent (`S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID`, and
+`S3_BUCKET_IMAGE_UPLOADS` for the upload spec); see [R6](tests.md#test-suite-rules).
 In CI, the suite runs only in a trusted secret context via the `test-playwright-credentialed`
-job; see [CI Job Conditions](reference-ci-ci-job-conditions.md).
+job, which is informational and does not gate `web`
+([live-provider smoke checks](tests.md#live-provider-smoke-checks)); see
+[CI Job Conditions](reference-ci-ci-job-conditions.md).
 
 Playwright and web-integration tests always run against **production builds** — never dev
 servers. `pnpm run test:playwright` and `pnpm run test:integration:web` automatically build

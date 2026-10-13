@@ -17,7 +17,7 @@ export async function isFirstCommunityPost(
   const { rows } = await read<{ is_first: boolean }>(sql`/* isFirstCommunityPost */
     SELECT (
       SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: the earliest community post can be in any post-ID partition, including before the current post
+      -- no-mistakes-disable-next-line postgres-required-predicates: an earlier post can be attached to this community later, so finding the first post requires all ID partitions
       FROM posts
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}
@@ -63,7 +63,9 @@ export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunity
           .id
       : null
   const candidateQuery = sql`/* enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts */
-    SELECT id FROM posts
+    SELECT id
+    -- no-mistakes-disable-next-line postgres-required-predicates: global recovery must find pending embedded posts in every ID partition, including before the first cursor
+    FROM posts
     WHERE community_id IS NOT NULL
       AND created_by_id IS NOT NULL
       AND deleted_at IS NULL
@@ -116,7 +118,7 @@ async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
       )
       AND p.id = (
         SELECT first_post.id
-        -- no-mistakes-disable-next-line postgres-required-predicates: the earliest community post can be in any post-ID partition, including before the current post
+        -- no-mistakes-disable-next-line postgres-required-predicates: this mixed-community batch has no safe parent-ID bound and an earlier post may have been attached later
         FROM posts first_post
         WHERE first_post.created_by_id = p.created_by_id
           AND first_post.community_id = p.community_id

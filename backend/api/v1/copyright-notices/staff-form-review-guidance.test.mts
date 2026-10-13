@@ -94,7 +94,7 @@ describe('copyright staff case form review after the decision', () => {
       },
     })
     expect(JSON.stringify(reviewed.form_review)).not.toContain('The signed notice is complete.')
-  }, 60_000)
+  })
 
   it('reports a review whose moderator account was erased with no reviewer', async () => {
     const [{ notice }, staff, erasedModerator] = await Promise.all([
@@ -123,5 +123,5 @@ describe('copyright staff case form review after the decision', () => {
       reviewed_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       reviewed_by_id: null,
     })
-  }, 60_000)
+  })
 })

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
@@ -17,6 +17,7 @@ test.describe('Instance Detail Routes', () => {
   let referralTopicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const hostname = `pw-instance-${suffix}.example`
     topicSlug = `instance-detail-${suffix}`

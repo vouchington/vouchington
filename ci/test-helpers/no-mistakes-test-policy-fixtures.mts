@@ -10,10 +10,11 @@ jobs:
   no-mistakes:
     runs-on: ubuntu-latest
     steps:
-      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
+      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
       - run: node ci/check-no-mistakes-test-policy.mts
       - run: node ci/check-live-workflow-topology.mts
       - run: node ci/check-storybook-browser-optimize-deps.mts
+      - run: node ci/check-classifier-golden-imports.mts
 `
 
 export const malformedWorkflow = 'jobs: [unterminated\n'
@@ -46,8 +47,8 @@ export const workflowWithDuplicate = `${staticAnalysisWorkflow}
 `
 
 export const workflowWithWrongOrder = staticAnalysisWorkflow.replace(
-  '      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json\n      - run: node ci/check-no-mistakes-test-policy.mts\n      - run: node ci/check-live-workflow-topology.mts',
-  '      - run: node ci/check-live-workflow-topology.mts\n      - run: node ci/check-no-mistakes-test-policy.mts\n      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
+  '      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check\n      - run: node ci/check-no-mistakes-test-policy.mts\n      - run: node ci/check-live-workflow-topology.mts',
+  '      - run: node ci/check-live-workflow-topology.mts\n      - run: node ci/check-no-mistakes-test-policy.mts\n      - run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
 )
 
 export const unrelatedWorkflows = {

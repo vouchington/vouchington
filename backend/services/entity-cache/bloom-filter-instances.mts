@@ -16,8 +16,8 @@ export function entityCacheBloomFilterEnabled(): boolean {
 //    not exist until rebuildFromStream completes its atomic RENAME. During the backfill
 //    window, ValkeyCache reads fall back to the DB because the live key is absent (correct
 //    behavior, no 404s).
-// 2. In caches.mts, passed to ValkeyCache so the Lua get scripts can check existence inline
-// 3. In entity create/upsert services to populate the filter at write time via .add()
+// 2. In EntityBloomCache, guarded by completeness markers before accepting a miss.
+// 3. In entity producers and listeners through addEntityBloomKeys after commit.
 export const entityCacheBloomFilters = {
   // concurrencyLimit: cap in-flight write chunks during bulk rebuilds in the bloom-filters worker.
   // posts (1M) and rss_feed_items (5M) use half the default (8 vs 16) to limit worker Valkey pressure.

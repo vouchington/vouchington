@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { searchRssFeeds } from '@services/rss-feeds'
@@ -19,6 +19,14 @@ type ListArgs = {
   enabled?: boolean | null
   discoverable?: boolean | null
   apply_mutes?: boolean
+  category?: string
+  include_descendants?: boolean
+  publisher_type?: string
+  publisher_type_match?: 'any' | 'all'
+  publisher_types?: string[]
+  topic?: string
+  topic_match?: 'any' | 'all'
+  topics?: string[]
   limit?: number
   after?: string
 }
@@ -27,10 +35,8 @@ type ListResult = McpPage<McpRssFeed> | typeof INVALID_CURSOR_RESULT
 type DetailResult = { success: true; rss_feed: McpRssFeed } | { success: false; error: string }
 const MAX_LIMIT = 25
 
-export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
+export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
   schema: {
-    name: 'search_rss_feeds',
-    type: 'function',
     description: `Search RSS feeds by title, type and current state. Returns at most ${MAX_LIMIT} feeds per page and page_info.end_cursor for the next page. Text search has no cursor, as on REST.`,
     parameters: {
       type: 'object',
@@ -41,12 +47,19 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
         enabled: { type: ['boolean', 'null'] },
         discoverable: { type: ['boolean', 'null'] },
         apply_mutes: { type: 'boolean', description: 'Exclude your muted feeds, as on REST.' },
+        category: { type: 'string' },
+        include_descendants: { type: 'boolean' },
+        publisher_type: { type: 'string' },
+        publisher_type_match: { type: 'string', enum: ['any', 'all'] },
+        publisher_types: { type: 'array', items: { type: 'string' } },
+        topic: { type: 'string' },
+        topic_match: { type: 'string', enum: ['any', 'all'] },
+        topics: { type: 'array', items: { type: 'string' } },
         limit: { type: 'integer', minimum: 1, description: 'Defaults to 25; clamped to 25.' },
         after: { type: 'string' },
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -70,6 +83,14 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
           feed_type: args.feed_type,
           enabled: args.enabled === undefined ? undefined : String(args.enabled),
           discoverable: args.discoverable === undefined ? undefined : String(args.discoverable),
+          category: args.category,
+          include_descendants: args.include_descendants,
+          publisher_type: args.publisher_type,
+          publisher_type_match: args.publisher_type_match,
+          publisher_types: args.publisher_types,
+          topic: args.topic,
+          topic_match: args.topic_match,
+          topics: args.topics,
         })
         const { shouldReturnEmpty, searchOptions } = await resolveRssFeedsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
@@ -98,10 +119,8 @@ export const searchRssFeedsTool: Tool<ListArgs, ListResult> = {
     },
 }
 
-export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
+export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
   schema: {
-    name: 'get_rss_feed',
-    type: 'function',
     description:
       'Get an RSS feed by UUID, including disabled or non-discoverable feeds as the REST detail route does.',
     parameters: {
@@ -109,7 +128,6 @@ export const getRssFeedTool: Tool<DetailArgs, DetailResult> = {
       properties: { rss_feed_id: { type: 'string', format: 'uuid' } },
       required: ['rss_feed_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

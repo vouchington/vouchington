@@ -9,18 +9,20 @@
   "scripts": {},
   "dependencies": {
     "@ts-shared/utils": "workspace:^",
+    "@vouchington/localization": "^0.2.0",
+    "@vouchington/localization-compiler": "^0.2.2",
     "auto-harness-client": "^0.8.1",
     "coverage-check": "^0.17.0",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.81.0",
+    "no-mistakes": "^0.86.3",
     "picomatch": "^4.0.4",
-    "playwright": "^1.63.0",
+    "playwright": "^1.64.0",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^0.38.0"
+    "vouchington-tooling": "^0.40.0"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",

@@ -6,9 +6,11 @@ import type { Post } from '@services/posts/types'
 
 describe('posts.openai', () => {
   /**
-   * Integration test for OpenAI Moderation API.
-   * This file contains one happy-path test that makes a real API call.
-   * Other tests are in posts.test.mts (no API) and posts.mock.test.mts (mocked API).
+   * Non-gating smoke check of the OpenAI Moderation API against the live API.
+   * This file contains one happy-path test that makes a real API call. The request we build is
+   * gated by a recorded response in backend/modules/openai-utils/moderate.replay.no-data.mock.test.mts;
+   * persistence is gated by posts.test.mts (no API).
+   * See docs/development/tests.md#live-provider-smoke-checks.
    */
 
   function randomSuffix(): string {

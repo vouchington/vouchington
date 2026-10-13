@@ -105,6 +105,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_03 = [
     consumers: ['swift', 'dotnet'],
   },
   ...NATIVE_CONSUMER_MANIFEST_CLAIMS_26,
+  { key: 'images.uploadPreviewUnavailable', consumers: ['dotnet', 'swift'] },
   { key: 'native.auth.authenticatorDescription', consumers: ['swift'] },
   { key: 'native.auth.authenticatorTitle', consumers: ['swift'] },
   { key: 'native.auth.checkEmail', consumers: ['swift'] },

@@ -19,7 +19,6 @@ import {
   getTestDeliveryRepairMarker,
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { recordImageDeliveryRepairMarker } from '../../media-delivery-safety/delivery-repair-markers.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'
@@ -99,18 +98,17 @@ describe('retained media identity cleanup', () => {
   })
 
   it('retains a committed pair through marker acknowledgement', async () => {
-    const { tuple } = await createTestDeliverySurface()
-    const deliveryKey = getImagePlacementDeliveryKey(tuple)
+    const { tuple, mediaDeliveryRegistryRecordId } = await createTestDeliverySurface()
     const edge = installTestMediaDeliveryEdge()
     await recordImageDeliveryRepairMarker(tuple)
     await drainRetainedMediaCleanup([tuple])
     expect(await hasTestRetainedMediaBinding(tuple.placementId)).toBe(true)
     expect(await hasTestRetainedImageIdentity(tuple.imageId)).toBe(true)
-    expect(await getTestDeliveryRepairMarker(deliveryKey)).not.toBeNull()
+    expect(await getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)).not.toBeNull()
 
-    await reconcileTestDeliveryRepairMarker(deliveryKey)
+    await reconcileTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)
     expect(edge.put).not.toHaveBeenCalled()
-    expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
+    expect(await getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)).toBeNull()
     await drainRetainedMediaCleanup([tuple])
     expect(await hasTestRetainedMediaBinding(tuple.placementId)).toBe(true)
     expect(await hasTestRetainedImageIdentity(tuple.imageId)).toBe(true)

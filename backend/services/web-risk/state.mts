@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { RateLimiter, type RateLimiterWindow } from '@data-stores/valkey-rate-limiter'
 import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
-import { TimeUnit } from '@valkey/valkey-glide'
+import { Batch, TimeUnit } from '@valkey/valkey-glide'
 import { getRetryAfterDurationMs } from '@modules/utils/http'
 import onError from '@modules/on-error'
 
@@ -18,6 +18,8 @@ type WebRiskStateOptions = {
   minuteThreshold?: number
   monthThreshold?: number
 }
+
+export type ProviderGate = { cleanCached: boolean; coolingDown: boolean }
 
 export type WebRiskState = ReturnType<typeof createWebRiskState>
 
@@ -42,9 +44,18 @@ export function createWebRiskState({
     }
   }
 
-  async function isProviderCoolingDown(): Promise<boolean> {
-    const ttl = await rateLimiterValkeyClient.pttl(cooldownKey)
-    return ttl > 0
+  /** One pipelined read of the exact-URL clean verdict and the provider cooldown. */
+  async function readProviderGate(url: URL): Promise<ProviderGate> {
+    const batch = new Batch(false).get(cleanCacheKey(url)).pttl(cooldownKey)
+    const result = await rateLimiterValkeyClient.exec(batch, true)
+    // A non-atomic pipeline only returns null for a conflicted transaction, but the type is shared.
+    /* v8 ignore start -- a non-atomic pipeline cannot return null; forced client failure would destabilize shared Valkey state. */
+    if (result === null || result.length < 2) {
+      throw new Error('readProviderGate: valkey batch exec returned no result')
+    }
+    /* v8 ignore stop */
+    const [cleanVerdict, cooldownTtl] = result
+    return { cleanCached: cleanVerdict === '1', coolingDown: Number(cooldownTtl) > 0 }
   }
 
   async function setProviderCooldownFromResponse(response: Response): Promise<void> {
@@ -57,10 +68,6 @@ export function createWebRiskState({
     await rateLimiterValkeyClient.set(cooldownKey, '1', {
       expiry: { type: TimeUnit.Seconds, count: seconds },
     })
-  }
-
-  async function hasCleanCachedVerdict(url: URL): Promise<boolean> {
-    return (await rateLimiterValkeyClient.get(cleanCacheKey(url))) === '1'
   }
 
   async function cacheCleanVerdict(url: URL): Promise<void> {
@@ -98,10 +105,9 @@ export function createWebRiskState({
 
   return {
     isLocallyRateLimited,
-    isProviderCoolingDown,
+    readProviderGate,
     setProviderCooldownFromResponse,
     setProviderCooldown,
-    hasCleanCachedVerdict,
     cacheCleanVerdict,
   }
 }

@@ -17,6 +17,16 @@ seedMessages('en', await loadJsonMessages('en'))
 // components directly in jsdom, so mock the marker module while preserving production imports.
 vi.mock(import('server-only'), () => ({}))
 
+// UI unit tests use seeded catalogs. Tests of an uncached request must supply their
+// own response fixture instead of contacting the localization service.
+vi.mock(import('@/lib/api/client/localization'), () => ({
+  getWebLocalizationBatchClient: vi
+    .fn<typeof import('@/lib/api/client/localization').getWebLocalizationBatchClient>()
+    .mockRejectedValue(
+      new Error('Unseeded localization request: provide a test catalog or request fixture'),
+    ),
+}))
+
 // Unit tests assert the dev/test fallback URL shape unless a test explicitly
 // stubs IMAGE_ORIGIN. Local `.env` may set it for server startup.
 function stubDefaultImageOrigin() {

@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+content-type: text/xml
+x-amzn-requestid: d5964849-c866-11e0-9beb-01a62d68c57f
+
+<SendEmailResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <SendEmailResult>
+    <MessageId>0100019a-1b2c-3d4e-5f60-7a8b9c0d1e2f-000000</MessageId>
+  </SendEmailResult>
+  <ResponseMetadata>
+    <RequestId>d5964849-c866-11e0-9beb-01a62d68c57f</RequestId>
+  </ResponseMetadata>
+</SendEmailResponse>

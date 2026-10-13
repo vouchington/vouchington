@@ -25,12 +25,14 @@ export async function checkEmbeddingSimilarityToBannedPosts(
       SELECT
         banned_posts.created_by_id AS source_user_id,
         MAX(1 - (candidate_posts.bedrock_nova_multimodal_v1_embedding <=> banned_posts.bedrock_nova_multimodal_v1_embedding)) AS similarity
+      -- no-mistakes-disable-next-line postgres-required-predicates: candidate posts can be attached to a community after creation, so community ID does not bound their history
       FROM posts candidate_posts
       JOIN community_bans cb
         ON cb.community_id = ${communityId}
         AND cb.lifted_at IS NULL
         AND (cb.expires_at IS NULL OR cb.expires_at > NOW())
         AND cb.id > ${getBanLookbackId()}::uuid
+      -- no-mistakes-disable-next-line postgres-required-predicates: banned posts may predate both their ban and later community attachment
       JOIN posts banned_posts
         ON banned_posts.created_by_id = cb.user_id
         AND banned_posts.community_id = ${communityId}
@@ -75,12 +77,14 @@ export async function checkContentHashMatchToBannedPosts(
   const query = sql`
     /* checkContentHashMatchToBannedPosts */
     SELECT banned_posts.created_by_id AS source_user_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: candidate posts can be attached to a community after creation, so community ID does not bound their history
     FROM posts candidate_posts
     JOIN community_bans cb
       ON cb.community_id = ${communityId}
       AND cb.lifted_at IS NULL
       AND (cb.expires_at IS NULL OR cb.expires_at > NOW())
       AND cb.id > ${getBanLookbackId()}::uuid
+    -- no-mistakes-disable-next-line postgres-required-predicates: banned posts may predate both their ban and later community attachment
     JOIN posts banned_posts
       ON banned_posts.created_by_id = cb.user_id
       AND banned_posts.community_id = ${communityId}

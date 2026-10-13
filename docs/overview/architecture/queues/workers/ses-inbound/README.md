@@ -5,7 +5,9 @@ Source entrypoint: [backend/workers/ses-inbound/README.md](../../../../../../bac
 The IO worker reads copyright MIME from `copyright-incoming/` in the private SES inbound S3 bucket.
 It never accepts raw MIME in the queue payload. Permanent MIME and size failures move to `failed/`;
 transient S3, PostgreSQL, and queue failures retry. The reconciler scans `copyright-incoming/` every
-five minutes and enqueues retained raw objects.
+five minutes and enqueues retained raw objects. It reads a bounded number of S3 pages per job and
+enqueues a continuation with S3's token when pages remain. It fetches retained failed process jobs
+once per reconciliation run, then retries only IDs matching objects on each listed page.
 
 Before source cleanup, the worker copies the complete RFC 5322 object to private copyright evidence
 storage, records its SHA-256 plus parsed attachment metadata in an immutable intake, and awaits a
@@ -54,7 +56,7 @@ expiry pending the infrastructure cleanup in #1229; the reconciler never lists t
 still copy, parse, thread-link, and delete each source object, so every email (a new notice or a
 reply on a case) becomes an intake row in the staff email intake queue. The evidence bucket is still
 required. A stack with no `S3_BUCKET_SES_INBOUND` (local development) has nothing for the five-minute
-reconcile to scan, so the sweep returns `enqueued: 0` and reports the skip through
+reconcile to scan, so the sweep returns `enqueued: 0, hasMore: false` and reports the skip through
 `recordScheduledJobConfigMissing` (a console warning in development and CI plus a tagged Sentry
 warning `scheduled_job_config_missing`) instead of failing and retrying. Ingest of a received email
 still fails on a missing SES inbound or evidence bucket, because that job only exists once mail

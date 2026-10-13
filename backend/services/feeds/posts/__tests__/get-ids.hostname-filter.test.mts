@@ -20,7 +20,7 @@ describe('getPostFeedIds hostname filtering', () => {
     viewer = await createTestUser()
     creator = await createTestUser()
     await followUser(viewer, creator)
-  }, 60_000)
+  }, 5_000)
 
   it('excludes posts from blocked hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -39,7 +39,7 @@ describe('getPostFeedIds hostname filtering', () => {
     const result = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 100 })
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes posts from muted hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -58,7 +58,7 @@ describe('getPostFeedIds hostname filtering', () => {
     const result = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 100 })
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('excludes posts from site-wide blocked hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -76,7 +76,7 @@ describe('getPostFeedIds hostname filtering', () => {
     const result = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 100 })
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('subdomain matching: blocking parent domain also blocks subdomain posts', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -101,7 +101,7 @@ describe('getPostFeedIds hostname filtering', () => {
     const result = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 100 })
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeUndefined()
-  }, 60_000)
+  })
 
   it('does NOT exclude posts when hostname has 0-vote URL relation', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -121,5 +121,5 @@ describe('getPostFeedIds hostname filtering', () => {
     const result = await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 100 })
     const found = result.results.find(r => r.entity_id === post.id)
     expect(found).toBeDefined()
-  }, 60_000)
+  })
 })

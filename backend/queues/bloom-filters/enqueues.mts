@@ -4,7 +4,6 @@ import {
   backfillBloomFilterJobOptions,
   backfillUserBookmarkBloomFilterJobOptions,
   deleteUserBookmarkBloomFilterJobOptions,
-  populateBloomFilterJobOptions,
   QUEUE_NAME,
   rebuildBloomFilterJobOptions,
   rebuildEmbeddingBloomFilterJobOptions,
@@ -15,19 +14,9 @@ import type {
   BackfillUserBookmarkBloomFilterData,
   BloomFilterProcessorJobs,
   DeleteUserBookmarkBloomFilterData,
-  PopulateBloomFilterData,
   RebuildBloomFilterData,
   RebuildEmbeddingBloomFilterData,
 } from './types.mts'
-
-const enqueuePopulateBloomFilterJob = createEnqueueFunction<
-  PopulateBloomFilterData,
-  BloomFilterProcessorJobs
->({
-  queue: bloomFilters,
-  queueName: QUEUE_NAME,
-  jobName: 'processPopulateBloomFilter',
-})
 
 const enqueueBackfillBloomFilterJob = createEnqueueFunction<
   BackfillBloomFilterData,
@@ -73,10 +62,6 @@ const enqueueRebuildEmbeddingBloomFilterJob = createEnqueueFunction<
   queueName: QUEUE_NAME,
   jobName: 'processRebuildEmbeddingBloomFilter',
 })
-
-export async function enqueuePopulateBloomFilter(priority?: number): Promise<void> {
-  await enqueuePopulateBloomFilterJob({}, populateBloomFilterJobOptions(priority))
-}
 
 export function enqueueBackfillBloomFilter(
   data: BackfillBloomFilterData,

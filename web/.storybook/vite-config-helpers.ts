@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { postDetailAlias, postDetailAsideAliases } from './post-detail-aside-aliases'
 import { transformWithOxc, type Alias, type Plugin } from 'vite'
 
 export const transformWorkspaceMts = {
@@ -11,6 +12,31 @@ export const transformWorkspaceMts = {
       lang: 'ts',
       target: 'es2022',
     })
+  },
+} satisfies Plugin
+
+const STORYBOOK_NEXTJS_FRAMEWORK = /@storybook[/+]nextjs(?:-vite)?[/\\]/
+
+// Next useRouter reads parentRenderTree.data.bfcacheId. Storybook still sets only parentCacheNode.
+// bfcacheId 0 is the fallback Next uses when the layout cache node has no id.
+export function addStorybookParentRenderTree(code: string): string | null {
+  if (!code.includes('LayoutRouterContext') || !code.includes('parentCacheNode:')) return null
+  if (code.includes('parentRenderTree')) return null
+
+  return code.replaceAll(
+    'parentCacheNode:',
+    'parentRenderTree:{data:{bfcacheId:0}},parentCacheNode:',
+  )
+}
+
+export const supplyStorybookParentRenderTree = {
+  name: 'storybook-next-parent-render-tree',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!STORYBOOK_NEXTJS_FRAMEWORK.test(id)) return null
+    const next = addStorybookParentRenderTree(code)
+    if (next == null) return null
+    return { code: next, map: null }
   },
 } satisfies Plugin
 
@@ -95,11 +121,8 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       find: '@/components/posts/edit-post-page',
       replacement: fileURLToPath(new URL('../storybook/mocks/edit-post-page.tsx', import.meta.url)),
     },
-    {
-      // PostDetail awaits auth and translations. The fixture renders the same view synchronously.
-      find: '@/components/posts/post-detail',
-      replacement: fileURLToPath(new URL('../storybook/mocks/post-detail.tsx', import.meta.url)),
-    },
+    postDetailAlias,
+    ...postDetailAsideAliases,
     {
       // ManageTagsTabs awaits server relations. The fixture renders the same card with empty rows.
       find: '@/components/tags/manage-tags-tabs',

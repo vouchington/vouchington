@@ -53,6 +53,7 @@ const reconcileKeys = {
   changeId: true,
   contentChanged: true,
   referrerId: true,
+  createdInWindow: true,
 } as const satisfies Record<keyof ReconcileEntityData, true>
 const entityTypes = {
   user: true,
@@ -62,6 +63,14 @@ const entityTypes = {
   post_deleted: true,
   image: true,
   url: true,
+  community: true,
+  rss_feed_item: true,
+  api_key: true,
+  blocklisted_domain: true,
+  embedding: true,
+  post_slug: true,
+  url_hostname: true,
+  topic_alias: true,
 } as const satisfies Record<ReconcileEntityData['entityType'], true>
 const topicIdKeys = [
   'homepage_url_id',
@@ -149,5 +158,6 @@ export function parseReconcileEntity(data: unknown): Record<string, unknown> {
   optionalString(record, 'changeId')
   optionalBoolean(record, 'contentChanged')
   optionalString(record, 'referrerId')
+  optionalBoolean(record, 'createdInWindow')
   return record
 }

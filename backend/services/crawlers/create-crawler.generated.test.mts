@@ -63,15 +63,21 @@ describe('create-crawler.generated', () => {
       crawler_type: 'fetch',
       description: 'Original',
     })
+    const newUrl = await createTestUrlWithNewHostname(
+      `https://crawler-update-new-${random}.example.com/test`,
+    )
     const updated = await updateCrawler(user, crawler.id, {
+      hostname_id: newUrl.hostname.id,
       description: 'Updated',
       priority: 10,
       css_selectors_to_remove: ['.updated'],
     })
 
+    expect(updated.hostname_id).toBe(newUrl.hostname.id)
     expect(updated.description).toBe('Updated')
     expect(updated.priority).toBe(10)
     expect(updated.css_selectors_to_remove).toEqual(['.updated'])
+    expect((await getCrawlerById(crawler.id))?.hostname_id).toBe(newUrl.hostname.id)
   })
 
   it('getOrCreateCrawlerForHostname creates once and reuses', async () => {
@@ -219,6 +225,24 @@ describe('create-crawler.generated', () => {
         hostname_id: 'not-a-uuid',
       }),
     ).rejects.toThrow('Invalid hostname ID')
+  })
+
+  it('updateCrawler rejects an invalid referral program ID without changing the crawler', async () => {
+    const url = await createTestUrlWithNewHostname(
+      `https://crawler-referral-${crypto.randomUUID()}.example.com/test`,
+    )
+    const crawler = await createCrawler(user, {
+      hostname_id: url.hostname.id,
+      crawler_type: 'fetch',
+    })
+
+    await expect(
+      updateCrawler(user, crawler.id, { referral_program_id: 'not-a-uuid' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Invalid referral program ID: not-a-uuid',
+    })
+    await expect(getCrawlerById(crawler.id)).resolves.toEqual(crawler)
   })
 })
 

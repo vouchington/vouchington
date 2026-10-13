@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -26,6 +26,7 @@ test.describe('Community features', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     COMMUNITY_SLUG = `pw-community-features-${suffix}`
 
@@ -149,6 +150,7 @@ test.describe('Community pinned-posts page accessible via Moderation dropdown', 
   let slug = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     slug = `pw-pinned-dropdown-${suffix}`
     const community = await insertTestCommunity({
@@ -175,6 +177,7 @@ test.describe('Community moderation page resilience', () => {
   let slug = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     slug = `pw-mod-resilience-${suffix}`
     const community = await insertTestCommunity({

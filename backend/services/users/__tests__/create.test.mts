@@ -5,10 +5,11 @@ import {
   insertSessionReferralAttribution,
   getUserReferrerId,
   getFollowExists,
-  readAllQueueJobs,
+  readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { it, expect, describe, vi } from 'vitest'
+import { it, expect, describe, onTestFinished, vi } from 'vitest'
 import * as entityListenerEnqueues from '@queues/entity-listeners/enqueues'
+import * as emailEnqueues from '@queues/emails/enqueues'
 import { upsertUser } from '../create.mts'
 import { PRIVACY_POLICY_VERSION, TERMS_OF_SERVICE_VERSION } from '../create-helpers.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
@@ -19,6 +20,8 @@ import { getActiveConsents } from '@services/user-consents/get'
 import type { UserConsent } from '@services/user-consents'
 import { emails } from '@queues/emails/queues'
 import { v7 } from 'uuid'
+
+type CapturedWelcomeEnqueue = { userId: string | undefined; completion: Promise<unknown> }
 
 async function withAutoFollow<T>(run: () => Promise<T>): Promise<T> {
   const enqueue = entityListenerEnqueues.enqueueAutoFollowReferrer
@@ -36,6 +39,43 @@ async function withAutoFollow<T>(run: () => Promise<T>): Promise<T> {
     await Promise.all(pending)
     spy.mockRestore()
   }
+}
+
+function captureWelcomeEmailEnqueues(): CapturedWelcomeEnqueue[] {
+  const captured: CapturedWelcomeEnqueue[] = []
+  const enqueue = emailEnqueues.enqueueSendWelcomeEmail
+  const spy = vi
+    .spyOn(emailEnqueues, 'enqueueSendWelcomeEmail')
+    .mockImplementation((input, variables) => {
+      const result = enqueue(input, variables)
+      const completion = Promise.resolve(result)
+      void completion.catch(() => {})
+      captured.push({ userId: input.userId, completion })
+      return result
+    })
+  onTestFinished(async () => {
+    await Promise.allSettled(captured.map(({ completion }) => completion)).finally(() =>
+      spy.mockRestore(),
+    )
+  })
+  return captured
+}
+
+async function assertSingleOwnedWelcomeJob(captured: CapturedWelcomeEnqueue[], userId: string) {
+  const owned = captured.filter(enqueue => enqueue.userId === userId)
+  expect(owned).toHaveLength(1)
+  const enqueue = owned[0]
+  if (!enqueue) throw new Error(`Expected one welcome email enqueue for ${userId}`)
+  const job = await readEnqueuedJob(emails, await enqueue.completion)
+  const data = job.data as {
+    input?: { emailAddress?: string; userId?: string }
+    variables?: { userName?: string }
+  }
+
+  expect(job.name).toBe('processSendWelcomeEmail')
+  expect(data.input?.userId).toBe(userId)
+  expect(data.input?.emailAddress).toBeUndefined()
+  expect(data.variables?.userName).toBeUndefined()
 }
 
 describe('create', () => {
@@ -222,29 +262,14 @@ describe('create', () => {
 
   describe('welcome email', () => {
     it('queues a welcome email for a new user with an email address', async () => {
+      const captured = captureWelcomeEmailEnqueues()
       const emailAddress = createRandomEmailAddress()
       const newUser = await upsertUser({ emailAddress, sessionId: v7(), deviceId: v7() })
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as {
-              input?: { emailAddress?: string; userId?: string }
-              variables?: { userName?: string }
-            }
-            return (
-              job.name === 'processSendWelcomeEmail' &&
-              data.input?.userId === newUser.id &&
-              data.input?.emailAddress === undefined &&
-              data.variables?.userName === undefined
-            )
-          })
-        })
-        .toBe(true)
+      await expect(assertSingleOwnedWelcomeJob(captured, newUser.id)).resolves.toBeUndefined()
     })
 
     it('queues a welcome email for a new OAuth signup with a provider email address', async () => {
+      const captured = captureWelcomeEmailEnqueues()
       const facebookUserId = `test-facebook-with-email-${v7()}`
       const providerEmailAddress = createRandomEmailAddress()
       const account = await insertTestOAuthAccount('facebook', facebookUserId, providerEmailAddress)
@@ -254,23 +279,11 @@ describe('create', () => {
         deviceId: v7(),
       })
       expect(newUser.email_address).toBeFalsy()
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as { input?: { emailAddress?: string; userId?: string } }
-            return (
-              job.name === 'processSendWelcomeEmail' &&
-              data.input?.userId === newUser.id &&
-              data.input?.emailAddress === undefined
-            )
-          })
-        })
-        .toBe(true)
+      await expect(assertSingleOwnedWelcomeJob(captured, newUser.id)).resolves.toBeUndefined()
     })
 
     it('queues a user-targeted welcome email for a new OAuth user with no email address', async () => {
+      const captured = captureWelcomeEmailEnqueues()
       const facebookUserId = `test-facebook-no-email-${v7()}`
       const account = await insertTestOAuthAccount('facebook', facebookUserId)
       const newUser = await upsertUser({
@@ -279,20 +292,7 @@ describe('create', () => {
         deviceId: v7(),
       })
       expect(newUser.email_address).toBeFalsy()
-
-      await expect
-        .poll(async () => {
-          const jobs = await readAllQueueJobs(emails)
-          return jobs.some(job => {
-            const data = job.data as { input?: { emailAddress?: string; userId?: string } }
-            return (
-              job.name === 'processSendWelcomeEmail' &&
-              data.input?.userId === newUser.id &&
-              data.input?.emailAddress === undefined
-            )
-          })
-        })
-        .toBe(true)
+      await expect(assertSingleOwnedWelcomeJob(captured, newUser.id)).resolves.toBeUndefined()
     })
   })
 })

@@ -6,7 +6,6 @@ import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-code
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import { resolveAdmissionIdentity } from '@services/contribution-gating/admission'
 import { parseIdempotencyKeyHeader } from '@services/contribution-gating/admit-route-contribution'
-import { getUserActivePlan } from '@services/memberships'
 import {
   importTopics,
   TopicImportInProgressError,
@@ -55,7 +54,7 @@ app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
   const names = body.names.filter(n => n.trim().length > 0)
   ctx.assert(names.length > 0, 400, 'At least one topic name is required')
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
+  const membershipPlan = currentUser.membership_plan ?? null
   const importIdentity = resolveAdmissionIdentity(
     parseIdempotencyKeyHeader(ctx.req.headers['idempotency-key']),
   )

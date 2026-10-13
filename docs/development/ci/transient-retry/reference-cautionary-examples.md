@@ -12,37 +12,26 @@ filed as jonathanong/filaments#8218) after
 bounded internal postinstall retry budget through
 [no-mistakes PR #578](https://github.com/jonathanong/no-mistakes/pull/578).
 
-**Don't generalize timeouts for heterogeneous jobs — unless the "job" is actually homogeneous by
-config.** If a job is a mix of external-provider connectivity smoke tests and broader integration
-tests (DB, cache, business logic), a job-level timeout match is **unsafe** — it would rerun real
-code-bug deadlocks. `backend-credentialed-provider-smoke-test-transient` looks like it might be
-this shape (it matches a bare `Test timed out in ` with no per-test title pinned), but it isn't:
-each credentialed Vitest project (the list is in [Vitest Projects](../../reference-tests-vitest-projects.md))
-is homogeneous by construction — every file matched by its own `include` glob is,
-by design, a real-provider probe with no setup file that mocks _the provider that project probes_, so
-a bare timeout inside that project's own probe boundary is never a broader integration-test deadlock.
-(`backend-openai` does load `./backend/test-helpers/vitest.setup.aws-mocks.mts` —
-`test-helpers/vitest-config/backend-credentialed-projects.mts` — but that mocks AWS, not OpenAI, so it's irrelevant to what `backend-openai` itself probes.) The rule
-matches on
-`FAIL <project> <path under that project's own include glob>` plus a provider-transport marker, not
-job-level timeout alone (`backend-credentialed-log-fingerprints.mts`). Two narrower trade-offs this
-still accepts, both bounded by `maxAttempts: 2` and the single-failure-block requirement:
+**Historical: don't generalize timeouts for heterogeneous jobs — unless the "job" is actually
+homogeneous by config.** If a job is a mix of external-provider connectivity smoke tests and broader
+integration tests (DB, cache, business logic), a job-level timeout match is **unsafe** — it would
+rerun real code-bug deadlocks. The retired `backend-credentialed-provider-smoke-test-transient` rule
+matched a bare `Test timed out in ` and looked like this shape, but it was safe: each credentialed
+Vitest project was homogeneous by construction, so a timeout inside a project's own `include` glob
+was never a broader integration-test deadlock. It matched on `FAIL <project> <path under that
+project's own include glob>` plus a provider-transport marker, never on a job-level timeout alone.
+The rule was removed once the credentialed job became an informational smoke check that never gates
+CI: an automatic rerun of a non-gating job gains nothing
+([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)). A future rule that matches
+a timeout still has to prove the job is homogeneous by config, or pin the owning project's boundary.
 
-- A genuine code bug inside a credentialed probe test that happens to manifest as a timeout gets one
-  rerun before dispatch, instead of dispatching immediately.
-- `backend-aws` and `backend-openai` also load a DB/Valkey `globalSetup` (`test-helpers/vitest-config/backend-credentialed-projects.mts`), so a
-  bare timeout there could in principle be DB/Valkey-origin rather than provider-origin — still
-  classified `rootCauseKey: 'external-provider-transient'`, since a rerun is still the right first
-  move either way.
-
-**Stale literal, not a stale rule (#10806/#10825): `hasBackendSesSendEmailTimeout` was dead for
-months and nothing failed.** The predicate required the literal `Test timed out in 120000ms` — the
-project's `testTimeout` when the rule was authored (PR #6551). PR #8107 lowered `backend-aws`'s
+**Historical: stale literal, not a stale rule (#10806/#10825): `hasBackendSesSendEmailTimeout` was
+dead for months and nothing failed.** The predicate required the literal `Test timed out in 120000ms`
+— the project's `testTimeout` when the rule was authored (PR #6551). PR #8107 lowered `backend-aws`'s
 `testTimeout` to `60_000` with no reason to touch this file, so the literal went stale silently: the
 predicate could never match again, and its own test fixture fed it a synthetic `120000ms` log
-authored to satisfy the same (now-wrong) literal, so the suite stayed green forever. Fixed by
-replacing all seven per-test title/timeout-digit regexes with the project-derived matcher above, and
-by deriving the credentialed project boundary from the project list Vitest itself runs
-(`test-helpers/vitest-config/backend-credentialed-projects.mts`) and checking it against the
-workflow in `backend-credentialed-config-agreement.test.mts`, so there is no second copy left to go
-stale. See `ci/transient-retry/AGENTS.md`'s invariant on this.
+authored to satisfy the same (now-wrong) literal, so the suite stayed green forever. The fix replaced
+the per-test title and timeout-digit regexes with a matcher derived from the project list Vitest
+itself runs, so no second copy was left to go stale. The lesson stays in force: derive a boundary
+from its owner and never hand-copy a title or a timeout digit count (see
+`ci/transient-retry/AGENTS.md`).

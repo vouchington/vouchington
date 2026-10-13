@@ -1,12 +1,12 @@
 import type { CrawlBrowserJobs } from '@queues/crawl-browser/types'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { CRAWL_BROWSER_QUEUE_NAME } from '@queues/crawl-browser/config'
 import { getCrawlerById } from '@services/crawlers'
 import { getUrlById } from '@services/urls/get'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { processBrowserCrawl } from './processors.mts'
 
-export const crawlBrowser = new Worker(
+export const crawlBrowser = createWorker(
   CRAWL_BROWSER_QUEUE_NAME,
   async (job: Job) => {
     switch (job.name as CrawlBrowserJobs) {
@@ -30,8 +30,7 @@ export const crawlBrowser = new Worker(
     }
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: 1,
   },
 )

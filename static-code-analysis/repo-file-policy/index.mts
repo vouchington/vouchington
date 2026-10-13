@@ -8,16 +8,11 @@ import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkGhaWorkspacePolicy } from 'vouchington-tooling/gha-workspace-policy'
-import { initSqlAst } from './sql-ast.mts'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { checkMigrationSqlGuard } from './migration-sql-guard.mts'
 import { checkUuidv7CreatedAtDdl } from './uuidv7-created-at-ddl-guard.mts'
 import { checkModerationHistoryGuard } from './moderation-history-guard.mts'
-import { runAstFilePass } from './ast-pass.mts'
-import { checkPostgresRuntimeSource } from './postgres-runtime-guard.mts'
-import {
-  checkStaleSchemaAllowlistEntries,
-  matchesPostgresRuntimeFile,
-} from './postgres-runtime-guard-runner.mts'
+import { checkStaleSchemaAllowlistEntries } from './schema-allowlist-freshness.mts'
 import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
@@ -70,30 +65,14 @@ export async function checkRepoFilePolicy(
     ),
   )
 
-  checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
-  checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
+  await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
+  await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
   errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
-  checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
-  checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
-  // One streaming pass over the union of files these guards inspect: each matched file is
-  // parsed once and the AST is discarded before the next file. See ast-pass.mts.
-  const [postgresRuntimeErrors] = runAstFilePass(
-    ctx.repoRoot,
-    trackedFiles,
-    [
-      {
-        matches: matchesPostgresRuntimeFile,
-        visit: (file, content, ast, bucket) => {
-          bucket.push(...checkPostgresRuntimeSource(file, content, ast))
-        },
-      },
-    ],
-    ctx,
-  )
-  errors.push(...postgresRuntimeErrors)
+  await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
+  await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)

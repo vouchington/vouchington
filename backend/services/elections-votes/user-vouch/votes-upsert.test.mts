@@ -5,8 +5,8 @@ import {
   getFollowExists,
   insertTestLocalFollow,
 } from '@voucha/test-helpers'
-import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { withOnlyOneWritePoolClientAvailable } from '@voucha/test-helpers/write-pool-probe'
+import { withOwnedVouchStats } from '@voucha/test-helpers/user-vouch-vote-stats-admission'
 import type { PrivateUser } from '@services/users/types'
 import { getUserVouchElectionById } from './get-election.mts'
 import { getUserVouchElectionVote } from './votes-get.mts'
@@ -24,7 +24,9 @@ describe('votes-upsert', () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
 
-    await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }])
+    await withOwnedVouchStats(target.id, () =>
+      upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }]),
+    )
 
     const election = await waitForUpdatedVouchStats(target.id, { up: 1, down: 0 })
     expect(election?.votes_count_up).toBe(1)
@@ -37,14 +39,16 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(true)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(0)
-  }, 60_000)
+  }, 30_000)
 
   it('disavowing a user (-2) auto-mutes and soft-deletes the existing follow', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
     expect(await getFollowExists(voter.id, target.id)).toBe(true)
 
-    await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
+    await withOwnedVouchStats(target.id, () =>
+      upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }]),
+    )
 
     const election = await waitForUpdatedVouchStats(target.id, { up: 0, down: 1 })
     expect(election?.votes_count_up).toBe(0)
@@ -57,19 +61,23 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  }, 60_000)
+  }, 30_000)
 
   it('retracting a disavow (0) does not unmute or restore the follow', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
 
-    await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
+    await withOwnedVouchStats(target.id, () =>
+      upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }]),
+    )
     await waitForUpdatedVouchStats(target.id, { up: 0, down: 1 })
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
 
-    await upsertUserVouchElectionVotes(voter.id, [
-      { entityId: target.id, score: 0 as ElectionVoteScore },
-    ])
+    await withOwnedVouchStats(target.id, () =>
+      upsertUserVouchElectionVotes(voter.id, [
+        { entityId: target.id, score: 0 as ElectionVoteScore },
+      ]),
+    )
     await waitForUpdatedVouchStats(target.id, { up: 0, down: 0 })
 
     const vote = await getUserVouchElectionVote(voter.id, target.id)
@@ -78,28 +86,32 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  }, 60_000)
+  }, 30_000)
 
   it('clearing a disavow keeps its committed mute and unfollow side effects', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
 
-    await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
-    await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: null }])
+    await withOwnedVouchStats(target.id, async () => {
+      await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
+      await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: null }])
+    })
 
     await expect(getUserVouchElectionVote(voter.id, target.id)).resolves.toBeNull()
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  })
+  }, 30_000)
 
   it('keeps the last semantic choice for duplicate target votes', async () => {
     const target = await createTestUser()
 
-    const result = await upsertUserVouchElectionVotes(voter.id, [
-      { entityId: target.id, score: 1 },
-      { entityId: target.id, score: -2 as ElectionVoteScore },
-    ])
+    const result = await withOwnedVouchStats(target.id, () =>
+      upsertUserVouchElectionVotes(voter.id, [
+        { entityId: target.id, score: 1 },
+        { entityId: target.id, score: -2 as ElectionVoteScore },
+      ]),
+    )
 
     expect(result).toHaveLength(1)
     expect(result[0]?.score).toBe(-2)
@@ -114,25 +126,36 @@ describe('votes-upsert', () => {
 
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  }, 60_000)
+  }, 30_000)
 
   it('completes with a user agent while its transaction holds the final write-pool client', async () => {
     const target = await createTestUser()
-    await withOnlyOneWritePoolClientAvailable(async () => {
-      const upsert = upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }], {
-        ipAddress: null,
-        deviceId: null,
-        sessionId: null,
-        userAgent: `pool-saturation-${crypto.randomUUID()}`,
-      })
+    await withOwnedVouchStats(target.id, async () => {
+      let upsert: Promise<unknown> | undefined
+      const failures: unknown[] = []
+      try {
+        await withOnlyOneWritePoolClientAvailable(async () => {
+          upsert = upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }], {
+            ipAddress: null,
+            deviceId: null,
+            sessionId: null,
+            userAgent: `pool-saturation-${crypto.randomUUID()}`,
+          })
 
-      await expect(withDeadline(upsert, 5_000)).resolves.toBeDefined()
+          await expect(withDeadline(upsert, 5_000)).resolves.toBeDefined()
+        })
+      } catch (err) {
+        failures.push(err)
+      } finally {
+        // The pool helper has released its held clients before this actual action drain.
+        if (upsert) await upsert.catch(err => failures.push(err))
+      }
+      if (failures.length === 1) throw failures[0]
+      if (failures.length > 1) throw new AggregateError(failures, 'Vote and cleanup failed')
     })
-  })
+  }, 30_000)
 
   async function waitForUpdatedVouchStats(userId: string, expected: { up: number; down: number }) {
-    await onceElectionVoteStatsCompleted({ electionId: userId, orderingKey: 'user_vouch' })
-
     const latest = await getUserVouchElectionById(userId)
     expect({ up: latest?.votes_count_up, down: latest?.votes_count_down }).toEqual(expected)
     return latest

@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import Home from './page'
@@ -60,6 +61,10 @@ vi.mock(import('@/components/home/top-communities-streaming'), () => ({
 
 vi.mock(import('@/components/home/top-referral-programs-streaming'), () => ({
   TopReferralProgramsStreaming: () => <div data-testid='top-referral-programs-streaming' />,
+}))
+
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: () => <span hidden />,
 }))
 
 vi.mock(

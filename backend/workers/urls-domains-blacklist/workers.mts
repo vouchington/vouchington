@@ -1,11 +1,11 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/urls-domains-blacklist/config'
 import * as processors from './processors.mts'
 import type { ProcessorJobs } from '@queues/urls-domains-blacklist/types'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 
-export const urlsDomainsBlacklist = new Worker(
+export const urlsDomainsBlacklist = createWorker(
   QUEUE_NAME,
   (job: Job) => {
     const fn = processors[job.name as ProcessorJobs]
@@ -13,8 +13,7 @@ export const urlsDomainsBlacklist = new Worker(
     return fn(job.data)
   },
   {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
+    dedicatedCommandClient: true,
     concurrency: getWorkerConcurrency('urlsDomainsBlacklist', { baseline: 5 }),
   },
 )

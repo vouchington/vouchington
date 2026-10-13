@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -24,6 +24,7 @@ let aiGeneratedDiscussionId = ''
 let aiGeneratedCommentBody = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const random = randomSuffix()
   const author = await createTestUser({ username: `admin-mod-${random}` })
   if (!author) throw new Error('Failed to create author for admin moderation test')

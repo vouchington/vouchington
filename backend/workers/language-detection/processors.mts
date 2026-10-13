@@ -62,34 +62,31 @@ export async function processLanguageDetectionBackfill(
 ): Promise<{ updated: number }> {
   assertKnownLanguageDetectionBackfillJob(jobName)
   if (entityIds?.length === 0) return { updated: 0 }
-  if (entityIds && jobName !== 'backfill_users') {
-    throw new Error(`Scoped language detection backfill is not implemented for ${jobName}`)
-  }
   let updated = 0
   switch (jobName) {
     case 'backfill_posts': {
-      for await (const ids of streamPostsNeedingLanguageDetection()) {
+      for await (const ids of streamPostsNeedingLanguageDetection(entityIds)) {
         const result = await detectPostLanguageBatch(ids)
         updated += result.updated
       }
       break
     }
     case 'backfill_rss_feed_items': {
-      for await (const ids of streamRssFeedItemsNeedingLanguageDetection()) {
+      for await (const ids of streamRssFeedItemsNeedingLanguageDetection(entityIds)) {
         const result = await detectRssFeedItemLanguageBatch(ids)
         updated += result.updated
       }
       break
     }
     case 'backfill_crawls': {
-      for await (const ids of streamCrawlsNeedingLanguageDetection()) {
+      for await (const ids of streamCrawlsNeedingLanguageDetection(entityIds)) {
         const result = await detectCrawlLanguageBatch(ids)
         updated += result.updated
       }
       break
     }
     case 'backfill_communities': {
-      for await (const ids of streamCommunitiesNeedingLanguageDetection()) {
+      for await (const ids of streamCommunitiesNeedingLanguageDetection(entityIds)) {
         const result = await detectCommunityLanguageBatch(ids)
         updated += result.updated
       }
@@ -103,7 +100,7 @@ export async function processLanguageDetectionBackfill(
       break
     }
     case 'backfill_topics': {
-      for await (const ids of streamTopicsNeedingLanguageDetection()) {
+      for await (const ids of streamTopicsNeedingLanguageDetection(entityIds)) {
         const result = await detectTopicLanguageBatch(ids)
         updated += result.updated
       }

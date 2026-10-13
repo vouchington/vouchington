@@ -26,23 +26,6 @@ async function* hashBatchesFromDb(): AsyncGenerator<string[]> {
 }
 
 /**
- * Populates the embedding bloom filter from all existing embeddings in the database.
- *
- * Streams embeddings using cursor-based pagination to avoid loading entire dataset
- * into memory. Called via job queue on startup or manually via admin endpoint.
- *
- * NOTE: ensureExists() must be called before addStream(). Post-#1955, bloom-filter-add.lua
- * no-ops when the live key does not exist, so ensureExists() here is load-bearing — it
- * reserves the filter with the correct capacity before addStream() writes any items.
- */
-export async function populateEmbeddingBloomFilterFromDatabase(): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  await embeddingBloomFilter.ensureExists()
-  await embeddingBloomFilter.addStream(hashBatchesFromDb())
-  await bloomValkeyClient.set(EMBEDDING_BLOOM_READY_KEY, '1')
-}
-
-/**
  * Clears and rebuilds the embedding bloom filter from scratch.
  *
  * Zero-downtime: builds under a separate key then atomically renames to live key.

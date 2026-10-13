@@ -104,7 +104,10 @@ export async function handleRssFeedRedirect(params: {
         }
       }
       await disableAndHideSource(rssFeedId)
-      void enqueueBulkFetchRssFeeds([existingFeed.id], { ttl: 0 })
+      void enqueueBulkFetchRssFeeds([existingFeed.id], {
+        ttl: 0,
+        deduplicationScope: 'request',
+      })
       return { type: 'done' }
     }
 

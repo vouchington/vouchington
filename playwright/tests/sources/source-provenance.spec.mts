@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -60,6 +60,7 @@ const card = (page: Page, { title }: SeededSource) =>
 const header = (page: Page) => page.getByTestId('topic-detail-header')
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   // Fresh per entry: topic names and slugs and users.username are globally unique.
   suffix = randomSuffix()
   clientName = `Provenance Agent ${suffix}`

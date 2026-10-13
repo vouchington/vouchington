@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { requireTestValue } from '../../helpers/assertions.mts'
@@ -11,6 +11,7 @@ let ordinaryOwnerId = ''
 
 test.describe('My API Keys Page', () => {
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     ordinaryOwnerId = requireTestValue(
       await createTestUser(),
       'Failed to create API-key lifetime owner',

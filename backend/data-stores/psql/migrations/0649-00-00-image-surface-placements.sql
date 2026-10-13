@@ -219,10 +219,9 @@ DECLARE
   v_revision integer;
 BEGIN
   INSERT INTO media_delivery_registry_records (
-    delivery_key, placement_id, placement_revision, image_id, desired_state
+    placement_id, placement_revision, image_id, desired_state
   )
-  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),
-    placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
+  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states
   FROM media_placements placement
   JOIN image_surface_placements surface ON surface.placement_id = placement.id
   WHERE placement.retired_at IS NULL
@@ -232,7 +231,8 @@ BEGIN
     AND surface.community_id IS NOT DISTINCT FROM p_community_id
     AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id
     AND surface.image_id IS DISTINCT FROM p_image_id
-  ON CONFLICT (delivery_key) DO UPDATE
+  ORDER BY placement.id, placement.revision, surface.image_id
+  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
   SET desired_state = 'withheld',
     generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
       THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;
@@ -279,16 +279,15 @@ BEGIN
   END IF;
 
   INSERT INTO media_delivery_registry_records (
-    delivery_key, placement_id, placement_revision, image_id, desired_state
+    placement_id, placement_revision, image_id, desired_state
   )
-  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),
-    v_placement_id, v_revision, p_image_id,
+  SELECT v_placement_id, v_revision, p_image_id,
     CASE WHEN image.deleted_at IS NULL
         AND image.quarantine_pending_at IS NULL
         AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
       THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END
   FROM images image WHERE image.id = p_image_id
-  ON CONFLICT (delivery_key) DO NOTHING;
+  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;
 
 END;
 $$;
@@ -417,36 +416,6 @@ $$;
 CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces
 BEFORE DELETE ON user_profile_links
 FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_profile_link_image_surfaces();
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_image_placement_publicly_projected(
-  p_placement_id uuid,
-  p_revision integer,
-  p_image_id uuid
-)
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM images image
-    WHERE image.id = p_image_id
-      AND image.deleted_at IS NULL
-      AND image.upload_completed_at IS NOT NULL
-      AND image.quarantine_pending_at IS NULL
-      AND image.is_flagged_by_openai_omni_moderation = FALSE
-      AND image.openai_omni_moderation_results IS NOT NULL
-      AND image.openai_omni_moderation_created_at IS NOT NULL
-      AND EXISTS (
-        SELECT 1
-        FROM view_media_delivery_registry_current_records registry
-        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
-          AND registry.desired_state = 'allow'
-          AND registry.state = 'completed'
-      )
-  );
-$$;
-
-COMMENT ON FUNCTION fn_image_placement_publicly_projected(uuid, integer, uuid)
-IS 'Projects only an exact image placement tuple that has completed its allowed edge delivery state.';
 
 COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.';
 COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';

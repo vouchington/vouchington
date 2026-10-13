@@ -125,7 +125,7 @@ _none_
 - `idx_topics__slug`: `CREATE UNIQUE INDEX idx_topics__slug ON public.topics USING btree (slug)`
 - `idx_topics__slug__text_pattern_ops`: `CREATE INDEX idx_topics__slug__text_pattern_ops ON public.topics USING btree (slug text_pattern_ops)`
 - `idx_topics__slug_trgm`: `CREATE INDEX idx_topics__slug_trgm ON public.topics USING gin (slug gin_trgm_ops) WHERE (deleted_at IS NULL)`
-- `idx_topics__updated_at_id_active`: `CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))`
+- `idx_topics__updated_at_id_active`: `CREATE INDEX idx_topics__updated_at_id_active ON public.topics USING btree (updated_at, ((id)::text)) WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL))`
 - `idx_topics__updated_by_id`: `CREATE INDEX idx_topics__updated_by_id ON public.topics USING btree (updated_by_id) WHERE (updated_by_id IS NOT NULL)`
 - `idx_topics__votes_score_sort__id`: `CREATE INDEX idx_topics__votes_score_sort__id ON public.topics USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_topics__votes_score_sort__positive__id`: `CREATE INDEX idx_topics__votes_score_sort__positive__id ON public.topics USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`

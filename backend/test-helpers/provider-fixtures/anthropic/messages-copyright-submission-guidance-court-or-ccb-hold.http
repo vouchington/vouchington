@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_01ReplayFixtureLegalHold
+
+{"id":"msg_01ReplayFixtureLegalHold","type":"message","role":"assistant","model":"claude-haiku-5-5-20261001","content":[{"type":"text","text":"{\"summary\":\"The filing names a court proceeding but gives no commencement date.\",\"criteria\":[{\"criterion\":\"is_from_original_claimant\",\"status\":\"present\",\"gap\":null},{\"criterion\":\"proceeding_kind\",\"status\":\"present\",\"gap\":null},{\"criterion\":\"commenced_at\",\"status\":\"missing\",\"gap\":\"No commencement date was given.\"},{\"criterion\":\"received_by_designated_agent_at\",\"status\":\"unclear\",\"gap\":\"Receipt time is not stated.\"},{\"criterion\":\"is_same_material\",\"status\":\"present\",\"gap\":null}],\"risk_notes\":[{\"kind\":\"timing_gap\",\"note\":\"The commencement date is missing.\"}]}"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":21,"cache_creation_input_tokens":150,"cache_read_input_tokens":340,"cache_creation":{"ephemeral_5m_input_tokens":100,"ephemeral_1h_input_tokens":50},"output_tokens":17,"service_tier":"standard"}}

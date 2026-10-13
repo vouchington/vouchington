@@ -4,12 +4,12 @@ import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from '@services/
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   createTestUserDirect,
   completeTestMediaDeliveryRecord,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecord,
+  getTestMediaDeliveryRegistryRecordId,
   hardDeleteTestUser,
   insertTestCommunity,
   insertTestImage,
@@ -101,15 +101,15 @@ describe('image surface placement lifecycle', () => {
     await updateProfileImageId(user.id, newImageId)
     const placements = await getTestImageSurfacePlacements({ userId: user.id })
     expect(placements.filter(placement => placement.retired_at === null)).toHaveLength(1)
-    expect(
-      await getTestMediaDeliveryRecord(
-        getImagePlacementDeliveryKey({
-          placementId: oldPlacement!.placement_id,
-          revision: oldPlacement!.placement_revision,
-          imageId: oldImageId,
-        }),
-      ),
-    ).toMatchObject({ desired_state: 'withheld' })
+    const oldRecordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: oldPlacement!.placement_id,
+      revision: oldPlacement!.placement_revision,
+      imageId: oldImageId,
+    })
+    expect(oldRecordId).not.toBeNull()
+    expect(await getTestMediaDeliveryRecord(oldRecordId!)).toMatchObject({
+      desired_state: 'withheld',
+    })
   })
 
   it('keeps a profile use retired when its owner removes it during image-delete rollback', async () => {
@@ -144,12 +144,6 @@ describe('image surface placement lifecycle', () => {
     await updateProfileImageId(user.id, imageId)
     const [placement] = await getTestImageSurfacePlacements({ userId: user.id })
     expect(placement).toBeDefined()
-    const deliveryKey = getImagePlacementDeliveryKey({
-      placementId: placement!.placement_id,
-      revision: placement!.placement_revision,
-      imageId,
-    })
-
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,
@@ -159,7 +153,13 @@ describe('image surface placement lifecycle', () => {
     ).toBe(false)
 
     await stageCurrentImagePlacementDeliveryRecordsForImageIds([imageId])
-    expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ desired_state: 'allow' })
+    const recordId = await getTestMediaDeliveryRegistryRecordId({
+      placementId: placement!.placement_id,
+      revision: placement!.placement_revision,
+      imageId,
+    })
+    expect(recordId).not.toBeNull()
+    expect(await getTestMediaDeliveryRecord(recordId!)).toMatchObject({ desired_state: 'allow' })
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,
@@ -168,7 +168,7 @@ describe('image surface placement lifecycle', () => {
       }),
     ).toBe(false)
 
-    await completeTestMediaDeliveryRecord(deliveryKey)
+    await completeTestMediaDeliveryRecord(recordId!)
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,

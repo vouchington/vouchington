@@ -67,7 +67,25 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
 ]
 
 export const ANALYZE_TARGETS = [
-  ...new Set([...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table), 'rss_feed_items']),
+  ...new Set([
+    ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
+    'rss_feed_items',
+    'api_keys',
+    'blocklisted_domains',
+    'bedrock_nova_multimodal_v1_embeddings',
+    'post_topic_alias_sources',
+    'post_explicit_topic_categories',
+    'post_images',
+    'image_placements',
+    'media_placements',
+    'images',
+    'media_delivery_registry_records',
+    'media_delivery_registry_changes',
+    'post_topic_recommendations',
+    'relation__topic__category__topic',
+    'relation__post__category__topic_alias',
+    'relation__rss_feed_item__category__topic_alias',
+  ]),
 ]
 
 export function buildSeededRowCountQuery({ table, column, prefix, pattern }: TableInfo): {

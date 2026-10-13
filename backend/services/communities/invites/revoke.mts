@@ -1,8 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from '../members/get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import type { CommunityInvite } from '../types.mts'
 
 export async function revokeInvite(currentUserId: string, inviteId: string): Promise<void> {
@@ -21,11 +20,9 @@ export async function revokeInvite(currentUserId: string, inviteId: string): Pro
   assert(invite, 404, 'Invite not found')
   assert(!invite.revoked_at && !invite.accepted_at, 422, 'Invite has already been used or revoked')
 
-  const [community, membership] = await Promise.all([
-    getCommunity(invite.community_id),
-    getCommunityMember(invite.community_id, currentUserId),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(invite.community_id, currentUserId)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   assert(membership?.role === 'owner' || membership?.role === 'moderator', 403, 'Forbidden')
 

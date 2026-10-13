@@ -8,7 +8,7 @@ describe('podcast-show', () => {
   beforeAll(async () => {
     const feed = await createTestRssFeed({})
     rssFeedId = feed.id
-  }, 60_000)
+  }, 5_000)
 
   describe('upsertPodcastShow', () => {
     it('inserts podcast show metadata for a new feed', async () => {
@@ -31,7 +31,7 @@ describe('podcast-show', () => {
       expect(result?.is_explicit).toBe(false)
       expect(result?.itunes_type).toBe('episodic')
       expect(result?.description).toBe('A podcast about money.')
-    }, 30_000)
+    })
 
     it('updates existing podcast show metadata on conflict', async () => {
       // First insert
@@ -62,7 +62,7 @@ describe('podcast-show', () => {
       expect(result?.cover_art_url).toBe('https://example.com/new-cover.jpg')
       expect(result?.is_explicit).toBe(true)
       expect(result?.itunes_type).toBe('serial')
-    }, 30_000)
+    })
 
     it('handles null metadata fields', async () => {
       const feed = await createTestRssFeed({})
@@ -80,7 +80,7 @@ describe('podcast-show', () => {
       expect(result).not.toBeNull()
       expect(result?.itunes_author).toBeNull()
       expect(result?.itunes_type).toBeNull()
-    }, 30_000)
+    })
   })
 
   describe('getPodcastShow', () => {
@@ -88,6 +88,6 @@ describe('podcast-show', () => {
       const feed = await createTestRssFeed({})
       const result = await getPodcastShow(feed.id)
       expect(result).toBeNull()
-    }, 30_000)
+    })
   })
 })

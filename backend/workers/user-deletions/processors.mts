@@ -1,4 +1,8 @@
-import { enqueueBulkUserDeletions, enqueueUserDeletion } from '@queues/user-deletions/enqueues'
+import {
+  enqueueBulkUserDeletions,
+  enqueueOrReactivateBulkUserDeletions,
+  enqueueUserDeletion,
+} from '@queues/user-deletions/enqueues'
 import { claimRecoverableUserDeletions, processUserDeletionBatch } from '@services/user-deletions'
 import { processUserDeletionPhaseBatch } from '@services/users/delete-phases'
 
@@ -33,7 +37,7 @@ export async function recoverUserDeletions(
   dependencies?: Partial<RecoverUserDeletionsDependencies>,
 ): Promise<{ enqueued: number }> {
   const claim = dependencies?.claimRecoverableUserDeletions ?? claimRecoverableUserDeletions
-  const enqueue = dependencies?.enqueueBulkUserDeletions ?? enqueueBulkUserDeletions
+  const enqueue = dependencies?.enqueueBulkUserDeletions ?? enqueueOrReactivateBulkUserDeletions
   const requests = await claim()
   if (requests.length > 0) await enqueue(requests)
   return { enqueued: requests.length }

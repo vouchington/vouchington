@@ -27,7 +27,7 @@ describe('apply-ring-penalty', () => {
       createTestUser({ administrator: true }) as Promise<PrivateUser>,
       createTestUserDirect({ username: randomUsername() }) as Promise<PrivateUser>,
     ])
-  }, 60_000)
+  }, 5000)
 
   function makePost(slug: string): Promise<string> {
     return insertTestPost({
@@ -80,7 +80,7 @@ describe('apply-ring-penalty', () => {
         resolved_at: expect.any(Date),
         resolved_by_id: adminUser.id,
       })
-    }, 60_000)
+    })
 
     it('returns penalized_user_count=0 when no upvoters exist', async () => {
       const postId = await makePost(randomSlug())
@@ -89,11 +89,13 @@ describe('apply-ring-penalty', () => {
 
       const result = await applyVoteRingPenalty(flag!.id, adminUser.id)
       expect(result.penalized_user_count).toBe(0)
-    }, 60_000)
+    })
 
     it('throws 404 for unknown flag ID', async () => {
-      await expect(applyVoteRingPenalty(uuidv7(), adminUser.id)).rejects.toThrow(Error)
-    }, 60_000)
+      const request = applyVoteRingPenalty(uuidv7(), adminUser.id)
+      await expect(request).rejects.toThrow(Error)
+      await expect(request).rejects.toMatchObject({ status: 404 })
+    })
 
     it('rejects a repeated request even after a penalty was revoked', async () => {
       const postId = await makePost(randomSlug())
@@ -108,6 +110,6 @@ describe('apply-ring-penalty', () => {
         status: 409,
       })
       expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
-    }, 60_000)
+    })
   })
 })

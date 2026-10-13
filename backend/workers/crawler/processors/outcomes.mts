@@ -64,7 +64,15 @@ export async function handleCrawlerProcessorError(
         },
       )
       const replacementJobId = replacementJobs[0]?.id
-      return replacementJobId ? { replacement_job_id: replacementJobId } : undefined
+      // No job means an equivalent replacement already holds the dedup id. Completing now would
+      // drop this URL and leave a waiting caller without a result, so retry the job instead.
+      if (!replacementJobId) {
+        throw new Error(
+          `Rate-limited crawl ${urlId} was not re-enqueued for retry ${rateLimitRetryCount + 1}`,
+          { cause: error },
+        )
+      }
+      return { replacement_job_id: replacementJobId }
     }
     // No Retry-After or circuit breaker tripped: Valkey lock is already set; let glide-mq retry.
     throw error

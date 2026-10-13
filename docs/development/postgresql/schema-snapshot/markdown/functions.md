@@ -142,15 +142,6 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  IMMUTABLE
 ```
 
-## `fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)
- RETURNS boolean
- LANGUAGE sql
- STABLE
-```
-
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
 
 ```sql
@@ -213,6 +204,15 @@ CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_d
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_id uuid)
  RETURNS interval
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+```
+
+## `fn_min_uuidv7(p_at timestamp with time zone)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)
+ RETURNS uuid
  LANGUAGE sql
  STABLE PARALLEL SAFE
 ```

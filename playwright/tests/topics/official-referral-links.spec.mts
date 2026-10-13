@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
@@ -13,6 +13,7 @@ test.describe('Official Referral Links — admin management', () => {
   let nonAdminId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     program = await insertTestReferralProgram(`off-${rand()}`)
     const nonAdmin = await createTestUser({ username: `off-nonadmin-${rand()}` })
     if (!nonAdmin) throw new Error('Failed to create non-admin user')
@@ -65,6 +66,7 @@ test.describe('Official Referral Links — personal gate for official accounts',
   let investorUserId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     program = await insertTestReferralProgram(`off-gate-${rand()}`)
     const investorUser = await createTestUser({
       username: `off-investor-${rand()}`,

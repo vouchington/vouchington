@@ -1,3 +1,4 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PostForm } from '../post-form'
@@ -43,7 +44,6 @@ vi.mock(import('@/lib/api/client/posts'), () => ({
   deletePostRating: vi.fn<VitestLooseMock>(),
   setPostImages: vi.fn<VitestLooseMock>(),
 }))
-
 vi.mock(import('@/lib/api/client/markdown'), () => ({
   previewMarkdown: vi.fn<VitestLooseMock>(),
 }))

@@ -1,5 +1,6 @@
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import * as services from '../run-services.mts'
 import { runPartitionPruningScenarios } from './partition-pruning.mts'
 import { runEntityTailScenarios } from './entity-tail.mts'
@@ -49,7 +50,8 @@ export async function runEntityAndCommunityScenarios() {
   await runAndCapture('user-by-username', () => getPublicUserByAny('seeduser0'))
 
   // Post lookup by slug (hits post_slugs → view_posts)
-  await runAndCapture('post-by-slug', () => getPostByAny('seed-post-0'))
+  registerScenarioContract('post-by-slug', await getViewPostsHydrationContract('post-by-slug'))
+  await runAndCapture('post-by-slug', () => getPostByAny('seed-post-3'))
 
   // Topic lookup by slug (hits topics + topic_aliases → view_topics)
   await runAndCapture('topic-by-slug', () => getTopicByAny('seed-topic-0'))

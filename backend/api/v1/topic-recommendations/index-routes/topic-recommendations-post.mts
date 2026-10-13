@@ -4,11 +4,12 @@ import {
   IDENTITY_REQUIRED,
 } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
-import { assertCanContribute } from '@services/contribution-gating/assert'
 import { admitRouteContribution, executePreparedContribution } from '@services/contribution-gating'
-import { getUserActivePlan } from '@services/memberships'
 import { assertNotSuspended } from '@services/users/suspension'
-import { currentUserCanCreatePost } from '@services/posts/authorization'
+import {
+  currentUserCanCreatePost,
+  getAuthorizedPostContributionMembershipPlan,
+} from '@services/posts/authorization'
 import {
   assertValidCreateTopicRecommendationInput,
   prepareTopicRecommendation,
@@ -57,8 +58,7 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
   }
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
   const body: unknown = await ctx.request.json<CreateTopicRecommendationRequest>('1mb')
   // The Idempotency-Key header is not run through the contract: the admission layer answers a
   // malformed key with its coded 400, which is the documented status.

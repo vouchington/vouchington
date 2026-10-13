@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { softDeleteList } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -5,14 +6,11 @@ import {
   LIST_ID_PARAMETER,
   SUCCESS_RESULT_SCHEMA,
 } from './list-tool-support.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
 type DeleteListArgs = { list_id: string }
 
-const tool: Tool<DeleteListArgs, { success: true }> = {
+const tool: MergedToolSource<DeleteListArgs, { success: true }> = {
   schema: {
-    name: 'delete_list',
-    type: 'function',
     description:
       "Delete a list the current user owns, along with its items. Deleting a list that is already deleted fails as not found, and another user's list cannot be deleted.",
     parameters: {
@@ -21,7 +19,6 @@ const tool: Tool<DeleteListArgs, { success: true }> = {
       required: ['list_id'],
       additionalProperties: false,
     },
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

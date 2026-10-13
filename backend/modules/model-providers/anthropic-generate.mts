@@ -12,7 +12,6 @@ type CreateMessage = (
 
 export type AnthropicDeps = { createMessage?: CreateMessage }
 
-/* v8 ignore start -- thin Anthropic integration wrapper; exercised by credentialed *.anthropic.test.mts */
 /* no-mistakes: integration=anthropic */
 function createWithClient(
   params: Anthropic.MessageCreateParamsNonStreaming,
@@ -20,7 +19,6 @@ function createWithClient(
 ): PromiseLike<Anthropic.Message> {
   return getAnthropicClient().messages.create(params, options)
 }
-/* v8 ignore stop */
 
 function unusable(
   code: 'refusal' | 'output-truncated' | 'invalid-response',

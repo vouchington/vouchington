@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { enqueueSpendCapRecheck } from '@queues/ai-agents/enqueues/spend-cap-recheck'
 import { registerSpendCapDelayedJob } from '@services/ai-usage'
@@ -22,10 +22,6 @@ function delayedJob<T>(data: T): Job<T> {
   } as unknown as Job<T>
 }
 
-function mockWorker(): Worker {
-  return { rateLimit: vi.fn<(ms: number) => Promise<void>>() } as unknown as Worker
-}
-
 describe('AI spend-cap registration timing', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -43,7 +39,7 @@ describe('AI spend-cap registration timing', () => {
     const enqueue = vi.fn<typeof enqueueSpendCapRecheck>().mockResolvedValue(null)
 
     await expect(
-      processAIAgentWorkerJob(job, mockWorker(), {
+      processAIAgentWorkerJob(job, {
         waitForSpendCapConfig: () => Promise.resolve(),
         getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1 }),
         getDailyAiCostTotalMicrounits: () =>

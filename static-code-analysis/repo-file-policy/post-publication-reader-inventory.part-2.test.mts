@@ -1,5 +1,5 @@
 import { beforeAll, describe, it } from 'vitest'
-import { initSqlAst } from './sql-ast.mts'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { runInventoryReaderCase } from '../test-helpers/post-publication-reader-case.mts'
 
 const view = 'must compose view_public_post_eligibility'

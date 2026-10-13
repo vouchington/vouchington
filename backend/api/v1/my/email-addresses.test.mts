@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, updateTestUserUiLocale } from '@voucha/test-helpers'
 
@@ -38,5 +38,57 @@ describe('email address list and verification request', () => {
       .send({ email_address: address })
       .expect(200)
     expect(response.body.email_address).toBe(address)
+  })
+
+  it('keeps the existing-address error for the current user', async () => {
+    const user = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const response = await request
+      .post('/api/v1/my/email-addresses')
+      .send({ email_address: user.email_address })
+      .expect(422)
+
+    expect(response.body.message).toBe('Email address already added to your account')
+  })
+
+  it('keeps the in-use error for another user address', async () => {
+    const user = await createTestUser()
+    const otherUser = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const response = await request
+      .post('/api/v1/my/email-addresses')
+      .send({ email_address: otherUser.email_address })
+      .expect(422)
+
+    expect(response.body.message).toBe('Email address is already in use')
+  })
+
+  it('checks email availability with one annotated query', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+
+    try {
+      const user = await createTestUser()
+      const request = createRequest()
+      await request.authenticateAs(user)
+
+      await request
+        .post('/api/v1/my/email-addresses')
+        .send({ email_address: newAddress() })
+        .expect(200)
+
+      const profileLines = stderr.mock.calls
+        .map(([chunk]) => String(chunk))
+        .filter(line => line.includes('route=POST /api/v1/my/email-addresses '))
+      expect(profileLines).toHaveLength(1)
+      expect(profileLines[0]).not.toContain('assertEmailAddressAvailableForUser')
+    } finally {
+      stderr.mockRestore()
+      vi.unstubAllEnvs()
+    }
   })
 })

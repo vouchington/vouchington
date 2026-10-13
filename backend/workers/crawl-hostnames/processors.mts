@@ -9,6 +9,7 @@ import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-host
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   enqueueBulkRefreshHostnameCrawler,
+  enqueueCrawlHostnamesDispatcher,
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
 } from '@queues/crawl-hostnames/enqueues'
@@ -92,12 +93,16 @@ export async function processCrawlHostnamesJob(
 ): Promise<unknown> {
   const deps = getDependencies(dependencies)
   switch (job.name as CrawlHostnamesJobs) {
+    case 'enqueueCrawlHostnamesDispatcher':
+      return enqueueCrawlHostnamesDispatcher()
     case 'enqueueCrawlTier1Dispatcher':
       return enqueueCrawlTier1Dispatcher()
     case 'enqueueCrawlTier2Dispatcher':
       return enqueueCrawlTier2Dispatcher()
     case 'crawl_hostnames_dispatcher':
-      return deps.dispatchCrawlHostnames()
+      return processRetainedSweep(job, save =>
+        deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),
+      )
     case 'crawl_urls_per_hostname_dispatcher': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)

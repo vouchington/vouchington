@@ -126,6 +126,11 @@ CREATE OR REPLACE VIEW view_posts AS
     ), '[]'::json) AS post_explicit_categories,
 
     COALESCE((
+      -- Bind the owning post before delivery eligibility can reorder the image joins.
+      WITH selected_post_images AS MATERIALIZED (
+        SELECT post_id, image_id, order_index, caption FROM post_images
+        WHERE post_id = posts.id ORDER BY order_index
+      )
       SELECT JSON_AGG(
         json_build_object(
           'image_id', post_images.image_id,
@@ -136,15 +141,16 @@ CREATE OR REPLACE VIEW view_posts AS
         )
         ORDER BY post_images.order_index
       )
-      FROM post_images
+      FROM selected_post_images post_images
       JOIN image_placements image_placement
         ON image_placement.post_id = post_images.post_id
         AND image_placement.image_id = post_images.image_id
       JOIN media_placements placement ON placement.id = image_placement.placement_id
         AND placement.retired_at IS NULL
-        AND fn_image_placement_publicly_projected(
-          placement.id, placement.revision, post_images.image_id
-        )
+      JOIN view_publicly_projected_image_placements public_delivery
+        ON public_delivery.placement_id = placement.id
+        AND public_delivery.placement_revision = placement.revision
+        AND public_delivery.image_id = post_images.image_id
       WHERE post_images.post_id = posts.id
     ), '[]'::json) AS images,
 

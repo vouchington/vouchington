@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetPostAncestors, mockGetPostDescendants, mockNotFound } = vi.hoisted(() => ({

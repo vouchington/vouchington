@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimitError } from 'openai'
 import type { Job, Worker } from 'glide-mq'
+import type { createWorker } from '@data-stores/valkey-glide-mq'
 import { StructuredDecisionError } from '@modules/structured-decisions'
 import { AI_AGENTS_QUEUE_NAME, CLASSIFIER_RUN_BACKOFF } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
@@ -22,43 +23,43 @@ const spendCapDisabled = {
 
 describe('ai-agents workers', () => {
   const mockProcessAIAgent = vi.fn<() => Promise<unknown>>()
-  const mockHandleOpenAIRateLimit = vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>()
+  const mockHandleOpenAIRateLimit =
+    vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockHandleOpenAIRateLimit.mockResolvedValue(undefined)
   })
 
-  it('constructs the worker with the queue processor and runtime options', () => {
-    const constructed: unknown[] = []
-    function CapturingWorker(
+  it('builds the worker through the factory with a dedicated command client and runtime options', () => {
+    const created: unknown[] = []
+    const factoryWorker = {} as Worker
+    const createWorkerStub = ((
       name: string,
       processor: (job: Job<AIAgentJobData>) => unknown,
       options: unknown,
-    ): void {
-      constructed.push({ name, processor, options })
-    }
+    ) => {
+      created.push({ name, processor, options })
+      return factoryWorker
+    }) as unknown as typeof createWorker
 
     const worker = createAIAgentsWorker({
-      WorkerCtor: CapturingWorker as unknown as typeof Worker,
+      createWorker: createWorkerStub,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
       handleOpenAIRateLimit: mockHandleOpenAIRateLimit,
       queueName: AI_AGENTS_QUEUE_NAME,
-      connection: { host: 'localhost' } as never,
-      prefix: 'test-prefix' as never,
       concurrency: 7,
       openAIRateLimitPerMinute: 42,
       openAITokenLimitPerMinute: 1234,
     })
 
-    expect(worker).toBeInstanceOf(CapturingWorker)
-    expect(constructed).toEqual([
+    expect(worker).toBe(factoryWorker)
+    expect(created).toEqual([
       {
         name: AI_AGENTS_QUEUE_NAME,
         processor: expect.any(Function),
         options: {
-          connection: { host: 'localhost' },
-          prefix: 'test-prefix',
+          dedicatedCommandClient: true,
           concurrency: 7,
           limiter: { max: 42, duration: 60_000 },
           tokenLimiter: {
@@ -74,22 +75,20 @@ describe('ai-agents workers', () => {
     ])
   })
 
-  it('rate-limits on OpenAI 429 and passes the worker instance', async () => {
+  it('hands an OpenAI 429 to the rate-limit handler with the job, not the worker', async () => {
     const rateLimitError = new RateLimitError(429, {}, 'rate limited', new Headers())
-    const worker = {
-      rateLimit: vi.fn<() => Promise<void>>(() => Promise.resolve()),
-    } as unknown as Worker
+    const job = makeJob()
     mockProcessAIAgent.mockRejectedValue(rateLimitError)
 
     await expect(
-      processAIAgentWorkerJob(makeJob(), worker, {
+      processAIAgentWorkerJob(job, {
         ...spendCapDisabled,
         processAIAgent: mockProcessAIAgent as typeof processAIAgent,
         handleOpenAIRateLimit: mockHandleOpenAIRateLimit,
       }),
     ).resolves.toBeUndefined()
 
-    expect(mockHandleOpenAIRateLimit).toHaveBeenCalledWith(rateLimitError, worker)
+    expect(mockHandleOpenAIRateLimit).toHaveBeenCalledWith(rateLimitError, job)
   })
 
   it('rethrows a provider outage unchanged so the backoff strategy sees its Retry-After', async () => {
@@ -97,16 +96,13 @@ describe('ai-agents workers', () => {
       failure: { retryClass: 'transient', retryAfterMs: 5 * 60_000 },
     })
     mockProcessAIAgent.mockRejectedValue(outage)
-    const rateLimit = vi.fn<() => Promise<void>>()
-    const worker = { rateLimit } as unknown as Worker
 
-    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), worker, {
+    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), {
       ...spendCapDisabled,
       processAIAgent: mockProcessAIAgent as typeof processAIAgent,
     }).catch((err: unknown) => err)
 
     expect(thrown).toBe(outage)
-    expect(rateLimit).not.toHaveBeenCalled()
     expect(classifierRunBackoffMs(1, thrown as Error, () => 0)).toBe(5 * 60_000)
   })
 })

@@ -68,6 +68,10 @@ vi.mock(import('@/components/shared/save-button'), () => ({
   ),
 }))
 
+vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
+  EntityBookmarkButton: () => <span hidden />,
+}))
+
 const basePost = {
   id: 'post-1',
   postType: 'discussion' as const,

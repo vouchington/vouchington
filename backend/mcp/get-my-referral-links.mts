@@ -46,7 +46,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_my_referral_links',
     type: 'function',
-    description: `List the current user's own referral links, newest first: each one's id, program, url, label and whether it is active. It never returns another user's links; use get_referral_links for the links under a program. Pass referral_program_id to see only the links under one program. Returns at most ${max} links per page and page_info.end_cursor; pass it as after to get the next page. A malformed cursor returns { success: false, error: "Invalid cursor" }.`,
+    description: `List the current user's own referral links, newest first: each one's id, program, url, label and whether it is active. It never returns another user's links; use get_referral_links for the links under a program. Pass referral_program_id to see only the links under one program. Returns at most ${max} links per page and page_info.end_cursor; pass it as after to get the next page.`,
     parameters: {
       type: 'object',
       properties: {

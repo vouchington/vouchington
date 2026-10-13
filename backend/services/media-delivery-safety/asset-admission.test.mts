@@ -1,3 +1,4 @@
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   WEB_PROVENANCE,
@@ -214,7 +215,13 @@ describe('asset admission root domain', () => {
     }
     await expect(modifying).resolves.toBeUndefined()
     expect(edge.records.get(key)?.state).toBe('withheld')
-    await processMediaDeliveryRegistryRecord(key)
+    const id = await getTestMediaDeliveryRegistryRecordId({
+      placementId: tuple!.placement_id,
+      revision: tuple!.placement_revision,
+      imageId,
+    })
+    if (!id) throw new Error('Missing committed registry identity')
+    await processMediaDeliveryRegistryRecord(id)
     expect(edge.records.get(key)?.state).toBe('withheld')
   })
 

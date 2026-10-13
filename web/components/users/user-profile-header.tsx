@@ -8,9 +8,9 @@ import { RssFeedLink } from '@/components/shared/rss-feed-link'
 import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { Button } from '@/components/ui/button'
 import { MARKDOWN_CONTENT_FEATURES_UTM } from '@/components/shared/markdown-content-features'
-import { MarkdownContent } from '@/components/shared/markdown-content'
-import { UserProfileLinks } from './profile-links'
 import { IdentityVerifiedBadge } from './identity-verified-badge'
+import { UserProfileLinks } from './profile-links'
+import { UserBioCopy } from './user-bio-copy'
 import { getDisplayName } from '@/lib/users/user-helpers'
 import { useAuth } from '@/lib/auth/context'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
@@ -35,6 +35,7 @@ interface UserProfileHeaderProps {
     | 'verification_status'
     | 'is_verified_badge_visible'
     | 'verified_display_name'
+    | 'lingua_rs_detected_language'
   > & { roles?: readonly string[] }
   metrics?: Pick<UserMetrics, 'count'>
   profileLinks?: Array<Pick<ProfileLink, 'id' | 'link_type' | 'url' | 'handle' | 'name'>>
@@ -152,13 +153,14 @@ export function UserProfileHeader({
           </div>
         </div>
       </div>
-      {aboutHtml && (
-        <MarkdownContent
+      {aboutHtml ? (
+        <UserBioCopy
           html={aboutHtml}
+          detectedLanguage={user.lingua_rs_detected_language}
           className='prose prose-sm mt-4 max-w-none dark:prose-invert line-clamp-4 [&_img]:hidden [&_pre]:hidden [&_table]:hidden'
           features={MARKDOWN_CONTENT_FEATURES_UTM}
         />
-      )}
+      ) : null}
     </div>
   )
 }

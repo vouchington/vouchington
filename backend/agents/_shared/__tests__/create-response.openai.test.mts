@@ -3,8 +3,10 @@ import { createOpenAIResponse } from '@modules/openai-utils/create-response'
 
 describe('agents._shared.create-response', () => {
   /**
-   * Credentialed happy-path test for the OpenAI Responses API primitive.
-   * Other agent-level OpenAI tests live in their agent's __tests__ directory.
+   * Non-gating smoke check of the OpenAI Responses API primitive against the live API.
+   * The request we build, SSE parsing and the latch-and-stop policy are gated by recorded
+   * responses in backend/modules/openai-utils/create-response.replay.no-data.mock.test.mts.
+   * See docs/development/tests.md#live-provider-smoke-checks.
    */
 
   it(

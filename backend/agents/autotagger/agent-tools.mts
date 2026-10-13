@@ -2,7 +2,7 @@ import { sanitizeClassifierExternalContent } from '@agents/classifiers/safe-cont
 import type { ToolDefinition } from '@modules/model-providers/tool-turn-types'
 import { getTopicIds } from '@services/topics/search/get-ids'
 
-export const SEARCH_TOPICS_TOOL = 'search_topics'
+export const SEARCH_TOPICS_TOOL = 'lookup_candidate_topics'
 export const SUBMIT_TOPICS_TOOL = 'submit_topics'
 
 /** The most topics one search returns; a lookup only needs the closest few names. */

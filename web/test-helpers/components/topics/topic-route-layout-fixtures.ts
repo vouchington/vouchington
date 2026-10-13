@@ -1,3 +1,5 @@
+import '@/test-helpers/i18n/mock-json-messages'
+
 export const emptyHostnames = {
   results: [],
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },

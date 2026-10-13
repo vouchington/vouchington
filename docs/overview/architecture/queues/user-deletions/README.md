@@ -7,9 +7,13 @@ only `{ requestId, processingAttemptId }` and use
 `user-deletion__<request-id>__<processing-attempt-id>` as both job and deduplication ID.
 
 Each delivery owns one fenced attempt and commits at most one 100-row phase batch. The database is
-the source of truth: a five-minute recovery schedule re-enqueues requests that were not started and
-rotates attempts that have been stuck for 30 minutes. Terminal queue failure is therefore repaired
-without a DLQ replay.
+the source of truth: a five-minute recovery schedule re-enqueues requests that were not started under
+the same attempt token and rotates attempts that have been stuck for 30 minutes. A job ID is a hard
+uniqueness key in GlideMQ, so a completed or failed record (including a job that stalled past its
+limit) that still holds an unstarted attempt's ID would make every re-enqueue a no-op. Recovery
+therefore removes a finished record under the ID and adds the attempt again; a job still waiting,
+delayed, or active under the ID stays the canonical delivery and is never touched. Terminal queue
+failure is therefore repaired without a DLQ replay.
 
 ## Related
 

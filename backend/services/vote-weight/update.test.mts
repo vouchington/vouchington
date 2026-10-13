@@ -16,7 +16,7 @@ describe('recalculateUserVoteWeight', () => {
     expect(typeof result.weight).toBe('number')
     // New accounts (< 7 days) get minimal weight (WEIGHT_NEW_ACCOUNT); this test only checks the return shape is valid
     expect(result.weight).toBeGreaterThan(0)
-  }, 60_000)
+  })
 
   it('skips recalculation when vote_weight_admin_set_at is set (returns current weight unchanged)', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -32,7 +32,7 @@ describe('recalculateUserVoteWeight', () => {
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(999)
     expect(factors?.vote_weight_admin_set_at).not.toBeNull()
-  }, 60_000)
+  })
 
   it('forceRecalculate clears admin override and calculates new weight', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -47,7 +47,7 @@ describe('recalculateUserVoteWeight', () => {
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(result.weight)
     expect(factors?.vote_weight_admin_set_at).toBeNull()
-  }, 60_000)
+  })
 
   it('returns changed=true when weight changes (admin user has elevated weight)', async () => {
     const user = await createTestUserDirect({ username: randomUsername(), administrator: true })
@@ -60,7 +60,7 @@ describe('recalculateUserVoteWeight', () => {
     // Admin multiplier is 10000, so weight >> 1.0
     expect(result.weight).toBeGreaterThan(1.0)
     expect(result.changed).toBe(true)
-  }, 60_000)
+  })
 
   it('returns changed=false when weight is already correct', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -73,12 +73,12 @@ describe('recalculateUserVoteWeight', () => {
     const second = await recalculateUserVoteWeight(userId)
     expect(second.weight).toBe(first.weight)
     expect(second.changed).toBe(false)
-  }, 60_000)
+  })
 
   it('returns weight=1 and changed=false for non-existent user', async () => {
     const fakeId = v7() // fresh UUIDv7 used here as a stand-in for a non-existent user ID
     const result = await recalculateUserVoteWeight(fakeId)
     expect(result.weight).toBe(1)
     expect(result.changed).toBe(false)
-  }, 60_000)
+  })
 })

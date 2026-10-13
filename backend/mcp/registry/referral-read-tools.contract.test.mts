@@ -1,3 +1,8 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import {
@@ -11,7 +16,6 @@ import {
   createReferralProgramFixture,
   disableReferralProgramByTopicId,
 } from '@voucha/test-helpers/entities/referral-programs'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 import getMyReferralLinksTool from '../get-my-referral-links.mts'
 
@@ -31,14 +35,16 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>) => ({
 })
 type Caller = ReturnType<typeof asCaller>
 
-describe('get_topic_referral_program — real DB', () => {
+describe('read_topic.referral_program — real DB', () => {
   let caller: Caller
   let program: { referralProgramId: string }
   let slug: string
   let switchedOff: string
 
   const read = (topic_id: string) =>
-    callStructuredMcpTool(caller, 'get_topic_referral_program', { topic_id }, ['topics:read'])
+    callStructuredMcpTool(caller, 'read_topic', optionArgs('referral_program', { topic_id }), [
+      'topics:read',
+    ])
 
   beforeAll(async () => {
     caller = asCaller(await createTestUser())
@@ -171,10 +177,14 @@ describe('get_my_referral_links — real DB', () => {
     })
   })
 
-  it('ignores a user_id argument and keeps to the caller own links', async () => {
-    const page = await mine({ user_id: other.id })
-
-    expect(ids(page)).toEqual([...links].toReversed())
+  it('rejects user_id before dispatch and scopes each caller to their own links', async () => {
+    expect(
+      await callRejectedMcpTool(owner, 'get_my_referral_links', { user_id: other.id }, [
+        'referral-links:read',
+      ]),
+    ).toContain('Invalid tool arguments')
+    expect(ids(await mine())).toEqual([...links].toReversed())
+    expect(ids(await mine({}, other))).toEqual([othersLink])
   })
 
   it('keeps only the links under one program and sanitizes the labels', async () => {

@@ -26,9 +26,10 @@
     "@services/openai-moderation": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
-    "glide-mq": "^0.17.0"
+    "glide-mq": "^0.18.0"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "openai": "^7.30.0"
   }
 }

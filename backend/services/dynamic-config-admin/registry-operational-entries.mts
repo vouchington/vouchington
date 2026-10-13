@@ -74,7 +74,6 @@ export const operationalDynamicConfigRegistryEntries = [
     config: rssFeedCrawlConfig,
     access: { update_roles: ['developer'] },
     fields: {
-      enabled: { description: 'Enable prioritized tiered RSS feed crawl scheduling.' },
       should_ignore_robots_txt: {
         description:
           'Ignore robots.txt allow/disallow rules for all RSS feed fetches. Operator kill-switch; hard-blocks (blocked/crawlable=FALSE/blacklists) still apply.',

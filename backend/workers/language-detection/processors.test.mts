@@ -129,17 +129,91 @@ describe('language detection processors', () => {
   })
 
   it('accepts every known language detection backfill job name', async () => {
-    const jobs: LanguageDetectionBackfillJobName[] = [
-      'backfill_posts',
-      'backfill_rss_feed_items',
-      'backfill_crawls',
-      'backfill_communities',
-      'backfill_users',
-      'backfill_topics',
+    const owner = await createTestUser()
+    const random = createRandomString(10)
+    const text =
+      'This English text has clear sentences, familiar vocabulary, and enough context for reliable language detection by the real batch processor.'
+    const fixtures: Array<{
+      job: LanguageDetectionBackfillJobName
+      table: Parameters<typeof getLanguageDetectionStateForTest>[0]
+      create: () => Promise<string>
+    }> = [
+      {
+        job: 'backfill_posts',
+        table: 'posts',
+        create: () =>
+          insertLanguageDetectionPostForTest({
+            createdById: owner.id,
+            title: `Backfill ${randomUUID()}`,
+            markdown: text,
+          }),
+      },
+      {
+        job: 'backfill_rss_feed_items',
+        table: 'rss_feed_items',
+        create: createRssFeedItemForLanguageDetection,
+      },
+      {
+        job: 'backfill_crawls',
+        table: 'crawls',
+        create: () => {
+          const hostname = `backfill-${randomUUID()}.example.com`
+          return insertLanguageDetectionCrawlForTest({
+            hostname,
+            url: `https://${hostname}/page`,
+            markdown: text,
+          })
+        },
+      },
+      {
+        job: 'backfill_communities',
+        table: 'communities',
+        create: () =>
+          insertLanguageDetectionCommunityForTest({
+            createdById: owner.id,
+            name: 'Clear English community words for a reliable language detection sample',
+            slug: `backfill-${randomUUID()}`,
+          }),
+      },
+      {
+        job: 'backfill_users',
+        table: 'users',
+        create: () =>
+          insertLanguageDetectionUserForTest({
+            username: `backfill-${random}-${randomUUID().slice(0, 8)}`,
+            markdown: text,
+          }),
+      },
+      {
+        job: 'backfill_topics',
+        table: 'topics',
+        create: () =>
+          insertLanguageDetectionTopicForTest({
+            createdById: owner.id,
+            name: `${text} ${randomUUID()}`,
+            slug: `backfill-${randomUUID()}`,
+          }),
+      },
     ]
-
-    for (const job of jobs) {
-      await expect(processLanguageDetectionBackfill(job, [])).resolves.toEqual({ updated: 0 })
+    for (const fixture of fixtures) {
+      const ownedId = await fixture.create()
+      const foreignId = await fixture.create()
+      const foreignBefore = await getLanguageDetectionStateForTest(fixture.table, foreignId)
+      expect(foreignBefore).toEqual({
+        lingua_rs_detected_language: null,
+        lingua_rs_input_sha256: null,
+        lingua_rs_detected_at: null,
+      })
+      await expect(processLanguageDetectionBackfill(fixture.job, [ownedId])).resolves.toEqual({
+        updated: 1,
+      })
+      const state = await getLanguageDetectionStateForTest(fixture.table, ownedId)
+      expect(state.lingua_rs_detected_language).toBe('en')
+      expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
+      expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
+      await expect(getLanguageDetectionStateForTest(fixture.table, foreignId)).resolves.toEqual(
+        foreignBefore,
+      )
     }
   })
 

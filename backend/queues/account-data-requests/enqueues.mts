@@ -2,6 +2,7 @@ import {
   createBulkEnqueueFunction,
   createEnqueueFunction as createGlideMqEnqueueFunction,
 } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { ACCOUNT_DATA_REQUESTS_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
@@ -53,7 +54,7 @@ export const enqueueBulkExportRequests = createBulkEnqueueFunction<
     removeOnFail: 100,
   },
   buildJob: data => {
-    const jobId = `account-data-export__${data.requestId}__${data.processingAttemptId}`
+    const jobId = exportRequestJobId(data)
     return {
       data,
       opts: {
@@ -64,6 +65,20 @@ export const enqueueBulkExportRequests = createBulkEnqueueFunction<
     }
   },
 })
+
+/**
+ * Recovery re-adds an attempt under the same token while its job may still be queued, so a live
+ * job stays the canonical delivery. A retained failed or completed record under that token would
+ * otherwise block the id on every pass, so recovery releases it first.
+ */
+export function enqueueOrReactivateBulkExportRequests(requests: ExportRequestData[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: accountDataRequests,
+    inputs: requests,
+    jobIdOf: exportRequestJobId,
+    enqueueBulk: enqueueBulkExportRequests,
+  })
+}
 
 const enqueueCleanupExpiredExportsJob = createGlideMqEnqueueFunction<
   Record<string, never>,
@@ -101,7 +116,7 @@ export async function enqueueExportRequest(
   processingAttemptId: string,
   priority?: number,
 ): Promise<void> {
-  const jobId = `account-data-export__${requestId}__${processingAttemptId}`
+  const jobId = exportRequestJobId({ requestId, processingAttemptId })
   await enqueueExportRequestJob(
     { requestId, userId, processingAttemptId },
     {
@@ -131,4 +146,8 @@ export function enqueueRecoverExportRequests(): EnqueueReturnType {
 
 export function enqueueCleanupExpiredExports(): EnqueueReturnType {
   return enqueueCleanupExpiredExportsJob({}, { priority: PRIORITY_DEFAULT })
+}
+
+function exportRequestJobId(data: Pick<ExportRequestData, 'requestId' | 'processingAttemptId'>) {
+  return `account-data-export__${data.requestId}__${data.processingAttemptId}`
 }

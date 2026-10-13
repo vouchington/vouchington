@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   jsonrpc_method TEXT CHECK (jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'),
   tool_name TEXT CHECK (tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'),
+  tool_option TEXT CHECK (tool_option ~ '^[A-Za-z0-9_.-]{1,64}$'),
   outcome mcp_call_audit_event_outcomes NOT NULL CHECK (outcome IN (
     'accepted',
     'tool_error',
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS mcp_call_audit_events (
   )),
   copyright_rationale_ciphertext TEXT,
   occurred_at TIMESTAMPTZ NOT NULL GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CHECK (tool_option IS NULL OR tool_name IS NOT NULL),
   CHECK (tool_name IS NULL OR jsonrpc_method = 'tools/call'),
   CHECK (copyright_rationale_ciphertext IS NULL OR (
     surface = 'admin_mcp' AND jsonrpc_method = 'tools/call' AND outcome = 'accepted'
@@ -67,3 +69,5 @@ COMMENT ON COLUMN mcp_call_audit_events.tool_name IS 'Name of a registered tool 
 COMMENT ON COLUMN mcp_call_audit_events.outcome IS 'Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.';
 COMMENT ON COLUMN mcp_call_audit_events.copyright_rationale_ciphertext IS 'Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.';
 COMMENT ON COLUMN mcp_call_audit_events.occurred_at IS 'Time the audit row was written, derived from the UUIDv7 id.';
+
+COMMENT ON COLUMN mcp_call_audit_events.tool_option IS 'Declared literal option of a registered merged tool, or NULL for flat tools and unknown selectors; arbitrary caller text is never stored.';

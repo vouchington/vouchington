@@ -32,7 +32,6 @@ export async function createTestDeliverySavepoint(query: TransactionQuery): Prom
 }
 
 export async function rollbackTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- verifies savepoint-local guard rewind inside the real transaction owner, not manual transaction lifecycle.
   await query(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`)
 }
 
@@ -67,9 +66,11 @@ export async function testDeliveryTransactionIsBlockingAdmission(pid: number): P
   return rows[0]!.blocked
 }
 
-export async function getTestDeliveryRepairMarker(deliveryKey: string): Promise<string | null> {
+export async function getTestDeliveryRepairMarker(
+  mediaDeliveryRegistryRecordId: string,
+): Promise<string | null> {
   const { rows } = await read<{ marker_token: string }>(sql`
-    SELECT marker_token FROM media_delivery_repair_markers WHERE delivery_key = ${deliveryKey}
+    SELECT marker_token FROM media_delivery_repair_markers WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
   `)
   return rows[0]?.marker_token ?? null
 }
@@ -105,11 +106,13 @@ export async function advanceTestDeliveryPlacementRevision(
 }
 
 /** Invokes the production exact-marker primitive using only a persisted owned fixture. */
-export async function reconcileTestDeliveryRepairMarker(deliveryKey: string): Promise<void> {
+export async function reconcileTestDeliveryRepairMarker(
+  mediaDeliveryRegistryRecordId: string,
+): Promise<void> {
   const { rows } = await read<Parameters<typeof reconcileDeliveryRepairMarker>[0]>(sql`
     /* reconcileTestDeliveryRepairMarker */
-    SELECT delivery_key, marker_token
-    FROM media_delivery_repair_markers WHERE delivery_key = ${deliveryKey}
+    SELECT media_delivery_registry_record_id, marker_token
+    FROM media_delivery_repair_markers WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
   `)
   if (!rows[0]) throw new Error('Owned delivery repair marker missing')
   await reconcileDeliveryRepairMarker(rows[0])

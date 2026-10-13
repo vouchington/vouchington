@@ -6,6 +6,7 @@ import {
   createConversation,
   createConversationMessage,
 } from '@services/conversations-messages/create'
+import { getConversationById } from '@services/conversations-messages'
 import { spendCapConfig } from '@services/ai-usage'
 import type { PrivateUser } from '@services/users/types'
 
@@ -74,10 +75,23 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
 
       const request = createRequest()
       await request.authenticateAs(user)
-      const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+      vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+      try {
+        const response = await request.post(`/api/v1/my/conversations/${conv.id}/title`).expect(200)
 
-      expect(response.body.conversation.id).toBe(conv.id)
-      expect(response.body.conversation.title).toBe('Great Chat Title')
+        expect(response.body.conversation.id).toBe(conv.id)
+        expect(response.body.conversation.title).toBe('Great Chat Title')
+        const profileLines = stderr.mock.calls
+          .map(([chunk]) => String(chunk))
+          .filter(line => line.startsWith('[pg-request-profile]'))
+        expect(profileLines).toHaveLength(1)
+        expect(profileLines[0]).toContain('route=POST /api/v1/my/conversations/:id/title ')
+        expect(profileLines[0]).not.toContain('fetchConversationById')
+      } finally {
+        stderr.mockRestore()
+        vi.unstubAllEnvs()
+      }
     } finally {
       restore()
     }
@@ -139,5 +153,41 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     } finally {
       restore()
     }
+  })
+})
+
+describe('PATCH /api/v1/my/conversations/:conversationId', () => {
+  it('returns the updated transcript and does not repeat the conversation read', async () => {
+    const user = await createTestUser()
+    const conversation = await createConversation(user.id, 'Original title')
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+    try {
+      const result = await request
+        .patch(`/api/v1/my/conversations/${conversation.id}`)
+        .send({ title: 'Updated title' })
+        .expect(200)
+
+      expect(result.body.conversation).toEqual({
+        id: conversation.id,
+        title: 'Updated title',
+        created_at: conversation.created_at.toISOString(),
+        updated_at: expect.any(String),
+      })
+      const profileLines = stderr.mock.calls
+        .map(([chunk]) => String(chunk))
+        .filter(line => line.startsWith('[pg-request-profile]'))
+      expect(profileLines).toHaveLength(1)
+      expect(profileLines[0]).toContain('route=PATCH /api/v1/my/conversations/:id ')
+      expect(profileLines[0]).not.toContain('fetchConversationById')
+    } finally {
+      stderr.mockRestore()
+      vi.unstubAllEnvs()
+    }
+
+    expect((await getConversationById(conversation.id))?.title).toBe('Updated title')
   })
 })

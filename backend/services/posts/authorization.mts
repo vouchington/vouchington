@@ -14,7 +14,6 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
 import { assertCanContribute } from '@services/contribution-gating/assert'
-import { getUserActivePlan } from '@services/memberships'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import {
@@ -27,8 +26,12 @@ import { isPlatformAccount } from '@services/users'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
+/**
+ * `currentUser.membership_plan` comes from `view_current_paid_memberships` on the primary-read
+ * private user loaded for this request, so gating needs no second membership lookup.
+ */
 export async function getAuthorizedPostContributionMembershipPlan(currentUser: PrivateUser) {
-  const membershipPlan = await getUserActivePlan(currentUser.id)
+  const membershipPlan = currentUser.membership_plan ?? null
   await assertCanContribute(currentUser, { membershipPlan })
   return membershipPlan
 }

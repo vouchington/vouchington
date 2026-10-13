@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
@@ -101,7 +102,6 @@ vi.mock(
       ),
     }) as unknown as typeof import('@/components/topics/settings/referral-validations-settings'),
 )
-
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import {
   createTopicSettingsAliasesPage,

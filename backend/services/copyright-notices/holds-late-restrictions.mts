@@ -2,7 +2,7 @@ import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
-  getImagePlacementForCopyright,
+  getImagePlacementsForCopyright,
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
 import { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
@@ -67,11 +67,13 @@ export async function activateLateCopyrightLegalHoldRestrictions(
     assertEnabled()
   }
   const publishPlacement = dependencies.publishPlacement ?? prepublishImagePlacementDenial
+  const placements = await getImagePlacementsForCopyright(
+    rows.map(restriction => restriction.placement_id),
+    { query: transaction },
+  )
   const intentIds = await Promise.all(
     rows.map(async restriction => {
-      const placement = await getImagePlacementForCopyright(restriction.placement_id, {
-        query: transaction,
-      })
+      const placement = placements.get(restriction.placement_id)
       if (!placement || placement.deleted) return null
       if (!placement.withheld) {
         await publishPlacement(

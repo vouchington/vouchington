@@ -15,7 +15,7 @@
 | Terminal completion                       | Verified/rejected evidence or completed operation | Excluded from scans                        | Retained audit ledger                                  |
 
 Recovery scans capture an inclusive UUIDv7 high-water mark before each bounded sweep. The cursor
-advances only after fan-out succeeds and clears after reaching that bound, so continuous new
+advances only after fan-out succeeds (one `enqueueBulk*` add per sweep, with the per-row stable job id) and clears after reaching that bound, so continuous new
 notifications, acknowledgements, or sources cannot starve work that was already pending. A direct
 source remains eligible until it reaches a terminal projection state; elapsed expiry alone is not a
 terminal provider observation.

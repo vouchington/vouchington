@@ -4,10 +4,13 @@ Source entrypoint: [backend/workers/bluesky-follow-propagation/README.md](../../
 
 Worker package for reconciling Voucha follow relationships onto linked Bluesky accounts.
 
-- `blueskyFollowPropagationWorker` - worker instance for the `bluesky-follow-propagation` queue.
-  Runs at concurrency 1 (`getWorkerConcurrency('blueskyFollowPropagation', { baseline: 1, ignoreScale: true })`)
-  because concurrent jobs touching the same Bluesky account can race a refresh-token rotation and
-  permanently invalidate that account's OAuth session — see
+- `createBlueskyFollowPropagationWorker` - creates the worker for the `bluesky-follow-propagation`
+  queue. It first sets the queue's global concurrency to 1 (`queue.setGlobalConcurrency(1)`, as
+  `bedrock-embeddings-batch-creation` does), then starts the worker at concurrency 1
+  (`getWorkerConcurrency('blueskyFollowPropagation', { baseline: 1, ignoreScale: true })`). Worker
+  concurrency only bounds one process, so the queue-wide cap is what stops two replicas running
+  jobs at once. Concurrent jobs touching the same Bluesky account can race a refresh-token rotation
+  and permanently invalidate that account's OAuth session — see
   [`@modules/bluesky-oauth/README.md`](../../../backend/modules/bluesky-oauth/README.md)'s "No distributed
   lock" section.
 - `reconcileFollow` - calls `reconcileBlueskyFollow` (`@services/bluesky-follows`) to bring one
@@ -19,6 +22,14 @@ Worker package for reconciling Voucha follow relationships onto linked Bluesky a
   marker is authoritative and the backfill must be able to recreate the same stable job id.
 - `backfillBlueskyDisconnectRequests` - cursor-streams all pending unlink intents and bulk-enqueues
   exact-generation disconnect jobs.
+
+The PDS calls in `@services/bluesky-follows/agent.mts` classify their failures for the queue. A 429
+requeues the job after the PDS's `ratelimit-reset` (epoch seconds) or a `Retry-After`, clamped to 1
+second through 15 minutes, without consuming an attempt. The follower chooses the PDS, so
+`processBlueskyFollowPropagationJob` runs every job through `boundRateLimitDeferral`: once a job is
+24 hours old, the next 429 spends the queue's attempts instead of requeuing. Any other 4xx except 408 ends the job as
+unrecoverable, because retrying a rejected follow cannot succeed (the idempotent reconcile and its
+backfill re-derive the work later). A network failure or 5xx keeps the queue's three attempts.
 
 ## Related
 

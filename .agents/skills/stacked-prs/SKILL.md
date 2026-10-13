@@ -9,8 +9,9 @@ description: Discover and shepherd native GitHub PR stacks or PRs based on non-m
 
 Claude Code and Codex load `vouchington-workflow:stacked-prs`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md`. If it cannot be read, stop and report
-the missing prerequisite; never apply this overlay alone. Decision owner for whether to stack at all,
-stack length limits, one source issue per PR, and the ~5k-changed-line split trigger:
+the missing prerequisite; never apply this overlay alone. Decision owner for whether to stack at all
+(dependent or conflicting work stacks without asking), the 10-PR stack cap, one source issue per PR,
+and the ~5k-changed-line split trigger:
 [Git And PRs](../agent-workflow/git-and-prs.md).
 This page is the CLI contract and procedure after that decision is already yes.
 

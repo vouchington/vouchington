@@ -6,12 +6,9 @@ export const toolingTestBudget = {
   // Run at the root's parallel maxWorkers, but keep generous 30s test/hook budgets so
   // slow child-process spawns and coverage reporting can still finish cleanly.
   //
-  // Do not raise these project-level budgets for a single slow file (dev/vitest-config.test.mts's
-  // "Vitest timeout policy (#10762, #8078)" ceiling test hard-caps every project's testTimeout at
-  // 60s and hookTimeout at 90s, and its own comment says a genuinely slower test belongs a
-  // targeted per-test override, not a bump to these ceilings). ci/coverage-rules-scope.test.mts's
-  // two whole-repo-scanning tests use exactly that per-test override — see the inline timeout
-  // arguments there.
+  // The canonical suite hard cap (docs/development/tests.md#test-suite-rules) applies to
+  // every test and hook, including targeted overrides. dev/vitest-config.test.mts checks
+  // project budgets against the same 30s ceiling; the five-second defaults rollout is separate.
   hookTimeout: 30_000,
   isolate: true,
   testTimeout: 30_000,

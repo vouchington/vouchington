@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
@@ -15,6 +15,7 @@ let conversationId = ''
 let paginatedConversationId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
 
   const user1 = await createTestUser({ username: `dm-user1-${suffix}` })
@@ -101,6 +102,7 @@ test.describe('Direct Messages inbox pagination', () => {
   let paginatedInboxUserId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const inboxUser = await createTestUser({ username: `dm-inbox-pager-${suffix}` })
     if (!inboxUser) throw new Error('Failed to create inbox pagination user')

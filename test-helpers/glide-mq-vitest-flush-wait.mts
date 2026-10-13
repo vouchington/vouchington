@@ -1,32 +1,17 @@
+import type { TestJob, TestJobRecord, TestQueue } from 'glide-mq/testing'
 import {
   captureFlushDiagnostics,
   TestQueueFlushTimeoutError,
 } from './glide-mq-vitest-flush-diagnostics.mts'
-import {
-  deadLetterQueueNames,
-  type FlushedJobFailure,
-  getOrCreateQueue,
-  recordOf,
-  type ShimTestQueue,
-} from './glide-mq-vitest-internals.mts'
+
+export type FlushQueue<D = any, R = any> = TestQueue<D, R> & {
+  settleWaiters: Set<() => void>
+  enqueue: TestQueue<D, R>['add']
+}
 
 export const DEFAULT_FLUSH_TIMEOUT_MS = 4_000
 
 type DeadLetterEnvelope = { originalJobId?: string }
-
-/** The terminal failure observed for one of the flushed job ids, if any. */
-export type FailureLookup = (jobId: string) => FlushedJobFailure | undefined
-
-function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
-  const dlqName = deadLetterQueueNames.get(queueName)
-  if (!dlqName) return false
-  for (const record of getOrCreateQueue(dlqName).jobs.values()) {
-    if ((record.data as DeadLetterEnvelope | undefined)?.originalJobId === originalJobId) {
-      return true
-    }
-  }
-  return false
-}
 
 /**
  * Ids still owed work. `waiting`, `prioritized` and `active` jobs will be processed, so a flush
@@ -35,35 +20,35 @@ function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
  * job never stays `delayed`: the shim promotes it as soon as the worker parks it for its backoff.
  */
 async function inspectJobs(
-  queue: ShimTestQueue,
-  jobIds: string[],
+  queue: FlushQueue,
+  jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
-  failureOf: FailureLookup,
 ): Promise<string[]> {
+  // Read admission before scanning mutable records, so a failure during this await is visible.
+  const admitted = new Set(
+    expectedDeadLetterJobIds.size === 0
+      ? []
+      : (await queue.getDeadLetterJobs()).map(
+          job => (job.data as DeadLetterEnvelope | undefined)?.originalJobId,
+        ),
+  )
   const pending: string[] = []
-  for (const jobId of jobIds) {
-    // Native retry dispatch parks then emits retrying synchronously. Awaiting the real lookup
-    // lets that hook register its actual promotion before we inspect a transient delayed state.
-    const job = await queue.getJob(jobId)
-    const promotion = job && queue.retryPromotions.get(recordOf(job))
-    if (promotion) await promotion
-    const state = job ? await job.getState() : 'unknown'
-    const record = queue.jobs.get(jobId)
-    // A `removeOnFail` job leaves no record, so its failure is only known from the watched event.
-    const failure =
-      failureOf(jobId) ??
-      (state === 'failed' && record
-        ? { name: record.name, reason: record.failedReason ?? 'unknown error' }
-        : undefined)
-    if (failure) {
-      if (!expectedDeadLetterJobIds.has(jobId)) {
+  for (const job of jobs) {
+    // The bound record retains terminal failure even after removeOnFail removes it from jobs.
+    // oxlint-disable-next-line no-underscore-dangle -- glide-mq exposes no public identity for a test job
+    const record = (job as unknown as { _record: TestJobRecord })._record
+    if (record.state === 'failed') {
+      if (!expectedDeadLetterJobIds.has(job.id)) {
         throw new Error(
-          `Test queue job failed in "${queue.name}" (${failure.name}#${jobId}): ${failure.reason}`,
+          `Test queue job failed in "${queue.name}" (${record.name}#${job.id}): ${record.failedReason ?? 'unknown error'}`,
         )
       }
-      if (!hasDeadLetterJob(queue.name, jobId)) pending.push(jobId)
-    } else if (state === 'waiting' || state === 'prioritized' || state === 'active') {
-      pending.push(jobId)
+      if (!admitted.has(job.id)) pending.push(job.id)
+    } else if (
+      queue.jobs.get(job.id) === record &&
+      ['waiting', 'prioritized', 'active', 'waiting-children'].includes(record.state)
+    ) {
+      pending.push(job.id)
     }
   }
   return pending
@@ -76,72 +61,61 @@ async function inspectJobs(
  * burn the timeout (it becomes a bug only when nothing ever attaches a worker). Rejects with the
  * job's failure and, on timeout, with worker/queue diagnostics.
  *
- * glide-mq 0.16's native waiters do not fit here: `addAndWait` refuses `removeOnComplete` /
- * `removeOnFail` (several production enqueues set them), waits on one id, and throws when the add
- * is deduplicated; `Job.waitUntilFinished` polls every 500ms and resolves 'failed' instead of
- * throwing; `Worker.drain()` closes the worker, which tests keep attached.
+ * Native `waitForJobs` waits through delayed and suspended states and rejects expected DLQ
+ * failures. This flush deliberately settles parked jobs, accepts an expected DLQ failure only
+ * after admission, and reads retained failure from each job's bound record. `Worker.drain()` closes
+ * the worker, which tests keep attached.
  */
 export async function flushJobs(
-  queue: ShimTestQueue,
-  jobIds: string[],
+  queue: FlushQueue,
+  jobs: TestJob[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
-  failureOf: FailureLookup = () => undefined,
 ): Promise<void> {
   const deadline = AbortSignal.timeout(flushTimeoutMs)
   if ((await queue.getWorkers()).length === 0) return
+  const jobIds = jobs.map(job => job.id)
 
-  return new Promise((resolve, reject) => {
-    let settled = false
-    let inspecting = false
-    let dirty = false
-    let pendingJobIds = [...jobIds]
-    function finish(error?: unknown) {
-      if (settled) return
-      settled = true
-      queue.settleWaiters.delete(notify)
-      deadline.removeEventListener('abort', timedOut)
-      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- preserves the original queue-inspection failure for test diagnostics
-      if (error !== undefined) reject(error)
-      else resolve()
+  let pendingJobIds = [...jobIds]
+  let transition = Promise.withResolvers<void>()
+  let notified = false
+  const expiration = Promise.withResolvers<never>()
+  function notify() {
+    notified = true
+    transition.resolve()
+  }
+  function timedOut() {
+    expiration.reject(
+      new TestQueueFlushTimeoutError(
+        queue.name,
+        [...jobIds],
+        pendingJobIds,
+        flushTimeoutMs,
+        captureFlushDiagnostics(queue, pendingJobIds),
+      ),
+    )
+    notify()
+  }
+  async function inspect() {
+    while (!deadline.aborted) {
+      transition = Promise.withResolvers<void>()
+      notified = false
+      const pending = await inspectJobs(queue, jobs, expectedDeadLetterJobIds)
+      // A transition during an awaited read requires a fresh inspection before success.
+      if (notified) continue
+      pendingJobIds = pending
+      if (pending.length === 0) return
+      await transition.promise
     }
-    function timedOut() {
-      finish(
-        new TestQueueFlushTimeoutError(
-          queue.name,
-          [...jobIds],
-          pendingJobIds,
-          flushTimeoutMs,
-          captureFlushDiagnostics(queue, pendingJobIds),
-        ),
-      )
-    }
-    function notify() {
-      if (settled) return
-      dirty = true
-      if (!inspecting) void inspect()
-    }
-    async function inspect() {
-      inspecting = true
-      try {
-        while (!settled && dirty) {
-          dirty = false
-          const pending = await inspectJobs(queue, jobIds, expectedDeadLetterJobIds, failureOf)
-          if (settled) return
-          // A real transition during any awaited read requires a fresh inspection before success.
-          if (dirty) continue
-          pendingJobIds = pending
-          if (pending.length === 0) finish()
-        }
-      } catch (err) {
-        finish(err)
-      } finally {
-        inspecting = false
-      }
-    }
-    queue.settleWaiters.add(notify)
-    deadline.addEventListener('abort', timedOut, { once: true })
+  }
+  queue.settleWaiters.add(notify)
+  deadline.addEventListener('abort', timedOut, { once: true })
+  try {
     if (deadline.aborted) timedOut()
-    else notify()
-  })
+    // The deadline also bounds an inspection whose native getter never returns.
+    await Promise.race([expiration.promise, inspect()])
+  } finally {
+    queue.settleWaiters.delete(notify)
+    deadline.removeEventListener('abort', timedOut)
+  }
 }

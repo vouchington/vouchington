@@ -1,3 +1,4 @@
+import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
 import { enqueuePostMentions } from '@queues/post-mentions/enqueues'
@@ -43,6 +44,7 @@ export const processPostCreated = async (
 ) => {
   const post = await getPostByAny(id, { readOnly: false })
   if (!post) return
+  await repairEntityBloomKeys('posts', id)
   const bypassCreateModeration = post.clearance_status === 'approved' && post.post_type !== 'story'
   const { content_sha256 } = createPostModerationContent(post)
   const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)
@@ -95,6 +97,7 @@ export const processPostUpdated = async ({
     ? await getPostModerationInput(id, { readOnly: false })
     : await getPostByAny(id)
   if (!post) return
+  await repairEntityBloomKeys('posts', id)
 
   const { content_sha256 } = createPostModerationContent(post)
   const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)

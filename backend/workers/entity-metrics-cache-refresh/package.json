@@ -21,7 +21,6 @@
     "@modules/queue-config": "workspace:^",
     "@queues/entity-metrics-cache-refresh": "workspace:^",
     "@services/entity-fetch": "workspace:^",
-    "glide-mq": "^0.17.0"
-  },
-  "devDependencies": {}
+    "glide-mq": "^0.18.0"
+  }
 }

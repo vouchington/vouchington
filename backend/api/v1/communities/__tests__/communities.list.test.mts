@@ -46,13 +46,13 @@ describe('communities', () => {
         const placements = await getTestImageSurfacePlacements({ communityId: community.id })
         await Promise.all(
           placements.map(async placement => {
-            const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+            const { mediaDeliveryRegistryRecordId } = await stageImagePlacementDeliveryRecord({
               placementId: placement.placement_id,
               revision: placement.placement_revision,
               imageId: placement.image_id,
               state: 'allow',
             })
-            await completeTestMediaDeliveryRecord(deliveryKey)
+            await completeTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
           }),
         )
 

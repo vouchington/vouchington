@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { voteChoice, voteTrigger } from '../../helpers/semantic-vote.mts'
@@ -16,6 +16,7 @@ test.describe('Existing vote state after reload', () => {
   let contributorId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     contributorId = requireTestValue(
       await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
       'Failed to create existing vote state contributor',

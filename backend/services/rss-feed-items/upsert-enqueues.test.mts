@@ -3,10 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { ai_agents } from '@queues/ai-agents/queues'
 import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
+import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/language-detection/config'
 import { language_detection } from '@queues/language-detection/queues'
 import { notifications } from '@queues/notifications/queues'
-import { readAllQueueJobs } from '@voucha/test-helpers'
-import { enqueueRssFeedItemPostUpsertJobs } from './upsert-enqueues.mts'
+import { enqueueRssFeedItemPostUpsertJobsWithCompletion } from './upsert-enqueues.mts'
+import { rssFeedItemsWorkConfig } from './work-limits.mts'
 import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import {
   BEDROCK_BATCH_MAX_VALUES,
@@ -39,7 +40,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   })
 
   afterAll(async () => {
-    await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
+    await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig, rssFeedItemsWorkConfig])
   })
 
   it('enqueues embedding, autotagger, notification, and language detection jobs', async () => {
@@ -55,91 +56,109 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       url_id: randomUUID(),
     }
 
-    const result = await enqueueRssFeedItemPostUpsertJobs(
-      [item],
-      [],
-      [
-        {
-          guid,
-          has_embedding: false,
-          id: itemId,
-          published_at: new Date(),
-          story_id: null,
-          url_id: item.url_id,
-        },
-      ],
-    )
+    const { rows: result, languageDetectionEnqueue } =
+      await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+        [item],
+        [],
+        [
+          {
+            guid,
+            has_embedding: false,
+            id: itemId,
+            published_at: new Date(),
+            story_id: null,
+            url_id: item.url_id,
+          },
+        ],
+      )
 
     expect(result).toEqual([{ has_embedding: false, id: itemId }])
-
-    await expect
-      .poll(async () => {
-        const [embeddingJobs, aiAgentJobs, notificationJobs, languageDetectionJobs] =
-          await Promise.all([
-            readAllQueueJobs(bedrock_embeddings_nova_multimodal_v1_single),
-            readAllQueueJobs(ai_agents),
-            readAllQueueJobs(notifications),
-            readAllQueueJobs(language_detection),
-          ])
-
-        return {
-          aiAgent: aiAgentJobs.some(
-            job =>
-              job.name === 'autotagger-rss-feed-item' &&
-              (job.data as { rss_feed_item_id?: string }).rss_feed_item_id === itemId,
-          ),
-          embedding: embeddingJobs.some(
-            job =>
-              job.name === 'rss_feed_item' &&
-              (job.data as { rss_feed_item_id?: string }).rss_feed_item_id === itemId,
-          ),
-          languageDetection: languageDetectionJobs.some(
-            job => job.name === 'rss_feed_item' && (job.data as { id?: string }).id === itemId,
-          ),
-          notification: notificationJobs.some(
-            job =>
-              job.name === 'processReconcileRssFeedItemNotifications' &&
-              (job.data as { rssFeedItemId?: string }).rssFeedItemId === itemId,
-          ),
-        }
-      })
-      .toEqual({
-        aiAgent: true,
-        embedding: true,
-        languageDetection: true,
-        notification: true,
-      })
+    await languageDetectionEnqueue
+    const [embeddingJobs, aiAgentJobs, notificationJobs, languageDetectionJobs] = await Promise.all(
+      [
+        bedrock_embeddings_nova_multimodal_v1_single.searchJobs({
+          name: 'rss_feed_item',
+          data: { rss_feed_item_id: itemId },
+        }),
+        ai_agents.searchJobs({
+          name: 'autotagger-rss-feed-item',
+          data: { rss_feed_item_id: itemId },
+        }),
+        notifications.searchJobs({
+          name: 'processReconcileRssFeedItemNotifications',
+          data: { rssFeedItemId: itemId },
+        }),
+        language_detection.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+      ],
+    )
+    expect({
+      aiAgent: aiAgentJobs.length > 0,
+      embedding: embeddingJobs.length > 0,
+      languageDetection: languageDetectionJobs.length > 0,
+      notification: notificationJobs.length > 0,
+    }).toEqual({ aiAgent: true, embedding: true, languageDetection: true, notification: true })
   })
 
   it('enqueues notification and language detection jobs for source-linked existing rows', async () => {
     const itemId = randomUUID()
     const guid = `guid-${randomUUID()}`
     const row = { guid, has_embedding: true, id: itemId }
-    const result = await enqueueRssFeedItemPostUpsertJobs([], [row], [], {
-      languageDetectionRows: [row],
-    })
+    const { rows: result, languageDetectionEnqueue } =
+      await enqueueRssFeedItemPostUpsertJobsWithCompletion([], [row], [], {
+        languageDetectionRows: [row],
+      })
 
     expect(result).toEqual([{ has_embedding: true, id: itemId }])
+    await languageDetectionEnqueue
+    const [notificationJobs, languageDetectionJobs] = await Promise.all([
+      notifications.searchJobs({
+        name: 'processReconcileRssFeedItemNotifications',
+        data: { rssFeedItemId: itemId },
+      }),
+      language_detection.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+    ])
+    expect({
+      languageDetection: languageDetectionJobs.length > 0,
+      notification: notificationJobs.length > 0,
+    }).toEqual({ languageDetection: true, notification: true })
+  })
 
-    await expect
-      .poll(async () => {
-        const [notificationJobs, languageDetectionJobs] = await Promise.all([
-          readAllQueueJobs(notifications),
-          readAllQueueJobs(language_detection),
-        ])
+  it('bulk-enqueues language detection for every row with the per-item options, across chunks', async () => {
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      enqueue_batch_size: 2,
+    })
+    try {
+      const rows = Array.from({ length: 3 }, () => ({
+        guid: `guid-${randomUUID()}`,
+        has_embedding: true,
+        id: randomUUID(),
+      }))
+      const { languageDetectionEnqueue } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+        [],
+        rows,
+        [],
+        { languageDetectionRows: rows },
+      )
+      await languageDetectionEnqueue
 
-        return {
-          languageDetection: languageDetectionJobs.some(
-            job => job.name === 'rss_feed_item' && (job.data as { id?: string }).id === itemId,
-          ),
-          notification: notificationJobs.some(
-            job =>
-              job.name === 'processReconcileRssFeedItemNotifications' &&
-              (job.data as { rssFeedItemId?: string }).rssFeedItemId === itemId,
-          ),
-        }
-      })
-      .toEqual({ languageDetection: true, notification: true })
+      for (const row of rows) {
+        const jobs = await language_detection.searchJobs({
+          name: 'rss_feed_item',
+          data: { id: row.id },
+        })
+        expect(jobs).toHaveLength(1)
+        expect(jobs[0]?.opts).toMatchObject({
+          priority: PRIORITY_DEFAULT,
+          deduplication: {
+            id: `language_detection_rss_feed_item_${row.id}`,
+            mode: 'debounce',
+            ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
+          },
+        })
+      }
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('narrows fanout to source-linked existing rows while returning all rows', async () => {
@@ -147,44 +166,33 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     const skippedItemId = randomUUID()
     const fanoutRow = { guid: `guid-${randomUUID()}`, has_embedding: true, id: fanoutItemId }
     const skippedRow = { guid: `guid-${randomUUID()}`, has_embedding: true, id: skippedItemId }
-    const result = await enqueueRssFeedItemPostUpsertJobs([], [fanoutRow, skippedRow], [], {
-      existingRowsForFanout: [fanoutRow],
-      languageDetectionRows: [fanoutRow],
-    })
+    const { rows: result, languageDetectionEnqueue } =
+      await enqueueRssFeedItemPostUpsertJobsWithCompletion([], [fanoutRow, skippedRow], [], {
+        existingRowsForFanout: [fanoutRow],
+        languageDetectionRows: [fanoutRow],
+      })
 
     expect(result).toEqual([
       { has_embedding: true, id: fanoutItemId },
       { has_embedding: true, id: skippedItemId },
     ])
 
-    await expect
-      .poll(async () => {
-        const [notificationJobs, languageDetectionJobs] = await Promise.all([
-          readAllQueueJobs(notifications),
-          readAllQueueJobs(language_detection),
-        ])
-
-        return {
-          languageDetection: languageDetectionJobs.some(
-            job =>
-              job.name === 'rss_feed_item' && (job.data as { id?: string }).id === fanoutItemId,
-          ),
-          skippedNotification: notificationJobs.some(
-            job =>
-              job.name === 'processReconcileRssFeedItemNotifications' &&
-              (job.data as { rssFeedItemId?: string }).rssFeedItemId === skippedItemId,
-          ),
-          sourceNotification: notificationJobs.some(
-            job =>
-              job.name === 'processReconcileRssFeedItemNotifications' &&
-              (job.data as { rssFeedItemId?: string }).rssFeedItemId === fanoutItemId,
-          ),
-        }
-      })
-      .toEqual({
-        languageDetection: true,
-        skippedNotification: false,
-        sourceNotification: true,
-      })
+    await languageDetectionEnqueue
+    const [notificationJobs, skippedNotificationJobs, languageDetectionJobs] = await Promise.all([
+      notifications.searchJobs({
+        name: 'processReconcileRssFeedItemNotifications',
+        data: { rssFeedItemId: fanoutItemId },
+      }),
+      notifications.searchJobs({
+        name: 'processReconcileRssFeedItemNotifications',
+        data: { rssFeedItemId: skippedItemId },
+      }),
+      language_detection.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
+    ])
+    expect({
+      languageDetection: languageDetectionJobs.length > 0,
+      skippedNotification: skippedNotificationJobs.length > 0,
+      sourceNotification: notificationJobs.length > 0,
+    }).toEqual({ languageDetection: true, skippedNotification: false, sourceNotification: true })
   })
 })

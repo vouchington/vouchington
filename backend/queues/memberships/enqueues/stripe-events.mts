@@ -1,4 +1,5 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
@@ -40,6 +41,20 @@ export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction<
     }
   },
 })
+
+/**
+ * Recovery re-adds an unleased event under the same lease token while its job may still be queued,
+ * so a live job stays the canonical delivery. A retained failed or completed record under that
+ * token would otherwise block the id on every pass, so recovery releases it first.
+ */
+export function enqueueOrReactivateBulkProcessStripeEvents(events: ProcessStripeEventData[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: memberships,
+    inputs: events,
+    jobIdOf: stripeEventJobId,
+    enqueueBulk: enqueueBulkProcessStripeEvents,
+  })
+}
 
 const enqueueRecoverStripeEventsJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>(
   {

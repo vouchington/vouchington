@@ -32,9 +32,11 @@ describe('shared append-only mutation guard', () => {
     })
   })
 
+  // The installed policy-approval guard rejects the real user's ON DELETE SET NULL action.
   it('enforces a guard with no actor-erasure arguments', async () => {
     await expect(probeSharedMutationTrigger('unchanged', false)).resolves.toMatchObject({
       count: 1,
+      actorErased: false,
     })
     await expect(probeSharedMutationTrigger('rewriteFact', false)).rejects.toMatchObject({
       code: '23514',

@@ -57,7 +57,7 @@ describe('vote-aggregation', () => {
       creatorUser = await createTestUserDirect({
         username: `test-va-${randomBytes(4).toString('hex')}`,
       })
-    }, 60_000)
+    }, 5_000)
 
     it('aggregates current up/down votes for a whitelisted config', async () => {
       const postId = await insertTestPost({
@@ -80,7 +80,7 @@ describe('vote-aggregation', () => {
       expect(stats.votes_count_up).toBe(1)
       expect(stats.votes_count_down).toBe(1)
       expect(stats.votes_count_none).toBe(0)
-    }, 60_000)
+    })
 
     it('keeps historic Vouch strength while leaving topic recommendation support binary', async () => {
       const voter = await createTestUserDirect({
@@ -117,7 +117,7 @@ describe('vote-aggregation', () => {
       await expect(
         aggregateElectionVoteStatsFromReplica(POST_ELECTION_CONFIG, recommendationPostId),
       ).resolves.toMatchObject({ votes_score_up: 1, votes_count_up: 1 })
-    }, 60_000)
+    })
 
     it('distinguishes legacy Clear zero rows from explicit Neutral rows and appends their transition', async () => {
       const postId = await insertTestPost({
@@ -152,7 +152,7 @@ describe('vote-aggregation', () => {
       await expect(
         upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 0 }]),
       ).resolves.toEqual([])
-    }, 60_000)
+    })
   })
 
   describe('SQL-identifier whitelist coverage', () => {

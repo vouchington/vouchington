@@ -25,6 +25,13 @@ export const streamDynamicConfigRegistryEntries = [
         max_value: 5000,
         integer: true,
       },
+      hostname_max_rows_per_run: {
+        description:
+          'Maximum hostname candidates and threshold probes per run before continuation.',
+        min_value: 1,
+        max_value: 100000,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum URLs per enqueue batch.',
         min_value: 1,

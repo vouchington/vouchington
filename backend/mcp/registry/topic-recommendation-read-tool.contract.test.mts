@@ -137,6 +137,21 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     expect(await list({ status: 'approved' })).toMatchObject({ results: [], posts: {} })
   })
 
+  it('searches the caller’s recommendations by q, as the REST route does', async () => {
+    const matching = await list({ q: pending.id })
+    expect(ids(matching)).toEqual([pending.id])
+    expect(Object.keys(matching.posts)).toEqual([pending.id])
+    expect(ids(await list({ q: strangers.id }))).toEqual([])
+
+    const request = createRequest()
+    await request.authenticateAs(ownerUser)
+    const rest = await request
+      .get('/api/v1/topic-recommendations')
+      .query({ q: pending.id })
+      .expect(200)
+    expect(ids(matching)).toEqual(rest.body.results.map((row: { id: string }) => row.id))
+  })
+
   it('sanitizes and fences the moderator’s rejection reason as external content', async () => {
     const page = await list({ status: 'rejected' })
     const reason = page.posts[rejected.id]!.topic_recommendation.rejection_reason
@@ -187,7 +202,6 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     [{ status: 'approved,rejected' }],
     [{ after: 7 }],
     [{ created_by_id: crypto.randomUUID() }],
-    [{ q: 'topic' }],
   ])('refuses the arguments %j before reading anything', async args => {
     expect(await callRejectedMcpTool(owner, TOOL, args, READ)).toContain('Invalid tool arguments')
   })

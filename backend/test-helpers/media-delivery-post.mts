@@ -50,27 +50,36 @@ export async function createTestPostDeliveryFixture(
   }
   const edge = installTestMediaDeliveryEdge()
   const staged = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-  await publishStagedMediaDeliveryRecord(staged.deliveryKey)
+  await publishStagedMediaDeliveryRecord(staged.mediaDeliveryRegistryRecordId)
   edge.put.mockClear()
   edge.invalidatePath.mockClear()
   const deliveryKey = getImagePlacementDeliveryKey(tuple)
-  return { user, post, postId, imageId, placement, edge, deliveryKey }
+  return {
+    user,
+    post,
+    postId,
+    imageId,
+    placement,
+    edge,
+    deliveryKey,
+    mediaDeliveryRegistryRecordId: staged.mediaDeliveryRegistryRecordId,
+  }
 }
 
 export async function expectTestPostDeliveryRestored(
   fixture: Awaited<ReturnType<typeof createTestPostDeliveryFixture>>,
 ): Promise<void> {
-  const { edge, deliveryKey, postId, imageId, placement } = fixture
+  const { edge, deliveryKey, mediaDeliveryRegistryRecordId, postId, imageId, placement } = fixture
   const denied = edge.put.mock.calls[0]?.[0]
   expect(denied).toMatchObject({ deliveryKey, state: 'withheld' })
   const restored = edge.records.get(deliveryKey)
   expect(restored).toMatchObject({ state: 'allow' })
   expect(BigInt(restored!.generation)).toBeGreaterThan(BigInt(denied!.generation))
-  await expect(getTestMediaDeliveryRecord(deliveryKey)).resolves.toMatchObject({
+  await expect(getTestMediaDeliveryRecord(mediaDeliveryRegistryRecordId)).resolves.toMatchObject({
     desired_state: 'allow',
     state: 'completed',
   })
-  await expect(getTestDeliveryRepairMarker(deliveryKey)).resolves.toBeNull()
+  await expect(getTestDeliveryRepairMarker(mediaDeliveryRegistryRecordId)).resolves.toBeNull()
   await expect(getTestPostImagePlacement(postId, imageId)).resolves.toEqual(placement)
   await expect(getPostByAny(postId, { readOnly: false })).resolves.toMatchObject({
     deleted_at: null,

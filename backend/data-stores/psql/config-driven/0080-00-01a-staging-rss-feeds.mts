@@ -153,7 +153,7 @@ INSERT INTO topic_aliases (id, topic_id, alias)
 SELECT ${lit(ids.alias)}, t.id, ${lit(feed.slug)}
 FROM topics t
 WHERE t.id = ${lit(ids.topic)}
-  AND ${lit(feed.slug)} = ANY(t.aliases)
+  AND t.aliases @> ARRAY[${lit(feed.slug)}]
   AND NOT EXISTS (SELECT 1 FROM topic_aliases WHERE alias = ${lit(feed.slug)})
   AND ${noActiveFeedForUrl(feed)}
 ON CONFLICT DO NOTHING;`,

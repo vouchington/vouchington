@@ -1,7 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost } from '@services/posts'
-import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
+import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
@@ -18,13 +18,10 @@ app.route('/api/v1/posts/:idOrSlug/follow-context').get(async (ctx: Context) => 
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 
-  const [positive_by_following, negative_by_following] = await Promise.all([
-    getFollowedUsersByElectionVote(currentUser, post.id, 'post_votes', 1),
-    getFollowedUsersByElectionVote(currentUser, post.id, 'post_votes', -1),
-  ])
+  const followContext = await getVoteFollowContextBatch(currentUser, post.id, 'post_votes')
 
   ctx.json({
-    positive_by_following,
-    negative_by_following,
+    positive_by_following: followContext.positiveByFollowing,
+    negative_by_following: followContext.negativeByFollowing,
   })
 })

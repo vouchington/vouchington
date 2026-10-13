@@ -1,3 +1,7 @@
+import {
+  createCopyrightSeedInputsForTest,
+  settleCopyrightSeedReads,
+} from '@voucha/test-helpers/copyright-seed'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { getCopyrightStaffEmailIntake } from '@services/copyright-notices'
@@ -9,9 +13,11 @@ import { seedCopyright } from './copyright.mts'
 describe('seedCopyright', () => {
   it('fills both staff queues with every review state and adds nothing when run again', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const foreign = await createParsedCopyrightEmailIntake(new Date())
-    const first = await seedCopyright()
-    const second = await seedCopyright()
+    const inputs = await createCopyrightSeedInputsForTest()
+    inputs.now = new Date(inputs.now.getTime() - 3 * 60 * 60 * 1000)
+    const foreign = await createParsedCopyrightEmailIntake(inputs.now)
+    const first = await seedCopyright(inputs)
+    const second = await seedCopyright(inputs)
     expect(second).toEqual(first)
 
     // The email queue is oldest first: new notice, its reply, a failed parse, no parse row, then
@@ -64,7 +70,7 @@ describe('seedCopyright', () => {
     ])
 
     // Only the malware-flagged message has its original withheld; the others offer the download.
-    const details = await Promise.all(
+    const details = await settleCopyrightSeedReads(
       first.emailIntakeIds.map(id => getCopyrightStaffEmailIntake(id, moderator)),
     )
     expect(details.map(detail => detail?.ses_verdicts.virus)).toEqual([
@@ -84,25 +90,31 @@ describe('seedCopyright', () => {
 
     // The overdue-deadline case outranks the case that has only waited on intake review.
     const noticeIds = [first.deadlineCase.noticeId, first.intakeReviewCase.noticeId]
-    const { cases, hasNextPage } = await listCopyrightStaffQueue(moderator, {
-      limit: noticeIds.length,
-      noticeIds,
-    })
+    const { cases, hasNextPage } = await listCopyrightStaffQueue(
+      moderator,
+      {
+        limit: noticeIds.length,
+        noticeIds,
+      },
+      { now: inputs.now },
+    )
     expect(hasNextPage).toBe(false)
     expect(cases.map(queued => queued.id)).toEqual([
       first.deadlineCase.noticeId,
       first.intakeReviewCase.noticeId,
     ])
+    expect(cases.map(queued => queued.received_at)).toEqual([inputs.now, inputs.now])
     const [deadlineCase, intakeReviewCase] = cases
+    expect(intakeReviewCase!.waiting_since).toEqual(inputs.now)
     expect(deadlineCase).toMatchObject({
       reasons: ['deadline_due'],
       claimant: { display_name: 'Priya Natarajan' },
       form_review: { review: { is_accepted: true } },
       counter_notices: [],
     })
-    expect(deadlineCase!.next_deadline!.escalation_at.getTime()).toBeLessThan(Date.now())
+    expect(deadlineCase!.next_deadline!.escalation_at.getTime()).toBeLessThan(inputs.now.getTime())
     expect(deadlineCase!.next_deadline!.restoration_deadline_at.getTime()).toBeGreaterThan(
-      Date.now(),
+      inputs.now.getTime(),
     )
     expect(deadlineCase!.waiting_since).toEqual(deadlineCase!.next_deadline!.escalation_at)
 
@@ -129,5 +141,25 @@ describe('seedCopyright', () => {
         },
       },
     })
+
+    const laterNow = new Date(inputs.now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    await expect(seedCopyright({ ...inputs, now: laterNow })).resolves.toEqual(first)
+    const later = await listCopyrightStaffQueue(
+      moderator,
+      {
+        limit: noticeIds.length,
+        noticeIds,
+      },
+      { now: laterNow },
+    )
+    expect(later.hasNextPage).toBe(false)
+    expect(later.cases.map(queued => queued.received_at)).toEqual([inputs.now, inputs.now])
+    expect(later.cases[1]!.waiting_since).toEqual(inputs.now)
+    expect(later.cases.map(queued => queued.id)).toEqual(noticeIds)
+    expect(later.cases[0]).toMatchObject({
+      reasons: ['deadline_missed'],
+      next_deadline: deadlineCase!.next_deadline,
+      waiting_since: deadlineCase!.waiting_since,
+    })
   })
-})
+}, 5_000)

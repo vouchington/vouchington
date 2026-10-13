@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+content-type: application/json
+request-id: req_replay_fixture
+stripe-version: 2026-09-30.endive
+idempotent-replayed: true
+
+{"id":"REFUND_ID","object":"refund","amount":REFUND_AMOUNT,"balance_transaction":"txn_replay_refund","charge":"CHARGE_ID","created":1893369800,"currency":"usd","destination_details":null,"metadata":{},"payment_intent":"pi_replay_payment","reason":null,"receipt_number":null,"source_transfer_reversal":null,"status":"succeeded","transfer_reversal":null}

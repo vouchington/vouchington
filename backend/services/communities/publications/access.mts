@@ -8,8 +8,7 @@ import {
   currentUserCanModerateCommunity,
   currentUserCanModerateCommunityPublication,
 } from '../authorization.mts'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from '../members/get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import type { Community, CommunityPostReview } from '../types.mts'
 
 export async function getPublicationReview(
@@ -71,11 +70,9 @@ export async function assertModeratorAccess(
   currentUser: PrivateUser,
   communityId: string,
 ): Promise<Community> {
-  const [community, membership] = await Promise.all([
-    getCommunity(communityId),
-    getCommunityMember(communityId, currentUser.id),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
   return community
@@ -94,11 +91,9 @@ export async function assertPublicationModeratorAccess(
   currentUser: PrivateUser,
   communityId: string,
 ): Promise<PublicationModeratorAccess> {
-  const [community, membership] = await Promise.all([
-    getCommunity(communityId),
-    getCommunityMember(communityId, currentUser.id),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(communityId, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   const isPlatformModerator = isModerationStaff(currentUser)
   assert(

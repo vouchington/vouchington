@@ -1,6 +1,6 @@
 import { endpoint, type ManifestEndpoint } from './endpoint-registry'
 
-const communities = endpoint('/api/v1/communities', { q: 'test' })
+const communities = endpoint('/api/v1/communities', { q: 'test', limit: '20' })
 const topics = endpoint('/api/v1/topics', { q: 'test' })
 const lists = endpoint('/api/v1/lists', { limit: '25' })
 const rssFeeds = endpoint('/api/v1/rss-feeds', { limit: '25' })

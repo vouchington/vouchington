@@ -16,7 +16,7 @@ describe('getReportAbusePenalties', () => {
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true, username: randomUsername() })
-  }, 60_000)
+  }, 5_000)
 
   it('gets one penalty by ID and returns null for an unknown ID', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -30,7 +30,7 @@ describe('getReportAbusePenalties', () => {
       reason: 'mass_report_campaign',
     })
     await expect(getReportAbusePenaltyByIdFromPrimary(uuidv7())).resolves.toBeNull()
-  }, 60_000)
+  })
 
   it('returns active, revoked, and unfiltered penalty lists', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -38,7 +38,7 @@ describe('getReportAbusePenalties', () => {
     const revokedId = await insertTestReportAbusePenalty({
       userId: user.id,
       createdById: admin.id,
-      revokedAt: new Date(),
+      revokedAt: new Date(Date.UTC(2026, 0, 31, 12)),
       revokedById: admin.id,
     })
 
@@ -54,7 +54,7 @@ describe('getReportAbusePenalties', () => {
     await expect(
       getReportAbusePenalties({ userId: user.id, status: 'revoked' }),
     ).resolves.toMatchObject({ results: [expect.objectContaining({ id: revokedId })] })
-  }, 60_000)
+  })
 
   it('filters by user and source flag', async () => {
     const [user, otherUser] = await Promise.all([
@@ -84,7 +84,7 @@ describe('getReportAbusePenalties', () => {
 
     const result = await getReportAbusePenalties({ userId: user!.id, sourceFlagId: flagId })
     expect(result.results).toEqual([expect.objectContaining({ id: expectedId })])
-  }, 60_000)
+  })
 
   it('uses scoped opaque cursors with exact limit-plus-one pagination', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -111,7 +111,7 @@ describe('getReportAbusePenalties', () => {
     await expect(
       getReportAbusePenalties({ status: 'active', limit: 2, after: first.page_info.end_cursor! }),
     ).rejects.toMatchObject({ status: 400 })
-  }, 60_000)
+  })
 
   it('rejects an unscoped or wrong-scope cursor', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -132,7 +132,7 @@ describe('getReportAbusePenalties', () => {
         after: encodeScopedUuidCursor(sortedIds[0]!, 'wrong-scope'),
       }),
     ).rejects.toMatchObject({ status: 400 })
-  }, 60_000)
+  })
 
   it('returns terminal page info for empty, partial, and exact-limit pages', async () => {
     const [emptyUser, partialUser, exactUser] = await Promise.all([
@@ -161,5 +161,5 @@ describe('getReportAbusePenalties', () => {
     expect(exact.results.map(penalty => penalty.id)).toEqual(exactIds.toSorted().toReversed())
     expect(exact.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
     expect(exact.page_info.start_cursor).not.toBeNull()
-  }, 60_000)
+  })
 })

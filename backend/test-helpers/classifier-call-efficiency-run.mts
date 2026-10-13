@@ -53,8 +53,6 @@ export type EfficiencyDriver = {
   fanOuts: readonly [number, number]
   /** How many questions the one call carries for a seed of `fanOut` candidates. */
   questions(fanOut: number): number
-  /** Whether the candidate set is captured outside the receipt identity, so it can change later. */
-  lateCandidates?: true
   /** Prepares the shared state the scope needs (C5's seeded config) and returns its release. */
   initialize?(): Promise<() => Promise<void>>
   seed(fanOut: number): Promise<EfficiencySeed>

@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -14,6 +14,7 @@ let suspendedPostId = ''
 let regularPostId = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const random = randomSuffix()
   const usernameSuffix = random.replaceAll(/\d/g, digit => 'abcdefghij'[Number(digit)])
 

@@ -22,7 +22,6 @@ import {
 } from '@queues/entity-metrics-cache-refresh/enqueues'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
 import { getPublicUserByAny, isAdminUser, isPlatformAccount } from '@services/users'
-import { getUserActivePlan } from '@services/memberships'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { getContributionQuota } from '@services/contribution-gating/quota'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
@@ -123,7 +122,7 @@ export const bookmarkEntity = async (
       !isPlatformAccount(user)
     ) {
       try {
-        const membershipPlan = await getUserActivePlan(user.id)
+        const membershipPlan = user.membership_plan ?? null
         const isAdmin = isAdminUser(user)
         const [contributionStatus, contributionQuota, { limited }, target] = await Promise.all([
           getContributionStatus(user, { membershipPlan, skipAccountAgeGate: true }),

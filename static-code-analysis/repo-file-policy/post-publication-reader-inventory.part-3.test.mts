@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
 import { discoverPublicPostReaders } from './post-publication-reader-inventory-source.mts'
 import {
@@ -6,7 +7,6 @@ import {
   inventoryPath,
   makeContext,
 } from './post-publication-reader-inventory.test-support.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 describe('post-publication reader inventory', () => {
   beforeAll(() => initSqlAst())

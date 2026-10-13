@@ -4,7 +4,10 @@ import {
   claimRecoverableDataRequests,
   deleteExportsFromS3,
 } from '@services/account-data-requests'
-import { enqueueBulkExportRequests } from '@queues/account-data-requests/enqueues'
+import {
+  enqueueBulkExportRequests,
+  enqueueOrReactivateBulkExportRequests,
+} from '@queues/account-data-requests/enqueues'
 
 type CleanupExpiredExportsDependencies = {
   deleteExportsFromS3: typeof deleteExportsFromS3
@@ -19,7 +22,8 @@ export async function recoverExportRequests(
   dependencies?: Partial<RecoverExportRequestsDependencies>,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const claimRequests = dependencies?.claimRecoverableDataRequests ?? claimRecoverableDataRequests
-  const enqueueRequests = dependencies?.enqueueBulkExportRequests ?? enqueueBulkExportRequests
+  const enqueueRequests =
+    dependencies?.enqueueBulkExportRequests ?? enqueueOrReactivateBulkExportRequests
   const { batchSize, maxBatches } = getDataRequestLimits()
   let enqueued = 0
   let hasMore = false

@@ -10,10 +10,11 @@ import {
 } from '@services/communities'
 import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
 import { validateCreatePostInput } from '@services/posts/create/validation'
-import { currentUserCanCreatePost } from '@services/posts/authorization'
+import {
+  currentUserCanCreatePost,
+  getAuthorizedPostContributionMembershipPlan,
+} from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
-import { getUserActivePlan } from '@services/memberships'
-import { assertCanContribute } from '@services/contribution-gating/assert'
 import {
   admitRouteContribution,
   contributionPolicySourceForPostType,
@@ -68,8 +69,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
   // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
   const body = (await ctx.request.json('1mb')) as CreatePostInput & {
     hp_website?: string

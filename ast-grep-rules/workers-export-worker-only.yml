@@ -1,7 +1,7 @@
 id: workers-export-worker-only
 language: Tsx
 severity: error
-message: 'worker leaf files may only export Worker or createWorker instances'
+message: 'worker leaf files may only export createWorker instances'
 files:
   - 'backend/workers/*/workers/*.mts'
 rule:
@@ -20,7 +20,6 @@ rule:
         - pattern: 'export const $NAME = $INIT'
         - not:
             any:
-              - pattern: 'export const $NAME = new Worker($$$)'
               - pattern: 'export const $NAME = createWorker($$$)'
 examples:
   - code: 'export function processJob() {}'

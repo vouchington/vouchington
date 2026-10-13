@@ -6,6 +6,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { PostAuthorAside } from '../post-author-aside'
 import type { AuthorAside } from '@/types/posts'
 import type { ProfileLink } from '@/types/user'
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 
 const nextDynamicMock = vi.hoisted(() => {
   const React = require('react')

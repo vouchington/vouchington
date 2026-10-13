@@ -1,9 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { getTopicByAnyCached } from '@services/entity-fetch'
-import {
-  getFollowedUsersByElectionVote,
-  getFollowedUsersFollowingTopic,
-} from '@services/users/follow-context'
+import { getTopicFollowContextBatch } from '@services/users/follow-context'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
@@ -14,16 +11,11 @@ app.route('/api/v1/topics/:idOrSlug/follow-context').get(async (ctx: Context) =>
   const topic = await getTopicByAnyCached(ctx.params.idOrSlug!)
   if (!topic) ctx.throw(404, 'Topic not found')
 
-  const [positive_by_following, negative_by_following, following_topic_followers] =
-    await Promise.all([
-      getFollowedUsersByElectionVote(currentUser, topic.id, 'topic_votes', 1),
-      getFollowedUsersByElectionVote(currentUser, topic.id, 'topic_votes', -1),
-      getFollowedUsersFollowingTopic(currentUser, topic.id),
-    ])
+  const followContext = await getTopicFollowContextBatch(currentUser, topic.id)
 
   ctx.json({
-    positive_by_following,
-    negative_by_following,
-    following_topic_followers,
+    positive_by_following: followContext.positiveByFollowing,
+    negative_by_following: followContext.negativeByFollowing,
+    following_topic_followers: followContext.followingTopicFollowers,
   })
 })

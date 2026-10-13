@@ -47,7 +47,7 @@ describe('dismissBanEvasionFlag', () => {
     expect(flagState?.suspected_ban_evader_dismissed_at).not.toBeNull()
     expect(flagState?.suspected_ban_evader_dismissed_by_id).toBe(owner.id)
 
-    const reportStatus = await getTestSystemModerationReportStatus('user', member.id)
+    const reportStatus = await getTestSystemModerationReportStatus('user', member.id, community.id)
     expect(reportStatus).toBe('dismissed')
 
     const actions = await getModeratorActionRowsForTest({

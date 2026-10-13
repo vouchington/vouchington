@@ -95,12 +95,12 @@ export async function completeLocalTestImagePlacementDeliveryRecord(input: {
   revision: number
   imageId: string
 }): Promise<void> {
-  const deliveryKey = `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
   await write(sql`
     /* completeLocalTestImagePlacementDeliveryRecord */
-    INSERT INTO media_delivery_registry_changes(delivery_key, generation, change_type, completed_at)
-    SELECT delivery_key, generation, 'completed', CURRENT_TIMESTAMP FROM view_media_delivery_registry_current_records
-    WHERE delivery_key = ${deliveryKey}
+    INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, completed_at)
+    SELECT media_delivery_registry_record_id, generation, 'completed', CURRENT_TIMESTAMP FROM view_media_delivery_registry_current_records
+    WHERE placement_id = ${input.placementId}::uuid AND placement_revision = ${input.revision}
+      AND image_id = ${input.imageId}::uuid
       AND desired_state = 'allow'
   `)
 }

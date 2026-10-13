@@ -50,12 +50,41 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
     it.each(driver.fanOuts)(
       'bills one call for a content version with %i candidates',
       async fanOut => {
-        const provider = installEfficiencyProvider({ latencyMs: 250 })
+        const started = Promise.withResolvers<void>()
+        const response = Promise.withResolvers<void>()
+        const provider = installEfficiencyProvider({
+          beforeResponse: async () => {
+            started.resolve()
+            await response.promise
+          },
+        })
         const window = efficiencyWindow()
         const seed = await driver.seed(fanOut)
         await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
           const run = await reserveSeededRun(driver.slug, seed)
-          expect(await deliverRun(driver.slug, run)).toBe('completed')
+          const delivery = deliverRun(driver.slug, run)
+          let outcome: PromiseSettledResult<void>
+          try {
+            await Promise.race([
+              started.promise,
+              delivery.then(() => {
+                throw new Error('Run completed before reaching the provider')
+              }),
+            ])
+            vi.setSystemTime(Date.now() + 250)
+            outcome = { status: 'fulfilled', value: undefined }
+          } catch (err) {
+            outcome = { status: 'rejected', reason: err }
+          }
+          response.resolve()
+          const [delivered] = await Promise.allSettled([delivery])
+          const errors = [outcome, delivered].flatMap(result =>
+            result.status === 'rejected' ? [result.reason] : [],
+          )
+          if (errors.length === 1 || (errors.length === 2 && Object.is(errors[0], errors[1])))
+            throw errors[0]
+          if (errors.length > 1) throw new AggregateError(errors, 'Provider release and run failed')
+          expect(delivered.status === 'fulfilled' && delivered.value).toBe('completed')
 
           expect(provider.requests).toHaveLength(1)
           expect(provider.requests[0]).toHaveLength(driver.questions(fanOut))
@@ -64,7 +93,7 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
           const { version, runs } = await reportOf(window, seed)
           expect(runs).toHaveLength(1)
           expect(version).toMatchObject({ ...ONE_BILLED_CALL, attemptsStarted: 1 })
-          expect(version?.latencyMsTotal).toBeGreaterThanOrEqual(250)
+          expect(version?.latencyMsTotal).toBe(250)
         })
       },
     )
@@ -116,25 +145,40 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
         })
       })
     })
+  })
+}
 
-    it.runIf(driver.lateCandidates)(
-      'asks nothing again when the candidate set changed after the run completed',
-      async () => {
-        const provider = installEfficiencyProvider()
-        const seed = await driver.seed(fewer)
-        await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
-          const run = await reserveSeededRun(driver.slug, seed)
-          expect(await deliverRun(driver.slug, run)).toBe('completed')
-          await seed.addCandidate?.()
+/** Only embedding-derived C6/C9 candidates are outside the receipt configuration identity. */
+export function describeClassifierLateCandidateReplay(driver: EfficiencyDriver): void {
+  const [fewer] = driver.fanOuts
+  const factsOf = (seed: EfficiencySeed) => getSubjectClassifierRunFacts(seed.subject, driver.slug)
+  describe(`${driver.scope} call efficiency (real PG, deterministic provider)`, () => {
+    let release: (() => Promise<void>) | undefined
+    beforeAll(async () => {
+      release = await driver.initialize?.()
+    })
+    beforeEach(() => vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key'))
+    afterEach(() => {
+      vi.unstubAllEnvs()
+      vi.mocked(fetchStructuredDecisionProvider).mockReset()
+    })
+    afterAll(async () => release?.())
+    it('asks nothing again when the candidate set changed after the run completed', async () => {
+      const provider = installEfficiencyProvider()
+      const seed = await driver.seed(fewer)
+      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+        const run = await reserveSeededRun(driver.slug, seed)
+        expect(await deliverRun(driver.slug, run)).toBe('completed')
+        if (!seed.addCandidate) throw new Error('Late-candidate driver requires an actual mutation')
+        await seed.addCandidate()
 
-          const again = await reserveSeededRun(driver.slug, seed)
-          expect(again.runId).toBe(run.runId)
-          expect(await deliverRun(driver.slug, again)).toBe('replay')
+        const again = await reserveSeededRun(driver.slug, seed)
+        expect(again.runId).toBe(run.runId)
+        expect(await deliverRun(driver.slug, again)).toBe('replay')
 
-          expect(provider.requests).toHaveLength(1)
-          expect(await factsOf(seed)).toHaveLength(1)
-        })
-      },
-    )
+        expect(provider.requests).toHaveLength(1)
+        expect(await factsOf(seed)).toHaveLength(1)
+      })
+    })
   })
 }

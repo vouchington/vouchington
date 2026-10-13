@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
@@ -30,8 +30,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-analytics').get(async (ctx: 
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   const canView = currentUserCanViewCommunityModlog(currentUser, community, membership)
   if (!canView) {

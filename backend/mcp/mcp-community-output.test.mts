@@ -1,4 +1,6 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getCommunityMembersTool from './get-community-members.mts'
 import getCommunityPinnedPostsTool from './get-community-pinned-posts.mts'
@@ -43,15 +45,11 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
 }
 
 const TOOLS = [
-  ['search_communities', searchCommunitiesTool, '/api/v1/communities'],
-  ['get_community', getCommunityTool, '/api/v1/communities/{idOrSlug}'],
-  ['get_community_posts', getCommunityPostsTool, '/api/v1/communities/{idOrSlug}/posts'],
-  [
-    'get_community_pinned_posts',
-    getCommunityPinnedPostsTool,
-    '/api/v1/communities/{idOrSlug}/pinned-posts',
-  ],
-  ['get_community_members', getCommunityMembersTool, '/api/v1/communities/{idOrSlug}/members'],
+  ['discover_communities', searchCommunitiesTool, '/api/v1/communities'],
+  ['read_community', getCommunityTool, '/api/v1/communities/{idOrSlug}'],
+  ['read_community', getCommunityPostsTool, '/api/v1/communities/{idOrSlug}/posts'],
+  ['read_community', getCommunityPinnedPostsTool, '/api/v1/communities/{idOrSlug}/pinned-posts'],
+  ['read_community', getCommunityMembersTool, '/api/v1/communities/{idOrSlug}/members'],
 ] as const
 
 describe('community read tool output schemas', () => {
@@ -87,9 +85,9 @@ describe('community read tool output schemas', () => {
   })
 
   it.each([
-    ['search_communities', searchCommunitiesTool],
-    ['get_community_posts', getCommunityPostsTool],
-    ['get_community_members', getCommunityMembersTool],
+    ['discover_communities', searchCommunitiesTool],
+    ['read_community', getCommunityPostsTool],
+    ['read_community', getCommunityMembersTool],
   ] as const)('takes the page info of %s from the PageInfo contract', (_name, tool) => {
     const found = propertiesOf(branches(tool)[0]!)
     const pageInfo = propertiesOf(found['page_info']!)
@@ -113,7 +111,7 @@ describe('community read tool output schemas', () => {
     const schema = tool.meta?.outputSchema as JsonSchema
     const [found, notFound] = branches(tool)
 
-    expect(tool.schema.name).toBe(name)
+    expect(getRegisteredToolByName(name)?.schema.name).toBe(name)
     expect(schema['type']).toBe('object')
     expect(found!['additionalProperties']).toBe(false)
     expect(Object.keys(propertiesOf(found!))[0]).toBe('success')
@@ -122,7 +120,7 @@ describe('community read tool output schemas', () => {
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(schema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(schema)
   })
 
   it.each(TOOLS)('names the documented REST twin of %s', (_name, tool, path) => {
@@ -140,9 +138,9 @@ describe('community read tool output schemas', () => {
   })
 
   it.each([
-    ['search_communities', searchCommunitiesTool],
-    ['get_community_posts', getCommunityPostsTool],
-    ['get_community_members', getCommunityMembersTool],
+    ['discover_communities', searchCommunitiesTool],
+    ['read_community', getCommunityPostsTool],
+    ['read_community', getCommunityMembersTool],
   ] as const)('bounds the %s page size at the documented maximum', (_name, tool) => {
     const { min, max } = COMMUNITY_PAGE_LIMIT
     const properties = tool.schema.parameters?.['properties'] as
@@ -150,7 +148,11 @@ describe('community read tool output schemas', () => {
       | undefined
 
     expect(max).toBe(25)
-    expect(properties?.['limit']).toMatchObject({ type: 'integer', minimum: min, maximum: max })
+    expect(properties?.['limit']).toMatchObject({
+      type: 'integer',
+      minimum: min,
+      maximum: max,
+    })
     expect(tool.schema.description).toContain(`at most ${max}`)
   })
 })

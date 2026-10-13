@@ -1,6 +1,6 @@
 import { createTestUser, insertEntityRelation } from '../../../backend/test-helpers/index.mts'
 import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsTestUser, TEST_USER_USERNAME } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -12,6 +12,7 @@ test.describe('User profile page', () => {
   let friendsOwnerUsername: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     friendsOwnerUsername = `profile-friends-owner-${suffix}`
     const [owner, following, follower] = await Promise.all([

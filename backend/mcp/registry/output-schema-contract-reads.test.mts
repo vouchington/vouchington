@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   WEB_PROVENANCE,
   createRandomString,
@@ -13,7 +14,6 @@ import {
 } from '@voucha/test-helpers'
 import { assignReferralProgramToCard, insertTestCard } from '@voucha/test-helpers/entities/cards'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { getRssFeedById } from '@services/rss-feeds/get'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -128,7 +128,15 @@ describe('MCP output schema contract for the other read tools — real DB', () =
       'recommendations:read',
     ])
 
-    expect(result).toEqual({ success: true, results: [] })
+    expect(result).toEqual({
+      success: true,
+      results: [],
+      page_info: {
+        has_next_page: false,
+        start_cursor: null,
+        end_cursor: null,
+      },
+    })
   })
 
   it('returns get_referral_links with labelled and unlabelled links', async () => {
@@ -176,7 +184,7 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 
-  it('returns non-empty search_data_points', async () => {
+  it('returns non-empty read_data_points.search', async () => {
     const topicId = await insertTestTopic({
       name: `Contract Data Topic ${suffix}`,
       slug: `contract-data-topic-${suffix}`,
@@ -195,8 +203,8 @@ describe('MCP output schema contract for the other read tools — real DB', () =
 
     const result = await callStructuredMcpTool(
       caller,
-      'search_data_points',
-      { topic_id: topicId },
+      'read_data_points',
+      optionArgs('search', { topic_id: topicId }),
       ['data-points:read'],
     )
 
@@ -210,11 +218,11 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     ])
   })
 
-  it('returns the not-found result of search_data_points', async () => {
+  it('returns the not-found result of read_data_points.search', async () => {
     const result = await callStructuredMcpTool(
       caller,
-      'search_data_points',
-      { topic_id: `missing-topic-${suffix}` },
+      'read_data_points',
+      optionArgs('search', { topic_id: `missing-topic-${suffix}` }),
       ['data-points:read'],
     )
 

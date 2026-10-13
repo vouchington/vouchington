@@ -9,7 +9,7 @@
  * after the user has scrolled at least once.
  */
 import { createHash } from 'node:crypto'
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
@@ -32,6 +32,7 @@ test.describe('InfiniteScroll — no eager second-page fetch on initial load', (
   let testUserId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const testUser = await createTestUser({ username: `pw-scroll-feed-user-${suffix}` })
     if (!testUser) throw new Error('createTestUser returned null')

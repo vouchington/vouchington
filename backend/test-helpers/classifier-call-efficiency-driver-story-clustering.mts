@@ -15,7 +15,6 @@ export const storyClusteringEfficiencyDriver: EfficiencyDriver = {
   slug: STORY_CLUSTERING_CLASSIFIER_SLUG,
   scope: 'C9 story-clustering classifier',
   fanOuts: [1, 5],
-  lateCandidates: true,
   /** The neighbors are the options of the one choice question. */
   questions: () => 1,
   async seed(neighborCount) {

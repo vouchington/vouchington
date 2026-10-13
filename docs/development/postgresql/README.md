@@ -43,6 +43,59 @@ rejections. The wrapper calls the real executor once and returns its original pr
 and unwrapped autocommit queries are outside this boundary. Completed advisory-lock SQL proves
 acquisition, not entry into a later server-side lock wait.
 
+## Per-Request Query Profile (API tests)
+
+The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts)) wraps every
+request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
+The `onQueryTiming` hook feeds it for every query, including `transaction.query()`, so unlike
+`runWithCapturedQueries` it sees in-transaction statements. Outside a scope (production, workers,
+non-API tests) the hook returns on its first line. Set `VITEST_DIAGNOSTICS=1` to print one stderr
+line for each request when the response finishes or closes early:
+
+```text
+[pg-request-profile] route=GET /v1/posts/:id queries=14 serialDepth=6 repeats=getUserById(x5),getPostMedia(x3)
+```
+
+- **Repeat (N+1 suspect):** the same `/* annotation */` ran two or more times in one request.
+  Cursor-batch iteration (`cursorBatches`) and pipelined batches are one logical statement and are
+  excluded. So is transaction control (`beginTransaction`, which also annotates COMMIT and
+  ROLLBACK): starting a transaction is not a lookup, and a per-item transaction loop is still
+  caught by the statements repeated inside it.
+- **Serial depth:** the largest set of non-overlapping query intervals (start = completion time
+  minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
+  `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
+  `docs/requirements/api/**` mean serial depth.
+- With diagnostics disabled, query profiles remain active and unbaselined repeats still fail tests.
+- Queries finishing after the response flushes, and Valkey commands (no command hook exists yet),
+  are not covered.
+
+### Enforcement and the baseline
+
+The profile is enforced. A repeated annotation within one API request that is not in
+[`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
+fails the test that made the request, with a message naming the route and the annotation. The
+response `finish` or `close` handler records the violation once and
+[`vitest.setup.request-query-profile.mts`](../../../backend/test-helpers/vitest.setup.request-query-profile.mts)
+throws it from `afterEach` (and `afterAll`). Serial depth is reported, not enforced.
+
+Each baseline entry is `{ annotation, reason, issue }`: the annotation, why the repeat is tolerated,
+and the number of the open issue that removes it. The baseline is per annotation, not per route.
+
+- **Add an entry** only for a repeat that cannot be fixed in the same PR. Prefer fixing the repeat.
+  Link an existing issue that owns the area, or file one in the "Query round-trip reductions"
+  milestone, and write a one-line `reason`.
+- **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
+  PR never depends on landing order; the entry is still deleted so the repeat cannot return.
+- **Find stale entries.** A data-dependent repeat can be missing from any single run, and one
+  process sees only a slice of the routes, so staleness is computed over several complete runs, not
+  in the test run. Set the repository variable `VITEST_DIAGNOSTICS` to `1` for 5 complete Backend
+  workflow runs on main, then unset it. Save every `test-backend-unit` shard and credentialed job
+  log from each run, concatenate each run's logs into one file, and run
+  `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. An entry is listed
+  only when it is absent from every log; delete it only then. The report prints how many logs it
+  used and warns that the result is not safe to act on when given fewer than 5. It always exits
+  successfully.
+
 ## Query access references
 
 - <a id="query-helpers"></a>[Query Helpers](reference-query-helpers.md)

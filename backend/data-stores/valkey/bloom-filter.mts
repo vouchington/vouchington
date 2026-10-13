@@ -11,10 +11,8 @@ const BUILDING_KEY_SCAN_PATTERN = 'bloom-filter:*:building'
 const BOOKMARK_LIVE_KEY_SCAN_PATTERN = 'bloom-filter:user-bookmarks:*'
 const SCAN_COUNT = 500
 
-// Generous headroom above any realistic single rebuild duration, comfortably shorter than the
-// weekly rebuild cadence (backend/queues/bloom-filters/enqueues/schedules.mts): a truly-orphaned
-// `:building` key self-clears well before next week's cycle, while the `HasNoExpiry` condition
-// below never disturbs a `:building` key that is mid-legitimate-rebuild.
+// Allow a day for legitimate rebuilds; failed or abandoned builds expire without waiting for
+// an admin request or failure-triggered rebuild. EXPIRE NX preserves an existing build TTL.
 const ORPHANED_BUILDING_KEY_TTL_SECONDS = 60 * 60 * 24
 
 /**
@@ -24,8 +22,8 @@ const ORPHANED_BUILDING_KEY_TTL_SECONDS = 60 * 60 * 24
  * clean up after itself). `ValkeyBloomFilter.rebuildFromStream()` (in `valkyries`) deletes any
  * pre-existing `:building` key at the start of each rebuild and atomically RENAMEs the finished
  * build over the live key, but a `:building` key orphaned by a dead rebuild would otherwise sit
- * with no TTL until the next scheduled rebuild for that exact filter succeeds — up to a week
- * away, or never, if the node stays wedged.
+ * with no TTL until another admin or failure-triggered rebuild succeeds, or indefinitely if the node
+ * stays wedged.
  *
  * Uses `EXPIRE key <ttl> NX` ("set the expiry only if the key currently has none"), so this is
  * safe to call redundantly or concurrently (both the worker-io and worker-cpu deployments call

@@ -6,13 +6,12 @@ import {
   assertStoryIsDiscoverable,
   currentUserCanCreateStoryPost,
 } from '@services/stories/authorization'
-import { assertCanContribute } from '@services/contribution-gating/assert'
 import { admitRouteContribution, executePreparedContribution } from '@services/contribution-gating'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
-import { getUserActivePlan } from '@services/memberships'
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiHeaders } from '../../response-contract.mts'
+import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
 
 /**
  * POST /api/v1/stories/:storyId/discussions
@@ -61,9 +60,7 @@ app.route('/api/v1/stories/:storyId/discussions').post(async (ctx: Context) => {
   const storyId = ctx.params.storyId!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')
 
-  // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,

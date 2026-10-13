@@ -70,7 +70,7 @@ describe('attachBanEvasionContext', () => {
     })
 
     it('attaches ban-evasion context to a system user report', async () => {
-      const report = makeUserReport({ entity_id: suspect.id })
+      const report = makeUserReport({ entity_id: suspect.id, community_id: community.id })
       const result = await attachBanEvasionContext([report])
 
       expect(result).toHaveLength(1)
@@ -131,12 +131,30 @@ describe('attachBanEvasionContext', () => {
       expect(result[0]!.community_ban_evasion?.score).toBeCloseTo(0.7, 5)
     })
 
-    it('returns the newest flag when no communityId is specified', async () => {
+    it('keeps each report on its own community when the same user is flagged in two', async () => {
+      const reportA = makeUserReport({
+        id: 'report-a',
+        entity_id: suspect2.id,
+        community_id: communityA.id,
+      })
+      const reportB = makeUserReport({
+        id: 'report-b',
+        entity_id: suspect2.id,
+        community_id: communityB.id,
+      })
+      const result = await attachBanEvasionContext([reportA, reportB])
+
+      expect(result[0]!.community_ban_evasion?.community_id).toBe(communityA.id)
+      expect(result[0]!.community_ban_evasion?.score).toBeCloseTo(0.7, 5)
+      expect(result[1]!.community_ban_evasion?.community_id).toBe(communityB.id)
+      expect(result[1]!.community_ban_evasion?.score).toBeCloseTo(0.9, 5)
+    })
+
+    it('does not guess a community when the report has no owner', async () => {
       const report = makeUserReport({ entity_id: suspect2.id })
       const result = await attachBanEvasionContext([report])
 
-      // communityB flag was set after communityA so it is newest
-      expect(result[0]!.community_ban_evasion?.community_id).toBe(communityB.id)
+      expect(result[0]!.community_ban_evasion ?? null).toBeNull()
     })
   })
 })

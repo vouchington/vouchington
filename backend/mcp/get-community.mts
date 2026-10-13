@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getCommunityMetrics } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import {
   COMMUNITY_NOT_FOUND,
   loadPublicCommunity,
@@ -16,12 +16,10 @@ type ToolArgs = {
 
 type ToolResult = ({ success: true } & McpCommunityEntry) | typeof COMMUNITY_NOT_FOUND
 
-const tool: Tool<ToolArgs, ToolResult> = {
+const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    name: 'get_community',
-    type: 'function',
     description:
-      'Get one community by its UUID or slug: its name, description, rules, owner and public counts. Only public communities are readable, for every caller: a private, deleted or unknown community returns { success: false, error: "Community not found" }, even to its own members, moderators and owner. Use get_community_posts, get_community_pinned_posts and get_community_members to read inside it.',
+      'Get one community by its UUID or slug: its name, description, rules, owner and public counts. Only public communities are readable, for every caller: a private, deleted or unknown community returns { success: false, error: "Community not found" }, even to its own members, moderators and owner. Use read_community (option posts), read_community (option pinned_posts) and read_community (option members) to read inside it.',
     parameters: {
       type: 'object',
       properties: {
@@ -29,7 +27,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
       },
       required: ['community_id'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

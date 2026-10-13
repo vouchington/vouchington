@@ -11,6 +11,7 @@ import updateMyFinancialProfileTool from '@voucha/mcp/update-my-financial-profil
 import type { PrivateUser } from '@services/users/types'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { callMcpTool } from './call-tool.mts'
+import { optionArgs } from '../../test-helpers/mcp-tool-contract.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
 
 // Each converted tool returns real, fully populated service rows through the real call path, which
@@ -19,8 +20,13 @@ import { USER_MCP_SERVER_CONFIG } from './config.mts'
 describe('MCP output schema contract — real DB', () => {
   let user: PrivateUser & { membership_plan: null }
 
-  async function call(caller: typeof user, name: string, scope: string) {
-    const result = await callMcpTool(name, {}, caller, [scope] as never, USER_MCP_SERVER_CONFIG)
+  async function call(
+    caller: typeof user,
+    name: string,
+    scope: string,
+    args: Record<string, unknown> = {},
+  ) {
+    const result = await callMcpTool(name, args, caller, [scope] as never, USER_MCP_SERVER_CONFIG)
     expect(result.isError).toBeUndefined()
     const [block] = result.content as [{ type: 'text'; text: string }]
     expect(result.structuredContent).toEqual(JSON.parse(block.text))
@@ -91,8 +97,8 @@ describe('MCP output schema contract — real DB', () => {
     expect(results).toHaveLength(1)
   })
 
-  it('returns a populated get_my_profile that satisfies the published schema', async () => {
-    const structured = await call(user, 'get_my_profile', 'profile:read')
+  it('returns a populated read_my_profile.overview that satisfies the published schema', async () => {
+    const structured = await call(user, 'read_my_profile', 'profile:read', optionArgs('overview'))
 
     expect(structured['cards']).toHaveLength(1)
     expect(structured['point_valuations']).toHaveLength(1)
@@ -104,10 +110,15 @@ describe('MCP output schema contract — real DB', () => {
     })
   })
 
-  it('returns get_my_profile for a user with no financial profile', async () => {
+  it('returns read_my_profile.overview for a user with no financial profile', async () => {
     const freshUser = { ...(await createTestUser()), membership_plan: null }
 
-    const structured = await call(freshUser, 'get_my_profile', 'profile:read')
+    const structured = await call(
+      freshUser,
+      'read_my_profile',
+      'profile:read',
+      optionArgs('overview'),
+    )
 
     expect(structured).not.toHaveProperty('financial_profile')
     const financial = await call(freshUser, 'get_my_financial_profile', 'financial-profile:read')

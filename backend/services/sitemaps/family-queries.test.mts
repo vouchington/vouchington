@@ -47,7 +47,7 @@ describe('sitemap family queries', () => {
     expect(query).toContain('FROM url_hostnames')
     expect(query).toContain('updated_at')
     expect(query).not.toContain('uuid_extract_timestamp(id) AS updated_at')
-    expect(query).toContain('blocked IS NOT TRUE')
+    expect(query).toContain('NOT is_blocked')
     expect(query).toContain('votes_count_up > 0')
   })
 

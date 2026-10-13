@@ -1,5 +1,6 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
+import type { JobOptions } from 'glide-mq'
 import { IMAGES_QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_HIGH } from './config.mts'
 import { imagesQueue } from './queues.mts'
 
@@ -19,16 +20,23 @@ const enqueueExtractImageMetadataJob = createEnqueueFunction<{ id: string }, 'ex
   jobName: 'extract-metadata',
 })
 
+/**
+ * One in-flight extraction per image, with no custom `jobId`. A stable `jobId` is a hard uniqueness
+ * key that outlives the job: GlideMQ keeps the claim while the terminal record is retained, and a
+ * job that stalls past its limit lands in the failed set without honoring `removeOnFail` at all.
+ * Either way the hourly `cleanupAbandonedUploads` recovery would get `null` back and silently skip
+ * the image. `simple` deduplication alone collapses duplicates while a job is waiting, active, or
+ * retrying, and releases the moment that job is completed or failed, however it got there.
+ */
+export function getExtractImageMetadataJobOptions(imageId: string) {
+  return {
+    priority: PRIORITY_HIGH,
+    deduplication: { id: `extract-image-metadata-${imageId}`, mode: 'simple' },
+  } satisfies Partial<JobOptions>
+}
+
 export function enqueueExtractImageMetadata(imageId: string): EnqueueReturnType {
-  const jobId = `extract-image-metadata-${imageId}`
-  return enqueueExtractImageMetadataJob(
-    { id: imageId },
-    {
-      priority: PRIORITY_HIGH,
-      jobId,
-      deduplication: { id: jobId, mode: 'simple' },
-    },
-  )
+  return enqueueExtractImageMetadataJob({ id: imageId }, getExtractImageMetadataJobOptions(imageId))
 }
 
 const enqueueStaydownHashJob = createEnqueueFunction<{ id: string }, 'staydown-hash'>({

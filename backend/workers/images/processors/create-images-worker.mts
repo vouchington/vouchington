@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job, Worker } from 'glide-mq'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
 import { IMAGES_QUEUE_NAME } from '@queues/images/config'
 import { processExtractImageMetadata } from './extract-metadata.mts'
@@ -38,8 +38,8 @@ export function createImagesWorker({
     }
   }
 
-  return new Worker(IMAGES_QUEUE_NAME, handleImagesJob, {
-    connection: workerQueueConnection,
+  return createWorker(IMAGES_QUEUE_NAME, handleImagesJob, {
+    dedicatedCommandClient: true,
     prefix,
     concurrency: getWorkerConcurrency('images', { baseline: 5 }),
     lockDuration: 120_000,

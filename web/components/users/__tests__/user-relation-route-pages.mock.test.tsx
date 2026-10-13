@@ -1,6 +1,13 @@
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { UserPostRelationRoute, UserRssFeedRelationRoute } from '../user-relation-route-pages'
+
+// This suite uses the English fixture catalog and preserves the real translator.
+vi.mock(import('@/lib/i18n/get-translations'), () => ({
+  getTranslations: async () => createTranslator('en', enMessages),
+}))
 
 const {
   mockGetUserPostsCollection,
@@ -46,6 +53,11 @@ vi.mock(import('../paginated-user-post-relation-list'), () => ({
 vi.mock(import('../user-relation-owner-action'), () => ({
   getOwnerRelationAction: mockGetOwnerRelationAction,
 }))
+vi.mock(import('../user-rss-feed-item-routes'), () => ({
+  UserHiddenRssFeedItemsRoute: async () => <span hidden />,
+  UserSavedRssFeedItemsRoute: async () => <span hidden />,
+  UserViewedRssFeedItemsRoute: async () => <span hidden />,
+}))
 vi.mock(
   import('@/components/shared/empty-state'),
   () =>
@@ -57,6 +69,13 @@ vi.mock(import('@/components/sources/rss-feed-list-item'), () => ({
   RssFeedListItem: ({ feed }: { feed: { id: string } }) => (
     <div data-testid='rss-feed-list-item'>{feed.id}</div>
   ),
+}))
+vi.mock(import('@/components/communities/join-button'), () => ({ default: () => <span hidden /> }))
+vi.mock(import('@/components/shared/follow-button'), () => ({
+  FollowButton: () => <span hidden />,
+}))
+vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
+  EntityBookmarkButton: () => <span hidden />,
 }))
 
 describe('UserRssFeedRelationRoute', () => {

@@ -1,6 +1,6 @@
 import { executeHandlerWithCursorInBatches } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueUnfurlReferralLink } from '@queues/unfurl-referral-links/enqueues'
+import { enqueueBulkUnfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues'
 
 import { getDispatchLimits } from './work-limits.mts'
 import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
@@ -45,15 +45,16 @@ export async function dispatchUnfurlReferralLinks(
       readOnly: true,
       handler: async rows => {
         total += rows.length
-        for (const row of rows) {
-          // oxlint-disable-next-line no-await-in-loop -- preserve per-row enqueue backpressure
-          await enqueueUnfurlReferralLink({ parentLinkId: row.id })
-          // oxlint-disable-next-line no-await-in-loop -- save only successfully enqueued predecessors
-          await saveProgress?.({
-            sweepStartedAt,
-            after: { requestedAt: row.requested_at, id: row.id },
-          })
-        }
+        // One batched add, then one cursor save: progress advances past a batch only after the
+        // whole batch was accepted. A failed batch is re-read and re-added on the next run, and
+        // each parent's debounce dedup id collapses that replay. The cursor helper never calls
+        // the handler with an empty batch.
+        await enqueueBulkUnfurlReferralLinks(rows.map(row => ({ parentLinkId: row.id })))
+        const last = rows.at(-1)!
+        await saveProgress?.({
+          sweepStartedAt,
+          after: { requestedAt: last.requested_at, id: last.id },
+        })
       },
     },
   )

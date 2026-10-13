@@ -3,6 +3,7 @@ import { read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 import { fetch } from 'undici'
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import { githubFollowingHasNextPage } from './friends-pagination.mts'
 import { finalizeGithubFriendSync, persistGithubFriendPage } from './friends-persistence.mts'
@@ -26,6 +27,7 @@ async function fetchGithubFollowing(
       Accept: 'application/vnd.github+json',
     },
   })
+  throwIfRateLimitedResponse(response, 'https://api.github.com/user/following')
   if (!response.ok)
     throw createHttpError(502, `GitHub /user/following request failed: ${response.status}`)
   const users = (await response.json()) as GithubUserShort[]

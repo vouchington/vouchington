@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   createTestUser,
   insertTestPost,
@@ -20,6 +20,7 @@ const seededReportsUrl = '/reports?sort=created_at_desc'
 const seededFlatReportsUrl = '/reports?cluster=none&sort=created_at_desc&limit=100'
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   await Promise.all([
     reviewPendingTestModerationReportsByReporterUsernamePrefixes(['rpt-reporter-', 'rpt-extra-']),
     reviewPendingTestModerationReportsByPostSlugPrefixes([

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import type { ReactNode } from 'react'
 
@@ -76,9 +76,10 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
   })
 
   it('renders tooltip text when tooltip is provided', () => {
@@ -139,13 +140,14 @@ describe('EntityBookmarkButton', () => {
     fireEvent.click(button)
     expect(mockBookmarkEntity).not.toHaveBeenCalled()
 
-    resolveBookmarks?.({ bookmarks: { subscribe_posts: false } })
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribe to Posts' })).not.toHaveAttribute(
-        'aria-disabled',
-      )
+    await act(async () => {
+      resolveBookmarks?.({ bookmarks: { subscribe_posts: false } })
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
+
+    expect(screen.getByRole('button', { name: 'Subscribe to Posts' })).not.toHaveAttribute(
+      'aria-disabled',
+    )
   })
 
   it('refetches bookmark state when a sibling emits a bookmark change for the same predicate', async () => {
@@ -168,11 +170,10 @@ describe('EntityBookmarkButton', () => {
     // Simulate a sibling proxy_follow button toggling — same predicate triggers refetch
     await act(async () => {
       emitBookmarkChange('community', 'community-1', 'proxy_follow', 'sibling-instance-id')
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Following' })).toBeDefined()
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('community', 'community-1')
   })
 
@@ -215,9 +216,10 @@ describe('EntityBookmarkButton', () => {
 
     // Click the button — handleToggle emits with the component's own instanceId
     fireEvent.click(screen.getByRole('button', { name: 'Follow' }))
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('topic', 'topic-1', 'follow')
 
     // The emit from the component's own click should NOT trigger a getEntityBookmarks refetch
     expect(mockGetEntityBookmarks).not.toHaveBeenCalled()

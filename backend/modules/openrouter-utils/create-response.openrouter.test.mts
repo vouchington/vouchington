@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createOpenRouterResponse } from './create-response.mts'
 
+// Non-gating smoke check of the OpenRouter Responses endpoint against the live API. The request we
+// build, SSE parsing and the latch-and-stop policy are gated by recorded responses in
+// create-response.replay.no-data.mock.test.mts. See docs/development/tests.md#live-provider-smoke-checks.
 describe('OpenRouter Responses', () => {
   it('accepts the retained structured-output contract and returns billed metadata', async () => {
     if (!process.env.OPENROUTER_API_KEY?.trim()) {

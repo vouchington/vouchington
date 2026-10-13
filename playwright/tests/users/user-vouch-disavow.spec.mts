@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
@@ -19,6 +19,7 @@ test.describe('User vouch/disavow asides', () => {
   let targetUsername: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const contributor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!contributor?.id) throw new Error('Failed to create user vouch contributor')
     contributorId = contributor.id

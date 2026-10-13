@@ -18,8 +18,8 @@
  * back by id (the job is a side effect of a service/HTTP call), or a bulk enqueue whose return value
  * has no single `.id`. It scans every state instead of `'waiting'` alone, so it sees jobs a worker has
  * already drained to `active`/`completed`/`failed`/`delayed` in the same fork. Its result includes
- * every job the fork has ever put on that queue — the shim never prunes terminal records, and
- * `glide-mq-vitest-obliterate.mts` (`queue.jobs.clear()`) only runs when a file explicitly calls it —
+ * retained jobs from every file in the fork — records remain until native retention removes them
+ * or a file explicitly calls `queue.obliterate()` —
  * so every absence assertion built on it must scope itself with a predicate (e.g. `.filter()` on
  * `job.data.<id>` or `job.name`); an unscoped `toHaveLength(0)` will eventually pick up another
  * file's terminal jobs on a shared queue.

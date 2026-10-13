@@ -11,6 +11,7 @@ import type { Post } from '@services/posts/types'
 import { getPostByAny } from '@services/posts/get'
 import {
   getImagePlacementForCopyright,
+  getImagePlacementsForCopyright,
   getImagePlacementCopyrightOwner,
   restoreImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
@@ -62,6 +63,58 @@ describe('image placements', () => {
       revision: secondPlacement.placement_revision,
       deleted: false,
     })
+  })
+
+  it('reads many copyright placements at once, omitting one that does not exist', async () => {
+    const creator = await createTestUser()
+    const suffix = randomUUID()
+    const [firstPostId, secondPostId] = await Promise.all([
+      insertTestPost({
+        title: `Batch first ${suffix}`,
+        slug: `batch-first-${suffix}`,
+        createdById: creator.id,
+        markdown: '',
+      }),
+      insertTestPost({
+        title: `Batch second ${suffix}`,
+        slug: `batch-second-${suffix}`,
+        createdById: creator.id,
+        markdown: '',
+      }),
+    ])
+    const [firstImageId, secondImageId, replacementImageId] = await Promise.all([
+      insertTestImage(creator.id),
+      insertTestImage(creator.id),
+      insertTestImage(creator.id),
+    ])
+    await Promise.all([
+      insertTestPostImage({ postId: firstPostId, imageId: firstImageId }),
+      insertTestPostImage({ postId: secondPostId, imageId: secondImageId }),
+    ])
+    const first = (await getPostImages(firstPostId))[0]!
+    const second = (await getPostImages(secondPostId))[0]!
+    const firstPost = (await getPostByAny(firstPostId, { readOnly: false })) as Post
+    await setPostImages(creator, firstPost, [{ image_id: replacementImageId, order_index: 0 }])
+    const missingId = randomUUID()
+
+    const placements = await getImagePlacementsForCopyright([
+      first.placement_id,
+      missingId,
+      second.placement_id,
+    ])
+
+    expect([...placements.keys()].toSorted()).toEqual(
+      [first.placement_id, second.placement_id].toSorted(),
+    )
+    expect(placements.get(first.placement_id)).toMatchObject({
+      imageId: firstImageId,
+      deleted: true,
+    })
+    expect(placements.get(second.placement_id)).toMatchObject({
+      imageId: secondImageId,
+      deleted: false,
+    })
+    await expect(getImagePlacementsForCopyright([])).resolves.toEqual(new Map())
   })
 
   it('resolves the post owning a placement for durable cache invalidation', async () => {

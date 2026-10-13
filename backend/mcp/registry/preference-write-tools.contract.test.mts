@@ -1,7 +1,11 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { getEmailPreferences, getPrivateUserByAny } from '@services/users'
 import { SETTING_FIELDS } from '../preference-tool-support.mts'
 
@@ -15,7 +19,7 @@ async function createCaller() {
 }
 
 describe('email preference tool contract — real DB', () => {
-  it('update_my_email_preferences returns what PATCH /api/v1/my/email-preferences returns', async () => {
+  it('edit_my_preferences.email returns what PATCH /api/v1/my/email-preferences returns', async () => {
     const caller = await createCaller()
     const other = await createTestUser()
     const request = createRequest()
@@ -28,8 +32,11 @@ describe('email preference tool contract — real DB', () => {
 
     const result = await callStructuredMcpTool(
       caller,
-      'update_my_email_preferences',
-      { news_digest_frequency: 'weekly', moderation_email_days_of_week: [3, 1, 3] },
+      'edit_my_preferences',
+      optionArgs('email', {
+        news_digest_frequency: 'weekly',
+        moderation_email_days_of_week: [3, 1, 3],
+      }),
       EMAIL_SCOPES,
     )
 
@@ -43,14 +50,17 @@ describe('email preference tool contract — real DB', () => {
 
     await callStructuredMcpTool(
       caller,
-      'update_my_email_preferences',
-      { community_digest_frequency: 'daily', moderation_email_timezone: 'America/New_York' },
+      'edit_my_preferences',
+      optionArgs('email', {
+        community_digest_frequency: 'daily',
+        moderation_email_timezone: 'America/New_York',
+      }),
       EMAIL_SCOPES,
     )
     const second = await callStructuredMcpTool(
       caller,
-      'update_my_email_preferences',
-      { is_engagement_emails_enabled: !before.is_engagement_emails_enabled },
+      'edit_my_preferences',
+      optionArgs('email', { is_engagement_emails_enabled: !before.is_engagement_emails_enabled }),
       EMAIL_SCOPES,
     )
 
@@ -78,7 +88,12 @@ describe('email preference tool contract — real DB', () => {
     const before = await getEmailPreferences(caller.id)
 
     expect(
-      await callRejectedMcpTool(caller, 'update_my_email_preferences', args, EMAIL_SCOPES),
+      await callRejectedMcpTool(
+        caller,
+        'edit_my_preferences',
+        optionArgs('email', args),
+        EMAIL_SCOPES,
+      ),
     ).toContain('Invalid tool arguments')
 
     expect(await getEmailPreferences(caller.id)).toEqual(before)
@@ -91,8 +106,8 @@ describe('email preference tool contract — real DB', () => {
     expect(
       await callRejectedMcpTool(
         caller,
-        'update_my_email_preferences',
-        { moderation_email_timezone: 'Not/AZone' },
+        'edit_my_preferences',
+        optionArgs('email', { moderation_email_timezone: 'Not/AZone' }),
         EMAIL_SCOPES,
       ),
     ).toContain('moderation_email_timezone must be a valid timezone string')
@@ -102,7 +117,7 @@ describe('email preference tool contract — real DB', () => {
 })
 
 describe('preferences tool contract — real DB', () => {
-  it('update_my_preferences applies the REST route’s command and returns every setting', async () => {
+  it('edit_my_preferences.general applies the REST route’s command and returns every setting', async () => {
     const caller = await createCaller()
     const other = await createTestUser()
     const args = {
@@ -120,7 +135,12 @@ describe('preferences tool contract — real DB', () => {
       .send(args)
       .expect(200)
 
-    const result = await callStructuredMcpTool(caller, 'update_my_preferences', args, EMAIL_SCOPES)
+    const result = await callStructuredMcpTool(
+      caller,
+      'edit_my_preferences',
+      optionArgs('general', args),
+      EMAIL_SCOPES,
+    )
 
     expect(Object.keys(result.settings as object).toSorted()).toEqual(
       [...SETTING_FIELDS].toSorted(),
@@ -142,15 +162,15 @@ describe('preferences tool contract — real DB', () => {
     const caller = await createCaller()
     await callStructuredMcpTool(
       caller,
-      'update_my_preferences',
-      { likes_visibility: 'followers', country: 'US' },
+      'edit_my_preferences',
+      optionArgs('general', { likes_visibility: 'followers', country: 'US' }),
       EMAIL_SCOPES,
     )
 
     const result = await callStructuredMcpTool(
       caller,
-      'update_my_preferences',
-      { country: null },
+      'edit_my_preferences',
+      optionArgs('general', { country: null }),
       EMAIL_SCOPES,
     )
 
@@ -170,7 +190,12 @@ describe('preferences tool contract — real DB', () => {
     const before = await privateUser(caller.id)
 
     expect(
-      await callRejectedMcpTool(caller, 'update_my_preferences', args, EMAIL_SCOPES),
+      await callRejectedMcpTool(
+        caller,
+        'edit_my_preferences',
+        optionArgs('general', args),
+        EMAIL_SCOPES,
+      ),
     ).toContain('Invalid tool arguments')
 
     expect(await privateUser(caller.id)).toEqual(before)
@@ -178,35 +203,38 @@ describe('preferences tool contract — real DB', () => {
 
   it('refuses a country the service does not know, as the REST route does', async () => {
     const caller = await createCaller()
-
     expect(
-      await callRejectedMcpTool(caller, 'update_my_preferences', { country: 'ZZZ' }, EMAIL_SCOPES),
+      await callRejectedMcpTool(
+        caller,
+        'edit_my_preferences',
+        optionArgs('general', { country: 'ZZZ' }),
+        EMAIL_SCOPES,
+      ),
     ).toContain('Invalid country')
   })
 })
-
 describe('display identity tool contract — real DB', () => {
-  it('update_my_display_identity sets and clears the avatar, and returns both fields', async () => {
+  it('edit_my_profile.display_identity sets and clears the avatar, and returns both fields', async () => {
     const caller = await createCaller()
     const imageId = await insertTestImage(caller.id)
-
     const set = await callStructuredMcpTool(
       caller,
-      'update_my_display_identity',
-      { use_display_name_from: 'username', profile_image_id: imageId },
+      'edit_my_profile',
+      optionArgs('display_identity', {
+        use_display_name_from: 'username',
+        profile_image_id: imageId,
+      }),
       IDENTITY_SCOPES,
     )
     const cleared = await callStructuredMcpTool(
       caller,
-      'update_my_display_identity',
-      { profile_image_id: null },
+      'edit_my_profile',
+      optionArgs('display_identity', { profile_image_id: null }),
       IDENTITY_SCOPES,
     )
-
     expect(set.identity).toEqual({ use_display_name_from: 'username', profile_image_id: imageId })
     expect(cleared.identity).toEqual({ use_display_name_from: 'username', profile_image_id: null })
   })
-
   it('matches PATCH /api/v1/my/identity for the same change', async () => {
     const caller = await createCaller()
     const other = await createTestUser()
@@ -217,19 +245,16 @@ describe('display identity tool contract — real DB', () => {
       .set('Content-Type', 'application/json')
       .send({ use_display_name_from: 'username' })
       .expect(200)
-
     const result = await callStructuredMcpTool(
       caller,
-      'update_my_display_identity',
-      { use_display_name_from: 'username' },
+      'edit_my_profile',
+      optionArgs('display_identity', { use_display_name_from: 'username' }),
       IDENTITY_SCOPES,
     )
-
     expect((result.identity as { use_display_name_from: string }).use_display_name_from).toBe(
       rest.body.identity.use_display_name_from,
     )
   })
-
   it('refuses an image another user uploaded and keeps the avatar', async () => {
     const caller = await createCaller()
     const owner = await createTestUser()
@@ -237,24 +262,21 @@ describe('display identity tool contract — real DB', () => {
     const own = await insertTestImage(caller.id)
     await callStructuredMcpTool(
       caller,
-      'update_my_display_identity',
-      { profile_image_id: own },
+      'edit_my_profile',
+      optionArgs('display_identity', { profile_image_id: own }),
       IDENTITY_SCOPES,
     )
-
     expect(
       await callRejectedMcpTool(
         caller,
-        'update_my_display_identity',
-        { profile_image_id: foreign },
+        'edit_my_profile',
+        optionArgs('display_identity', { profile_image_id: foreign }),
         IDENTITY_SCOPES,
       ),
     ).toContain('Image not found or does not belong to you')
-
     expect((await privateUser(caller.id))?.profile_image_id).toBe(own)
     expect((await privateUser(owner.id))?.profile_image_id ?? null).toBeNull()
   })
-
   it.each([
     ['nothing to change', {}],
     ['a username', { username: 'someone-else' }],
@@ -264,11 +286,14 @@ describe('display identity tool contract — real DB', () => {
   ])('refuses %s before any change', async (_, args) => {
     const caller = await createCaller()
     const before = await privateUser(caller.id)
-
     expect(
-      await callRejectedMcpTool(caller, 'update_my_display_identity', args, IDENTITY_SCOPES),
+      await callRejectedMcpTool(
+        caller,
+        'edit_my_profile',
+        optionArgs('display_identity', args),
+        IDENTITY_SCOPES,
+      ),
     ).toContain('Invalid tool arguments')
-
     expect(await privateUser(caller.id)).toEqual(before)
   })
 })

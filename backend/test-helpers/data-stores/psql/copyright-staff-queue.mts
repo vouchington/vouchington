@@ -26,6 +26,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
   noticeId: string
   reviewerUserId: string
   state: 'due' | 'missed'
+  now?: Date
 }): Promise<string> {
   const missed = input.state === 'missed'
   const { rows } = await write<{ id: string }>(sql`/* insertOpenCopyrightCounterNoticeDeadline */
@@ -33,25 +34,25 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
       INSERT INTO copyright_notice_submissions (
         copyright_notice_id, kind, received_at, source_kind, body_ciphertext
       ) VALUES (
-        ${input.noticeId}, 'counter_notice', CURRENT_TIMESTAMP - INTERVAL '20 days', 'staff',
+        ${input.noticeId}, 'counter_notice', COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '20 days', 'staff',
         ${`counter-${randomUUID()}`}
       ) RETURNING id
     ), assessment AS (
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id, is_substantially_compliant
       )
-      SELECT id, CURRENT_TIMESTAMP - INTERVAL '19 days', ${input.reviewerUserId}, true
+      SELECT id, COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '19 days', ${input.reviewerUserId}, true
       FROM submission RETURNING id, copyright_notice_submission_id
     ), deadline AS (
       INSERT INTO copyright_notice_deadlines (
         copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
         escalation_at, restoration_deadline_at
       )
-      SELECT ${input.noticeId}, id, CURRENT_TIMESTAMP - INTERVAL '10 days',
-        CASE WHEN ${missed} THEN CURRENT_TIMESTAMP - INTERVAL '3 days'
-          ELSE CURRENT_TIMESTAMP - INTERVAL '1 hour' END,
-        CASE WHEN ${missed} THEN CURRENT_TIMESTAMP - INTERVAL '1 day'
-          ELSE CURRENT_TIMESTAMP + INTERVAL '2 days' END
+      SELECT ${input.noticeId}, id, COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '10 days',
+        CASE WHEN ${missed} THEN COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '3 days'
+          ELSE COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '1 hour' END,
+        CASE WHEN ${missed} THEN COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '1 day'
+          ELSE COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) + INTERVAL '2 days' END
       FROM assessment RETURNING id
     ), review AS (
       INSERT INTO copyright_notice_counter_notice_reviews (
@@ -59,7 +60,7 @@ export async function insertOpenCopyrightCounterNoticeDeadline(input: {
         copyright_notice_deadline_id, reviewed_at, reviewed_by_id, is_accepted, rationale_ciphertext
       )
       SELECT assessment.copyright_notice_submission_id, assessment.id, deadline.id,
-        CURRENT_TIMESTAMP - INTERVAL '19 days', ${input.reviewerUserId}, true,
+        COALESCE(${input.now ?? null}::timestamptz, CURRENT_TIMESTAMP) - INTERVAL '19 days', ${input.reviewerUserId}, true,
         ${`rationale-${randomUUID()}`}
       FROM assessment CROSS JOIN deadline
     )

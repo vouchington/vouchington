@@ -21,7 +21,6 @@ import {
 import { apiQuery, apiRequestContract, apiResponse } from '../../response-contract.mts'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { getUserActivePlan } from '@services/memberships'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
@@ -142,7 +141,7 @@ app
     const rawBody = (await ctx.request.json('1mb')) as CreateRssFeedBody
     validateRequestContract(ctx, 'POST:/api/v1/rss-feeds', { body: rawBody })
     const body = parseCreateSourceBody(rawBody)
-    const membershipPlan = await getUserActivePlan(currentUser.id)
+    const membershipPlan = currentUser.membership_plan ?? null
     const result = await createSourceFromUrl(currentUser, provenance, body.rss_feed_url, {
       assertContributionLimit: () =>
         assertWithinContributionActionLimit(currentUser, membershipPlan, 'rss_feed'),

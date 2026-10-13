@@ -1,7 +1,7 @@
 import type { CopyrightSweepContinuation } from '@queues/notifications/types'
-import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
+import { enqueueBulkSendCopyrightNoticeEmails } from '@queues/emails/enqueues'
 import {
-  enqueueDeliverCopyrightNotice,
+  enqueueBulkDeliverCopyrightNotices,
   enqueueReconcileCopyrightDeliveryIntents,
 } from '@queues/notifications/enqueues'
 import {
@@ -9,7 +9,7 @@ import {
   searchRecoverableCopyrightDeliveryIntentIds,
 } from '@services/copyright-notices'
 import {
-  enqueueEveryCopyrightSweepPage,
+  enqueueBulkCopyrightSweepPages,
   createCopyrightSweepBudget,
   type CopyrightSweepTally,
 } from './copyright-sweep-walk.mts'
@@ -18,18 +18,20 @@ type CopyrightDeliveryChannel = Parameters<
   typeof searchRecoverableCopyrightDeliveryIntentIds
 >[0]['channel']
 
+type BulkEnqueue = (intentIds: string[]) => Promise<unknown>
+
 export type ReconcileCopyrightDeliveryIntentsDeps = {
   enqueueContinuation: typeof enqueueReconcileCopyrightDeliveryIntents
   searchDeliveryIntents: typeof searchRecoverableCopyrightDeliveryIntentIds
-  enqueueDeliverCopyrightNotice: typeof enqueueDeliverCopyrightNotice
-  enqueueSendCopyrightNoticeEmail: typeof enqueueSendCopyrightNoticeEmail
+  enqueueBulkDeliverCopyrightNotices: BulkEnqueue
+  enqueueBulkSendCopyrightNoticeEmails: BulkEnqueue
 }
 
 const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
   enqueueContinuation: enqueueReconcileCopyrightDeliveryIntents,
   searchDeliveryIntents: searchRecoverableCopyrightDeliveryIntentIds,
-  enqueueDeliverCopyrightNotice,
-  enqueueSendCopyrightNoticeEmail,
+  enqueueBulkDeliverCopyrightNotices,
+  enqueueBulkSendCopyrightNoticeEmails,
 }
 
 export async function processDeliverCopyrightNotice(
@@ -44,10 +46,10 @@ export async function processDeliverCopyrightNotice(
 }
 
 /**
- * Processes capped pages of each channel's delivery intents, enqueueing each row's delivery job. The
- * job's claim, not this sweep, fails a lease-expired row at the retry cap. A failed page read or
- * enqueue does not stop the rest; the job fails afterwards with every error so its retry covers
- * what is still pending.
+ * Processes capped pages of each channel's delivery intents, adding each page's delivery jobs in one
+ * bulk call. The job's claim, not this sweep, fails a lease-expired row at the retry cap. A failed
+ * page read or bulk add does not stop the rest; the job fails afterwards with every error so its
+ * retry covers what is still pending.
  */
 export async function processReconcileCopyrightDeliveryIntents(
   dependencyOverrides: Partial<ReconcileCopyrightDeliveryIntentsDeps> = {},
@@ -58,9 +60,9 @@ export async function processReconcileCopyrightDeliveryIntents(
   const budget = createCopyrightSweepBudget()
   const deferred = new Set<string>()
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
-  const enqueueByChannel: Record<CopyrightDeliveryChannel, typeof enqueueDeliverCopyrightNotice> = {
-    in_app: intentId => deps.enqueueDeliverCopyrightNotice(intentId),
-    email: intentId => deps.enqueueSendCopyrightNoticeEmail(intentId),
+  const enqueueByChannel: Record<CopyrightDeliveryChannel, BulkEnqueue> = {
+    in_app: intentIds => deps.enqueueBulkDeliverCopyrightNotices(intentIds),
+    email: intentIds => deps.enqueueBulkSendCopyrightNoticeEmails(intentIds),
   }
   const channels = Object.keys(enqueueByChannel) as CopyrightDeliveryChannel[]
   const pending = [...(data.pending ?? channels)]
@@ -71,7 +73,7 @@ export async function processReconcileCopyrightDeliveryIntents(
     const after = cursors.get(channel) ?? undefined
     cursors.delete(channel)
     // oxlint-disable-next-line no-await-in-loop -- rotate channels after each page under the shared job allowance.
-    await enqueueEveryCopyrightSweepPage(
+    await enqueueBulkCopyrightSweepPages(
       tally,
       page => deps.searchDeliveryIntents({ channel, ...page }),
       enqueueByChannel[channel],

@@ -51,8 +51,8 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
         WHERE u.hostname_id = ${hostnameId}
           AND u.pathname LIKE ${likePattern} ESCAPE '\\'
           AND u.pathname NOT LIKE ${escapedExclude} ESCAPE '\\'
-          AND (h.is_blocked IS NULL OR h.is_blocked = false)
-          AND (h.is_crawlable IS NULL OR h.is_crawlable = true)
+          AND NOT h.is_blocked
+          AND h.is_crawlable
           AND c.response_status_code = 200
           AND c.completed_at >= ${recentCutoffDate}
           AND c.html_sha256 IS NOT NULL

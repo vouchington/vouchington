@@ -1,4 +1,10 @@
-import { expect, test, type Page, withMonitoredPage } from '../../helpers/test.mts'
+import {
+  expect,
+  test,
+  type Page,
+  withMonitoredPage,
+  protectPlaywrightHookTimeouts,
+} from '../../helpers/test.mts'
 import { createTestUser, followUser, insertTestPost } from '../../../backend/test-helpers/index.mts'
 import { createDeviceAndSessionTokens } from '../../../backend/services/jwt-session/index.mts'
 import { processFollowerDistributionChunk } from '../../../backend/services/follower-distributions/index.mts'
@@ -71,6 +77,7 @@ async function processLatestPostDistribution(action: 'post_share' | 'post_send',
 }
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const random = randomSuffix()
 
   const creator = await createTestUser({ username: `share-creator-${random}` })

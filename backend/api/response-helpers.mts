@@ -8,6 +8,7 @@ import {
   assertRequestContractOperation,
   markRequestContractValidated,
 } from './request-contract-enforcement-helpers.mts'
+import { getCurrentUserWithRateLimit } from './overlapped-rate-limit-helpers.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
@@ -36,9 +37,10 @@ function assertActiveForRoute(currentUser: PrivateUser | null, routeId: string):
 }
 
 export async function requireAuth(ctx: Context, routeId: string): Promise<PrivateUser> {
-  const currentUser = await requireUserAfterAnonRateLimit(ctx, routeId)
+  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
-  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
   return currentUser
 }
@@ -48,9 +50,10 @@ export async function requireAuthForSuspendedException(
 ): Promise<PrivateUser> {
   if (!SUSPENDED_EXCEPTION_ROUTES.includes(routeId))
     throw new Error(`Unapproved suspension exception: ${routeId}`)
-  const currentUser = await requireUserAfterAnonRateLimit(ctx, routeId)
+  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
-  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  await settleBeforeSignatureError(settleRateLimit, signatureError)
   return currentUser
 }
 export async function getOptionalAuthAndRateLimit(
@@ -58,8 +61,8 @@ export async function getOptionalAuthAndRateLimit(
   routeId: string,
 ): Promise<PrivateUser | null> {
   const signatureError = captureSignatureVerificationError(ctx)
-  const currentUser = await ctx.getCurrentUser()
-  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
   return currentUser
 }
@@ -70,8 +73,8 @@ export async function getOptionalProtocolAuthAndRateLimit(
   if (!SUSPENDED_PROTOCOL_ROUTES.includes(routeId))
     throw new Error(`Unapproved protocol route: ${routeId}`)
   const signatureError = captureSignatureVerificationError(ctx)
-  const currentUser = await ctx.getCurrentUser()
-  await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
+  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  await settleBeforeSignatureError(settleRateLimit, signatureError)
   return currentUser
 }
 export async function requireAuthAndRateLimit(
@@ -134,12 +137,29 @@ async function requireUserAfterAnonRateLimit(ctx: Context, routeId: string): Pro
   ctx.assert(false, 401, 'Unauthorized')
   throw new Error('Unauthorized')
 }
+// The anonymous outcome (including a session uid with no user row): the limiter was charged once
+// alongside the user fetch, so surface its 429 first, then the 401.
+async function rejectAnonymous(ctx: Context, settleRateLimit: () => Promise<void>): Promise<never> {
+  await settleRateLimit()
+  ctx.assert(false, 401, 'Unauthorized')
+  throw new Error('Unauthorized')
+}
+async function settleBeforeSignatureError(
+  settleRateLimit: () => Promise<void>,
+  signatureError: Promise<unknown | null>,
+): Promise<void> {
+  await settleRateLimit()
+  await throwSignatureError(signatureError)
+}
 async function applyRouteRateLimitBeforeSignatureError(
   ctx: Context,
   routeId: string,
   signatureError: Promise<unknown | null>,
 ): Promise<void> {
   await ctx.applyRouteRateLimit(routeId)
+  await throwSignatureError(signatureError)
+}
+async function throwSignatureError(signatureError: Promise<unknown | null>): Promise<void> {
   const error = await signatureError
   if (error)
     throw error instanceof Error

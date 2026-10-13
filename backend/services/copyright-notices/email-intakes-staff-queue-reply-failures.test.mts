@@ -1,5 +1,8 @@
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import { readCopyrightEmailIntakeResponses } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import {
+  readCopyrightEmailIntakeResponses,
+  readCopyrightEmailIntakeReplyTiming,
+} from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
@@ -14,7 +17,8 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 describe('copyright email intake queue reply failures', () => {
   useCopyrightIntakeEnvironment()
   it('lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest', async () => {
-    const anchor = Date.now()
+    // Receipt time is deliberately distinct from native failure/bounce time.
+    const anchor = new Date('2020-01-01T00:00:00.000Z').getTime()
     const at = (offset: number) => new Date(anchor + offset)
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const awaiting = await createParsedCopyrightEmailIntake(at(1))
@@ -35,6 +39,18 @@ describe('copyright email intake queue reply failures', () => {
       sesMessageId: `ses-sent-${crypto.randomUUID()}`,
     })
     await bounceTestCopyrightEmailIntakeReply(bounced.intentId)
+    const failedTiming = await readCopyrightEmailIntakeReplyTiming(failed.intakeId, failed.intentId)
+    const bouncedTiming = await readCopyrightEmailIntakeReplyTiming(
+      bounced.intakeId,
+      bounced.intentId,
+    )
+    const replyTimes = new Map([
+      [failed.intakeId, { eventAt: failedTiming.failed_at, observedAt: failedTiming.observed_at }],
+      [
+        bounced.intakeId,
+        { eventAt: bouncedTiming.bounced_at, observedAt: bouncedTiming.observed_at },
+      ],
+    ])
     const intakeIds = [
       awaiting.id,
       pending.intakeId,
@@ -60,7 +76,11 @@ describe('copyright email intake queue reply failures', () => {
     // An unreviewed intake waits from its receipt; a failed reply waits from the failure itself.
     expect(intakes[0]!.waiting_since).toEqual(at(1))
     for (const intake of intakes.slice(1)) {
+      const timing = replyTimes.get(intake.id)!
+      expect(intake.waiting_since).toEqual(timing.eventAt)
       expect(intake.waiting_since.getTime()).toBeGreaterThan(intake.received_at.getTime())
+      expect(intake.waiting_since.getTime()).toBeGreaterThan(anchor + 1_000_000)
+      expect(intake.waiting_since.getTime()).toBeLessThanOrEqual(timing.observedAt.getTime())
     }
   })
 })

@@ -3,6 +3,8 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   insertTestBlock,
+  insertTestLocalFollow,
+  insertTestMute,
   setTestUserDirectMessagesAudience,
   suspendTestUser,
 } from '@voucha/test-helpers'
@@ -178,6 +180,93 @@ describe('messages API', () => {
       await request
         .post('/api/v1/my/messages')
         .send({ user_ids: [user2.id, user3.id] })
+        .expect(403)
+    })
+
+    it('returns 404 for a missing recipient before checking the others', async () => {
+      const nobodyUser = await createTestUser()
+      await setTestUserDirectMessagesAudience(nobodyUser.id, 'nobody')
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .post('/api/v1/my/messages')
+        .send({ user_ids: [nobodyUser.id, crypto.randomUUID()] })
+        .expect(404)
+    })
+
+    it('returns 403 when the recipient has blocked the sender', async () => {
+      const recipient = await createTestUser()
+      await Promise.all([
+        setTestUserDirectMessagesAudience(recipient.id, 'everyone'),
+        insertTestBlock(recipient.id, user.id),
+      ])
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request.post('/api/v1/my/messages').send({ user_id: recipient.id }).expect(403)
+    })
+
+    it('returns 403 when the sender has blocked the recipient', async () => {
+      const recipient = await createTestUser()
+      await Promise.all([
+        setTestUserDirectMessagesAudience(recipient.id, 'everyone'),
+        insertTestBlock(user.id, recipient.id),
+      ])
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request.post('/api/v1/my/messages').send({ user_id: recipient.id }).expect(403)
+    })
+
+    it.each([
+      ['sender muted the recipient', true],
+      ['recipient muted the sender', false],
+    ])('returns 403 when the %s', async (_label, senderMutes) => {
+      const recipient = await createTestUser()
+      await setTestUserDirectMessagesAudience(recipient.id, 'everyone')
+      if (senderMutes) await insertTestMute(user.id, recipient.id)
+      else await insertTestMute(recipient.id, user.id)
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request.post('/api/v1/my/messages').send({ user_id: recipient.id }).expect(403)
+    })
+
+    it('applies each audience value to the sender', async () => {
+      const request = createRequest()
+      await request.authenticateAs(user)
+      const create = async (audience: string, follows?: 'sender' | 'both') => {
+        const recipient = await createTestUser()
+        await setTestUserDirectMessagesAudience(recipient.id, audience)
+        if (follows) await insertTestLocalFollow(user.id, recipient.id)
+        if (follows === 'both') await insertTestLocalFollow(recipient.id, user.id)
+        return request.post('/api/v1/my/messages').send({ user_id: recipient.id })
+      }
+
+      await create('everyone').then(r => expect(r.status).toBe(201))
+      await create('users').then(r => expect(r.status).toBe(201))
+      await create('followers').then(r => expect(r.status).toBe(403))
+      await create('followers', 'sender').then(r => expect(r.status).toBe(201))
+      await create('mutual_followers', 'sender').then(r => expect(r.status).toBe(403))
+      await create('mutual_followers', 'both').then(r => expect(r.status).toBe(201))
+      await create('nobody', 'both').then(r => expect(r.status).toBe(403))
+    })
+
+    it('returns 403 for a group when only one recipient refuses the sender', async () => {
+      const open = await createTestUser()
+      const blocker = await createTestUser()
+      await Promise.all([
+        setTestUserDirectMessagesAudience(open.id, 'everyone'),
+        setTestUserDirectMessagesAudience(blocker.id, 'everyone'),
+        insertTestBlock(blocker.id, user.id),
+      ])
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .post('/api/v1/my/messages')
+        .send({ user_ids: [open.id, blocker.id] })
         .expect(403)
     })
 

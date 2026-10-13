@@ -15,4 +15,9 @@ tables for the `direct_message` channel type.
 - `getConversationMessages(conversationId, opts)` — list messages in a thread
 - `getConversationParticipants(conversationId)` — list active participants
 - `currentUserCanViewConversation` / `currentUserCanSendMessage` — participant-based auth
-- `currentUserCanMessageUser` — DM gate (block, mute, `direct_messages_audience` check)
+- `currentUserCanMessageUsers(currentUserId, recipients)` — DM gate for one or many recipients in
+  a single set-based query (block or mute in either direction, follow and mutual-follow state),
+  then each recipient's `direct_messages_audience` decides: `everyone`/`users` allow, `followers`
+  needs sender-follows, `mutual_followers` needs both directions, `nobody` and unknown deny. True
+  only when every recipient allows the sender. REST (`POST /my/messages`, participant add) is the
+  only caller; group creation also runs `anyPairAmongUsersBlockedOrMuted` for recipient pairs.

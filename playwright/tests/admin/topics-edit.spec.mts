@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -20,6 +20,7 @@ test.describe('Admin Topics Edit', () => {
   }
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const topic = await insertTestTopic(`Edit Test Topic ${suffix}`, `edit-test-topic-${suffix}`)
     topicId = topic.id

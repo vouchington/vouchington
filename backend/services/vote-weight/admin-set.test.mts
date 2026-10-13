@@ -16,7 +16,7 @@ describe('adminSetVoteWeight', () => {
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(5.5)
     expect(factors?.vote_weight_admin_set_at).not.toBeNull()
-  }, 60_000)
+  })
 
   it('overwrites a previously set admin weight', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -28,7 +28,7 @@ describe('adminSetVoteWeight', () => {
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(7.25)
     expect(factors?.vote_weight_admin_set_at).not.toBeNull()
-  }, 60_000)
+  })
 })
 
 describe('adminClearVoteWeight', () => {
@@ -47,7 +47,7 @@ describe('adminClearVoteWeight', () => {
     expect(factorsAfter?.vote_weight_admin_set_at).toBeNull()
     // vote_weight itself is left as-is; only the lock is cleared
     expect(factorsAfter?.current_weight).toBe(5.5)
-  }, 60_000)
+  })
 
   it('is a no-op for a user without an admin weight set', async () => {
     const user = await createTestUserDirect({ username: randomUsername() })
@@ -58,5 +58,5 @@ describe('adminClearVoteWeight', () => {
 
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.vote_weight_admin_set_at).toBeNull()
-  }, 60_000)
+  })
 })

@@ -342,7 +342,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   copyright_notice_action_intent_id uuid,
   copyright_notice_email_intake_id uuid,
   copyright_notice_delivery_work_item_id uuid,
-  media_delivery_registry_record_delivery_key text,
+  media_delivery_registry_record_id uuid,
   copyright_notice_guest_capability_id uuid,
   review_action copyright_review_actions CHECK (review_action IN ('confirm', 'reverse')),
   review_rationale_id uuid CHECK (review_rationale_id IS NULL OR review_rationale_id = id),
@@ -368,7 +368,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
       copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id,
       copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id,
       copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id,
-      copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_delivery_key,
+      copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_id,
       copyright_notice_guest_capability_id
     ) = CASE WHEN change_type = 'notice_received' THEN 0 ELSE 1 END
     AND CASE
@@ -392,7 +392,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
         'placement_withheld', 'placement_restored') THEN copyright_notice_action_intent_id IS NOT NULL
       WHEN change_type = 'email_correspondence_rejected' THEN copyright_notice_email_intake_id IS NOT NULL
       WHEN change_type = 'delivery_intent_replayed' THEN copyright_notice_delivery_work_item_id IS NOT NULL
-      WHEN change_type = 'media_delivery_registry_replayed' THEN media_delivery_registry_record_delivery_key IS NOT NULL
+      WHEN change_type = 'media_delivery_registry_replayed' THEN media_delivery_registry_record_id IS NOT NULL
       WHEN change_type IN ('guest_capability_issued', 'guest_capability_revoked',
         'guest_capability_revoked_by_withdrawal') THEN copyright_notice_guest_capability_id IS NOT NULL
       ELSE false
@@ -592,10 +592,10 @@ BEGIN
       AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id
   ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
 
-  IF NEW.media_delivery_registry_record_delivery_key IS NOT NULL AND NOT EXISTS (
+  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM media_delivery_registry_records source
     JOIN copyright_notice_targets target ON target.placement_id = source.placement_id
-    WHERE source.delivery_key = NEW.media_delivery_registry_record_delivery_key
+    WHERE source.id = NEW.media_delivery_registry_record_id
       AND target.copyright_notice_id = NEW.copyright_notice_id
   ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;
   RETURN NEW;
@@ -683,7 +683,7 @@ CREATE INDEX idx_copyright_notice_lifecycle_changes__email_intake ON copyright_n
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__delivery_intent ON copyright_notice_lifecycle_changes(copyright_notice_delivery_work_item_id) WHERE copyright_notice_delivery_work_item_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON copyright_notice_lifecycle_changes(media_delivery_registry_record_delivery_key) WHERE media_delivery_registry_record_delivery_key IS NOT NULL;
+CREATE INDEX idx_copyright_notice_lifecycle_changes__media_registry ON copyright_notice_lifecycle_changes(media_delivery_registry_record_id) WHERE media_delivery_registry_record_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_lifecycle_changes__guest_capability ON copyright_notice_lifecycle_changes(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -1196,7 +1196,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_deadline_i
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_restriction_id IS 'Restriction imposed or reviewed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_email_intake_id IS 'Email intake cited by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_delivery_work_item_id IS 'Delivery intent replayed by this event; a reply to a declined email intake is replayed with no case, and its intake is the intent''s own.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.media_delivery_registry_record_delivery_key IS 'Media delivery registry record replayed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.media_delivery_registry_record_id IS 'Media delivery registry record replayed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_guest_capability_id IS 'Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_action IS 'Human review outcome stored on a mandatory-review event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.review_rationale_id IS 'Required parent-identified encrypted rationale companion for mandatory human review; member timelines expose no ciphertext.';

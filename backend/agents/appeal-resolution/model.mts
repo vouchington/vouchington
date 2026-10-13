@@ -50,7 +50,6 @@ Respond with a JSON object containing:
 - Default to "deny" when uncertain — be conservative about reversing moderation decisions.
 - Your response will be reviewed and edited by a human moderator before anything is communicated.`
 
-/* v8 ignore start -- thin provider integration wrapper; exercised by credentialed *.anthropic.test.mts */
 export const callAppealModel: AppealModelCaller = (
   input,
   safetyIdentifier,
@@ -75,4 +74,3 @@ export const callAppealModel: AppealModelCaller = (
     },
     { openaiTransport },
   )
-/* v8 ignore stop */

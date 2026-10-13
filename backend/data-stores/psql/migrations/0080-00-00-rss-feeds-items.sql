@@ -480,6 +480,13 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_alias_id
 ON rss_feed_item_categories (topic_alias_id, rss_feed_item_id DESC)
 WHERE topic_alias_id IS NOT NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__rss_feed_item_id__mapped
+ON rss_feed_item_categories (rss_feed_item_id) INCLUDE (topic_alias_id, category_text)
+WHERE topic_alias_id IS NOT NULL;
+
+COMMENT ON INDEX idx_rss_feed_item_categories__rss_feed_item_id__mapped IS 'Bounds mapped hashtag occurrences by content id before joining recent RSS items.';
+
 -- for updating and joining
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__category_text

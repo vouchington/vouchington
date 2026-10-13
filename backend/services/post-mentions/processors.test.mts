@@ -11,7 +11,6 @@ import {
 } from '@voucha/test-helpers'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import { invalidate } from '@services/entity-cache'
-import { upsertUser } from '@services/users/create'
 
 describe('processors', () => {
   const getMentionTable = (subjectType: 'user' | 'topic' | 'post') => {
@@ -32,11 +31,6 @@ describe('processors', () => {
 
   it('processPostMentions upserts and soft-deletes mention relations', async () => {
     const random = Math.random().toString(36).slice(2, 10)
-    await upsertUser({
-      emailAddress: 'system@voucha.ai',
-      deviceId: `device-${random}`,
-      sessionId: `session-${random}`,
-    })
     const author = await createTestUser()
     const mentionedUser = await createTestUser({ username: `mention-${random}` })
     const topicId = await insertTestTopic({
@@ -95,11 +89,6 @@ describe('processors', () => {
 
   it('processPostMentions ignores invalid mention-like text and resolves comment permalink urls', async () => {
     const random = Math.random().toString(36).slice(2, 10)
-    await upsertUser({
-      emailAddress: `system-mentions-${random}@voucha.ai`,
-      deviceId: `device-comment-${random}`,
-      sessionId: `session-comment-${random}`,
-    })
     const author = await createTestUserDirect()
     const rootPostId = await insertTestPost({
       title: `Root post ${random}`,
@@ -132,5 +121,5 @@ describe('processors', () => {
     expect(topicRows).toHaveLength(0)
     expect(postRows.map(row => row.subject_id)).toEqual([commentId])
     expect(postRows[0].deleted_at).toBeNull()
-  }, 60_000)
+  }, 30_000)
 })

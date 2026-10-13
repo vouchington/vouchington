@@ -89,8 +89,17 @@ export async function getTrendingPosts(
   }
 
   if (cursorScore !== undefined && cursorId !== undefined) {
-    query.append(sql`
-      AND (trending_score, id) < (${cursorScore}, ${cursorId})`)
+    query.append(
+      sql`
+      AND (trending_score, id) < (
+        COALESCE((
+          SELECT `.append(buildHotScoreExpression('cursor_post')).append(sql`
+          FROM posts cursor_post
+          WHERE cursor_post.id = ${cursorId}
+        ), ${cursorScore}),
+        ${cursorId}
+      )`),
+    )
   }
 
   query.append(sql`

@@ -101,6 +101,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_06 = [
   { key: 'native.dotnet.engineeringQueues.activeCount', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineeringQueues.backfills', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineeringQueues.completedCount', consumers: ['dotnet'] },
+  { key: 'native.dotnet.engineeringQueues.delayedCount', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineeringQueues.failedCount', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineeringQueues.queueCount', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineeringQueues.runBackfill', consumers: ['dotnet'] },

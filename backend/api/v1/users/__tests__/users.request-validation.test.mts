@@ -23,7 +23,7 @@ describe('user routes - request contract validation', () => {
   beforeAll(async () => {
     owner = await createTestUser({ username: safeUsername('users-validation-owner') })
     stranger = await createTestUser({ username: safeUsername('users-validation-stranger') })
-  }, 60_000)
+  }, 5_000)
 
   describe('anonymous callers', () => {
     it.each([
@@ -205,11 +205,16 @@ describe('user routes - request contract validation', () => {
     it('keeps applying a valid body', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
+      const before = await request.get(`/api/v1/users/${owner.id}`).expect(200)
+      expect(before.body.user.is_engagement_emails_enabled).toBe(true)
       const response = await request
         .patch(`/api/v1/users/${owner.id}`)
         .send({ is_engagement_emails_enabled: false })
         .expect(200)
       expect(response.body.user.id).toBe(owner.id)
+      expect(response.body.user.is_engagement_emails_enabled).toBe(false)
+      const after = await request.get(`/api/v1/users/${owner.id}`).expect(200)
+      expect(after.body.user.is_engagement_emails_enabled).toBe(false)
     })
 
     it('keeps returning 403 for a valid body from another user', async () => {

@@ -65,6 +65,7 @@ When a referred visitor creates an account, the new user automatically follows t
 - Implemented via `enqueueAutoFollowReferrer(newUserId, referrerId)` fired from `upsertUser`
 - Runs as a `processAutoFollowReferrer` entity-listener job
 - Creates a `relation__user__follow__user` row: `subject_id = newUserId`, `object_id = referrerId`
+- Writes with `skipIfDeleted`, so a retried job or an entity-listener reconciliation replay never re-follows a referrer the user already unfollowed
 - This triggers `enqueueFollowNotification` (wired into `upsertEntityRelation`), which sends a follow notification to the referrer with referral-context copy ("Your referral @username signed up and followed you!")
 
 ## Referral Notifications

@@ -35,7 +35,10 @@ describe('toolToMcpTool', () => {
   })
 
   it('marks read-only tools idempotent', () => {
-    const tool = makeToolWithAnnotations({ readOnlyHint: true, openWorldHint: true })
+    const tool = makeToolWithAnnotations({
+      readOnlyHint: true,
+      openWorldHint: true,
+    })
     expect(toolToMcpTool(tool).annotations).toEqual({
       readOnlyHint: true,
       idempotentHint: true,
@@ -58,18 +61,23 @@ describe('toolToMcpTool', () => {
 
   it('includes canonical required scopes in MCP metadata', () => {
     const result = toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true }))
-    expect(result['_meta']).toEqual({ 'voucha/requiredScopes': ['topics:read'] })
+    expect(result['_meta']).toEqual({
+      'voucha/requiredScopes': ['topics:read'],
+    })
   })
 
   it('publishes the declared output schema', () => {
-    const outputSchema = { type: 'object', properties: { ok: { type: 'boolean' } } } as const
+    const outputSchema = {
+      type: 'object',
+      properties: { ok: { type: 'boolean' } },
+    } as const
     const tool = makeToolWithAnnotations({ readOnlyHint: true })
     const withSchema: Tool = {
       ...tool,
       meta: { ...tool.meta!, outputSchema },
     }
 
-    expect(toolToMcpTool(withSchema).outputSchema).toBe(outputSchema)
+    expect(toolToMcpTool(withSchema).outputSchema).toEqual(outputSchema)
   })
 
   it('omits the output schema when the tool declares none', () => {
@@ -104,6 +112,10 @@ describe('toolToMcpTool', () => {
       function: (_user: unknown) => () => Promise.resolve({}),
     } as unknown as Tool
     const result = toolToMcpTool(tool)
-    expect(result.inputSchema).toEqual({ type: 'object', properties: {} })
+    expect(result.inputSchema).toEqual({
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    })
   })
 })

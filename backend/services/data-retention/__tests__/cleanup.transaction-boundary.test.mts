@@ -83,5 +83,5 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     expect(
       await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: firstPostId }),
     ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
-  }, 60_000)
+  })
 })

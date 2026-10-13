@@ -38,7 +38,7 @@ describe('getRssFeedItemFeedIds filter branches', () => {
     const entityIds = result.results.map(r => r.entity_id)
     expect(entityIds).toContain(audioItem.id)
     expect(entityIds).not.toContain(articleItem.id)
-  }, 60_000)
+  })
 
   it('text_search_query filter returns only items matching the query', async () => {
     const user = await createTestUser()
@@ -70,7 +70,7 @@ describe('getRssFeedItemFeedIds filter branches', () => {
     const entityIds = result.results.map(r => r.entity_id)
     expect(entityIds).toContain(searchItemId)
     expect(entityIds).not.toContain(otherItem.id)
-  }, 60_000)
+  })
 
   it('topic_ids filter includes only items from feeds with matching topic', async () => {
     const user = await createTestUser()
@@ -93,7 +93,7 @@ describe('getRssFeedItemFeedIds filter branches', () => {
     const entityIds = result.results.map(r => r.entity_id)
     expect(entityIds).toContain(itemA.id)
     expect(entityIds).not.toContain(itemB.id)
-  }, 60_000)
+  })
 
   it('pagination with share cursor (shareEventIdLt) applies published_at <= bound inside direct_candidate CTE', async () => {
     const sharer = await createTestUser()
@@ -112,6 +112,11 @@ describe('getRssFeedItemFeedIds filter branches', () => {
     // Page 1: limit 1 — share appears first (sort_rank=1 beats direct sort_rank=0)
     const page1 = await getRssFeedItemFeedIds(follower, { feed_type: 'any', limit: 1 })
     expect(page1.results.length).toBe(1)
+    expect(page1.results[0]).toMatchObject({
+      entity_id: directItem1.id,
+      delivery_type: 'share',
+      shared_by_id: sharer.id,
+    })
     expect(page1.page_info.has_next_page).toBe(true)
 
     // Page 2: cursor from page1; if page1 ended on the share, shareEventIdLt branch fires
@@ -130,7 +135,7 @@ describe('getRssFeedItemFeedIds filter branches', () => {
     // directItem1 appears as both share (page1) and direct (page2); directItem2 as direct
     expect(allEntityIds).toContain(directItem1.id)
     expect(allEntityIds).toContain(directItem2.id)
-  }, 60_000)
+  })
 
   it('category topics on items do not affect topic_ids source-feed filter', async () => {
     const user = await createTestUser()
@@ -157,5 +162,5 @@ describe('getRssFeedItemFeedIds filter branches', () => {
       topic_ids: [feedTopic.id],
     })
     expect(resultByFeedTopic.results.map(r => r.entity_id)).toContain(item.id)
-  }, 60_000)
+  })
 })

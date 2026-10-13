@@ -118,7 +118,7 @@ _none_
 - `idx_users__lingua_rs_pending`: `CREATE INDEX idx_users__lingua_rs_pending ON public.users USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_users__profile_image_id`: `CREATE INDEX idx_users__profile_image_id ON public.users USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
 - `idx_users__referrer_id`: `CREATE INDEX idx_users__referrer_id ON public.users USING btree (referrer_user_id) WHERE (referrer_user_id IS NOT NULL)`
-- `idx_users__updated_at_id_active`: `CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, id) WHERE (deleted_at IS NULL)`
+- `idx_users__updated_at_id_active`: `CREATE INDEX idx_users__updated_at_id_active ON public.users USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
 - `idx_users__username`: `CREATE UNIQUE INDEX idx_users__username ON public.users USING btree (lower(username)) WHERE (username IS NOT NULL)`
 - `idx_users__username__text_pattern_ops`: `CREATE INDEX idx_users__username__text_pattern_ops ON public.users USING btree (lower(username) text_pattern_ops) WHERE (username IS NOT NULL)`
 - `idx_users__vote_weight_recalculation`: `CREATE INDEX idx_users__vote_weight_recalculation ON public.users USING btree (vote_weight_recalculated_at) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))`

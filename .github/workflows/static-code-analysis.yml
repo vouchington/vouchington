@@ -131,8 +131,8 @@ jobs:
           cache: false
         timeout-minutes: 3
       - name: Run no-mistakes
-        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
-        timeout-minutes: 3
+        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
+        timeout-minutes: 4
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
         timeout-minutes: 1
@@ -142,8 +142,14 @@ jobs:
       - name: Check web route localization selector map
         run: node static-code-analysis/i18n-extract/route-selector-map.mts --check --diagnostics
         timeout-minutes: 2
+      - name: Check live web route localization bounds
+        run: node ci/check-live-web-route-localization.mts
+        timeout-minutes: 4
       - name: Check Storybook browser optimizeDeps
         run: node ci/check-storybook-browser-optimize-deps.mts
+        timeout-minutes: 2
+      - name: Check classifier golden set imports
+        run: node ci/check-classifier-golden-imports.mts
         timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1

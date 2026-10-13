@@ -157,9 +157,17 @@ export const getPublicUserByIdOrSlug = (
   return getPublicUserByAny(idOrSlug, options)
 }
 
-let systemUser
-export const getSystemUser = async () => {
-  systemUser ||= await getPrivateUserByAny('system@voucha.ai')
+let systemUser: PrivateUser | null = null
+export const getSystemUser = async (): Promise<PrivateUser | null> => {
+  if (systemUser) return systemUser
+  const { rows } = await write<PrivateUser>(sql`/* getSystemUser */
+    SELECT view_users_private.*
+    FROM users
+    JOIN view_users_private ON view_users_private.id = users.id
+    WHERE users.username = 'system' AND users.platform_account_kind = 'system'
+    LIMIT 1
+  `)
+  systemUser = rows[0] ?? null
   return systemUser
 }
 

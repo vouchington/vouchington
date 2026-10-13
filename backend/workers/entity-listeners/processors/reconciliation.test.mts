@@ -128,6 +128,7 @@ describe('reconcileEntity', () => {
       processTopicCurrentState: vi.fn<VitestLooseMock>(),
       processUrlCreated: vi.fn<VitestLooseMock>(),
       processUserCreated: vi.fn<VitestLooseMock>(),
+      processUserUpdated: vi.fn<VitestLooseMock>(),
     }
 
     await reconcileEntity(
@@ -136,6 +137,17 @@ describe('reconcileEntity', () => {
         entityId: 'user-1',
         changedAtEpochUs: '1',
         referrerId: 'user-2',
+        createdInWindow: true,
+      },
+      dependencies,
+    )
+    await reconcileEntity(
+      {
+        entityType: 'user',
+        entityId: 'user-3',
+        changedAtEpochUs: '3',
+        referrerId: 'user-2',
+        createdInWindow: false,
       },
       dependencies,
     )
@@ -169,12 +181,15 @@ describe('reconcileEntity', () => {
       dependencies,
     )
 
-    expect(dependencies.processUserCreated).toHaveBeenCalledWith({
+    expect(dependencies.processUserCreated).toHaveBeenCalledExactlyOnceWith({
       id: 'user-1',
     })
-    expect(dependencies.processAutoFollowReferrer).toHaveBeenCalledWith({
+    expect(dependencies.processAutoFollowReferrer).toHaveBeenCalledExactlyOnceWith({
       newUserId: 'user-1',
       referrerId: 'user-2',
+    })
+    expect(dependencies.processUserUpdated).toHaveBeenCalledExactlyOnceWith({
+      id: 'user-3',
     })
     expect(dependencies.processTopicCurrentState).toHaveBeenCalledWith({
       id: 'topic-1',

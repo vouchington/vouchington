@@ -42,10 +42,13 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
     const t = emailCopy(locale, 'community-moderation-summary')
     const dateVars = { date: generatedForDate }
     return (
-      <Html>
+      <Html lang={locale}>
         <Head />
         <Preview>{t('preview', dateVars)}</Preview>
-        <Body style={styles.main}>
+        <Body
+          lang={locale}
+          style={styles.main}
+        >
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>

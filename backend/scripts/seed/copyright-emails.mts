@@ -1,3 +1,4 @@
+import type { CopyrightSeedContext } from './copyright-context.mts'
 import { createHash } from 'node:crypto'
 import {
   createCopyrightEmailIntake,
@@ -6,7 +7,6 @@ import {
 } from '@services/copyright-notices'
 
 const HOUR_MS = 60 * 60 * 1000
-const NOTICE_MESSAGE_ID = '<dev-seed-copyright-notice@mail.rights-holder.example>'
 
 type SeedParse = Parameters<typeof recordCopyrightEmailParse>[1]
 
@@ -44,11 +44,12 @@ function noticeBody(hostedUseUrl: string): string {
 // One per queue state the email-review page branches on: a new notice, a reply that quotes it,
 // a parse that failed, an intake whose parse never landed (so the reply address is typed in), and
 // a message SES flagged for malware (parsed text only; the original email is withheld).
-function seedEmails(hostedUseUrl: string): SeedEmail[] {
+function seedEmails(hostedUseUrl: string, namespace: string): SeedEmail[] {
+  const noticeMessageId = `<${namespace}-notice@mail.rights-holder.example>`
   const sender = { fromEmail: 'dana@whitfield-photo.example', fromName: 'Dana Whitfield' }
   return [
     {
-      sesMessageId: 'ses-dev-seed-copyright-notice',
+      sesMessageId: `ses-${namespace}-notice`,
       receivedHoursAgo: 3,
       sesVerdicts: PASSING_SES_VERDICTS,
       parse: {
@@ -56,7 +57,7 @@ function seedEmails(hostedUseUrl: string): SeedEmail[] {
         ...sender,
         subject: 'DMCA takedown notice: harbour sunrise photograph',
         bodyText: noticeBody(hostedUseUrl),
-        messageId: NOTICE_MESSAGE_ID,
+        messageId: noticeMessageId,
         replyReferences: [],
         attachments: [
           {
@@ -70,7 +71,7 @@ function seedEmails(hostedUseUrl: string): SeedEmail[] {
       },
     },
     {
-      sesMessageId: 'ses-dev-seed-copyright-thread-reply',
+      sesMessageId: `ses-${namespace}-thread-reply`,
       receivedHoursAgo: 2,
       sesVerdicts: PASSING_SES_VERDICTS,
       parse: {
@@ -78,26 +79,26 @@ function seedEmails(hostedUseUrl: string): SeedEmail[] {
         ...sender,
         subject: 'Re: DMCA takedown notice: harbour sunrise photograph',
         bodyText: 'Following up: I can send the original RAW file if that helps verify ownership.',
-        messageId: '<dev-seed-copyright-reply@mail.rights-holder.example>',
-        replyReferences: [NOTICE_MESSAGE_ID],
+        messageId: `<${namespace}-reply@mail.rights-holder.example>`,
+        replyReferences: [noticeMessageId],
         attachments: [],
       },
     },
     {
-      sesMessageId: 'ses-dev-seed-copyright-parse-failed',
+      sesMessageId: `ses-${namespace}-parse-failed`,
       receivedHoursAgo: 1.5,
       sesVerdicts: PASSING_SES_VERDICTS,
       parse: { status: 'failed', error: 'MIME parse failed: unterminated multipart boundary' },
     },
     {
-      sesMessageId: 'ses-dev-seed-copyright-no-parse',
+      sesMessageId: `ses-${namespace}-no-parse`,
       receivedHoursAgo: 0.5,
       sesVerdicts: PASSING_SES_VERDICTS,
       parse: null,
     },
     {
       // SES's malware scan failed, so the review page withholds the original and shows parsed text.
-      sesMessageId: 'ses-dev-seed-copyright-quarantined',
+      sesMessageId: `ses-${namespace}-quarantined`,
       receivedHoursAgo: 0.25,
       sesVerdicts: { ...PASSING_SES_VERDICTS, virus: 'fail' },
       parse: {
@@ -111,7 +112,7 @@ function seedEmails(hostedUseUrl: string): SeedEmail[] {
           `We represent the photographer of the image hosted at ${hostedUseUrl}.`,
           'The evidence bundle with the original file and licence history is attached.',
         ].join('\n'),
-        messageId: '<dev-seed-copyright-quarantined@mail.rights-holder.example>',
+        messageId: `<${namespace}-quarantined@mail.rights-holder.example>`,
         replyReferences: [],
         attachments: [
           {
@@ -127,20 +128,27 @@ function seedEmails(hostedUseUrl: string): SeedEmail[] {
   ]
 }
 
-export async function seedCopyrightEmails(hostedUseUrl: string): Promise<string[]> {
-  const intakeIds: string[] = []
-  for (const email of seedEmails(hostedUseUrl)) {
-    const { intake } = await createCopyrightEmailIntake({
-      sesMessageId: email.sesMessageId,
-      receivedAt: new Date(Date.now() - email.receivedHoursAgo * HOUR_MS),
-      rawStorageKey: `dev-seed/${email.sesMessageId}/original.eml`,
-      rawSha256: createHash('sha256').update(email.sesMessageId).digest(),
-      rawMimeType: 'message/rfc822',
-      rawByteSize: 4_096,
-      sesVerdicts: email.sesVerdicts,
-    })
-    if (email.parse) await recordCopyrightEmailParse(intake, email.parse)
-    intakeIds.push(intake.id)
-  }
-  return intakeIds
+export async function seedCopyrightEmails(
+  hostedUseUrl: string,
+  { identity, now }: CopyrightSeedContext,
+): Promise<string[]> {
+  // A reply must see its original notice and parse correlation before admission.
+  return seedEmails(hostedUseUrl, identity.namespace).reduce<Promise<string[]>>(
+    (pending, email) =>
+      pending.then(async intakeIds => {
+        const { intake } = await createCopyrightEmailIntake({
+          sesMessageId: email.sesMessageId,
+          receivedAt: new Date(now.getTime() - email.receivedHoursAgo * HOUR_MS),
+          rawStorageKey: `dev-seed/${email.sesMessageId}/original.eml`,
+          rawSha256: createHash('sha256').update(email.sesMessageId).digest(),
+          rawMimeType: 'message/rfc822',
+          rawByteSize: 4_096,
+          sesVerdicts: email.sesVerdicts,
+        })
+        if (email.parse) await recordCopyrightEmailParse(intake, email.parse)
+        intakeIds.push(intake.id)
+        return intakeIds
+      }),
+    Promise.resolve([]),
+  )
 }

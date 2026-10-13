@@ -132,7 +132,7 @@ function buildDomainsQuery() {
   return sql`/* buildSitemapDomainsQuery */
     SELECT CONCAT('/domain/', hostname) AS path, updated_at
     FROM url_hostnames
-    WHERE is_blocked IS NOT TRUE
+    WHERE NOT is_blocked
       AND votes_count_up > 0
     ORDER BY votes_score_net DESC, id DESC
   `

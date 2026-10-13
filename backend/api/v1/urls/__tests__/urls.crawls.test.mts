@@ -33,7 +33,7 @@ describe('index', () => {
 
     await createTestMembership({ user_id: plusUser.id, plan: 'plus' })
     await createTestMembership({ user_id: proUser.id, plan: 'pro' })
-  }, 60_000)
+  }, 5_000)
   describe('URLs Routes', () => {
     describe('POST /api/v1/urls/:id/crawl', () => {
       it('should enqueue crawl for admin users', async () => {
@@ -205,7 +205,7 @@ describe('index', () => {
         expect(response.body.crawl.markdown).toBe('Test content')
         expect(response.body.crawl.links).toEqual({ a: ['/alpha'] })
         expect(response.body.crawl.meta_tags).toEqual({ 'og:title': 'Test content' })
-      }, 60_000)
+      })
 
       it('should return specific crawl for pro users', async () => {
         const random = Math.random().toString(36).slice(2, 8)
@@ -241,7 +241,7 @@ describe('index', () => {
         expect(response.body.crawl).not.toHaveProperty('html_sha256')
         expect(response.body.crawl).not.toHaveProperty('html_snapshot_uploaded_at')
         expect(response.body).not.toHaveProperty('og_image_sideload')
-      }, 60_000)
+      })
 
       it('should return 403 for free users', async () => {
         const random = Math.random().toString(36).slice(2, 8)
@@ -261,7 +261,7 @@ describe('index', () => {
         await request.authenticateAs(freeUser)
 
         await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(403)
-      }, 60_000)
+      })
 
       it('should return 401 for unauthenticated users', async () => {
         const random = Math.random().toString(36).slice(2, 8)
@@ -280,7 +280,7 @@ describe('index', () => {
         const request = createRequest()
 
         await request.get(`/api/v1/urls/${urlId}/crawls/${crawlId}`).expect(401)
-      }, 60_000)
+      })
     })
   })
 })

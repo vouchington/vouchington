@@ -10,22 +10,24 @@ export type TestAdministratorRefundOperation = {
   applicationId: string
   id: string
   membershipSourceId: string
+  userId: string
 }
 export async function createTestAdministratorRefundOperation(): Promise<TestAdministratorRefundOperation> {
   const applicationId = `administrator-refund-${randomUUID()}`
-  const { rows } = await write<{
-    id: string
-    membershipSourceId: string
-  }>(sql`/* createTestAdministratorRefundOperation */
-    WITH lineage AS (
+  const { rows } = await write<
+    Omit<TestAdministratorRefundOperation, 'applicationId'>
+  >(sql`/* createTestAdministratorRefundOperation */
+    WITH actor AS (
+      INSERT INTO users DEFAULT VALUES RETURNING id
+    ), lineage AS (
       INSERT INTO membership_provider_lineages (
         provider, environment, application_id, provider_lineage_id
       ) VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`})
       RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
-      SELECT id, (SELECT id FROM users ORDER BY id LIMIT 1) FROM lineage
-      RETURNING id, membership_provider_lineage_id
+      SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor
+      RETURNING id, membership_provider_lineage_id, user_id
     ), source AS (
       INSERT INTO membership_sources (source_kind, membership_provider_lineage_id)
       SELECT 'direct', id FROM lineage
@@ -42,26 +44,29 @@ export async function createTestAdministratorRefundOperation(): Promise<TestAdmi
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
-    RETURNING id, membership_source_id AS "membershipSourceId"`)
+    RETURNING id, membership_source_id AS "membershipSourceId",
+      (SELECT user_id FROM binding) AS "userId"`)
   return { applicationId, ...rows[0]! }
 }
 export async function claimTestAdministratorRefundOperation(operationId: string): Promise<number> {
   const lease = await leaseDueRefundReconciliation(operationId)
   return lease ? 1 : 0
 }
-export async function scheduleTestAdministratorRefundRetry(operationId: string): Promise<number> {
+export async function scheduleTestAdministratorRefundRetry(
+  operationId: string,
+  dueAt: Date,
+): Promise<number> {
   const { rows } = await read<{
     lease_token: string
   }>(sql`/* scheduleTestAdministratorRefundRetry */
     SELECT lease_token FROM membership_operation_execution_work_items WHERE membership_operation_id = ${operationId}`)
   await scheduleRefundReconciliationRetry(
     { id: operationId, leaseToken: rows[0]!.lease_token },
-    new Date(Date.now() + 300_000),
+    dueAt,
     'provider outcome pending',
   )
   return 1
 }
-
 export async function getTestAdministratorRefundRetryState(operationId: string) {
   const { rows } = await read<{
     reconciliationAttemptOrdinal: number
@@ -74,7 +79,6 @@ export async function getTestAdministratorRefundRetryState(operationId: string) 
     WHERE operation.id = ${operationId}`)
   return rows[0]
 }
-
 export async function hasExpectedTestMembershipOperationReconciliationDueIndex(): Promise<boolean> {
   const { rows } = await read<{ indexdef: string }>(
     `/* getTestMembershipOperationReconciliationDueIndex */
@@ -87,26 +91,25 @@ export async function hasExpectedTestMembershipOperationReconciliationDueIndex()
     'CREATE INDEX idx_membership_operation_execution_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)'
   )
 }
-
-export async function createTestAdministratorRefundRequest(operationId: string): Promise<string> {
+export async function createTestAdministratorRefundRequest(
+  operation: TestAdministratorRefundOperation,
+): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestAdministratorRefundRequest */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, membership_id, issued_by_id, provider_payment_reference,
       amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
-      ${operationId}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`payment-${randomUUID()}`},
+      ${operation.id}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId}, ${`payment-${randomUUID()}`},
       100, 'usd', 'requested', true, ${'a'.repeat(64)}, ${`request-${randomUUID()}`},
       'Customer requested a refund'
     ) RETURNING id`)
   return rows[0]!.id
 }
-
 export async function mutateTestAdministratorRefundRequest(requestId: string): Promise<void> {
   await write(sql`/* mutateTestAdministratorRefundRequest */
     UPDATE membership_administrator_refund_operation_requests SET note = 'changed' WHERE id = ${requestId}`)
 }
-
 export async function createTestRefundOperationAttempt(
   operation: TestAdministratorRefundOperation,
   providerRefundId?: string,
@@ -122,7 +125,6 @@ export async function createTestRefundOperationAttempt(
     ) RETURNING id`)
   return rows[0]!.id
 }
-
 export async function enrichTestRefundOperationAttemptProviderId(
   attemptId: string,
 ): Promise<number> {
@@ -131,12 +133,10 @@ export async function enrichTestRefundOperationAttemptProviderId(
     SET provider_refund_id = ${`refund-${randomUUID()}`} WHERE id = ${attemptId}`)
   return result.rowCount ?? 0
 }
-
 export async function mutateTestRefundOperationAttemptAmount(attemptId: string): Promise<void> {
   await write(sql`/* mutateTestRefundOperationAttemptAmount */
     UPDATE membership_refund_operation_attempts SET amount_minor_units = 99 WHERE id = ${attemptId}`)
 }
-
 export async function deleteTestRefundOperationAttempt(attemptId: string): Promise<void> {
   await write(sql`/* deleteTestRefundOperationAttempt */
     DELETE FROM membership_refund_operation_attempts WHERE id = ${attemptId}`)
@@ -153,7 +153,7 @@ export async function getTestMembershipRefundOperationLinkNullable(): Promise<bo
 }
 
 export async function createTestLinkedRefundReceiptRequest(
-  operationId: string,
+  operation: TestAdministratorRefundOperation,
 ): Promise<{ requestKey: string }> {
   const requestKey = `request-${randomUUID()}`
   await write(sql`/* createTestLinkedRefundReceiptRequest */
@@ -162,7 +162,7 @@ export async function createTestLinkedRefundReceiptRequest(
       provider_payment_reference, amount_minor_units, currency_code, reason, is_cancel_requested,
       request_fingerprint
     ) VALUES (
-      ${operationId}, ${requestKey}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`ch_${randomUUID()}`},
+      ${operation.id}, ${requestKey}, ${await createTestRetainedMembershipIdentity()}, ${operation.userId}, ${`ch_${randomUUID()}`},
       100, 'usd', 'requested', false, ${'b'.repeat(64)}
     )`)
   return { requestKey }
@@ -194,7 +194,7 @@ export async function insertTestLinkedOperationRefundReceipt(
     ) VALUES (
       ${operation.id}, ${await createTestRetainedMembershipIdentity()}, ${operation.membershipSourceId}, ${`re_linked_${randomUUID()}`},
       ${`ch_linked_${randomUUID()}`}, ${requestKey}, ${'b'.repeat(64)},
-      100, 'usd', 'requested', FALSE, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin'
+      100, 'usd', 'requested', FALSE, ${operation.userId}, 'admin'
     )`)
   return result.rowCount ?? 0
 }

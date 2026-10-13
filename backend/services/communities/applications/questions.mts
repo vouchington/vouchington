@@ -2,8 +2,7 @@ import { read, beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from '../members/get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import type { CommunityApplicationQuestion } from '../types.mts'
 import {
   assertApplicationQuestionInputs,
@@ -17,7 +16,7 @@ export async function getApplicationQuestions(
   options?: QueryOptions & { lock?: boolean },
 ): Promise<CommunityApplicationQuestion[]> {
   const statement = sql`/* getApplicationQuestions */
-    SELECT *
+    SELECT id, community_id, question, field_type, options, order_index, is_required, created_at, deleted_at
     FROM community_application_questions
     WHERE community_id = ${communityId}
       AND deleted_at IS NULL
@@ -33,11 +32,9 @@ export async function setApplicationQuestions(
   communityId: string,
   questions: ApplicationQuestionInput[],
 ): Promise<CommunityApplicationQuestion[]> {
-  const [community, membership] = await Promise.all([
-    getCommunity(communityId),
-    getCommunityMember(communityId, currentUserId),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(communityId, currentUserId)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 403, 'Community is archived')
   assert(membership?.role === 'owner', 403, 'Only owners can set application questions')
   assertApplicationQuestionInputs(questions)

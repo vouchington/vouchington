@@ -1,10 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { parsePostgresSql } from 'no-mistakes'
 import {
-  createPostgresReplayContext,
-  type GeneratedColumnReferences,
+  parsePostgresSql,
+  type PostgresSqlConflict,
+  type PostgresSqlInsert,
+  type PostgresSqlTrigger,
+} from 'no-mistakes'
+import {
+  createPostgresReplayContextFromSchema,
+  projectGeneratedArbiterInput,
   type SchemaSnapshot,
 } from 'vouchington-tooling/pg-schema-snapshot'
 import { generatedArbiterViolation } from './on-conflict-generated-arbiter.mts'
@@ -20,71 +25,49 @@ const schemaPath = fileURLToPath(
   new URL('../../../../data-stores/psql/schema-snapshot/schema.json', import.meta.url),
 )
 const schema = JSON.parse(readFileSync(schemaPath, 'utf8')) as SchemaSnapshot
-const generatedColumnDefinitions = Object.entries(schema.tables).flatMap(([table, snapshotTable]) =>
-  Object.entries(snapshotTable.columns).flatMap(([column, definition]) =>
-    definition.generated === 'stored' && definition.generatedExpression !== null
-      ? [{ table, column, expression: definition.generatedExpression }]
-      : [],
-  ),
-)
-const generatedExpressionFacts = generatedColumnDefinitions.length
-  ? await parsePostgresSql(
-      generatedColumnDefinitions.map(({ table, column, expression }) => ({
-        sql: `SELECT (${expression})`,
-        fileName: `schema-snapshot:${table}.${column}`,
-      })),
-    )
-  : []
-const generatedColumnReferences: GeneratedColumnReferences[] = generatedColumnDefinitions.map(
-  ({ table, column }, index) => {
-    const facts = generatedExpressionFacts[index]
-    const statement = facts?.statements[0]
-    if (
-      !facts ||
-      facts.diagnostics.length > 0 ||
-      facts.statements.length !== 1 ||
-      statement?.kind !== 'select' ||
-      !statement.query.complete ||
-      statement.query.unsupported.length > 0
-    ) {
-      throw new Error(`Unable to collect generated-column references for ${table}.${column}`)
-    }
-    return {
-      table,
-      column,
-      sourceColumns: [
-        ...new Set(
-          statement.query.columns.flatMap(reference => {
-            const name = reference.name.parts.at(-1)?.value
-            return name === undefined ? [] : [name]
-          }),
-        ),
-      ],
-    }
-  },
-)
-const replayContext = createPostgresReplayContext({ schema, generatedColumnReferences })
+const replayContext = await createPostgresReplayContextFromSchema(schema)
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+// The snapshot is immutable for this process. Parse its trigger DDL in one native batch so the
+// synchronous INSERT guard consumes only normalized facts. A malformed trigger stays undefined and
+// fails closed; an existing table with no triggers retains its safe empty list.
+const triggerEntries = Object.keys(schema.tables).flatMap(table =>
+  (replayContext.triggerTextsForTable(table) ?? []).map(sql => ({ table, sql })),
+)
+const parsedTriggerEntries = await parsePostgresSql(triggerEntries.map(({ sql }) => ({ sql })))
+const triggerFactsByTable = new Map<string, (PostgresSqlTrigger | undefined)[]>(
+  Object.keys(schema.tables).map(table => [table, []]),
+)
+for (const [index, { table }] of triggerEntries.entries()) {
+  const parsed = parsedTriggerEntries[index]
+  const statement = parsed?.statements[0]
+  const trigger =
+    parsed?.diagnostics.length === 0 &&
+    parsed.statements.length === 1 &&
+    statement?.kind === 'createTrigger'
+      ? statement.trigger
+      : undefined
+  triggerFactsByTable.get(table)?.push(trigger)
 }
 
-/**
- * `undefined` (fail-closed) when the table itself is unknown to the schema snapshot — the
- * caller should then treat the insert as trigger-unsafe rather than silently skip the check.
- */
-export function triggerTextsForTable(table: string): readonly string[] | undefined {
-  return replayContext.triggerTextsForTable(table)
+/** `undefined` means the table is absent from the snapshot; malformed DDL is an unsafe entry. */
+export function triggerFactsForTable(
+  table: string,
+): readonly (PostgresSqlTrigger | undefined)[] | undefined {
+  return triggerFactsByTable.get(table)
 }
 
-export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): boolean {
+export function hasReplayUnsafeTrigger(
+  insert: PostgresSqlInsert,
+  onConflict: PostgresSqlConflict,
+): boolean {
   const table = insertTableName(insert)
   if (table === undefined) return true
-  const triggers = triggerTextsForTable(table)
+  const triggers = triggerFactsForTable(table)
   if (triggers === undefined) return true
   const assignedColumns = assignedColumnsFromOnConflict(onConflict)
   const excludedAssignedColumns = excludedAssignedColumnsFromOnConflict(onConflict)
-  const conflictWhereClause = isRecord(onConflict) ? onConflict.whereClause : undefined
+  const conflictWhereClause =
+    onConflict.action.kind === 'doUpdate' ? onConflict.action.predicate : null
   return replayUnsafeTrigger(
     triggers,
     assignedColumns,
@@ -95,7 +78,7 @@ export function hasReplayUnsafeTrigger(insert: unknown, onConflict: unknown): bo
 
 /**
  * Maps each STORED generated column in `table` to the source columns its expression reads —
- * uses released parser facts projected through `createPostgresReplayContext`. The module's
+ * uses released parser facts projected through `createPostgresReplayContextFromSchema`. The module's
  * schema.json is read once; the context memoizes the table projection.
  */
 export function generatedDependenciesForTable(
@@ -104,10 +87,13 @@ export function generatedDependenciesForTable(
   return replayContext.generatedDependenciesForTable(table)
 }
 
-export function hasGeneratedArbiterViolation(insert: unknown, onConflict: unknown): boolean {
+export function hasGeneratedArbiterViolation(
+  insert: PostgresSqlInsert,
+  onConflict: PostgresSqlConflict,
+): boolean {
   const table = insertTableName(insert)
   if (table === undefined) return true
   const dependencies = generatedDependenciesForTable(table)
   if (dependencies === undefined) return true
-  return generatedArbiterViolation(onConflict, dependencies).violation
+  return generatedArbiterViolation(projectGeneratedArbiterInput(onConflict), dependencies).violation
 }

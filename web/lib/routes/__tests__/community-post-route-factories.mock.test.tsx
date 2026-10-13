@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
 import type { MessageKey } from '@ts-shared/ui-messages'

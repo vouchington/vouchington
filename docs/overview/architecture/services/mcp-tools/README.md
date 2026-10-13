@@ -8,6 +8,23 @@ Lists and executes MCP tools through stateless HTTP requests.
 
 The [module inventory](module-inventory.md) maps each source file to its responsibility.
 
+## Merged tools
+
+Related user operations share a tool through `createMergedTool`. Every call uses a closed
+`{ option, arguments }` envelope: the option selects exactly one input schema, and unknown options,
+extra envelope fields, missing arguments, or fields from another option are rejected before dispatch.
+The registry compares declared MCP scopes, roles, plan and annotations across group members.
+Each option retains its source handler's runtime authorization and REST behavior.
+
+The selected option alone determines the REST routes charged to the caller. Its result must satisfy
+its own output schema before validation against the advertised union of all option outputs.
+There are no aliases for replaced tool names. Regenerate the catalog with `pnpm mcp:catalog`.
+
+The audit records only registered options in `tool_option`, without arguments or results. A handler
+that refuses an admitted call still writes the existing `accepted` and `tool_error` rows; both carry
+the selected option. For example, free callers can read RSS feed details, while crawl reads retain
+their existing runtime 403 rather than becoming a declared plan denial.
+
 ## Structured tool results
 
 A tool declares `meta.outputSchema` (JSON Schema, object root) and `toolToMcpTool` publishes it as
@@ -26,6 +43,17 @@ the schema rejects throws `McpToolOutputMismatchError` (tool name and failing pa
 value); the call path reports it through `onError` and returns the generic tool-failure result,
 never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
 whole-response bound (step 4), so JSON escaping counts for them too.
+
+**Tool-local references.** Each input and output schema can carry its own root `$defs` and use
+`$ref: "#/$defs/…"`. Listing and catalog generation preserve those schemas; argument and
+structured-result validation resolve references within the schema being validated. Input and
+output definitions have separate namespaces. The focused
+[`build-tool-result.test.mts`](../../../../../backend/services/mcp-tools/build-tool-result.test.mts)
+fixture exercises discovery and calls through the official TypeScript SDK client and our stateless
+HTTP handler, invalid arguments/results, generated artifacts and listing parity. This proves our
+server boundary and that SDK path; external-client findings and the consolidation gate remain in
+[#2431](https://github.com/vouchington/vouchington/issues/2431). Production tool consolidation and
+schema factoring follow that gate.
 
 **One source of truth.** The checked-in `api-fixtures/v1/request-contracts.json` carries a
 `responses` map with the response schema of every route whose 200 body is a named response type,
@@ -49,6 +77,30 @@ against actual handler results, including nullable fields, normal errors, and tr
 Do not widen a schema or remove validation merely to make a mismatch pass. Runtime argument and
 structured-result validation remain enforced; broader automated drift detection awaits redesign.
 See the [fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow).
+
+**Tool-local schema factoring.** The generated MCP catalog factors exactly repeated subschemas
+within each tool's input or output schema into that schema's root `$defs`, referenced only by
+`#/$defs/<Name>`. Definitions never cross tool or input/output boundaries. Keep the factual shape
+authored once in the domain source and reuse it across related tools; the catalog pass handles
+wire-level factoring. Every output schema remains advertised.
+
+**Strict inputs.** Every declared input object closes unknown fields with
+`additionalProperties: false`, including each branch of a root `oneOf`. Do not close roots without
+declared properties or intentional arbitrary JSON/data maps. Declare and forward the effective
+REST fields within each tool’s public-read or action scope. Preserve its existing privilege and
+fixed-selector boundaries; record fields outside that operation as explicit REST audit exceptions.
+Keep the route-to-input audit and per-family rejection coverage with the MCP contract tests.
+
+**Server instructions and budgets.** Put guidance repeated by at least three tools on the same
+server into `backend/services/mcp-tools/instructions.mts`, phrased to say when it applies. Preserve
+tool-specific predicates, cursor bindings, units, identifiers, and examples beside each tool.
+Instructions do not name tools and may grow by at most 4,000 characters per server over the slice's
+base commit. CI measures generated `tools/list` counts, serialized sizes, core and output-aware
+projections, and instruction length after scope, role, plan, and copyright-switch filtering. The
+approved per-server/grant caps are maintained by the
+[catalog budget test](../../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.bound.test.mts).
+Personalized topic recommendations also expose the REST filters and `page_info` continuation;
+malformed cursors return the advertised invalid-cursor outcome.
 
 **Normal failure results.** A lookup tool that returns a miss (`{ success: false, error }` or
 `{ found: false, error }`) rather than throwing must admit that shape, or the miss fails
@@ -131,6 +183,7 @@ range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived f
 | `oauth_client_id`, `api_key_id`          | Exactly one is set (a `CHECK`): a foreign key to the OAuth client the token was issued to, or to the API key's `retained_api_key_identities` row                       |
 | `resource`                               | Protected resource URL of the route called                                                                                                                             |
 | `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                            |
+| `tool_option`                            | Selected registered option for a merged tool, otherwise `NULL`                                                                                                         |
 | `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
 | `copyright_rationale_ciphertext`         | Typed encrypted rationale for an admitted, validated copyright decision call; bound to the audit event id                                                              |
 | `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |

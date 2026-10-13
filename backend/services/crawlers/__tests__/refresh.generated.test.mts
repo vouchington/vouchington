@@ -6,6 +6,7 @@ import {
   insertStaleFetchCrawlerForHostname,
   insertTestUrlHostname,
   insertTestUrl,
+  updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import {
   searchCrawlerRefreshUrlCandidatesByHostnameId,
@@ -48,6 +49,21 @@ describe('refresh.generated', () => {
 
     expect(ids).not.toContain(nonCrawlableUrl!.hostname.id)
   })
+
+  it.each(['uncrawlable', 'blocked'] as const)(
+    'excludes %s hostnames from both refresh readers',
+    async flag => {
+      const suffix = Math.random().toString(36).slice(2)
+      const url = await createTestUrlWithNewHostname(
+        `https://refresh-flags-${suffix}.example.com/a`,
+      )
+      await insertStaleFetchCrawlerForHostname(url.hostname.id)
+      if (flag === 'blocked') await updateUrlHostnameBlocked(url.hostname.id, true)
+      else await updateUrlHostname(url.hostname.id, { is_crawlable: false })
+      expect(await searchCrawlerRefreshUrlCandidatesByHostnameId(url.hostname.id, 1)).toEqual([])
+      expect(await searchHostnameIdsNeedingCrawlerRefresh(10_000)).not.toContain(url.hostname.id)
+    },
+  )
 
   it('searchCrawlerRefreshUrlCandidatesByHostnameId returns at most the requested limit', async () => {
     const random = Math.random().toString(36).slice(2, 15)

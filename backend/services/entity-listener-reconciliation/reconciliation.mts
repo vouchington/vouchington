@@ -1,5 +1,6 @@
-import { createAsyncGeneratorFromCursor, write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import type { EntityReconciliationCandidate, EntityReconciliationWindow } from './types.mts'
+import { write, type QueryOptions } from '@data-stores/psql'
+import { streamEntityReconciliationRows } from './candidates-query.mts'
 import sql from 'sql-template-strings'
 
 import { getEntityReconciliationLimits } from './work-limits.mts'
@@ -7,38 +8,21 @@ import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 const OVERLAP_MS = 5 * 60_000
 const REPLICA_LAG_MARGIN_MS = 60_000
 
-export type ReconciledEntityType =
-  | 'user'
-  | 'topic'
-  | 'post_created'
-  | 'post_updated'
-  | 'post_deleted'
-  | 'image'
-  | 'url'
-
-export type EntityReconciliationCandidate = {
-  entityType: ReconciledEntityType
-  entityId: string
-  changedAtEpochUs: string
-  changeId?: string
-  contentChanged?: boolean
-  referrerId?: string
-}
-
-export type EntityReconciliationWindow = {
-  start: Date
-  end: Date
-}
+export type { EntityReconciliationCandidate, EntityReconciliationWindow } from './types.mts'
 
 export async function getEntityReconciliationWindow(
   intervalSeconds: number,
   now = new Date(),
+  options: QueryOptions = {},
 ): Promise<EntityReconciliationWindow> {
-  const { rows } = await write(sql`/* getEntityReconciliationWindow */
+  const { rows } = await write(
+    sql`/* getEntityReconciliationWindow */
     SELECT reconciled_through_at
     FROM entity_listener_reconciliation_cursors
     WHERE is_singleton
-  `)
+  `,
+    options,
+  )
   const end = new Date(now.getTime() - REPLICA_LAG_MARGIN_MS)
   const completedThrough = (rows[0] as { reconciled_through_at: Date } | undefined)
     ?.reconciled_through_at
@@ -58,66 +42,12 @@ export async function* streamEntityReconciliationCandidateBatches(
 ): AsyncGenerator<EntityReconciliationCandidate[]> {
   const limits = options.limits ?? getEntityReconciliationLimits()
   const after = options.after
-  const firstRevisionId = getMinUUIDv7ForDate(window.start)
-  const afterLastRevisionId = getMinUUIDv7ForDate(new Date(window.end.getTime() + 1))
   let batch: EntityReconciliationCandidate[] = []
-  for await (const row of createAsyncGeneratorFromCursor<{
-    entity_type: ReconciledEntityType
-    entity_id: string
-    changed_at_epoch_us: string
-    change_id: string | null
-    details: Record<string, unknown> | null
-  }>(
-    sql`/* streamEntityReconciliationCandidateBatches */
-      SELECT entity_type, entity_id, changed_at_epoch_us, change_id, details
-      FROM (
-        SELECT 'user'::text AS entity_type, id AS entity_id,
-          floor(extract(epoch FROM updated_at) * 1000000)::text AS changed_at_epoch_us,
-          NULL::uuid AS change_id,
-          jsonb_build_object('referrerId', referrer_user_id) AS details,
-          updated_at AS changed_at
-        FROM users
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end} AND deleted_at IS NULL
-        UNION ALL
-        SELECT 'topic', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM topics
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-          AND deleted_at IS NULL AND merged_into_topic_id IS NULL
-        UNION ALL
-        SELECT CASE revision_type
-            WHEN 'create' THEN 'post_created'
-            WHEN 'update' THEN 'post_updated'
-            WHEN 'delete' THEN 'post_deleted'
-          END,
-          post_id,
-          floor(extract(epoch FROM created_at) * 1000000)::text,
-          id, jsonb_build_object('changes', changes), created_at
-        FROM post_revisions
-        WHERE id >= ${firstRevisionId} AND id < ${afterLastRevisionId}
-        UNION ALL
-        SELECT 'image', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM images
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-          AND deleted_at IS NULL AND upload_completed_at IS NOT NULL
-        UNION ALL
-        SELECT 'url', id, floor(extract(epoch FROM updated_at) * 1000000)::text,
-          NULL::uuid, NULL::jsonb, updated_at
-        FROM urls
-        WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
-      ) candidates
-      WHERE (${after?.entityId ?? null}::uuid IS NULL
-        OR (changed_at_epoch_us::numeric, entity_id, entity_type) >
-          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
-        OR ((changed_at_epoch_us::numeric, entity_id, entity_type) =
-          (${after?.changedAtEpochUs ?? null}::numeric, ${after?.entityId ?? null}::uuid, ${after?.entityType ?? null}::text)
-          AND ${after?.changeId ?? null}::uuid IS NOT NULL
-          AND (change_id > ${after?.changeId ?? null}::uuid OR change_id IS NULL)))
-      ORDER BY changed_at, entity_id, entity_type, change_id
-    `,
-    { batchSize: limits.batchSize, maxRows: limits.maxRows, onComplete: options.onComplete },
-  )) {
+  for await (const row of streamEntityReconciliationRows(window, {
+    after,
+    limits,
+    onComplete: options.onComplete,
+  })) {
     const changes = row.details?.changes as Record<string, { before?: unknown }> | undefined
     batch.push({
       entityType: row.entity_type,
@@ -129,6 +59,9 @@ export async function* streamEntityReconciliationCandidateBatches(
         : {}),
       ...(row.entity_type === 'user' && typeof row.details?.referrerId === 'string'
         ? { referrerId: row.details.referrerId }
+        : {}),
+      ...(row.entity_type === 'user'
+        ? { createdInWindow: row.details?.createdInWindow === true }
         : {}),
     })
     if (batch.length >= limits.batchSize) {
@@ -146,8 +79,12 @@ function isPostContentChange(changes?: Record<string, unknown>): boolean {
   )
 }
 
-export async function advanceEntityReconciliationCheckpoint(completedThrough: Date): Promise<void> {
-  await write(sql`/* advanceEntityReconciliationCheckpoint */
+export async function advanceEntityReconciliationCheckpoint(
+  completedThrough: Date,
+  options: QueryOptions = {},
+): Promise<void> {
+  await write(
+    sql`/* advanceEntityReconciliationCheckpoint */
     INSERT INTO entity_listener_reconciliation_cursors (is_singleton, reconciled_through_at)
     VALUES (TRUE, ${completedThrough})
     ON CONFLICT (is_singleton) DO UPDATE
@@ -155,5 +92,7 @@ export async function advanceEntityReconciliationCheckpoint(completedThrough: Da
       entity_listener_reconciliation_cursors.reconciled_through_at,
       EXCLUDED.reconciled_through_at
     )
-  `)
+  `,
+    options,
+  )
 }

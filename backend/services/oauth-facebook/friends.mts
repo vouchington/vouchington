@@ -4,6 +4,7 @@ import { read } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 import { fetch } from 'undici'
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import { finalizeFacebookFriendSync, persistFacebookFriendPage } from './friends-persistence.mts'
 
@@ -33,6 +34,7 @@ async function fetchFacebookFriends(
       dispatcher: getExternalRequestDispatcher(),
     },
   )
+  throwIfRateLimitedResponse(response, 'https://graph.facebook.com/me/friends')
   if (!response.ok)
     throw createHttpError(502, `Facebook /me/friends request failed: ${response.status}`)
   return response.json() as Promise<FacebookFriendsResponse>

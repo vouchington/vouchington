@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import '@/test-helpers/lib/routes/topic-subpage-factories.mock-support'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'

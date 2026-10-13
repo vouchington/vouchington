@@ -76,7 +76,7 @@ describe('retained user identity cleanup for membership lineage', () => {
     expect(await readTestRetainedMembershipChangeIds(membership.id)).toEqual(history)
     await cleanupRetainedIdentityRoots(1_000, { membership: [membership.id] })
     expect(await hasTestRetainedIdentityRoot('membership', membership.id)).toBe(true)
-  }, 60_000)
+  })
 
   it.each(membershipRetainedUserReferences)(
     'keeps a root referenced only by %s.%s',

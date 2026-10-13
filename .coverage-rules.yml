@@ -16,8 +16,8 @@
 # `ignored` mirrors that same config's `exclude` array, pruned to entries that can actually match a
 # positive-threshold path below (a config/type/test/fixture file `coverage.all=true` never
 # instruments) and are not already covered by an existing patch_coverage_min: 0 rule.
-# ci/coverage-rules-scope.test.mts asserts this list never drifts looser than coverage-config.mts's
-# `exclude` array for any reachable path; see docs/development/reference-ci-coverage-gates.md.
+# ci/check-coverage-scope.mts audits every reachable tracked path against coverage-config.mts's
+# `exclude` array before area patch coverage; see docs/development/reference-ci-coverage-gates.md.
 scope:
   version: 1
   analyzer: javascript

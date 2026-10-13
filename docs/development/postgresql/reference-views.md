@@ -24,8 +24,10 @@ visibility-gated verification fields, the derived `verified_display_name`, and
 `lingua_rs_detected_language`. Verification columns are populated only when the user is verified
 and has made the verified badge visible; `verified_display_name` is derived from the selected
 public verified-name display. This makes the view the intentionally redacted public projection for
-top-level user lookups (e.g. `getPublicUserByAny` and batch user fetches), where user rows are the
-primary result set.
+top-level user lookups, where user rows are the primary result set. The caller picks the user ids
+first, resolving a handle or other outside input to an id against `users`, then reads the view by
+those ids. It never filters, sorts, or pages on the view's columns; see
+[R6](../postgres-schema-rules.md#r6--query-shape).
 
 Use `view_embedded_users` (via scalar subquery) when nesting user data as JSON inside another
 entity's view (e.g. `created_by`, `updated_by` in `view_posts` and `view_topics`).

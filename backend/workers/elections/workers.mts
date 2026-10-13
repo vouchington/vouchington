@@ -1,6 +1,6 @@
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { updateTopicElectionVoteStats } from '@services/elections-votes/topic'
 import { updateHostnameElectionVoteStats } from '@services/elections-votes/hostname'
 import { updateAgentModerationElectionVoteStats } from '@services/elections-votes/agent-moderation'
@@ -53,8 +53,7 @@ async function processElection(job: Job): Promise<void> {
   }
 }
 
-export const elections = new Worker(QUEUE_NAME, processElection, {
-  connection: workerQueueConnection,
-  prefix: workerQueuePrefix,
+export const elections = createWorker(QUEUE_NAME, processElection, {
+  dedicatedCommandClient: true,
   concurrency: getWorkerConcurrency('elections', { baseline: 5 }),
 })

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
 import {
+  overrideDynamicConfigFieldsForTest,
   createTestUser,
   createTestUserDirect,
   insertTestPost,
@@ -22,6 +23,7 @@ import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import '@voucha/test-helpers/entity-url-guard-registrations'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { blockHostname } from './block-hostname.mts'
+import { hostnameBlockingWorkConfig } from './work-limits.mts'
 import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'
 
 describe('block-hostname', () => {
@@ -35,7 +37,7 @@ describe('block-hostname', () => {
 
   beforeAll(async () => {
     admin = (await createTestUser({ administrator: true })) as PrivateUser
-  }, 60_000)
+  })
 
   /** Link a post to a URL via the post->related->url entity relation */
   async function relatePostToUrl(creator: PrivateUser, postId: string, urlId: string) {
@@ -48,7 +50,7 @@ describe('block-hostname', () => {
   describe('blockHostname', () => {
     it('throws 404 for a non-existent hostname', async () => {
       await expect(blockHostname(admin.id, uuidv7())).rejects.toMatchObject({ status: 404 })
-    }, 60_000)
+    })
 
     it('sets blocked=true, blocked_at, blocked_by_id on the target hostname', async () => {
       const hostname = randomHostname()
@@ -61,7 +63,7 @@ describe('block-hostname', () => {
       expect(row!.is_blocked).toBe(true)
       expect(row!.blocked_at).toBeInstanceOf(Date)
       expect(row!.blocked_by_id).toBe(admin.id)
-    }, 60_000)
+    })
 
     it('also blocks subdomains of the target hostname', async () => {
       const base = `subdomain-base-${rand()}.example.com`
@@ -84,7 +86,7 @@ describe('block-hostname', () => {
       expect(baseRow!.is_blocked).toBe(true)
       expect(sub1Row!.is_blocked).toBe(true)
       expect(sub2Row!.is_blocked).toBe(true)
-    }, 60_000)
+    })
 
     it('returns correct blocked_hostname_count including subdomains', async () => {
       const base = `count-test-${rand()}.example.com`
@@ -97,7 +99,7 @@ describe('block-hostname', () => {
 
       const result = await blockHostname(admin.id, baseId)
       expect(result.blocked_hostname_count).toBeGreaterThanOrEqual(2)
-    }, 60_000)
+    })
 
     it('soft-deletes post->related->url entity relations for the blocked hostname', async () => {
       const hostname = randomHostname()
@@ -129,7 +131,7 @@ describe('block-hostname', () => {
 
       // Relation should now be soft-deleted
       expect(await getTestRelationDeletedAt(postId, urlObj!.id)).toBeInstanceOf(Date)
-    }, 60_000)
+    })
 
     it('captures affected posts when blocking a hostname and its subdomains', async () => {
       const hostname = randomHostname()
@@ -176,15 +178,19 @@ describe('block-hostname', () => {
         expect(dirtyWork!.reasons).toContain('post_related_urls_changed')
         await expect(listTestPostPublicationImpactPostIds(dirtyWork!.id)).resolves.toEqual([postId])
       }
-    }, 60_000)
+    })
 
     it('captures every affected post across bounded hostname relation batches', async () => {
+      const restoreWorkLimit = overrideDynamicConfigFieldsForTest(hostnameBlockingWorkConfig, {
+        post_related_url_delete_batch_size: 3,
+      })
+      onTestFinished(restoreWorkLimit)
       const hostname = randomHostname()
       const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
       const creator = (await createTestUserDirect({
         username: `bh-batch-${rand()}`,
       })) as PrivateUser
-      const postIds = await insertTestPostBatch(creator.id, 501)
+      const postIds = await insertTestPostBatch(creator.id, 4)
       const urlIds = postIds.map(() => uuidv7())
       await insertTestPostRelatedUrlBatch({
         postIds,
@@ -196,11 +202,11 @@ describe('block-hostname', () => {
 
       const result = await blockHostname(admin.id, hostnameId)
 
-      expect(result.soft_deleted_relation_count).toBe(501)
+      expect(result.soft_deleted_relation_count).toBe(4)
       await expect(
         countTestPostPublicationDirtyWorkForPostsWithReason(postIds, 'post_related_urls_changed'),
-      ).resolves.toBe(501)
-    }, 60_000)
+      ).resolves.toBe(4)
+    })
 
     it('applies a 20% vote weight penalty to users who created the relations', async () => {
       const hostname = randomHostname()
@@ -228,7 +234,7 @@ describe('block-hostname', () => {
       expect(penalties[0]!.penalty_multiplier).toBe(DEFAULT_PENALTY_MULTIPLIER)
       expect(penalties[0]!.reason).toBe('blocked_hostname')
       expect(penalties[0]!.revoked_at).toBeNull()
-    }, 60_000)
+    })
 
     it('is idempotent: re-blocking does not create duplicate penalties', async () => {
       const hostname = randomHostname()
@@ -254,6 +260,6 @@ describe('block-hostname', () => {
       const penalties = await getTestPenaltiesByHostnameId(hostnameId)
       const userPenalties = penalties.filter(p => p.user_id === creator.id)
       expect(userPenalties).toHaveLength(1)
-    }, 60_000)
+    })
   })
 })

@@ -1,6 +1,6 @@
 import { it, expect, afterEach, beforeEach, describe, vi, type MockInstance } from 'vitest'
 import {
-  checkBloomFilter,
+  checkBloomFilters,
   addDomainsToBloomFilter,
   rebuildBloomFilter,
   deleteBloomFilter,
@@ -17,6 +17,11 @@ import {
 import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
+import { checkBloomFilterRead } from './read-repair.mts'
+
+async function checkBloomFilter(hostname: string): Promise<boolean | null> {
+  return (await checkBloomFilters([hostname]))[0] ?? null
+}
 
 describe('bloom-filter.generated', () => {
   const TEST_SOURCE_NAME = `test-bloom-filter-${Array.from({ length: 8 }, () => String.fromCodePoint(97 + Math.floor(Math.random() * 26))).join('')}`
@@ -50,7 +55,7 @@ describe('bloom-filter.generated', () => {
 
   registerOwnedBlocklistBloomRecoveryTests({
     filter: 'url-blocklist',
-    check: checkBloomFilter,
+    check: (domain, target) => checkBloomFilterRead({ ...target, value: domain }),
     add: addDomainsToBloomFilter,
     wasRebuildEnqueued: () => enqueueSpy.mock.calls.length > 0,
     settleRebuildEnqueues: settleOwnedRebuildEnqueues,

@@ -14,6 +14,16 @@ describe('user-agent string lookup', () => {
     expect(secondId).toBe(firstId)
     await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
   })
+  it('creates a missing row once and returns the existing row on later lookups', async () => {
+    const userAgent = `user-agent-new-${crypto.randomUUID()}`
+    await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(0)
+    const createdId = await upsertUserAgentString(userAgent)
+    expect(createdId).toBeTruthy()
+    await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
+    await expect(upsertUserAgentString(userAgent)).resolves.toBe(createdId)
+    await expect(upsertUserAgentString(`  ${userAgent}  `)).resolves.toBe(createdId)
+    await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
+  })
   it('normalizes bounded strings and distinguishes absent from explicitly empty agents', async () => {
     await expect(upsertUserAgentString(null)).resolves.toBeNull()
     await expect(upsertUserAgentString(undefined)).resolves.toBeNull()

@@ -40,13 +40,23 @@ type Target = { spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]; noticeId: st
 
 /** For each covered table, a notice with a row holding something the overwrite would change. */
 async function createTargets(): Promise<Target[]> {
-  const cases = await Promise.all([
+  const caseResults = await Promise.allSettled([
     createRetentionEmailCase(),
     createRetentionFormCase(),
     createRetentionAdministratorLiftCase(),
   ])
+  const cases = caseResults.map(result => {
+    if (result.status === 'rejected') throw result.reason
+    return result.value
+  })
   await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
-  const rows = await Promise.all(cases.map(entry => readCopyrightRetentionColumns(entry.noticeId)))
+  const rowResults = await Promise.allSettled(
+    cases.map(entry => readCopyrightRetentionColumns(entry.noticeId)),
+  )
+  const rows = rowResults.map(result => {
+    if (result.status === 'rejected') throw result.reason
+    return result.value
+  })
   const targets: Target[] = []
   const uncovered: string[] = []
   for (const spec of COPYRIGHT_RETENTION_ERASURE) {
@@ -69,10 +79,28 @@ describe('copyright retention erasure spec and legal-record guards', () => {
   // Every statement below is rolled back, so one set of fixtures serves the whole file.
   beforeAll(async () => {
     restoreWithholding = await enableAutomaticProvisionalWithholdingForTest()
-    targets = await createTargets()
-  }, 240_000)
+    try {
+      targets = await createTargets()
+    } catch (err) {
+      const setupError = err
+      const restore = restoreWithholding
+      restoreWithholding = undefined
+      try {
+        restore?.()
+      } catch (err) {
+        throw new AggregateError([setupError, err], 'Copyright fixture setup and restore failed', {
+          cause: err,
+        })
+      }
+      throw setupError
+    }
+  }, 30_000)
 
-  afterAll(() => restoreWithholding?.())
+  afterAll(() => {
+    const restore = restoreWithholding
+    restoreWithholding = undefined
+    restore?.()
+  })
 
   async function attemptAll(statement: CopyrightRetentionGuardStatement, permit: boolean) {
     const outcomes: [string, Awaited<ReturnType<typeof attemptCopyrightRetentionStatement>>][] = []

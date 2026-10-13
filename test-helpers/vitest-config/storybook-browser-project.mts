@@ -165,7 +165,7 @@ export const storybookBrowserProject: TestProjectConfiguration = {
     // per browser session; isolated story files restored the setup-file flake.
     isolate: false,
     testTimeout: 30_000,
-    hookTimeout: 60_000,
+    hookTimeout: 30_000,
     api: { port: parseStorybookBrowserApiPort() },
     browser: {
       enabled: isStorybookBrowserEnabled,

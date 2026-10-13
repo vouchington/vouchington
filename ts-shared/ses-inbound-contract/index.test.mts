@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertSesInboundProcessJobData,
+  assertSesInboundReconcileJobData,
   createSesInboundProcessJobId,
   decodeS3EventObjectKey,
   getSesInboundProcessJobOptions,
@@ -74,5 +75,22 @@ describe('SES inbound contract', () => {
         objectKey: 'incoming/complaint-123',
       }),
     ).toThrow('unknown prefix')
+  })
+
+  it('validates scheduled and token continuation payloads', () => {
+    expect(() => assertSesInboundReconcileJobData({})).not.toThrow()
+    expect(() =>
+      assertSesInboundReconcileJobData({ continuationToken: 'opaque:token' }),
+    ).not.toThrow()
+    for (const data of [
+      null,
+      [],
+      { continuationToken: '' },
+      { continuationToken: 12 },
+      { continuationToken: 'x'.repeat(1025) },
+      { other: true },
+    ]) {
+      expect(() => assertSesInboundReconcileJobData(data)).toThrow('SES inbound')
+    }
   })
 })

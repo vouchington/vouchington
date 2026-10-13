@@ -13,7 +13,7 @@ describe('detect-velocity-spike', () => {
 
   beforeAll(async () => {
     creatorUser = await createTestUserDirect({ username: randomUsername() })
-  }, 60_000)
+  }, 5000)
 
   function makePost(slug: string): Promise<string> {
     return insertTestPost({
@@ -37,7 +37,7 @@ describe('detect-velocity-spike', () => {
 
       const result = await detectVelocitySpike('post', postId)
       expect(result.flagged).toBe(false)
-    }, 60_000)
+    })
 
     it('returns flagged=true when young-account vote count exceeds threshold', async () => {
       const postId = await makePost(randomSlug())
@@ -52,7 +52,7 @@ describe('detect-velocity-spike', () => {
       const result = await detectVelocitySpike('post', postId)
       expect(result.flagged).toBe(true)
       expect(result.details.young_account_vote_count).toBeGreaterThan(VELOCITY_SPIKE_THRESHOLD)
-    }, 60_000)
+    })
 
     it('returns correct details shape', async () => {
       const postId = await makePost(randomSlug())
@@ -63,6 +63,6 @@ describe('detect-velocity-spike', () => {
       expect(result.details).toHaveProperty('threshold')
       expect(result.details).toHaveProperty('window_minutes')
       expect(result.details).toHaveProperty('young_account_age_days')
-    }, 60_000)
+    })
   })
 })

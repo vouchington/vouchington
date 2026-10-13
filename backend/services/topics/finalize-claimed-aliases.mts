@@ -1,5 +1,5 @@
 import { enqueueBulkTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import type { TopicAlias } from './alias-types.mts'
@@ -12,7 +12,7 @@ export async function finalizeClaimedTopicAliases(
   if (claimedAliases.length === 0) return
 
   const aliases = claimedAliases.map(alias => alias.alias)
-  void entityCacheBloomFilters.topics.add(aliases.map(normalizeKey))
+  void addEntityBloomKeys('topics', aliases.map(normalizeKey))
   await Promise.all([
     invalidate.topics(topicId, aliases),
     invalidate.topic_metrics(topicId),

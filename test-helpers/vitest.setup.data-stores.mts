@@ -1,3 +1,5 @@
+import { writeSync } from 'node:fs'
+
 import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
 import {
   collectDbBackedTestSetupInput,
@@ -30,6 +32,44 @@ process.env.VOUCHA_OTP_TOKEN_HASH_SECRET ??= 'this is a fake test OTP HMAC secre
 process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
   'fake-test-key:raw32:this fake test key is not secret'
 
+const emitSetupTiming = process.env.VITEST_DIAGNOSTICS === '1'
+
+async function timedSetupPhase<T>(phase: string, run: () => Promise<T>): Promise<T> {
+  if (emitSetupTiming) writeSync(2, `[vitest-setup] phase=${phase} start\n`)
+  const start = performance.now()
+  try {
+    const result = await run()
+    if (emitSetupTiming)
+      writeSync(
+        2,
+        `[vitest-setup] phase=${phase} done ms=${Math.round(performance.now() - start)}\n`,
+      )
+    return result
+  } catch (err) {
+    writeSync(
+      2,
+      `[vitest-setup] phase=${phase} failed ms=${Math.round(performance.now() - start)}\n`,
+    )
+    throw err
+  }
+}
+
+async function settleSetupOperations<const T extends readonly unknown[]>(operations: {
+  [K in keyof T]: PromiseLike<T[K]>
+}): Promise<T> {
+  const outcomes = await Promise.allSettled(operations)
+  const reasons: unknown[] = []
+  const values: unknown[] = []
+  for (const outcome of outcomes) {
+    if (outcome.status === 'fulfilled') values.push(outcome.value)
+    else if (!reasons.some(reason => Object.is(reason, outcome.reason)))
+      reasons.push(outcome.reason)
+  }
+  if (reasons.length === 1) throw reasons[0]
+  if (reasons.length > 1) throw new AggregateError(reasons, 'Backend setup operations failed')
+  return values as unknown as T
+}
+
 export async function setup() {
   const [
     { Logger },
@@ -38,36 +78,41 @@ export async function setup() {
     { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter },
     { dynamicConfigRegistry },
     { persistDynamicConfigTestBaseline },
-  ] = await Promise.all([
-    import('@valkey/valkey-glide'),
-    import('@voucha/scripts/seed'),
-    import('@services/bedrock-embeddings'),
-    import('@services/urls-domains-blacklist'),
-    import('@services/dynamic-config-admin/registry'),
-    import('../backend/test-helpers/dynamic-config.mts'),
-  ])
+  ] = await timedSetupPhase('imports', () =>
+    settleSetupOperations([
+      import('@valkey/valkey-glide'),
+      import('@voucha/scripts/seed'),
+      import('@services/bedrock-embeddings'),
+      import('@services/urls-domains-blacklist'),
+      import('@services/dynamic-config-admin/registry'),
+      import('../backend/test-helpers/dynamic-config.mts'),
+    ]),
+  )
 
   // Suppress WARN-level messages from Glide's Rust logger (e.g. "item exists" from BF.RESERVE)
   Logger.setLoggerConfig('error')
 
-  await seed()
-  await Promise.all(
-    dynamicConfigRegistry.map(async ({ config }) => {
-      await config.waitForInitialization()
-      await persistDynamicConfigTestBaseline(config)
-    }),
+  await timedSetupPhase('seed', seed)
+  await timedSetupPhase('dynamic-config', () =>
+    settleSetupOperations(
+      dynamicConfigRegistry.map(({ config }) =>
+        timedSetupPhase(`dynamic-config:${config.key}`, async () => {
+          await config.waitForInitialization()
+          await persistDynamicConfigTestBaseline(config)
+        }),
+      ),
+    ),
   )
-  await Promise.all([
-    warmUpEmbeddingBloomFilter(),
-    warmUpUrlBlocklistBloomFilter(),
-    warmUpEmailBlocklistBloomFilter(),
-  ])
+  await timedSetupPhase('bloom-warmup', () =>
+    settleSetupOperations([
+      timedSetupPhase('bloom-embeddings', warmUpEmbeddingBloomFilter),
+      timedSetupPhase('bloom-url-blocklist', warmUpUrlBlocklistBloomFilter),
+      timedSetupPhase('bloom-email-blocklist', warmUpEmailBlocklistBloomFilter),
+    ]),
+  )
 }
 
-// Mirrors the condition that wires the CI reporters (test-helpers/vitest-ci-reporters.mts) —
-// same signal that turns on the teardown-overrun reporter also turns on this timing, so the
-// two stay silent or visible together. Keeps plain local `vitest run` output quiet.
-const emitTeardownTiming = process.env.VITEST_CI_REPORTERS === 'run'
+const emitTeardownTiming = process.env.VITEST_DIAGNOSTICS === '1'
 
 // Diagnoses the #8259 teardownTimeout race: on a force-kill, the last "start" line with no
 // matching "done" line names which teardown phase was still in flight. Each phase gets its
@@ -90,18 +135,6 @@ async function timedTeardownPhase(phase: string, run: () => Promise<void>): Prom
 
 export async function teardown() {
   const overallStart = emitTeardownTiming ? performance.now() : 0
-
-  await timedTeardownPhase('queues', async () => {
-    /**
-     * Clean all queues to avoid unnecessary calls to external services like OpenAI.
-     */
-    const { default: queues } = await import('@services/queue-monitoring/queue-inventory')
-    await Promise.all(
-      queues.map((queue: { obliterate(opts: { force: boolean }): Promise<void> }) =>
-        queue.obliterate({ force: true }),
-      ),
-    )
-  })
 
   await timedTeardownPhase('native-drain', async () => {
     /**

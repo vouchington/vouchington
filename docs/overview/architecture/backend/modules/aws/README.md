@@ -20,7 +20,9 @@ are absent.
 ### SES
 
 - `SESClient` — lazy-initialized SES client
-- `sendEmail(options: SendEmailOptions)` — sends a transactional email via SES
+- `sendEmail(options: SendEmailOptions)` — sends a transactional email via SES. The client keeps
+  `maxAttempts: 1`, so a `Throttling` rejection (HTTP 400) is retried by the email queue through
+  [`wrapHttpForRetry`](../queue-errors/README.md#wraphttpforretryerr-unknown-never)
 - `hasSESCredentials()` / `getSESCredentials()` — checks and returns SES credentials from env vars
 
 Local development uses explicit `SES_AWS_*` credentials (or shared `AWS_*` credentials as a

@@ -4,8 +4,11 @@ import { calcCostMicrounits } from './pricing.mts'
 
 type Verdict = { capital: string }
 
-// Real Anthropic call (credentialed project `backend-anthropic`): the key or the federated token
-// must be set, like every other credentialed test. Pull-request CI does not select this project.
+// Non-gating smoke check of the live Anthropic Messages API (credentialed project
+// `backend-anthropic`): the key or the federated token must be set, like every other credentialed
+// test. The request we build, response parsing, usage normalization and failure classification are
+// gated by recorded responses in generate.replay.no-data.mock.test.mts.
+// See docs/development/tests.md#live-provider-smoke-checks.
 describe('generateJson on Anthropic Haiku 5.5', () => {
   it('returns schema-valid JSON with priced provider-neutral usage', async () => {
     const result = await generateJson(

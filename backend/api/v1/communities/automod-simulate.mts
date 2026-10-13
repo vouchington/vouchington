@@ -2,11 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertDailySpendCapNotBreached } from '@services/ai-usage'
-import {
-  currentUserCanModerateCommunity,
-  getCommunityMember,
-  getCommunityOrThrow,
-} from '@services/communities'
+import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import {
   getCommunityAgentPrompt,
   getCommunityAgentPromptFalsePositiveEstimate,
@@ -20,8 +16,7 @@ import { createAutomodSimulationResults } from './automod-simulate-response.mts'
 app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/automod/simulate')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const community = await getCommunityOrThrow(idOrSlug)
-  const membership = await getCommunityMember(community.id, currentUser.id)
+  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
   ctx.assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 

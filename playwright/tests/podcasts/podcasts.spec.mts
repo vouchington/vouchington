@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestPodcastShow } from '../../helpers/insert-test-podcast.mts'
@@ -11,6 +11,7 @@ test.describe('Podcast Hub', () => {
   let episodeIds: string[]
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     suffix = randomSuffix()
     const podcast = await insertTestPodcastShow(suffix)
     topicSlug = podcast.topicSlug

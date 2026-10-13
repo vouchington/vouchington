@@ -1,23 +1,16 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { initSqlAst } from 'vouchington-tooling/sql-ast'
+import { describe, expect, it } from 'vitest'
 
-import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 
-describe('config-driven generated DDL insert invariant: multiple inserts in one unparseable fragment', () => {
-  beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-
+describe('config-driven generated DDL insert invariant: sibling inserts', () => {
   it(
     'fails closed on a DO-body fragment carrying two inserts when a guard token on one ' +
       'could otherwise mask the other',
-    () => {
-      // splitSqlStatements has no PL/pgSQL grammar, so the leading BEGIN of a DO body glues
-      // onto whatever comes before the first top-level semicolon — here, a whole two-CTE
-      // WITH statement. That combined text fails to parse standalone, so this reaches the
-      // masked text fallback with two INSERT INTO occurrences: foo's own DO NOTHING must not
-      // be mistaken for a guard on bar's entirely unguarded insert.
+    async () => {
+      // Each CTE has its own replay contract. A guard on foo must never
+      // hide bar's unguarded insert inside the same DO body.
       expect(
-        findFirstUnguardedInsertViolation(`DO $$
+        await findFirstUnguardedInsertViolation(`DO $$
 BEGIN
 WITH a AS (
   INSERT INTO foo (id) VALUES ('a') ON CONFLICT (id) DO NOTHING
@@ -27,19 +20,13 @@ WITH a AS (
 SELECT 1;
 END
 $$;`),
-      ).toBe(
-        "INSERT INTO foo (id) VALUES ('a') ON CONFLICT (id) DO NOTHING\n" +
-          '), b AS (\n' +
-          "  INSERT INTO bar (id) VALUES ('b')\n" +
-          ')\n' +
-          'SELECT 1',
-      )
+      ).toBe("INSERT INTO bar (id) VALUES ('b')")
     },
   )
 
-  it('does not flag a DO-body fragment whose single glued-BEGIN chunk carries only one insert', () => {
+  it('does not flag a DO body containing one guarded insert', async () => {
     expect(
-      findFirstUnguardedInsertViolation(`DO $$
+      await findFirstUnguardedInsertViolation(`DO $$
 BEGIN
 INSERT INTO foo (id) VALUES ('a') ON CONFLICT (id) DO NOTHING;
 END

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   followUser,
@@ -178,7 +178,7 @@ describe('RSS Feed Items Routes', () => {
     it('returns only followed-user rss item votes', async () => {
       const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const followedUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-      const unfollowedUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+      const dislikedFollower = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const topic = await createTestTopic({ user: viewer })
       const feedId = await createTestRssFeedWithTiming(topic.id)
       const guid = `follow-context-guid-${Math.random().toString(36).slice(2, 10)}`
@@ -192,6 +192,7 @@ describe('RSS Feed Items Routes', () => {
       })
 
       await followUser(viewer, followedUser)
+      await followUser(viewer, dislikedFollower)
 
       const followedRequest = createRequest()
       await followedRequest.authenticateAs(followedUser)
@@ -200,24 +201,38 @@ describe('RSS Feed Items Routes', () => {
         .send({ choice: 'like' })
         .expect(204)
 
-      const unfollowedRequest = createRequest()
-      await unfollowedRequest.authenticateAs(unfollowedUser)
-      await unfollowedRequest
+      const dislikedRequest = createRequest()
+      await dislikedRequest.authenticateAs(dislikedFollower)
+      await dislikedRequest
         .put(`/api/v1/rss-feed-items/${itemId}/vote`)
         .send({ choice: 'dislike' })
         .expect(204)
 
       const request = createRequest()
       await request.authenticateAs(viewer)
-      const response = await request
-        .get(`/api/v1/rss-feed-items/${itemId}/follow-context`)
-        .expect(200)
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+      vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+      try {
+        const response = await request
+          .get(`/api/v1/rss-feed-items/${itemId}/follow-context`)
+          .expect(200)
+        const profileLines = stderr.mock.calls
+          .map(([chunk]) => String(chunk))
+          .filter(line => line.startsWith('[pg-request-profile]'))
+        expect(profileLines).toHaveLength(1)
+        expect(profileLines[0]).toContain('route=GET /api/v1/rss-feed-items/:id/follow-context ')
+        expect(profileLines[0]).not.toContain('getPublicUsersByAnyBatch')
 
-      expect(response.body.positive_by_following.total).toBe(1)
-      expect(response.body.positive_by_following.users).toHaveLength(1)
-      expect(response.body.positive_by_following.users[0].id).toBe(followedUser.id)
-      expect(response.body.negative_by_following.total).toBe(0)
-      expect(response.body.negative_by_following.users).toHaveLength(0)
+        expect(response.body.positive_by_following.total).toBe(1)
+        expect(response.body.positive_by_following.users).toHaveLength(1)
+        expect(response.body.positive_by_following.users[0].id).toBe(followedUser.id)
+        expect(response.body.negative_by_following.total).toBe(1)
+        expect(response.body.negative_by_following.users).toHaveLength(1)
+        expect(response.body.negative_by_following.users[0].id).toBe(dislikedFollower.id)
+      } finally {
+        stderr.mockRestore()
+        vi.unstubAllEnvs()
+      }
     })
   })
 })

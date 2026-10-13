@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -15,6 +15,7 @@ let COMMUNITY_SLUG = ''
 let TOPIC_SLUG = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   const suffix = randomSuffix()
   TOPIC_SLUG = `pw-cs-topic-${suffix}`
   const communitySlug = `pw-cs-community-${suffix}`

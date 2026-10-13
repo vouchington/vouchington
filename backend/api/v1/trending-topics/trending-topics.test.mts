@@ -41,22 +41,21 @@ describe('trending-topics', () => {
       })
 
       it('should return topics as objects (streaming pattern)', async () => {
-        // Use a very high tag count to produce a score well above accumulated data
-        // from prior test runs (dirty-database pattern). Score = 500*5 + 100 = 2600.
         const { topicId, feedId, userId } = await createTrendingTopicData({
-          postTagCount: 500,
-          rssItemTagCount: 100,
+          postTagCount: 1,
+          rssItemTagCount: 1,
           netVote: 1,
         })
         testIds.push(feedId, topicId, userId)
 
         // Use an authenticated request to bypass the Valkey search cache (which caches
         // anon results for 60s) so the newly created topic appears in the response.
-        // Use a high min_score to filter out low-scoring accumulated data from prior runs.
+        // The public cursor starts immediately before the owned score/UUID tuple.
         const request = createRequest()
         await request.authenticateAs(admin)
         const response = await request
-          .get('/api/v1/trending-topics?limit=100&min_score=2000')
+          .get('/api/v1/trending-topics')
+          .query({ limit: 1, min_score: 6, after: createTrendingTopicCursorBefore(topicId, 6) })
           .expect(200)
 
         // Streaming pattern: topics and topics_metrics are objects, not arrays
@@ -67,19 +66,18 @@ describe('trending-topics', () => {
         // results should still be an array
         expect(Array.isArray(response.body.results)).toBe(true)
 
-        // Only verify our specific topic to avoid race conditions from parallel tests:
-        // trending-topics has no user filter, so other tests' topics may appear in results
-        // and be deleted mid-flight by their afterAll cleanup.
+        // The boundary includes the owned tuple without dominating the global ranking.
         expect(response.body.topics[topicId]).toBeDefined()
         expect(response.body.topics_metrics[topicId]).toBeDefined()
-      }, 120_000)
+        expect(response.body.results.map((row: { id: string }) => row.id)).toEqual([topicId])
+      })
 
       it('should support pagination with limit', async () => {
         // Create multiple trending topics in parallel — each dataset is independent.
         const datasets = await Promise.all(
-          Array.from({ length: 5 }, (_, i) =>
+          Array.from({ length: 4 }, () =>
             createTrendingTopicData({
-              postTagCount: i + 1,
+              postTagCount: 1,
               rssItemTagCount: 1,
               netVote: 1,
             }),
@@ -90,12 +88,24 @@ describe('trending-topics', () => {
         }
 
         const request = createRequest()
-        const response = await request.get('/api/v1/trending-topics?limit=3').expect(200)
+        const ownedIds = datasets
+          .map(row => row.topicId)
+          .toSorted()
+          .toReversed()
+        const response = await request
+          .get('/api/v1/trending-topics')
+          .query({
+            limit: 3,
+            min_score: 6,
+            after: createTrendingTopicCursorBefore(ownedIds[0]!, 6),
+          })
+          .expect(200)
 
         expect(response.body.results).toHaveLength(3)
+        expect(response.body.results[0]?.id).toBe(ownedIds[0])
         expect(response.body.page_info.has_next_page).toBe(true)
         expect(response.body.page_info.end_cursor).toBeDefined()
-      }, 60_000)
+      })
 
       it('should support time_range parameter', async () => {
         const { topicId, feedId, userId } = await createTrendingTopicData({
@@ -110,6 +120,11 @@ describe('trending-topics', () => {
 
         expect(response.body.results).toBeDefined()
         expect(response.body.page_info).toBeDefined()
+        const owned = await request
+          .get('/api/v1/trending-topics')
+          .query({ time_range: 'week', after: createTrendingTopicCursorBefore(topicId, 11) })
+          .expect(200)
+        expect(owned.body.results[0]?.id).toBe(topicId)
       })
 
       it('should support min_score parameter', async () => {
@@ -118,8 +133,8 @@ describe('trending-topics', () => {
           feedId: feedId1,
           userId: userId1,
         } = await createTrendingTopicData({
-          postTagCount: 5,
-          rssItemTagCount: 3,
+          postTagCount: 2,
+          rssItemTagCount: 1,
           netVote: 1,
         })
         testIds.push(feedId1, topicId1, userId1)
@@ -144,7 +159,7 @@ describe('trending-topics', () => {
         await request.authenticateAs(admin)
         const response = await request
           .get('/api/v1/trending-topics')
-          .query({ min_score: 10, after: createTrendingTopicCursorBefore(topicId1, 28) })
+          .query({ min_score: 10, after: createTrendingTopicCursorBefore(topicId1, 11) })
           .expect(200)
 
         // In the shared dirty database, an older topic could satisfy min_score=10 even if the
@@ -168,9 +183,9 @@ describe('trending-topics', () => {
       it('should support after cursor for pagination', async () => {
         // Create multiple trending topics in parallel — each dataset is independent.
         const datasets = await Promise.all(
-          Array.from({ length: 3 }, (_, i) =>
+          Array.from({ length: 3 }, () =>
             createTrendingTopicData({
-              postTagCount: 3 - i,
+              postTagCount: 1,
               rssItemTagCount: 1,
               netVote: 1,
             }),
@@ -183,14 +198,25 @@ describe('trending-topics', () => {
         const request = createRequest()
 
         // Get first page
-        const response1 = await request.get('/api/v1/trending-topics?limit=2').expect(200)
+        const ownedIds = datasets
+          .map(row => row.topicId)
+          .toSorted()
+          .toReversed()
+        const response1 = await request
+          .get('/api/v1/trending-topics')
+          .query({
+            limit: 2,
+            min_score: 6,
+            after: createTrendingTopicCursorBefore(ownedIds[0]!, 6),
+          })
+          .expect(200)
         expect(response1.body.results).toHaveLength(2)
         expect(response1.body.page_info.end_cursor).toBeDefined()
 
         // Get second page using cursor
         const cursor = response1.body.page_info.end_cursor
         const response2 = await request
-          .get(`/api/v1/trending-topics?limit=2&after=${cursor}`)
+          .get(`/api/v1/trending-topics?limit=2&min_score=6&after=${cursor}`)
           .expect(200)
 
         expect(response2.body.results).toBeDefined()
@@ -198,6 +224,17 @@ describe('trending-topics', () => {
         const firstPageIds = response1.body.results.map((r: { id: string }) => r.id)
         const secondPageIds = response2.body.results.map((r: { id: string }) => r.id)
         expect(firstPageIds).not.toEqual(secondPageIds)
+        expect(secondPageIds.length).toBeGreaterThan(0)
+        expect(secondPageIds.length).toBeLessThanOrEqual(2)
+        expect(firstPageIds[0]).toBe(ownedIds[0])
+        expect(secondPageIds.every((id: string) => !firstPageIds.includes(id))).toBe(true)
+        for (const id of ownedIds) {
+          const owned = await request
+            .get('/api/v1/trending-topics')
+            .query({ limit: 1, min_score: 6, after: createTrendingTopicCursorBefore(id, 6) })
+            .expect(200)
+          expect(owned.body.results.map((row: { id: string }) => row.id)).toEqual([id])
+        }
       })
 
       it('should reject invalid cursor with 400', async () => {

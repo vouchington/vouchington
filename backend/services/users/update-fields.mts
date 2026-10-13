@@ -6,7 +6,7 @@ import { validateUsername } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import type { UpdateUserOptions } from './types.mts'
 import { oauthProviders } from '@services/oauth-accounts'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
 import sql from 'sql-template-strings'
 import { appendSet, appendVisibilityFields } from './update-fields-visibility.mts'
@@ -131,7 +131,7 @@ export async function updateUserFields(userId: string, options: UpdateUserOption
   await write(query)
 
   if (typeof username === 'string') {
-    void entityCacheBloomFilters.users.add([normalizeKey(username)])
+    void addEntityBloomKeys('users', [normalizeKey(username)])
   }
   await Promise.all([
     invalidate.users(userId, previousUsername, validatedUsername),

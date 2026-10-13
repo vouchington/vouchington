@@ -6,40 +6,41 @@ Durable exact image-placement delivery outbox; image and placement parents are r
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                            | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                                                                                         |
-| -------------------- | ------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `delivery_key`       | `text`                          | no       |                     |          |           |           | Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.                                                                                                                          |
-| `placement_id`       | `uuid`                          | no       |                     |          |           |           | Typed placement authority; never inferred from image existence.                                                                                                                                                 |
-| `placement_revision` | `integer`                       | no       |                     |          |           |           | Exact placement revision required by a placement route; stale revisions are independently withheld.                                                                                                             |
-| `image_id`           | `uuid`                          | no       |                     |          |           |           | Immutable image bound to the exact public-use placement.                                                                                                                                                        |
-| `desired_state`      | `media_delivery_desired_states` | no       |                     |          |           |           | Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.                                                       |
-| `generation`         | `bigint`                        | no       | `0`                 |          |           |           | Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused. |
-| `created_at`         | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                                                                                 |
-| `updated_at`         | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                                                                                 |
+| Column               | Type                            | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                                                         |
+| -------------------- | ------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                          | no       | `uuidv7()`                   |          |           |           | Stable retained delivery authority identity for an exact placement revision and image binding.                                                                                                                  |
+| `placement_id`       | `uuid`                          | no       |                              |          |           |           | Typed placement authority; never inferred from image existence.                                                                                                                                                 |
+| `placement_revision` | `integer`                       | no       |                              |          |           |           | Exact placement revision required by a placement route; stale revisions are independently withheld.                                                                                                             |
+| `image_id`           | `uuid`                          | no       |                              |          |           |           | Immutable image bound to the exact public-use placement.                                                                                                                                                        |
+| `desired_state`      | `media_delivery_desired_states` | no       |                              |          |           |           | Staging cache of the desired edge state, captured atomically in each immutable generation transition; current delivery readers use the latest transition.                                                       |
+| `generation`         | `bigint`                        | no       | `0`                          |          |           |           | Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused. |
+| `latest_change_id`   | `uuid`                          | yes      |                              |          |           |           | Trigger-maintained current immutable transition, advanced under the retained authority lock independently of history UUID order.                                                                                |
+| `created_at`         | `timestamp with time zone`      | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                 |
+| `updated_at`         | `timestamp with time zone`      | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                                                 |
 
-**Primary key:** `PRIMARY KEY (delivery_key)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `media_delivery_registry_recor_placement_id_placement_revisi_key`: `UNIQUE (placement_id, placement_revision, image_id)`
 
 **Check constraints:**
 
-- `media_delivery_registry_records_delivery_key_check`: `CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))`
 - `media_delivery_registry_records_desired_state_check`: `CHECK ((desired_state = ANY (ARRAY['allow'::media_delivery_desired_states, 'withheld'::media_delivery_desired_states])))`
-- `media_delivery_registry_records_exact_key`: `CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))`
 - `media_delivery_registry_records_generation_check`: `CHECK ((generation >= 0))`
 - `media_delivery_registry_records_placement_revision_check`: `CHECK ((placement_revision >= 0))`
 
 **Foreign keys:**
 
 - `fk_media_delivery_registry_records__retained_image_binding`: `FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT`
+- `fk_media_registry_records__latest_change`: `FOREIGN KEY (id, latest_change_id) REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, id) ON DELETE RESTRICT`
 - `media_delivery_registry_records_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_media_delivery_registry_records__image`: `CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id)`
-- `idx_media_delivery_registry_records__placement`: `CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id)`
-- `media_delivery_registry_records_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)`
+- `media_delivery_registry_recor_placement_id_placement_revisi_key`: `CREATE UNIQUE INDEX media_delivery_registry_recor_placement_id_placement_revisi_key ON public.media_delivery_registry_records USING btree (placement_id, placement_revision, image_id)`
+- `media_delivery_registry_records_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (id)`
 
 **Triggers:**
 

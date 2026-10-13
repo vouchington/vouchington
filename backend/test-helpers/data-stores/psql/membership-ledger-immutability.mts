@@ -24,7 +24,7 @@ export async function createTestImmutableMembershipGrant(): Promise<string> {
     sql`/* getImmutableTestGrantProduct */ SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`,
   )
   const { rows } = await write<{ id: string }>(sql`/* createImmutableTestGrant */
-    WITH source AS (INSERT INTO membership_sources (user_id, source_kind) VALUES ((SELECT id FROM users ORDER BY id LIMIT 1), 'admin_grant') RETURNING id, user_id)
+    WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id), source AS (INSERT INTO membership_sources (user_id, source_kind) SELECT id, 'admin_grant' FROM actor RETURNING id, user_id)
     INSERT INTO membership_grants (membership_source_id, user_id, membership_product_id, calendar_days, issuer_snapshot)
     SELECT id, user_id, ${products[0]!.id}, 30, 'Test issuer' FROM source RETURNING id`)
   return rows[0]!.id
@@ -44,7 +44,7 @@ export function attemptTestMembershipGrantMutation(
       )
     case 'revoke':
       return write(
-        sql`/* revokeTestMembershipGrant */ UPDATE membership_grants SET revoked_at = CURRENT_TIMESTAMP, revoked_by_id = (SELECT id FROM users ORDER BY id LIMIT 1), revocation_reason = 'policy reversal' WHERE id = ${grantId}`,
+        sql`/* revokeTestMembershipGrant */ UPDATE membership_grants SET revoked_at = CURRENT_TIMESTAMP, revoked_by_id = user_id, revocation_reason = 'policy reversal' WHERE id = ${grantId}`,
       )
     case 'rewriteReason':
       return write(
@@ -52,7 +52,7 @@ export function attemptTestMembershipGrantMutation(
       )
     case 'rewriteRevoker':
       return write(
-        sql`/* rewriteTestMembershipGrantRevoker */ UPDATE membership_grants SET revoked_by_id = (SELECT id FROM users ORDER BY id DESC LIMIT 1) WHERE id = ${grantId}`,
+        sql`/* rewriteTestMembershipGrantRevoker */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) UPDATE membership_grants SET revoked_by_id = (SELECT id FROM actor) WHERE id = ${grantId}`,
       )
   }
 }
@@ -183,7 +183,7 @@ export function setTestLineageBindingOriginatingInvoice(
 export async function createTestImmutableMembershipChange(): Promise<string> {
   const changeId = randomUUID()
   await write(
-    sql`/* createImmutableTestMembershipChange */ INSERT INTO membership_changes (id, membership_id, user_id, change_type, note) VALUES (${changeId}, ${await createTestRetainedMembershipIdentity()}, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin_grant', 'original')`,
+    sql`/* createImmutableTestMembershipChange */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) INSERT INTO membership_changes (id, membership_id, user_id, change_type, note) SELECT ${changeId}, ${await createTestRetainedMembershipIdentity()}, id, 'admin_grant', 'original' FROM actor`,
   )
   return changeId
 }

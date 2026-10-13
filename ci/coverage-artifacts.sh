@@ -60,6 +60,7 @@ case "$command" in
       echo "::error::No LCOV artifacts found for the ${coverage_area} area coverage gate." >&2
       exit 1
     fi
+    node ci/check-coverage-scope.mts
     merge_coverage_artifacts
     collect_whitespace_ignore_args
     area_rules_file="$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/coverage-rules-${coverage_area}.XXXXXX")"

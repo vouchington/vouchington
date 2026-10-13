@@ -15,7 +15,7 @@ describe('assert-hostname-not-blocked', () => {
     const urlId = await insertTestUrl({ url: `https://ok-${random}.example.com/page`, hostnameId })
 
     await expect(assertUrlsHaveNoBlockedHostnames([urlId])).resolves.toBeUndefined()
-  }, 60_000)
+  })
 
   it('assertUrlsHaveNoBlockedHostnames throws 422 for blocked hostname', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -33,7 +33,7 @@ describe('assert-hostname-not-blocked', () => {
     expect(() => {
       throw error
     }).toThrow(/blocked/)
-  }, 60_000)
+  })
 
   it('assertUrlsHaveNoBlockedHostnames passes for empty array', async () => {
     await expect(assertUrlsHaveNoBlockedHostnames([])).resolves.toBeUndefined()
@@ -60,5 +60,5 @@ describe('assert-hostname-not-blocked', () => {
     const attemptPenalty = penalties.find(p => p.reason === 'blocked_hostname_attempt')
     expect(attemptPenalty).toBeDefined()
     expect(attemptPenalty!.user_id).toBe(testUser.id)
-  }, 60_000)
+  })
 })

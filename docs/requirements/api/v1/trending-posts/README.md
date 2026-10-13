@@ -37,3 +37,9 @@ Cached (short TTL) for unauthenticated users.
 
 - Service: [../../../services/trending-posts/](../../../../overview/architecture/services/trending-posts/README.md)
 - Parent: [../../AGENTS.md](../../../../../backend/api/AGENTS.md)
+
+## Live pagination
+
+The opaque `after` cursor retains its score and post UUID. When that post exists, the query recomputes its boundary score using the same SQL statement clock and hot-score expression as the returned rows; the stored score is intentionally not used for an existing post. This prevents the boundary row repeating solely because its score decayed between requests. A soft-deleted post still supplies the boundary but is excluded from results. If the cursor UUID has no post row, its supplied score remains the boundary.
+
+Pagination follows live ranking, not a snapshot: vote changes, eligibility changes, or future-dated rows moving through the age-zero clamp can change traversal membership. Returned scores keep their current time-decay meaning, and the cursor shape and UUID validation remain unchanged. REST and MCP share this service behavior.

@@ -36,7 +36,7 @@ Conditional-required validation is enforced in `normalizeTopicRecommendationValu
 
 - generic `/api/posts` does not expose `topic_recommendation`
 - generic `/api/posts/:idOrSlug` routes do not expose `topic_recommendation`
-- generic tools like `search_posts` do not expose `topic_recommendation`
+- generic tools like `read_posts(search)` do not expose `topic_recommendation`
 - generic semantic post search does not expose `topic_recommendation`
 - the dedicated `/api/topic-recommendations` route and service search do expose them
 

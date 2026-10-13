@@ -6,12 +6,11 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import {
-  getCommunityOrThrow,
-  loadCommunityForApplicationQuestions,
-  getCommunityMember,
-  getApplicationQuestions,
-  setApplicationQuestions,
   currentUserCanUpdateCommunity,
+  getApplicationQuestions,
+  loadCommunityForApplicationQuestions,
+  loadCommunityWithViewer,
+  setApplicationQuestions,
   type ApplicationQuestionInput,
 } from '@services/communities'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -45,9 +44,7 @@ app
     )
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
-
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
     const body = (await ctx.request.json('1mb')) as { questions: ApplicationQuestionInput[] }

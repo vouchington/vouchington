@@ -30,14 +30,12 @@ describe('RSS feed item category view', () => {
     ])
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: authoredHashtags }])
 
-    await expect
-      .poll(async () => {
-        const observed = await getRssFeedItemById(item.id)
-        return observed?.categories
-          ?.filter(category => category.topic?.id === topic.id)
-          .flatMap(category => (category.hashtag ? [category.hashtag.key] : []))
-          .toSorted()
-      })
-      .toEqual(authoredHashtags.toSorted())
+    const observed = await getRssFeedItemById(item.id)
+    expect(
+      observed?.categories
+        ?.filter(category => category.topic?.id === topic.id)
+        .flatMap(category => (category.hashtag ? [category.hashtag.key] : []))
+        .toSorted(),
+    ).toEqual(authoredHashtags.toSorted())
   })
 })

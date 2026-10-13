@@ -23,6 +23,7 @@ export const RewardsSetup: Story = {
     subtitle: page.subtitle,
     title: page.title,
     userMarkdown: user.markdown,
+    detectedLanguage: user.lingua_rs_detected_language,
     username: user.username,
   },
   render: args => (

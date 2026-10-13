@@ -84,6 +84,10 @@ export type ToolMeta = {
   // buckets. Absent, every listed endpoint is exercised. It is never serialized, so the catalog and
   // the MCP fixtures still list the whole `api`.
   selectApi?: (args: Record<string, unknown>) => readonly ToolApiEndpoint[]
+  // A merged tool validates the selected source contract before its advertised output union.
+  selectOutputSchema?: (args: Record<string, unknown>) => ToolOutputSchema | undefined
+  // Only registered literal options from a merged tool may enter the durable call audit.
+  auditOption?: (args: Record<string, unknown>) => string | null
   // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
   // result as `structuredContent`, validated against it. A tool that returns its REST twin's
   // body unchanged derives it from the generated response contract

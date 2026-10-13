@@ -1,3 +1,4 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import createHttpError from 'http-errors'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -10,16 +11,15 @@ import {
   REFERRAL_LINK_RESULT_SCHEMA,
   type ReferralLinkIdArgs,
 } from './referral-link-tool-support.mts'
-import type { Tool } from '@services/openai-agents/tool-types'
 
-const tool: Tool<ReferralLinkIdArgs, { success: true; referral_link: UserReferralLink }> = {
+const tool: MergedToolSource<
+  ReferralLinkIdArgs,
+  { success: true; referral_link: UserReferralLink }
+> = {
   schema: {
-    name: 'deactivate_referral_link',
-    type: 'function',
     description:
       'Turn a referral link you own off so it is no longer shown, without deleting it. Links the system derived from another link follow their parent and cannot be turned off by themselves.',
     parameters: REFERRAL_LINK_ID_PARAMETERS,
-    strict: null,
   },
   meta: {
     surfaces: ['mcp'],

@@ -40,7 +40,7 @@ describe('buildAutotaggerAgentInput', () => {
 
 describe('AUTOTAGGER_AGENT_INSTRUCTIONS', () => {
   it('asks for facts only, through the two tools', () => {
-    expect(AUTOTAGGER_AGENT_INSTRUCTIONS).toContain('search_topics')
+    expect(AUTOTAGGER_AGENT_INSTRUCTIONS).toContain('lookup_candidate_topics')
     expect(AUTOTAGGER_AGENT_INSTRUCTIONS).toContain('submit_topics')
     expect(AUTOTAGGER_AGENT_INSTRUCTIONS).toContain('never invent an id')
   })

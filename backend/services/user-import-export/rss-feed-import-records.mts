@@ -11,6 +11,11 @@ import {
   toImportSummary,
 } from './rss-feed-import-types.mts'
 
+type ImportReadRow = Pick<
+  UserRssFeedImportRow,
+  'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'
+> & { row_id: string | null }
+
 export async function createRssFeedImport(
   userId: string,
   provenance: ContentProvenance,
@@ -18,8 +23,9 @@ export async function createRssFeedImport(
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
   await using query = await beginTransaction()
-  const { rows: batchRows } = await write(
+  const { rows } = await write(
     sql`/* createRssFeedImport */
+      WITH inserted_batch AS (
         INSERT INTO user_rss_feed_import_batches (
           user_id,
           created_via,
@@ -35,32 +41,38 @@ export async function createRssFeedImport(
           ${urls.length}
         )
         RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
-      `,
-    { query },
-  )
-  const batch = batchRows[0] as UserRssFeedImportBatchRow
-
-  const { rows: importRows } = await write(
-    sql`/* createRssFeedImport */
+      ), inserted_rows AS (
         INSERT INTO user_rss_feed_import_rows (
           batch_id,
           row_index,
           input_url
         )
-        SELECT ${batch.id}, row_index, input_url
-        FROM UNNEST(
+        SELECT inserted_batch.id, input.row_index, input.input_url
+        FROM inserted_batch
+        CROSS JOIN UNNEST(
           ${urls.map((_, index) => index)}::int[],
           ${urls}::text[]
-        ) AS t(row_index, input_url)
-        RETURNING id
+        ) AS input(row_index, input_url)
+        RETURNING id, row_index
+      )
+      SELECT inserted_batch.id, inserted_batch.total_rows, inserted_batch.completed_rows,
+        inserted_batch.failed_rows, inserted_batch.completed_at, inserted_batch.created_at,
+        inserted_rows.id AS row_id
+      FROM inserted_batch
+      LEFT JOIN inserted_rows ON TRUE
+      ORDER BY inserted_rows.row_index
       `,
     { query },
   )
 
+  const batch = rows[0] as UserRssFeedImportBatchRow
+
   await query.commit()
   return {
     import: toImportSummary(batch),
-    rowIds: (importRows as Array<{ id: string }>).map(row => row.id),
+    rowIds: (rows as Array<{ row_id: string | null }>).flatMap(row =>
+      row.row_id === null ? [] : [row.row_id],
+    ),
   }
 }
 
@@ -70,30 +82,27 @@ export async function getRssFeedImport(
 ): Promise<UserRssFeedImport | null> {
   if (!isUUID(importId)) return null
 
-  const { rows: batchRows } = await read(
-    sql`/* getRssFeedImport */
-      SELECT id, total_rows, completed_rows, failed_rows, completed_at, created_at
-      FROM user_rss_feed_import_batches
-      WHERE id = ${importId}
-        AND user_id = ${currentUserId}
-      LIMIT 1
-    `,
-  )
-  const batch = batchRows[0] as UserRssFeedImportBatchRow | undefined
-  if (!batch) return null
-
   const { rows } = await read(
     sql`/* getRssFeedImport */
-      SELECT id, input_url, outcome, error_message, rss_feed_id
-      FROM user_rss_feed_import_rows
-      WHERE batch_id = ${importId}
-      ORDER BY row_index ASC
+      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
+        batch.completed_at, batch.created_at, import_row.id AS row_id,
+        import_row.input_url, import_row.outcome, import_row.error_message,
+        import_row.rss_feed_id
+      FROM user_rss_feed_import_batches batch
+      LEFT JOIN user_rss_feed_import_rows import_row ON import_row.batch_id = batch.id
+      WHERE batch.id = ${importId}
+        AND batch.user_id = ${currentUserId}
+      ORDER BY import_row.row_index
     `,
   )
+  const batch = rows[0] as UserRssFeedImportBatchRow | undefined
+  if (!batch) return null
 
   return {
     import: toImportSummary(batch),
-    rows: (rows as UserRssFeedImportRow[]).map(toImportRowResult),
+    rows: (rows as ImportReadRow[]).flatMap(row =>
+      row.row_id === null ? [] : [toImportRowResult({ ...row, id: row.row_id })],
+    ),
   }
 }
 

@@ -5,19 +5,14 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
-import { getCommunity } from '../get.mts'
-import { getCommunityMember } from '../members/get.mts'
+import type { LoadedCommunity } from '../load-with-viewer.mts'
 
 export async function liftCommunityRestriction(
   currentUser: PrivateUser,
-  communityId: string,
+  { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   restrictionId: string,
 ): Promise<void> {
-  const [community, membership] = await Promise.all([
-    getCommunity(communityId),
-    getCommunityMember(communityId, currentUser.id),
-  ])
-  assert(community, 404, 'Community not found')
+  const communityId = community.id
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   await using query = await beginTransaction()

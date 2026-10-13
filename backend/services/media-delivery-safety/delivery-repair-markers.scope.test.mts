@@ -6,7 +6,6 @@ import {
   reconcileTestDeliveryRepairMarker,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { reconcileMediaDeliveryRepairMarkers } from './index.mts'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
 
 describe('scoped delivery repair', () => {
@@ -16,14 +15,14 @@ describe('scoped delivery repair', () => {
   })
 
   it('consumes only an owned repair marker and preserves the unrelated token', async () => {
-    const selected = (await createTestDeliverySurface()).tuple
-    const unrelated = (await createTestDeliverySurface()).tuple
-    const selectedKey = getImagePlacementDeliveryKey(selected)
-    const unrelatedKey = getImagePlacementDeliveryKey(unrelated)
+    const selected = await createTestDeliverySurface()
+    const unrelated = await createTestDeliverySurface()
+    const selectedKey = selected.mediaDeliveryRegistryRecordId
+    const unrelatedKey = unrelated.mediaDeliveryRegistryRecordId
     installTestMediaDeliveryEdge()
     await Promise.all([
-      recordImageDeliveryRepairMarker(selected),
-      recordImageDeliveryRepairMarker(unrelated),
+      recordImageDeliveryRepairMarker(selected.tuple),
+      recordImageDeliveryRepairMarker(unrelated.tuple),
     ])
     const unrelatedToken = await getTestDeliveryRepairMarker(unrelatedKey)
     expect(await reconcileMediaDeliveryRepairMarkers(10, [selectedKey])).toBe(1)

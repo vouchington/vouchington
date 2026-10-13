@@ -1,12 +1,9 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { checkMonetaryContractFile, checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkMonetaryMigration } from './monetary-migration-guard.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 describe('monetary contract guard', () => {
-  beforeAll(() => initSqlAst())
-
   it('checks final monetary storage from the generated schema snapshot', () => {
     const errors: string[] = []
     checkMonetarySnapshot(
@@ -28,10 +25,10 @@ describe('monetary contract guard', () => {
     ])
   })
 
-  it('rejects decimal and floating-point storage for monetary columns', () => {
+  it('rejects decimal and floating-point storage for monetary columns', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -49,10 +46,10 @@ describe('monetary contract guard', () => {
     ])
   })
 
-  it('rejects ambiguous cents and dollars column names even when integer-backed', () => {
+  it('rejects ambiguous cents and dollars column names even when integer-backed', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -71,10 +68,10 @@ describe('monetary contract guard', () => {
     ])
   })
 
-  it('requires integer monetary columns to have a currency association', () => {
+  it('requires integer monetary columns to have a currency association', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -89,9 +86,9 @@ describe('monetary contract guard', () => {
     expect(errors[0]).toContain('currency_code')
   })
 
-  it('does not treat an unrelated currency-like column as a money association', () => {
+  it('does not treat an unrelated currency-like column as a money association', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',
@@ -104,9 +101,9 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([expect.stringContaining('invoices.amount_minor_units')])
   })
 
-  it('checks ALTER TABLE ADD COLUMN money definitions', () => {
+  it('checks ALTER TABLE ADD COLUMN money definitions', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       'ALTER TABLE invoices ADD COLUMN amount_minor_units NUMERIC(10, 2);',
       errors,
@@ -117,9 +114,9 @@ describe('monetary contract guard', () => {
     ])
   })
 
-  it('checks ALTER TABLE ALTER COLUMN money and currency definitions', () => {
+  it('checks ALTER TABLE ALTER COLUMN money and currency definitions', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'ALTER TABLE invoices ALTER COLUMN amount_minor_units TYPE NUMERIC(10, 2);',
@@ -135,9 +132,9 @@ describe('monetary contract guard', () => {
     ])
   })
 
-  it('allows unrelated ALTER TABLE ALTER COLUMN type changes', () => {
+  it('allows unrelated ALTER TABLE ALTER COLUMN type changes', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'ALTER TABLE invoices ALTER COLUMN confidence TYPE NUMERIC(4, 3);',
@@ -149,9 +146,22 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([])
   })
 
-  it('fails closed when a migration cannot be parsed', () => {
+  it('ignores unrelated ALTER TABLE operations beside monetary columns', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      [
+        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code TEXT, note TEXT);',
+        'ALTER TABLE invoices DROP COLUMN note;',
+      ].join('\n'),
+      errors,
+    )
+    expect(errors).toEqual([])
+  })
+
+  it('fails closed when a migration cannot be parsed', async () => {
+    const errors: string[] = []
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       'CREATE TABLE invoices ( amount_minor_units BIGINT,, );',
       errors,
@@ -159,9 +169,48 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([expect.stringContaining('could not parse monetary migration')])
   })
 
-  it('requires currency association columns to use TEXT', () => {
+  it('rejects the whole migration when invalid SQL follows a valid money statement', async () => {
     const errors: string[] = []
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      'CREATE TABLE invoices (amount_minor_units NUMERIC); CREATE TABLE broken (,);',
+      errors,
+    )
+    expect(errors).toEqual([expect.stringContaining('could not parse monetary migration')])
+  })
+
+  it('ignores money definitions inside a valid DO block', async () => {
+    const errors: string[] = []
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      [
+        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code TEXT);',
+        'DO $$ BEGIN',
+        '  IF true THEN',
+        '    ALTER TABLE invoices ADD COLUMN fee_minor_units NUMERIC;',
+        '  END IF;',
+        'END $$;',
+      ].join('\n'),
+      errors,
+    )
+    expect(errors).toEqual([])
+  })
+
+  it('still fails closed on malformed monetary SQL beside an ignored DO block', async () => {
+    const errors: string[] = []
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      ['DO $$ BEGIN NULL; END $$;', 'CREATE TABLE invoices (amount_minor_units BIGINT,,);'].join(
+        '\n',
+      ),
+      errors,
+    )
+    expect(errors).toEqual([expect.stringContaining('could not parse monetary migration')])
+  })
+
+  it('requires currency association columns to use TEXT', async () => {
+    const errors: string[] = []
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code INTEGER);',
       errors,
@@ -169,10 +218,10 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([expect.stringContaining('currency_code must be TEXT')])
   })
 
-  it('allows integer money with record or field-specific currency codes and unrelated analytics', () => {
+  it('allows integer money with record or field-specific currency codes and unrelated analytics', async () => {
     const errors: string[] = []
 
-    checkMonetaryMigration(
+    await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
         'CREATE TABLE invoices (',

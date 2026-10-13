@@ -112,7 +112,7 @@ describe('POST /api/v1/reports rate limits', () => {
       .send({ entityType: 'post', entityId: postId, reason: 'spam' })
       .expect(429)
     expect(response.headers['retry-after']).toBeDefined()
-  }, 60_000)
+  })
 
   it('keeps default test agents in separate route-rate-limit IP buckets', async () => {
     originalRouteRateLimitConfig = routeRateLimitConfig.getFields()
@@ -144,5 +144,5 @@ describe('POST /api/v1/reports rate limits', () => {
       .set('Content-Type', 'application/json')
       .send({ entityType: 'post', entityId: postId, reason: 'spam' })
       .expect(201)
-  }, 60_000)
+  })
 })

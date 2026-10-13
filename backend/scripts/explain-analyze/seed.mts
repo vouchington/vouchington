@@ -1,3 +1,5 @@
+import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
+import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
@@ -67,6 +69,10 @@ import { seedClassifierHumanVoteComparison } from './seed-data/classifier-human-
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
+import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
+import { seedHostnameFlags } from './seed-data/hostname-flags.mts'
+import { seedTopHashtags } from './seed-data/top-hashtags.mts'
+import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
@@ -83,6 +89,8 @@ async function main() {
   await seedMembershipRefunds()
   await checkpointSeed('memberships')
   await seedHostnames()
+  await seedHostnameFlags()
+  await seedHostnameCrawlSweeps()
   await seedRemoteFollowers()
   await seedUrls()
   await seedTopics(2500)
@@ -104,7 +112,6 @@ async function main() {
   await seedFollowRelations(10_000)
   await seedMuteBlockRelations(5000)
   await seedRssFeeds(RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT)
-  await seedFollowerDistributions()
   await seedSemanticRssFeedItems()
   await seedStoryPostRelatedUrlProjection()
   await seedDisabledRssFeed(2500)
@@ -129,6 +136,8 @@ async function main() {
   await checkpointSeed('crawls')
   await seedPostSlugs(1000)
   await seedTopicAliases(2500)
+  await seedTopHashtags()
+  await seedFollowerDistributions()
   await seedProfileLinks(1000)
   await seedCommunities(5, 200)
   await seedCommunityListItemTopic()
@@ -139,12 +148,15 @@ async function main() {
   await seedPostDataPointTopics(1000)
   await seedPostReviewTopicRatings(1000)
   await seedAnchorPostReviewTopicRating()
+  await seedViewPostsHydration()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
+  await seedBloomReconciliation()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
   await seedClassifierHumanVoteComparison()
   await runAnalyze()
+  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   await printRowCounts()
   console.log('\nSeed complete.')
   process.exit(0)

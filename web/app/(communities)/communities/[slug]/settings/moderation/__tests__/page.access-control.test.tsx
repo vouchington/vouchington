@@ -1,3 +1,4 @@
+import '@/test-helpers/i18n/mock-json-messages'
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
   mockGetCurrentUser,

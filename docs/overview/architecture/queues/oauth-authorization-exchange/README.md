@@ -3,7 +3,10 @@
 Source entrypoint: [backend/queues/oauth-authorization-exchange/README.md](../../../../../backend/queues/oauth-authorization-exchange/README.md)
 
 Exchanges server-held Facebook, X, and GitHub authorization codes after the public callback has
-persisted them in PostgreSQL. Queue payloads contain only the durable authorization UUID.
+persisted them in PostgreSQL. Initial payloads contain the durable authorization UUID. Before provider execution, the worker
+adds the fenced claim UUID as `exchangeClaimId` through the public job-data API, then a
+secret-free `exchangeProviderRequestArmed` marker immediately before provider admission. Active and
+retained retry jobs can therefore carry both UUIDs; no provider code, token, or raw error enters Valkey.
 
 ## Jobs
 
@@ -17,36 +20,36 @@ persisted them in PostgreSQL. Queue payloads contain only the durable authorizat
   the `oauth-authorization-exchange-dispatch` admin backfill. All dispatcher variants share the
   `dispatcher` ordering key at concurrency one so terminal-state inspection and reactivation cannot
   race another recovery pass. The same constant also backs the dispatcher enqueue's Valkey
-  throttle-dedup TTL, so the dedup window widened from 5s to 60s together with the interval.
+  throttle-dedup TTL, so the dedup window widened from 5s to 60s together with the interval. The
+  manual and backfill triggers carry only that throttle window and no custom job id: a custom id
+  would stay claimed while the finished pass is retained (and GlideMQ rejects the backfill's
+  `backfill:` prefix as an id), so every later trigger would fail or silently get `null`.
 
-Individual exchanges retry five times with exponential backoff. A failed attempt releases its
-durable claim before throwing. Provider work uses a 30-second end-to-end abort signal, below the
-60-second stale-claim lease, so the dispatcher cannot reclaim a normally running exchange. Rows
-that exhaust five durable claims become `rejected` and their provider code is cleared, preventing a
-permanent provider failure from monopolizing the oldest recovery page.
+Individual exchanges retry five times with exponential backoff. A recorded continuation
+reconciles only its own claim without repeating provider execution. The dispatcher preserves
+exact retained unarmed continuations before stale recovery; unavailable or armed outcomes fail
+closed. Provider timeout includes ownership persistence and a fresh claim check before admission.
+The canonical precedence and cross-store limits are documented in the
+[service continuation contract](../../services/oauth/README.md#queue-owned-exchange-continuation).
 
-The callback's initial enqueue is best-effort after PostgreSQL commits, so queue failure never
-withholds the web cookie/redirect or native deep-link handoff. The dispatcher is the non-DLQ
-recovery path for work that has not crossed the upstream provider's one-time-code boundary,
-including stable IDs occupied by retained completed or failed jobs. Facebook, X, and GitHub do not
-provide an idempotency key for authorization code exchange. A process failure after the provider
-consumes the code but before the account transaction commits therefore remains an explicit
-accepted-loss case: replay is attempted, then the bounded-attempt rule rejects the authorization
-and the member starts a fresh flow. Callback persistence, Valkey loss, pre-exchange worker failure,
-database failure before commit, and response loss after commit remain replayable from PostgreSQL.
+The initial enqueue is best-effort after callback persistence, preserving the web cookie/redirect
+or native handoff. Safe explicit pre-provider release permits a bounded retry. An interrupted armed
+request or missing stale ownership is an accepted unknown-outcome loss: no provider replay is
+attempted, and the member starts a fresh authorization. Committed account/client results retain
+their normal replay contract; this does not replay a consumed provider code.
 
 ## Durable Transitions
 
-| Operation                    | Required state                                                         | Durable write                                                    | Replay result                                                                         |
-| ---------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Begin                        | enabled provider/mode and valid owner/proof                            | `pending`, HMAC state, encrypted verifier, owner/session, expiry | no provider code exists yet; an abandoned row expires                                 |
-| Provider denial callback     | `pending`                                                              | `rejected`, bounded error, stable completion handoff             | repeated callback returns the same handoff; no job is enqueued                        |
-| Provider code callback       | `pending`                                                              | encrypted code, stable completion handoff, `callback_received`   | repeated callback returns the same handoff; initial enqueue failure still returns it  |
-| Dispatch and worker claim    | `callback_received`, or a stale non-X `exchanging` claim               | terminal queue state reactivated, then `exchanging` plus claim   | missing/terminal Valkey work is re-derived; only the current claim may commit         |
-| Provider-account persistence | current fenced claim                                                   | provider account and `completion_ready` in one transaction       | stale claims fail without advancing; post-commit response loss is replayable          |
-| Client completion            | `completion_ready` and matching owner/session/cookie or proof          | `completed` with authenticated, MFA, or connected result         | a lost client response replays the durable result until expiry                        |
-| Bounded provider failure     | fifth failed claim, or X code misses its ten-second queue-start budget | `rejected`, clear code and claim                                 | terminal; this includes the accepted-loss replay after indeterminate code consumption |
-| Expiry and retention         | any uncompleted row past ten minutes, or any retained terminal row     | `expired` with secrets cleared, then bounded deletion            | terminal; parent user/provider deletion cascades the ephemeral row                    |
+| Operation                    | Required state                                                         | Durable write                                                    | Replay result                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Begin                        | enabled provider/mode and valid owner/proof                            | `pending`, HMAC state, encrypted verifier, owner/session, expiry | no provider code exists yet; an abandoned row expires                                                                 |
+| Provider denial callback     | `pending`                                                              | `rejected`, bounded error, stable completion handoff             | repeated callback returns the same handoff; no job is enqueued                                                        |
+| Provider code callback       | `pending`                                                              | encrypted code, stable completion handoff, `callback_received`   | repeated callback returns the same handoff; initial enqueue failure still returns it                                  |
+| Dispatch and worker claim    | `callback_received`, or exact retained unarmed ownership               | terminal queue state reactivated, then `exchanging` plus claim   | missing initial work is re-derived; unknown stale claims are rejected; exact retained unarmed jobs resume disposition |
+| Provider-account persistence | current fenced claim                                                   | provider account and `completion_ready` in one transaction       | stale claims fail without advancing; post-commit response loss is replayable                                          |
+| Client completion            | `completion_ready` and matching owner/session/cookie or proof          | `completed` with authenticated, MFA, or connected result         | a lost client response replays the durable result until expiry                                                        |
+| Bounded provider failure     | fifth failed claim, or X code misses its ten-second queue-start budget | `rejected`, clear code and claim                                 | known unused exhaustion is terminal; indeterminate outcomes use unknown-outcome rejection instead of provider replay  |
+| Expiry and retention         | any uncompleted row past ten minutes, or any retained terminal row     | `expired` with secrets cleared, then bounded deletion            | terminal; parent user/provider deletion cascades the ephemeral row                                                    |
 
 ## Related
 

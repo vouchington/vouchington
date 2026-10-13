@@ -33,8 +33,8 @@ describe('dispatchCrawlHostnames', () => {
     expect(await isHostnameDispatchable(crawlableHostname)).toBe(true)
 
     // Dispatch should work without errors
-    const total = await dispatchCrawlHostnames()
-    expect(total).toBeGreaterThanOrEqual(1)
+    const { count } = await dispatchCrawlHostnames()
+    expect(count).toBeGreaterThanOrEqual(1)
   })
 
   it('should not dispatch hostnames with blocked=true', async () => {

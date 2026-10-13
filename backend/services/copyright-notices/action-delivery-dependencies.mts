@@ -18,9 +18,11 @@ async function prepublishCopyrightImagePlacementDenial(
   return prepublishImagePlacementDenial(...args)
 }
 
-async function publishStagedCopyrightDeliveryRecord(deliveryKey: string): Promise<void> {
+async function publishStagedCopyrightDeliveryRecord(
+  mediaDeliveryRegistryRecordId: string,
+): Promise<void> {
   assertMediaDeliveryLegalEnforcementEnabled()
-  await publishStagedMediaDeliveryRecord(deliveryKey)
+  await publishStagedMediaDeliveryRecord(mediaDeliveryRegistryRecordId)
 }
 
 export type CopyrightActionDeliveryDependencies = {

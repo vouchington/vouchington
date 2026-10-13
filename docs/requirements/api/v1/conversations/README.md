@@ -142,7 +142,7 @@ Soft-deletes a conversation. The conversation is hidden from list endpoints but 
 | `POST /api/v1/conversations/:conversationId/client-generated-chat` | 4+             | None (write) | Auth, conversation lookup, two safety provider calls, transactional transcript pair |
 | `GET /api/v1/my/conversations`                                     | 2              | None         | Auth and paginated query                                                            |
 | `GET /api/v1/my/conversations/:conversationId/messages`            | 3              | None         | Auth, conversation lookup, messages query                                           |
-| `PATCH /api/v1/my/conversations/:conversationId`                   | 4              | None (write) | Auth, conversation lookup, update, re-fetch                                         |
+| `PATCH /api/v1/my/conversations/:conversationId`                   | 3              | None (write) | Auth, conversation lookup, update returns the updated conversation                  |
 | `DELETE /api/v1/my/conversations/:conversationId`                  | 3              | None (write) | Auth, conversation lookup, soft-delete                                              |
 
 ## Related

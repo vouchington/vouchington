@@ -1,5 +1,11 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import {
+  advisoryLockPool,
+  beginTransaction,
+  type OwnedTransaction,
+  type QueryExecutor,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
@@ -21,7 +27,6 @@ export function withConcurrentPostPrivacyChangeForTest<T>(
     },
   )
 }
-
 /** Commit a disabled community type only after creation reaches its settings row fence. */
 export function withConcurrentCommunityReviewDisableForTest<T>(
   communityId: string,
@@ -36,7 +41,6 @@ export function withConcurrentCommunityReviewDisableForTest<T>(
     },
   )
 }
-
 /** Delete a community only after a delegated thread write waits on its live row. */
 export function withConcurrentCommunityDeletionForTest<T>(
   communityId: string,
@@ -63,7 +67,6 @@ export function withConcurrentCommunityArchiveForTest<T>(
         UPDATE communities SET archived_at = CURRENT_TIMESTAMP WHERE id = ${communityId}`)
   })
 }
-
 /** Commit suspension after a delegated write reaches the canonical author lifecycle fence. */
 export function withConcurrentActorSuspensionForTest<T>(
   userId: string,
@@ -97,7 +100,6 @@ export function withConcurrentActorDeletionForTest<T>(
     },
   )
 }
-
 /** Revoke membership only after the write waits on its active membership row. */
 export function withConcurrentCommunityMembershipRemovalForTest<T>(
   communityId: string,
@@ -105,31 +107,94 @@ export function withConcurrentCommunityMembershipRemovalForTest<T>(
   operation: () => Promise<T>,
   queryMarker = 'lockDelegatedPostCommunity.membership',
 ): Promise<T> {
-  return withConcurrentDelegatedWriteChangeForTest(operation, queryMarker, async query => {
-    await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
-        UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
-        WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
-  })
+  return withConcurrentDelegatedWriteChangeForTest(
+    operation,
+    queryMarker,
+    async query => {
+      await query(sql`/* withConcurrentCommunityMembershipRemovalForTest */
+          UPDATE community_members SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${userId}
+          WHERE community_id = ${communityId} AND user_id = ${userId} AND removed_at IS NULL`)
+    },
+    true,
+  )
 }
-
 /** Commit the staged change only after the mutation is blocked on the exact writer fence. */
 async function withConcurrentDelegatedWriteChangeForTest<T>(
   operation: () => Promise<T>,
   queryMarker: string,
   stageChange: (query: QueryExecutor) => Promise<void>,
+  membershipDiagnostics = false,
 ): Promise<T> {
-  await using query = await beginTransaction()
-  const processId = await getTestPostgresBackendProcessId(query)
-  await stageChange(query)
-  const pending = operation()
-  void pending.catch(() => undefined)
+  const diagnostics = createMembershipLockDiagnosticReporter(membershipDiagnostics)
+  diagnostics.emit('observer-acquire-start')
+  const observer = await beginTransaction({ client: advisoryLockPool })
+  diagnostics.emit('observer-acquired')
+  let query: OwnedTransaction | undefined
+  let pending: Promise<T> | undefined
+  let result: T | undefined
+  let failure: { reason: unknown } | undefined
+  const cleanupErrors: unknown[] = []
+  let settlementAttempted = false
   try {
-    await waitForTestPostgresLockWaiter(processId, queryMarker)
+    diagnostics.emit('holder-acquire-start')
+    query = await beginTransaction()
+    diagnostics.emit('holder-pid-query-start')
+    const processId = await getTestPostgresBackendProcessId(query)
+    diagnostics.emit('holder-acquired', `holder_pid=${processId}`)
+    await stageChange(query)
+    diagnostics.emit('change-staged')
+    pending = operation()
+    void pending.catch(() => undefined)
+    diagnostics.emit('pending-started')
+    await waitForTestPostgresLockWaiter(
+      processId,
+      queryMarker,
+      observer,
+      membershipDiagnostics ? diagnostics.observeWait : undefined,
+    )
+    settlementAttempted = true
+    diagnostics.emit('holder-commit-start')
     await query.commit()
+    diagnostics.emit('holder-committed')
+    result = await pending
+    diagnostics.emit('operation-settled')
   } catch (err) {
-    await query.rollback()
-    await pending.catch(() => undefined)
-    throw err
+    diagnostics.emit('failed')
+    failure = { reason: err }
+  } finally {
+    if (query && !settlementAttempted) {
+      try {
+        await query.rollback()
+      } catch (err) {
+        cleanupErrors.push(err)
+      }
+    }
+    try {
+      await query?.[Symbol.asyncDispose]()
+    } catch (err) {
+      cleanupErrors.push(err)
+    }
+    try {
+      await observer[Symbol.asyncDispose]()
+    } catch (err) {
+      cleanupErrors.push(err)
+    }
+    if (pending) {
+      try {
+        await pending
+      } catch (err) {
+        if (!failure) failure = { reason: err }
+        else if (!Object.is(err, failure.reason)) cleanupErrors.push(err)
+      }
+    }
   }
-  return await pending
+  diagnostics.emit('cleanup-complete')
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(
+      [...(failure ? [failure.reason] : []), ...cleanupErrors],
+      'Delegated write race cleanup failed',
+    )
+  }
+  if (failure) throw failure.reason
+  return result as T
 }

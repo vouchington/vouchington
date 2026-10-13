@@ -242,7 +242,11 @@ END $$;
 CREATE FUNCTION fn_update_moderation_report_transparency_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.moderation_transparency_community_id IS NULL THEN
-    SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;
+    IF NEW.community_id IS NOT NULL THEN
+      NEW.moderation_transparency_community_id := NEW.community_id;
+    ELSIF NEW.post_id IS NOT NULL THEN
+      SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;
+    END IF;
   END IF;
   RETURN NEW;
 END $$;

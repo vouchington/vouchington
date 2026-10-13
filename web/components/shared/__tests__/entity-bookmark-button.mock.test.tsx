@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import type { ReactNode } from 'react'
 
@@ -83,9 +83,10 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribed to Posts' })).toBeDefined()
+    await act(async () => {
+      await mockGetEntityBookmarks.mock.results.at(-1)!.value
     })
+    expect(screen.getByRole('button', { name: 'Subscribed to Posts' })).toBeDefined()
     expect(mockGetEntityBookmarks).toHaveBeenCalledWith('topic', 'topic-1')
   })
 
@@ -106,19 +107,19 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    await waitFor(() => {
-      expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribed' })).toBeEnabled()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeEnabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribed' }))
 
-    await waitFor(() => {
-      expect(mockUnbookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
+    await act(async () => {
+      await mockUnbookmarkEntity.mock.results.at(-1)!.value
     })
+    expect(mockUnbookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
   })
 
   it('renders an optional semantic icon before the label', () => {
@@ -155,8 +156,9 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
+    await act(async () => {
+      await mockBookmarkEntity.mock.results.at(-1)!.value
     })
 
     rerender(
@@ -170,9 +172,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
 
     rerender(
       <EntityBookmarkButton
@@ -185,9 +185,7 @@ describe('EntityBookmarkButton', () => {
       />,
     )
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()
   })
 
   it('resets display state immediately when the entity changes', async () => {
@@ -245,9 +243,7 @@ describe('EntityBookmarkButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
-    })
+    expect(screen.getByRole('button', { name: 'Subscribed' })).toBeDefined()
 
     rerender(
       <EntityBookmarkButton
@@ -262,6 +258,7 @@ describe('EntityBookmarkButton', () => {
 
     await act(async () => {
       rejectBookmark?.(new Error('request failed'))
+      await mockBookmarkEntity.mock.results.at(-1)!.value.catch(() => undefined)
     })
 
     expect(screen.getByRole('button', { name: 'Subscribe' })).toBeDefined()

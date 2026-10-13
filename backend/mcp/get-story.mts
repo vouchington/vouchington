@@ -37,7 +37,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_story',
     type: 'function',
     description:
-      'Get one news story by its UUID: its title, why its articles were grouped, and one cursor page of the articles that belong to it, newest first. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A deleted or missing story returns { success: false, error: "Story not found" }. A malformed cursor returns { success: false, error: "Invalid cursor" }.',
+      'Get one news story by its UUID: its title, why its articles were grouped, and one cursor page of the articles that belong to it, newest first. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A deleted or missing story returns { success: false, error: "Story not found" }.',
     parameters: {
       type: 'object',
       properties: {

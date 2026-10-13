@@ -1,14 +1,11 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import type { CommunityMember } from './types.mts'
-import { communityColumns } from './columns.mts'
-import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
-import { getCommunityMember } from './members/get.mts'
-import { getPendingApplicationForUser } from './applications/pending.mts'
+import { selectCommunityWithOwner } from './select-community.mts'
+import { loadCommunityWithViewer, type LoadedCommunity } from './load-with-viewer.mts'
 import {
   currentUserCanModerateCommunity,
   currentUserCanModerateCommunityPublication,
@@ -21,28 +18,20 @@ import {
 } from './get-mapping.mts'
 
 export type { CommunityWithOwner } from './get-mapping.mts'
-
-export type LoadedCommunity = {
-  community: CommunityWithOwner
-  membership: CommunityMember | null
-  hasPendingApplication: boolean
-}
+export type { LoadedCommunity } from './load-with-viewer.mts'
 
 export async function loadCommunityForViewer(
   currentUser: PrivateUser | null,
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<LoadedCommunity> {
-  const community = await getCommunityOrThrow(idOrSlug, options)
-  const membership = currentUser
-    ? await getCommunityMember(community.id, currentUser.id, options)
-    : null
+  const loaded = await loadCommunityWithViewer(idOrSlug, currentUser?.id ?? null, options)
   assert(
-    currentUserCanViewCommunity(currentUser, community, membership),
+    currentUserCanViewCommunity(currentUser, loaded.community, loaded.membership),
     404,
     'Community not found',
   )
-  return { community, membership, hasPendingApplication: false }
+  return loaded
 }
 
 // Only for the community detail route — applicants can view the community page without being members
@@ -51,17 +40,16 @@ export async function loadCommunityForViewerOrApplicant(
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<LoadedCommunity> {
-  const community = await getCommunityOrThrow(idOrSlug, options)
-  const membership = currentUser
-    ? await getCommunityMember(community.id, currentUser.id, options)
-    : null
+  const { community, membership, hasPendingApplication } = await loadCommunityWithViewer(
+    idOrSlug,
+    currentUser?.id ?? null,
+    options,
+    { includePendingApplication: true },
+  )
   const canView = currentUserCanViewCommunity(currentUser, community, membership)
-  const hasPendingApplication =
-    !canView && currentUser && community.visibility === 'private'
-      ? !!(await getPendingApplicationForUser(community.id, currentUser.id, options))
-      : false
-  assert(canView || hasPendingApplication, 404, 'Community not found')
-  return { community, membership, hasPendingApplication }
+  const isApplicant = !canView && community.visibility === 'private' && hasPendingApplication
+  assert(canView || isApplicant, 404, 'Community not found')
+  return { community, membership, hasPendingApplication: isApplicant }
 }
 
 export async function loadCommunityForModerator(
@@ -69,10 +57,13 @@ export async function loadCommunityForModerator(
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<LoadedCommunity> {
-  const community = await getCommunityOrThrow(idOrSlug, options)
-  const membership = await getCommunityMember(community.id, currentUser.id, options)
-  assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
-  return { community, membership, hasPendingApplication: false }
+  const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id, options)
+  assert(
+    currentUserCanModerateCommunity(currentUser, loaded.community, loaded.membership),
+    403,
+    'Forbidden',
+  )
+  return loaded
 }
 
 export async function loadCommunityForPublicationModerator(
@@ -80,14 +71,13 @@ export async function loadCommunityForPublicationModerator(
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<LoadedCommunity> {
-  const community = await getCommunityOrThrow(idOrSlug, options)
-  const membership = await getCommunityMember(community.id, currentUser.id, options)
+  const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id, options)
   assert(
-    currentUserCanModerateCommunityPublication(currentUser, community, membership),
+    currentUserCanModerateCommunityPublication(currentUser, loaded.community, loaded.membership),
     403,
     'Forbidden',
   )
-  return { community, membership, hasPendingApplication: false }
+  return loaded
 }
 
 export async function getCommunityOrThrow(
@@ -124,15 +114,4 @@ export async function getCommunity(
   const { rows } = await read(query.append(sql` AND c.deleted_at IS NULL LIMIT 1`), options)
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
-}
-
-/** Completes an annotated `SELECT ` with the community detail projection and its FROM clause. */
-function selectCommunityWithOwner(select: SQLStatement): SQLStatement {
-  return select
-    .append(communityColumns('c'))
-    .append(
-      ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
-    )
-    .append(buildCommunityImagePlacementSelect())
-    .append(' FROM communities c LEFT JOIN users u ON u.id = c.created_by_id')
 }

@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { getCommunity, getCommunityMember } from '@services/communities'
+import { loadCommunityWithViewer } from '@services/communities'
 import { getMembershipByUserId } from '@services/memberships/get'
 import {
   currentUserCanViewCommunityModerationResults,
@@ -31,11 +31,8 @@ app
     )
 
     const { idOrSlug, postId } = ctx.params as { idOrSlug: string; postId: string }
-    const community = await getCommunity(idOrSlug)
-    ctx.assert(community, 404, 'Community not found')
-
-    const [membership, activeMembership] = await Promise.all([
-      getCommunityMember(community.id, currentUser.id),
+    const [{ community, membership }, activeMembership] = await Promise.all([
+      loadCommunityWithViewer(idOrSlug, currentUser.id),
       getMembershipByUserId(currentUser.id),
     ])
 

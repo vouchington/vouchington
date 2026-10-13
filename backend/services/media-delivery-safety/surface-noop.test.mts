@@ -1,3 +1,5 @@
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
+import { getTestMediaDeliveryRegistryRecordId } from '@voucha/test-helpers/entities/image-surface-placements'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
@@ -11,7 +13,6 @@ import {
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { processMediaDeliveryRegistryRecord } from './index.mts'
-import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { updateCommunity } from '../communities/update.mts'
 import { getTopicByAny } from '../topics/get.mts'
 import { updateTopic } from '../topics/update.mts'
@@ -62,6 +63,21 @@ describe('unchanged surface image updates', () => {
         kind === 'community' ? { communityId: id } : { topicId: id },
       )
       const edge = installTestMediaDeliveryEdge()
+      const recordIds = await Promise.all(
+        placements.map(placement =>
+          getTestMediaDeliveryRegistryRecordId({
+            placementId: placement.placement_id,
+            revision: placement.placement_revision,
+            imageId,
+          }),
+        ),
+      )
+      await Promise.all(
+        recordIds.map(key => {
+          if (!key) throw new Error('Missing registry identity')
+          return processMediaDeliveryRegistryRecord(key)
+        }),
+      )
       const keys = placements.map(placement =>
         getImagePlacementDeliveryKey({
           placementId: placement.placement_id,
@@ -69,7 +85,6 @@ describe('unchanged surface image updates', () => {
           imageId,
         }),
       )
-      await Promise.all(keys.map(key => processMediaDeliveryRegistryRecord(key)))
       edge.put.mockClear()
       if (kind === 'community')
         await updateCommunity(user, id, {

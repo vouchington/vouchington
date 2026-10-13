@@ -113,7 +113,7 @@ export async function lockAndFindBlockedProjectionUrlIds(
       SELECT DISTINCT suffix.url_id
       FROM hostname_suffixes suffix
       JOIN url_hostnames candidate ON candidate.hostname = suffix.hostname
-      WHERE candidate.is_blocked = TRUE`,
+      WHERE candidate.is_blocked`,
     [urlIds],
   )
   const blockedUrlIds = new Set<string>()

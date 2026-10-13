@@ -14,7 +14,7 @@ import { fetchFollowerUsers } from '@/lib/api/client/users'
 import type { FollowerDistributionAcceptedResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -47,12 +47,13 @@ describe('FollowerShareActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
 
-    await waitFor(() => {
-      expect(sendRssFeedItemToFollowers).toHaveBeenCalledWith('item-1', {
-        audience: 'all_followers',
-      })
-      expect(toast.success).toHaveBeenCalledWith('Send queued')
+    await act(async () => {
+      await vi.mocked(sendRssFeedItemToFollowers).mock.results.at(-1)!.value
     })
+    expect(sendRssFeedItemToFollowers).toHaveBeenCalledWith('item-1', {
+      audience: 'all_followers',
+    })
+    expect(toast.success).toHaveBeenCalledWith('Send queued')
     expect(fetchFollowerUsers).not.toHaveBeenCalled()
   })
 
@@ -68,10 +69,11 @@ describe('FollowerShareActions', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Selected followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
 
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalled()
-      expect(sendPostToFollowers).not.toHaveBeenCalled()
+    await act(async () => {
+      await vi.mocked(fetchFollowerUsers).mock.results.at(-1)!.value
     })
+    expect(toast.error).toHaveBeenCalled()
+    expect(sendPostToFollowers).not.toHaveBeenCalled()
   })
 
   it('surfaces send failures', async () => {
@@ -87,9 +89,13 @@ describe('FollowerShareActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
 
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalled()
+    await act(async () => {
+      await vi
+        .mocked(sendPostToFollowers)
+        .mock.results.at(-1)!
+        .value.catch(() => undefined)
     })
+    expect(toast.error).toHaveBeenCalled()
   })
 
   it('allows sharing a new entity while an earlier share is pending', async () => {
@@ -113,7 +119,7 @@ describe('FollowerShareActions', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Share with followers' }))
-    await waitFor(() => expect(sharePostWithFollowers).toHaveBeenCalledTimes(1))
+    expect(sharePostWithFollowers).toHaveBeenCalledTimes(1)
 
     rerender(
       <FollowerShareActions
@@ -122,11 +128,15 @@ describe('FollowerShareActions', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Share with followers' }))
-    await waitFor(() => expect(sharePostWithFollowers).toHaveBeenCalledWith('post-2'))
+    expect(sharePostWithFollowers).toHaveBeenCalledWith('post-2')
+    await act(async () => {
+      await vi.mocked(sharePostWithFollowers).mock.results[1]!.value
+    })
 
-    await act(async () =>
-      resolveFirstShare({ status: 'accepted', distribution_id: 'distribution-1' }),
-    )
+    await act(async () => {
+      resolveFirstShare({ status: 'accepted', distribution_id: 'distribution-1' })
+      await vi.mocked(sharePostWithFollowers).mock.results[0]!.value
+    })
 
     expect(toast.success).toHaveBeenCalledTimes(1)
   })

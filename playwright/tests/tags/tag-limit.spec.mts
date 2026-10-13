@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
@@ -20,6 +20,7 @@ let userId: string
 let postId: string
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   // A beforeAll can re-run in the same worker process when Playwright's
   // fullyParallel scheduler hands the worker a second test from this file —
   // module scope is preserved across that re-entry. Generating the suffix

@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   createTestPost,
   createTestUser,
@@ -18,6 +18,7 @@ test.describe('Post Author Aside', () => {
   let postSlug: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const unique = createRandomString(12)
     const author = await createTestUser()
     const viewer = await createTestUser()

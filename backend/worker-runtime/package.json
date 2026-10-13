@@ -21,7 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.1146.0",
+    "@aws-sdk/client-sqs": "^3.1149.0",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -36,6 +36,6 @@
     "@ts-shared/utils": "workspace:^",
     "@vouchington/worker-runtime": "^0.1.1",
     "@workers/heartbeat": "workspace:^",
-    "glide-mq": "^0.17.0"
+    "glide-mq": "^0.18.0"
   }
 }

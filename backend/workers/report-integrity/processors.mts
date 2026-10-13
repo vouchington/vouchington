@@ -1,6 +1,9 @@
 import { createReportIntegrityFlag } from '@services/report-integrity/create-flag'
 import { detectMassReportCampaign } from '@services/report-integrity/detect'
-import { streamEntitiesWithPendingReportsBatches } from '@services/report-integrity/backfill'
+import {
+  streamEntitiesWithPendingReportsBatches,
+  type PendingReportEntity,
+} from '@services/report-integrity/backfill'
 import { enqueueReportIntegrityCheckBatch } from '@queues/report-integrity/enqueues'
 import onError from '@modules/on-error'
 import type { ProcessReportIntegrityCheckData } from '@queues/report-integrity/types'
@@ -29,9 +32,11 @@ export async function processReportIntegrityCheck(
   }
 }
 
-export async function processBackfillReportIntegrity(): Promise<{ enqueued: number }> {
+export async function processBackfillReportIntegrity(
+  target?: PendingReportEntity,
+): Promise<{ enqueued: number }> {
   let enqueued = 0
-  for await (const batch of streamEntitiesWithPendingReportsBatches()) {
+  for await (const batch of streamEntitiesWithPendingReportsBatches(target)) {
     await enqueueReportIntegrityCheckBatch(batch)
     enqueued += batch.length
   }

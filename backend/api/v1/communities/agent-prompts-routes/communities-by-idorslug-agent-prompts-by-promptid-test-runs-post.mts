@@ -1,7 +1,7 @@
 import { prepareCommunityPromptDryRun } from '@agents/community-moderation'
 import type { Context } from '@jongleberry/api-server'
 import { assertDailySpendCapNotBreached } from '@services/ai-usage'
-import { currentUserCanModerateCommunity, getCommunityMember } from '@services/communities'
+import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import { getCommunityAgentPrompt } from '@services/community-agent-prompts'
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
@@ -12,8 +12,6 @@ import {
   validateUUIDParam,
 } from '../../../response-helpers.mts'
 
-import { getCommunityOrThrow } from './shared.mts'
-
 app
   .route('/api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs')
   .post(async (ctx: Context) => {
@@ -23,8 +21,7 @@ app
     )
 
     const { idOrSlug, promptId } = ctx.params as { idOrSlug: string; promptId: string }
-    const community = await getCommunityOrThrow(ctx, idOrSlug)
-    const membership = await getCommunityMember(community.id, currentUser.id)
+    const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
     ctx.assert(
       currentUserCanModerateCommunity(currentUser, community, membership),

@@ -1,3 +1,9 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  type McpContractCaller,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { randomUUID } from 'node:crypto'
 import {
   createRandomString,
@@ -10,11 +16,6 @@ import {
   suspendTestUser,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  callRejectedMcpTool,
-  callStructuredMcpTool,
-  type McpContractCaller,
-} from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Body = Record<string, unknown>
@@ -35,7 +36,7 @@ const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContract
 })
 const ids = (page: { results: Row[] }) => page.results.map(row => row.id)
 
-describe('get_user and search_users — real DB', () => {
+describe('read_users.details and read_users.search — real DB', () => {
   const random = createRandomString(6).toLowerCase()
   let caller: McpContractCaller
   let admin: McpContractCaller
@@ -44,9 +45,9 @@ describe('get_user and search_users — real DB', () => {
   let hidden: Awaited<ReturnType<typeof createTestUser>>
 
   const getUser = (user_id: string, who = caller) =>
-    callStructuredMcpTool(who, 'get_user', { user_id }, SCOPES)
+    callStructuredMcpTool(who, 'read_users', optionArgs('details', { user_id }), SCOPES)
   const search = (args: Body, who = caller) =>
-    callStructuredMcpTool(who, 'search_users', args, SCOPES) as Promise<Page>
+    callStructuredMcpTool(who, 'read_users', optionArgs('search', args), SCOPES) as Promise<Page>
 
   beforeAll(async () => {
     ;[caller, admin] = (
@@ -61,7 +62,7 @@ describe('get_user and search_users — real DB', () => {
     await softDeleteUser(hidden.id)
   })
 
-  describe('get_user', () => {
+  describe('read_users.details', () => {
     it('returns the public profile by id or by username, whatever the case', async () => {
       const expected = {
         success: true,
@@ -174,14 +175,19 @@ describe('get_user and search_users — real DB', () => {
       const withPhone = await createTestUser({ phone_number: true })
 
       for (const user_id of [ada.email_address!, withPhone.phone_number!]) {
-        expect(await callRejectedMcpTool(caller, 'get_user', { user_id }, SCOPES)).toContain(
-          'Invalid user identifier',
-        )
+        expect(
+          await callRejectedMcpTool(
+            caller,
+            'read_users',
+            optionArgs('details', { user_id }),
+            SCOPES,
+          ),
+        ).toContain('Invalid user identifier')
       }
     })
   })
 
-  describe('search_users', () => {
+  describe('read_users.search', () => {
     it('lists the users whose username starts with the query, A to Z, case-insensitively', async () => {
       const lower = await search({ q: `ada-${random}` })
       const upper = await search({ q: `ADA-${random}` })

@@ -1,6 +1,6 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import { getRssFeedItemFeedIds, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@services/feeds'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from './private-user.mts'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT } from './paged-search.mts'
@@ -16,12 +16,10 @@ import {
   type ItemArgs,
 } from './personal-feed-support.mts'
 
-const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
+const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
   schema: {
-    name: 'get_rss_feed_item_feed',
-    type: 'function',
     description:
-      'Page RSS items delivered to your own feed. Results identify each item for get_rss_feed_item; the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.',
+      'Page RSS items delivered to your own feed. Results identify each item for read_rss_feed_item (option details); the domain feed service applies the REST follow, community and content policy. Returns at most 100 per page.',
     parameters: {
       type: 'object',
       properties: {
@@ -33,10 +31,13 @@ const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
           type: 'array',
           items: { type: 'string', enum: ['article', 'audio', 'video'] },
         },
+        media_type: {
+          type: 'array',
+          items: { type: 'string', enum: ['article', 'audio', 'video'] },
+        },
       },
       required: ['feed_type'],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -65,7 +66,7 @@ const getRssFeedItemFeedTool: Tool<ItemArgs, FeedResult> = {
           min_score_follow_rss_feeds: args.min_score_follow_rss_feeds,
           min_score_follow_topics: args.min_score_follow_topics,
           has_related_posts: args.has_related_posts,
-          media_types: args.media_types,
+          media_types: args.media_types ?? args.media_type,
           limit: clampToolLimit(args.limit, 25, MAX_LIMIT),
           after: args.after,
         })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v4 as uuidv4, v7 as uuidv7 } from 'uuid'
 import { encodeJwkSetForEnv, signSessionJwt, verifyDeviceJwt, verifySessionJwt } from '../jwt.mts'
@@ -28,7 +28,26 @@ async function signRawJwt({
     .sign((await jose.importJWK(key, 'RS512')) as jose.CryptoKey)
 }
 
+const fixedNow = process.env.VOUCH_PROOF_NOW
+  ? Date.parse(process.env.VOUCH_PROOF_NOW)
+  : Date.UTC(2026, 0, 31, 23, 59, 59)
+
+if (
+  !Number.isFinite(fixedNow) ||
+  (process.env.VOUCH_PROOF_NOW !== undefined && !process.env.VOUCH_PROOF_NOW.endsWith('Z'))
+) {
+  throw new Error('VOUCH_PROOF_NOW must be a finite UTC timestamp ending in Z')
+}
+
 describe('legacy UUID session JWT verification', () => {
+  beforeEach(() => {
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(fixedNow)
+  })
+  afterEach(() => vi.useRealTimers())
   it('rejects signed device tokens with a UUIDv4 device id', async () => {
     const key = await generatePrivateJwk('legacy-device-key')
     const env = { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([key]) }

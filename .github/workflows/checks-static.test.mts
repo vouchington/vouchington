@@ -166,7 +166,9 @@ if [ -n "$untracked_generated_files" ]; then
 fi\n`,
     })
     const valkey = parsed.jobs?.['static-backend']?.services?.valkey
-    expect(valkey?.image).toMatch(/^valkey\/valkey-bundle:[^@]+@sha256:[a-f0-9]{64}$/)
+    expect(valkey?.image).toMatch(
+      /^mirror\.gcr\.io\/valkey\/valkey-bundle:[^@]+@sha256:[a-f0-9]{64}$/,
+    )
     expect(valkey?.ports).toEqual([6379])
     expect(valkey?.options).toContain('--health-cmd "valkey-cli ping"')
     expect(parsed.jobs?.['static-backend']?.services?.postgres).toBeUndefined()

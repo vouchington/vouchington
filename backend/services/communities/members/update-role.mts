@@ -1,12 +1,11 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunity, type CommunityWithOwner } from '../get.mts'
 import { getCommunityMember } from './get.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { enqueueSendCommunityRoleChangeEmail } from '@queues/emails/enqueues'
 import { lockCommunityUsers } from '../bans/lock.mts'
-import type { CommunityMemberRole } from '../types.mts'
+import type { Community, CommunityMemberRole } from '../types.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getPrivateUserByAny } from '@services/users/get'
@@ -22,15 +21,14 @@ const ROLE_RANK: Record<CommunityMemberRole, number> = { member: 0, moderator: 1
 
 export async function updateMemberRole(
   currentUserId: string,
-  communityId: string,
+  community: Community,
   targetUserId: string,
   role: CommunityMemberRole,
 ): Promise<{
   roleChangeEmailEnqueue: ReturnType<typeof enqueueSendCommunityRoleChangeEmail> | null
 }> {
   assert(currentUserId !== targetUserId, 422, 'You cannot change your own role')
-  const community = await getCommunity(communityId)
-  assert(community, 404, 'Community not found')
+  const communityId = community.id
   assert(!community.archived_at, 403, 'Community is archived')
 
   await using query = await beginTransaction()
@@ -111,7 +109,7 @@ export async function updateMemberRole(
 
 function enqueueRoleChangeEmail(
   targetUser: PrivateUser,
-  community: Pick<CommunityWithOwner, 'name' | 'slug'>,
+  community: Pick<Community, 'name' | 'slug'>,
   role: CommunityMemberRole,
   direction: 'promoted' | 'demoted',
 ): ReturnType<typeof enqueueSendCommunityRoleChangeEmail> {

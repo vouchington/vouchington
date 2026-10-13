@@ -45,11 +45,9 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 
 ## MCP Operations
 
-| Operation    | Description                                             |
-| ------------ | ------------------------------------------------------- |
-| `initialize` | Returns capabilities and server `instructions`          |
-| `tools/list` | Lists tools filtered by role, plan, and key permissions |
-| `tools/call` | Executes a tool; enforces same checks as list           |
+- `initialize` returns capabilities and server `instructions`.
+- `tools/list` lists tools filtered by role, plan, and key permissions.
+- `tools/call` executes a tool and enforces the same checks as `tools/list`.
 
 ## Audit
 
@@ -87,40 +85,40 @@ Every tool on this server declares an output schema; the catalog test fails for 
 See [MCP Tools service](../../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
 
 The [post and story read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md)
-(`get_post`, `get_post_ancestors`, `get_post_descendants`, `get_story`, each requiring the
+(`read_posts(details)`, `read_posts(ancestors)`, `read_posts(descendants)`, `get_story`, each requiring the
 `posts:read` scope) return an object that is either
 `{ success: true, ... }` or `{ success: false, error }`. They read as the credential owner minus
 private data: a post or story that is deleted, missing, or visible to the owner only through private
 visibility (private audience, private community, or their own unapproved post) is answered as
 `{ success: false, error: "Post not found" }` (`"Story not found"`), even to its author, and one
-hidden ancestor hides the whole thread. Paged tools (`get_post_descendants`, `get_story`) take
+hidden ancestor hides the whole thread. Paged tools (`read_posts(descendants)`, `get_story`) take
 `limit` and `after` and return `page_info` with the same cursor contract as their REST twins; a
 malformed cursor returns `{ success: false, error: "Invalid cursor" }`. Post and article text is
 wrapped as external content.
 
-`search_posts` follows the same rule: it lists only posts that `get_post` would return to the
+`read_posts(search)` follows the same rule: it lists only posts that `read_posts(details)` would return to the
 credential owner, so the owner's private, audience-limited and unapproved posts and the comments of
-a thread `get_post` refuses are never listed, even to their author or an administrator. A
-`similar_post_id` that `get_post` would refuse returns an empty page, like an id that matches
+a thread `read_posts(details)` refuses are never listed, even to their author or an administrator. A
+`similar_post_id` that `read_posts(details)` would refuse returns an empty page, like an id that matches
 nothing. Muted and blocked users, topics and hostnames are still left out. `GET /api/v1/posts` is
 unchanged.
 
 The [community read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#community-read-tools)
-(`search_communities`, `get_community`, `get_community_posts`, `get_community_pinned_posts`,
-`get_community_members`, each requiring the `communities:read` scope) return the same
+(`discover_communities(search)`, `read_community(details)`, `read_community(posts)`, `read_community(pinned_posts)`,
+`read_community(members)`, each requiring the `communities:read` scope) return the same
 `{ success: true, ... }` or `{ success: false, error }` object. They read as a signed-out reader for
 every caller: a private, deleted or unknown community is
 `{ success: false, error: "Community not found" }`, even to its member, moderator, owner and an
-administrator, and never appears in `search_communities`. An anonymous post never names its author,
+administrator, and never appears in `discover_communities(search)`. An anonymous post never names its author,
 even to the author or an administrator, and no result carries a viewer sidecar. The paged tools take
 `limit` (1 to 25, default 20) and `after` and return `page_info`; a malformed cursor, or one from a
 different sort, returns `{ success: false, error: "Invalid cursor" }`. Descriptions, rules and post
 text are wrapped as external content.
 
 The [hostname read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#hostnames)
-(`search_hostnames`, `get_top_hostnames`, each requiring `hostnames:read`) and
+(`read_hostnames(search)`, `read_hostnames(top)`, each requiring `hostnames:read`) and
 [user read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#users)
-(`get_user`, `search_users`, each requiring `users:read`) read as a signed-out reader for every
+(`read_users(details)`, `read_users(search)`, each requiring `users:read`) read as a signed-out reader for every
 caller. A hostname result carries its `topic_id` and public trust vote totals, and an
 administratively blocked hostname never appears, even to an administrator. A user result is the
 public profile only, so no result carries an email address, phone number or suspension, and a
@@ -128,17 +126,17 @@ deleted or unknown user is `{ success: false, error: "User not found" }`. The bi
 external content.
 
 The [list read tools](../../../../overview/architecture/mcp/hostname-list-user-read-tools.md#lists)
-(`get_my_lists`, `get_list`, `get_list_items`, each requiring `lists:read`) read a public or
+(`read_my_lists(list)`, `read_my_lists(get)`, `read_my_lists(items)`, each requiring `lists:read`) read a public or
 unlisted list by id, as REST does. A private list is readable only by its owner and only when the
 credential holds the exact `post-relations.owned-private:write` grant, which `mcp.user:write` does
 not imply; every other case, including another user's private list, a removed list and a malformed
-id, is the same `{ success: false, error: "List not found" }`. `get_my_lists` leaves private lists
-out without the grant, and `get_list_items` leaves out any post `get_post` would refuse, so a page
+id, is the same `{ success: false, error: "List not found" }`. `read_my_lists(list)` leaves private lists
+out without the grant, and `read_my_lists(items)` leaves out any post `read_posts(details)` would refuse, so a page
 can hold fewer than `limit` items while `has_next_page` is true. The paged tools take `limit` (1 to 25) and `after`; a malformed cursor returns `{ success: false, error: "Invalid cursor" }`.
 
 The [trending, referral, search and reference read tools](../../../../overview/architecture/mcp/search-reference-read-tools.md)
-(`get_trending_communities`, `get_trending_referral_programs`, `get_topic_referral_program`,
-`get_my_referral_links`, `search_web`, `list_countries`, `list_currencies`, `get_platform_stats`)
+(`discover_communities(trending)`, `discover_topics(trending_referral_programs)`, `read_topic(referral_program)`,
+`get_my_referral_links`, `search_web`, `read_reference_data(countries)`, `read_reference_data(currencies)`, `read_reference_data(platform_stats)`)
 read public data as a signed-out reader would, so a private community never appears.
 `get_my_referral_links` returns only the caller's own links. Web snippets are external content.
 
@@ -147,20 +145,19 @@ reuse the REST guards, and the dispute and appeal reads are owner-only.
 
 ### Paged results
 
-`search_posts`, `search_topics`, `get_trending_posts` and `get_trending_topics` take the `after` and
+`read_posts(search)`, `discover_topics(search)`, `read_posts(trending)` and `discover_topics(trending)` take the `after` and
 `limit` of their REST routes and return `page_info` (`has_next_page`, `start_cursor`,
 `end_cursor`). `after` is an opaque cursor: pass the previous result's `page_info.end_cursor` to get
 the next page. An oversized `limit` is clamped to 100 as on REST, and `0` is refused. A malformed or
-foreign cursor makes `search_posts` and `search_topics` return
-`{ success: false, error: "Invalid cursor" }`; the trending tools refuse it. `get_topic_details`
+foreign cursor makes `read_posts(search)` and `discover_topics(search)` return
+`{ success: false, error: "Invalid cursor" }`; the trending tools refuse it. `read_topic(details)`
 pages only its children, with `children_after`, `children_limit` and `children_page_info`, when
 `hierarchy` asks for them.
 
 ## Performance
 
-| Endpoint         | Round Trips | Caching | Notes                                                                                                 |
-| ---------------- | ----------- | ------- | ----------------------------------------------------------------------------------------------------- |
-| POST /api/v1/mcp | 3-5         | None    | Credential validate + user fetch + rate limit + tool execute; response body streams with backpressure |
+`POST /api/v1/mcp` takes 3–5 round trips with no caching: credential validation, user fetch, rate
+limit, and tool execution. The response body streams with backpressure.
 
 ## Related
 

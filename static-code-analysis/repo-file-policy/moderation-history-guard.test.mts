@@ -1,14 +1,11 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { checkModerationHistoryGuard } from './moderation-history-guard.mts'
-import { initSqlAst } from './sql-ast.mts'
 
 describe('moderation-history-guard', () => {
-  beforeAll(() => initSqlAst())
-
   const testDirs: string[] = []
 
   afterEach(async () => {
@@ -26,9 +23,9 @@ describe('moderation-history-guard', () => {
     await writeFile(join(repoRoot, path), content)
   }
 
-  function runGuard(repoRoot: string, trackedFiles: string[]): string[] {
+  async function runGuard(repoRoot: string, trackedFiles: string[]): Promise<string[]> {
     const errors: string[] = []
-    checkModerationHistoryGuard(repoRoot, trackedFiles, errors)
+    await checkModerationHistoryGuard(repoRoot, trackedFiles, errors)
     return errors
   }
 
@@ -46,7 +43,7 @@ describe('moderation-history-guard', () => {
   frozen_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain(
       '::error file=backend/data-stores/psql/migrations/0999-00-00-test.sql',
@@ -70,7 +67,7 @@ describe('moderation-history-guard', () => {
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(0)
   })
 
@@ -85,7 +82,7 @@ describe('moderation-history-guard', () => {
   blocked BOOLEAN
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('link_submissions.blocked')
   })
@@ -108,7 +105,7 @@ describe('moderation-history-guard', () => {
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(0)
     },
   )
@@ -124,7 +121,7 @@ describe('moderation-history-guard', () => {
   -- suspended_at TIMESTAMPTZ
 );\n`,
     )
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(0)
   })
 
@@ -144,7 +141,7 @@ describe('moderation-history-guard', () => {
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(0)
     },
   )
@@ -164,7 +161,7 @@ describe('moderation-history-guard', () => {
   crawlable BOOLEAN
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(0)
     },
   )
@@ -184,7 +181,7 @@ describe('moderation-history-guard', () => {
   crawlable BOOLEAN
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toContain('url_hostnames.blocked')
     },
@@ -199,14 +196,14 @@ describe('moderation-history-guard', () => {
       `CREATE OR REPLACE VIEW view_suspended_users AS
 SELECT id, suspended_at FROM users WHERE suspended_at IS NOT NULL;\n`,
     )
-    const errors = runGuard(dir, [viewFile])
+    const errors = await runGuard(dir, [viewFile])
     expect(errors).toHaveLength(0)
   })
 
   it('reports SQL parse errors', { timeout: 10_000 }, async () => {
     const dir = await makeRepo()
     await track(dir, MIGRATION_PATH, 'CREATE TABLE broken (\n')
-    const errors = runGuard(dir, [MIGRATION_PATH])
+    const errors = await runGuard(dir, [MIGRATION_PATH])
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('failed to parse SQL')
   })
@@ -228,7 +225,7 @@ SELECT id, suspended_at FROM users WHERE suspended_at IS NOT NULL;\n`,
   muted_reason TEXT
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(1)
     },
   )
@@ -253,7 +250,7 @@ CREATE TABLE IF NOT EXISTS user_mutes (
   muted_at TIMESTAMPTZ
 );\n`,
       )
-      const errors = runGuard(dir, [MIGRATION_PATH])
+      const errors = await runGuard(dir, [MIGRATION_PATH])
       expect(errors).toHaveLength(2)
     },
   )

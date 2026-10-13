@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -11,6 +11,7 @@ let postId: string
 let suffix = ''
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   suffix = randomSuffix()
   postId = await insertTestPost({
     title: `Post Hide Test ${suffix}`,

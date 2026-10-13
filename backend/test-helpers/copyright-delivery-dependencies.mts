@@ -22,7 +22,7 @@ export function createTestCopyrightDeliveryDependencies(
     assertMediaDeliveryLegalEnforcementEnabled: () => undefined,
     prepublishImagePlacementDenial: (input, options) =>
       publish({ ...input, state: 'withheld' }, options),
-    publishStagedMediaDeliveryRecord: async deliveryKey => {
+    publishStagedMediaDeliveryRecord: async mediaDeliveryRegistryRecordId => {
       const { rows } = await read<{
         placement_id: string
         placement_revision: number
@@ -30,10 +30,11 @@ export function createTestCopyrightDeliveryDependencies(
         desired_state: 'allow' | 'withheld'
       }>(sql`
         SELECT placement_id, placement_revision, image_id, desired_state
-        FROM view_media_delivery_registry_current_records WHERE delivery_key = ${deliveryKey}
+        FROM view_media_delivery_registry_current_records WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
       `)
       const record = rows[0]
-      if (!record) throw new Error(`Missing copyright test outbox record ${deliveryKey}`)
+      if (!record)
+        throw new Error(`Missing copyright test outbox record ${mediaDeliveryRegistryRecordId}`)
       await publish({
         placementId: record.placement_id,
         revision: record.placement_revision,

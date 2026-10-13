@@ -5,7 +5,7 @@ export type RssFeedToFetch = {
   id: string
   url: string
   url_hostname_id: string
-  crawlable: boolean | null
+  crawlable: boolean
   title: string | null
   declared_language: string | null
   last_modified_at: Date | null
@@ -22,10 +22,7 @@ export type RssFeedToFetch = {
 }
 
 type GetRssFeedsToFetchOptions = {
-  ttl?: number
   limit?: number
-  // Lets the dispatcher thread one config decision through selection and enqueueing.
-  prioritized?: boolean
 }
 
 const FEED_COLUMNS = `
@@ -47,49 +44,6 @@ const FEED_COLUMNS = `
 const FEED_JOINS = `
     JOIN urls ON urls.id = rss_feeds.rss_feed_url_id
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id`
-
-async function getRssFeedsFlatTtl(options: {
-  rssFeedId?: string
-  ttl: number
-  limit?: number
-}): Promise<RssFeedToFetch[]> {
-  const { rssFeedId, ttl, limit } = options
-  const params: unknown[] = []
-  let paramIndex = 1
-
-  let where = `    WHERE rss_feeds.deleted_at IS NULL
-      AND rss_feeds.is_enabled = TRUE\n`
-
-  if (rssFeedId) {
-    where += `      AND rss_feeds.id = $${paramIndex}\n`
-    params.push(rssFeedId)
-    paramIndex++
-  }
-
-  if (ttl > 0) {
-    where += `      AND (rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($${paramIndex} * INTERVAL '1 millisecond'))\n`
-    params.push(ttl)
-    paramIndex++
-  }
-
-  let limitClause = ''
-  if (limit !== undefined) {
-    limitClause = `    LIMIT $${paramIndex}\n`
-    params.push(limit)
-  }
-
-  const query = `/* getRssFeedsFlatTtl */
-    SELECT${FEED_COLUMNS},
-      0::DOUBLE PRECISION AS crawl_score,
-      5::INT AS crawl_tier,
-      1 AS priority_group
-    FROM rss_feeds${FEED_JOINS}
-${where}    ORDER BY rss_feeds.last_fetched_at ASC NULLS FIRST, rss_feeds.id ASC
-${limitClause}`
-
-  const { rows } = await read<RssFeedToFetch>(query, params)
-  return rows
-}
 
 async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
   const tier1_sla_ms = crawlConfig.getTierSlaMs(1)
@@ -117,28 +71,18 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       AND rss_feeds.is_enabled = TRUE`
 
   const query = `/* getRssFeedsTiered */
-    WITH due AS (
+    WITH candidates AS (
       SELECT${FEED_COLUMNS},
         ${scoreExpr} AS crawl_score,
         ${tierExpr} AS crawl_tier,
-        1 AS priority_group,
-        NULL::TIMESTAMPTZ AS deadline_at
+        CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END AS priority_group,
+        CASE WHEN ${isDueExpr} THEN NULL::TIMESTAMPTZ
+          ELSE rss_feeds.last_fetched_at + (${slaCaseExpr}) END AS deadline_at
       FROM rss_feeds${FEED_JOINS}
       LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
       WHERE ${enabledWhere}
-        AND ${isDueExpr}
-    ),
-    backfill AS (
-      SELECT${FEED_COLUMNS},
-        ${scoreExpr} AS crawl_score,
-        ${tierExpr} AS crawl_tier,
-        2 AS priority_group,
-        (rss_feeds.last_fetched_at + (${slaCaseExpr})) AS deadline_at
-      FROM rss_feeds${FEED_JOINS}
-      LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
-      WHERE ${enabledWhere}
-        AND NOT ${isDueExpr}
-        AND rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond')
+        AND (${isDueExpr}
+          OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond'))
     )
     SELECT
       id, url, url_hostname_id, crawlable, title,
@@ -146,11 +90,7 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       feed_ignore_robots_txt, hostname_ignore_robots_txt,
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
       crawl_score, crawl_tier, priority_group
-    FROM (
-      SELECT * FROM due
-      UNION ALL
-      SELECT * FROM backfill
-    ) combined
+    FROM candidates
     ORDER BY
       priority_group ASC,
       deadline_at ASC NULLS FIRST,
@@ -171,16 +111,9 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
   return rows
 }
 
-export function getRssFeedsToFetch({
-  ttl = 60_000,
-  limit,
-  prioritized,
-}: GetRssFeedsToFetchOptions = {}): Promise<RssFeedToFetch[]> {
-  const usePrioritized = prioritized ?? crawlConfig.isCrawlPrioritizationEnabled()
-  if (!usePrioritized) {
-    return getRssFeedsFlatTtl({ ttl, limit: limit ?? 100 })
-  }
-
+export function getRssFeedsToFetch({ limit }: GetRssFeedsToFetchOptions = {}): Promise<
+  RssFeedToFetch[]
+> {
   const capacityBudget = crawlConfig.getCrawlCapacityBudget()
   const budget = limit === undefined ? capacityBudget : Math.min(limit, capacityBudget)
   return getRssFeedsTiered(budget)
@@ -194,6 +127,25 @@ export async function getRssFeedByIdToFetch(
   rssFeedId: string,
   { ttl = 60_000 }: GetRssFeedByIdToFetchOptions = {},
 ): Promise<RssFeedToFetch | null> {
-  const rows = await getRssFeedsFlatTtl({ rssFeedId, ttl, limit: 1 })
+  const params: unknown[] = [rssFeedId]
+  const ttlFilter =
+    ttl > 0
+      ? `AND (rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($2 * INTERVAL '1 millisecond'))`
+      : ''
+  if (ttl > 0) params.push(ttl)
+
+  const query = `/* getRssFeedByIdToFetch */
+    SELECT${FEED_COLUMNS},
+      0::DOUBLE PRECISION AS crawl_score,
+      5::INT AS crawl_tier,
+      1 AS priority_group
+    FROM rss_feeds${FEED_JOINS}
+    WHERE rss_feeds.id = $1
+      AND rss_feeds.deleted_at IS NULL
+      AND rss_feeds.is_enabled = TRUE
+      ${ttlFilter}
+    LIMIT 1`
+
+  const { rows } = await read<RssFeedToFetch>(query, params)
   return rows[0] ?? null
 }

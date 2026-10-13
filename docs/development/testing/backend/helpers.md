@@ -7,6 +7,23 @@ Testing utility library for the Voucha backend.
 
 Tests share one dirty database ([suite rule R1](../../tests.md#test-suite-rules)). Assert owned ids, page with an owned-row cursor such as `encodeUuidCursorBefore(id)`, and take an advisory-lock reservation window such as `acquireTestAiUsageDateReservation` when the assertion is an exact global aggregate. Inject a write failure through a throwing `QueryExecutor` ([R2](../../tests.md#test-suite-rules)). Wait on the promise, queue event, or notification the code returns ([R3](../../tests.md#test-suite-rules)). Lower a DynamicConfig work limit with `overrideDynamicConfigFieldsForTest` instead of building a large fixture ([R4](../../tests.md#test-suite-rules)).
 
+Delegated-write fence tests use
+[`post-delegated-write-race.mts`](../../../../backend/test-helpers/post-delegated-write-race.mts).
+It reserves an owned observer connection from the primary advisory pool before acquiring the
+holder transaction or starting the mutation. Before each observation, it discards its own
+transaction-local statistics snapshot with `pg_stat_clear_snapshot()`. The observer reads the actual PostgreSQL lock wait,
+matching the query marker and holder PID through `pg_blocking_pids`; connection admission alone
+is not evidence of a blocked mutation. Cleanup settles and disposes the holder and observer, then
+drains the mutation, preserving the original failure and distinct cleanup failures. The existing
+lock-wait poll remains; reserving the observer does not eliminate pool acquisition or event-loop
+stalls.
+
+[`createTestDsaPayloadBuildFailure`](../../../../backend/test-helpers/dsa-statement-build-failure-fixtures.mts)
+scopes a DSA build failure to one restriction through the existing builder dependency. Its 404
+case calls the real builder with a missing restriction UUID; its 422 case builds a real payload
+then calls the real validator with an invalid content date. Other restrictions use the normal
+builder. Recovery uses the normal builder again; fixtures keep immutable rows and constraints intact.
+
 SQL setup and assertions are grouped by concern in `sql-*.mts` (posts, RSS feeds, topics,
 moderation, feed shares, follower distribution, URLs, configuration, and agent prompts).
 Language detection separates fixture creation from state assertions, and `sql-query-inputs.mts`
@@ -88,6 +105,11 @@ Agent and manual community unpublish lock-order cases share
 Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
 ## `onceEntityListenerCompleted`
+
+For a mutation whose entity may already have completed jobs, use
+[`withTestEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-transition.mts)
+with the mutation callback. It registers before the mutation and waits for a new owned completion,
+so an earlier job or an initially drained worker cannot satisfy the wait.
 
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.
 
@@ -175,6 +197,17 @@ See `backend/queues/post-publication/enqueues.test.mts` for the full pattern, in
 test that attaches a no-op stub worker and proves the id-scoped read survives a live consumer
 draining the job. More GlideMQ testing patterns: [GlideMQ testing](glide-mq-testing.md).
 
+## `startRealGlideJobLifecycle`
+
+For a claim the in-memory shim cannot establish, such as whether a finished job's record still holds a
+custom `jobId` (`backend/test-helpers/real-glide-job-lifecycle.mts`). It builds an isolated real
+GlideMQ queue under a unique name plus one worker, for `*.real-glide.mock.test.mts` files that
+`vi.mock` `glide-mq` back to the real package. Replay the queue package's production job options on
+`lifecycle.queue`, choose the worker's outcome with `setOutcome('complete' | 'fail')`, and wait on
+`lifecycle.settled(job)` (the worker's own terminal event, never a timer). Pass
+`{ connection: workerQueueConnection, prefix: workerQueuePrefix }`, and call `lifecycle.close()` in
+`finally`. See `backend/queues/images/enqueues.real-glide.mock.test.mts`.
+
 ## Reducing Entity-Listener Load
 
 Entity listener jobs (processUserCreated, processTopicCreated, processPostCreated, etc.) run asynchronously in the in-process TestWorker. Under high concurrency, a large backlog causes test timeouts.
@@ -242,6 +275,84 @@ try {
   await server.close()
 }
 ```
+
+## Recorded Provider Responses
+
+Gate request construction and response handling for an external provider on a recorded wire
+response, and keep the live call as a non-gating smoke check ([live-provider smoke
+checks](../../tests.md#live-provider-smoke-checks)). `createProviderReplay()` from
+[`provider-replay.mts`](../../../../backend/test-helpers/provider-replay.mts) is a URL-agnostic
+`fetch` that answers each request with the next queued response, so the SDK parses real status
+lines, headers, and SSE or JSON bytes and nothing touches the network
+([R5](../../tests.md#test-suite-rules)).
+
+- **Fixtures** are `curl -si`-style files (a status line, headers, a blank line, then the raw body)
+  under `backend/test-helpers/provider-fixtures/<provider>/`. Record one with `curl -si`, or
+  hand-write it from the provider's documented wire format when recording is not possible, and say so
+  in the pull request. `loadRecordedResponse('openai/responses-stream-text-completed.http')` drops
+  the framing headers (`content-length`, `transfer-encoding`, `content-encoding`, `connection`,
+  `keep-alive`) because it serves the decoded body. Pass `{ replace: { token: value } }` to swap a
+  literal token, such as the sentinel response id, for an id the test owns on the shared database.
+- **Replay**: `replay.respondWith(...)` queues responses in request order, `replay.requests` holds
+  each captured request (`method`, `url`, lower-cased `headers`, `body` bytes, `json()`), and
+  `replay.assertDrained()` fails when a queued response was never requested. A request with no
+  queued response throws, so an unexpected retry or extra call fails loudly. `createProviderReplay({
+  chunkBytes })` streams the body in pieces that ignore event boundaries. `toReplayResponse()` builds
+  the `Response` for a transport that is not `fetch` (Stripe's `createFetchHttpClient`, an AWS SDK
+  request handler); Bedrock's binary event-stream body is just bytes in the fixture.
+- **Injecting it** without editing production code: a provider SDK package is resolvable only from the
+  package that depends on it (`openai` from `@modules/openai-utils`), so put the test beside the
+  client. Mock the external package with a subclass that forces the replay `fetch`:
+
+  ```ts
+  const replay = await vi.hoisted(async () => {
+    const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+    return createProviderReplay({ chunkBytes: 41 })
+  })
+  vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
+    const actual = await importOriginal()
+    const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+    return { ...actual, default: replayClient(actual.default, replay) }
+  })
+  ```
+
+  That `vi.mock` makes the file `*.mock.test.mts`; use `*.no-data.mock.test.mts` when it needs no
+  database so it runs in `backend-no-data-mocks`. Name it so it does not match a live-provider glob
+  (`*.openai*`, `*.anthropic*`, `*.openrouter`, `*.stripe`, `*.bedrock`, `*.s3`), for example
+  `create-response.replay.no-data.mock.test.mts`: the credentialed projects collect those suffixes
+  and the unit projects exclude them. Call `replay.reset()` in `beforeEach` because the client is a
+  module singleton.
+
+- **Per-provider adapters** cover transports that are not a `fetch` option. Each is a thin wrapper
+  over the same `createProviderReplay()`, so fixtures, `requests`, and `assertDrained()` behave
+  identically; read the header comment of each file for its exact use.
+  - [`anthropic-message-replay.mts`](../../../../backend/test-helpers/anthropic-message-replay.mts):
+    agent packages cannot resolve `@anthropic-ai/sdk`, so `createAnthropicMessageReplay()` supplies
+    a `createMessage` dependency that serves recorded Messages bodies, and `replayGenerateJson()`
+    injects it into the real `generateJson`. The SDK-level replay stays beside the client.
+  - [`aws-replay-request-handler.mts`](../../../../backend/test-helpers/aws-replay-request-handler.mts):
+    `replayAwsClient()` wraps an AWS SDK v3 client class (SES, Bedrock) in a `vi.mock` factory so its
+    `requestHandler` serves the replay; the SDK still serializes, signs, and classifies errors.
+  - [`stripe-replay.mts`](../../../../backend/test-helpers/stripe-replay.mts): Stripe takes an
+    `httpClient`, so the test spies on `getProviderFetch` or `getStripeClient()` with
+    `createReplayStripeClient()`, not a module mock (`no-mistakes/module-mock-boundary` bans mocking
+    internal modules). `routeStripeReplay()` answers by method and path when the call count is ours
+    to change.
+
+  Live calls never gate CI: the `*.openai*`, `*.anthropic*`, `*.openrouter`, `*.stripe`, `*.bedrock`,
+  and `*.s3` files are non-gating smoke checks, and a recorded fixture test gates the code they
+  once covered. A coverage-ignore marker must not cite a live or credentialed test as its reason; add
+  a replay case instead. See [live-provider smoke checks](../../tests.md#live-provider-smoke-checks).
+
+- **Assert our behavior**: the request we build (model, parameters, headers we set), how we parse
+  the result (the id, model, tier, and usage the ledger reads), and our failure policy (for example
+  the latch-and-stop on a possibly billed create failure). Do not assert an upstream error message,
+  a URL the SDK builds, or an SDK retry or call count. Existing `*.no-data.mock.test.mts` files that
+  mock the SDK object keep owning branch logic; the replay test owns the wire. Model-quality golden
+  and eval files (`*.golden.*.test.mts`) are smoke and eval checks, not fixture candidates.
+
+Worked example: [`create-response.replay.no-data.mock.test.mts`](../../../../backend/modules/openai-utils/create-response.replay.no-data.mock.test.mts)
+and [`moderate.replay.no-data.mock.test.mts`](../../../../backend/modules/openai-utils/moderate.replay.no-data.mock.test.mts).
 
 ## Focused PostgreSQL Test Operations
 
@@ -337,9 +448,12 @@ receives the real transport and request count; server and dispatcher close after
 
 Use `withTestNotificationPushRecoveryBacklog()` from
 `@voucha/test-helpers/notification-push-recovery` for a fixed recovery snapshot spanning multiple
-pages. It pins owned intent timestamps to one isolated cursor window, exposes a frozen ordered ID
-snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
-settles.
+pages. Its normal notification insert captures intents with one transaction timestamp. It derives
+the cursor from those owned rows and keeps PostgreSQL's timestamp text to preserve microseconds,
+exposes a frozen ordered ID snapshot and endpoint-state readers, and deletes only its owned
+notifications after the callback settles. `createTestNotificationWithoutPushIntent()` creates a
+normal notification, then removes only its owned intent to exercise missing-intent recovery with
+all constraints and triggers enabled.
 
 ## Image Moderation Fixtures
 
@@ -662,3 +776,51 @@ from calls that create or retire provider mappings.
 - Backend context and test conventions: [../AGENTS.md](../../../../backend/AGENTS.md)
 - Mocking policy: [../services/AGENTS.md](../../../../backend/services/AGENTS.md)
 - PostgreSQL (entity helpers align with schema): [../data-stores/psql/README.md](../../postgresql/README.md)
+
+### Retained relation cleanup reservation
+
+`withTestRetainedRelationCleanupReservation` acquires every elected-family advisory transaction lock before admitting the normal global worker call. Admission matches the actual query executor, active test, and retained-relation operation; it closes before the helper awaits rollback. Worker deletes and cursor checkpoints remain in that transaction and are rolled back, including on assertion or registration failure. A handler failure retains its original identity unless rollback also fails, when both errors are reported in an `AggregateError`. A rollback failure always fails the test. Calls outside the reservation, on another executor, or from another test remain rejected by the shared-database scope guard. This is trusted test infrastructure: registration must stay after successful lock acquisition and must never be used to admit committed global writes.
+
+Embedding creation's exact global-capacity cases run in the first project group on the ordinary
+backend shard database. Later projects reuse the same database without resetting it. The fixture
+advisory lock coordinates concurrent runs of this file only; it does not serialize arbitrary
+production writers. Persist owned accounting rows, include other-work positive controls in the
+unfiltered aggregate, observe committed owned-job queue events, and drain before owned cleanup
+and configuration restoration. No test creates a database or raises capacity to hide saturation.
+Count-denial cases keep unfiltered admission, one positive-size owned active reservation, and
+worker denial in one `REPEATABLE READ` transaction. Their local count ceiling is the snapshot's
+active count plus one and never exceeds the normal configured ceiling, so they need one free
+count slot. Setup verifies the owned active row; rollback and cleanup verify its removal without
+requiring foreign usage to remain stationary. The mixed fairness case lowers its local size
+ceiling to the smallest positive integer GiB covering the snapshot's usage plus the exact size
+midpoint, never above normal capacity. Its rollback-owned active size reservation is only the
+remainder below that integer ceiling, less than one GiB. A positive remainder requires one
+reservation slot plus one admission slot; an exactly zero remainder inserts no row and needs
+only admission. The count ceiling reflects that actual contribution and never exceeds normal
+capacity. These are explicit preconditions, not skips or raised ceilings.
+A separately committed owned completed row with one record tests
+snapshot isolation using the real hourly query directly; it consumes no active count or size.
+All transaction setup and later operations are registered before effects and settle before
+rollback. Completed-row writes are owned and registered before insertion. Queue drain and
+successful rollback precede config restoration; unsafe cleanup withholds restoration.
+After acquiring the advisory lock, the fixture claims an atomic same-host lease before
+configuration initialization or worker admission. The nonce-owned witness lives outside Git in
+the ordinary user's local state and includes the actual server/database identity and database
+OID. Only proven physical drain, snapshot rollback, configuration restoration, and owned
+accounting removal permit its deletion. A failure retains it across owner exit, so the next
+fork refuses admission even when PostgreSQL releases the disconnected owner's advisory lock.
+There is no PID-age expiry or automatic stale removal. Recovery requires an explicit coordinator
+decision with exact witness ownership and actual process/PostgreSQL/Valkey idle evidence.
+This boundary covers the normal same-host, same-user non-main fixture and the GitHub Actions
+local ephemeral `postgres` service database, not remote databases.
+Database recreation changes the OID; an OID collision conservatively refuses admission.
+The six empty/unknown embedding-creation route cases use `createEmptyEmbeddingCreationWorker`
+from the first-layer empty-routing helper, with its controlled `emptyEmbeddingCreationDependencies`. This typed fixture injects controlled admitted capacity through
+the ordinary optional `BatchCreationDependencies` worker/processor seam. They exercise real SQL
+empty scans and real SDK worker completion or unknown-route failure, retaining actual `createBatch`
+(which empty scans must not invoke). They do not prove ambient provider admission. The five route
+denial cases and mixed fairness case retain real unfiltered global quota discovery. Production
+callers omit dependencies and preserve capacity-before-stream ordering and ordinary ceilings.
+Owned workers use the SDK's public `promotionInterval` to exercise real scheduled-priority
+admission within the test budget; this preserves priority ordering and delayed-job due times.
+The normal worker factory forwards that optional setting without changing production defaults.

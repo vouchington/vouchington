@@ -41,7 +41,7 @@ mixed-audience, and write-without-read sets fail closed. The shared catalogue li
 The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 
 - Populated on `createApiKey` (awaited via `addKeyHashToBloomFilter`)
-- Rebuilt weekly (Sunday 8AM UTC) via `processRebuildBloomFilter`
+- Rebuilt through `processRebuildBloomFilter` only for an admin request or a missing/failed filter; the existing entity-listener reconciliation window repairs missed adds.
 - Read through a ready-aware Lua probe that checks the rebuild marker and Bloom filter key before `BF.EXISTS`; missing or partial filters fall back to PostgreSQL.
 - Controlled by the `apiKeyBloomFilterEnabled` flag in `bloom-filter-config`
 

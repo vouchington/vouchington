@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, it, expect } from 'vitest'
 import { assertUrlsAreNotReferralLinks } from './assert-urls-are-not-referral-links.mts'
 import {
@@ -8,10 +9,9 @@ import {
   insertTestUrl,
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
-const randomSuffix = () => Math.random().toString(36).slice(2, 10)
+const randomSuffix = () => randomUUID().replaceAll('-', '')
 
 describe('assertUrlsAreNotReferralLinks', () => {
   beforeAll(async () => {
@@ -33,11 +33,11 @@ describe('assertUrlsAreNotReferralLinks', () => {
     })
 
     await expect(assertUrlsAreNotReferralLinks([urlId])).resolves.toBeUndefined()
-  }, 60_000)
+  })
 
   it('throws 422 when a URL matches an enabled referral program rule', async () => {
     const suffix = randomSuffix()
-    const user = (await createTestUserDirect({ username: `aunrl-${suffix}` })) as PrivateUser
+    const user = await createTestUserDirect({ username: `aunrl-${suffix}` })
     const fixture = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: suffix,
@@ -55,7 +55,7 @@ describe('assertUrlsAreNotReferralLinks', () => {
     expect(() => {
       throw error
     }).toThrow(/referral/i)
-  }, 60_000)
+  })
 
   it('throws 422 when only one URL in the batch is a referral link', async () => {
     const suffix = randomSuffix()
@@ -85,13 +85,13 @@ describe('assertUrlsAreNotReferralLinks', () => {
     expect(() => {
       throw error
     }).toThrow(/referral/i)
-  }, 60_000)
+  })
 
   it('applies penalty to userId when a referral link is found', async () => {
     const suffix = randomSuffix()
-    const user = (await createTestUserDirect({
+    const user = await createTestUserDirect({
       username: `aunrl-pen-${suffix}`,
-    })) as PrivateUser
+    })
     const fixture = await createReferralProgramFixture({
       createdById: user.id,
       randomSuffix: suffix,
@@ -111,15 +111,15 @@ describe('assertUrlsAreNotReferralLinks', () => {
     const attemptPenalty = penalties.find(p => p.reason === 'blocked_hostname_attempt')
     expect(attemptPenalty).toBeDefined()
     expect(attemptPenalty!.user_id).toBe(user.id)
-  }, 60_000)
+  })
 
   it('does not apply penalty when userId is not provided', async () => {
     const suffix = randomSuffix()
-    const submitter = (await createTestUserDirect({
+    const submitter = await createTestUserDirect({
       username: `aunrl-nopen-sub-${suffix}`,
-    })) as PrivateUser
+    })
     const fixture = await createReferralProgramFixture({
-      createdById: (await createTestUserDirect({ username: `aunrl-nopen-creator-${suffix}` })).id,
+      createdById: submitter.id,
       randomSuffix: suffix,
       hostname: `aunrl-nopen-${suffix}.example.com`,
       pathname: '/ref/%',
@@ -136,5 +136,5 @@ describe('assertUrlsAreNotReferralLinks', () => {
 
     const penalties = await getTestPenaltiesByUserId(submitter.id)
     expect(penalties.find(p => p.reason === 'blocked_hostname_attempt')).toBeUndefined()
-  }, 60_000)
+  })
 })

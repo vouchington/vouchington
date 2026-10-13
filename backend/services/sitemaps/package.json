@@ -23,7 +23,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
+    "@aws-sdk/client-s3": "^3.1149.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
@@ -31,7 +31,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
-    "p-map": "^7.0.8",
+    "p-map": "^7.1.0",
     "sql-template-strings": "^2.2.2"
   }
 }

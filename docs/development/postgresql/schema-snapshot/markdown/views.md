@@ -7,11 +7,18 @@
 Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.
 
 ```sql
- WITH canonical_follows AS (
+ WITH feed_inputs AS MATERIALIZED (
+         SELECT rss_feeds.id,
+            rss_feeds.canonical_rss_feed_id,
+            rss_feeds.topic_id,
+            rss_feeds.deleted_at,
+            rss_feeds.is_enabled
+           FROM rss_feeds
+        ), canonical_follows AS (
          SELECT COALESCE(rf.canonical_rss_feed_id, rf.id) AS rss_feed_id,
             f.subject_id AS user_id
            FROM (relation__user__follow__rss_feed f
-             JOIN rss_feeds rf ON ((rf.id = f.object_id)))
+             JOIN feed_inputs rf ON ((rf.id = f.object_id)))
           WHERE (f.deleted_at IS NULL)
           GROUP BY COALESCE(rf.canonical_rss_feed_id, rf.id), f.subject_id
         ), active_paid_memberships AS (
@@ -32,7 +39,7 @@ Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly b
         ), scored AS (
          SELECT rf.id AS rss_feed_id,
             (ln(((1)::double precision + (COALESCE(fc.weighted_follower_count, 0))::double precision)) + COALESCE(t.votes_score_net, (0)::double precision)) AS crawl_score
-           FROM ((rss_feeds rf
+           FROM ((feed_inputs rf
              JOIN topics t ON ((t.id = rf.topic_id)))
              LEFT JOIN follow_counts fc ON ((fc.rss_feed_id = rf.id)))
           WHERE ((rf.deleted_at IS NULL) AND (rf.is_enabled = true))
@@ -77,7 +84,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
                    FROM users post_creator
                   WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1
                    FROM user_suspensions suspension
-                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= uuidv7('-30 days'::interval)))
+                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (source.post_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))
         ), eligible_rss_hashtags AS (
          SELECT category.topic_alias_id,
             category.category_text AS authored_token,
@@ -88,13 +95,13 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
            FROM ((rss_feed_item_categories category
              JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))
              JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))
-          WHERE ((category.topic_alias_id IS NOT NULL) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1
+          WHERE ((category.topic_alias_id IS NOT NULL) AND (category.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (identity.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1
                    FROM ((rss_feed_item_sources source
                      JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))
                      JOIN topics feed_topic ON ((feed_topic.id = feed.topic_id)))
-                  WHERE ((source.rss_feed_item_id = item.id) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1
+                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1
                    FROM relation__rss_feed_item__category__topic_alias relation
-                  WHERE ((relation.subject_id = item.id) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))
+                  WHERE ((relation.subject_id = item.id) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))
         ), occurrences AS (
          SELECT eligible_post_hashtags.topic_alias_id,
             eligible_post_hashtags.authored_token,
@@ -272,15 +279,17 @@ Compact topic references embedded in current entity responses.
     logo_image_id,
     hero_image_id,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS logo_image_placement,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
     rewards_program_topic_id AS rewards_program_id,
@@ -329,9 +338,10 @@ Compact public user references without private account fields.
         END AS display_account,
     profile_image_id,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
@@ -619,7 +629,8 @@ UNION ALL
 Current authority record joined to its latest immutable delivery transition; no workflow state is stored on the authority parent.
 
 ```sql
- SELECT record.delivery_key,
+ SELECT record.id AS media_delivery_registry_record_id,
+    concat('image-placement:', record.placement_id, ':', record.placement_revision, ':', record.image_id) AS delivery_key,
     record.placement_id,
     record.placement_revision,
     record.image_id,
@@ -638,7 +649,7 @@ Current authority record joined to its latest immutable delivery transition; no 
     change.next_attempt_at
    FROM (media_delivery_registry_records record
      JOIN LATERAL ( SELECT history.id,
-            history.delivery_key,
+            history.media_delivery_registry_record_id,
             history.generation,
             history.change_type,
             history.desired_state,
@@ -652,8 +663,7 @@ Current authority record joined to its latest immutable delivery transition; no 
             history.next_attempt_at,
             history.created_at
            FROM media_delivery_registry_changes history
-          WHERE ((history.delivery_key = record.delivery_key) AND (history.generation = record.generation))
-          ORDER BY history.id DESC
+          WHERE ((history.media_delivery_registry_record_id = record.id) AND (history.id = record.latest_change_id) AND (history.generation = record.generation))
          LIMIT 1) change ON (true));
 ```
 
@@ -874,10 +884,20 @@ Current post response projection; callers enforce publication, deletion and audi
                     source.authored_token AS category_label
                    FROM post_topic_alias_sources source
                   WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,
-    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
-           FROM ((post_images
+    COALESCE(( WITH selected_post_images AS MATERIALIZED (
+                 SELECT post_images_1.post_id,
+                    post_images_1.image_id,
+                    post_images_1.order_index,
+                    post_images_1.caption
+                   FROM post_images post_images_1
+                  WHERE (post_images_1.post_id = posts.id)
+                  ORDER BY post_images_1.order_index
+                )
+         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
+           FROM (((selected_post_images post_images
              JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))
-             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))
+             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))
           WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,
     posts.community_id,
     posts.data_point_vertical,
@@ -981,6 +1001,19 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
                 )
          SELECT 1
            FROM story_publication))) AND (root_suspension.user_id IS NULL));
+```
+
+## `view_publicly_projected_image_placements`
+
+Usable images with completed allowed delivery in the current registry generation; read by the exact placement, revision and image tuple.
+
+```sql
+ SELECT registry.placement_id,
+    registry.placement_revision,
+    registry.image_id
+   FROM (view_media_delivery_registry_current_records registry
+     JOIN images image ON ((image.id = registry.image_id)))
+  WHERE ((image.deleted_at IS NULL) AND (image.upload_completed_at IS NOT NULL) AND (image.quarantine_pending_at IS NULL) AND (image.is_flagged_by_openai_omni_moderation = false) AND (image.openai_omni_moderation_results IS NOT NULL) AND (image.openai_omni_moderation_created_at IS NOT NULL) AND (registry.desired_state = 'allow'::media_delivery_desired_states) AND (registry.state = 'completed'::text));
 ```
 
 ## `view_rss_feed_current_states`
@@ -1201,15 +1234,17 @@ Current topic response projection; callers enforce topic lifecycle and visibilit
     topics.logo_image_id,
     topics.hero_image_id,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS logo_image_placement,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS hero_image_placement,
     topics.rewards_program_topic_id AS rewards_program_id,
@@ -1329,9 +1364,10 @@ Private account projection for the authenticated owner or explicitly authorized 
     users.individual_id,
     users.profile_image_id,
     ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
-           FROM (image_surface_placements surface
+           FROM ((image_surface_placements surface
              JOIN media_placements placement ON ((placement.id = surface.placement_id)))
-          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))
+          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     users.markdown,

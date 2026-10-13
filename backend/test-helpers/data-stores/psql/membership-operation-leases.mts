@@ -7,14 +7,16 @@ type QueryResult = { rowCount: number | null }
 export async function createExecutionLeaseOperation(idempotencyKey: string): Promise<string> {
   const applicationId = `execution-lease-${randomUUID()}`
   const { rows } = await write<{ id: string }>(sql`/* createExecutionLeaseOperation */
-    WITH lineage AS (
+    WITH actor AS (
+      INSERT INTO users DEFAULT VALUES RETURNING id
+    ), lineage AS (
       INSERT INTO membership_provider_lineages (
         provider, environment, application_id, provider_lineage_id
       ) VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`})
       RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
-      SELECT id, (SELECT id FROM users ORDER BY id LIMIT 1) FROM lineage
+      SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor
       RETURNING id, membership_provider_lineage_id
     ), source AS (
       INSERT INTO membership_sources (source_kind, membership_provider_lineage_id)

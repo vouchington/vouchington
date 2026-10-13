@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
@@ -16,6 +16,7 @@ test.describe('Publisher Type vote persistence', () => {
   let sourceTopicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await using transaction = await beginTransaction()
     await seedPlaywrightPublisherTypeTopics(transaction)
     await transaction.commit()

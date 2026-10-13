@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { searchRssFeedItemsBySemantic } from './search-semantic.mts'
 import { searchRssFeedItems } from './search.mts'
 import {
@@ -26,7 +27,7 @@ describe('searchRssFeedItemsBySemantic', () => {
   beforeAll(async () => {
     const feed = await insertTestRssFeedDirect({})
     feedId = feed.id
-    const random = Math.random().toString(36).slice(2, 10)
+    const random = randomUUID()
 
     const upserted = await upsertRssFeedItems(feed.id, [
       {
@@ -51,17 +52,23 @@ describe('searchRssFeedItemsBySemantic', () => {
 
     storyItemId = upserted[2].id
 
-    for (const item of upserted) {
-      await addDummyEmbeddingToRssFeedItem(item.id, {
-        embedding: makeNearbyEmbedding(MOCK_EMBEDDING),
-      })
+    const embeddings = await Promise.allSettled(
+      upserted.map(item =>
+        addDummyEmbeddingToRssFeedItem(item.id, {
+          embedding: makeNearbyEmbedding(MOCK_EMBEDDING),
+        }),
+      ),
+    )
+    for (const result of embeddings) {
+      if (result.status === 'rejected') throw result.reason
     }
 
-    // Tag the third item with a story_id so the dedup test can check it.
+    // Two owned candidates share a story; the remaining item keeps pagination nonempty.
     const story = await insertTestStory({})
     storyId = story.id
+    await setTestItemStoryId(upserted[1].id, storyId)
     await setTestItemStoryId(storyItemId, storyId)
-  }, 60_000)
+  }, 30_000)
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -86,6 +93,7 @@ describe('searchRssFeedItemsBySemantic', () => {
     getCachedSearchEmbeddingMock.mockResolvedValue(ZERO_EMBEDDING)
     const result = await searchRssFeedItemsBySemantic({
       semantic_search_query: 'completely unrelated query xyz',
+      rss_feed_ids: [feedId],
       limit: 5,
       dependencies,
     })
@@ -97,6 +105,7 @@ describe('searchRssFeedItemsBySemantic', () => {
   it('deduplicates items sharing the same story_id', async () => {
     const result = await searchRssFeedItemsBySemantic({
       semantic_search_query: 'developer tools',
+      rss_feed_ids: [feedId],
       limit: 10,
       dependencies,
     })
@@ -104,6 +113,8 @@ describe('searchRssFeedItemsBySemantic', () => {
     const uniqueStoryIds = new Set(storyIds)
     // No story_id should appear more than once in results
     expect(storyIds.length).toBe(uniqueStoryIds.size)
+    expect(result.results).toHaveLength(2)
+    expect(storyIds).toEqual([storyId])
   })
 
   it('traverses relevance pages without duplicating items', async () => {
@@ -121,13 +132,17 @@ describe('searchRssFeedItemsBySemantic', () => {
       dependencies,
     })
 
+    expect(firstPage.results).toHaveLength(1)
+    expect(secondPage.results).toHaveLength(1)
     expect(secondPage.results[0]?.id).not.toBe(firstPage.results[0]?.id)
+    expect(secondPage.page_info.has_next_page).toBe(false)
+    expect(secondPage.page_info.end_cursor).toBeNull()
     expect(secondPage.page_info.start_cursor).toEqual(expect.any(String))
   })
 
   it('orders equal relevance scores by published_at then id', async () => {
     const feed = await insertTestRssFeedDirect({})
-    const random = Math.random().toString(36).slice(2, 10)
+    const random = randomUUID()
     const samePublishedAt = new Date(2025, 0, 10).toISOString()
     const items = await upsertRssFeedItems(
       feed.id,
@@ -138,13 +153,16 @@ describe('searchRssFeedItemsBySemantic', () => {
         pubDate: samePublishedAt,
       })),
     )
-    await Promise.all(
+    const embeddings = await Promise.allSettled(
       items.map((item, index) =>
         addDummyEmbeddingToRssFeedItem(item.id, {
           embedding: makeEquidistantEmbedding(index + 1),
         }),
       ),
     )
+    for (const result of embeddings) {
+      if (result.status === 'rejected') throw result.reason
+    }
 
     const result = await searchRssFeedItemsBySemantic({
       semantic_search_query: 'developer tools',
@@ -162,7 +180,7 @@ describe('searchRssFeedItemsBySemantic', () => {
 
   it('deduplicates story candidates before applying a page keyset', async () => {
     const feed = await insertTestRssFeedDirect({})
-    const random = Math.random().toString(36).slice(2, 10)
+    const random = randomUUID()
     const items = await upsertRssFeedItems(
       feed.id,
       Array.from({ length: 5 }, (_, index) => ({
@@ -172,18 +190,24 @@ describe('searchRssFeedItemsBySemantic', () => {
         pubDate: new Date(2025, 0, index + 1).toISOString(),
       })),
     )
-    await Promise.all(
+    const embeddings = await Promise.allSettled(
       items.map((item, index) =>
         addDummyEmbeddingToRssFeedItem(item.id, {
           embedding: makeRankedEmbedding(index),
         }),
       ),
     )
+    for (const result of embeddings) {
+      if (result.status === 'rejected') throw result.reason
+    }
     const story = await insertTestStory({})
-    await Promise.all([
+    const assignments = await Promise.allSettled([
       setTestItemStoryId(items[0].id, story.id),
       setTestItemStoryId(items[1].id, story.id),
     ])
+    for (const result of assignments) {
+      if (result.status === 'rejected') throw result.reason
+    }
 
     const firstPage = await searchRssFeedItemsBySemantic({
       semantic_search_query: 'developer tools',
@@ -221,12 +245,12 @@ describe('searchRssFeedItemsBySemantic', () => {
   })
 
   it('skips embedding call when semantic_search_query is absent', async () => {
-    await searchRssFeedItems({ limit: 3 })
+    await searchRssFeedItems({ rss_feed_ids: [feedId], limit: 3 })
     expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
   })
 
   it('skips embedding call when semantic_search_query is whitespace-only', async () => {
-    await searchRssFeedItems({ semantic_search_query: '   ', limit: 3 })
+    await searchRssFeedItems({ semantic_search_query: '   ', rss_feed_ids: [feedId], limit: 3 })
     expect(getCachedSearchEmbeddingMock).not.toHaveBeenCalled()
   })
 })

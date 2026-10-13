@@ -1,6 +1,10 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { insertEntityRelation } from '@voucha/test-helpers/entities/entity-relations'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
 import { createTrendingTopicData } from '@voucha/test-helpers/entities/trending-topics'
 import { updateEntityRelationElection } from '@voucha/test-helpers/entities/user-profile-fixture-mutations'
@@ -43,11 +47,14 @@ describe('MCP output schema contract for trending reads — real DB', () => {
     }
   })
 
-  describe('get_trending_posts', () => {
+  describe('read_posts.trending', () => {
     const callPosts = (args: Record<string, unknown>) =>
-      callStructuredMcpTool(caller, 'get_trending_posts', { topic_id: topicId, ...args }, [
-        'posts:read',
-      ]) as Promise<Page>
+      callStructuredMcpTool(
+        caller,
+        'read_posts',
+        optionArgs('trending', { topic_id: topicId, ...args }),
+        ['posts:read'],
+      ) as Promise<Page>
 
     // A post's trending score decays with its age, so the score in page one's cursor is a hair above
     // the same post's score by the time page two runs. The REST route has this property too, so the
@@ -71,8 +78,8 @@ describe('MCP output schema contract for trending reads — real DB', () => {
     it('returns the topic-not-found result', async () => {
       const result = await callStructuredMcpTool(
         caller,
-        'get_trending_posts',
-        { topic_id: `missing-topic-${crypto.randomUUID()}` },
+        'read_posts',
+        optionArgs('trending', { topic_id: `missing-topic-${crypto.randomUUID()}` }),
         ['posts:read'],
       )
 
@@ -84,15 +91,20 @@ describe('MCP output schema contract for trending reads — real DB', () => {
 
       expect(clamped.results.map(r => r.id)).toEqual(postIds)
       await expect(
-        callRejectedMcpTool(caller, 'get_trending_posts', { limit: 0 }, ['posts:read']),
+        callRejectedMcpTool(caller, 'read_posts', optionArgs('trending', { limit: 0 }), [
+          'posts:read',
+        ]),
       ).resolves.toContain('/limit must be >= 1')
     })
 
     it('refuses a cursor that is not a trending cursor', async () => {
       await expect(
-        callRejectedMcpTool(caller, 'get_trending_posts', { after: 'not-a-cursor' }, [
-          'posts:read',
-        ]),
+        callRejectedMcpTool(
+          caller,
+          'read_posts',
+          optionArgs('trending', { after: 'not-a-cursor' }),
+          ['posts:read'],
+        ),
       ).resolves.toBe(
         JSON.stringify({
           error: {
@@ -106,11 +118,14 @@ describe('MCP output schema contract for trending reads — real DB', () => {
     })
   })
 
-  describe('get_trending_topics', () => {
+  describe('discover_topics.trending', () => {
     const callTopics = (args: Record<string, unknown>) =>
-      callStructuredMcpTool(caller, 'get_trending_topics', { time_range: 'week', ...args }, [
-        'topics:read',
-      ]) as Promise<Page>
+      callStructuredMcpTool(
+        caller,
+        'discover_topics',
+        optionArgs('trending', { time_range: 'week', ...args }),
+        ['topics:read'],
+      ) as Promise<Page>
 
     // A topic's score counts its recent tags, so it holds still between the two page requests.
     it('pages with no overlap and non-increasing scores', async () => {
@@ -134,7 +149,9 @@ describe('MCP output schema contract for trending reads — real DB', () => {
       expect(clamped.results.length).toBeGreaterThan(0)
       expect(clamped.results.length).toBeLessThanOrEqual(100)
       await expect(
-        callRejectedMcpTool(caller, 'get_trending_topics', { limit: 0 }, ['topics:read']),
+        callRejectedMcpTool(caller, 'discover_topics', optionArgs('trending', { limit: 0 }), [
+          'topics:read',
+        ]),
       ).resolves.toContain('/limit must be >= 1')
     })
   })

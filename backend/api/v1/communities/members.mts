@@ -9,6 +9,7 @@ import {
 import {
   getCommunityOrThrow,
   loadCommunityForViewer,
+  loadCommunityWithViewer,
   searchCommunityMembers,
   joinCommunity,
   leaveCommunity,
@@ -88,7 +89,7 @@ app
       path: ctx.params,
     })
 
-    await joinCommunity(currentUser.id, community.id)
+    await joinCommunity(currentUser.id, community)
 
     ctx.setStatus(201)
     ctx.json({})
@@ -97,12 +98,12 @@ app
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/communities/:idOrSlug/members')
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
-    const community = await getCommunityOrThrow(idOrSlug)
+    const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/members', {
       path: ctx.params,
     })
 
-    await leaveCommunity(currentUser.id, community.id)
+    await leaveCommunity(currentUser.id, loaded)
 
     ctx.setStatus(204)
   })
@@ -124,7 +125,7 @@ app
       body,
     })
 
-    await updateMemberRole(currentUser.id, community.id, userId, body.role)
+    await updateMemberRole(currentUser.id, community, userId, body.role)
 
     ctx.setStatus(204)
   })
@@ -140,7 +141,7 @@ app
       path: ctx.params,
     })
 
-    await removeMember(currentUser.id, community.id, userId)
+    await removeMember(currentUser.id, community, userId)
 
     ctx.setStatus(204)
   })
@@ -162,7 +163,7 @@ app.route('/api/v1/communities/:idOrSlug/ownership-transfers').post(async (ctx: 
   ctx.assert(body.user_id, 422, 'user_id is required')
   ctx.assert(isUUID(body.user_id), 422, 'user_id must be a valid UUID')
 
-  await initiateOwnershipTransfer(currentUser.id, community.id, body.user_id)
+  await initiateOwnershipTransfer(currentUser.id, community, body.user_id)
 
   ctx.setStatus(204)
 })

@@ -9,7 +9,7 @@ import { fetchFollowerUsers } from '@/lib/api/client/users'
 import type { FollowerDistributionAcceptedResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -42,9 +42,10 @@ describe('FollowerShareActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
 
-    await waitFor(() => {
-      expect(sendPostToFollowers).toHaveBeenCalledWith('post-1', { audience: 'all_followers' })
+    await act(async () => {
+      await vi.mocked(sendPostToFollowers).mock.results.at(-1)!.value
     })
+    expect(sendPostToFollowers).toHaveBeenCalledWith('post-1', { audience: 'all_followers' })
     expect(fetchFollowerUsers).not.toHaveBeenCalled()
   })
 
@@ -64,23 +65,25 @@ describe('FollowerShareActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Selected followers' }))
 
-    await waitFor(() => {
-      expect(fetchFollowerUsers).toHaveBeenCalledWith('user-1', {
-        after: undefined,
-        q: undefined,
-        limit: 5,
-        signal: expect.any(AbortSignal),
-      })
+    await act(async () => {
+      await vi.mocked(fetchFollowerUsers).mock.results.at(-1)!.value
+    })
+    expect(fetchFollowerUsers).toHaveBeenCalledWith('user-1', {
+      after: undefined,
+      q: undefined,
+      limit: 5,
+      signal: expect.any(AbortSignal),
     })
 
     fireEvent.click(await screen.findByRole('button', { name: /alpha/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
 
-    await waitFor(() => {
-      expect(sendPostToFollowers).toHaveBeenCalledWith('post-1', {
-        audience: 'selected_followers',
-        recipient_user_ids: ['01900000-0000-7000-8000-000000000002'],
-      })
+    await act(async () => {
+      await vi.mocked(sendPostToFollowers).mock.results.at(-1)!.value
+    })
+    expect(sendPostToFollowers).toHaveBeenCalledWith('post-1', {
+      audience: 'selected_followers',
+      recipient_user_ids: ['01900000-0000-7000-8000-000000000002'],
     })
   })
 
@@ -110,9 +113,10 @@ describe('FollowerShareActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
-    await waitFor(() => {
-      expect(sendPostToFollowers).toHaveBeenCalledWith('post-2', { audience: 'all_followers' })
+    await act(async () => {
+      await vi.mocked(sendPostToFollowers).mock.results.at(-1)!.value
     })
+    expect(sendPostToFollowers).toHaveBeenCalledWith('post-2', { audience: 'all_followers' })
   })
 
   it('keeps a new entity dialog open when an earlier send completes', async () => {
@@ -141,7 +145,7 @@ describe('FollowerShareActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
-    await waitFor(() => expect(sendPostToFollowers).toHaveBeenCalledTimes(1))
+    expect(sendPostToFollowers).toHaveBeenCalledTimes(1)
 
     rerender(
       <FollowerShareActions
@@ -151,14 +155,20 @@ describe('FollowerShareActions', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Send to followers' }))
     fireEvent.click(screen.getByRole('button', { name: 'Send now' }))
-    await waitFor(() => expect(sendPostToFollowers).toHaveBeenCalledTimes(2))
+    expect(sendPostToFollowers).toHaveBeenCalledTimes(2)
 
-    await act(async () => resolveFirstSend(acceptedResponse('distribution-1')))
+    await act(async () => {
+      resolveFirstSend(acceptedResponse('distribution-1'))
+      await vi.mocked(sendPostToFollowers).mock.results[0]!.value
+    })
 
     expect(screen.getByRole('heading', { name: 'Send to followers' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sending...' })).toBeDisabled()
 
-    await act(async () => resolveSecondSend(acceptedResponse('distribution-2')))
+    await act(async () => {
+      resolveSecondSend(acceptedResponse('distribution-2'))
+      await vi.mocked(sendPostToFollowers).mock.results[1]!.value
+    })
   })
 })
 

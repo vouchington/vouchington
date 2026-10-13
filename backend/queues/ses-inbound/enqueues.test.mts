@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import {
   getSesInboundProcessJobOptions,
   type SesInboundProcessJobData,
@@ -7,6 +8,7 @@ import {
   enqueueOrRetryBulkSesInboundProcess,
   enqueueSesInboundProcess,
   enqueueSesInboundReconcile,
+  enqueueSesInboundReconcileContinuation,
 } from './enqueues.mts'
 import { sesInboundQueue } from './queues.mts'
 
@@ -43,6 +45,23 @@ describe('SES inbound enqueues', () => {
     })
   })
 
+  it('deduplicates a continuation by its opaque token digest without scheduled throttle', async () => {
+    const token = `opaque:${crypto.randomUUID()}`
+    const first = await enqueueSesInboundReconcileContinuation(token)
+    const second = await enqueueSesInboundReconcileContinuation(token)
+    expect(first).toMatchObject({
+      data: { continuationToken: token },
+      opts: {
+        jobId: `ses_inbound_reconcile_continuation__${createHash('sha256').update(token).digest('hex')}`,
+        ordering: { key: 'ses-inbound-reconciliation', concurrency: 1 },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    })
+    expect(first).not.toHaveProperty('opts.deduplication')
+    expect(second).toBeNull()
+  })
+
   it('retries only failed process jobs that still have copyright objects', async () => {
     const current = {
       sesMessageId: 'ses-current',
@@ -54,7 +73,7 @@ describe('SES inbound enqueues', () => {
     const enqueueBulk = vi.fn<() => Promise<never[]>>().mockResolvedValue([])
 
     await expect(
-      enqueueOrRetryBulkSesInboundProcess([current], {
+      enqueueOrRetryBulkSesInboundProcess([current], undefined, {
         enqueueBulk,
         getFailedJobs: async () => [
           { id: currentId, name: 'processInboundEmail', retry: retryCurrent },

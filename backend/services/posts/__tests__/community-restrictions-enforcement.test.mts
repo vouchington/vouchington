@@ -161,7 +161,7 @@ describe('community restriction enforcement', () => {
       expiresAt: futureDate(),
     })
 
-    await expect(joinCommunity(user!.id, community.id)).rejects.toMatchObject({ status: 403 })
+    await expect(joinCommunity(user!.id, community)).rejects.toMatchObject({ status: 403 })
   })
 
   it('allows approved members to post under approved_members_only', async () => {

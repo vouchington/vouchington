@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
@@ -89,6 +89,7 @@ test.describe('Activity-gated dismissible asides', () => {
   let freshUserId = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const user = await createTestUser()
     if (!user) throw new Error('Failed to create fresh user for activity-gated aside tests')
     freshUserId = user.id

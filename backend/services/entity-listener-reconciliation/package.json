@@ -24,6 +24,11 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/api-keys": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

@@ -57,6 +57,8 @@ export const test = guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixture
   browserErrors: [browserErrorsFixture, { auto: true }],
 })
 
+export { protectPlaywrightHookTimeouts } from '../config/test-timeout.mts'
+
 export { expect }
 export type { Browser, BrowserContext, Locator, Page, Request, TestInfo } from '@playwright/test'
 

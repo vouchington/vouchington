@@ -1,3 +1,5 @@
+import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
+import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { RssFeedItemModal } from './rss-feed-item-modal'
@@ -40,11 +42,9 @@ vi.mock(import('./rss-feed-item-modal-shell'), () => ({
 vi.mock(import('@/components/news/news-item-actions'), () => ({
   NewsItemActions: () => <div data-testid='news-item-actions' />,
 }))
-
 vi.mock(import('@/components/news/news-item-header'), () => ({
   NewsItemHeader: () => <div data-testid='news-item-header' />,
 }))
-
 vi.mock(
   import('./rss-feed-item-follow-context'),
   () =>

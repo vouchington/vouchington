@@ -1,3 +1,4 @@
+import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import { createTestUserDirect } from './entities/users.mts'
 import { insertTestImage } from './entities/images.mts'
 import { getTestImageSurfacePlacements } from './entities/image-surface-placements.mts'
@@ -16,5 +17,10 @@ export async function createTestDeliverySurface() {
     imageId,
   }
   const staged = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-  return { tuple, userId: user.id, deliveryKey: staged.deliveryKey }
+  return {
+    tuple,
+    deliveryKey: getImagePlacementDeliveryKey(tuple),
+    userId: user.id,
+    mediaDeliveryRegistryRecordId: staged.mediaDeliveryRegistryRecordId,
+  }
 }

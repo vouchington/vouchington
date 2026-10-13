@@ -8,3 +8,6 @@
 | `domain` | Block hostname site-wide                                        | Admin                    | `/domain/[id]` → Moderation tab; quick-add on `/domains` | `web/components/domains/hostname-moderation-controls.tsx`; `web/components/domains/block-hostname-quick-add.tsx` | `POST /api/v1/hostnames` (upsert + block) or `PATCH /api/v1/hostnames/:id` |
 | `url`    | Trigger crawl                                                   | Admin                    | `/url/[id]`                                              | `web/components/urls/trigger-url-crawl-button.tsx`; admin aside: `web/components/urls/url-admin-aside.tsx`       | `POST /api/v1/urls/:id/crawl`                                              |
 | `url`    | View crawl history                                              | Admin OR Paid (Plus/Pro) | `/url/[id]`                                              | `web/components/urls/url-admin-aside.tsx`                                                                        | `backend/services/urls/authorization.mts:10,19`                            |
+
+Admin hostname writes use the [non-null flag contract](anatomy/domain.md); omitted fields keep
+the current value, and explicit `false` remains a valid moderation update.

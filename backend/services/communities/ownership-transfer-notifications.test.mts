@@ -22,7 +22,7 @@ describe('ownership transfer notifications', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community.id, moderator.id)
+    await initiateOwnershipTransfer(owner.id, community, moderator.id)
 
     const [previousOwner, newOwner] = await Promise.all([
       listNotifications(owner.id),
@@ -55,9 +55,9 @@ describe('ownership transfer notifications', () => {
       insertTestCommunityMember({ communityId: community.id, userId: member.id, role: 'member' }),
     ])
 
-    await expect(
-      initiateOwnershipTransfer(owner.id, community.id, member.id),
-    ).rejects.toMatchObject({ status: 422 })
+    await expect(initiateOwnershipTransfer(owner.id, community, member.id)).rejects.toMatchObject({
+      status: 422,
+    })
 
     expect((await getCommunityMember(community.id, owner.id))?.role).toBe('owner')
     expect((await getCommunityMember(community.id, member.id))?.role).toBe('member')

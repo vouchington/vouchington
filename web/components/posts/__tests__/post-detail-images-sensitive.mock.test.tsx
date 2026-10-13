@@ -9,6 +9,10 @@ const { mockGetExposureState, mockRecordMediaReveal } = vi.hoisted(() => ({
 
 vi.mock(import('next/dynamic'), () => ({ default: () => () => null }))
 
+vi.mock(import('../post-image-lightbox'), () => ({
+  PostImageLightbox: () => <span hidden />,
+}))
+
 vi.mock(import('@/components/ui/carousel'), async importOriginal => {
   const actual = await importOriginal()
   const Carousel = (({ children }) => <div>{children}</div>) as typeof actual.Carousel

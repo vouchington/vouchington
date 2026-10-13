@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, act, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockIssueAdminUserWarning, mockIssueCommunityUserWarning, mockOnError, mockOnSuccess } =
@@ -97,16 +97,17 @@ describe('IssueWarningDialog', () => {
     openDialog()
     fillReason('Posting spam')
     submitForm()
+    await act(async () => {
+      await mockIssueAdminUserWarning.mock.results.at(-1)!.value
+    })
 
-    await waitFor(() =>
-      expect(mockIssueAdminUserWarning).toHaveBeenCalledWith({
-        userId: 'user-1',
-        reason: 'Posting spam',
-        publicMessage: null,
-        reportId: 'report-1',
-        resolveReport: true,
-      }),
-    )
+    expect(mockIssueAdminUserWarning).toHaveBeenCalledWith({
+      userId: 'user-1',
+      reason: 'Posting spam',
+      publicMessage: null,
+      reportId: 'report-1',
+      resolveReport: true,
+    })
     expect(mockOnSuccess).toHaveBeenCalledWith('Warning issued')
     expect(onIssued).toHaveBeenCalledWith(fakeWarning)
   })
@@ -124,16 +125,17 @@ describe('IssueWarningDialog', () => {
     openDialog()
     fillReason('Harassment')
     submitForm()
+    await act(async () => {
+      await mockIssueCommunityUserWarning.mock.results.at(-1)!.value
+    })
 
-    await waitFor(() =>
-      expect(mockIssueCommunityUserWarning).toHaveBeenCalledWith('credit-cards', {
-        userId: 'user-1',
-        reason: 'Harassment',
-        publicMessage: null,
-        reportId: 'report-42',
-        resolveReport: true,
-      }),
-    )
+    expect(mockIssueCommunityUserWarning).toHaveBeenCalledWith('credit-cards', {
+      userId: 'user-1',
+      reason: 'Harassment',
+      publicMessage: null,
+      reportId: 'report-42',
+      resolveReport: true,
+    })
   })
 
   it('includes publicMessage when filled in', async () => {
@@ -146,11 +148,12 @@ describe('IssueWarningDialog', () => {
       target: { value: 'Please review the rules.' },
     })
     submitForm()
+    await act(async () => {
+      await mockIssueAdminUserWarning.mock.results.at(-1)!.value
+    })
 
-    await waitFor(() =>
-      expect(mockIssueAdminUserWarning).toHaveBeenCalledWith(
-        expect.objectContaining({ publicMessage: 'Please review the rules.' }),
-      ),
+    expect(mockIssueAdminUserWarning).toHaveBeenCalledWith(
+      expect.objectContaining({ publicMessage: 'Please review the rules.' }),
     )
   })
 
@@ -161,8 +164,11 @@ describe('IssueWarningDialog', () => {
     openDialog()
     fillReason('Spam')
     submitForm()
+    await act(async () => {
+      await mockIssueAdminUserWarning.mock.results.at(-1)!.value
+    })
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('routes errors through onError and keeps dialog open', async () => {
@@ -173,12 +179,13 @@ describe('IssueWarningDialog', () => {
     openDialog()
     fillReason('Spam')
     submitForm()
+    await act(async () => {
+      await mockIssueAdminUserWarning.mock.results.at(-1)!.value.catch(() => undefined)
+    })
 
-    await waitFor(() =>
-      expect(mockOnError).toHaveBeenCalledWith(
-        err,
-        expect.objectContaining({ fallback: 'Failed to issue warning' }),
-      ),
+    expect(mockOnError).toHaveBeenCalledWith(
+      err,
+      expect.objectContaining({ fallback: 'Failed to issue warning' }),
     )
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })

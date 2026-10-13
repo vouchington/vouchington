@@ -11,7 +11,7 @@ describe('household routes - request contract validation', () => {
 
   beforeAll(async () => {
     owner = await createTestUser()
-  }, 60_000)
+  }, 5_000)
 
   describe('anonymous callers', () => {
     it.each([

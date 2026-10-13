@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
@@ -16,6 +16,7 @@ test.describe('Referral Program Validations', () => {
   let nonAdminUserId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     referralProgram = await insertTestReferralProgram(rand())
     const nonAdmin = await createTestUser({ username: `ref-non-admin-${rand()}` })
     if (!nonAdmin) throw new Error('Failed to create non-admin user')
@@ -160,6 +161,7 @@ test.describe('Referral Program Validations — New Validation', () => {
   let referralProgram: Awaited<ReturnType<typeof insertTestReferralProgram>>
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     referralProgram = await insertTestReferralProgram(rand())
   })
 
@@ -181,6 +183,7 @@ test.describe('Referral Program Validations — Empty Validations State', () => 
   let emptyProgramTopicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const result = await insertTestEmptyReferralProgram(rand())
     emptyProgramTopicId = result.topicId
   })

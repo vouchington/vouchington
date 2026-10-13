@@ -1,4 +1,10 @@
-import { test, expect, type Locator, type Page } from '../../helpers/test.mts'
+import {
+  test,
+  expect,
+  type Locator,
+  type Page,
+  protectPlaywrightHookTimeouts,
+} from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -15,6 +21,7 @@ test.describe('Topic Aliases', () => {
   let topicId: string
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const suffix = randomSuffix()
     const topic = await insertTestTopic(`Alias Test Topic ${suffix}`, `alias-test-topic-${suffix}`)
     topicId = topic.id

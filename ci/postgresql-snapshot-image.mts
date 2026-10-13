@@ -1,4 +1,4 @@
-const imagePattern = /^pgvector\/pgvector:pg18@sha256:[0-9a-f]{64}$/u
+const imagePattern = /^mirror\.gcr\.io\/pgvector\/pgvector:pg18@sha256:[0-9a-f]{64}$/u
 
 export function isPinnedPostgresImage(image: string): boolean {
   return imagePattern.test(image)

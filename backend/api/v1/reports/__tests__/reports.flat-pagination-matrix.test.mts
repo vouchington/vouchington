@@ -1,12 +1,15 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { randomInt } from 'node:crypto'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
-  createTestExpiryWindow,
   createTestUser,
   insertTestModerationReport,
   insertTestPost,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { paginationConfig } from '@services/pagination/config'
+import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import {
   buildReportPageInfo,
   encodeReportCursor,
@@ -34,74 +37,89 @@ type TraversalResponse = {
   body: { results: ReportRow[]; page_info: PageInfo }
 }
 
-// The shared staff report queue is dirty and parallel: other tests leave pending reports behind
-// and never clean up (see backend/test-helpers/AGENTS.md). These traversals only assert
-// properties scoped to the reports this file owns, so they tolerate that foreign noise instead
-// of requiring a quiet table. Mutable sorts (`severity`, `most_reported`) 422 when a cursor
-// row's report count or judgement rank changes, so this file starts from an owned-report cursor
-// rather than seeking through foreign pages of the shared queue.
-const FINE_PAGE_SLACK = 25
+// Owned keyset bounds avoid scanning the dirty staff queue. One non-owned row
+// interleaves the five owned rows; all requests still execute the real HTTP/SQL path.
+const FINE_PAGE_SLACK = 2
 
 describe('GET /api/v1/reports flat pagination matrix', () => {
+  let restorePagination: (() => void) | undefined
   let admin: PrivateUser
   let reportIds: string[]
   let ownedIds: Set<string>
-  const createdAt = createTestExpiryWindow().firstEligibleDate
+  let excludedControlId: string
+  // An injected historical namespace is ordering input, not an eligibility clock.
+  const createdAt = new Date(Date.UTC(1971, 0, 1) + randomInt(31_536_000_000))
 
   beforeAll(async () => {
+    await paginationConfig.waitForInitialization()
+    paginationConfig.unsubscribe()
+    restorePagination = overrideDynamicConfigFieldsForTest(paginationConfig, {
+      default_limit: 2,
+      max_limit: 4,
+    })
     admin = await createTestUser({ administrator: true })
     const owner = await createTestUser()
     reportIds = []
+    const reporter = await createTestUser()
     for (let index = 0; index < 6; index += 1) {
-      const reporter = await createTestUser()
       const postId = await insertTestPost({
         createdById: owner.id,
         slug: `flat-pagination-matrix-${index}-${crypto.randomUUID().slice(0, 8)}`,
         title: `Flat pagination matrix ${index}`,
         markdown: 'body',
       })
-      reportIds.push(
-        await insertTestModerationReport({
-          reporterUserId: reporter.id,
-          entityType: 'post',
-          entityId: postId,
-          reason: 'spam',
-          createdAt: new Date(createdAt.getTime() + index),
-        }),
-      )
+      const reportId = await insertTestModerationReport({
+        reporterUserId: reporter.id,
+        entityType: 'post',
+        entityId: postId,
+        reason: 'spam',
+        createdAt: new Date(createdAt.getTime() + index),
+      })
+      if (index === 2) excludedControlId = reportId
+      else reportIds.push(reportId)
     }
     ownedIds = new Set(reportIds)
   })
 
-  // Each sort does two fine-grained (limit 2 and 4) forward/backward traversals from an
-  // owned-report cursor. That's slower than the default 30s under concurrent DB load now that
-  // this file runs alongside every other report test instead of behind an exclusive lock; the
-  // longer budget accommodates real work, not a hang — each traversal still fails fast with an
-  // explicit bounded-page error well before this elapses.
-  it.each(FLAT_SORTS)(
-    'traverses every owned report exactly once for %s',
-    async sort => {
-      const firstId = firstOwnedId(sort)
-      const resumeAfter = encodeOwnedCursor(firstId, sort)
+  afterAll(async () => {
+    restorePagination?.()
+    await closeScopedDynamicConfigContext([paginationConfig])
+  })
 
-      for (const limit of [2, 4]) {
-        const forward = await traverseOwned(sort, limit, resumeAfter, firstId)
-        expect(forward.seen).toHaveLength(ownedIds.size)
-        expect(new Set(forward.seen)).toEqual(ownedIds)
+  it.each(FLAT_SORTS)('traverses every owned report exactly once for %s', async sort => {
+    const firstId = firstOwnedId(sort)
+    const orderedIds = reportIds.toSorted()
+    if (sort === 'created_at_desc') orderedIds.reverse()
+    const leadingRequest = createRequest()
+    await leadingRequest.authenticateAs(admin)
+    const leading = await leadingRequest
+      .get('/api/v1/reports')
+      .query({
+        before: encodeOwnedCursor(orderedIds[1]!, sort),
+        limit: 1,
+        sort,
+      })
+      .expect(200)
+    expect(leading.body.results.map((row: ReportRow) => row.id)).toEqual([firstId])
+    const resumeAfter = leading.body.page_info.start_cursor as string
 
-        const target = forward.seen.length - forward.lastPageOwnedCount
-        const backward = await traverseOwnedBackward(
-          sort,
-          limit,
-          forward.lastPage.start_cursor!,
-          target,
-          forward.pagesUsed + FINE_PAGE_SLACK,
-        )
-        expect(backward).toEqual(forward.seen.slice(0, target))
-      }
-    },
-    60_000,
-  )
+    for (const limit of [2, 4]) {
+      const forward = await traverseOwned(sort, limit, resumeAfter, firstId)
+      expect(forward.seen).toHaveLength(ownedIds.size)
+      expect(new Set(forward.seen)).toEqual(ownedIds)
+      expect(forward.excludedControlSeen).toBe(true)
+
+      const target = forward.seen.length - forward.lastPageOwnedCount
+      const backward = await traverseOwnedBackward(
+        sort,
+        limit,
+        forward.lastPage.start_cursor!,
+        target,
+        forward.pagesUsed + FINE_PAGE_SLACK,
+      )
+      expect(backward).toEqual(forward.seen.slice(0, target))
+    }
+  })
 
   it('returns canonical empty page info', () => {
     expect(
@@ -121,7 +139,14 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
   it('rejects a cursor when status, sort, or cluster scope changes', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    const first = await request.get('/api/v1/reports?limit=2&sort=severity').expect(200)
+    const first = await request
+      .get('/api/v1/reports')
+      .query({
+        limit: 2,
+        sort: 'severity',
+        after: encodeOwnedCursor(firstOwnedId('severity'), 'severity'),
+      })
+      .expect(200)
     const after = first.body.page_info.end_cursor as string
 
     await request
@@ -151,7 +176,7 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
     return ownedIds.has(row.id)
   }
 
-  // These fixtures share a randomized per-run future timestamp range and rank 0 / report_count 1,
+  // Injected historical UUIDv7 timestamps and rank 0 / report_count 1 establish ordering,
   // so severity and most_reported match created_at_asc (id ASC) without prior focused runs
   // interleaving rows inside the owned cluster. created_at_desc starts from the newest owned id.
   function firstOwnedId(sort: ModerationReportSort): string {
@@ -183,6 +208,7 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
     let lastPage: PageInfo | undefined
     let lastPageOwnedCount = 0
     const maxPages = ownedIds.size + FINE_PAGE_SLACK
+    let excludedControlSeen = false
     let pagesUsed = 0
     for (let page = 0; page < maxPages; page += 1) {
       const response: TraversalResponse = await request
@@ -194,6 +220,7 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
       )
       lastPageOwnedCount = 0
       for (const row of response.body.results) {
+        if (row.id === excludedControlId) excludedControlSeen = true
         if (!isOwnedRow(row)) continue
         expect(seenSet.has(row.id)).toBe(false)
         seenSet.add(row.id)
@@ -212,7 +239,7 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
         `traversal for ${sort} exceeded ${maxPages} pages before seeing every owned report`,
       )
     }
-    return { seen, lastPage: lastPage!, lastPageOwnedCount, pagesUsed }
+    return { seen, lastPage: lastPage!, lastPageOwnedCount, pagesUsed, excludedControlSeen }
   }
 
   // Walks backward from the start of the final forward page, so it only needs to cover the

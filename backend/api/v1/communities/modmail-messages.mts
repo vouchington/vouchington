@@ -5,8 +5,7 @@ import { isUUID } from '@modules/utils'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
-import { getCommunityOrThrow } from '@services/communities/get'
-import { getCommunityMember } from '@services/communities/members/get'
+import { loadCommunityWithViewer } from '@services/communities'
 import {
   getModmailThread,
   currentUserCanViewModmailThread,
@@ -34,11 +33,10 @@ app
       conversationId: string
     }
     ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
-    const [community, thread] = await Promise.all([
-      getCommunityOrThrow(idOrSlug),
+    const [{ community, membership }, thread] = await Promise.all([
+      loadCommunityWithViewer(idOrSlug, currentUser.id),
       getModmailThread(conversationId),
     ])
-    const membership = await getCommunityMember(community.id, currentUser.id)
 
     ctx.assert(thread, 404, 'Modmail thread not found')
     ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')
@@ -88,11 +86,10 @@ app
       conversationId: string
     }
     ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
-    const [community, thread] = await Promise.all([
-      getCommunityOrThrow(idOrSlug),
+    const [{ community, membership }, thread] = await Promise.all([
+      loadCommunityWithViewer(idOrSlug, currentUser.id),
       getModmailThread(conversationId),
     ])
-    const membership = await getCommunityMember(community.id, currentUser.id)
 
     ctx.assert(thread, 404, 'Modmail thread not found')
     ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')

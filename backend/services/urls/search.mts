@@ -47,9 +47,7 @@ function buildUrlFilters(options: SearchUrlsOptions): SQLStatement[] {
   }
 
   if (excludeBlockedHostnames) {
-    filters.push(
-      sql`urls.hostname_id IN (SELECT id FROM url_hostnames WHERE (is_blocked IS NOT TRUE))`,
-    )
+    filters.push(sql`urls.hostname_id IN (SELECT id FROM url_hostnames WHERE (NOT is_blocked))`)
   }
 
   return filters

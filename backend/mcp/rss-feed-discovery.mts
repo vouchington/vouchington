@@ -1,5 +1,5 @@
+import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@services/openai-agents/tool-types'
 import { getRecommendedRssFeeds } from '@services/recommended-rss-feeds/get-recommendations'
 import type {
   RecommendationSource,
@@ -37,12 +37,13 @@ const recommendedSchema = closedObject({
   recommendation_reasons: { type: 'array', items: { type: 'string' } },
 })
 
-export const getTrendingRssFeedsTool: Tool<TrendingArgs, DiscoveryResult<TrendingRssFeedMetric>> = {
+export const getTrendingRssFeedsTool: MergedToolSource<
+  TrendingArgs,
+  DiscoveryResult<TrendingRssFeedMetric>
+> = {
   schema: {
-    name: 'get_trending_rss_feeds',
-    type: 'function',
     description:
-      'List trending RSS feed IDs, scores and counts. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.',
+      'List trending RSS feed IDs, scores and counts. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.',
     parameters: {
       type: 'object',
       properties: {
@@ -52,7 +53,6 @@ export const getTrendingRssFeedsTool: Tool<TrendingArgs, DiscoveryResult<Trendin
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
@@ -80,15 +80,13 @@ export const getTrendingRssFeedsTool: Tool<TrendingArgs, DiscoveryResult<Trendin
   },
 }
 
-export const getRecommendedRssFeedsTool: Tool<
+export const getRecommendedRssFeedsTool: MergedToolSource<
   RecommendedArgs,
   DiscoveryResult<RecommendedRssFeedResult>
 > = {
   schema: {
-    name: 'get_recommended_rss_feeds',
-    type: 'function',
     description:
-      'List RSS feed recommendations for the current user, with scores and reasons. Use get_rss_feed for details. Returns at most 100 per page and a cursor for the next page.',
+      'List RSS feed recommendations for the current user, with scores and reasons. Use read_rss_feed (option details) for details. Returns at most 100 per page and a cursor for the next page.',
     parameters: {
       type: 'object',
       properties: {
@@ -97,7 +95,6 @@ export const getRecommendedRssFeedsTool: Tool<
       },
       required: [],
     },
-    strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],

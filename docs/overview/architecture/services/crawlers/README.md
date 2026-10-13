@@ -15,6 +15,7 @@ For example, for a certain domain, we'd simplify the crawling by having a global
 - Crawler selection for a hostname should use `priority DESC, id ASC`
 - Define parsing strategies (exclude headers, extract specific content)
 - Can be updated per hostname to improve crawl quality
+- Admin updates lock the crawler row and read its pre-update state once for existence checks and the moderator-action history snapshot.
 - When new URLs are saved for unblocked hostnames, a crawler should exist (create on demand)
 - `css_selectors_to_remove` updates are append-only and deduplicated (never auto-remove existing selectors)
 - Wildcard hostname patterns are not supported for crawlers

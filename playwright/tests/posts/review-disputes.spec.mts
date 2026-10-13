@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
@@ -25,6 +25,7 @@ let verificationClaimId = ''
 const verificationClaimEvidence = `Deterministic Playwright topic claim ${randomSuffix()}`
 
 test.beforeAll(async () => {
+  protectPlaywrightHookTimeouts(test.info())
   // Seed a deterministic pending dispute for the staff-queue tests
   const reviewer = requireTestValue(await createTestUser(), 'Failed to create reviewer')
   reviewerId = reviewer.id
@@ -119,6 +120,7 @@ test.describe('Admin - topic claims and dispute queue', () => {
 
 test.describe('Disputes — Site Moderator staff queue', () => {
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const moderator = await createSiteModeratorUser()
     smModeratorId = moderator.id
   })

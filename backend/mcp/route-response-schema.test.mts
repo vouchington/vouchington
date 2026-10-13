@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import {
   componentSchema,
   inlineSchemaReferences,
@@ -20,12 +21,18 @@ describe('inlineSchemaReferences', () => {
 
     expect(
       inlineSchemaReferences(
-        { anyOf: [{ ...ref('Thing'), description: 'A thing' }, { type: 'null' }] },
+        {
+          anyOf: [{ ...ref('Thing'), description: 'A thing' }, { type: 'null' }],
+        },
         components,
       ),
     ).toEqual({
       anyOf: [
-        { type: 'object', properties: { id: { type: 'string' } }, description: 'A thing' },
+        {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          description: 'A thing',
+        },
         { type: 'null' },
       ],
     })
@@ -68,7 +75,9 @@ describe('inlineSchemaReferences', () => {
       B: { type: 'object', properties: { a: ref('A') } },
     }
 
-    const inlined = inlineSchemaReferences(ref('A'), components) as { $defs: object }
+    const inlined = inlineSchemaReferences(ref('A'), components) as {
+      $defs: object
+    }
 
     expect(Object.keys(inlined.$defs)).toEqual(['A'])
     expect(JSON.stringify(inlined)).not.toContain('#/components')
@@ -85,7 +94,9 @@ describe('inlineSchemaReferences', () => {
 })
 
 describe('resolveRouteResponse', () => {
-  const components = { Page: { type: 'object', properties: { total: { type: 'number' } } } }
+  const components = {
+    Page: { type: 'object', properties: { total: { type: 'number' } } },
+  }
 
   it('returns the self-contained object schema for a route', () => {
     expect(
@@ -112,16 +123,22 @@ describe('resolveRouteResponse', () => {
 
 describe('checked-in route contracts', () => {
   it('resolves a shipped route into a schema that needs no document around it', () => {
-    const schema = routeResponseSchema({ method: 'GET', path: '/api/v1/my/cards' })
+    const schema = routeResponseSchema({
+      method: 'GET',
+      path: '/api/v1/my/cards',
+    })
 
     expect(schema.type).toBe('object')
     expect(Object.keys(schema['properties'] as object).toSorted()).toEqual(['page_info', 'results'])
-    expect(JSON.stringify(schema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(schema)
   })
 
   it('fails loudly for a route that documents its response inline', () => {
     expect(() =>
-      routeResponseSchema({ method: 'GET', path: '/api/v1/my/financial-profile' }),
+      routeResponseSchema({
+        method: 'GET',
+        path: '/api/v1/my/financial-profile',
+      }),
     ).toThrow('No checked-in response contract')
   })
 
@@ -130,7 +147,7 @@ describe('checked-in route contracts', () => {
 
     expect(schema['type']).toBe('object')
     expect(schema['properties']).toHaveProperty('credit_score_range')
-    expect(JSON.stringify(schema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(schema)
   })
 })
 
@@ -157,7 +174,10 @@ describe('successResultSchema', () => {
   it('wraps the body in the success envelope the list tools return', () => {
     expect(successResultSchema({ type: 'object', properties: {} })).toEqual({
       type: 'object',
-      properties: { success: { const: true }, result: { type: 'object', properties: {} } },
+      properties: {
+        success: { const: true },
+        result: { type: 'object', properties: {} },
+      },
       required: ['success', 'result'],
       additionalProperties: false,
     })
@@ -165,7 +185,11 @@ describe('successResultSchema', () => {
 
   it('hoists $defs to the root of the envelope so their references still resolve', () => {
     expect(
-      successResultSchema({ type: 'object', properties: {}, $defs: { Node: { type: 'object' } } }),
+      successResultSchema({
+        type: 'object',
+        properties: {},
+        $defs: { Node: { type: 'object' } },
+      }),
     ).toMatchObject({
       properties: { result: { type: 'object', properties: {} } },
       $defs: { Node: { type: 'object' } },

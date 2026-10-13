@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
-  createTestPreCaptureNotification,
+  createTestNotificationWithoutPushIntent,
   createTestUserDirect,
   getTestNotificationPushIntent,
 } from '@voucha/test-helpers'
@@ -80,14 +80,14 @@ function toCursor(intent: { updated_at: string; user_id: string; notification_id
 }
 
 describe('ensureNotificationPushIntents', () => {
-  it('creates the missing durable intent for a pre-capture notification', async () => {
+  it('recovers the missing durable intent for an owned notification', async () => {
     const recipient = await createTestUserDirect()
-    const notificationId = await createTestPreCaptureNotification(recipient.id)
+    const notificationId = await createTestNotificationWithoutPushIntent(recipient.id)
     await expect(
       getTestNotificationPushIntent(recipient.id, notificationId),
     ).resolves.toBeUndefined()
 
-    await expect(createPreCaptureNotificationPushIntent()).resolves.toBe(1)
+    await expect(createMissingNotificationPushIntent()).resolves.toBe(1)
 
     await expect(
       getTestNotificationPushIntent(recipient.id, notificationId),
@@ -95,7 +95,7 @@ describe('ensureNotificationPushIntents', () => {
       status: 'pending',
     })
 
-    async function createPreCaptureNotificationPushIntent(): Promise<number> {
+    async function createMissingNotificationPushIntent(): Promise<number> {
       await using query = await beginTransaction()
       const result = await ensureNotificationPushIntents(
         [{ userId: recipient.id, notificationId }],

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { MARKDOWN_CONTENT_FEATURES_RICH } from '@/components/shared/markdown-content-features'
-import { MarkdownContent } from '@/components/shared/markdown-content'
+import { UserBioCopy } from '@/components/users/user-bio-copy'
 import { getUserProfile, GET_USER_PROFILE_WITH_BIO } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { createUserPathname } from '@/lib/links/entity-href'
@@ -76,8 +76,9 @@ export default async function UserProfilePage({ params }: PageProps) {
         })}
       />
       {profileData.user_bio_html ? (
-        <MarkdownContent
+        <UserBioCopy
           html={profileData.user_bio_html}
+          detectedLanguage={user.lingua_rs_detected_language}
           features={MARKDOWN_CONTENT_FEATURES_RICH}
         />
       ) : isOwner ? (

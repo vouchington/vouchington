@@ -5,6 +5,11 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { format } from 'oxfmt'
 import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
+import { buildMcpResultFixtures } from './mcp-result-cases.mts'
+import {
+  financialMcpResultCases,
+  type McpResultFixtureCase,
+} from '@voucha/test-helpers/native-mcp-result-cases'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const toJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
@@ -13,6 +18,7 @@ async function generate(
   rawArgs: readonly string[],
   root: string,
   tools: readonly Tool[],
+  cases: readonly McpResultFixtureCase[],
 ): Promise<void> {
   const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs
   const repoPath = (path: string): string => join(root, path)
@@ -20,8 +26,13 @@ async function generate(
     throw new Error('Usage: pnpm run mcp:catalog [--check]')
   const check = args.includes('--check')
   const markdownPath = repoPath('docs/overview/architecture/mcp/catalog.md')
+  const catalog = buildMcpCatalog(tools)
   const artifacts = [
-    { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(buildMcpCatalog(tools)) },
+    { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(catalog) },
+    {
+      path: repoPath('api-fixtures/v1/mcp-results.json'),
+      raw: toJson(buildMcpResultFixtures(catalog, cases)),
+    },
     {
       path: markdownPath,
       raw: spliceCatalogTable(await readFile(markdownPath, 'utf8'), renderCatalogTable(tools)),
@@ -57,9 +68,11 @@ export async function runCatalogGeneration(
     closeResources,
     ready,
     tools,
+    cases = financialMcpResultCases,
   }: {
     root?: string
     tools: readonly Tool[]
+    cases?: readonly McpResultFixtureCase[]
     ready: Promise<void>
     closeResources: readonly (() => Promise<void>)[]
   },
@@ -67,7 +80,7 @@ export async function runCatalogGeneration(
   const failures: unknown[] = []
   try {
     await ready
-    await generate(args, root, tools)
+    await generate(args, root, tools, cases)
   } catch (err) {
     failures.push(err)
   } finally {

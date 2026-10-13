@@ -1,8 +1,12 @@
+import {
+  optionArgs,
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { describe, expect, it } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import {
   createFollowNotification,
@@ -39,7 +43,7 @@ async function queuedDeletions(userId: string, notificationId: string) {
 }
 
 describe('notification tools contract — real DB', () => {
-  it('mark_notification_read marks only that notification and repeats without changing it', async () => {
+  it('mark_notifications_read.one marks only that notification and repeats without changing it', async () => {
     const caller = await createCaller()
     const target = await createNotificationFor(caller.id)
     const other = await createNotificationFor(caller.id)
@@ -47,8 +51,8 @@ describe('notification tools contract — real DB', () => {
     expect(
       await callStructuredMcpTool(
         caller,
-        'mark_notification_read',
-        { notification_id: target },
+        'mark_notifications_read',
+        optionArgs('one', { notification_id: target }),
         SCOPES,
       ),
     ).toEqual({ success: true })
@@ -56,8 +60,8 @@ describe('notification tools contract — real DB', () => {
     expect(
       await callStructuredMcpTool(
         caller,
-        'mark_notification_read',
-        { notification_id: target },
+        'mark_notifications_read',
+        optionArgs('one', { notification_id: target }),
         SCOPES,
       ),
     ).toEqual({ success: true })
@@ -67,7 +71,7 @@ describe('notification tools contract — real DB', () => {
     expect(await readAt(caller.id, other)).toBeNull()
   })
 
-  it('mark_notification_read does what PATCH /api/v1/my/notifications/:id does', async () => {
+  it('mark_notifications_read.one does what PATCH /api/v1/my/notifications/:id does', async () => {
     const caller = await createCaller()
     const viaRest = await createNotificationFor(caller.id)
     const viaTool = await createNotificationFor(caller.id)
@@ -77,8 +81,8 @@ describe('notification tools contract — real DB', () => {
 
     await callStructuredMcpTool(
       caller,
-      'mark_notification_read',
-      { notification_id: viaTool },
+      'mark_notifications_read',
+      optionArgs('one', { notification_id: viaTool }),
       SCOPES,
     )
 
@@ -86,7 +90,7 @@ describe('notification tools contract — real DB', () => {
     expect(await readAt(caller.id, viaTool)).not.toBeNull()
   })
 
-  it('mark_all_notifications_read reports how many changed and leaves other users alone', async () => {
+  it('mark_notifications_read.all reports how many changed and leaves other users alone', async () => {
     const caller = await createCaller()
     const bystander = await createTestUser()
     const mine = await Promise.all([
@@ -95,8 +99,18 @@ describe('notification tools contract — real DB', () => {
     ])
     const theirs = await createNotificationFor(bystander.id)
 
-    const first = await callStructuredMcpTool(caller, 'mark_all_notifications_read', {}, SCOPES)
-    const again = await callStructuredMcpTool(caller, 'mark_all_notifications_read', {}, SCOPES)
+    const first = await callStructuredMcpTool(
+      caller,
+      'mark_notifications_read',
+      optionArgs('all', {}),
+      SCOPES,
+    )
+    const again = await callStructuredMcpTool(
+      caller,
+      'mark_notifications_read',
+      optionArgs('all', {}),
+      SCOPES,
+    )
 
     expect(first).toEqual({ success: true, marked_read: 2 })
     expect(again).toEqual({ success: true, marked_read: 0 })
@@ -169,11 +183,11 @@ describe('notification tools contract — real DB', () => {
   })
 
   it.each([
-    ['mark_notification_read', { notification_id: 'nope' }],
-    ['mark_notification_read', {}],
+    ['mark_notifications_read', optionArgs('one', { notification_id: 'nope' })],
+    ['mark_notifications_read', optionArgs('one', {})],
     ['delete_notification', { notification_id: 'nope' }],
     ['delete_notification', { notification_id: crypto.randomUUID(), user_id: crypto.randomUUID() }],
-    ['mark_all_notifications_read', { user_id: crypto.randomUUID() }],
+    ['mark_notifications_read', optionArgs('all', { user_id: crypto.randomUUID() })],
   ])('refuses invalid %s arguments before any change', async (name, args) => {
     const caller = await createCaller()
     const notificationId = await createNotificationFor(caller.id)

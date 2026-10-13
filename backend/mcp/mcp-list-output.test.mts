@@ -1,4 +1,6 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { readFileSync } from 'node:fs'
+import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.mts'
 import { describe, expect, it } from 'vitest'
 import getListItemsTool from './get-list-items.mts'
 import getListTool from './get-list.mts'
@@ -33,9 +35,9 @@ function branches(tool: { meta?: Tool['meta'] }): JsonSchema[] {
 }
 
 const TOOLS = [
-  ['get_my_lists', getMyListsTool, '/api/v1/lists'],
-  ['get_list', getListTool, '/api/v1/lists/{id}'],
-  ['get_list_items', getListItemsTool, '/api/v1/lists/{id}/items'],
+  ['read_my_lists', getMyListsTool, '/api/v1/lists'],
+  ['read_my_lists', getListTool, '/api/v1/lists/{id}'],
+  ['read_my_lists', getListItemsTool, '/api/v1/lists/{id}/items'],
 ] as const
 
 describe('list read tool output schemas', () => {
@@ -79,14 +81,14 @@ describe('list read tool output schemas', () => {
   it.each(TOOLS)('publishes %s as a closed found-or-not-found object', (name, tool) => {
     const [found, notFound] = branches(tool)
 
-    expect(tool.schema.name).toBe(name)
+    expect(getRegisteredToolByName(name)?.schema.name).toBe(name)
     expect(found!['additionalProperties']).toBe(false)
     expect(found!['required']).toEqual(Object.keys(propertiesOf(found!)))
     expect(propertiesOf(notFound!)).toEqual({
       success: { const: false },
       error: { type: 'string' },
     })
-    expect(JSON.stringify(tool.meta?.outputSchema)).not.toContain('$ref')
+    assertMcpLocalSchemaRefs(tool.meta?.outputSchema)
   })
 
   it('returns one list as an entry and the others as pages with their page info', () => {
@@ -121,13 +123,17 @@ describe('list read tool output schemas', () => {
   })
 
   it.each([
-    ['get_my_lists', getMyListsTool],
-    ['get_list_items', getListItemsTool],
+    ['read_my_lists', getMyListsTool],
+    ['read_my_lists', getListItemsTool],
   ] as const)('bounds the %s page size at the signed-out REST maximum', (_name, tool) => {
     const properties = tool.schema.parameters?.['properties'] as Record<string, unknown>
 
     expect(LIST_PAGE_LIMIT).toEqual({ min: 1, max: 25, default: 20 })
-    expect(properties['limit']).toMatchObject({ type: 'integer', minimum: 1, maximum: 25 })
+    expect(properties['limit']).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 25,
+    })
     expect(tool.schema.description).toContain('at most 25')
   })
 

@@ -1,3 +1,4 @@
+import { optionArgs, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
 import {
   createRandomString,
@@ -6,7 +7,6 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 type Caller = PrivateUser & { membership_plan: null }
@@ -22,7 +22,7 @@ const INVALID_CURSOR = { success: false, error: 'Invalid cursor' }
 
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-describe('get_community_members — real DB', () => {
+describe('read_community.members — real DB', () => {
   let owner: Caller
   let moderator: Caller
   let members: Caller[]
@@ -67,9 +67,12 @@ describe('get_community_members — real DB', () => {
   }
 
   const list = (caller: Caller, community_id: string, args: Record<string, unknown> = {}) =>
-    callStructuredMcpTool(caller, 'get_community_members', { community_id, ...args }, [
-      'communities:read',
-    ]) as unknown as Promise<MembersPage>
+    callStructuredMcpTool(
+      caller,
+      'read_community',
+      optionArgs('members', { community_id, ...args }),
+      ['communities:read'],
+    ) as unknown as Promise<MembersPage>
 
   it('lists a public roster in order with usernames, roles and ISO dates', async () => {
     const community = await roster({})

@@ -1,8 +1,6 @@
 {
   "bookmarks": {},
-  "community_memberships": {},
-  "community_metrics": {},
-  "communitys": {
+  "communities": {
     "community-1-api": {
       "__entity_type": "community",
       "archived_at": null,
@@ -100,6 +98,8 @@
       "visibility": "public"
     }
   },
+  "community_memberships": {},
+  "community_metrics": {},
   "page_info": {
     "end_cursor": null,
     "has_next_page": false,

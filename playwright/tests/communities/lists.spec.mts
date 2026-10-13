@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../../helpers/test.mts'
+import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -35,6 +35,7 @@ test.describe('Community Lists Page', () => {
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     const fixture = createCommunityFixture()
     COMMUNITY_SLUG = fixture.slug
 

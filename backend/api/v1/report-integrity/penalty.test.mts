@@ -19,7 +19,7 @@ describe('GET /api/v1/report-integrity/penalties/:id', () => {
       createTestUser({ extraRoles: ['moderator'], username: randomUsername() }),
       createTestUser({ extraRoles: ['customer_support'], username: randomUsername() }),
     ])
-  }, 60_000)
+  }, 5_000)
 
   it('requires administrator access', async () => {
     await createRequest().get(`/api/v1/report-integrity/penalties/${uuidv7()}`).expect(401)
@@ -30,14 +30,14 @@ describe('GET /api/v1/report-integrity/penalties/:id', () => {
         await request.get(`/api/v1/report-integrity/penalties/${uuidv7()}`).expect(403)
       }),
     )
-  }, 60_000)
+  })
 
   it('returns 422 for an invalid ID and 404 for an unknown penalty', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
     await request.get('/api/v1/report-integrity/penalties/invalid').expect(422)
     await request.get(`/api/v1/report-integrity/penalties/${uuidv7()}`).expect(404)
-  }, 60_000)
+  })
 
   it('returns the exact authoritative penalty', async () => {
     const user = await createTestUser({ username: randomUsername() })
@@ -53,5 +53,5 @@ describe('GET /api/v1/report-integrity/penalties/:id', () => {
       created_by_id: admin.id,
       revoked_at: null,
     })
-  }, 60_000)
+  })
 })

@@ -36,14 +36,14 @@ export async function insertTestSystemModerationReport(
   insertQuery.append(sql`reporter_user_id, `)
   insertQuery.append(fkColumn)
   insertQuery.append(sql`, case_id, reason, original_reason, note, created_via`)
-  if (communityId) insertQuery.append(sql`, moderation_transparency_community_id`)
+  if (communityId) insertQuery.append(sql`, community_id, moderation_transparency_community_id`)
   insertQuery.append(sql`)
     VALUES (`)
   if (reportId) insertQuery.append(sql`${reportId}, `)
   insertQuery.append(
     sql`${systemUser.id}, ${entityId}::uuid, ${caseId}, 'other', 'other', ${note ?? null}, 'system'`,
   )
-  if (communityId) insertQuery.append(sql`, ${communityId}::uuid`)
+  if (communityId) insertQuery.append(sql`, ${communityId}::uuid, ${communityId}::uuid`)
   insertQuery.append(sql`)
     ON CONFLICT DO NOTHING
     RETURNING id
@@ -56,8 +56,13 @@ export async function insertTestSystemModerationReport(
   selectQuery.append(fkColumn)
   selectQuery.append(sql` = ${entityId}::uuid
       AND reviewed_at IS NULL
-    LIMIT 1
   `)
+  if (communityId) {
+    selectQuery.append(sql` AND community_id = ${communityId}::uuid`)
+  } else {
+    selectQuery.append(sql` AND community_id IS NULL`)
+  }
+  selectQuery.append(sql` LIMIT 1`)
   const { rows: existing } = await read<{ id: string }>(selectQuery)
   return existing[0]!.id
 }
@@ -65,6 +70,7 @@ export async function insertTestSystemModerationReport(
 export async function getTestSystemModerationReportStatus(
   entityType: string,
   entityId: string,
+  communityId?: string,
 ): Promise<string | null> {
   const fkColumn = ENTITY_TYPE_TO_REPORT_FK[entityType]
   if (!fkColumn) return null
@@ -79,8 +85,9 @@ export async function getTestSystemModerationReportStatus(
   query.append(fkColumn)
   query.append(sql` = ${entityId}::uuid
       AND u.username = ${BAN_EVASION_SYSTEM_USERNAME}
-    LIMIT 1
   `)
+  if (communityId) query.append(sql` AND mr.community_id = ${communityId}::uuid`)
+  query.append(sql` LIMIT 1`)
   const { rows } = await read<{ status: string }>(query)
   return rows[0]?.status ?? null
 }
@@ -94,6 +101,21 @@ export async function getTestModerationReportEscalatedAt(
     SELECT escalated_at FROM moderation_reports WHERE id = ${reportId}
   `)
   return rows[0]?.escalated_at
+}
+
+/** Pending user-report community stamps for one reported user, including a null global stamp. */
+export async function listTestPendingUserReportCommunityIds(
+  reportedUserId: string,
+): Promise<Array<string | null>> {
+  const { rows } = await read<{ moderation_transparency_community_id: string | null }>(sql`
+    /* listTestPendingUserReportCommunityIds */
+    SELECT moderation_transparency_community_id
+    FROM moderation_reports
+    WHERE reported_user_id = ${reportedUserId}::uuid
+      AND reviewed_at IS NULL
+    ORDER BY moderation_transparency_community_id ASC NULLS FIRST, id ASC
+  `)
+  return rows.map(row => row.moderation_transparency_community_id)
 }
 
 export async function getTestModerationReportStatus(reportId: string): Promise<string> {

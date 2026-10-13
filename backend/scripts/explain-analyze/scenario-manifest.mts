@@ -1,4 +1,14 @@
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  'bloom-repair-window',
+  'bloom-repair-capped',
+  'bloom-repair-resumed',
+  'crawl-hostname-threshold-seek',
+  'crawl-hostnames-due',
+  'crawl-hostnames-due-capped',
+  'url-blocklist-hostnames',
+  'mv-top-hashtags-refresh',
+  'mv-rss-feed-crawl-tiers-refresh',
+  'rss-feeds-to-fetch-tiered',
   'post-search-similar-post-new',
   'post-search-similar-post-relevance',
   'post-search-similar-rss-new',
@@ -177,4 +187,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'follower-distribution-rate-limit-rss_feed_item_share',
   'follower-distribution-rate-limit-rss_feed_item_send',
   'post-creation-moderation-bypass',
+  'media-delivery-replay-first',
+  'media-delivery-replay-continuation',
+  'media-delivery-replay-scoped',
 ] as const

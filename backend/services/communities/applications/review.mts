@@ -3,9 +3,9 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { getPrivateUserByAny } from '@services/users/get'
-import { getCommunityMember } from '../members/get.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
-import { getCommunity, type CommunityWithOwner } from '../get.mts'
+import type { CommunityWithOwner } from '../get.mts'
+import { getCommunityWithViewer } from '../load-with-viewer.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
 import { getApplication } from './get.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -31,11 +31,9 @@ export async function approveApplication(
     'Application has already been reviewed',
   )
 
-  const [community, membership] = await Promise.all([
-    getCommunity(application.community_id),
-    getCommunityMember(application.community_id, currentUser.id),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(application.community_id, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
@@ -112,11 +110,9 @@ export async function rejectApplication(
     'Application has already been reviewed',
   )
 
-  const [community, membership] = await Promise.all([
-    getCommunity(application.community_id),
-    getCommunityMember(application.community_id, currentUser.id),
-  ])
-  assert(community, 404, 'Community not found')
+  const loaded = await getCommunityWithViewer(application.community_id, currentUser.id)
+  assert(loaded, 404, 'Community not found')
+  const { community, membership } = loaded
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 

@@ -164,7 +164,7 @@ describe('Follow -> trust-vote coupling (issue #7257)', () => {
     const lastTarget = targets[30]!
     const bookmarks = await getBookmarksForEntity(user, 'user', { id: lastTarget.id })
     expect(bookmarks.follow).toBe(true)
-  }, 60_000)
+  })
 
   it('a follower who has exhausted their daily contribution quota does not cast a vouch', async () => {
     // Quota is deliberately read-only here (getContributionQuota, not

@@ -1,3 +1,4 @@
+import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, getTestMediaDeliveryRecordSnapshot } from '@voucha/test-helpers'
 import {
@@ -7,7 +8,7 @@ import {
 } from '@voucha/test-helpers/media-delivery-recovery'
 import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
-  listRecoverableMediaDeliveryRegistryKeys,
+  listRecoverableMediaDeliveryRegistryIds,
   replayFailedMediaDeliveryRegistryRecords,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
@@ -18,10 +19,10 @@ describe('media registry recovery pages', () => {
     await withTestMediaRecoveryBacklog(
       user.id,
       1,
-      async ({ deliveryKeys, placements, scanBefore }) => {
-        const key = deliveryKeys[0]!
+      async ({ recordIds, placements, scanBefore }) => {
+        const key = recordIds[0]!
         const expiredAt = new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString()
-        await setTestMediaRecoveryState(deliveryKeys, {
+        await setTestMediaRecoveryState(recordIds, {
           state: 'claimed',
           attempts: 5,
           at: expiredAt,
@@ -33,53 +34,49 @@ describe('media registry recovery pages', () => {
         )
         const replacement = await getTestMediaDeliveryRecordSnapshot(key)
         expect(Number(replacement?.generation)).toBeGreaterThan(Number(abandoned?.generation))
-        expect(
-          await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, deliveryKeys),
-        ).toBe(0)
+        expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, recordIds)).toBe(
+          0,
+        )
         expect(await getTestMediaDeliveryRecordSnapshot(key)).toEqual(replacement)
       },
     )
   })
   it('drains 101 records through scoped immutable keysets at one cutoff', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 102, async ({ deliveryKeys, scanBefore }) => {
-      await setTestMediaRecoveryState([deliveryKeys[101]!], {
-        state: 'pending',
-        attempts: 0,
-        at: scanBefore,
-        createdAt: '2300-01-01T00:00:00Z',
-      })
-      const input = { limit: 100, scanBefore, deliveryKeys }
-      const first = await listRecoverableMediaDeliveryRegistryKeys(input)
-      expect(first.results).toEqual(deliveryKeys.slice(0, 100))
+    await withTestMediaRecoveryBacklog(user.id, 101, async ({ recordIds, scanBefore }) => {
+      const later = await createTestDeliverySurface()
+      const inputIds = [...recordIds, later.mediaDeliveryRegistryRecordId]
+      const input = { limit: 100, scanBefore, recordIds: inputIds }
+      const first = await listRecoverableMediaDeliveryRegistryIds(input)
+      expect(first.results).toEqual(recordIds.slice(0, 100))
       expect(first.page_info.has_next_page).toBe(true)
-      const second = await listRecoverableMediaDeliveryRegistryKeys({
+      const second = await listRecoverableMediaDeliveryRegistryIds({
         ...input,
         after: first.page_info.end_cursor!,
       })
-      expect(second.results).toEqual([deliveryKeys[100]])
+      expect(second.results).toEqual([recordIds[100]])
       expect(second.page_info.has_next_page).toBe(false)
       await expect(
-        listRecoverableMediaDeliveryRegistryKeys({
+        listRecoverableMediaDeliveryRegistryIds({
           ...input,
           scanBefore: '2300-01-01T00:00:00Z',
           after: first.page_info.end_cursor!,
         }),
       ).rejects.toThrow('Invalid media recovery cursor')
       await expect(
-        listRecoverableMediaDeliveryRegistryKeys({
+        listRecoverableMediaDeliveryRegistryIds({
           ...input,
-          deliveryKeys: deliveryKeys.slice(1),
+          recordIds: recordIds.slice(1),
           after: first.page_info.end_cursor!,
         }),
       ).rejects.toThrow('Invalid media recovery cursor')
       expect(
-        (await listRecoverableMediaDeliveryRegistryKeys({ ...input, deliveryKeys: [] })).results,
+        (await listRecoverableMediaDeliveryRegistryIds({ ...input, recordIds: [] })).results,
       ).toEqual([])
       expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, [])).toBe(0)
-      const exact = await listRecoverableMediaDeliveryRegistryKeys({
+      const exact = await listRecoverableMediaDeliveryRegistryIds({
         ...input,
-        deliveryKeys: deliveryKeys.slice(0, 100),
+        recordIds: recordIds.slice(0, 100),
       })
       expect(exact.results).toHaveLength(100)
       expect(exact.page_info.has_next_page).toBe(false)
@@ -87,28 +84,28 @@ describe('media registry recovery pages', () => {
   })
   it('terminalizes bounded abandoned final claims without excluding later eligible work', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 103, async ({ deliveryKeys, scanBefore }) => {
+    await withTestMediaRecoveryBacklog(user.id, 103, async ({ recordIds, scanBefore }) => {
       const expiredAt = new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString()
-      await setTestMediaRecoveryState(deliveryKeys.slice(0, 102), {
+      await setTestMediaRecoveryState(recordIds.slice(0, 102), {
         state: 'claimed',
         attempts: 5,
         at: expiredAt,
       })
-      const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(deliveryKeys[101]!)
-      const ownedKeys = [...deliveryKeys.slice(0, 101), deliveryKeys[102]!]
+      const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(recordIds[101]!)
+      const ownedKeys = [...recordIds.slice(0, 101), recordIds[102]!]
       expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, ownedKeys)).toBe(
         100,
       )
       expect(
         (
-          await listRecoverableMediaDeliveryRegistryKeys({
+          await listRecoverableMediaDeliveryRegistryIds({
             limit: 100,
             scanBefore,
-            deliveryKeys: ownedKeys,
+            recordIds: ownedKeys,
           })
         ).results,
-      ).toEqual([deliveryKeys[102]])
-      expect(await getTestMediaDeliveryRecordSnapshot(deliveryKeys[0]!)).toMatchObject({
+      ).toEqual([recordIds[102]])
+      expect(await getTestMediaDeliveryRecordSnapshot(recordIds[0]!)).toMatchObject({
         state: 'failed',
         delivery_attempt_count: 5,
         claimed_at: expect.any(String),
@@ -116,61 +113,61 @@ describe('media registry recovery pages', () => {
       })
       expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, ownedKeys)).toBe(1)
       expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, ownedKeys)).toBe(0)
-      expect(await getTestMediaDeliveryRecordSnapshot(deliveryKeys[101]!)).toEqual(unrelatedBefore)
-      const outside = deliveryKeys[101]!
+      expect(await getTestMediaDeliveryRecordSnapshot(recordIds[101]!)).toEqual(unrelatedBefore)
+      const outside = recordIds[101]!
       await setTestMediaRecoveryState([outside], { state: 'failed', attempts: 5, at: expiredAt })
       const failedOutside = await getTestMediaDeliveryRecordSnapshot(outside)
-      expect(await replayFailedMediaDeliveryRegistryRecords({ deliveryKeys: ownedKeys })).toBe(101)
-      expect(await getTestMediaDeliveryRecordSnapshot(deliveryKeys[0]!)).toMatchObject({
+      expect(
+        await replayFailedMediaDeliveryRegistryRecords({ recordIds: ownedKeys }),
+      ).toMatchObject({ replayed: 101 })
+      expect(await getTestMediaDeliveryRecordSnapshot(recordIds[0]!)).toMatchObject({
         state: 'pending',
         delivery_attempt_count: 0,
         claimed_at: null,
         completed_at: null,
       })
       expect(await getTestMediaDeliveryRecordSnapshot(outside)).toEqual(failedOutside)
-      expect(await replayFailedMediaDeliveryRegistryRecords({ deliveryKeys: [] })).toBe(0)
+      expect(await replayFailedMediaDeliveryRegistryRecords({ recordIds: [] })).toMatchObject({
+        replayed: 0,
+      })
     })
   })
   it('preserves active, completed, locked and nonexhausted records', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 4, async ({ deliveryKeys, scanBefore }) => {
+    await withTestMediaRecoveryBacklog(user.id, 4, async ({ recordIds, scanBefore }) => {
       const expiredAt = new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString()
-      await setTestMediaRecoveryState([deliveryKeys[0]!], {
+      await setTestMediaRecoveryState([recordIds[0]!], {
         state: 'claimed',
         attempts: 5,
         at: scanBefore,
       })
-      await setTestMediaRecoveryState([deliveryKeys[1]!], {
+      await setTestMediaRecoveryState([recordIds[1]!], {
         state: 'completed',
         attempts: 5,
         at: expiredAt,
       })
-      await setTestMediaRecoveryState([deliveryKeys[2]!], {
+      await setTestMediaRecoveryState([recordIds[2]!], {
         state: 'claimed',
         attempts: 4,
         at: expiredAt,
       })
-      await setTestMediaRecoveryState([deliveryKeys[3]!], {
+      await setTestMediaRecoveryState([recordIds[3]!], {
         state: 'claimed',
         attempts: 5,
         at: expiredAt,
       })
-      const before = await Promise.all(deliveryKeys.map(getTestMediaDeliveryRecordSnapshot))
-      await withLockedTestMediaDeliveryRecord(deliveryKeys[3]!, async () => {
-        expect(
-          await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, deliveryKeys),
-        ).toBe(0)
-        expect(await Promise.all(deliveryKeys.map(getTestMediaDeliveryRecordSnapshot))).toEqual(
-          before,
+      const before = await Promise.all(recordIds.map(getTestMediaDeliveryRecordSnapshot))
+      await withLockedTestMediaDeliveryRecord(recordIds[3]!, async () => {
+        expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, recordIds)).toBe(
+          0,
         )
+        expect(await Promise.all(recordIds.map(getTestMediaDeliveryRecordSnapshot))).toEqual(before)
       })
-      expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, deliveryKeys)).toBe(
-        1,
-      )
+      expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, recordIds)).toBe(1)
       expect(
-        (await listRecoverableMediaDeliveryRegistryKeys({ limit: 100, scanBefore, deliveryKeys }))
+        (await listRecoverableMediaDeliveryRegistryIds({ limit: 100, scanBefore, recordIds }))
           .results,
-      ).toEqual([deliveryKeys[2]])
+      ).toEqual([recordIds[2]])
     })
   })
 })

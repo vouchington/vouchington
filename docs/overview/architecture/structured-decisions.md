@@ -31,8 +31,9 @@ Each normalized answer also retains its validated native provider fragment so th
 can persist one auditable response per candidate without copying the entire response envelope.
 
 The deterministic test suite owns request validation, provider decoding, and ambiguous-billed-attempt
-classification. One
-credentialed OpenRouter test verifies the native contract using all three primitives. The opt-in
+classification, including one recorded OpenRouter Decisions response that exercises all three
+primitives. One
+credentialed OpenRouter test is a non-gating smoke check of the same native contract against the live API. The opt-in
 benchmark uses a bounded candidate-count sweep and repeated fixed anchor to record success or
 failure, probability drift, latency, usage, and deterministic cost comparisons in a private local
 artifact. A completed operator cap is not a claimed provider ceiling. This public repository keeps

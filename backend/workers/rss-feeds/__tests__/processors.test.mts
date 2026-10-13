@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import type {
-  getRssFeedsToFetch,
-  isCrawlPrioritizationEnabled,
-  getTierSlaMs,
-  RssFeedToFetch,
-} from '@services/rss-feeds'
+import type { getRssFeedsToFetch, getTierSlaMs, RssFeedToFetch } from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import {
   processFetchRssFeed,
@@ -16,7 +11,6 @@ import type { Job } from 'glide-mq'
 
 const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
 const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()
-const mockIsCrawlPrioritizationEnabled = vi.fn<typeof isCrawlPrioritizationEnabled>()
 const mockGetTierSlaMs = vi.fn<typeof getTierSlaMs>()
 
 // Default SLAs matching the config defaults
@@ -58,7 +52,6 @@ function makeRssFeedToFetch(overrides: {
 describe('processRssFeedsDispatcher', () => {
   beforeEach(() => {
     mockEnqueueBulkFetchRssFeeds.mockResolvedValue(undefined as never)
-    mockIsCrawlPrioritizationEnabled.mockReturnValue(true)
     mockGetTierSlaMs.mockImplementation((tier: number) => TIER_SLA[tier] ?? TIER_SLA[5])
   })
 
@@ -79,7 +72,7 @@ describe('processRssFeedsDispatcher', () => {
 
     await runDispatcher()
 
-    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith({ prioritized: true })
+    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith()
     expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-tier1'], {
       priority: TIER_PRIORITY[1],
       ttl: TIER_SLA[1],
@@ -131,22 +124,6 @@ describe('processRssFeedsDispatcher', () => {
     expect(result).toEqual({ count: 2 })
   })
 
-  it('uses flat fallback TTL when prioritization is disabled', async () => {
-    mockIsCrawlPrioritizationEnabled.mockReturnValue(false)
-    const feed = makeRssFeedToFetch({ id: 'feed-flat', crawl_tier: 5 })
-    mockGetRssFeedsToFetch.mockResolvedValue([feed])
-
-    await runDispatcher()
-
-    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith({
-      prioritized: false,
-      ttl: 5 * 60_000,
-    })
-    expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-flat'], {
-      ttl: 5 * 60_000,
-    })
-  })
-
   it('omits ttl for backfill feeds so they are not blocked by the SLA dedup window', async () => {
     const feed = makeRssFeedToFetch({ id: 'feed-backfill', crawl_tier: 5, priority_group: 2 })
     mockGetRssFeedsToFetch.mockResolvedValue([feed])
@@ -165,7 +142,6 @@ function runDispatcher(): Promise<{ count: number }> {
     enqueueBulkFetchRssFeeds: mockEnqueueBulkFetchRssFeeds,
     getRssFeedsToFetch: mockGetRssFeedsToFetch,
     getTierSlaMs: mockGetTierSlaMs,
-    isCrawlPrioritizationEnabled: mockIsCrawlPrioritizationEnabled,
   })
 }
 

@@ -4,12 +4,16 @@ import { memberships } from '../queues.mts'
 import {
   enqueueAcknowledgeGooglePlayPurchase,
   enqueueProcessGooglePlayNotification,
-  enqueueReconcileGooglePlayActiveSource,
   enqueueRecoverGooglePlayAcknowledgements,
   enqueueRecoverGooglePlayActiveSources,
   enqueueRecoverGooglePlayNotifications,
   enqueueRefreshGooglePlayOidcTrust,
 } from './google-play.mts'
+import {
+  enqueueBulkAcknowledgeGooglePlayPurchases,
+  enqueueBulkProcessGooglePlayNotifications,
+  enqueueBulkReconcileGooglePlayActiveSources,
+} from './google-play-jobs.mts'
 
 const queueStates = ['waiting', 'active', 'completed', 'failed', 'delayed'] as const
 const queuedJobs = async () =>
@@ -40,7 +44,7 @@ describe('Google Play membership enqueues', () => {
     const acknowledgementId = randomUUID()
     const sourceId = randomUUID()
     await enqueueAcknowledgeGooglePlayPurchase({ acknowledgementId })
-    await enqueueReconcileGooglePlayActiveSource({ sourceId })
+    await enqueueBulkReconcileGooglePlayActiveSources([{ sourceId }])
     const jobs = await queuedJobs()
     expect(
       jobs.find(job => job.id === `google-play-acknowledgement__${acknowledgementId}`),
@@ -56,6 +60,72 @@ describe('Google Play membership enqueues', () => {
       data: { sourceId },
       opts: { ordering: { key: `google-play-source:${sourceId}`, concurrency: 1 } },
     })
+  })
+
+  it('bulk-enqueues recovery rows with the single-enqueue identity and options per row', async () => {
+    const now = 1_800_000_000_123
+    const bucket = Math.floor(now / 3_600_000)
+    const notifications = [randomUUID(), randomUUID()].map((evidenceId, index) => ({
+      evidenceId,
+      purchaseToken: `synthetic-${randomUUID()}`,
+      environment: index === 0 ? ('test' as const) : ('production' as const),
+    }))
+    const acknowledgementIds = [randomUUID(), randomUUID()]
+    const sourceIds = [randomUUID(), randomUUID()]
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now)
+    try {
+      await enqueueBulkProcessGooglePlayNotifications(notifications)
+      await enqueueBulkAcknowledgeGooglePlayPurchases(
+        acknowledgementIds.map(acknowledgementId => ({ acknowledgementId })),
+      )
+      await enqueueBulkReconcileGooglePlayActiveSources(sourceIds.map(sourceId => ({ sourceId })))
+    } finally {
+      dateNow.mockRestore()
+    }
+    const jobs = await queuedJobs()
+
+    for (const notification of notifications) {
+      const jobId = `google-play-notification__${notification.evidenceId}`
+      const purchaseTokenLookupSha256 = createHash('sha256')
+        .update(notification.purchaseToken)
+        .digest('hex')
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
+        data: {
+          evidenceId: notification.evidenceId,
+          purchaseTokenLookupSha256,
+          environment: notification.environment,
+        },
+        opts: {
+          priority: 10,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: {
+            key: `google-play-token:${notification.environment}:${purchaseTokenLookupSha256}`,
+            concurrency: 1,
+          },
+        },
+      })
+    }
+    for (const acknowledgementId of acknowledgementIds) {
+      const jobId = `google-play-acknowledgement__${acknowledgementId}`
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
+        data: { acknowledgementId },
+        opts: { priority: 10, deduplication: { id: jobId, mode: 'simple' } },
+      })
+    }
+    for (const sourceId of sourceIds) {
+      const jobId = `google-play-active-source__${sourceId}__${bucket}`
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
+        data: { sourceId },
+        opts: {
+          priority: 10,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: { key: `google-play-source:${sourceId}`, concurrency: 1 },
+        },
+      })
+    }
+    const payloads = jobs.map(job => ({ data: job.data, opts: job.opts }))
+    for (const notification of notifications)
+      expect(JSON.stringify(payloads)).not.toContain(notification.purchaseToken)
   })
 
   it('throttles each recovery and trust-refresh scan to its own interval', async () => {

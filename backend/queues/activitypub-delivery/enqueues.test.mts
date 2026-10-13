@@ -4,7 +4,9 @@ import { readAllQueueJobs } from '../../test-helpers/queue-jobs.mts'
 import {
   enqueueBulkDeliverActivity,
   enqueueBulkDistributeActivity,
+  enqueueDeliverAcceptActivity,
   enqueueDistributeActivity,
+  getAcceptActivityId,
   type DistributeActivityData,
 } from './enqueues.mts'
 import { activitypubDelivery } from './queues.mts'
@@ -81,5 +83,50 @@ describe('ActivityPub delivery enqueues', () => {
       },
     })
     expect(jobs[0]!.opts.ordering).toBeUndefined()
+  })
+
+  describe('Accept activity id', () => {
+    const sourceUserId = randomUUID()
+    const followActivityId = `https://remote.example/activities/${randomUUID()}`
+
+    it('is stable for one local user acknowledging one inbound Follow', () => {
+      const id = getAcceptActivityId({ sourceUserId, followActivityId })
+
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+      expect(getAcceptActivityId({ sourceUserId, followActivityId })).toBe(id)
+    })
+
+    it('differs for another Follow or another local user so no Accept is mistaken for a repeat', () => {
+      const id = getAcceptActivityId({ sourceUserId, followActivityId })
+
+      expect(
+        getAcceptActivityId({
+          sourceUserId,
+          followActivityId: `https://remote.example/activities/${randomUUID()}`,
+        }),
+      ).not.toBe(id)
+      expect(getAcceptActivityId({ sourceUserId: randomUUID(), followActivityId })).not.toBe(id)
+    })
+
+    it('is the activity id the queued Accept job carries', async () => {
+      const input = {
+        sourceUserId,
+        inboxUrl: `https://${randomUUID()}.example/inbox`,
+        followActivityId,
+        followActorUri: 'https://remote.example/users/alice',
+      }
+
+      await enqueueDeliverAcceptActivity(input)
+
+      const jobs = (await readAllQueueJobs(activitypubDelivery)).filter(
+        job => (job.data as { inboxUrl?: string }).inboxUrl === input.inboxUrl,
+      )
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]!.data).toEqual({
+        ...input,
+        activityType: 'Accept',
+        activityId: getAcceptActivityId(input),
+      })
+    })
   })
 })

@@ -1,6 +1,6 @@
 import type { CopyrightSweepContinuation } from '@queues/notifications/types'
 import {
-  enqueueApplyCopyrightAction,
+  enqueueBulkApplyCopyrightActions,
   enqueueReconcileCopyrightActionIntents,
 } from '@queues/notifications/enqueues'
 import {
@@ -18,7 +18,7 @@ import {
   searchSuspendedClaimantAutomaticRestrictionNoticeIds,
 } from '@services/copyright-notices'
 import {
-  enqueueEveryCopyrightSweepPage,
+  enqueueBulkCopyrightSweepPages,
   createCopyrightSweepBudget,
   runCopyrightSweepStage,
   settleCopyrightSweepSequentially,
@@ -39,7 +39,7 @@ export type ReconcileCopyrightActionIntentsDeps = {
   searchDueRestorations: typeof searchDueStatutoryCopyrightRestorationDeadlineIds
   createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
   searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
-  enqueueApplyCopyrightAction: typeof enqueueApplyCopyrightAction
+  enqueueBulkApplyCopyrightActions: (intentIds: string[]) => Promise<unknown>
   enqueueContinuation: typeof enqueueReconcileCopyrightActionIntents
   now: () => Date
 }
@@ -57,7 +57,7 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   searchDueRestorations: searchDueStatutoryCopyrightRestorationDeadlineIds,
   createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchActionIntents: searchRecoverableCopyrightActionIntentIds,
-  enqueueApplyCopyrightAction,
+  enqueueBulkApplyCopyrightActions,
   enqueueContinuation: enqueueReconcileCopyrightActionIntents,
   now: () => new Date(),
 }
@@ -152,10 +152,10 @@ export async function processReconcileCopyrightActionIntents(
         ),
       ),
     () =>
-      enqueueEveryCopyrightSweepPage(
+      enqueueBulkCopyrightSweepPages(
         tally,
         page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
-        id => deps.enqueueApplyCopyrightAction(id),
+        ids => deps.enqueueBulkApplyCopyrightActions(ids),
         options('actions'),
       ),
   ]

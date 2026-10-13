@@ -3,7 +3,10 @@ import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-res
 import { calcCostMicrounits } from '@modules/model-providers/pricing'
 import { callAppealModel } from './model.mts'
 
-// Real Anthropic call (credentialed project `backend-anthropic`); fails without a credential.
+// Non-gating smoke check of the live Anthropic Messages API (credentialed project
+// `backend-anthropic`); fails without a credential. The request this agent builds and its schema
+// and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
+// See docs/development/tests.md#live-provider-smoke-checks.
 describe('appeal resolution on Anthropic Haiku 5.5', () => {
   it('returns a schema-valid draft with a priced ledger row shape', async () => {
     const result = await callAppealModel(

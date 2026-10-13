@@ -45,9 +45,14 @@ describe('route helpers', () => {
     await expect(requireAuth(ctx, 'GET:/api/v1/posts')).rejects.toBe(signatureError)
     expect(ctx.getCurrentUser).toHaveBeenCalledTimes(1)
     expect(ctx.verifyAttestedRequestSignature).toHaveBeenCalledTimes(1)
-    expect(ctx.applyRouteRateLimit).toHaveBeenCalledTimes(1)
-    expect(ctx.applyRouteRateLimit).toHaveBeenCalledWith('GET:/api/v1/posts')
-    expect(ctx.events).toEqual(['currentUser', 'signature', 'rate-limit:GET:/api/v1/posts'])
+    expect(ctx.prepareRouteRateLimit).toHaveBeenCalledTimes(1)
+    expect(ctx.settleRouteRateLimit).toHaveBeenCalledTimes(1)
+    expect(ctx.events).toEqual([
+      'rate-limit-charge:GET:/api/v1/posts',
+      'currentUser',
+      'signature',
+      'rate-limit:GET:/api/v1/posts',
+    ])
   })
 
   it('getOptionalAuthAndRateLimit rate-limits before rethrowing a signature failure', async () => {
@@ -60,9 +65,14 @@ describe('route helpers', () => {
     await expect(getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')).rejects.toBe(signatureError)
     expect(ctx.getCurrentUser).toHaveBeenCalledTimes(1)
     expect(ctx.verifyAttestedRequestSignature).toHaveBeenCalledTimes(1)
-    expect(ctx.applyRouteRateLimit).toHaveBeenCalledTimes(1)
-    expect(ctx.applyRouteRateLimit).toHaveBeenCalledWith('GET:/api/v1/posts')
-    expect(ctx.events).toEqual(['signature', 'currentUser', 'rate-limit:GET:/api/v1/posts'])
+    expect(ctx.prepareRouteRateLimit).toHaveBeenCalledTimes(1)
+    expect(ctx.settleRouteRateLimit).toHaveBeenCalledTimes(1)
+    expect(ctx.events).toEqual([
+      'signature',
+      'rate-limit-charge:GET:/api/v1/posts',
+      'currentUser',
+      'rate-limit:GET:/api/v1/posts',
+    ])
   })
 
   it('requireAuthAndRateLimit rate-limits before rethrowing a signature failure', async () => {
@@ -102,25 +112,20 @@ describe('route helpers', () => {
     expect(ctx.events).toEqual(['currentUser', 'signature', 'rate-limit:POST:/api/v1/posts'])
   })
 
-  it.each([
-    {
-      helperName: 'requireAuth',
-      routeId: 'GET:/api/v1/posts',
-      run: (ctx: Context) => requireAuth(ctx, 'GET:/api/v1/posts'),
-    },
-    {
-      helperName: 'requireAuthAndRateLimit',
-      routeId: 'POST:/api/v1/posts',
-      run: (ctx: Context) => requireAuthAndRateLimit(ctx, () => false, 'POST:/api/v1/posts'),
-    },
-  ])('rate-limits unauthenticated $helperName requests before 401', async ({ routeId, run }) => {
-    const signatureError = new Error('signature failed')
-    const unauthorizedCtx = makeContext({ currentUser: null, signatureError })
+  it('rate-limits unauthenticated requireAuthAndRateLimit requests before 401', async () => {
+    const routeId = 'POST:/api/v1/posts'
+    const unauthorizedCtx = makeContext({
+      currentUser: null,
+      signatureError: new Error('signature failed'),
+    })
 
-    await expect(run(unauthorizedCtx)).rejects.toMatchObject({ status: 401 })
+    await expect(
+      requireAuthAndRateLimit(unauthorizedCtx, () => false, routeId),
+    ).rejects.toMatchObject({ status: 401 })
 
     expect(unauthorizedCtx.applyRouteRateLimit).toHaveBeenCalledTimes(1)
     expect(unauthorizedCtx.applyRouteRateLimit).toHaveBeenCalledWith(routeId)
+    expect(unauthorizedCtx.prepareRouteRateLimit).not.toHaveBeenCalled()
     expect(unauthorizedCtx.verifyAttestedRequestSignature).not.toHaveBeenCalled()
     expect(unauthorizedCtx.events).toEqual(['currentUser', `rate-limit:${routeId}`])
   })
@@ -186,6 +191,18 @@ function makeContext(options: {
       if (options.signatureError) throw options.signatureError
     }),
     applyRouteRateLimit: vi
+      .fn<(routeId: string) => Promise<void>>()
+      .mockImplementation(async routeId => {
+        events.push(`rate-limit:${routeId}`)
+        if (options.routeLimitError) throw options.routeLimitError
+      }),
+    prepareRouteRateLimit: vi
+      .fn<(routeId: string) => Promise<null>>()
+      .mockImplementation(async routeId => {
+        events.push(`rate-limit-charge:${routeId}`)
+        return null
+      }),
+    settleRouteRateLimit: vi
       .fn<(routeId: string) => Promise<void>>()
       .mockImplementation(async routeId => {
         events.push(`rate-limit:${routeId}`)
