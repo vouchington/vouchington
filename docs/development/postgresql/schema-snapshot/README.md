@@ -43,7 +43,8 @@ and its generated extension versions move together.
 ## no-mistakes Catalog
 
 `backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json` is the only input the
-`schemaCatalogPath` option of `postgres-conflict-ordering` and `postgres-lock-ordering` in
+`schemaCatalogPath` option of `postgres-conflict-ordering`, `postgres-lock-ordering`, and
+`postgres-key-column-types` in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) reads. `no-mistakes` owns this format and its
 generator and never reads `schema.json`; `schema.json` and the catalog describe one database for two
 readers and are generated, written, and compared together.
