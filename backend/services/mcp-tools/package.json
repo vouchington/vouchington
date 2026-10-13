@@ -25,7 +25,7 @@
     "@voucha/mcp": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",

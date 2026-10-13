@@ -20,6 +20,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.18.0",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   }
 }

@@ -31,7 +31,7 @@
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@services/oauth-accounts": "workspace:^",
