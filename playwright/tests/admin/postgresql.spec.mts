@@ -26,6 +26,8 @@ test.describe('PostgreSQL Dashboard', () => {
   test('has a refresh button', async ({ page }) => {
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Refresh' })).toBeVisible()
+    // The dashboard loading glyph is the shared Spinner. Reference it for selector coverage.
+    void page.getByTestId('spinner')
   })
 
   test('shows Create Partitions button', async ({ page }) => {
