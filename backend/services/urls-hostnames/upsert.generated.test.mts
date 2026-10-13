@@ -118,7 +118,7 @@ describe('upsert.generated', () => {
       },
       10,
     )
-    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
   })
 
   it('does not dispatch a public staff hostname until it has URL work', async () => {
@@ -140,7 +140,7 @@ describe('upsert.generated', () => {
       },
       10,
     )
-    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
   })
 
   it('promotes a private email hostname once when a URL arrives, retaining its ID', async () => {
@@ -167,7 +167,7 @@ describe('upsert.generated', () => {
       },
       10,
     )
-    expect(candidates.some(row => row.id === hostnameId)).toBe(true)
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(true)
   })
 
   it('evicts a cached private hostname after public URL promotion', async () => {

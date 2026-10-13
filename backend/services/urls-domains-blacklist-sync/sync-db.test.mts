@@ -85,7 +85,7 @@ describe('sync-db', () => {
       },
       10,
     )
-    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
   })
 
   it('evicts cached hostname policy after feed adds and removes a block', async () => {
