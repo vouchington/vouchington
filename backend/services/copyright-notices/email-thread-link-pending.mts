@@ -38,6 +38,8 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
   linkQuery.append(
     copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`edge.ancestor_message_intake_id`),
   )
+  linkQuery.append(sql` OR `)
+  linkQuery.append(copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql`
       UNION
       SELECT edge.reply_message_intake_id

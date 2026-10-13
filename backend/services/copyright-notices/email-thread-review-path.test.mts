@@ -61,6 +61,28 @@ describe('copyright email review path', () => {
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })
 
+  it('does not link a waiting reply after its own Message-ID is claimed twice', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const parentMessageId = copyrightEmailMessageId()
+    const replyMessageId = copyrightEmailMessageId()
+    const parent = await recordThreadedCopyrightEmail({
+      messageId: parentMessageId,
+      replyReferences: [],
+    })
+    const reply = await recordThreadedCopyrightEmail({
+      messageId: replyMessageId,
+      replyReferences: [parentMessageId],
+    })
+    await recordThreadedCopyrightEmail({ messageId: replyMessageId, replyReferences: [] })
+    const promoted = await promoteCopyrightEmailIntake(
+      await copyrightEmailPromotionInput(moderator, parent.intakeId),
+    )
+
+    expect(promoted.noticeId).toEqual(expect.any(String))
+    expect(reply.match).toBeNull()
+    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
+  })
+
   it('sends the second Message-ID claimant to manual review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
