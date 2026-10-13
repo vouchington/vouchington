@@ -8,10 +8,7 @@ export async function observeOwnedVoteRouteAdmissions(
   observeWorkers = true,
 ) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const { elections } = await import('../queues/elections/queues.mts')
-  const { topicRatings } = await import('../queues/topic-ratings/queues.mts')
-  const { voteIntegrityQueue } = await import('../queues/vote-integrity/queues.mts')
-  const { voteWeightQueue } = await import('../queues/vote-weight/queues.mts')
+  const { voteAggregation } = await import('../queues/vote-aggregation/queues.mts')
   type Attempt = {
     promise?: Promise<unknown>
     calls: Array<{ kind: string; data: unknown; result?: Promise<unknown> }>
@@ -109,7 +106,7 @@ export async function observeOwnedVoteRouteAdmissions(
         for (const job of returned as Array<Job | null>) {
           if (job?.id && owns(job.data)) {
             const kind = returnedCalls[index]!.kind
-            admittedKinds.add(kind)
+            admittedKinds.add(voteAdmissionKind(job.name))
             jobs.set(`${kind}:${job.id}`, job)
           }
         }
@@ -150,8 +147,10 @@ export async function observeOwnedVoteRouteAdmissions(
   }
   try {
     if (observeWorkers) {
-      listen('elections', (await import('../workers/elections/workers.mts')).elections)
-      listen('topic-ratings', (await import('../workers/topic-ratings/workers.mts')).topicRatings)
+      listen(
+        'vote-aggregation',
+        (await import('../workers/vote-aggregation/workers.mts')).voteAggregation,
+      )
     }
     const real = retry.retryTransientEnqueue
     const spy = vi.spyOn(retry, 'retryTransientEnqueue')
@@ -164,13 +163,7 @@ export async function observeOwnedVoteRouteAdmissions(
       void promise.catch(() => undefined)
       return promise
     })
-    for (const [kind, queue] of [
-      ['elections', elections],
-      ['topic-ratings', topicRatings],
-      ['vote-integrity', voteIntegrityQueue],
-      ['vote-weight', voteWeightQueue],
-    ] as const)
-      watch(kind, queue as Queue)
+    watch('vote-aggregation', voteAggregation as Queue)
   } catch (err) {
     failures.push(err)
     await finish()
@@ -186,4 +179,20 @@ export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
       ownedUserIds.has(String(data.userId)),
     false,
   )
+}
+
+function voteAdmissionKind(name: string): string {
+  switch (name) {
+    case 'processUpdateElectionVoteStats':
+      return 'elections'
+    case 'processUpdateTopicRatingStats':
+      return 'topic-ratings'
+    case 'processVoteIntegrityCheck':
+      return 'vote-integrity'
+    case 'processRecalculateUserVoteWeight':
+    case 'processRecalculateVoteWeightDispatcher':
+      return 'vote-weight'
+    default:
+      return 'vote-aggregation'
+  }
 }

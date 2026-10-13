@@ -9,6 +9,7 @@ import { observeOwnedVoteRouteAdmissions } from '../test-helpers/owned-vote-rout
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
 import { insertTestTopic } from '../test-helpers/entities/topics.mts'
 import { getEnqueuedJobId, readEnqueuedJob } from '../test-helpers/queue-jobs.mts'
+import { settleVoteRouteOperations } from '../test-helpers/settle-vote-route-operations.mts'
 
 class RegisteredWaiters extends Map<string, (end: OwnedVoteJobEnd) => void> {
   registered = Promise.withResolvers<void>()
@@ -27,7 +28,7 @@ describe('owned vote-route admission settlement', () => {
     'rejects deduplicated $mode calls as fresh owned admissions',
     async ({ mode, skipped }) => {
       const user = await createTestUserDirect()
-      const { voteWeightQueue: queue } = await import('../queues/vote-weight/queues.mts')
+      const { voteAggregation: queue } = await import('../queues/vote-aggregation/queues.mts')
       const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
       const data = { userId: user.id }
       const opts = {
@@ -109,6 +110,30 @@ describe('owned vote-route admission settlement', () => {
     },
   )
 
+  it.each(['error', 'undefined'] as const)(
+    'preserves raw %s primary failure and ordered secondary failures',
+    async mode => {
+      const primary = mode === 'error' ? new Error('Owned route primary') : undefined
+      const secondary = new Error('Owned route secondary')
+      const first = Promise.withResolvers<never>()
+      first.reject(primary)
+      const result = await settleVoteRouteOperations([
+        first.promise,
+        Promise.reject(secondary),
+        Promise.resolve('independent route settled'),
+      ]).then(
+        () => {
+          throw new Error('Expected actual route settlement failure')
+        },
+        err => err,
+      )
+      expect(result).toBeInstanceOf(AggregateError)
+      expect(result.errors).toEqual([primary, secondary])
+      expect(Object.hasOwn(result, 'cause')).toBe(true)
+      expect(result.cause).toBe(primary)
+    },
+  )
+
   it.each([0, 10])(
     'retains a runnable public job with priority %s until its actual completion',
     async priority => {
@@ -168,15 +193,14 @@ describe('owned vote-route admission settlement', () => {
       (('electionId' in data && data.electionId === topicId) ||
         ('topicId' in data && data.topicId === topicId))
     const finish = await observeOwnedVoteRouteAdmissions(owns)
-    const { elections: worker } = await import('../workers/elections/workers.mts')
-    const { elections: queue } = await import('../queues/elections/queues.mts')
-    const { topicRatings } = await import('../queues/topic-ratings/queues.mts')
+    const { voteAggregation: worker } = await import('../workers/vote-aggregation/workers.mts')
+    const { voteAggregation: queue } = await import('../queues/vote-aggregation/queues.mts')
     const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
     let followUp: Promise<unknown> | undefined
     const completed = (job: { data: { electionId?: string } }) => {
       if (job.data.electionId !== topicId) return
       followUp = retry.retryTransientEnqueue(() =>
-        topicRatings.add('unexpected-owned-review-job', { topicId }, { attempts: 1 }),
+        queue.add('unexpected-owned-review-job', { topicId }, { attempts: 1 }),
       )
       void followUp.catch(() => {})
     }
@@ -195,9 +219,7 @@ describe('owned vote-route admission settlement', () => {
     const settlement = finish()
     void settlement.catch(() => {})
     await admission
-    await expect(settlement).rejects.toThrow(
-      'Topic ratings job unexpected-owned-review-job not found',
-    )
+    await expect(settlement).rejects.toThrow('Unknown job name: unexpected-owned-review-job')
     expect(followUp).toBeDefined()
   })
 })

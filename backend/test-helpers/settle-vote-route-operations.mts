@@ -11,5 +11,7 @@ export function throwVoteRouteFailures(failures: unknown[]) {
   )
   if (distinct.length === 1) throw distinct[0]
   if (distinct.length)
-    throw new AggregateError(distinct, 'Vote-route operations/observation failed')
+    throw new AggregateError(distinct, 'Vote-route operations/observation failed', {
+      cause: distinct[0],
+    })
 }
