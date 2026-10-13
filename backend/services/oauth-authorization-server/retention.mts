@@ -76,7 +76,9 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
       deleted += count
       remaining -= count
       if (!redistributing) allowances[phase]! -= count
-      if (redistributing || count < limit || allowances[phase] === 0) phase++
+      // A short positive delete can expose the next refresh-chain root in this transaction.
+      // Keep spending this phase's reserved share; only an empty read exhausts the phase.
+      if (redistributing || count === 0 || allowances[phase] === 0) phase++
     }
     // oxlint-disable-next-line no-await-in-loop -- release this batch's locks before the next one
     await query.commit()
