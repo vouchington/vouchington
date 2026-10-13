@@ -16,6 +16,7 @@ import {
   searchCommunityListItems,
 } from '@services/communities'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
+import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
@@ -98,7 +99,7 @@ app
       community.id,
       'url_hostname',
       body.url_hostname_id,
-      { isAdministrator: currentUser.roles.includes('administrator') },
+      { isAdministrator: isAdminUser(currentUser) },
     )
 
     ctx.setStatus(201)
