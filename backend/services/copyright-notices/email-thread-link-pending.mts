@@ -45,6 +45,11 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
   linkQuery.append(copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql` OR `)
   linkQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`descendant.intake_id`))
+  linkQuery.append(sql` OR EXISTS (
+        SELECT 1 FROM copyright_notice_email_intake_notice_links existing_link
+        WHERE existing_link.copyright_notice_email_intake_id = descendant.intake_id
+          AND existing_link.copyright_notice_id IS DISTINCT FROM ${input.noticeId}
+      )`)
   linkQuery.append(sql`
       UNION
       SELECT edge.reply_message_intake_id

@@ -16,6 +16,7 @@ import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { promoteInitialCopyrightEmail } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 
 describe('copyright email threading', () => {
   it('links a reply to a sent outbound copyright email to its case for human review', async () => {
@@ -185,5 +186,63 @@ describe('copyright email threading', () => {
       review_path: 'unresolved_thread',
       linked_notice: null,
     })
+
+    const messageA = `<${crypto.randomUUID()}@example.test>`
+    const messageB = `<${crypto.randomUUID()}@example.test>`
+    const replyCSesMessageId = `ses-chain-c-${crypto.randomUUID()}`
+    const { intake: replyC } = await createCopyrightEmailIntake({
+      sesMessageId: replyCSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${replyCSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 5),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await recordCopyrightEmailParse(replyC, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'This arrived before the message it answers.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [messageB],
+      attachments: [],
+    })
+    const replyBSesMessageId = `ses-chain-b-${crypto.randomUUID()}`
+    const { intake: replyB } = await createCopyrightEmailIntake({
+      sesMessageId: replyBSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${replyBSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 4),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(replyB, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: Copyright notice',
+        bodyText: 'This answers the sent mail and names a notice that is not a case yet.',
+        messageId: messageB,
+        replyReferences: [`<${outboundMessageId}>`, messageA],
+        attachments: [],
+      }),
+    ).resolves.toMatchObject({ noticeId: notice.id })
+    const promoter = await createTestUser({ extraRoles: ['moderator'] })
+    const promotedA = await promoteInitialCopyrightEmail({
+      moderator: promoter,
+      messageId: messageA,
+    })
+
+    await expect(getCopyrightStaffEmailIntake(replyB.id, promoter)).resolves.toMatchObject({
+      review_path: 'matched_thread',
+      linked_notice: { id: notice.id },
+    })
+    await expect(getCopyrightStaffEmailIntake(replyC.id, promoter)).resolves.toMatchObject({
+      review_path: 'ancestor_notice_conflict',
+      linked_notice: null,
+    })
+    expect(promotedA.noticeId).not.toBe(notice.id)
   })
 })
