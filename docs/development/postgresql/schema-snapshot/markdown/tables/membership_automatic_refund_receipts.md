@@ -17,7 +17,7 @@ Not partitioned — growth: unbounded.
 | `provider_refund_id`               | `text`                             | yes      |                              |          |           |           | Provider-context-scoped refund identity, absent only for zero-amount receipts. |
 | `amount_minor_units`               | `bigint`                           | no       |                              |          |           |           | Amount refunded by this receipt in the currency minor unit.                    |
 | `remaining_refundable_minor_units` | `bigint`                           | no       |                              |          |           |           | Captured operation remainder that bounds this receipt amount.                  |
-| `currency_code`                    | `text`                             | no       |                              |          |           |           | Currency of the receipt amount and operation snapshot.                         |
+| `currency_code`                    | `currency_codes`                   | no       |                              |          |           |           | Currency of the receipt amount and operation snapshot.                         |
 | `created_at`                       | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`

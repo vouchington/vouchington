@@ -28,6 +28,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.0.13",

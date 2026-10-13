@@ -20,7 +20,7 @@ describe('monetary contract guard', () => {
       errors,
     )
     expect(errors).toEqual([
-      expect.stringContaining('currency_code must be TEXT'),
+      expect.stringContaining('currency_code must be CURRENCY_CODES'),
       expect.stringContaining('amount_minor_units stores integer money as numeric'),
     ])
   })
@@ -56,7 +56,7 @@ describe('monetary contract guard', () => {
         '  id UUID PRIMARY KEY,',
         '  price_cents BIGINT,',
         '  total_dollars INTEGER,',
-        '  currency_code TEXT',
+        '  currency_code currency_codes',
         ');',
       ].join('\n'),
       errors,
@@ -93,7 +93,7 @@ describe('monetary contract guard', () => {
       [
         'CREATE TABLE invoices (',
         '  amount_minor_units BIGINT,',
-        '  settlement_currency_code TEXT',
+        '  settlement_currency_code currency_codes',
         ');',
       ].join('\n'),
       errors,
@@ -126,7 +126,7 @@ describe('monetary contract guard', () => {
       errors,
     )
     expect(errors).toEqual([
-      expect.stringContaining('invoices.currency_code must be TEXT'),
+      expect.stringContaining('invoices.currency_code must be CURRENCY_CODES'),
       expect.stringContaining('invoices.amount_minor_units stores money as pg_catalog.numeric'),
       expect.stringContaining('invoices.annual_fee stores money as pg_catalog.float8'),
     ])
@@ -139,7 +139,7 @@ describe('monetary contract guard', () => {
       [
         'ALTER TABLE invoices ALTER COLUMN confidence TYPE NUMERIC(4, 3);',
         'ALTER TABLE invoices ALTER COLUMN amount_minor_units TYPE BIGINT;',
-        'ALTER TABLE invoices ALTER COLUMN currency_code TYPE TEXT;',
+        'ALTER TABLE invoices ALTER COLUMN currency_code TYPE currency_codes;',
       ].join('\n'),
       errors,
     )
@@ -151,7 +151,7 @@ describe('monetary contract guard', () => {
     await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
-        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code TEXT, note TEXT);',
+        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code currency_codes, note TEXT);',
         'ALTER TABLE invoices DROP COLUMN note;',
       ].join('\n'),
       errors,
@@ -184,7 +184,7 @@ describe('monetary contract guard', () => {
     await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       [
-        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code TEXT);',
+        'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code currency_codes);',
         'DO $$ BEGIN',
         '  IF true THEN',
         '    ALTER TABLE invoices ADD COLUMN fee_minor_units NUMERIC;',
@@ -208,14 +208,14 @@ describe('monetary contract guard', () => {
     expect(errors).toEqual([expect.stringContaining('could not parse monetary migration')])
   })
 
-  it('requires currency association columns to use TEXT', async () => {
+  it('requires currency association columns to use the currency enum', async () => {
     const errors: string[] = []
     await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
       'CREATE TABLE invoices (amount_minor_units BIGINT, currency_code INTEGER);',
       errors,
     )
-    expect(errors).toEqual([expect.stringContaining('currency_code must be TEXT')])
+    expect(errors).toEqual([expect.stringContaining('currency_code must be CURRENCY_CODES')])
   })
 
   it('allows integer money with record or field-specific currency codes and unrelated analytics', async () => {
@@ -227,10 +227,10 @@ describe('monetary contract guard', () => {
         'CREATE TABLE invoices (',
         '  id UUID PRIMARY KEY,',
         '  amount_minor_units BIGINT,',
-        '  currency_code TEXT,',
+        '  currency_code currency_codes,',
         '  cost_microunits int8,',
         '  renewal_price_increase_notified_minor_units BIGINT,',
-        '  renewal_price_increase_notified_currency_code TEXT,',
+        '  renewal_price_increase_notified_currency_code currency_codes,',
         '  confidence NUMERIC(4, 3),',
         '  ranking_score DOUBLE PRECISION',
         ');',

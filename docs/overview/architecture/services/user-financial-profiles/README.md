@@ -12,18 +12,18 @@ the same across multiple submissions. This profile pre-fills those fields to sav
 
 ## Table: `individual_financial_profiles`
 
-| Column                              | Type        | Description                                                         |
-| ----------------------------------- | ----------- | ------------------------------------------------------------------- |
-| `individual_id`                     | UUID PK     | References `individuals(id)`                                        |
-| `currency_code`                     | TEXT FK     | Record-wide currency for all profile money                          |
-| `credit_score_range`                | TEXT        | Credit score bracket (e.g. `670-739`)                               |
-| `stated_income_minimum_minor_units` | BIGINT      | Inclusive annual-income minimum                                     |
-| `stated_income_maximum_minor_units` | BIGINT      | Exclusive maximum; null means unbounded                             |
-| `total_credit_limit_minor_units`    | BIGINT      | Total credit across all cards                                       |
-| `years_of_credit_history`           | SMALLINT    | Length of credit history in years                                   |
-| `hard_inquiries_12m`                | SMALLINT    | Hard pulls in the last 12 months (credit card vertical only)        |
-| `cards_opened_24m`                  | SMALLINT    | New cards opened in the prior 24 months (credit card vertical only) |
-| `updated_at`                        | TIMESTAMPTZ | Last update timestamp                                               |
+| Column                              | Type                | Description                                                         |
+| ----------------------------------- | ------------------- | ------------------------------------------------------------------- |
+| `individual_id`                     | UUID PK             | References `individuals(id)`                                        |
+| `currency_code`                     | `currency_codes` FK | Record-wide currency for all profile money                          |
+| `credit_score_range`                | TEXT                | Credit score bracket (e.g. `670-739`)                               |
+| `stated_income_minimum_minor_units` | BIGINT              | Inclusive annual-income minimum                                     |
+| `stated_income_maximum_minor_units` | BIGINT              | Exclusive maximum; null means unbounded                             |
+| `total_credit_limit_minor_units`    | BIGINT              | Total credit across all cards                                       |
+| `years_of_credit_history`           | SMALLINT            | Length of credit history in years                                   |
+| `hard_inquiries_12m`                | SMALLINT            | Hard pulls in the last 12 months (credit card vertical only)        |
+| `cards_opened_24m`                  | SMALLINT            | New cards opened in the prior 24 months (credit card vertical only) |
+| `updated_at`                        | TIMESTAMPTZ         | Last update timestamp                                               |
 
 `hard_inquiries_12m` and `cards_opened_24m` are relevant only for the credit card vertical. They
 are shown in the "Your Profile" section of the data point form for that vertical but not for bank

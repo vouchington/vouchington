@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { getCurrencyCodeEnumLabels } from '../../test-helpers/data-stores/psql/currencies.mts'
 import { encodeCursor } from '@modules/pagination'
+import { CURRENCIES } from '@ts-shared/money'
 import { listCurrencies } from './currencies.mts'
 
 describe('currency catalog', () => {
+  it('keeps database enum labels in shared catalog order', async () => {
+    expect(await getCurrencyCodeEnumLabels()).toEqual(
+      CURRENCIES.map(currency => currency.code).toSorted(),
+    )
+  })
+
   it('returns the seeded Stripe-style currency codes and minor-unit exponents', async () => {
     const page = await listCurrencies({ limit: 25 })
     expect(page.results).toEqual([

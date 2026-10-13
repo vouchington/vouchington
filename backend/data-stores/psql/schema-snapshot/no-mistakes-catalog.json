@@ -461,6 +461,9 @@
     "curated_aside_item_types": {
       "values": ["topic", "source", "community"]
     },
+    "currency_codes": {
+      "values": ["aud", "cad", "eur", "gbp", "jpy", "usd"]
+    },
     "digest_frequencies": {
       "values": ["none", "daily", "weekly"]
     },
@@ -1576,7 +1579,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_case_operation_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  valid_context BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind = 'ineligible_purchase_reversal'\n    AND operation.membership_source_id = reversal_case.membership_source_id\n    AND operation.membership_provider_lineage_id = reversal_case.membership_provider_lineage_id\n    AND operation.membership_lineage_binding_id = reversal_case.membership_lineage_binding_id\n  INTO valid_context\n  FROM membership_operations operation\n  CROSS JOIN membership_ineligible_purchase_reversal_cases reversal_case\n  WHERE operation.id = NEW.membership_operation_id\n    AND reversal_case.id = NEW.membership_ineligible_purchase_reversal_case_id;\n\n  IF valid_context = FALSE THEN\n    RAISE EXCEPTION 'reversal case operation context does not match its immutable case'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_purchase_reversal_refund_observation_currency()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency TEXT;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency currency_codes;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_review_dispute_subject_snapshot()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -5529,7 +5532,7 @@
         },
         "currency_code": {
           "comment": "Currency of the estimated cost; NULL when unpriced.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5777,12 +5780,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -9290,7 +9293,7 @@
         },
         "currency_code": {
           "comment": "Currency for the annual fee. NULL when the fee is unknown.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -9431,12 +9434,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -42543,10 +42546,6 @@
     },
     "currencies": {
       "checkConstraints": {
-        "currencies_code_check": {
-          "definition": "CHECK ((code ~ '^[a-z]{3}$'::text))",
-          "validated": true
-        },
         "currencies_minor_unit_exponent_check": {
           "definition": "CHECK (((minor_unit_exponent >= 0) AND (minor_unit_exponent <= 4)))",
           "validated": true
@@ -42555,7 +42554,7 @@
       "columns": {
         "code": {
           "comment": "Lowercase ISO 4217 three-letter currency code, matching Stripe wire values.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -42584,12 +42583,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "code",
               "descending": false,
               "expression": "code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -48544,7 +48543,7 @@
         },
         "currency_code": {
           "comment": "Currency for the credit limit.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -48712,12 +48711,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -48848,7 +48847,7 @@
         },
         "currency_code": {
           "comment": "Currency shared by every monetary value in this profile.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -48954,12 +48953,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -49026,7 +49025,7 @@
         },
         "currency_code": {
           "comment": "Currency used to value each point.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -49130,12 +49129,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -51468,7 +51467,7 @@
         },
         "currency_code": {
           "comment": "ISO 4217 currency code requested for the refund.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -51620,12 +51619,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -51865,7 +51864,7 @@
         },
         "currency_code": {
           "comment": "Currency of the receipt amount and operation snapshot.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -51995,12 +51994,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -54643,7 +54642,7 @@
         },
         "currency_code": {
           "comment": "ISO 4217 currency code for all amounts in this immutable case.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54842,12 +54841,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -54903,10 +54902,6 @@
         "chk_member_inelig_purcha_revers_refund_observ__stripe_refund_id": {
           "definition": "CHECK ((((char_length(stripe_refund_id) >= 1) AND (char_length(stripe_refund_id) <= 255)) AND (stripe_refund_id = TRIM(BOTH FROM stripe_refund_id))))",
           "validated": true
-        },
-        "chk_member_inelig_purchas_reversa_refund_observa__currency_code": {
-          "definition": "CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))",
-          "validated": true
         }
       },
       "columns": {
@@ -54922,7 +54917,7 @@
         },
         "currency_code": {
           "comment": "Stripe refund currency, required by trigger to match the owning scan.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54988,12 +54983,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -55173,10 +55168,6 @@
           "definition": "CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))",
           "validated": true
         },
-        "chk_members_ineligi_purchas_reversa_refund_scans__currency_code": {
-          "definition": "CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))",
-          "validated": true
-        },
         "chk_members_ineligib_purchase_reversal_refund_scans__invoice_id": {
           "definition": "CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))",
           "validated": true
@@ -55255,7 +55246,7 @@
         },
         "currency_code": {
           "comment": "Currency required for every accepted succeeded-refund observation.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -55421,12 +55412,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -55462,12 +55453,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             },
             {
@@ -56679,7 +56670,7 @@
         },
         "currency_code": {
           "comment": "Currency of the captured refundable allocation.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -56946,12 +56937,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -57187,12 +57178,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -58296,7 +58287,7 @@
         },
         "observed_price_currency_code": {
           "comment": "Immutable provider currency observed for the current entitlement, when known.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58396,7 +58387,7 @@
         },
         "renewal_price_currency_code": {
           "comment": "Immutable provider-authoritative currency expected at the next renewal, when known.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58645,12 +58636,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "renewal_price_currency_code",
               "descending": false,
               "expression": "renewal_price_currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             },
             {
@@ -58759,12 +58750,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "observed_price_currency_code",
               "descending": false,
               "expression": "observed_price_currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -58805,12 +58796,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "renewal_price_currency_code",
               "descending": false,
               "expression": "renewal_price_currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -58951,7 +58942,7 @@
         },
         "currency_code": {
           "comment": "ISO currency code for the displayed provider price, when the provider exposes one.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59087,12 +59078,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -59976,7 +59967,7 @@
         },
         "currency_code": {
           "comment": "ISO 4217 currency code for the attempted refund.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60072,12 +60063,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -60868,7 +60859,7 @@
         },
         "currency_code": {
           "comment": "Currency of the future renewal price.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61056,12 +61047,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],
@@ -118349,7 +118340,7 @@
         },
         "currency_code": {
           "comment": "Currency of the spending amount.",
-          "dataType": "text",
+          "dataType": "currency_codes",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -118471,12 +118462,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "currency_code",
               "descending": false,
               "expression": "currency_code",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.enum_ops",
               "orderingSupported": true
             }
           ],

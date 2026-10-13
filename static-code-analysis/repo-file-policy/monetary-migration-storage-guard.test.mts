@@ -1,8 +1,33 @@
 import { describe, expect, it } from 'vitest'
 
+import { checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkMonetaryMigration } from './monetary-migration-guard.mts'
 
 describe('monetary migration storage guard', () => {
+  it('keeps provider-raw membership refund currency as text', async () => {
+    const snapshotErrors: string[] = []
+    checkMonetarySnapshot(
+      {
+        tables: {
+          membership_refunds: { columns: { currency_code: { type: 'text' } } },
+          invoices: { columns: { currency_code: { type: 'text' } } },
+        },
+      } as never,
+      snapshotErrors,
+    )
+    expect(snapshotErrors).toEqual([
+      expect.stringContaining('invoices.currency_code must be CURRENCY_CODES'),
+    ])
+
+    const migrationErrors: string[] = []
+    await checkMonetaryMigration(
+      'backend/data-stores/psql/migrations/9999-money.sql',
+      'CREATE TABLE membership_refunds (currency_code TEXT); CREATE TABLE invoices (currency_code currency_codes);',
+      migrationErrors,
+    )
+    expect(migrationErrors).toEqual([])
+  })
+
   it('requires integer-unit money columns to use BIGINT storage', async () => {
     const errors: string[] = []
 
@@ -13,7 +38,7 @@ describe('monetary migration storage guard', () => {
         '  amount_minor_units TEXT,',
         '  cost_microunits UUID,',
         '  fee_minor_units INTEGER,',
-        '  currency_code TEXT',
+        '  currency_code currency_codes',
         ');',
       ].join('\n'),
       errors,
@@ -35,11 +60,11 @@ describe('monetary migration storage guard', () => {
         'CREATE TABLE invoices (',
         '  amount_minor_units BIGINT[],',
         '  cost_microunits BIGINT[][],',
-        '  currency_code TEXT',
+        '  currency_code currency_codes',
         ');',
         'ALTER TABLE invoices ALTER COLUMN amount_minor_units TYPE BIGINT[];',
         'ALTER TABLE payouts ADD COLUMN fee_minor_units BIGINT[];',
-        'ALTER TABLE payouts ADD COLUMN currency_code TEXT;',
+        'ALTER TABLE payouts ADD COLUMN currency_code currency_codes;',
       ].join('\n'),
       errors,
     )
@@ -66,10 +91,10 @@ describe('monetary migration storage guard', () => {
         '  amount_minor_units "bigint",',
         '  fee_minor_units custom.bigint,',
         '  refund_minor_units "int8",',
-        '  currency_code TEXT',
+        '  currency_code currency_codes',
         ');',
         'ALTER TABLE payouts ADD COLUMN cost_microunits "bigint";',
-        'ALTER TABLE payouts ADD COLUMN currency_code TEXT;',
+        'ALTER TABLE payouts ADD COLUMN currency_code currency_codes;',
       ].join('\n'),
       errors,
     )
@@ -91,7 +116,7 @@ describe('monetary migration storage guard', () => {
         'CREATE TABLE invoices (',
         '  amount_minor_units BIGINT,',
         '  cost_microunits int8,',
-        '  currency_code TEXT',
+        '  currency_code currency_codes',
         ');',
       ].join('\n'),
       errors,
