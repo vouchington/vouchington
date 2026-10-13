@@ -149,14 +149,17 @@ async function deleteExpiredRows(
     )
   const result = await query(
     `/* deleteExpiredOAuthAuthorizationServerArtifacts:${validatedTable} */
-     /* deadlock-safe: ordered token/request/code rows use SKIP LOCKED; empty-family
-        locks are also skipped, so retention never waits behind a family-first writer. */
-     WITH candidates AS MATERIALIZED (
-       SELECT artifact.id FROM ${validatedTable} AS artifact
+     /* Page request/code IDs before SKIP LOCKED; family locks are skipped too. */
+     WITH page AS MATERIALIZED (
+       SELECT artifact.id, artifact.expires_at FROM ${validatedTable} AS artifact
        WHERE (artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2))
        ORDER BY artifact.expires_at ASC, artifact.id ASC
        LIMIT $3
+     ), candidates AS MATERIALIZED (
+       SELECT artifact.id FROM page
+       JOIN ${validatedTable} AS artifact ON artifact.id = page.id
+       ORDER BY page.expires_at, page.id
        FOR UPDATE OF artifact SKIP LOCKED
      )
      DELETE FROM ${validatedTable} target USING candidates WHERE target.id = candidates.id`,
