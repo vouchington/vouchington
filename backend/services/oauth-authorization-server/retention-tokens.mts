@@ -12,12 +12,17 @@ export async function lockExpiredOAuthRetentionFamilies(
   // arbitrarily many earlier empty families to find one with a child.
   const families = await query<{ id: string }>(
     `/* lockExpiredOAuthRetentionFamilies */
-     /* deadlock-safe: ordered family locks skip held rows before child cleanup. */
-     SELECT family.id FROM oauth_refresh_token_families AS family
-     WHERE family.expires_at <= $1
-       AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
-     ORDER BY family.expires_at, family.id
-     LIMIT $3 FOR UPDATE OF family SKIP LOCKED`,
+     /* Bound expiry-index reads before skipping held family rows. */
+     WITH page AS MATERIALIZED (
+       SELECT family.id, family.expires_at FROM oauth_refresh_token_families AS family
+       WHERE family.expires_at <= $1
+         AND ($2::timestamptz IS NULL OR family.expires_at >= $2)
+       ORDER BY family.expires_at, family.id LIMIT $3
+     )
+     SELECT family.id FROM page
+     JOIN oauth_refresh_token_families AS family ON family.id = page.id
+     ORDER BY page.expires_at, page.id
+     FOR UPDATE OF family SKIP LOCKED`,
     [window.now, window.lowerBoundDate ?? null, limit],
   )
   return families.rows.map(row => row.id)

@@ -16,8 +16,54 @@ import {
   deleteExpiredOAuthRetentionTokens,
   lockExpiredOAuthRetentionFamilies,
 } from './retention-tokens.mts'
+import { deleteExpiredOAuthAuthorizationServerArtifacts } from './retention.mts'
 
 describe('OAuth retention replacement-chain locking', () => {
+  it('limits the family page before skipping a held first family', async () => {
+    const owner = await createTestUserDirect()
+    const expiryWindow = createTestExpiryWindow()
+    const expiry = expiryWindow.firstEligibleDate
+    const window = { lowerBoundDate: expiry, now: expiry }
+    const familyIds: string[] = []
+    for (let index = 0; index < 2; index += 1) {
+      const flow = await createTestApprovedOAuthAuthorization(owner)
+      await exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      })
+      await prepareTestOAuthRetentionRows(flow.client.client_id, {
+        expiresAt: expiry,
+        childExpiresAt: expiryWindow.afterUpperBoundDate,
+        only: 'family',
+      })
+      familyIds.push(await getTestOAuthRetentionFamilyId(flow.client.client_id))
+    }
+
+    await using holder = await beginTransaction()
+    let released = false
+    onTestFinished(async () => {
+      if (!released) await holder.rollback()
+    })
+    const firstPage = await lockExpiredOAuthRetentionFamilies(holder, window, 1)
+    expect(firstPage).toHaveLength(1)
+    expect(familyIds).toContain(firstPage[0])
+    await using contender = await beginTransaction()
+    expect(await lockExpiredOAuthRetentionFamilies(contender, window, 1)).toEqual([])
+    expect(
+      await deleteExpiredOAuthAuthorizationServerArtifacts(1, {
+        lowerBoundDate: expiry,
+        now: expiry,
+        maxBatches: 1,
+      }),
+    ).toEqual({ deleted: 0, hasMore: true })
+    await holder.rollback()
+    released = true
+    expect(await lockExpiredOAuthRetentionFamilies(contender, window, 1)).toEqual(firstPage)
+    await contender.rollback()
+  })
+
   it('locks only the globally selected child when several families have children', async () => {
     const owner = await createTestUserDirect()
     const window = createTestExpiryWindow()
