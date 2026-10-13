@@ -111,6 +111,17 @@ read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
 
   it('counts locking CTE reads and rejects incomplete artifacts', async () => {
     expect(
+      isRead(
+        '/* assertTopicHasHostname */\n-- no-mistakes-disable-next-line postgres-required-predicates: exact lookup\n/* query */ SELECT id FROM topics',
+      ),
+    ).toBe(true)
+    expect(
+      isRead(
+        '/* getTopics */ -- policy\r\nWITH topics AS (SELECT id FROM topics) SELECT id FROM topics',
+      ),
+    ).toBe(true)
+    expect(isRead('/* update */ -- policy\nUPDATE topics SET active = true')).toBe(false)
+    expect(
       isRead('/* lock */ WITH rows AS (SELECT id FROM jobs FOR UPDATE) SELECT id FROM rows'),
     ).toBe(true)
     expect(

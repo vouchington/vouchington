@@ -290,7 +290,9 @@ query text. It reports annotated statements, reads, covered reads, confirmed unc
 ambiguous same-name reads, then groups the latter two by owning backend directory. A scenario
 suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
 `TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
-the annotated-statement total. A partial result artifact missing a registered scenario is rejected.
+the annotated-statement total. Leading SQL comments after the annotation do not hide a read;
+the complete SQL text still has to match a capture exactly. A partial result artifact missing a
+registered scenario is rejected.
 Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 
 ```bash

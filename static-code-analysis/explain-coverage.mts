@@ -25,7 +25,14 @@ export interface CoverageReport {
 
 export function isRead(sqlText: string | null): boolean {
   if (!sqlText) return false
-  const statement = sqlText.replace(/^\s*\/\*[\s\S]*?\*\//, '').trimStart()
+  let statement = sqlText.trimStart()
+  for (;;) {
+    const withoutComment = statement
+      .replace(/^(?:\/\*[\s\S]*?\*\/|--[^\r\n]*(?:\r\n?|\n|$))/, '')
+      .trimStart()
+    if (withoutComment === statement) break
+    statement = withoutComment
+  }
   if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
   return (
     /^WITH\b/i.test(statement) &&
