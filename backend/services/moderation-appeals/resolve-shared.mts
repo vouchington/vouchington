@@ -61,7 +61,7 @@ export async function finalizeDeliveredModerationAppeal(
 ): Promise<ModerationAppealResponse> {
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
-  const response = await runWithTransaction(options.query, async query => {
+  const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
     await assertModerationAppealDelivered(appealId, { query })
     const { rows } = await query(
       sql`/* finalizeDeliveredModerationAppeal */

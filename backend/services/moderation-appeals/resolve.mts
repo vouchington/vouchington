@@ -42,7 +42,7 @@ export async function resolveModerationAppealAccept(
 ): Promise<ModerationAppealResponse> {
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
-  const response = await runWithTransaction(options.query, async query => {
+  const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
     await Promise.all([
       assertModerationAppealDelivered(appealId, { query }),
       lockSuspensionAppealAuthorLifecycle(query, appealId),

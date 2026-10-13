@@ -37,7 +37,8 @@ export async function adminAssignItemToStory(
   const reportError = dependencies.onError ?? onError
   let refreshResults: Array<{ storyId: string; result: StoryPostRefreshResult | null }> = []
   let afterCommit: (() => Promise<void>) | undefined
-  const assignedId = await runWithTransaction(dependencies.query, async query => {
+  const selectedQuery = dependencies.query
+  const assignedId = await runWithTransaction(selectedQuery, async (query: TransactionQuery) => {
     const prior = await query(
       sql`/* adminAssignItemToStory:item */
       SELECT id, story_id FROM rss_feed_items
@@ -45,9 +46,7 @@ export async function adminAssignItemToStory(
       FOR UPDATE`,
     )
     const lockedItem = prior.rows[0] as { id: string; story_id: string | null } | undefined
-    if (!lockedItem) {
-      return null
-    }
+    if (!lockedItem) return null
     const storyIds = [storyId]
     if (lockedItem.story_id) storyIds.push(lockedItem.story_id)
     await lockStoryLifecycles(query, [...new Set(storyIds)].toSorted())
@@ -134,7 +133,8 @@ export async function adminRemoveItemFromStory(
   let afterCommit: (() => Promise<void>) | undefined
   // Use a CTE to capture the old story_id before the SET clause nulls it.
   // PostgreSQL RETURNING reflects post-update values, so story_id would be NULL after SET.
-  const removedId = await runWithTransaction(dependencies.query, async query => {
+  const selectedQuery = dependencies.query
+  const removedId = await runWithTransaction(selectedQuery, async (query: TransactionQuery) => {
     const result = await query(
       sql`/* adminRemoveItemFromStory */
     WITH old AS (

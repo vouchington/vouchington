@@ -66,7 +66,7 @@ export async function upsertAgentModerationElectionVotes(
   // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
   const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, options)
 
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await lockAgentModerationVoteMutation(
       query,
       userId,
@@ -104,6 +104,7 @@ export async function upsertAgentModerationElectionVotes(
   SELECT input_votes.user_id, am.id, am.post_id, input_votes.score,
     ${context.ipAddress}::inet, ${context.deviceId}::uuid, ${context.sessionId}::uuid, ${userAgentId}::uuid
   FROM input_votes
+  -- no-mistakes-disable-next-line postgres-required-predicates: vote input carries moderation IDs but no post IDs; use the indexed ID lookup across post partitions to obtain each ballot's post_id
   JOIN agent_moderations am ON am.id = input_votes.agent_moderation_id AND am.deleted_at IS NULL
   LEFT JOIN previous_votes ON previous_votes.agent_moderation_id = input_votes.agent_moderation_id
   WHERE input_votes.score IS DISTINCT FROM previous_votes.score

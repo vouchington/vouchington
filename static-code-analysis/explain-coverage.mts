@@ -167,7 +167,7 @@ export async function reportCoverage(
       importSpecifier: '@data-stores/psql',
       executorNames: ['query', 'read', 'write', ...cursorNames],
       executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-      executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
+      executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
     }),
     extractExecutedPostgresSql({
       sources,

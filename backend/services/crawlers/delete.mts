@@ -14,7 +14,7 @@ export const deleteCrawler = async (
   crawlerId: string,
   options: { query?: TransactionQuery } = {},
 ): Promise<void> => {
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await query(
       sql`/* deleteCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
     )

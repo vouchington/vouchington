@@ -33,7 +33,7 @@ export async function releaseModerationQueueItem(
         AND released_at IS NULL
     `)
     query.append(sql` RETURNING community_id`)
-    await runWithTransaction(options.query, async transaction => {
+    await runWithTransaction(options.query, async (transaction: TransactionQuery) => {
       const { rows } = await transaction<{ community_id: string }>(query)
       await Promise.all(
         rows.map(row =>

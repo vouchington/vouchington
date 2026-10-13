@@ -27,7 +27,7 @@ export async function applyVoteRingPenalty(
   adminUserId: string,
   options: { query?: TransactionQuery } = {},
 ): Promise<ApplyRingPenaltyResult> {
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     // Load and lock the flag to determine the entity
     const flagQuery = sql`/* applyVoteRingPenalty_getFlag */
     SELECT `

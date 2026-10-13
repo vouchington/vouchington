@@ -18,7 +18,7 @@ export async function adminVerifyTopicClaim(
   claimId: string,
   options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
-  return runWithTransaction(options.query, async transaction => {
+  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const { rows } = await transaction(
       sql`/* adminVerifyTopicClaim */
     UPDATE topic_claims
@@ -49,7 +49,7 @@ export async function rejectTopicClaim(
   options: { query?: TransactionQuery } = {},
 ): Promise<TopicClaim> {
   assert(rejectionReason.trim().length > 0, 422, 'rejection_reason is required')
-  return runWithTransaction(options.query, async transaction => {
+  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const { rows } = await transaction(
       sql`/* rejectTopicClaim */
     UPDATE topic_claims

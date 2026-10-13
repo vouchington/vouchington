@@ -12,7 +12,7 @@ export async function deleteUserModNote(
   targetUserId: string,
   options: { query?: TransactionQuery } = {},
 ): Promise<void> {
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rows } = await query(sql`/* deleteUserModNote */
     SELECT id, target_user_id, author_user_id, community_id
     FROM user_moderator_notes
