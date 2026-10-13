@@ -1,11 +1,10 @@
+import { LIVE_PROVIDER_PROJECTS } from './vitest-live-provider-projects.ts'
+
 const STATE_KEY = Symbol.for('voucha.testNetworkAllowlist')
 
 // Real sockets and DNS may reach only these hosts, loopback, and local binds (0.0.0.0, ::).
 // Any other host fails the test. Live-provider projects are exempt. `.ts` for Storybook SWC.
 const ALLOWED_HOSTS = new Set(['example.com', 'example.net', 'example.org'])
-const LIVE_PROVIDER_PROJECTS = new Set(
-  'anthropic,aws,bedrock,openai,openrouter,stripe'.split(',').map(name => `backend-${name}`),
-)
 
 type AllowlistState = { installed: boolean; violations: string[]; allowedIps: Set<string> }
 type DnsFn = (this: unknown, ...args: unknown[]) => unknown

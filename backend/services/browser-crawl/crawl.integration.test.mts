@@ -1,15 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { crawlWithBrowser } from './crawl.mts'
 
-/**
- * Real, non-mocked check that the Lightpanda cloud SaaS connection actually works:
- * connects over CDP, navigates, and extracts content. Gated on LIGHTPANDA_TOKEN so
- * it only runs when a real credential is present (locally via ~/voucha.env, or in
- * CI only where the secret has been explicitly provided) — it never burns free-tier
- * hours on a routine push.
- */
+/** Retained live cloud smoke check, selected only by the credentialed CI project. */
 describe('crawlWithBrowser (Lightpanda cloud)', () => {
-  const hasLightpandaToken = Boolean(process.env.LIGHTPANDA_TOKEN)
   let originalCdpUrl: string | undefined
 
   beforeAll(() => {
@@ -24,19 +17,22 @@ describe('crawlWithBrowser (Lightpanda cloud)', () => {
     }
   })
 
-  it.skipIf(!hasLightpandaToken)(
+  it(
     'crawls a real page over the live Lightpanda cloud SaaS',
     /* no-mistakes: integration=http */
     async () => {
+      if (!process.env.LIGHTPANDA_TOKEN?.trim()) {
+        throw new Error('LIGHTPANDA_TOKEN is required for the selected Lightpanda cloud test')
+      }
       // Unconditional, not `??=`: local dev's .env may already export a stale
       // LIGHTPANDA_CDP_URL (or a future non-cloud value); this test must always
       // exercise the real cloud endpoint regardless of ambient environment state.
       process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-      const result = await crawlWithBrowser('https://www.google.com/')
+      const result = await crawlWithBrowser('https://example.com/')
       expect(result.statusCode).toBe(200)
       expect(result.hasContent).toBe(true)
       expect(result.title.length).toBeGreaterThan(0)
     },
-    60_000,
+    30_000,
   )
 })

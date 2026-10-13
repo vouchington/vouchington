@@ -70,6 +70,7 @@ backend-credentialed:
   - 'backend/**/*.stripe.test.mts'
   - 'backend/modules/aws/**'
   - 'backend/modules/stripe/**'
+  - 'backend/services/browser-crawl/**'
   - 'backend/modules/openai-utils/**'
   - 'backend/modules/model-providers/**'
   - 'backend/modules/structured-decisions/**'

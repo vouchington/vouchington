@@ -10,6 +10,8 @@ on:
     types: [checks_requested]
   workflow_call:
     secrets:
+      LIGHTPANDA_TOKEN:
+        required: false
       AWS_TEST_ROLE_ARN:
         required: false
       OPENAI_API_KEY:
@@ -78,6 +80,7 @@ jobs:
       OPENAI_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
       OPENROUTER_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}
       STRIPE_SECRET_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.STRIPE_SECRET_KEY || '' }}
+      LIGHTPANDA_TOKEN: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.LIGHTPANDA_TOKEN || '' }}
     permissions:
       actions: read
       contents: read

@@ -34,6 +34,7 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
     expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
     expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
+    expect(credentialedJob).toContain('LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
     expect(credentialedJob).toContain(
       'VITEST_JUNIT_OUTPUT_FILE: backend-credentialed-test-report.junit.xml',
@@ -84,6 +85,7 @@ describe('backend credentialed test workflow', () => {
     expect(workflow).toContain('OPENAI_API_KEY:\n        required: false')
     expect(workflow).toContain('OPENROUTER_API_KEY:\n        required: false')
     expect(workflow).toContain('STRIPE_SECRET_KEY:\n        required: false')
+    expect(workflow).toContain('LIGHTPANDA_TOKEN:\n        required: false')
   })
 
   // Live provider calls are smoke checks, not a gate. Recorded-response fixtures in the unit suites
@@ -106,6 +108,7 @@ describe('backend credentialed test workflow', () => {
     // and the step would be skipped on exactly the failure it reports.
     expect(report).toContain('if: ${{ failure() && (')
     expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
+    expect(report).toContain("steps.credentials.outcome == 'failure'")
     expect(report).toContain("steps.anthropic-token.outcome == 'failure'")
     expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
     expect(report).toContain('::warning title=Live provider smoke check failed::')

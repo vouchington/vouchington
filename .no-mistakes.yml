@@ -2004,6 +2004,7 @@ rules:
         backend-openai: [backend-credentialed]
         backend-openrouter: [backend-credentialed]
         backend-stripe: [backend-credentialed]
+        backend-lightpanda: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
         web-storybook-component-coverage: [storybook]
