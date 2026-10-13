@@ -1,4 +1,4 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { query as executeQuery, type QueryOptions } from '@data-stores/psql'
 import { mapCommentRow } from '@modules/search-utils'
 import { isSlug, isUUID } from '@modules/utils'
 import createError from 'http-errors'
@@ -12,19 +12,22 @@ export async function getCommentAncestorsByAny(
   const isId = isUUID(idOrSlug)
   const isSlugValue = isSlug(idOrSlug)
   if (!isId && !isSlugValue) throw createError(422, `Invalid post identifier: ${idOrSlug}`)
-  const query = isId
+  const statement = isId
     ? buildCommentAncestorsQuery(sql`${idOrSlug}`)
     : buildCommentAncestorsQuery(
         sql`/* getCommentAncestorsByAny:fragment */
           (SELECT post_id FROM post_slugs WHERE slug = ${idOrSlug.toLowerCase()} LIMIT 1)`,
       )
-  const { rows } = await read(query, options)
+  const { rows } = await executeQuery(
+    `/* buildCommentAncestorsQuery */\n    WITH RECURSIVE ${statement.text}`,
+    statement.values,
+    options,
+  )
   return rows.map(row => mapCommentRow(row as CommentRow))
 }
 
 export function buildCommentAncestorsQuery(idSql: SQLStatement): SQLStatement {
-  const query = sql`/* buildCommentAncestorsQuery */
-    WITH RECURSIVE ancestors AS (
+  const query = sql`ancestors AS (
       SELECT posts.id, posts.post_type, posts.root_post_id, posts.parent_post_id, posts.deleted_at, posts.created_at, posts.votes_score_sort, 0 AS depth
       FROM posts WHERE posts.id = `
   query.append(idSql)

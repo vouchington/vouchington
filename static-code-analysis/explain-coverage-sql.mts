@@ -9,9 +9,6 @@ export function isRead(sqlText: string | null): boolean {
     statement = withoutComment
   }
   if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
-  // The released extractor keeps an interpolated leading token as a placeholder. Its SQL
-  // verb is unknown, so retain the annotated statement for review rather than hiding it.
-  if (/^sql_placeholder_\d+\b/.test(statement)) return true
   return (
     /^WITH\b/i.test(statement) &&
     !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(

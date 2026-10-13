@@ -19,8 +19,7 @@ export async function getTopicDataPointInsights(
   topicId: string,
   options?: { vertical?: string },
 ): Promise<TopicDataPointInsights> {
-  const query = sql`/* getTopicDataPointInsights */
-    WITH base AS (
+  const query = sql`base AS (
       SELECT
         posts.structured_data->>'result' AS result,
         posts.structured_data->>'credit_score_range' AS credit_score_range,
@@ -76,7 +75,10 @@ export async function getTopicDataPointInsights(
     FROM base
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read(
+    `/* getTopicDataPointInsights */\n    WITH ${query.text}`,
+    query.values,
+  )
   const row = rows[0]
 
   const totalCount = Number(row?.total_count ?? 0)

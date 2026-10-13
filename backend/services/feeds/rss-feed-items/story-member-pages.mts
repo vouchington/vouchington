@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { query as executeQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
@@ -34,16 +34,17 @@ export async function getStoryMemberPagesBatch(
   )
   if (requests.length === 0) return {}
   const prepared = requests.map(request => prepareRequest(currentUser, request))
-  const query = appendRssFeedItemViewerCTEs(
-    sql`/* getStoryMemberPagesBatch */ WITH `,
-    currentUser?.id,
-  ).append(sql` `)
+  const query = appendRssFeedItemViewerCTEs(sql``, currentUser?.id).append(sql` `)
   const first = prepared.filter(request => !request.after_id)
   const continuation = prepared.filter(request => request.after_id)
   if (first.length) query.append(buildMemberSelection(first, limit, false))
   if (first.length && continuation.length) query.append(sql` UNION ALL `)
   if (continuation.length) query.append(buildMemberSelection(continuation, limit, true))
-  const { rows } = await read<{ story_id: string; id: string }>(query, options)
+  const { rows } = await executeQuery<{ story_id: string; id: string }>(
+    `/* getStoryMemberPagesBatch */ WITH ${query.text}`,
+    query.values,
+    options,
+  )
   const idsByStory = new Map<string, string[]>()
   for (const row of rows) {
     const ids = idsByStory.get(row.story_id) ?? []

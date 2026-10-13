@@ -81,8 +81,7 @@ async function createNextRecipientNotificationBatch(
   lastUserId: string | null,
   batchSize: number,
 ): Promise<{ lastUserId: string; created: number } | null> {
-  const query = `
-      SELECT user_id
+  const query = `user_id
       FROM ${recipientTable}
       WHERE ($1::uuid IS NULL OR user_id > $1)
       ORDER BY user_id
@@ -92,11 +91,11 @@ async function createNextRecipientNotificationBatch(
   const result =
     config.batchQueryComment === 'selectRssFeedItemNotificationRecipientBatch'
       ? await client.query<{ user_id: string }>(
-          `/* selectRssFeedItemNotificationRecipientBatch */${query}`,
+          `/* selectRssFeedItemNotificationRecipientBatch */\n      SELECT ${query}`,
           values,
         )
       : await client.query<{ user_id: string }>(
-          `/* selectPostNotificationRecipientBatch */${query}`,
+          `/* selectPostNotificationRecipientBatch */\n      SELECT ${query}`,
           values,
         )
   const rows: Array<{ user_id: string }> = result.rows

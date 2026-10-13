@@ -197,7 +197,7 @@ read("/* getUnique */ SELECT id FROM posts WHERE slug = 'a  b'")
     }
   })
 
-  it('keeps dynamic leading reads and root/subpath cursor calls in the inventory', async () => {
+  it('excludes unknown leading verbs while counting root and subpath cursor reads', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-cursors-'))
     try {
       const resultsPath = join(fixtureDir, 'results.json')
@@ -234,11 +234,8 @@ executeHandlerWithCursorInBatches(\`/* cursorSubpath */ SELECT id FROM posts\`, 
         resultsPath,
         ['cursor-plan'],
       )
-      expect(report).toMatchObject({ annotatedStatements: 3, reads: 3, coveredReads: 1 })
-      expect(report.uncoveredReads.map(read => read.name)).toEqual([
-        'dynamicLeading',
-        'cursorSubpath',
-      ])
+      expect(report).toMatchObject({ annotatedStatements: 3, reads: 2, coveredReads: 1 })
+      expect(report.uncoveredReads.map(read => read.name)).toEqual(['cursorSubpath'])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
@@ -256,6 +253,7 @@ executeHandlerWithCursorInBatches(\`/* cursorSubpath */ SELECT id FROM posts\`, 
       ),
     ).toBe(true)
     expect(isRead('/* update */ -- policy\nUPDATE topics SET active = true')).toBe(false)
+    expect(isRead('/* unknown */ sql_placeholder_1 FROM topics')).toBe(false)
     expect(
       isRead('/* lock */ WITH rows AS (SELECT id FROM jobs FOR UPDATE) SELECT id FROM rows'),
     ).toBe(true)

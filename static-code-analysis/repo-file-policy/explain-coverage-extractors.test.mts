@@ -5,6 +5,68 @@ import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 
 describe('EXPLAIN extractor overlap', () => {
+  it('lists assembled reads only when their extracted SQL has a known read verb', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-assembled-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const paths = [
+        'backend/services/comments/ancestors.mts',
+        'backend/services/bookmarks/counts.mts',
+        'backend/services/bookmarks/query.mts',
+        'backend/services/data-points/insights.mts',
+        'backend/services/elections-votes/entity-relation/refresh-stats.mts',
+        'backend/services/elections-votes/entity-relation/resolve-election-target.mts',
+        'backend/services/feeds/rss-feed-items/story-member-pages.mts',
+        'backend/services/images/placements.mts',
+        'backend/services/moderation-appeals/get.mts',
+        'backend/services/notifications/reconcile-batches.mts',
+        'backend/services/post-publication/shadow-audit.mts',
+        'backend/services/remote-actors/list-followers-of-user.mts',
+        'backend/services/topics/metrics-batch.mts',
+        'backend/services/users/follow-context-queries.mts',
+        'backend/services/users/metrics-batch.mts',
+        'backend/services/vote-integrity/get-penalties.mts',
+      ]
+      const sources = paths.map(fileName => ({
+        fileName,
+        source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
+      }))
+      const report = await reportCoverage(sources, resultsPath, ['fixture'])
+      expect(report.uncoveredReads.map(read => read.name)).toEqual(
+        expect.arrayContaining([
+          'buildCommentAncestorsQuery',
+          'getUserBookmarkCounts',
+          'getEntityBookmarkCounts',
+          'queryEntityBookmarksForRelations',
+          'getTopicDataPointInsights',
+          'refreshEntityRelationVoteStatsById',
+          'resolveEntityRelationElectionTargetById',
+          'getStoryMemberPagesBatch',
+          'getImagePlacementsForCopyright',
+          'getModerationAppealById',
+          'listPostPublicationShadowAuditCandidates',
+          'listRemoteFollowerInboxPage',
+          'getTopicMetricsByAnyBatch',
+          'getUserMetricsByAnyBatch',
+          'getFollowedUsersByElectionVote',
+          'getVoteWeightPenalties',
+          'selectPostNotificationRecipientBatch',
+          'selectRssFeedItemNotificationRecipientBatch',
+        ]),
+      )
+      expect(report.reads).toBeGreaterThanOrEqual(9)
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
   it('counts overlapping extraction passes once while retaining subpath cursor and notification reads', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-extractors-'))
     try {

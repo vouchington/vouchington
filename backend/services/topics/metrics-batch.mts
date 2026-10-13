@@ -48,7 +48,7 @@ export const getTopicMetricsByAnyBatch = async (
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
   const { rows } = await read<TopicMetricsBatchRow>(
-    `/* getTopicMetricsByAnyBatch */${buildTopicMetricsBatchQuery(inputCtes.ctes)}`,
+    `/* getTopicMetricsByAnyBatch */\n    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic input CTE interpolation\n    -- breaks structural SQL parsing; id_lookups/slug_lookups filter deleted and merged topics.\n    WITH ${buildTopicMetricsBatchQuery(inputCtes.ctes)}`,
     inputCtes.values,
     options,
   )

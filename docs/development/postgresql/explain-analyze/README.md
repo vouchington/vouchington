@@ -299,7 +299,9 @@ failed final scenario already emitted one plan. Cursor helper calls from the roo
 package and its cursor subpath are included once when both extractors find the same call. Dynamic
 notification recipient queries use a literal annotation for each caller so both reads appear in
 the inventory. An annotated statement with an interpolated first
-SQL token stays in the read inventory for review because its verb cannot be proven statically.
+SQL token remains in the annotated-statement total but is not classified as a read: its verb
+cannot be proven statically. Move a fixed leading read verb to the execution callsite when its
+SQL builder is dynamic, preserving the executed SQL and parameters.
 Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 
 ```bash

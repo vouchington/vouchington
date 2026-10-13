@@ -53,10 +53,8 @@ async function queryEntityBookmarksForRelations(
   relations: BookmarkRelation[],
   objectIds: string[],
 ): Promise<BookmarkRow[]> {
-  const subqueries = relations.map(relation => {
-    return `
-      SELECT
-        object_id,
+  const subqueries = relations.map((relation, index) => {
+    return `${index === 0 ? '' : '\n      SELECT\n'}        object_id,
         '${relation.predicate}' AS _bookmark_type
       FROM ${relation.table_name}
       WHERE subject_id = $1
@@ -66,7 +64,7 @@ async function queryEntityBookmarksForRelations(
   })
 
   const { rows } = await read(
-    `/* queryEntityBookmarksForRelations */ ${subqueries.join(' UNION ALL ')}`,
+    `/* queryEntityBookmarksForRelations */ \n      SELECT\n${subqueries.join(' UNION ALL ')}`,
     [userId, objectIds],
   )
   return rows as BookmarkRow[]

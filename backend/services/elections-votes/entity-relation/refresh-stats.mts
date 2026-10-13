@@ -19,13 +19,13 @@ export async function refreshEntityRelationVoteStatsFromPrimaryWithFallback(
 
 export async function refreshEntityRelationVoteStatsById(relationId: string): Promise<void> {
   const tableUnions = electionRelationTables.map(
-    table => `SELECT id, '${table}'::text AS entity_relation
+    (table, index) => `${index === 0 ? '' : 'SELECT '}id, '${table}'::text AS entity_relation
       FROM "${table}"
       WHERE id = $1 AND deleted_at IS NULL`,
   )
   const { rows } = await write(
     `/* refreshEntityRelationVoteStatsById */
-    ${tableUnions.join('\n    UNION ALL\n    ')}
+    SELECT ${tableUnions.join('\n    UNION ALL\n    ')}
     LIMIT 1`,
     [relationId],
   )

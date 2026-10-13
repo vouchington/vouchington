@@ -48,7 +48,7 @@ export const getUserMetricsByAnyBatch = async (
   const usernameInputs = normalizedInputs.filter(input => input.type === 'username')
 
   const { rows } = await read(
-    `/* getUserMetricsByAnyBatch */${USER_METRICS_BATCH_SQL}`,
+    `/* getUserMetricsByAnyBatch */\n    WITH ${USER_METRICS_BATCH_SQL}`,
     [
       idInputs.map(input => input.value),
       idInputs.map(input => input.index),
