@@ -36,6 +36,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_30_COMMUNITY_AUTOMOD } from './native-c
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_31_COPYRIGHT_NOTICES } from './native-consumer-manifest/claims-31-copyright-notices.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_32_AUTHORED_POST } from './native-consumer-manifest/claims-32-authored-post.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_33_DOTNET_MCP } from './native-consumer-manifest/claims-33-dotnet-mcp.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_34_MCP_WARNINGS } from './native-consumer-manifest/claims-34-mcp-warnings.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest/types.mts'
 
 export type {
@@ -83,6 +84,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_31_COPYRIGHT_NOTICES,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_32_AUTHORED_POST,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_33_DOTNET_MCP,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_34_MCP_WARNINGS,
 ]
 
 export const NATIVE_CONSUMER_MANIFEST =
