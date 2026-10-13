@@ -1,16 +1,8 @@
 import Sentry from './sentry.mts'
+import { shouldLogToConsole } from './should-log-to-console.mts'
 
 const sentryThrottleMs = 10_000
 const lastSentryReportByClientCommand = new Map<string, number>()
-
-// Log to console when Sentry is disabled (development, CI) but not in test mode.
-// Mirrors the identical pattern in index.mts — kept local to avoid changing the
-// export surface of on-error/index.mts.
-function shouldLogToConsole(): boolean {
-  const env = process.env.NODE_ENV || 'development'
-  if (env === 'test') return false
-  return env === 'development' || !!process.env.CI
-}
 
 export type ValkeySaturationContext = {
   client: string

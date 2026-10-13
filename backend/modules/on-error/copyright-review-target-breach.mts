@@ -1,13 +1,5 @@
 import Sentry from './sentry.mts'
-
-// Log to console when Sentry is disabled (development, CI) but not in test mode.
-// Mirrors the identical pattern in index.mts and the other named recorders in this module — kept
-// local to avoid changing the export surface of on-error/index.mts.
-function shouldLogToConsole(): boolean {
-  const env = process.env.NODE_ENV || 'development'
-  if (env === 'test') return false
-  return env === 'development' || !!process.env.CI
-}
+import { shouldLogToConsole } from './should-log-to-console.mts'
 
 export type CopyrightReviewTargetBreachBucket = {
   count: number
