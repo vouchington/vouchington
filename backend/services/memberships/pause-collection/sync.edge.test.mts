@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as psql from '@data-stores/psql'
 import * as stripeClientModule from '@modules/stripe/client'
 import {
   createTestMembership,
@@ -76,6 +77,25 @@ describe('membership pause collection edges', () => {
 
     expect(retrieve).not.toHaveBeenCalled()
     expect(update).not.toHaveBeenCalled()
+  })
+
+  it('pauses a direct subscription the replica does not see', async () => {
+    const member = await createTestUser()
+    await suspendTestUser(member.id)
+    await createTestPauseCollectionDirectSubscription(member.id)
+    await queueTestPauseCollectionSync(member.id)
+    const [job] = await readTestPauseCollectionSyncJobs(member.id)
+    vi.spyOn(psql, 'read').mockResolvedValue({
+      rows: [],
+      command: 'SELECT',
+      rowCount: 0,
+      oid: 0,
+      fields: [],
+    } as never)
+
+    await syncMembershipPauseCollection(job!)
+
+    expect(update).toHaveBeenCalledTimes(1)
   })
 
   it('does not update an already canceled Stripe subscription', async () => {

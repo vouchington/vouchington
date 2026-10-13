@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { memberships } from '@queues/memberships/queues'
-import { enqueueSyncMembershipPauseCollection } from '@queues/memberships/enqueues'
-import type { SyncMembershipPauseCollectionData } from '@queues/memberships/types'
-import { dispatchDuePauseCollectionWork } from '@services/memberships'
-import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '@services/memberships/get-catalog'
+import { enqueueSyncMembershipPauseCollection } from '../queues/memberships/enqueues/pause-collection.mts'
+import { memberships } from '../queues/memberships/queues.mts'
+import type { SyncMembershipPauseCollectionData } from '../queues/memberships/types.mts'
+import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '../services/memberships/get-catalog.mts'
+import { dispatchDuePauseCollectionWork } from '../services/memberships/pause-collection/dispatch.mts'
 import { createTestMembership } from './entities/memberships.mts'
 import {
   getTestMembershipPauseCollectionRequestedAt,

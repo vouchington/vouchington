@@ -2,7 +2,7 @@ import {
   getStripeSubscription,
   updateStripeSubscriptionPauseCollection,
 } from '@modules/stripe/subscriptions'
-import { getManageableStripeSubscriptionByUserId } from '../management/get-manageable-stripe-subscription.mts'
+import { loadPauseCollectionDirectSubscriptionId } from './direct-subscription.mts'
 import {
   claimMembershipPauseCollection,
   completeMembershipPauseCollection,
@@ -80,8 +80,7 @@ async function applyPauseCollection(
 
 async function loadDirectSubscriptionId(input: OwnedLease): Promise<string | 'superseded' | null> {
   if (!(await membershipPauseCollectionLeaseHeld(input))) return 'superseded'
-  const manageable = await getManageableStripeSubscriptionByUserId(input.userId)
-  return manageable?.subscriptionId ?? null
+  return loadPauseCollectionDirectSubscriptionId(input.userId)
 }
 
 async function sendPauseCollection(
