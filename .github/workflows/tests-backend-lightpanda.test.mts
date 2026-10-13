@@ -46,23 +46,22 @@ describe('retained Lightpanda cloud CI boundary', () => {
   })
 
   it.each([
-    { name: 'missing', token: undefined, expected: 1, expectedOutput: null },
-    { name: 'blank', token: ' \t\n ', expected: 1, expectedOutput: null },
+    { name: 'missing', token: undefined, missing: true },
+    { name: 'blank', token: ' \t\n ', missing: true },
     {
       name: 'present',
       token: 'private-preflight-sentinel',
-      expected: 0,
-      expectedOutput: 'has_aws=false\n',
+      missing: false,
     },
   ])(
     'executes the actual credential preflight for a $name token without leaking it',
-    ({ token, expected, expectedOutput }) => {
+    ({ token, missing }) => {
       const directory = mkdtempSync(join(tmpdir(), 'lightpanda-preflight-'))
       onTestFinished(() => rmSync(directory, { recursive: true }))
       const env: NodeJS.ProcessEnv = {
         ...process.env,
         LIGHTPANDA_TOKEN: token,
-        AWS_TEST_ROLE_ARN: '',
+        AWS_TEST_ROLE_ARN: 'arn:aws:iam::123456789012:role/preflight-fixture',
         OPENAI_API_KEY: '',
         OPENROUTER_API_KEY: '',
         STRIPE_SECRET_KEY: '',
@@ -77,15 +76,15 @@ describe('retained Lightpanda cloud CI boundary', () => {
       })
       expect(result.error).toBeUndefined()
       expect(result.signal).toBeNull()
-      expect(result.status).toBe(expected)
+      expect(result.status).toBe(0)
       expect(result.stdout).not.toContain('private-preflight-sentinel')
       expect(result.stderr).not.toContain('private-preflight-sentinel')
-      expect(result.stdout.includes('::error::LIGHTPANDA_TOKEN is required')).toBe(expected === 1)
-      expect(result.stdout.includes('::error::')).toBe(expected === 1)
+      expect(result.stdout.includes('::warning::LIGHTPANDA_TOKEN is missing')).toBe(missing)
+      expect(result.stdout).not.toContain('::error::')
       const output = existsSync(env.GITHUB_OUTPUT!)
         ? readFileSync(env.GITHUB_OUTPUT!, 'utf8')
         : null
-      expect(output).toBe(expectedOutput)
+      expect(output).toBe('has_aws=true\n')
     },
   )
 })
