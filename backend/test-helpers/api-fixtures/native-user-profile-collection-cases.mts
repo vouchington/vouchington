@@ -11,6 +11,15 @@ const firstPage = (endCursor: string) => ({
   end_cursor: endCursor,
 })
 const communityWithOwner = { ...community, owner: null }
+const topicWithLogoPlacement = {
+  ...topic,
+  logo_image_id: '00000000-0000-7000-8000-000000000205',
+  logo_image_placement: {
+    placement_id: '00000000-0000-7000-8000-000000000306',
+    placement_revision: 3,
+    image_id: '00000000-0000-7000-8000-000000000205',
+  },
+}
 
 export const nativeUserProfileCollectionApiFixtureCases: ApiFixtureCase[] = [
   {
@@ -24,7 +33,7 @@ export const nativeUserProfileCollectionApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    body: { results: [topic], page_info: firstPage(timestampCursor) },
+    body: { results: [topicWithLogoPlacement], page_info: firstPage(timestampCursor) },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: [],
   },
