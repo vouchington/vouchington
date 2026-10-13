@@ -39,8 +39,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `cancel-replaced-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `checks-backend-smoke.yml`             | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 14            |
-| `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 10            |
-| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-24.04-arm`                    | 15            |
+| `checks-static.yml`                    | `static-cloudflare`             | job    | `ubuntu-latest`                       | 11            |
+| `checks-static.yml`                    | `static-lambdas`                | job    | `ubuntu-24.04-arm`                    | 16            |
 | `checks-static.yml`                    | `static-web`                    | job    | `ubuntu-24.04-arm`                    | 10            |
 | `ci-area-coverage.yml`                 | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`                | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
@@ -138,7 +138,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-backend-unit.yml`               | `backend-tests`                 | matrix | `ubuntu-latest`                       | 29            |
 | `tests-backend-unit.yml`               | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-cloudflare-worker.yml`          | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 20            |
-| `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 13            |
+| `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 14            |
 | `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 23            |
 | `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 13            |
