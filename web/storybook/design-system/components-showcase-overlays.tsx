@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Spinner } from '@/components/ui/spinner'
 import { ChevronDown, LogOut, Settings, Star } from 'lucide-react'
 import { SectionLabel } from './foundations-showcase'
 
@@ -104,7 +105,7 @@ export function FeedbackShowcaseSection() {
           </div>
           <div className='flex items-center gap-3'>
             <span className='font-mono text-xs text-muted-foreground'>Spinner</span>
-            <div className='h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground' />
+            <Spinner className='size-5' />
           </div>
         </div>
       </section>

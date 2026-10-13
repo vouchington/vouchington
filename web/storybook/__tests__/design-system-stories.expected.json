@@ -109,8 +109,9 @@
   "sheet.stories.tsx": ["Right", "Left"],
   "shell.stories.ts": ["WithAside"],
   "sidebar.stories.tsx": ["Expanded"],
-  "skeleton.stories.tsx": ["Skeleton", "Spinner"],
+  "skeleton.stories.tsx": ["Skeleton"],
   "sonner.stories.tsx": ["Default"],
+  "spinner.stories.tsx": ["Default"],
   "spending-categories-manager.stories.tsx": ["EmptyState", "WithItems"],
   "status-page.stories.tsx": [
     "NotFound",

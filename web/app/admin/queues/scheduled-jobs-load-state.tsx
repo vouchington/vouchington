@@ -1,6 +1,7 @@
 'use client'
 
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function ScheduledJobsLoadingState() {
@@ -9,7 +10,10 @@ export function ScheduledJobsLoadingState() {
     <div className='flex min-h-screen items-center justify-center'>
       <h1 className='sr-only'>{t('extracted.queues.scheduledJobsLoadState.queues_be77db11')}</h1>
       <div className='flex flex-col items-center gap-4'>
-        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+        <Spinner
+          className='size-8 text-primary'
+          aria-hidden
+        />
         <p className='text-muted-foreground'>
           {t('extracted.queues.scheduledJobsLoadState.loadingScheduledJobs_22dbad5e')}
         </p>

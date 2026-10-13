@@ -72,8 +72,10 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Save' })
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
-    // Loader2 svg is present
-    expect(button.querySelector('svg')).toBeInTheDocument()
+    expect(button).toHaveAccessibleName('Save')
+    const spinner = button.querySelector('svg')
+    expect(spinner).toHaveAttribute('data-pw', 'spinner')
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('keeps children visible alongside the spinner when loading', () => {

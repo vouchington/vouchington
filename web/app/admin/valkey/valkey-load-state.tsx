@@ -1,6 +1,7 @@
 'use client'
 
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function ValkeyLoadingState() {
@@ -9,7 +10,10 @@ export function ValkeyLoadingState() {
     <div className='flex items-center justify-center min-h-screen'>
       <h1 className='sr-only'>{t('extracted.valkey.valkeyLoadState.valkey_2392ad6b')}</h1>
       <div className='flex flex-col items-center gap-4'>
-        <Loader2 className='animate-spin w-8 h-8 text-primary' />
+        <Spinner
+          className='size-8 text-primary'
+          aria-hidden
+        />
         <p className='text-muted-foreground'>
           {t('extracted.valkey.valkeyLoadState.loadingValkeyStatus_7caf2d2f')}
         </p>
