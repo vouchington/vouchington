@@ -22,7 +22,9 @@ export async function getOAuthAccountCreatedAt(
 ): Promise<Date | null> {
   const config = providerTableConfigs[provider]
   const { rows } = await read<{ created_at: Date }>(
-    `SELECT created_at FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `SELECT created_at FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    ),
     [providerUserId],
   )
   return rows[0]?.created_at ?? null
