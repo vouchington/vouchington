@@ -61,16 +61,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     load: () => import('@queues/psql/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'account-data-requests',
+    queueName: 'account-lifecycle',
     load: () =>
-      import('@queues/account-data-requests/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'user-deletions',
-    load: () =>
-      import('@queues/user-deletions/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/account-lifecycle/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'oauth-authorization-exchange',

@@ -16,7 +16,7 @@ import * as crawlBoilerplateRemovalQueues from '@queues/crawl-boilerplate-remova
 import { rss_feeds } from '@queues/rss-feeds/queues'
 import { rssFeedItemCategories } from '@queues/rss-feed-item-categories/queues'
 import { topicAliases } from '@queues/topic-aliases/queues'
-import { accountDataRequests } from '@queues/account-data-requests/queues'
+import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
 import { articleSync } from '@queues/article-sync/queues'
@@ -45,7 +45,6 @@ import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exc
 import { rssFeedDiscoverability } from '@queues/rss-feed-discoverability/queues'
 import { sesInboundQueue } from '@queues/ses-inbound/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
-import { userDeletions } from '@queues/user-deletions/queues'
 import type { Queue } from 'glide-mq'
 
 const allQueues = [
@@ -65,7 +64,7 @@ const allQueues = [
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
   ...Object.values(openaiModerationQueues),
-  accountDataRequests,
+  accountLifecycle,
   bloomFilters,
   adminImports,
   articleSync,
@@ -95,7 +94,6 @@ const allQueues = [
   rssFeedDiscoverability,
   sesInboundQueue,
   unfurlReferralLinksQueue,
-  userDeletions,
 ]
   .flat(Infinity)
   .filter(Boolean) as Queue[]

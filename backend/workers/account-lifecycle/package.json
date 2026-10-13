@@ -1,0 +1,32 @@
+{
+  "name": "@workers/account-lifecycle",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@data-stores/valkey-pubsub": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/account-lifecycle": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@services/account-data-requests": "workspace:^",
+    "@services/user-deletions": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@modules/aws": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

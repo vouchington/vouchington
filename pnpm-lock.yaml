@@ -765,9 +765,9 @@ importers:
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../modules/worker-queue-inventory
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../queues/account-data-requests
+        version: link:../queues/account-lifecycle
       '@queues/activitypub-delivery':
         specifier: workspace:^
         version: link:../queues/activitypub-delivery
@@ -1748,9 +1748,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
+        version: link:../../queues/account-lifecycle
       '@queues/activitypub-inbox':
         specifier: workspace:^
         version: link:../../queues/activitypub-inbox
@@ -1808,15 +1808,12 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@workers/account-data-requests':
+      '@workers/account-lifecycle':
         specifier: workspace:^
-        version: link:../../workers/account-data-requests
+        version: link:../../workers/account-lifecycle
       '@workers/activitypub-delivery':
         specifier: workspace:^
         version: link:../../workers/activitypub-delivery
@@ -1919,9 +1916,6 @@ importers:
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../workers/urls-domains-blacklist
-      '@workers/user-deletions':
-        specifier: workspace:^
-        version: link:../../workers/user-deletions
       '@workers/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../workers/user-rss-feed-imports
@@ -2690,7 +2684,7 @@ importers:
 
   backend/modules/worker-queue-inventory: {}
 
-  backend/queues/account-data-requests:
+  backend/queues/account-lifecycle:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -3326,21 +3320,6 @@ importers:
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/user-deletions:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -8812,9 +8791,9 @@ importers:
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../../modules/worker-queue-inventory
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
+        version: link:../../queues/account-lifecycle
       '@queues/activitypub-delivery':
         specifier: workspace:^
         version: link:../../queues/activitypub-delivery
@@ -8941,9 +8920,6 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../queues/user-rss-feed-imports
@@ -10971,6 +10947,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/account-lifecycle':
+        specifier: workspace:^
+        version: link:../../queues/account-lifecycle
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -10986,9 +10965,6 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -11513,7 +11489,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/account-data-requests:
+  backend/workers/account-lifecycle:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -11527,21 +11503,31 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
+        version: link:../../queues/account-lifecycle
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../../services/account-data-requests
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../../services/user-deletions
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/activitypub-delivery:
     dependencies:
@@ -13235,27 +13221,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/workers/user-deletions:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../../services/user-deletions
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/user-rss-feed-imports:
     dependencies:
