@@ -1,0 +1,154 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const gh = vi.hoisted(() => ({
+  runGh: vi.fn<(args: string[]) => Promise<string>>(),
+  processDiffCommand:
+    vi.fn<(command: unknown, onBlock: (block: string) => void) => Promise<void>>(),
+}))
+
+vi.mock<typeof import('vouchington-tooling/gh-cli')>(
+  import('vouchington-tooling/gh-cli'),
+  async importOriginal => ({ ...(await importOriginal()), ...gh }),
+)
+
+import { VALID_PR_BODY } from './test-helpers/pr-description/valid-pr-body.mts'
+import { pullRequestDefaults, validatePullRequest } from './agent-policy.mts'
+
+const REPO = 'vouchington/vouchington'
+const PROJECT = {
+  id: 'P1',
+  title: 'Roadmap',
+  url: 'https://github.com/orgs/x/projects/1',
+  closed: false,
+}
+
+function issueJson(number: number, milestone: string | null) {
+  return JSON.stringify({
+    body: '',
+    html_url: `https://github.com/${REPO}/issues/${number}`,
+    milestone: milestone === null ? null : { title: milestone },
+    number,
+    state: 'open',
+    title: `Issue ${number}`,
+  })
+}
+
+function install(options: { milestone?: string; projects?: unknown[]; failIssue?: boolean } = {}) {
+  gh.runGh.mockImplementation(async args => {
+    const [a, b] = args
+    if (a === 'repo') return JSON.stringify({ nameWithOwner: REPO })
+    if (a === 'api' && b === 'graphql') {
+      const nodes = (options.projects ?? []).map(project => ({ project }))
+      return JSON.stringify({ data: { repository: { issue: { projectItems: { nodes } } } } })
+    }
+    if (a === 'api' && b?.startsWith('repos/')) {
+      if (options.failIssue) throw new Error('boom')
+      return issueJson(Number(b.split('/').at(-1)), options.milestone ?? null)
+    }
+    if (a === 'pr' && b === 'view')
+      return JSON.stringify({
+        baseRefOid: 'b',
+        headRefOid: 'h',
+        mergeCommit: null,
+        number: 7,
+        state: 'OPEN',
+        url: `https://github.com/${REPO}/pull/7`,
+      })
+    return '[]'
+  })
+  gh.processDiffCommand.mockResolvedValue(undefined)
+}
+
+const base = {
+  title: 't',
+  body: VALID_PR_BODY,
+  base: 'main',
+  head: 'feature',
+  mode: 'interactive',
+} as const
+
+describe('validatePullRequest', () => {
+  beforeEach(() => {
+    gh.runGh.mockReset()
+    gh.processDiffCommand.mockReset()
+  })
+
+  it('reports content-policy errors without calling gh', async () => {
+    const { errors } = await validatePullRequest({ ...base, body: '## Summary\n\nx\n' })
+    expect(errors.join('\n')).toContain('## Related issues')
+    expect(gh.runGh).not.toHaveBeenCalled()
+  })
+
+  it('accepts a valid body on create and warns with the referenced issue', async () => {
+    install()
+    const result = await validatePullRequest(base)
+    expect(result.errors).toEqual([])
+    expect(result.warnings).toEqual([expect.stringContaining('#123 OPEN issue: Issue 123')])
+    expect(gh.processDiffCommand).not.toHaveBeenCalled()
+  })
+
+  it('reports an unresolvable closing reference', async () => {
+    install({ failIssue: true })
+    const { errors } = await validatePullRequest(base)
+    expect(errors.join('\n')).toContain('#123')
+  })
+
+  it('checks the existing PR diff when pr is set', async () => {
+    install()
+    const result = await validatePullRequest({ ...base, pr: 7 })
+    expect(result.errors).toEqual([])
+    expect(gh.processDiffCommand).toHaveBeenCalledOnce()
+    expect(gh.runGh).toHaveBeenCalledWith(expect.arrayContaining(['pr', 'view', '7']))
+  })
+})
+
+describe('pullRequestDefaults', () => {
+  beforeEach(() => {
+    gh.runGh.mockReset()
+    gh.processDiffCommand.mockReset()
+  })
+
+  const issues = (...numbers: number[]) =>
+    numbers.map(number => ({ number, relation: 'refs' as const, reason: 'r' }))
+
+  it('returns only the repository without related issues', async () => {
+    expect(await pullRequestDefaults({ title: 't', base: 'main', relatedIssues: [] })).toEqual({
+      repositories: [REPO],
+    })
+    expect(await pullRequestDefaults()).toEqual({ repositories: [REPO] })
+    expect(gh.runGh).not.toHaveBeenCalled()
+  })
+
+  it('inherits the milestone and the single open project of the source issue', async () => {
+    install({ milestone: 'Agent tooling MCP server', projects: [PROJECT] })
+    const defaults = await pullRequestDefaults({
+      title: 't',
+      base: 'main',
+      relatedIssues: issues(5),
+    })
+    expect(defaults).toEqual({
+      milestone: 'Agent tooling MCP server',
+      project: 'Roadmap',
+      repositories: [REPO],
+    })
+  })
+
+  it('looks at closing issues before refs and omits ambiguous projects', async () => {
+    install({ projects: [PROJECT, { ...PROJECT, id: 'P2' }] })
+    const relatedIssues = [
+      { number: 1, relation: 'refs' as const, reason: 'r' },
+      { number: 2, relation: 'closes' as const, reason: 'r' },
+    ]
+    const defaults = await pullRequestDefaults({ title: 't', base: 'main', relatedIssues })
+    expect(defaults).toEqual({ repositories: [REPO] })
+    const urls = gh.runGh.mock.calls.map(([args]) => args[1]).filter(a => a?.startsWith('repos/'))
+    expect(urls).toEqual([`repos/${REPO}/issues/2`, `repos/${REPO}/issues/1`])
+  })
+
+  it('omits metadata when GitHub lookups fail', async () => {
+    install({ failIssue: true })
+    expect(
+      await pullRequestDefaults({ title: 't', base: 'main', relatedIssues: issues(5) }),
+    ).toEqual({ repositories: [REPO] })
+  })
+})

@@ -4,11 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { UNASSESSED_RETROSPECTIVE_SECTIONS } from './test-helpers/blackboard/retrospective-sections.mts'
-import {
-  pullRequestDefaults,
-  validateRetrospective,
-  type RetrospectivePolicyInput,
-} from './agent-policy.mts'
+import { validateRetrospective, type RetrospectivePolicyInput } from './agent-policy.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const SESSION_ID = 'f5413927-eec3-4204-90c6-4f81b6a413e4'
@@ -197,12 +193,6 @@ describe('validateRetrospective', () => {
   })
 })
 
-describe('pullRequestDefaults', () => {
-  it('returns the Vouchington repository', () => {
-    expect(pullRequestDefaults()).toEqual({ repositories: ['vouchington/vouchington'] })
-  })
-})
-
 describe('child process contract', () => {
   it('runs under plain node with only HOME and PATH', () => {
     const runner = `
@@ -224,5 +214,33 @@ describe('child process contract', () => {
     expect(child.stderr).toBe('')
     expect(child.status).toBe(0)
     expect(JSON.parse(child.stdout)).toEqual({ errors: [] })
+  })
+
+  it('validates a pull request that fails content policy without gh', () => {
+    const runner = `
+      import { readFileSync } from 'node:fs'
+      const { validatePullRequest } = await import(process.argv[1])
+      const request = JSON.parse(readFileSync(0, 'utf8'))
+      process.stdout.write(JSON.stringify(await validatePullRequest(request)))
+    `
+    const child = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', runner, new URL('./agent-policy.mts', import.meta.url).href],
+      {
+        cwd: repoRoot,
+        env: { HOME: process.env.HOME ?? '', PATH: '/usr/bin:/bin' },
+        input: JSON.stringify({
+          title: 't',
+          body: '## Summary\n\nx\n',
+          base: 'main',
+          head: 'feature',
+          mode: 'interactive',
+        }),
+        encoding: 'utf8',
+      },
+    )
+    expect(child.stderr).toBe('')
+    expect(child.status).toBe(0)
+    expect(JSON.parse(child.stdout).errors.join('\n')).toContain('## Related issues')
   })
 })
