@@ -1,5 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
+import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tokens.mts'
 
 /**
  * How an erased column is overwritten. Every overwrite keeps the column valid for its CHECK
@@ -95,8 +96,13 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
     { filename_ciphertext: 'redact', content_id_ciphertext: 'redact' },
     viaEmailIntakes,
   ),
-  table('copyright_notice_email_thread_references', { lookup_token: 'hex64' }, viaEmailIntakes),
-  table('copyright_notice_email_intake_notice_links', { matched_reference_lookup: 'hex64' }),
+  table(
+    'copyright_notice_email_thread_tokens',
+    { lookup_digest: 'hex64' },
+    exclusiveCaseThreadTokenScopeSql,
+  ),
+  table('copyright_notice_email_thread_references', { token_id: 'null' }, viaEmailIntakes),
+  table('copyright_notice_email_intake_notice_links', { matched_token_id: 'null' }),
   table(
     'copyright_notice_email_intake_recommendations',
     { structured_output_ciphertext: 'redact' },

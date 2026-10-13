@@ -7,11 +7,16 @@ import type { CommunityListItem, CommunityListItemType } from './types.mts'
 async function assertEntityExists(
   itemType: CommunityListItemType,
   entityId: string,
+  isAdministrator: boolean,
 ): Promise<void> {
   const { entityTable, activeEntityFilter } = getCommunityListItemStorageConfig(itemType)
+  const hostnameVisibilityFilter =
+    itemType === 'url_hostname' && !isAdministrator
+      ? ' AND publicly_introduced_at IS NOT NULL AND NOT is_blocked'
+      : ''
   const { rows } = await read(
     `/* assertEntityExists */
-    SELECT id FROM ${entityTable} WHERE id = $1 ${activeEntityFilter} LIMIT 1
+    SELECT id FROM ${entityTable} WHERE id = $1 ${activeEntityFilter}${hostnameVisibilityFilter} LIMIT 1
     `,
     [entityId],
   )
@@ -23,12 +28,13 @@ export async function addCommunityListItem(
   communityId: string,
   itemType: CommunityListItemType,
   entityId: string,
+  options?: { isAdministrator?: boolean },
 ): Promise<CommunityListItem> {
   const community = await getCommunity(communityId)
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
 
-  await assertEntityExists(itemType, entityId)
+  await assertEntityExists(itemType, entityId, options?.isAdministrator ?? false)
 
   const { table, entityColumn } = getCommunityListItemStorageConfig(itemType)
 

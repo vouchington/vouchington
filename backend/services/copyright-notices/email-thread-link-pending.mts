@@ -1,9 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import {
-  copyrightEmailIntakeMessageIdIsAmbiguousSql,
-  copyrightEmailReferencedTokenIsAmbiguousSql,
-} from './email-thread-review-path.mts'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
+import { copyrightEmailReferencedTokenIsAmbiguousSql } from './email-thread-review-path.mts'
 
 /**
  * Links replies that arrived before a case, including chains. A reply whose ancestors are not all
@@ -13,6 +11,29 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
   input: { initialIntakeId: string; noticeId: string },
   transaction: TransactionQuery,
 ): Promise<void> {
+  const { rows: graphTokens } = await transaction<{ lookup_digest: string }>(sql`
+    /* lockPendingCopyrightEmailReplies:tokens */
+    WITH RECURSIVE descendants(intake_id) AS (
+      SELECT edge.reply_message_intake_id
+      FROM copyright_notice_email_message_ancestors edge
+      WHERE edge.ancestor_message_intake_id = ${input.initialIntakeId}
+      UNION
+      SELECT edge.reply_message_intake_id
+      FROM descendants parent
+      JOIN copyright_notice_email_message_ancestors edge
+        ON edge.ancestor_message_intake_id = parent.intake_id
+    )
+    SELECT DISTINCT token.lookup_digest
+    FROM copyright_notice_email_thread_references reference
+    JOIN copyright_notice_email_thread_tokens token ON token.id = reference.token_id
+    WHERE reference.copyright_notice_email_intake_id = ${input.initialIntakeId}
+       OR reference.copyright_notice_email_intake_id IN (SELECT intake_id FROM descendants)
+    ORDER BY token.lookup_digest
+  `)
+  await lockCopyrightEmailThreadTokens(
+    transaction,
+    graphTokens.map(row => row.lookup_digest),
+  )
   const linkQuery = sql`/* linkPendingCopyrightEmailRepliesInTransaction:links */
     WITH RECURSIVE descendants(intake_id) AS (
       SELECT edge.reply_message_intake_id
@@ -38,12 +59,6 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
         )
         AND ancestor_link.copyright_notice_id IS DISTINCT FROM ${input.noticeId}
       ) OR `
-  linkQuery.append(
-    copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`edge.ancestor_message_intake_id`),
-  )
-  linkQuery.append(sql` OR `)
-  linkQuery.append(copyrightEmailIntakeMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
-  linkQuery.append(sql` OR `)
   linkQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`descendant.intake_id`))
   linkQuery.append(sql` OR EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_notice_links existing_link

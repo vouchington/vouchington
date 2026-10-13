@@ -98,6 +98,7 @@ app
       community.id,
       'url_hostname',
       body.url_hostname_id,
+      { isAdministrator: currentUser.roles.includes('administrator') },
     )
 
     ctx.setStatus(201)

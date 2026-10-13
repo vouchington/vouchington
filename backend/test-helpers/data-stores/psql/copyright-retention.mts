@@ -22,13 +22,19 @@ export async function readCopyrightSensitiveColumns(): Promise<Record<string, st
 /** Every erasable column of every row the retention sweep covers for one notice, by table. */
 export async function readCopyrightRetentionColumns(
   noticeId: string,
+  retainedRows?: CopyrightRetentionRows,
 ): Promise<CopyrightRetentionRows> {
   const tables: CopyrightRetentionRows = {}
   for (const spec of COPYRIGHT_RETENTION_ERASURE) {
+    const tokenIds = retainedRows?.[spec.table]?.map(row => row.id)
+    const scope =
+      spec.table === 'copyright_notice_email_thread_tokens' && tokenIds
+        ? sql`id = ANY(${tokenIds}::uuid[])`
+        : spec.scope(noticeId)
     const { rows } = await read<Record<string, unknown>>(
       sql`/* readCopyrightRetentionColumns */`
         .append(`\n SELECT id, ${Object.keys(spec.columns).join(', ')} FROM ${spec.table} WHERE `)
-        .append(spec.scope(noticeId))
+        .append(scope)
         .append(' ORDER BY id'),
     )
     tables[spec.table] = rows
@@ -42,19 +48,27 @@ export async function readCopyrightRetentionColumns(
  */
 export async function readCopyrightRetentionSkeleton(
   noticeId: string,
+  retainedRows?: CopyrightRetentionRows,
 ): Promise<CopyrightRetentionRows> {
   const tables: CopyrightRetentionRows = {}
   for (const spec of COPYRIGHT_RETENTION_ERASURE) {
+    const rowName = spec.table === 'copyright_notice_email_thread_tokens' ? spec.table : 'erasable'
+    const alias = rowName === 'erasable' ? ' erasable' : ''
+    const tokenIds = retainedRows?.[spec.table]?.map(row => row.id)
+    const scope =
+      spec.table === 'copyright_notice_email_thread_tokens' && tokenIds
+        ? sql`id = ANY(${tokenIds}::uuid[])`
+        : spec.scope(noticeId)
     const erasable = Object.keys(spec.columns)
       .map(column => `'${column}'`)
       .join(', ')
     const { rows } = await read<{ row: Record<string, unknown> }>(
       sql`/* readCopyrightRetentionSkeleton */`
         .append(
-          `\n SELECT to_jsonb(erasable) - 'updated_at' - ARRAY[${erasable}]::text[] AS row FROM ${spec.table} erasable WHERE `,
+          `\n SELECT to_jsonb(${rowName}) - 'updated_at' - ARRAY[${erasable}]::text[] AS row FROM ${spec.table}${alias} WHERE `,
         )
-        .append(spec.scope(noticeId))
-        .append(' ORDER BY erasable.id'),
+        .append(scope)
+        .append(` ORDER BY ${rowName}.id`),
     )
     tables[spec.table] = rows.map(entry => entry.row)
   }

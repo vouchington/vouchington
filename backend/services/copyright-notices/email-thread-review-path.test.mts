@@ -1,4 +1,5 @@
 import { createTestUser } from '@voucha/test-helpers'
+import { readCopyrightEmailAncestorIds } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
@@ -41,7 +42,28 @@ describe('copyright email review path', () => {
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })
 
-  it('does not link a waiting reply after its parent Message-ID is claimed twice', async () => {
+  it('does not backfill a pending reply when both Message-ID claimants preceded its edge', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const parentMessageId = copyrightEmailMessageId()
+    const firstParent = await recordThreadedCopyrightEmail({
+      messageId: parentMessageId,
+      replyReferences: [],
+    })
+    await recordThreadedCopyrightEmail({ messageId: parentMessageId, replyReferences: [] })
+    const reply = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      replyReferences: [parentMessageId],
+    })
+    await promoteCopyrightEmailIntake(
+      await copyrightEmailPromotionInput(moderator, firstParent.intakeId),
+    )
+
+    expect(reply.match).toBeNull()
+    await expect(readCopyrightEmailAncestorIds(reply.intakeId)).resolves.toEqual([])
+    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
+  })
+
+  it('keeps a resolved waiting reply edge after its parent Message-ID is claimed twice', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const parentMessageId = copyrightEmailMessageId()
     const reply = await recordThreadedCopyrightEmail({
@@ -58,29 +80,10 @@ describe('copyright email review path', () => {
     )
 
     expect(promoted.noticeId).toEqual(expect.any(String))
-    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
-  })
-
-  it('does not link a waiting reply after its own Message-ID is claimed twice', async () => {
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const parentMessageId = copyrightEmailMessageId()
-    const replyMessageId = copyrightEmailMessageId()
-    const parent = await recordThreadedCopyrightEmail({
-      messageId: parentMessageId,
-      replyReferences: [],
+    await expect(getCopyrightStaffEmailIntake(reply.intakeId, moderator)).resolves.toMatchObject({
+      review_path: 'matched_thread',
+      linked_notice: { id: promoted.noticeId },
     })
-    const reply = await recordThreadedCopyrightEmail({
-      messageId: replyMessageId,
-      replyReferences: [parentMessageId],
-    })
-    await recordThreadedCopyrightEmail({ messageId: replyMessageId, replyReferences: [] })
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, parent.intakeId),
-    )
-
-    expect(promoted.noticeId).toEqual(expect.any(String))
-    expect(reply.match).toBeNull()
-    await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })
 
   it('sends the second Message-ID claimant to manual review', async () => {
@@ -92,6 +95,22 @@ describe('copyright email review path', () => {
       replyReferences: [],
     })
 
+    expect(second.match).toBeNull()
+    await expectManualReview(moderator, second.intakeId, 'duplicate_message_id')
+  })
+
+  it('records no new ancestor edge for a second Message-ID claimant', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const parentMessageId = copyrightEmailMessageId()
+    const duplicateMessageId = copyrightEmailMessageId()
+    await promoteInitialCopyrightEmail({ moderator, messageId: parentMessageId })
+    await recordThreadedCopyrightEmail({ messageId: duplicateMessageId, replyReferences: [] })
+    const second = await recordThreadedCopyrightEmail({
+      messageId: duplicateMessageId,
+      replyReferences: [parentMessageId],
+    })
+
+    await expect(readCopyrightEmailAncestorIds(second.intakeId)).resolves.toEqual([])
     expect(second.match).toBeNull()
     await expectManualReview(moderator, second.intakeId, 'duplicate_message_id')
   })

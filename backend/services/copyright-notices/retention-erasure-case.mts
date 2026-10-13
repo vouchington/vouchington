@@ -4,6 +4,8 @@ import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 import { lockCopyrightRetentionCase } from './retention-erasure-preservation.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
+import { caseThreadTokenDigestsSql } from './retention-erasure-thread-tokens.mts'
 import {
   COPYRIGHT_RETENTION_ERASURE,
   eraseCopyrightRetentionTableSql,
@@ -106,6 +108,13 @@ export async function eraseCopyrightRetentionCase(
   const exclusiveObjects = await listCopyrightRetentionEvidenceKeys(noticeId, transaction)
   const keys = exclusiveObjects.map(row => row.key)
   await deleteCopyrightEvidenceObjectVersions(keys)
+  const { rows: threadTokens } = await transaction<{ lookup_digest: string }>(
+    caseThreadTokenDigestsSql(noticeId),
+  )
+  await lockCopyrightEmailThreadTokens(
+    transaction,
+    threadTokens.map(row => row.lookup_digest),
+  )
   await transaction(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
   )

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestCommunity,
+  insertTestCommunityListItem,
+} from '@voucha/test-helpers'
 import { resolveEmailDomainHostnameId } from '../../../services/email-address-validator/email-domain-context.mts'
 import { addCommunityListItem } from '../../../services/communities/list-items/add.mts'
 import { upsertUrlHostnames } from '../../../services/urls-hostnames/upsert.mts'
@@ -49,7 +53,11 @@ describe('hostname public provenance', () => {
     const publicDomain = `public-${suffix}.example.com`
     const publicId = (await upsertUrlHostnames(owner.id, [publicDomain])).get(publicDomain)
     if (!privateId || !publicId) throw new Error('Expected test hostnames')
-    await addCommunityListItem(owner.id, community.id, 'url_hostname', privateId)
+    await insertTestCommunityListItem({
+      communityId: community.id,
+      itemType: 'url_hostname',
+      entityId: privateId,
+    })
     await addCommunityListItem(owner.id, community.id, 'url_hostname', publicId)
 
     const items = await createRequest()

@@ -5,7 +5,7 @@ export const COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE = 'copyright-email-thread-
 export type CopyrightEmailThreadReferenceKind = 'message_id' | 'in_reply_to' | 'references'
 
 export type CopyrightEmailThreadReferenceRow = {
-  lookup_token: string
+  lookup_digest: string
   reference_kind: CopyrightEmailThreadReferenceKind
 }
 
@@ -55,7 +55,7 @@ export function buildCopyrightEmailThreadReferenceRows(input: {
     const key = `${kind}:${lookupToken}`
     if (seen.has(key)) return
     seen.add(key)
-    rows.push({ lookup_token: lookupToken, reference_kind: kind })
+    rows.push({ lookup_digest: lookupToken, reference_kind: kind })
   }
   if (input.messageId) add('message_id', input.messageId)
   for (const value of input.inReplyTo) add('in_reply_to', value)

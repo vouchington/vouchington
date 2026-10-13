@@ -1029,8 +1029,9 @@ period.
     recommendations. These are personal data and statements.
   - Object versions deleted and the key overwritten with `erased:<row id>`: evidence artifact and
     raw `.eml` storage keys. This is the evidence itself.
-  - Overwritten with a per-row digest: email thread lookup tokens and matched-reference lookups,
-    which identify the sender's mail thread.
+  - Email-thread references and matched links clear their token UUIDs. A private token's keyed
+    digest is overwritten with a per-row digest only when no other live case or reply uses it;
+    shared tokens keep their digest and continue threading for their remaining owner.
   - Kept: the notice, targets, submissions, dates, kinds, states, hashes, MIME types, and sizes
     (the minimal record for the repeat-infringer count and the limitation period); restrictions,
     deadlines, and hold and review outcomes (restoration records); repeat-infringer incidents,

@@ -6,6 +6,7 @@ import {
   insertCopyrightEmailThreadReferences,
   lockCopyrightEmailThreadTokens,
   recordCopyrightEmailAncestorEdges,
+  resolveCopyrightEmailThreadTokenIds,
 } from './email-thread-ancestors.mts'
 import {
   findCopyrightEmailThreadMatch,
@@ -34,23 +35,31 @@ export async function recordCopyrightEmailThreadReferences(input: {
 }): Promise<CopyrightEmailThreadMatch | null> {
   const referenceRows = buildCopyrightEmailThreadReferenceRows(input)
   await using transaction = await beginTransaction()
+  let tokenIds = new Map<string, string>()
   if (referenceRows.length > 0) {
     // ast-grep-ignore: no-three-sequential-awaits -- token locks precede reference insertion, which must precede ancestor resolution in this transaction
     await lockCopyrightEmailThreadTokens(
       transaction,
-      referenceRows.map(row => row.lookup_token),
+      referenceRows.map(row => row.lookup_digest),
     )
-    await insertCopyrightEmailThreadReferences(transaction, input.intakeId, referenceRows)
-    await recordCopyrightEmailAncestorEdges(transaction, input.intakeId)
+    tokenIds = await insertCopyrightEmailThreadReferences(
+      transaction,
+      input.intakeId,
+      referenceRows,
+    )
   }
   const ambiguous = await copyrightEmailMessageIdIsAmbiguous(transaction, input.intakeId)
   if (ambiguous) {
     await transaction.commit()
     return null
   }
+  if (referenceRows.length > 0) {
+    await recordCopyrightEmailAncestorEdges(transaction, input.intakeId)
+  }
   const match = await findCopyrightEmailThreadMatch(
     input.intakeId,
     normalizedCopyrightEmailReplyValues(input),
+    tokenIds,
     transaction,
   )
   if (match) {
@@ -85,13 +94,19 @@ async function insertCopyrightEmailIntakeNoticeLink(
   transaction: TransactionQuery,
   input: CopyrightEmailIntakeNoticeLink,
 ): Promise<void> {
+  let matchedTokenId: string | null = null
+  if (input.matchedReference) {
+    const digest = hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, input.matchedReference)
+    await lockCopyrightEmailThreadTokens(transaction, [digest])
+    matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
+  }
   await transaction(sql`/* linkCopyrightEmailIntakeToNotice */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind,
-      matched_reference_lookup
+      matched_token_id
     ) VALUES (
       ${input.intakeId}, ${input.noticeId}, ${input.linkKind},
-      ${input.matchedReference ? hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, input.matchedReference) : null}
+      ${matchedTokenId}
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
   if (input.linkKind === 'thread') {

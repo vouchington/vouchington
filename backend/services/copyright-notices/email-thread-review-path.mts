@@ -37,10 +37,10 @@ export function copyrightEmailDuplicateMessageIdSql(): SQLStatement {
         SELECT 1
         FROM copyright_notice_email_thread_references first_claimant
         JOIN copyright_notice_email_thread_references second_claimant
-          ON second_claimant.lookup_token = first_claimant.lookup_token
+          ON second_claimant.token_id = first_claimant.token_id
          AND second_claimant.reference_kind = 'message_id'
          AND second_claimant.copyright_notice_email_intake_id <> first_claimant.copyright_notice_email_intake_id
-        WHERE first_claimant.lookup_token = own_reference.lookup_token
+        WHERE first_claimant.token_id = own_reference.token_id
           AND first_claimant.reference_kind = 'message_id'
       )
   )`
@@ -80,7 +80,7 @@ export function copyrightEmailIntakeMessageIdIsAmbiguousSql(intakeId: SQLStateme
     SELECT 1
     FROM copyright_notice_email_thread_references claimed
     JOIN copyright_notice_email_thread_references other_claim
-      ON other_claim.lookup_token = claimed.lookup_token
+      ON other_claim.token_id = claimed.token_id
      AND other_claim.reference_kind = 'message_id'
      AND other_claim.copyright_notice_email_intake_id <> claimed.copyright_notice_email_intake_id
     WHERE claimed.reference_kind = 'message_id'
@@ -96,16 +96,26 @@ export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStateme
     SELECT 1
     FROM copyright_notice_email_thread_references reference
     JOIN copyright_notice_email_thread_references first_claimant
-      ON first_claimant.lookup_token = reference.lookup_token
+      ON first_claimant.token_id = reference.token_id
      AND first_claimant.reference_kind = 'message_id'
     JOIN copyright_notice_email_thread_references second_claimant
-      ON second_claimant.lookup_token = reference.lookup_token
+      ON second_claimant.token_id = reference.token_id
      AND second_claimant.reference_kind = 'message_id'
      AND second_claimant.copyright_notice_email_intake_id <> first_claimant.copyright_notice_email_intake_id
     WHERE reference.reference_kind IN ('in_reply_to', 'references')
       AND reference.copyright_notice_email_intake_id = `
   query.append(intakeId)
-  query.append(sql`)`)
+  query.append(sql`
+      AND NOT EXISTS (
+        SELECT 1
+        FROM copyright_notice_email_message_ancestors existing_edge
+        JOIN copyright_notice_email_thread_references recorded_parent
+          ON recorded_parent.copyright_notice_email_intake_id = existing_edge.ancestor_message_intake_id
+         AND recorded_parent.token_id = reference.token_id
+         AND recorded_parent.reference_kind = 'message_id'
+        WHERE existing_edge.reply_message_intake_id = reference.copyright_notice_email_intake_id
+      )
+  )`)
   return query
 }
 

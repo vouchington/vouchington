@@ -12,6 +12,8 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { updateRssFeedById } from '@services/rss-feeds/update'
+import { resolveEmailDomainHostnameId } from '../../email-address-validator/email-domain-context.mts'
+import { upsertUrlHostnames } from '../../urls-hostnames/upsert.mts'
 import { addCommunityListItem } from './add.mts'
 import { getCommunityListItemStorageConfig } from './catalog.mts'
 
@@ -26,6 +28,27 @@ describe('add', () => {
   })
 
   describe('addCommunityListItem', () => {
+    it('rejects a private hostname until it is publicly introduced', async () => {
+      const listOwner = await createTestUser()
+      const suffix = randomUUID()
+      const listCommunity = await insertTestCommunity({
+        createdById: listOwner.id,
+        name: `Private hostname list ${suffix}`,
+        slug: `private-hostname-list-${suffix}`,
+      })
+      const domain = `email-only-${suffix}.example.com`
+      const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+      if (!hostnameId) throw new Error('Expected email hostname')
+
+      await expect(
+        addCommunityListItem(listOwner.id, listCommunity.id, 'url_hostname', hostnameId),
+      ).rejects.toMatchObject({ status: 404 })
+      expect((await upsertUrlHostnames(listOwner.id, [domain])).get(domain)).toBe(hostnameId)
+      await expect(
+        addCommunityListItem(listOwner.id, listCommunity.id, 'url_hostname', hostnameId),
+      ).resolves.toMatchObject({ entity_id: hostnameId })
+    })
+
     it('adds a topic to the community list', async () => {
       expect(getCommunityListItemStorageConfig('topic').entityColumn).toBe('topic_id')
       const random = createRandomString(8)

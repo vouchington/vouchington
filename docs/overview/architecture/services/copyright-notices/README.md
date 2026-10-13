@@ -52,10 +52,13 @@ The extraction records all statutory fields plus bounded source excerpts without
 declarations. Ordinary approval identifies the recommendation reviewed; an agent failure requires
 an explicit manual-fallback reason.
 
-After an email intake is admitted, its Message-ID and reply references are correlated with keyed
-digests at ingestion only. The first retained parse fixes those references for replay. An immutable
-reply-to-parent relation stores intake IDs and is filled when either message arrives second; thread
-reads follow those IDs rather than comparing saved tokens. A matched inbound reply receives an
+After an email intake is admitted, its Message-ID and reply references resolve keyed digests to
+private token UUIDs at ingestion. The first retained parse fixes those references for replay.
+Immutable ancestor edges store intake IDs for every unambiguous In-Reply-To and References token,
+including an ancestor that arrives later. A later duplicate never redirects an existing edge;
+new edges from a token with multiple Message-ID claimants wait for manual review. Thread reads
+join only UUIDs. Staff review paths are computed at read time, with an existing thread match taking
+precedence over a duplicate or conflicting-ancestor reason. A matched inbound reply receives an
 immutable pending-review record and remains attached
 to the original MIME evidence and still receives the advisory extraction/recommendation. Staff must
 classify and admit it through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
@@ -69,6 +72,8 @@ artifacts reference that identity; promotion and correspondence reuse the intake
 Retention erasure locks each registry row, then checks for other owners in a fresh statement before
 deleting any bucket version. It clears the erased case's references and deletes a registry row only
 when no intake or artifact still references it. Immutable legal receipts remain.
+Thread-token erasure takes the same sorted digest locks as ingestion, clears the erased case's
+token FKs, and overwrites a digest only when no other live intake or link owns that token.
 
 The current screening execution, rather than the newest result UUID or any historical clear result,
 owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)

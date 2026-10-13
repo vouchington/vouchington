@@ -16,7 +16,7 @@ type InboundAncestorMatch = {
   status: 'none' | 'blocked' | 'match'
   noticeId: string | null
   matchedIntakeId: string | null
-  matchedLookup: string | null
+  matchedTokenId: string | null
 }
 
 type InboundAncestorRow = {
@@ -25,7 +25,7 @@ type InboundAncestorRow = {
   unlinkedCount: number
   noticeId: string | null
   matchedIntakeId: string | null
-  matchedLookup: string | null
+  matchedTokenId: string | null
   referencedAmbiguous: boolean
 }
 
@@ -36,12 +36,13 @@ type InboundAncestorRow = {
 export async function findCopyrightEmailThreadMatch(
   intakeId: string,
   references: string[],
+  tokenIds: ReadonlyMap<string, string>,
   transaction?: TransactionQuery,
 ): Promise<CopyrightEmailThreadMatch | null> {
   if (references.length === 0) return null
-  if (transaction) return matchCopyrightEmailThread(intakeId, references, transaction)
+  if (transaction) return matchCopyrightEmailThread(intakeId, references, tokenIds, transaction)
   await using owned = await beginTransaction()
-  const match = await matchCopyrightEmailThread(intakeId, references, owned)
+  const match = await matchCopyrightEmailThread(intakeId, references, tokenIds, owned)
   await owned.commit()
   return match
 }
@@ -49,12 +50,18 @@ export async function findCopyrightEmailThreadMatch(
 async function matchCopyrightEmailThread(
   intakeId: string,
   references: string[],
+  tokenIds: ReadonlyMap<string, string>,
   transaction: TransactionQuery,
 ): Promise<CopyrightEmailThreadMatch | null> {
-  const inbound = await findInboundCopyrightEmailThreadMatch(intakeId, references, transaction)
+  const inbound = await findInboundCopyrightEmailThreadMatch(
+    intakeId,
+    [...tokenIds.values()],
+    transaction,
+  )
   if (inbound.status === 'blocked') return null
   const outbound = await findOutboundCopyrightEmailThreadMatch(references, transaction)
-  const inboundMatch = inbound.status === 'match' ? toInboundMatch(inbound, references) : null
+  const inboundMatch =
+    inbound.status === 'match' ? toInboundMatch(inbound, references, tokenIds) : null
   const matches = [inboundMatch, outbound].filter(
     (match): match is CopyrightEmailThreadMatch => match !== null,
   )
@@ -65,12 +72,9 @@ async function matchCopyrightEmailThread(
 
 async function findInboundCopyrightEmailThreadMatch(
   intakeId: string,
-  references: string[],
+  tokenIds: string[],
   transaction: TransactionQuery,
 ): Promise<InboundAncestorMatch> {
-  const lookups = references.map(reference =>
-    hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, reference),
-  )
   const matchQuery = sql`/* findCopyrightEmailThreadMatch */
     WITH RECURSIVE ancestors(intake_id) AS (
       SELECT ancestor.ancestor_message_intake_id
@@ -108,18 +112,18 @@ async function findInboundCopyrightEmailThreadMatch(
         JOIN copyright_notice_email_thread_references parent_message
           ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_id
          AND parent_message.reference_kind = 'message_id'
-         AND parent_message.lookup_token = ANY(${lookups})
+         AND parent_message.token_id = ANY(${tokenIds}::uuid[])
         WHERE direct_edge.reply_message_intake_id = ${intakeId}
       ) AS "matchedIntakeId",
       (
-        SELECT min(parent_message.lookup_token)
+        SELECT min(parent_message.token_id::text)::uuid
         FROM copyright_notice_email_message_ancestors direct_edge
         JOIN copyright_notice_email_thread_references parent_message
           ON parent_message.copyright_notice_email_intake_id = direct_edge.ancestor_message_intake_id
          AND parent_message.reference_kind = 'message_id'
-         AND parent_message.lookup_token = ANY(${lookups})
+         AND parent_message.token_id = ANY(${tokenIds}::uuid[])
         WHERE direct_edge.reply_message_intake_id = ${intakeId}
-      ) AS "matchedLookup",
+      ) AS "matchedTokenId",
       `
   matchQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`${intakeId}`))
   matchQuery.append(sql` AS "referencedAmbiguous"`)
@@ -134,7 +138,7 @@ function toInboundAncestorMatch(row: InboundAncestorRow | undefined): InboundAnc
       status: row.ancestorCount === 0 && !row.referencedAmbiguous ? 'none' : 'blocked',
       noticeId: null,
       matchedIntakeId: null,
-      matchedLookup: null,
+      matchedTokenId: null,
     }
   }
   assert(row.noticeId, 500, 'Copyright email thread match has no notice')
@@ -142,18 +146,20 @@ function toInboundAncestorMatch(row: InboundAncestorRow | undefined): InboundAnc
     status: 'match',
     noticeId: row.noticeId,
     matchedIntakeId: row.matchedIntakeId,
-    matchedLookup: row.matchedLookup,
+    matchedTokenId: row.matchedTokenId,
   }
 }
 
 function toInboundMatch(
   inbound: InboundAncestorMatch,
   references: string[],
+  tokenIds: ReadonlyMap<string, string>,
 ): CopyrightEmailThreadMatch | null {
-  if (!inbound.noticeId || !inbound.matchedLookup) return null
+  if (!inbound.noticeId || !inbound.matchedTokenId) return null
   const matchedReference = references.find(
     reference =>
-      hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, reference) === inbound.matchedLookup,
+      tokenIds.get(hashToken(COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE, reference)) ===
+      inbound.matchedTokenId,
   )
   assert(matchedReference, 500, 'Copyright email thread match has no reference')
   return {
