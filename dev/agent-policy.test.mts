@@ -1,0 +1,158 @@
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+
+import { describe, expect, it } from 'vitest'
+
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from './test-helpers/blackboard/retrospective-sections.mts'
+import {
+  pullRequestDefaults,
+  validateRetrospective,
+  type RetrospectivePolicyInput,
+} from './agent-policy.mts'
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url))
+const SESSION_ID = 'f5413927-eec3-4204-90c6-4f81b6a413e4'
+const COVERAGE = { status: 'partial', sources: [], droppedCount: 0 }
+
+const BODY = `
+# Retrospective: sample
+
+## Verifiable Facts
+
+=== Retrospective Facts ===
+facts
+
+## Transcript Facts
+
+=== Transcript Facts ===
+facts
+
+## CI Failures
+
+Status: none observed
+${UNASSESSED_RETROSPECTIVE_SECTIONS}`
+
+function doc(frontMatter: string[] = []): string {
+  return ['---', 'date: 2026-10-12', 'issues: []', 'prs: []', ...frontMatter, '---', BODY].join(
+    '\n',
+  )
+}
+
+function input(markdown: string, overrides: Partial<RetrospectivePolicyInput> = {}) {
+  return {
+    sessionId: SESSION_ID,
+    parentSessionId: null,
+    mode: 'interactive',
+    workOutcome: 'success',
+    feedbackCoverage: COVERAGE,
+    repositories: ['vouchington/vouchington'],
+    markdown,
+    sourceEventId: 'retrospective-1',
+    ...overrides,
+  } satisfies RetrospectivePolicyInput
+}
+
+describe('validateRetrospective', () => {
+  it('accepts a valid retrospective', () => {
+    expect(validateRetrospective(input(doc()))).toEqual({ errors: [] })
+  })
+
+  it('rejects a missing required section', () => {
+    const markdown = doc().replace('## Transcript Facts', '## Other')
+    const { errors } = validateRetrospective(input(markdown))
+    expect(errors).toContain('missing "## Transcript Facts" section header')
+  })
+
+  it('rejects bad front matter', () => {
+    const { errors } = validateRetrospective(input(doc().replace('date: 2026-10-12\n', '')))
+    expect(errors).toEqual([expect.stringContaining('missing a non-empty "date" field')])
+  })
+
+  it('rejects a missing front-matter block', () => {
+    const { errors } = validateRetrospective(input(BODY))
+    expect(errors).toEqual([expect.stringContaining('missing a front-matter block')])
+  })
+
+  it('rejects a CI failure-grammar violation', () => {
+    const markdown = doc().replace('Status: none observed', 'Status: failures observed')
+    const { errors } = validateRetrospective(input(markdown))
+    expect(errors).toContain(
+      '"Status: failures observed" requires at least one failure-group entry',
+    )
+  })
+
+  it('rejects an assessment without a status', () => {
+    const markdown = doc().replace(/Status: not assessed \(tool[^\n]*\n/, '')
+    const { errors } = validateRetrospective(input(markdown))
+    expect(errors).toContain('## Tool Findings requires exactly one assessment status')
+  })
+
+  it('rejects a session id that differs from the requested session', () => {
+    const { errors } = validateRetrospective(
+      input(doc([`session_id: ${SESSION_ID}`]), { sessionId: 'other-session' }),
+    )
+    expect(errors).toEqual([expect.stringContaining('does not match resolved session')])
+  })
+
+  it('rejects front-matter outcome and coverage that differ from the request', () => {
+    const markdown = doc([
+      'work_outcome: failure',
+      'feedback_coverage: {status: partial, sources: [], droppedCount: 0}',
+    ])
+    const { errors } = validateRetrospective(input(markdown))
+    expect(errors).toEqual(['front matter work_outcome conflicts with the requested work outcome'])
+    const other = validateRetrospective(
+      input(markdown, {
+        workOutcome: 'failure',
+        feedbackCoverage: { ...COVERAGE, droppedCount: 2 },
+      }),
+    )
+    expect(other.errors).toEqual([
+      'front matter feedback_coverage conflicts with the requested coverage',
+    ])
+  })
+
+  it('rejects front-matter repositories that differ from the request', () => {
+    const { errors } = validateRetrospective(input(doc(['repositories: [other/repo]'])))
+    expect(errors).toEqual(['front matter repositories conflict with the requested repositories'])
+  })
+
+  it('rejects complete coverage when an assessment was not performed', () => {
+    const { errors } = validateRetrospective(
+      input(doc(), { feedbackCoverage: { ...COVERAGE, status: 'complete' } }),
+    )
+    expect(errors).toEqual([
+      'complete feedback coverage requires available assessed factual, tool, and architecture sources',
+    ])
+  })
+})
+
+describe('pullRequestDefaults', () => {
+  it('returns the Vouchington repository', () => {
+    expect(pullRequestDefaults()).toEqual({ repositories: ['vouchington/vouchington'] })
+  })
+})
+
+describe('child process contract', () => {
+  it('runs under plain node with only HOME and PATH', () => {
+    const runner = `
+      import { readFileSync } from 'node:fs'
+      const { validateRetrospective } = await import(process.argv[1])
+      const request = JSON.parse(readFileSync(0, 'utf8'))
+      process.stdout.write(JSON.stringify(await validateRetrospective(request)))
+    `
+    const child = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', runner, new URL('./agent-policy.mts', import.meta.url).href],
+      {
+        cwd: repoRoot,
+        env: { HOME: process.env.HOME ?? '', PATH: '/usr/bin:/bin' },
+        input: JSON.stringify(input(doc())),
+        encoding: 'utf8',
+      },
+    )
+    expect(child.stderr).toBe('')
+    expect(child.status).toBe(0)
+    expect(JSON.parse(child.stdout)).toEqual({ errors: [] })
+  })
+})

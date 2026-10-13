@@ -176,5 +176,8 @@
     "ignoreDependencies": [
       "husky"
     ]
+  },
+  "vouchington-tooling": {
+    "policy": "dev/agent-policy.mts"
   }
 }

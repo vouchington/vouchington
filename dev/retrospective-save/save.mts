@@ -22,7 +22,7 @@ import {
   validateRootCodexOptions,
 } from '../agent-session-id/resolve.mts'
 import { validateRetroDoc } from '../retrospective-validate.mts'
-import { parseFrontMatter } from './front-matter.mts'
+import { parseFrontMatter } from '../agent-policy/front-matter.mts'
 import { retrospectiveEnvelope } from './feedback-metadata.mts'
 
 type ParsedArgs = FeedbackArgs & {
