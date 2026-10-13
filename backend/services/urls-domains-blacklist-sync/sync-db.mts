@@ -95,8 +95,9 @@ async function materializeDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
 ): Promise<void> {
-  await query(
-    `/* syncDomainsWithDatabase */
+  await Promise.all([
+    query(
+      `/* syncDomainsWithDatabase */
       CREATE TEMP TABLE ${ADDED_DOMAINS_TABLE}
       AS
       SELECT n.domain
@@ -105,10 +106,10 @@ async function materializeDomainDiff(
         ON d.source_id = $1 AND d.domain = n.domain
       WHERE d.domain IS NULL
     `,
-    [sourceId],
-  )
-  await query(
-    `/* syncDomainsWithDatabase */
+      [sourceId],
+    ),
+    query(
+      `/* syncDomainsWithDatabase */
       CREATE TEMP TABLE ${REMOVED_DOMAINS_TABLE}
       AS
       SELECT d.domain
@@ -117,10 +118,13 @@ async function materializeDomainDiff(
         ON n.domain = d.domain
       WHERE d.source_id = $1 AND n.domain IS NULL
     `,
-    [sourceId],
-  )
-  await query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${ADDED_DOMAINS_TABLE} (domain)`)
-  await query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${REMOVED_DOMAINS_TABLE} (domain)`)
+      [sourceId],
+    ),
+  ])
+  await Promise.all([
+    query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${ADDED_DOMAINS_TABLE} (domain)`),
+    query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${REMOVED_DOMAINS_TABLE} (domain)`),
+  ])
 }
 async function applyPreparedDomainDiff(
   query: TransactionQuery,

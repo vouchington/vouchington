@@ -18,3 +18,12 @@ export async function withPostgresTransactionForTest<Result>(
   ) as TransactionQuery
   return await operation(observed)
 }
+
+/** Commit an owned service transaction after assertions inside its callback. */
+export async function withCommittedPostgresTransactionForTest(
+  operation: (query: TransactionQuery) => Promise<void>,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await operation(query)
+  await query.commit()
+}

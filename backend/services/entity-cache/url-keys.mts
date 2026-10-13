@@ -50,6 +50,23 @@ export const getUrlHostnameCacheKeys = async (...keys: unknown[]): Promise<strin
   const ids = new Set(inputs.filter(isUUID))
   const hostnames = new Set(inputs.filter(k => !isUUID(k) && isHostname(k) && k.includes('.')))
   if (!(ids.size > 0 || hostnames.size > 0)) return []
+  // A database RETURNING row already supplies both cache keys. Resolve only incomplete
+  // inputs (such as a hostname id from a topic update) through PostgreSQL.
+  if (
+    keys.length > 0 &&
+    keys.every(key => {
+      if (typeof key !== 'object' || key === null || Array.isArray(key)) return false
+      const { id, hostname } = key as Record<string, unknown>
+      return (
+        typeof id === 'string' &&
+        isUUID(normalizeKey(id)) &&
+        typeof hostname === 'string' &&
+        isHostname(normalizeKey(hostname)) &&
+        hostname.includes('.')
+      )
+    })
+  )
+    return [...ids, ...hostnames]
   const filters = []
   const values = []
   if (ids.size > 0) filters.push(`id = ANY($${values.push([...ids])})`)

@@ -7,7 +7,7 @@ import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidat
 import { addUrl } from '../urls/upsert.mts'
 import { caches } from '@services/entity-cache/caches'
 import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { createTestUser } from '@voucha/test-helpers'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
@@ -195,10 +195,10 @@ describe('upsert.generated', () => {
     const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
     await caches.url_hostnames.set(hostnameId, privateHostname)
 
-    await using transaction = await beginTransaction()
-    await upsertUrlHostnames(null, [domain], { query: transaction })
-    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
-    await transaction.commit()
+    await withCommittedPostgresTransactionForTest(async query => {
+      await upsertUrlHostnames(null, [domain], { query })
+      expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
+    })
 
     expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeTruthy()
   })
