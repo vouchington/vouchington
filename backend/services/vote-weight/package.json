@@ -24,14 +24,14 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/elections": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

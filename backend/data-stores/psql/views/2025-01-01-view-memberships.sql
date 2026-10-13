@@ -27,8 +27,8 @@ CREATE OR REPLACE VIEW view_memberships AS
     END AS status,
     m.effective_at AS started_at,
     m.expires_at,
-    CASE WHEN lineage.provider = 'stripe' AND source.source_kind = 'direct' THEN lineage.provider_lineage_id END AS stripe_subscription_id,
-    CASE WHEN lineage.provider = 'stripe' AND source.source_kind = 'direct' THEN lineage.provider_account_id END AS stripe_customer_id,
+    CASE WHEN lineage_context.provider = 'stripe' AND source.source_kind = 'direct' THEN lineage.provider_lineage_id END AS stripe_subscription_id,
+    CASE WHEN lineage_context.provider = 'stripe' AND source.source_kind = 'direct' THEN lineage.provider_account_id END AS stripe_customer_id,
     membership_grant.granted_by_id,
     m.cancelled_at,
     m.expired_at,
@@ -65,21 +65,21 @@ CREATE OR REPLACE VIEW view_memberships AS
     ON evidence.id = observation.membership_provider_evidence_record_id
   LEFT JOIN membership_grants membership_grant ON membership_grant.membership_source_id = source.id
   LEFT JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
+  LEFT JOIN membership_provider_contexts lineage_context ON lineage_context.id = lineage.membership_provider_context_id
   LEFT JOIN LATERAL (
-    SELECT provider_product_id, price_minor_units, currency_code
-    FROM membership_provider_products
-    WHERE membership_product_id = p.id
-      AND provider = 'stripe'
+    SELECT mapping.provider_product_id, mapping.price_minor_units, mapping.currency_code
+    FROM membership_provider_products mapping
+    INNER JOIN membership_provider_contexts mapping_context
+      ON mapping_context.id = mapping.membership_provider_context_id
+    WHERE mapping.membership_product_id = p.id
+      AND mapping_context.provider = 'stripe'
       AND source.source_kind <> 'admin_grant'
       AND (
-        (source.source_kind = 'direct' AND lineage.provider = 'stripe' AND environment = lineage.environment)
-        OR source.source_kind <> 'direct'
+        (source.source_kind = 'direct' AND lineage_context.provider = 'stripe'
+          AND mapping.membership_provider_context_id = lineage.membership_provider_context_id)
+        OR (source.source_kind <> 'direct' AND mapping_context.application_id = 'voucha-web')
       )
-      AND application_id = CASE
-        WHEN source.source_kind = 'direct' AND lineage.provider = 'stripe' THEN lineage.application_id
-        ELSE 'voucha-web'
-      END
-    ORDER BY id DESC
+    ORDER BY mapping.id DESC
     LIMIT 1
   ) stripe_mapping ON true
   WHERE m.projection_ended_at IS NULL

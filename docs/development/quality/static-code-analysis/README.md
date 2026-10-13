@@ -104,6 +104,15 @@ against the real catalog compiler in all four web locales and all public request
 [translation catalog and locale checks](../../reference-tests-translation-catalog-and-locale-checks.md)
 for the detailed check and test reference.
 
+## Form keyboard reference and local catalog
+
+The canonical `pnpm run repo-file-policy` aggregate inspects tracked index
+blobs for obsolete form keyboard links and require the canonical helper reference and heading.
+Static CI runs it through the existing Repo Node static checks step. Its unit tests use tiny
+synthetic Git indexes; untracked files neither fail nor satisfy the guard.
+The static job also runs `node dev/localization/local-catalog.mts` once to compile the full local
+development catalog. CLI unit tests use finite worktree fixtures through `--worktree-root`.
+
 ## Markdown Information Architecture Gates
 
 `no-mistakes` enforces two repository-wide Markdown gates over tracked documentation
@@ -275,6 +284,13 @@ requires that owner to import the real registrar and call
 [data-store registry tests](../../../../backend/data-stores/graceful-shutdown/data-store-shutdown-registry.test.mts)
 exercise actual registration and connection-close behavior; the graph and syntax guards preserve
 entrypoint wiring without reloading shared runtime modules or shutting down shared clients.
+
+The `query-reached-per-item` no-mistakes rule selects the PostgreSQL and Valkey effect families
+in [`.no-mistakes.yml`](../../../../.no-mistakes.yml). Its existing-call baseline uses `{file, callee}`
+without line pins; remove entries as the owning area's set-based follow-up lands. Batch helpers
+are declared separately in each family's `batchFunctions`.
+
+The local `valkey-no-consecutive-unbatched-reads` AST-grep rule flags consecutive unbatched Valkey reads that can share one batch.
 
 The scope-aware Oxlint `no-mistakes/postgres-cursor-call-contract` rule protects the two PostgreSQL
 cursor executors exported by `@data-stores/psql` and `@data-stores/psql/cursors`. Production callers

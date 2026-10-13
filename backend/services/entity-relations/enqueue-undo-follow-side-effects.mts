@@ -1,4 +1,4 @@
-import { enqueueBulkDistributeActivity } from '@queues/activitypub-delivery/enqueues'
+import { enqueueBulkDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import { enqueueBulkReconcileBlueskyFollow } from '@queues/bluesky-follow-propagation/enqueues'
 import type { EntityRelationMetadata } from './metadata.mts'
 

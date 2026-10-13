@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -33,6 +34,7 @@ jobs:
         run: pnpm dedupe
 
       - name: Detect lockfile changes
+        timeout-minutes: 2
         id: diff
         run: |
           if git diff --quiet -- pnpm-lock.yaml; then
@@ -44,6 +46,7 @@ jobs:
           fi
 
       - if: steps.diff.outputs.changed == 'true'
+        timeout-minutes: 2
         name: Commit and push
         env:
           BRANCH: chore/pnpm-dedupe
@@ -62,6 +65,7 @@ jobs:
           GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader GIT_CONFIG_VALUE_0="AUTHORIZATION: Basic $TOKEN_B64" git -c core.hooksPath=/dev/null push --force-with-lease origin "$BRANCH"
 
       - if: steps.diff.outputs.changed == 'true'
+        timeout-minutes: 2
         name: Open PR if missing
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}

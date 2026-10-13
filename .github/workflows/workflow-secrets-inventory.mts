@@ -71,6 +71,11 @@ export const SECRET_INVENTORY = {
       '(verified 2026-08-26: environment copy already removed, repo copy is the sole source ' +
       'of truth going forward).',
   },
+  LIGHTPANDA_TOKEN: {
+    provisioned: true,
+    notes:
+      'Lightpanda cloud token for trusted credentialed browser-crawl smoke tests (repo secret).',
+  },
   OPENAI_API_KEY: {
     provisioned: true,
     notes: 'OpenAI key for credentialed backend/Playwright tests (repo secret).',

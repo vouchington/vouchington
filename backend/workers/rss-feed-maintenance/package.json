@@ -1,0 +1,34 @@
+{
+  "name": "@workers/rss-feed-maintenance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared RSS feed item category, discoverability, and topic alias maintenance",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@queues/notifications": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

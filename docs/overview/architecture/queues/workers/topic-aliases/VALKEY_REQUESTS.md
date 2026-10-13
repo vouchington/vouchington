@@ -1,4 +1,4 @@
-# Valkey Requests — topic-aliases
+# Valkey Requests — topic-aliases jobs on rss-feed-maintenance
 
 Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own

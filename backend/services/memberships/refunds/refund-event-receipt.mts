@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { isUuid } from '@vouchington/utils/validation'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import type { MembershipRefund } from '../types.mts'
 
 export async function recordMembershipRefundEvent(options: {
@@ -21,6 +22,14 @@ export async function recordMembershipRefundEvent(options: {
   const canMatchReconciliationAttempt =
     !!operationId && !!attemptId && isUuid(operationId) && isUuid(attemptId)
   await using transaction = await beginTransaction()
+  const providerContextId = await getOrCreateProviderContextId(
+    {
+      provider: 'stripe',
+      environment: options.providerEnvironment ?? 'production',
+      applicationId: options.providerApplicationId ?? 'voucha-web',
+    },
+    transaction,
+  )
   if (!canMatchReconciliationAttempt) {
     await transaction(sql`/* recordMembershipRefundEvent:unlinkedReceipt */
       INSERT INTO membership_refunds (
@@ -98,12 +107,8 @@ export async function recordMembershipRefundEvent(options: {
           attempt.provider_refund_id IS NULL
           OR attempt.provider_refund_id = receipt.stripe_refund_id
         )
-        AND attempt.provider = 'stripe'
-        AND attempt.environment = ${options.providerEnvironment ?? 'production'}
-        AND attempt.application_id = ${options.providerApplicationId ?? 'voucha-web'}
-        AND operation.provider = 'stripe'
-        AND operation.environment = ${options.providerEnvironment ?? 'production'}
-        AND operation.application_id = ${options.providerApplicationId ?? 'voucha-web'}
+        AND attempt.membership_provider_context_id = ${providerContextId}::UUID
+        AND operation.membership_provider_context_id = attempt.membership_provider_context_id
         AND operation.operation_kind = 'administrator_refund'
         AND attempt.amount_minor_units = receipt.amount_minor_units
         AND attempt.currency_code::text = receipt.currency_code

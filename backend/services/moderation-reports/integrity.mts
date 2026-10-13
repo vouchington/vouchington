@@ -7,7 +7,7 @@ import { decorateModerationEnqueueError } from './enqueue-observability.mts'
  * reports on the same entity collapse into one check job.
  */
 export function enqueueReportIntegrityCheck(entityType: string, entityId: string): void {
-  import('@queues/report-integrity/enqueues')
+  import('@queues/vote-aggregation/enqueues/report-integrity')
     .then(({ enqueueReportIntegrityCheck: enqueue }) => enqueue(entityType, entityId))
     /* v8 ignore start -- fire-and-forget error handler; covered by process-level onError integration */
     .catch((err: Error) =>

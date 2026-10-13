@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Entity relations helpers
  */
@@ -30,11 +31,13 @@ export async function insertEntityRelation(
 ): Promise<void> {
   validateRelationTable(tableName)
   await write(
-    sql`INSERT INTO `
-      .append(tableName)
-      .append(
-        sql` (subject_id, object_id) VALUES (${subjectId}, ${objectId}) ON CONFLICT DO NOTHING`,
-      ),
+    allowUnannotatedQuery(
+      sql`INSERT INTO `
+        .append(tableName)
+        .append(
+          sql` (subject_id, object_id) VALUES (${subjectId}, ${objectId}) ON CONFLICT DO NOTHING`,
+        ),
+    ),
   )
 }
 
@@ -47,10 +50,12 @@ export async function updateTestEntityRelationCreatedAt(
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    sql`UPDATE `
-      .append(tableName)
-      .append(sql` SET created_at = ${createdAt} WHERE `)
-      .append(whereClause),
+    allowUnannotatedQuery(
+      sql`UPDATE `
+        .append(tableName)
+        .append(sql` SET created_at = ${createdAt} WHERE `)
+        .append(whereClause),
+    ),
   )
 }
 
@@ -62,7 +67,7 @@ export async function getEntityRelation(
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   const { rows } = await read(
-    sql`SELECT * FROM `
+    sql`/* getEntityRelation */ SELECT * FROM `
       .append(tableName)
       .append(sql` WHERE `)
       .append(whereClause),
@@ -99,10 +104,12 @@ export async function setTestEntityRelationIdAndScore(
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    sql`UPDATE `
-      .append(tableName)
-      .append(sql` SET id = ${id}, votes_score_up = ${votesScoreUp} WHERE `)
-      .append(whereClause),
+    allowUnannotatedQuery(
+      sql`UPDATE `
+        .append(tableName)
+        .append(sql` SET id = ${id}, votes_score_up = ${votesScoreUp} WHERE `)
+        .append(whereClause),
+    ),
   )
 }
 
@@ -130,7 +137,7 @@ export async function softDeleteEntityRelationTest(
 ): Promise<void> {
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
-  const updateQuery = sql`UPDATE `
+  const updateQuery = sql`/* softDeleteEntityRelationTest */ UPDATE `
     .append(tableName)
     .append(sql` SET deleted_at = CURRENT_TIMESTAMP`)
   if (deletedById) updateQuery.append(sql`, deleted_by_id = ${deletedById}`)
@@ -147,10 +154,12 @@ export async function setEntityRelationDeletedAt(
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    sql`UPDATE `
-      .append(tableName)
-      .append(sql` SET deleted_at = ${deletedAt} WHERE `)
-      .append(whereClause),
+    allowUnannotatedQuery(
+      sql`UPDATE `
+        .append(tableName)
+        .append(sql` SET deleted_at = ${deletedAt} WHERE `)
+        .append(whereClause),
+    ),
   )
 }
 
@@ -163,37 +172,13 @@ export async function setEntityRelationCreatedAt(
   validateRelationTable(tableName)
   const whereClause = buildWhereClause(subjectId, objectId)
   await write(
-    sql`UPDATE `
-      .append(tableName)
-      .append(sql` SET created_at = ${createdAt} WHERE `)
-      .append(whereClause),
+    allowUnannotatedQuery(
+      sql`UPDATE `
+        .append(tableName)
+        .append(sql` SET created_at = ${createdAt} WHERE `)
+        .append(whereClause),
+    ),
   )
 }
 
-export async function getMentionRowsForRelationTable(
-  tableName: string,
-  postId: string,
-): Promise<
-  Array<{
-    subject_id: string
-    deleted_at: Date | null
-  }>
-> {
-  const allowedTables = new Set([
-    'relation__user__mentioned__post',
-    'relation__topic__mentioned__post',
-    'relation__post__mentioned__post',
-  ])
-  if (!allowedTables.has(tableName)) {
-    throw new Error(`Invalid mention relation table name: ${tableName}`)
-  }
-  const { rows } = await read(
-    sql`
-    SELECT subject_id, deleted_at
-    FROM `.append(tableName).append(sql`
-    WHERE object_id = ${postId}
-    ORDER BY subject_id ASC
-  `),
-  )
-  return rows as Array<{ subject_id: string; deleted_at: Date | null }>
-}
+export { getMentionRowsForRelationTable } from './entity-relation-mentions.mts'

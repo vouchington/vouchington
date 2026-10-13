@@ -20,6 +20,7 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       observation.renewal_effective_at AS expires_at
     FROM memberships m
     LEFT JOIN membership_renewal_price_increase_notification_work_items work ON work.membership_id = m.id
+    LEFT JOIN membership_provider_observations work_observation ON work_observation.id = work.membership_provider_observation_id
     INNER JOIN membership_source_states state
       ON state.membership_source_id = m.membership_source_id
       AND state.membership_product_id = m.membership_product_id
@@ -56,10 +57,10 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
       AND (
         ((work.leased_at IS NULL
           OR work.lease_expires_at <= clock_timestamp()) AND
-          (work.membership_provider_product_id,
-          work.price_minor_units,
-          work.currency_code,
-          work.effective_at)
+          (work_observation.renewal_membership_provider_product_id,
+          work_observation.renewal_price_minor_units,
+          work_observation.renewal_price_currency_code,
+          work_observation.renewal_effective_at)
         IS DISTINCT FROM
         (observation.renewal_membership_provider_product_id,
           observation.renewal_price_minor_units,
@@ -125,10 +126,6 @@ export async function claimRenewalPriceIncreaseNotification(
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
         AND work.generation = ${generation}::bigint
         AND work.membership_provider_observation_id = observation.id
-        AND work.membership_provider_product_id = observation.renewal_membership_provider_product_id
-        AND work.price_minor_units = observation.renewal_price_minor_units
-        AND work.currency_code = observation.renewal_price_currency_code
-        AND work.effective_at = observation.renewal_effective_at
         AND work.completed_at IS NULL AND work.delivery_attempted_at IS NULL
         AND work.available_at <= clock_timestamp()
         AND (work.lease_token IS NULL OR work.lease_expires_at <= clock_timestamp())

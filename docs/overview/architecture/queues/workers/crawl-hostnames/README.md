@@ -1,12 +1,12 @@
 # Crawl Hostnames Worker
 
-Source entrypoint: [backend/workers/crawl-hostnames/README.md](../../../../../../backend/workers/crawl-hostnames/README.md)
+Source entrypoint: [backend/workers/crawl-dispatch/README.md](../../../../../../backend/workers/crawl-dispatch/README.md)
 
 Worker package for hostname crawl dispatch, per-hostname URL dispatch, tiered crawl dispatch, and crawl cleanup jobs.
 
 ## Exports
 
-- `crawlHostnames` - worker instance for the `crawl_hostnames` queue.
+- `crawlDispatch` - shared worker instance for the `crawl-dispatch` queue.
 
 ## Related
 

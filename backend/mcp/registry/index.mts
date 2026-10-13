@@ -1,3 +1,4 @@
+import { adminMergedTools, replacedAdminToolNames } from './admin-merged-tools.mts'
 import { userMergedReadingTools } from './user-merged-reading-tools.mts'
 import { userMergedParticipationTools } from './user-merged-participation-tools.mts'
 import { userMergedAccountTools } from './user-merged-account-tools.mts'
@@ -61,11 +62,7 @@ import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 import { rssReadTools } from './rss-read-tools.mts'
 
-export const ALL_TOOLS: readonly Tool[] = [
-  ...userMergedReadingTools,
-  ...userMergedParticipationTools,
-  ...userMergedAccountTools,
-  ...userWriteTools,
+const adminSourceTools = [
   ...adminEditorialStoryTools,
   ...adminEditorialImportTools,
   ...adminEditorialCategoryTools,
@@ -89,13 +86,22 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...adminAppealsLifecycleTools,
   ...adminDisputesLifecycleTools,
   ...adminSiteOperationsTools,
+  resolveModerationAppealTool,
+  resolveReviewDisputeTool,
+]
+
+export const ALL_TOOLS: readonly Tool[] = [
+  ...userMergedReadingTools,
+  ...userMergedParticipationTools,
+  ...userMergedAccountTools,
+  ...userWriteTools,
+  ...adminSourceTools.filter(tool => !replacedAdminToolNames.has(tool.schema.name)),
+  ...adminMergedTools,
   ...communityListMembershipReadTools,
   ...entityRelationWriteTools,
   ...ownDataReadTools,
   ...searchReferenceReadTools,
   ...rssReadTools,
-  resolveModerationAppealTool,
-  resolveReviewDisputeTool,
   activateReferralLinkTool,
   addListItemTool,
   addMyProfileLinkTool,

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
@@ -51,17 +52,19 @@ test.describe('Hacker News discussions aside', () => {
   test.afterEach(async () => {
     const errors: unknown[] = []
     try {
-      await write(`DELETE FROM rss_feeds WHERE id = $1`, [feedId])
+      await write(allowUnannotatedQuery(`DELETE FROM rss_feeds WHERE id = $1`), [feedId])
     } catch (err) {
       errors.push(err)
     }
     try {
-      await write(`DELETE FROM rss_feed_item_guids WHERE id = $1`, [rssItemId])
+      await write(allowUnannotatedQuery(`DELETE FROM rss_feed_item_guids WHERE id = $1`), [
+        rssItemId,
+      ])
     } catch (err) {
       errors.push(err)
     }
     try {
-      await write(`DELETE FROM topics WHERE id = $1`, [topicId])
+      await write(allowUnannotatedQuery(`DELETE FROM topics WHERE id = $1`), [topicId])
     } catch (err) {
       errors.push(err)
     }

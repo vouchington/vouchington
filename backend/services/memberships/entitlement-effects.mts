@@ -1,7 +1,7 @@
 import { getMembershipWorkLimit } from './work-limits.mts'
 import { markJwtStaleBatch } from '@data-stores/valkey/jwt-stale'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import sql from 'sql-template-strings'
 
 const DELIVERY_CLAIM_TTL_SECONDS = 300

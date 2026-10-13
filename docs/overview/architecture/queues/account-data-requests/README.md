@@ -1,12 +1,12 @@
 # Account Data Requests System
 
-Source entrypoint: [backend/queues/account-data-requests/README.md](../../../../../backend/queues/account-data-requests/README.md)
+Source entrypoint: [backend/queues/account-lifecycle/enqueues/account-data-requests.mts](../../../../../backend/queues/account-lifecycle/enqueues/account-data-requests.mts)
 
 Processes GDPR-style user account data export requests and cleans up expired exports.
 
 ## Queue Configuration
 
-### `account-data-requests` (concurrency: 2)
+### Export jobs on `account-lifecycle` (shared concurrency: 2)
 
 - `processExportRequest` — generates a user's data export archive and uploads it to S3, then emails the user a download link when the user requested the export themselves (an admin-requested export sends no email)
 - `processCleanupExpiredExports` — removes expired export archives from S3

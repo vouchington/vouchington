@@ -13,19 +13,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/post-publication/workers').then(module => module.postPublication),
   },
   {
-    queueName: 'topic-ratings',
-    load: () => import('@workers/topic-ratings/workers').then(module => module.topicRatings),
-  },
-  {
-    queueName: 'elections',
-    load: () => import('@workers/elections/workers').then(module => module.elections),
-  },
-  {
-    queueName: 'entity-metrics-cache-refresh',
-    load: () =>
-      import('@workers/entity-metrics-cache-refresh/workers').then(
-        module => module.entityMetricsCacheRefresh,
-      ),
+    queueName: 'vote-aggregation',
+    load: () => import('@workers/vote-aggregation/workers').then(module => module.voteAggregation),
   },
   {
     queueName: 'cache-purge',
@@ -50,26 +39,13 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/rss-feeds/workers').then(module => module.rss_feeds),
   },
   {
-    queueName: 'rss-feed-discoverability',
+    queueName: 'rss-feed-maintenance',
     load: () =>
-      import('@workers/rss-feed-discoverability/workers').then(
-        module => module.rssFeedDiscoverability,
-      ),
+      import('@workers/rss-feed-maintenance/workers').then(module => module.rssFeedMaintenance),
   },
   {
     queueName: 'crawl_embeds',
     load: () => import('@workers/crawl-embeds/workers').then(module => module.crawlEmbeds),
-  },
-  {
-    queueName: 'rss-feed-item-categories',
-    load: () =>
-      import('@workers/rss-feed-item-categories/workers').then(
-        module => module.rssFeedItemCategories,
-      ),
-  },
-  {
-    queueName: 'topic-aliases',
-    load: () => import('@workers/topic-aliases/workers').then(module => module.topicAliases),
   },
   {
     queueName: 'openai_moderation_omni_single',
@@ -84,13 +60,9 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {
-    queueName: 'account-data-requests',
+    queueName: 'account-lifecycle',
     load: () =>
-      import('@workers/account-data-requests/workers').then(module => module.accountDataRequests),
-  },
-  {
-    queueName: 'user-deletions',
-    load: () => import('@workers/user-deletions/workers').then(module => module.userDeletions),
+      import('@workers/account-lifecycle/workers').then(module => module.accountLifecycle),
   },
   {
     queueName: 'oauth-authorization-exchange',
@@ -100,16 +72,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
       ),
   },
   {
-    queueName: 'activitypub-delivery',
-    load: () =>
-      import('@workers/activitypub-delivery/workers').then(
-        module => module.activitypubDeliveryWorker,
-      ),
-  },
-  {
-    queueName: 'activitypub-inbox',
-    load: () =>
-      import('@workers/activitypub-inbox/workers').then(module => module.activitypubInboxWorker),
+    queueName: 'activitypub',
+    load: () => import('@workers/activitypub/workers').then(module => module.activitypubWorker),
   },
   {
     queueName: 'bloom-filters',
@@ -137,14 +101,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'notifications',
     load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
-  },
-  {
-    queueName: 'vote-weight',
-    load: () => import('@workers/vote-weight/workers').then(module => module.voteWeight),
-  },
-  {
-    queueName: 'vote-integrity',
-    load: () => import('@workers/vote-integrity/workers').then(module => module.voteIntegrity),
   },
   {
     queueName: 'spam_detection',
@@ -175,10 +131,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'ses_inbound',
     load: () => import('@workers/ses-inbound/workers').then(module => module.sesInboundWorker),
-  },
-  {
-    queueName: 'report_integrity',
-    load: () => import('@workers/report-integrity/workers').then(module => module.reportIntegrity),
   },
   {
     queueName: 'bluesky-follow-propagation',

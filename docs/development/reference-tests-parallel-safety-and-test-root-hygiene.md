@@ -138,15 +138,16 @@ any assertion runs (#10984, Main CI backend run 34008968250; #11013). Look jobs 
 `test-helpers/vitest.setup.glide-mq-workers.mts` is the allowlist of workers that may
 stay live for side effects. Definition identity tests that import any other worker
 module must close it before the file finishes, matching the OAuth and
-activitypub-inbox `load()` tests in that file — closing the worker remains mandatory
+activitypub `load()` tests in that file — closing the worker remains mandatory
 regardless of how enqueue tests assert. `TestWorker` drains jobs already waiting on
 its queue from a constructor `queueMicrotask`, and that microtask runs before the
 importing module body. `afterAll` and a `close()` after the static import are both
 too late. Pause that test queue before evaluating the worker module, close the
 worker, then resume the queue.
-`backend/workers/activitypub-inbox/workers.test.mts` does this so a waiting
-`rearmFailedDeliveries` job cannot call `rearmFailedActivityPubInboxDeliveries()`
-with no ids. Still `await worker.close()` in `afterAll`.
+`backend/entrypoints/worker-io/worker-definitions.test.mts` pauses `activitypub`
+before its lazy worker import, then closes the worker and resumes the queue in
+`finally`, so a waiting `rearmFailedDeliveries` job cannot run during that
+identity test.
 
 `backend-data-stores` also configures
 `vitest.runner.glide-mq-worker-attachment-guard.mts`. After the project's setup files load but

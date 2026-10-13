@@ -43,11 +43,10 @@ describe('copyright MCP correspondence admission', () => {
       target_ids: [fixture.targetId],
       rationale: 'Staff verified every statutory field.',
     }
-    const first = await callTestCopyrightWriteTool(
-      admin,
-      'admit_copyright_email_correspondence',
-      args,
-    )
+    const first = await callTestCopyrightWriteTool(admin, 'review_copyright_email_correspondence', {
+      option: 'admit',
+      arguments: args,
+    })
     expect(first.isError).not.toBe(true)
     expect(first.structuredContent).toMatchObject({
       copyright_notice: { id: fixture.noticeId },
@@ -57,8 +56,8 @@ describe('copyright MCP correspondence admission', () => {
     })
     const replay = await callTestCopyrightWriteTool(
       admin,
-      'admit_copyright_email_correspondence',
-      args,
+      'review_copyright_email_correspondence',
+      { option: 'admit', arguments: args },
     )
     expect(replay.structuredContent).toMatchObject({ is_duplicate: true })
     const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
@@ -69,12 +68,19 @@ describe('copyright MCP correspondence admission', () => {
       submission_kind: 'appeal',
       appeal_reason: 'I own the photograph.',
     })
-    const denied = await callTestCopyrightWriteTool(admin, 'admit_copyright_email_correspondence', {
-      intake_id: mismatch.intake.id,
-      kind: 'counter_notice',
-      target_ids: [mismatch.targetId],
-      rationale: 'Staff reviewed the mismatched recommendation.',
-    })
+    const denied = await callTestCopyrightWriteTool(
+      admin,
+      'review_copyright_email_correspondence',
+      {
+        option: 'admit',
+        arguments: {
+          intake_id: mismatch.intake.id,
+          kind: 'counter_notice',
+          target_ids: [mismatch.targetId],
+          rationale: 'Staff reviewed the mismatched recommendation.',
+        },
+      },
+    )
     expect(denied.isError).toBe(true)
     const block = denied.content[0]
     if (block?.type !== 'text') throw new Error('Expected a typed MCP error')

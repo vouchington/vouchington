@@ -13,8 +13,10 @@ import {
   readTestPublicationBridgeTraversalBound,
   readTestPublicationConcreteSchema,
   hasTestRetainedIdentityRoot,
+  acquireTestPublicationIdentityBridgeCleanupReservation,
+  visitTestPublicationPostIdentityCandidates,
 } from '@voucha/test-helpers'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { recordPostPublicationChange } from './capture.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
@@ -31,6 +33,17 @@ import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { acknowledgePostPublicationDirtyWork } from './dirty-work.mts'
 
 describe('publication concrete identity relationships', () => {
+  let cleanupReservation:
+    | Awaited<ReturnType<typeof acquireTestPublicationIdentityBridgeCleanupReservation>>
+    | undefined
+  beforeEach(async () => {
+    cleanupReservation = await acquireTestPublicationIdentityBridgeCleanupReservation()
+  })
+  afterEach(async () => {
+    await cleanupReservation?.release()
+    cleanupReservation = undefined
+  })
+
   it('retains accepted post identity after acknowledgement and live hard deletion', async () => {
     const { work, candidate } = await createTestPublicationSnapshotWork()
     const snapshot = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
@@ -167,12 +180,9 @@ describe('publication concrete identity relationships', () => {
   })
   it('reclaims only unreferenced identities through bounded cyclic pages', async () => {
     const ids = await seedTestUnreferencedPublicationIdentities(101)
-    const bound = await readTestPublicationBridgeTraversalBound(100)
-    for (let page = 0; page < bound; page++) {
-      const result = await cleanupPostPublicationIdentityBridges(1_000)
-      expect(result.scanned).toBeLessThanOrEqual(100)
-      expect(result.deleted).toBeLessThanOrEqual(result.scanned)
-    }
+    expect(await visitTestPublicationPostIdentityCandidates([ids[0]!, ids.at(-1)!], 1_000)).toEqual(
+      [],
+    )
     expect(await readTestPublicationIdentityBridge('post', ids[0]!)).toBeUndefined()
     expect(await readTestPublicationIdentityBridge('post', ids.at(-1)!)).toBeUndefined()
   })
@@ -181,10 +191,9 @@ describe('publication concrete identity relationships', () => {
     const post = await createTestPost()
     await using capture = await beginTransaction()
     await retainPublicationIdentityBridges(capture, 'post', [id!.toUpperCase(), id!, reclaimId!])
-    const bound = await readTestPublicationBridgeTraversalBound(100)
-    for (let page = 0; page < bound; page++) {
-      await cleanupPostPublicationIdentityBridges()
-    }
+    expect(await visitTestPublicationPostIdentityCandidates([id!, reclaimId!])).toEqual([])
+    expect(await readTestPublicationIdentityBridge('post', id!)).toBeDefined()
+    expect(await readTestPublicationIdentityBridge('post', reclaimId!)).toBeDefined()
     const work = await recordPostPublicationChange(capture, {
       scope: { type: 'post', postId: post.id },
       reason: 'post_updated',
@@ -192,9 +201,7 @@ describe('publication concrete identity relationships', () => {
     await retainPostPublicationKeys(capture, work.id, [{ kind: 'impact_post', uuidValue: id! }])
     await capture.commit()
     expect(await readTestPublicationIdentityBridge('post', id!)).toBeDefined()
-    for (let page = 0; page < bound; page++) {
-      await cleanupPostPublicationIdentityBridges()
-    }
+    expect(await visitTestPublicationPostIdentityCandidates([reclaimId!])).toEqual([])
     expect(await readTestPublicationIdentityBridge('post', reclaimId!)).toBeUndefined()
   })
   it('stores only concrete payload columns and requires every receipt snapshot pointer', async () => {

@@ -18,6 +18,18 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
     test: {
       pool: 'forks',
       isolate: false,
+      name: 'backend-lightpanda',
+      include: ['backend/services/browser-crawl/crawl.integration.test.mts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+      testTimeout: 5_000,
+      hookTimeout: 30_000,
+    },
+  },
+  {
+    extends: true,
+    test: {
+      pool: 'forks',
+      isolate: false,
       name: 'backend-openrouter',
       include: ['backend/**/*.openrouter.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],

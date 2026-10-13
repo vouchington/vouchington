@@ -23,7 +23,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/model-providers": "workspace:^",
     "@queues/admin-imports": "workspace:^",
-    "@queues/crawl-boilerplate-removal": "workspace:^",
+    "@queues/crawl-dispatch": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/ai-usage": "workspace:^",

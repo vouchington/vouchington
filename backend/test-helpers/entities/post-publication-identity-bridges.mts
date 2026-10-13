@@ -5,6 +5,12 @@ import {
   retainPublicationIdentityBridges,
   type PublicationIdentityBridgeFamily,
 } from '../../services/post-publication/identity-bridges.mts'
+import { cleanupPostPublicationIdentityBridges } from '../../services/post-publication/identity-bridge-cleanup.mts'
+import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
+
+export function acquireTestPublicationIdentityBridgeCleanupReservation() {
+  return acquireTestPostgresAdvisoryLock({ namespace: 2_135_045, key: 1, timeout: '20s' })
+}
 
 export async function readTestPublicationIdentityBridge(
   family: PublicationIdentityBridgeFamily,
@@ -44,9 +50,28 @@ export async function readTestPublicationBridgeTraversalBound(limit: number): Pr
         .join(' UNION ALL ')}
     ) totals`,
   )
+  // Each page of a dominant family can require a full round of other families first.
   return (
-    Math.ceil(Number(rows[0]!.count) / limit) + Object.keys(PUBLICATION_IDENTITY_BRIDGES).length * 2
+    Object.keys(PUBLICATION_IDENTITY_BRIDGES).length *
+    (Math.ceil(Number(rows[0]!.count) / limit) + 2)
   )
+}
+
+/** Returns owned IDs that production cleanup did not select within two bounded cursor cycles. */
+export async function visitTestPublicationPostIdentityCandidates(
+  ids: readonly string[],
+  limit = 100,
+): Promise<string[]> {
+  const pending = new Set(ids)
+  const maxPages = 2 * (await readTestPublicationBridgeTraversalBound(100))
+  for (let page = 0; page < maxPages && pending.size > 0; page++) {
+    const result = await cleanupPostPublicationIdentityBridges(limit)
+    if (result.scanned > 100 || result.deleted > result.scanned) {
+      throw new Error('Publication identity bridge cleanup exceeded its bounded page')
+    }
+    if (result.family === 'post') for (const id of result.candidates) pending.delete(id)
+  }
+  return [...pending]
 }
 
 export async function readTestPublicationConcreteSchema() {

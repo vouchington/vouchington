@@ -24,6 +24,8 @@ export async function getManageableStripeSubscriptionByUserId(
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
     INNER JOIN membership_lineage_bindings binding
       ON binding.membership_provider_lineage_id = lineage.id
       AND binding.source_kind = 'direct'
@@ -42,9 +44,9 @@ export async function getManageableStripeSubscriptionByUserId(
       AND state.cancelled_at IS NULL
       AND state.expired_at IS NULL
       AND (membership.projection_ended_at IS NULL OR state.paused_at IS NOT NULL)
-      AND lineage.provider = 'stripe'
-      AND lineage.environment = ${context.environment}
-      AND lineage.application_id = ${context.applicationId}
+      AND provider_context.provider = 'stripe'
+      AND provider_context.environment = ${context.environment}
+      AND provider_context.application_id = ${context.applicationId}
       AND lineage.provider_account_id IS NOT NULL
     ORDER BY membership.projection_ended_at DESC NULLS FIRST, membership.id DESC, source.id DESC
     LIMIT 1

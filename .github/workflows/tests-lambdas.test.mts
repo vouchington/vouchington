@@ -36,7 +36,7 @@ describe('Lambda Tests workflow', () => {
     const steps = job?.steps ?? []
     const unbounded = steps.filter(step => step['timeout-minutes'] === undefined)
 
-    expect(unbounded.map(step => step.name ?? step.uses)).toEqual(['Preserve full lambdas LCOV'])
+    expect(unbounded.map(step => step.name ?? step.uses)).toEqual([])
 
     const stepBudget = steps.reduce((sum, step) => sum + (step['timeout-minutes'] ?? 0), 0)
     expect(stepBudget).toBeGreaterThan(0)

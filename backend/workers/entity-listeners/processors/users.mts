@@ -1,6 +1,6 @@
 import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'

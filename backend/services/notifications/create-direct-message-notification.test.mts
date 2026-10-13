@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { createTestUser, createTestDirectConversation } from '@voucha/test-helpers'
-import { createDirectMessageNotification } from './create-direct-message-notification.mts'
+import { createDirectMessageNotifications } from './create-direct-message-notification.mts'
 
 describe('create-direct-message-notification', () => {
   it('creates a direct_message notification', async () => {
@@ -8,7 +8,7 @@ describe('create-direct-message-notification', () => {
     const other = await createTestUser()
     const conversation = await createTestDirectConversation({ user1Id: user.id, user2Id: other.id })
 
-    const result = await createDirectMessageNotification(user.id, conversation.id)
+    const result = await createDirectMessageNotifications([user.id], conversation.id)
 
     expect(result).toHaveLength(1)
     expect(result[0]!.user_id).toBe(user.id)
@@ -20,10 +20,10 @@ describe('create-direct-message-notification', () => {
     const other = await createTestUser()
     const conversation = await createTestDirectConversation({ user1Id: user.id, user2Id: other.id })
 
-    const first = await createDirectMessageNotification(user.id, conversation.id)
+    const first = await createDirectMessageNotifications([user.id], conversation.id)
     expect(first).toHaveLength(1)
 
-    const second = await createDirectMessageNotification(user.id, conversation.id)
+    const second = await createDirectMessageNotifications([user.id], conversation.id)
     expect(second).toHaveLength(1)
     // The notification id is regenerated on upsert
     expect(second[0]!.user_id).toBe(user.id)

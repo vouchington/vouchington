@@ -3,7 +3,7 @@ import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { EntityRelation, UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import { writeEntityRelations } from './write-relations.mts'
-import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 
 export async function upsertEntityRelationsForSubjects(
   creator: BasicUser,

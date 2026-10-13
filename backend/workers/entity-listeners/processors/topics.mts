@@ -5,7 +5,7 @@ import { enqueueCreateTopicEmbedding } from '@queues/bedrock-embeddings/enqueues
 import {
   enqueueBackfillCategoriesForTopicAliases,
   enqueueBackfillRssFeedCategoriesForTopicAlias,
-} from '@queues/rss-feed-item-categories/enqueues'
+} from '@queues/rss-feed-maintenance/enqueues/item-categories'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 

@@ -1,7 +1,7 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { insertVoteWeightPenalty } from '@services/vote-integrity/insert-vote-weight-penalty'

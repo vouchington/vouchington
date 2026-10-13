@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Email address entity helpers
  */
@@ -12,11 +13,13 @@ import sql from 'sql-template-strings'
  * This simulates a user who has completed email verification.
  */
 export async function addVerifiedEmailForUser(userId: string, email: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO user_email_addresses (user_id, email_address, is_primary)
     VALUES (${userId}, ${email}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
-  `)
+  `),
+  )
 }
 
 /**
@@ -62,44 +65,54 @@ export async function addDisposableEmailForUser(
   email: string,
   domain: string,
 ): Promise<void> {
-  const { rows: sourceRows } = await write(sql`
+  const { rows: sourceRows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
-  `)
+  `),
+  )
   const sourceId = sourceRows[0].id
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `)
+  `),
+  )
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO user_email_addresses (user_id, email_address, is_primary)
     VALUES (${userId}, ${email}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
-  `)
+  `),
+  )
 }
 
 /**
  * Add a disposable email domain to the blacklist without adding a user_email_addresses row.
  */
 export async function addDisposableDomain(domain: string): Promise<void> {
-  const { rows: sourceRows } = await write(sql`
+  const { rows: sourceRows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
-  `)
+  `),
+  )
   const sourceId = sourceRows[0].id
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO blocklisted_domains (source_id, domain)
     VALUES (${sourceId}, ${domain})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `)
+  `),
+  )
 }
 
 /**
@@ -113,28 +126,34 @@ export async function insertEmailAddressLoginToken(
 ): Promise<void> {
   const hashed = hashToken('email-address-login-token', token.toUpperCase())
   if (loggedIn) {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       INSERT INTO email_address_login_tokens (email_address, token, logged_in_at)
       VALUES (${emailAddress}, ${hashed}, CURRENT_TIMESTAMP)
-    `)
+    `),
+    )
   } else {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       INSERT INTO email_address_login_tokens (email_address, token)
       VALUES (${emailAddress}, ${hashed})
-    `)
+    `),
+    )
   }
 }
 
 export async function getLatestEmailAddressLoginTokenHash(
   emailAddress: string,
 ): Promise<string | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT token
     FROM email_address_login_tokens
     WHERE email_address = ${emailAddress}
     ORDER BY created_at DESC
     LIMIT 1
-  `)
+  `),
+  )
   return (rows[0]?.token as string | null) ?? null
 }
 

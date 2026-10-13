@@ -106,39 +106,32 @@ Each case keeps its title, slug prefix, review-lock SQL comment, member setup, u
 
 ## `onceEntityListenerCompleted`
 
-For a mutation whose entity may already have completed jobs, use
-[`withTestEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-transition.mts)
-with the mutation callback. It registers before the mutation and waits for a new owned completion,
-so an earlier job or an initially drained worker cannot satisfy the wait.
+[`onceEntityListenerCompleted`](../../../../backend/test-helpers/workers/entity-listeners/test-support.mts)
+can accept an already drained worker or historical completion. Concurrent calls with `Promise.all`
+do not establish that a mutation admitted new owned work.
 
-Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.
-
-**Signature:** `onceEntityListenerCompleted(jobName, entityId?, count?, timeoutMs?)`
-
-- Always pass `entityId` to match the specific entity's job, not just any job with the same name running concurrently in other tests.
-- Times out with a clear error after 15s by default.
-
-**Concurrent waits — use `Promise.all`:**
+For the `processUserUpdated` mutation boundary, use
+[`withTestEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-transition.mts):
+it installs call-through observers before invoking the action, tracks that user's
+`enqueueOnUserUpdated` calls, and requires exactly one concrete matching queue admission with a
+completed state. It returns the action result after settling owned work; a deduplicated admission,
+wrong identity, or non-completed job fails the helper. Its logical enqueue observer is specific to
+`enqueueOnUserUpdated`; do not assume equivalent observation of another fire-and-forget producer.
 
 ```ts
-// Wrong — post3's event can fire while we're still waiting for post1
-await onceEntityListenerCompleted('processPostCreated', post1.id)
-await onceEntityListenerCompleted('processPostCreated', post2.id)
-await onceEntityListenerCompleted('processPostCreated', post3.id)
-
-// Correct — all listeners registered before any can be missed
-await Promise.all([
-  onceEntityListenerCompleted('processPostCreated', post1.id),
-  onceEntityListenerCompleted('processPostCreated', post2.id),
-  onceEntityListenerCompleted('processPostCreated', post3.id),
-])
+await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
+  request.delete('/api/v1/auth/bluesky/link').expect(204),
+)
 ```
 
-**When to use it:**
-
-- After creating an entity that triggers auto-votes, auto-subscribe, or notifications, when the test asserts on those side effects.
-- When testing sort-by-score/best pagination: vote scores change asynchronously via entity listeners, so wait before paginating to ensure stable scores.
-- After deletions/updates that trigger downstream cache invalidation.
+The optional `admission` argument has `beforeAdd(): Promise<void>` and `release(): void` hooks.
+Only the matching queue add waits for `beforeAdd`. The test must release its gate when its
+boundary assertions finish; `release` must be idempotent because cleanup also invokes it.
+The helper registers `onTestFinished` before starting the action. Cleanup releases the gate,
+settles the action, tracked user enqueues, and the growing matching-add inventory, then restores
+its spies. Cleanup settlement does not certify success: the helper's main path checks the returned
+job identity and completed state. This is the canonical test-queue contract, not physical
+cross-process QueueEvents evidence.
 
 ## `pollUntilNotNull` / `waitForCondition`
 
@@ -156,6 +149,11 @@ the same key to repopulate: read it (the read recomputes from the database) or s
 fills only the id key, so a test that asserts a username key was cleared must first read by username.
 These caches are filled by a fire-and-forget write, which is why the warm-up before the operation is
 the part worth polling.
+[`withPrivateIdentityCacheFill`](../../../../backend/test-helpers/private-identity-cache.mts)
+registers before the initial identity read, joins the producer's public cache-set or cache-hit
+receipt for the owned key, drains its call-through script promises, then asserts the real cached
+null Bluesky account. It neither polls nor seeds the cache.
+Its optional write gate must release idempotently; cleanup releases it before joining owned work.
 
 ## `onceElectionVoteStatsCompleted`
 
@@ -165,6 +163,38 @@ for `entity_relation` jobs, so a job for another election kind or relation table
 wait. See the [election-votes service](../../../overview/architecture/services/elections-votes/README.md) for an example.
 Its test runs in `backend-data-stores`, retaining worker setup and data-store teardown even though
 the helper and test live together here.
+
+## Owned vote-route admissions
+
+Register `observeOwnedVoteRouteAdmissions` before invoking the owned route and register its
+returned cleanup with `onTestFinished`. Its ownership predicate selects actual queue-call payloads
+inside captured retry attempts; `requireAdmission(kind)` requires a concrete owned enqueue, not
+merely a returned route response. `observeOwnedPenaltyAdmissions` scopes by owned user IDs and
+observes admission settlement without claiming worker completion.
+
+Cleanup settles the growing set of owned retry attempts, including follow-up admissions started
+by workers during settlement. For queues with installed worker listeners, it keeps observing
+runnable `waiting`, `prioritized`, and `active` jobs until their exact job terminal receipt.
+Genuinely delayed or suspended work stays with canonical teardown; this does not prove completion
+of the production debounce interval. Worker-wide errors lack owned-job identity and are retained
+as diagnostics when an owned observation expires. Restore instrumentation only after settlement;
+`settleVoteRouteOperations` preserves the ordered, identity-distinct failure reasons.
+
+## Owned queue-admission boundaries
+
+Register an owned admission observer before invoking the route or mutation, and register cleanup
+with `onTestFinished` before starting effects. Scope queue-call payloads and retry attempts to the
+fixture's owned identities. Require an actual owned enqueue; a successful route response alone
+does not prove admission. Admission settlement and worker completion are separate contracts.
+
+Cleanup must settle the growing inventory of owned retries, including follow-up admissions started
+by workers during settlement. When an observer owns worker completion, keep its listeners attached
+for runnable `waiting`, `prioritized`, and `active` jobs until the exact owned terminal receipt.
+Genuinely delayed or suspended work stays with canonical teardown; admission does not prove that
+the production debounce interval completed. Worker-wide errors without a matching job identity
+are diagnostics, not an owned terminal receipt; retain them when reporting an expired owned wait.
+Restore instrumentation after settlement, preserving the primary failure and ordered,
+identity-distinct secondary failures. Document which of these boundaries each helper provides.
 
 ## `readEnqueuedJob` / `isDeduplicatedEnqueue` / `getEnqueuedJobId`
 

@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import {
+  acquireTestPostgresAdvisoryLock,
+  type TestPostgresAdvisoryLock,
+} from '../../../test-helpers/postgres-advisory-lock.mts'
 import {
   ageRefundReconciliationLeaseForTest,
   cleanupRefundReconciliationOperationsForTest,
+  prioritizeRefundReconciliationOperationsForTest,
   withLockedRefundOperationForTest,
 } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import {
@@ -16,15 +21,30 @@ import {
 const ownedOperationIds: string[] = []
 
 describe('refund reconciliation dispatcher', () => {
+  let reservation: TestPostgresAdvisoryLock
+
+  beforeAll(async () => {
+    reservation = await acquireTestPostgresAdvisoryLock({
+      namespace: 2_135_050,
+      key: 1,
+      timeout: '20s',
+    })
+  })
+
   afterEach(async () => {
     await cleanupRefundReconciliationOperationsForTest(ownedOperationIds)
     ownedOperationIds.length = 0
   })
 
+  afterAll(async () => {
+    await reservation.release()
+  })
+
   it('leases the earliest due operations in a caller-bounded batch', async () => {
-    const first = await createDueOperation('1900-01-01T00:00:00.000Z')
-    const second = await createDueOperation('1900-01-01T00:00:01.000Z')
-    const third = await createDueOperation('1900-01-01T00:00:02.000Z')
+    const first = await createDueOperation()
+    const second = await createDueOperation()
+    const third = await createDueOperation()
+    await prioritizeRefundReconciliationOperationsForTest([first.id, second.id, third.id])
 
     const batch = await dispatchDueRefundReconciliations(2)
     expect(batch.map(item => item.id)).toEqual(expect.arrayContaining([first.id, second.id]))
@@ -37,8 +57,9 @@ describe('refund reconciliation dispatcher', () => {
   })
 
   it('skips a due row locked by another dispatcher', async () => {
-    const locked = await createDueOperation('1899-01-01T00:00:00.000Z')
-    const available = await createDueOperation('1899-01-01T00:00:01.000Z')
+    const locked = await createDueOperation()
+    const available = await createDueOperation()
+    await prioritizeRefundReconciliationOperationsForTest([locked.id, available.id])
     await withLockedRefundOperationForTest(locked.id, async () => {
       await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual([
         expect.objectContaining({ id: available.id }),
@@ -50,7 +71,8 @@ describe('refund reconciliation dispatcher', () => {
   })
 
   it('rotates a stale lease so an orphaned child cannot retain ownership', async () => {
-    const operation = await createDueOperation('1898-01-01T00:00:00.000Z')
+    const operation = await createDueOperation()
+    await prioritizeRefundReconciliationOperationsForTest([operation.id])
     const [firstLease] = await dispatchDueRefundReconciliations(1)
     expect(firstLease?.id).toBe(operation.id)
     await ageRefundReconciliationLeaseForTest(operation.id)
@@ -61,7 +83,7 @@ describe('refund reconciliation dispatcher', () => {
   })
 })
 
-async function createDueOperation(reconciliationDueAt: string) {
+async function createDueOperation() {
   const [member, administrator] = await Promise.all([createTestUser(), createTestUser()])
   const membership = await createTestMembership({
     user_id: member.id,
@@ -85,7 +107,7 @@ async function createDueOperation(reconciliationDueAt: string) {
   if (!lease) throw new Error('Expected the new refund operation to be due')
   await scheduleRefundReconciliationRetry(
     lease,
-    new Date(reconciliationDueAt),
+    new Date('1900-01-01T00:00:00.000Z'),
     'dispatcher test setup',
   )
   ownedOperationIds.push(operation.id)

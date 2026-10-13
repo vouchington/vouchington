@@ -95,14 +95,19 @@ export async function reconcileRssFeedItemCategorySnapshots(
   CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = getRssFeedItemsWorkLimit(
     'category_snapshot_reconciliation_batch_size',
   ),
+  rssFeedItemIds?: readonly string[],
 ): Promise<{ reconciled: number }> {
+  if (rssFeedItemIds?.length === 0) return { reconciled: 0 }
   const { rows } = await write<RssFeedItemCategorySnapshotReconciliation>(
     `/* reconcileRssFeedItemCategorySnapshots */
       SELECT rss_feed_item_id, categories, generation
       FROM rss_feed_item_category_snapshot_reconciliations
+      ${rssFeedItemIds ? 'WHERE rss_feed_item_id = ANY($2::uuid[])' : ''}
       ORDER BY updated_at, rss_feed_item_id
       LIMIT $1`,
-    [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE],
+    rssFeedItemIds
+      ? [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE, rssFeedItemIds]
+      : [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE],
   )
   return reconcileRssFeedItemCategorySnapshotRows(rows)
 }

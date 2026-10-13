@@ -30,7 +30,7 @@ flowchart TD
   listener --> reviews[Update topic rating stats for reviews]
   listener --> sitemap[sitemaps queue]
   listener --> cache[Invalidate post cache]
-  listener --> metrics[entity-metrics-cache-refresh queue]
+  listener --> metrics[vote-aggregation queue]
 ```
 
 > **Note:** Post revisions are tracked synchronously inside the `createPost()` transaction via `createPostRevision()`, not via the entity-listeners queue.

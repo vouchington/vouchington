@@ -75,7 +75,6 @@ export async function getTestGooglePlayTokenLineageSummary(options: {
     lineageCount: Number(rows[0]?.lineage_count),
   }
 }
-
 export async function createTestGooglePlayRtdnEvidence(options: {
   applicationId: string
   rawBody: Buffer
@@ -93,10 +92,10 @@ export async function createTestGooglePlayRtdnEvidence(options: {
   const { rows } = await write<{ id: string }>(sql`
     /* createTestGooglePlayRtdnEvidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, provider_event_id,
+      membership_provider_context_id, provider_event_id,
       evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      'google_play', 'test', ${options.applicationId}, ${`test-rtdn-${randomUUID()}`},
+      fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), ${`test-rtdn-${randomUUID()}`},
       ${lookup}, ${encryptedEvidence}
     ) RETURNING id
   `)
@@ -104,7 +103,6 @@ export async function createTestGooglePlayRtdnEvidence(options: {
   if (!evidenceId) throw new Error('Google Play RTDN test evidence was not created')
   return evidenceId
 }
-
 export async function createTestCorruptGooglePlayMembershipVerification(options: {
   applicationId: string
   userId: string
@@ -114,17 +112,17 @@ export async function createTestCorruptGooglePlayMembershipVerification(options:
     /* createTestCorruptGooglePlayMembershipVerification */
     WITH evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
+        membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
       ) VALUES (
-        'google_play', 'test', ${options.applicationId}, ${evidenceLookupSha256}, ${Buffer.from('corrupt')}
+        fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), ${evidenceLookupSha256}, ${Buffer.from('corrupt')}
       ) RETURNING id
     )
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
-      provider, environment, application_id
+      membership_provider_context_id
     ) SELECT
       ${options.userId}, ${randomUUID()}, ${createHash('sha256').update(randomUUID()).digest('hex')}, id,
-      'google_play', 'test', ${options.applicationId}
+      fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId})
     FROM evidence
     RETURNING id
   `)
@@ -132,7 +130,6 @@ export async function createTestCorruptGooglePlayMembershipVerification(options:
   if (!verificationId) throw new Error('Corrupt Google Play verification was not created')
   return verificationId
 }
-
 export async function reacceptTestGooglePlayVerifiedEvidence(options: {
   verificationId: string
   lineageId?: string
@@ -147,8 +144,9 @@ export async function reacceptTestGooglePlayVerifiedEvidence(options: {
   >(sql`
     /* reacceptTestGooglePlayVerifiedEvidence */
     SELECT verification.id AS "verificationId", verification.user_id AS "userId",
-      verification.membership_purchase_intent_id AS "purchaseIntentId", verification.environment,
-      verification.application_id AS "applicationId", evidence.id AS "evidenceId",
+      verification.membership_purchase_intent_id AS "purchaseIntentId", provider_context.environment,
+      provider_context.id AS "providerContextId",
+      provider_context.application_id AS "applicationId", evidence.id AS "evidenceId",
       evidence.encrypted_evidence AS "encryptedEvidence",
       evidence.evidence_lookup_sha256 AS "evidenceLookupSha256",
       evidence.rejected_at AS "evidenceRejectedAt", evidence.rejection_reason AS "evidenceRejectionReason",
@@ -157,12 +155,14 @@ export async function reacceptTestGooglePlayVerifiedEvidence(options: {
       observation.membership_product_id AS "membershipProductId",
       observation.membership_provider_product_id AS "membershipProviderProductId"
     FROM membership_verifications verification
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = verification.membership_provider_context_id
     INNER JOIN membership_provider_evidence_records evidence
       ON evidence.id = verification.membership_provider_evidence_record_id
     INNER JOIN membership_provider_observations observation
       ON observation.membership_provider_evidence_record_id = evidence.id
     WHERE verification.id = ${options.verificationId}
-      AND observation.provider = 'google_play'
+      AND provider_context.provider = 'google_play'
   `)
   const context = rows[0]
   if (!context?.evidenceLineageId)

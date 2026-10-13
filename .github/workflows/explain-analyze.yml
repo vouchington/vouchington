@@ -92,6 +92,7 @@ jobs:
         timeout-minutes: 1
         run: echo "EXPLAIN_SEED_ANCHOR_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
@@ -109,6 +110,7 @@ jobs:
         timeout-minutes: 3
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: |
           mkdir -p backend/scripts/explain-analyze/output
           (
@@ -133,6 +135,7 @@ jobs:
         timeout-minutes: 10
         env:
           EXPLAIN_PLAN_CACHE_MODE: compare
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
       - name: Enforce plan gates and write job summary
         timeout-minutes: 2
         run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"

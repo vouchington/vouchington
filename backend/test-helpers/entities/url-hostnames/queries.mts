@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export async function getCrawlableHostnames(hostnameIds: string[]): Promise<Array<{ id: string }>> {
   if (hostnameIds.length === 0) return []
-  const result = await read<{ id: string }>(sql`
+  const result = await read<{ id: string }>(sql`/* getCrawlableHostnames */
     SELECT id
     FROM url_hostnames
     WHERE is_crawlable
@@ -14,7 +14,7 @@ export async function getCrawlableHostnames(hostnameIds: string[]): Promise<Arra
 }
 
 export async function isHostnameDispatchable(hostname: string): Promise<boolean> {
-  const result = await read(sql`
+  const result = await read(sql`/* isHostnameDispatchable */
     SELECT 1 FROM url_hostnames uh
     WHERE uh.hostname = ${hostname}
       AND uh.is_crawlable
@@ -30,7 +30,7 @@ export async function isHostnameDispatchable(hostname: string): Promise<boolean>
 }
 
 export async function getUrlHostnameTopicId(hostnameId: string): Promise<string | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read(sql`/* getUrlHostnameTopicId */
     SELECT topic_id
     FROM url_hostnames
     WHERE id = ${hostnameId}

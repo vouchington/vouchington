@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write, writePool, withTransactionOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -28,11 +29,11 @@ export async function withTestDeliveryReusedClient(
 }
 
 export async function createTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  await query(sql`SAVEPOINT delivery_admission_test`)
+  await query(allowUnannotatedQuery(sql`SAVEPOINT delivery_admission_test`))
 }
 
 export async function rollbackTestDeliverySavepoint(query: TransactionQuery): Promise<void> {
-  await query(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`)
+  await query(allowUnannotatedQuery(sql`ROLLBACK TO SAVEPOINT delivery_admission_test`))
 }
 
 export async function flagTestDeliveryImageInTransaction(
@@ -40,7 +41,9 @@ export async function flagTestDeliveryImageInTransaction(
   imageId: string,
 ): Promise<void> {
   await query(
-    sql`UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
+    allowUnannotatedQuery(
+      sql`UPDATE images SET is_flagged_by_openai_omni_moderation = TRUE WHERE id = ${imageId}`,
+    ),
   )
 }
 
@@ -55,11 +58,15 @@ export async function setTestDeliveryUserImageInTransaction(
     userId,
     query,
   )
-  await query(sql`UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`)
+  await query(
+    allowUnannotatedQuery(sql`UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`),
+  )
 }
 
 export async function testDeliveryTransactionIsBlockingAdmission(pid: number): Promise<boolean> {
-  const { rows } = await read<{ blocked: boolean }>(sql`
+  const { rows } = await read<{
+    blocked: boolean
+  }>(sql`/* testDeliveryTransactionIsBlockingAdmission */
     SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE ${pid} = ANY(pg_blocking_pids(pid))
       AND query LIKE '%lockImageAssetAdmission%') AS blocked
   `)
@@ -69,19 +76,25 @@ export async function testDeliveryTransactionIsBlockingAdmission(pid: number): P
 export async function getTestDeliveryRepairMarker(
   mediaDeliveryRegistryRecordId: string,
 ): Promise<string | null> {
-  const { rows } = await read<{ marker_token: string }>(sql`
+  const { rows } = await read<{ marker_token: string }>(
+    allowUnannotatedQuery(sql`
     SELECT marker_token FROM media_delivery_repair_markers WHERE media_delivery_registry_record_id = ${mediaDeliveryRegistryRecordId}
-  `)
+  `),
+  )
   return rows[0]?.marker_token ?? null
 }
 
 export async function getTestDeliveryTransactionPid(query: TransactionQuery): Promise<number> {
-  const { rows } = await query<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`)
+  const { rows } = await query<{ pid: number }>(
+    allowUnannotatedQuery(sql`SELECT pg_backend_pid() AS pid`),
+  )
   return rows[0]!.pid
 }
 
 export async function testDeliveryTransactionIsWaitingForLock(pid: number): Promise<boolean> {
-  const { rows } = await read<{ waiting: boolean }>(sql`
+  const { rows } = await read<{
+    waiting: boolean
+  }>(sql`/* testDeliveryTransactionIsWaitingForLock */
     SELECT wait_event_type = 'Lock' AS waiting FROM pg_stat_activity WHERE pid = ${pid}
   `)
   return rows[0]?.waiting ?? false
@@ -91,17 +104,21 @@ export async function lockTestDeliveryNoticeNowait(
   query: TransactionQuery,
   noticeId: string,
 ): Promise<void> {
-  await query(sql`SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE NOWAIT`)
+  await query(
+    sql`/* lockTestDeliveryNoticeNowait */ SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE NOWAIT`,
+  )
 }
 
 export async function advanceTestDeliveryPlacementRevision(
   query: TransactionQuery,
   placementId: string,
 ): Promise<number> {
-  const { rows } = await query<{ revision: number }>(sql`
+  const { rows } = await query<{ revision: number }>(
+    allowUnannotatedQuery(sql`
     UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CURRENT_TIMESTAMP
     WHERE id = ${placementId} RETURNING revision
-  `)
+  `),
+  )
   return rows[0]!.revision
 }
 

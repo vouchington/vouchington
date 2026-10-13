@@ -5,6 +5,7 @@ import {
   insertTestCommunity,
   readTestPublicationBridgeTraversalBound,
   readTestPublicationIdentityBridge,
+  acquireTestPublicationIdentityBridgeCleanupReservation,
 } from '@voucha/test-helpers'
 import {
   createSyntheticClassifier,
@@ -14,10 +15,21 @@ import {
   requestSyntheticRun,
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cleanupPostPublicationIdentityBridges } from './identity-bridge-cleanup.mts'
 
 describe('publication identity bridge cleanup', () => {
+  let cleanupReservation:
+    | Awaited<ReturnType<typeof acquireTestPublicationIdentityBridgeCleanupReservation>>
+    | undefined
+  beforeEach(async () => {
+    cleanupReservation = await acquireTestPublicationIdentityBridgeCleanupReservation()
+  })
+  afterEach(async () => {
+    await cleanupReservation?.release()
+    cleanupReservation = undefined
+  })
+
   it('keeps a community identity that a classifier run still references', async () => {
     const user = await createTestUser()
     const community = await insertTestCommunity({ createdById: user.id })

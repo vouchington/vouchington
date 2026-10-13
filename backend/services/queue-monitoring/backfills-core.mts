@@ -18,14 +18,14 @@ import {
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
 import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
-import { enqueueBackfillReportIntegrity } from '@queues/report-integrity/enqueues'
+import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
 import {
   enqueueBackfillBlueskyDisconnectRequests,
   enqueueBackfillBlueskyFollowPropagation,
 } from '@queues/bluesky-follow-propagation/enqueues'
 import { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues'
-import { enqueueRecoverExportRequests } from '@queues/account-data-requests/enqueues'
-import { enqueueRecoverUserDeletions } from '@queues/user-deletions/enqueues'
+import { enqueueRecoverExportRequests } from '@queues/account-lifecycle/enqueues/account-data-requests'
+import { enqueueRecoverUserDeletions } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { enqueueRecoverStripeEvents } from '@queues/memberships/enqueues'
 import { enqueueSesInboundReconcile } from '@queues/ses-inbound/enqueues'
 import { SES_INBOUND_RECONCILE_JOB_NAME } from '@queues/ses-inbound/config'
@@ -69,7 +69,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'account-data-request-recovery',
-    queue_name: 'account-data-requests',
+    queue_name: 'account-lifecycle',
     job_name: 'recoverExportRequests',
     description: 'Recover persisted account export requests that were not completed',
     source_table: 'user_data_requests',
@@ -77,7 +77,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'user-deletion-recovery',
-    queue_name: 'user-deletions',
+    queue_name: 'account-lifecycle',
     job_name: 'recoverUserDeletions',
     description: 'Recover durable user deletions that were never started or became stale',
     source_table: 'user_deletion_requests',
@@ -173,7 +173,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'backfill_report_integrity',
-    queue_name: 'report_integrity',
+    queue_name: 'vote-aggregation',
     job_name: 'backfill_report_integrity',
     description: 'Re-enqueue integrity checks for entities with pending mass-report campaigns',
     source_table: 'moderation_reports',

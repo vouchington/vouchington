@@ -54,7 +54,7 @@
     "@modules/utils": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",

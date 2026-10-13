@@ -27,6 +27,6 @@
     "@modules/utils": "workspace:^",
     "@services/memberships": "workspace:^",
     "@voucha/types": "workspace:^",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   }
 }

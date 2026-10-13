@@ -1,4 +1,4 @@
-// Duplicated (not imported) from @queues/activitypub-delivery's job-data shapes so this
+// Duplicated (not imported) from @queues/activitypub's job-data shapes so this
 // business-logic package stays independent of the queue package — services must not depend on
 // queues (backend/AGENTS.md's module-structure layering: services -> modules/data-stores only).
 // Field names are kept identical on purpose so a queue job's data satisfies these input types

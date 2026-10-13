@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   claimTestAdministratorRefundOperation,
@@ -62,7 +63,7 @@ describe('membership refund reconciliation schema', () => {
       createTestAdministratorRefundOperation(),
       createTestAdministratorRefundOperation(),
     ])
-    const providerRefundId = 'refund-provider-scoped'
+    const providerRefundId = `refund-provider-scoped-${randomUUID()}`
     await expect(
       Promise.all(
         [first, second].map(operation =>
@@ -72,12 +73,35 @@ describe('membership refund reconciliation schema', () => {
     ).resolves.toHaveLength(2)
   })
 
+  it('rejects a second attempt with the same provider refund id in one context', async () => {
+    const applicationId = `attempt-context-${randomUUID()}`
+    const [first, second] = await Promise.all([
+      createTestAdministratorRefundOperation(applicationId),
+      createTestAdministratorRefundOperation(applicationId),
+    ])
+    const providerRefundId = `attempt-refund-${randomUUID()}`
+    await createTestRefundOperationAttempt(first, providerRefundId)
+    await expect(createTestRefundOperationAttempt(second, providerRefundId)).rejects.toMatchObject({
+      code: '23505',
+    })
+  })
+
+  it('rejects an attempt whose context differs from its operation', async () => {
+    const operation = await createTestAdministratorRefundOperation()
+    await expect(
+      createTestRefundOperationAttempt(operation, undefined, `wrong-context-${randomUUID()}`),
+    ).rejects.toMatchObject({ code: '23503' })
+  })
+
   it('accepts legacy unlinked receipts and structurally links new operation receipts', async () => {
     const operation = await createTestAdministratorRefundOperation()
     const { requestKey } = await createTestLinkedRefundReceiptRequest(operation)
     await expect(insertTestLegacyUnlinkedRefundReceipt(operation.membershipSourceId)).resolves.toBe(
       1,
     )
+    await expect(
+      insertTestLinkedOperationRefundReceipt(operation, `wrong-${randomUUID()}`),
+    ).rejects.toMatchObject({ code: '23514' })
     await expect(insertTestLinkedOperationRefundReceipt(operation, requestKey)).resolves.toBe(1)
   })
 })

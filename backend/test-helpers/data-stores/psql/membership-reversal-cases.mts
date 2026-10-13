@@ -77,11 +77,11 @@ export async function createWrongKindTestReversalCaseOperation(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createWrongKindReversalCaseOperation */
     INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
-      membership_lineage_binding_id, provider, environment, application_id, operation_kind,
+      membership_lineage_binding_id, membership_provider_context_id, operation_kind,
       idempotency_key, qualifying_allocation_minor_units, remaining_refundable_minor_units,
       currency_code, period_started_at, period_ends_at)
     SELECT membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, 'automatic_refund', ${`wrong-kind-${randomUUID()}`},
+      membership_provider_context_id, 'automatic_refund', ${`wrong-kind-${randomUUID()}`},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     FROM membership_operations WHERE id = ${operationId} RETURNING id`)
   return rows[0]!.id
@@ -99,18 +99,18 @@ export async function createTestReversalCaseFixture(
     operation_id: string
     source_id: string
   }>(sql`/* createReversalCaseFixtureContext */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-      VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${suffix}`}) RETURNING id),
+    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${suffix}`}) RETURNING id),
     binding AS (INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
       SELECT id, ${userId} FROM lineage RETURNING id, membership_provider_lineage_id),
     source AS (INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id)
       SELECT ${userId}, 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id),
     operation AS (INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
-      membership_lineage_binding_id, provider, environment, application_id, operation_kind,
+      membership_lineage_binding_id, membership_provider_context_id, operation_kind,
       idempotency_key, qualifying_allocation_minor_units, remaining_refundable_minor_units,
       currency_code, period_started_at, period_ends_at, collision_at)
-      SELECT source.id, source.membership_provider_lineage_id, binding.id, 'stripe', 'test',
-        ${applicationId}, 'ineligible_purchase_reversal', ${`operation-${suffix}`}, 100, 100, 'usd',
+      SELECT source.id, source.membership_provider_lineage_id, binding.id,
+        fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'ineligible_purchase_reversal', ${`operation-${suffix}`}, 100, 100, 'usd',
         CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM source INNER JOIN binding
         ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id RETURNING id)
     SELECT binding.id AS binding_id, binding.membership_provider_lineage_id,

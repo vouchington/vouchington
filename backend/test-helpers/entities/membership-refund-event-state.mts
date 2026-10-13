@@ -22,11 +22,11 @@ export async function getMatchedChargeRefundedReceiptForTest(options: {
     providerRefundId: string | null
     receiptCount: string
   }>(sql`/* matchedChargeRefundedReceipt */
-    SELECT attempt.application_id AS "applicationId", attempt.environment,
+    SELECT context.application_id AS "applicationId", context.environment,
       attempt.provider_refund_id AS "providerRefundId", work.available_at <= CURRENT_TIMESTAMP AS due,
       (attempt.membership_operation_id = operation.id AND request.membership_operation_id = operation.id
-        AND attempt.provider = 'stripe' AND attempt.environment = 'test' AND attempt.application_id = ${options.applicationId}
-        AND operation.provider = 'stripe' AND operation.environment = 'test' AND operation.application_id = ${options.applicationId}
+        AND attempt.membership_provider_context_id = operation.membership_provider_context_id
+        AND context.provider = 'stripe' AND context.environment = 'test' AND context.application_id = ${options.applicationId}
         AND operation.operation_kind = 'administrator_refund' AND attempt.amount_minor_units = receipt.amount_minor_units
         AND attempt.currency_code::text = receipt.currency_code AND request.amount_minor_units = receipt.amount_minor_units
         AND request.currency_code::text = receipt.currency_code
@@ -34,6 +34,7 @@ export async function getMatchedChargeRefundedReceiptForTest(options: {
       (SELECT COUNT(*)::TEXT FROM membership_refunds WHERE stripe_refund_id = ${options.refundId}) AS "receiptCount"
     FROM membership_refund_operation_attempts attempt
     INNER JOIN membership_operations operation ON operation.id = attempt.membership_operation_id
+    INNER JOIN membership_provider_contexts context ON context.id = operation.membership_provider_context_id
     INNER JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     INNER JOIN membership_administrator_refund_operation_requests request ON request.membership_operation_id = operation.id
     INNER JOIN membership_refunds receipt ON receipt.stripe_refund_id = ${options.refundId}

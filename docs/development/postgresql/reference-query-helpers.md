@@ -38,6 +38,12 @@ Annotated queries should start with a block comment:
 await read('/* getFriendRecommendations */ SELECT ...', [currentUserId])
 ```
 
+The annotation check also runs under Vitest. Runtime queries and helper SQL that mirrors them
+require a leading `/* functionName */` comment. Deliberately unannotated test fixture SQL can
+use `allowUnannotatedQuery(input)` from `@vouchington/postgres`; keep that per-call opt-out in
+test files or `backend/test-helpers/**`. The wrapper preserves the simple query protocol for
+fixtures without bound values, including multi-statement fixtures.
+
 Prepared statement names are derived from the annotation plus a hash of the full SQL text. The
 helper lives in [prepared-statement-name.mts](../../../backend/data-stores/psql/prepared-statement-name.mts), and keeps different
 query shapes distinct even when they share the same annotation.

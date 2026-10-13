@@ -17,9 +17,12 @@ describe('registered admin read projections', () => {
         ['moderation:read', 'moderation:write'],
         ADMIN_MCP_SERVER_CONFIG,
       )
-    const note = await invoke('add_user_mod_note', {
-      userId: target.id,
-      body: `Audit fixture ${randomUUID()}`,
+    const note = await invoke('record_user_moderation', {
+      option: 'note',
+      arguments: {
+        userId: target.id,
+        body: `Audit fixture ${randomUUID()}`,
+      },
     })
     expect(note.isError).not.toBe(true)
     const history = await readStaffActionHistory(admin.id)

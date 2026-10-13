@@ -10,9 +10,8 @@ Rust NAPI addons and Lightpanda cloud browser crawling. Local development runs e
 | Queue                                          | Notes                                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------ |
 | `crawl_urls`                                   | HTML download + Rust sanitization                                              |
-| `crawl_hostnames`                              | Hostname crawls (Rust HTML)                                                    |
+| `crawl-dispatch`                               | Hostname dispatch and Rust boilerplate removal                                 |
 | `crawl_referral_links`                         | Referral link crawls (Rust HTML)                                               |
-| `crawl_html_boilerplate_removal`               | Rust boilerplate stripper                                                      |
 | `crawl_browser`                                | Lightpanda cloud headless browser (`requiresExplicitInclusion`)                |
 | `images`                                       | Sharp image processing                                                         |
 | `ai_agents`                                    | `@jongleberry/vurst-ai` text classification                                    |

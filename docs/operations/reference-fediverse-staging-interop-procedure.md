@@ -24,7 +24,7 @@ These are reversible staging validation steps, not a record that any production 
    NodeInfo classification complete through the HTTP CONNECT proxy with the same public response
    shapes. Check proxy latency, timeout, and provider-error telemetry before continuing.
 3. Set `activitypub-inbox.async_delivery_enabled: true`. Send one controlled signed activity and correlate
-   the `202` with its `activitypub_inbox_delivery_work_items` row and `activitypub-inbox` job. Verify the I/O worker
+   the `202` with its `activitypub_inbox_delivery_work_items` row and `activitypub` job. Verify the I/O worker
    fetches the actor, verifies against `received_at`, applies actor-match and sender limits, then
    deduplicates/dispatches and deletes the final pending raw envelope.
 4. Exercise recovery by confirming the five-minute dispatcher can rediscover eligible durable work;
@@ -56,7 +56,7 @@ These are reversible staging validation steps, not a record that any production 
    evidence only; do not claim the remote UI rendered or understood a Voucha object.
 8. Record every unsupported matrix cell explicitly. Do not synthesize missing product workflows or
    add WebView/open-web fallbacks.
-9. Check the ActivityPub delivery queue and Sentry for delivery failures after each implementation.
+9. Check the `activitypub` queue and Sentry for delivery failures after each implementation.
    Investigate any new terminal delivery failure before calling that row a pass.
 
 Example public-route probes:

@@ -3,7 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   enqueueBulkTopicAliasesUpdate,
   enqueueTopicAliasRemovalUpdate,
-} from '@queues/topic-aliases/enqueues'
+} from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { createTopicRevision } from '@services/topic-revisions'
 import { normalizeHashtag } from '@ts-shared/utils'

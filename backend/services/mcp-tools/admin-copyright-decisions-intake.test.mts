@@ -78,10 +78,13 @@ describe('registered copyright intake write tools', () => {
       { reply_email: 'injected@example.test' },
     ])
       await expect(
-        callTestCopyrightWriteTool(admin, 'reject_copyright_email_intake', {
-          intake_id: id,
-          rationale: 'Human staff determination.',
-          ...injected,
+        callTestCopyrightWriteTool(admin, 'review_copyright_email_intake', {
+          option: 'reject',
+          arguments: {
+            intake_id: id,
+            rationale: 'Human staff determination.',
+            ...injected,
+          },
         }),
       ).rejects.toMatchObject({ code: ErrorCode.InvalidParams })
   })
@@ -103,9 +106,12 @@ describe('registered copyright intake write tools', () => {
         model: 'synthetic-test-model',
         structuredOutput: { recommendation: 'reject' },
       })
-      const result = await callTestCopyrightWriteTool(admin, 'reject_copyright_email_intake', {
-        intake_id: intake.id,
-        rationale: 'Human staff found the email insufficient to open a case.',
+      const result = await callTestCopyrightWriteTool(admin, 'review_copyright_email_intake', {
+        option: 'reject',
+        arguments: {
+          intake_id: intake.id,
+          rationale: 'Human staff found the email insufficient to open a case.',
+        },
       })
       expect(result.isError).not.toBe(true)
       const rejected = (await readCopyrightEmailIntakeResponses(intake.id)).find(

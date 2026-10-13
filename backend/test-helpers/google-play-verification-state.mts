@@ -14,6 +14,7 @@ export async function getTestGooglePlaySourceExpiredAt(userId: string): Promise<
     SELECT state.expired_at FROM membership_source_states state
     INNER JOIN membership_sources source ON source.id = state.membership_source_id
     INNER JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
-    WHERE source.user_id = ${userId} AND lineage.provider = 'google_play'`)
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
+    WHERE source.user_id = ${userId} AND context.provider = 'google_play'`)
   return rows[0]?.expired_at ?? null
 }

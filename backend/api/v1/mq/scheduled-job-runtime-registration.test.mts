@@ -15,15 +15,10 @@ import {
 } from '@queues/bloom-filters/enqueues/schedules'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import {
-  scheduledJobManifest as boilerplateManifest,
-  upsertSchedules as registerBoilerplate,
-} from '@queues/crawl-boilerplate-removal/enqueues/schedules'
-import { boilerplateRemovalQueue } from '@queues/crawl-boilerplate-removal/queues'
-import {
-  scheduledJobManifest as crawlHostnamesManifest,
-  upsertSchedules as registerCrawlHostnames,
-} from '@queues/crawl-hostnames/enqueues/schedules'
-import { crawlHostnamesQueue } from '@queues/crawl-hostnames/queues'
+  scheduledJobManifest as crawlDispatchManifest,
+  upsertSchedules as registerCrawlDispatch,
+} from '@queues/crawl-dispatch/enqueues/schedules'
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import {
   scheduledJobManifest as crawlReferralManifest,
   upsertSchedules as registerCrawlReferral,
@@ -67,15 +62,14 @@ import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
 import {
   scheduledJobManifest as voteWeightManifest,
   upsertSchedules as registerVoteWeight,
-} from '@queues/vote-weight/enqueues/schedules'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
+} from '@queues/vote-aggregation/enqueues/schedules'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
   [registerBedrock, bedrock_embeddings_batch, bedrockManifest],
   [registerBloom, bloomFilters, bloomManifest],
-  [registerBoilerplate, boilerplateRemovalQueue, boilerplateManifest],
-  [registerCrawlHostnames, crawlHostnamesQueue, crawlHostnamesManifest],
+  [registerCrawlDispatch, crawlDispatchQueue, crawlDispatchManifest],
   [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
   [registerImages, imagesQueue, imagesManifest],
@@ -84,7 +78,7 @@ const REGISTRATIONS = [
   [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
   [registerBlacklist, urlsDomainsBlacklist, blacklistManifest],
-  [registerVoteWeight, voteWeightQueue, voteWeightManifest],
+  [registerVoteWeight, voteAggregation, voteWeightManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

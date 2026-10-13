@@ -1,13 +1,13 @@
 # ActivityPub Delivery Queue
 
-Source entrypoint: [backend/queues/activitypub-delivery/README.md](../../../../../backend/queues/activitypub-delivery/README.md)
+Source entrypoint: [backend/queues/activitypub/README.md](../../../../../backend/queues/activitypub/README.md)
 
 Fans an outbound Follow/Undo(Follow)/Like/Undo(Like) social action out to a local user's remote fediverse
 followers, then delivers the signed AS2 activity to each follower's inbox (Phase C4).
 
 ## Queue
 
-- Queue name: `activitypub-delivery`
+- Queue name: `activitypub`
 
 ## Jobs
 
@@ -66,6 +66,6 @@ user is deleted, preventing a later duplicate distribution job from restarting f
 ## Related
 
 - Service: [../../services/activitypub-delivery](../../../../../backend/services/activitypub-delivery)
-- Worker: [../../workers/activitypub-delivery](../../../../../backend/workers/activitypub-delivery)
+- Worker: [../../workers/activitypub-delivery](../../../../../backend/workers/activitypub)
 - Follower inbox discovery: [../../services/remote-actors](../../../../../backend/services/remote-actors)
-- Durable transition details: [../../workers/activitypub-delivery](../../../../../backend/workers/activitypub-delivery)
+- Durable transition details: [../../workers/activitypub-delivery](../../../../../backend/workers/activitypub)

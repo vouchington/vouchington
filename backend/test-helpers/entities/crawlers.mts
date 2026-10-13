@@ -1,8 +1,10 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function insertStaleFetchCrawlerForHostname(hostnameId: string): Promise<string[]> {
-  const { rows } = await write(sql`
+  const { rows } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
@@ -24,7 +26,8 @@ export async function insertStaleFetchCrawlerForHostname(hostnameId: string): Pr
       CURRENT_TIMESTAMP - INTERVAL '14 days'
     )
     RETURNING id
-  `)
+  `),
+  )
 
   return rows.map(row => row.id as string)
 }
@@ -51,7 +54,8 @@ export async function insertTestCrawler(options: {
     linkHrefsToRemove = [],
   } = options
 
-  const result = await write(sql`
+  const result = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO hostname_crawler_configurations (
       hostname_id,
       description,
@@ -70,7 +74,8 @@ export async function insertTestCrawler(options: {
       ${linkHrefsToRemove}
     )
     RETURNING id
-  `)
+  `),
+  )
 
   return result.rows[0].id
 }

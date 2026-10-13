@@ -78,3 +78,5 @@ provide all three binding values:
 `AGENT_TMUX_SOCKET`, `AGENT_TMUX_PANE`, and `AGENT_TMUX_WORKTREE` provide the same binding for
 name-only calls; a complete CLI binding takes precedence. An incomplete binding is rejected.
 Pass an empty name to clear the pane title and restore automatic window naming.
+
+The local catalog CLI defaults to its owning worktree. Use `node dev/localization/local-catalog.mts --worktree-root <root>` to compile a selected worktree; unit tests select finite fixture catalogs rather than scanning the full checkout. Static CI compiles the default catalog once.

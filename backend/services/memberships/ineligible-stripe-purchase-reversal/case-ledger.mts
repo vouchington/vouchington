@@ -57,7 +57,7 @@ export async function claimIneligiblePurchaseReversalCase(
     SELECT reversal_case.id, reversal_case.membership_source_id AS "membershipSourceId",
       reversal_case.membership_provider_lineage_id AS "membershipProviderLineageId",
       reversal_case.membership_lineage_binding_id AS "membershipLineageBindingId",
-      lineage.environment AS "providerEnvironment", lineage.application_id AS "providerApplicationId",
+      provider_context.environment AS "providerEnvironment", provider_context.application_id AS "providerApplicationId",
       lineage.provider_lineage_id AS "subscriptionId", binding.originating_invoice_id AS "originatingInvoiceId",
       reversal_case.stripe_price_id AS "stripePriceId", reversal_case.winning_source_kind AS "winningSourceKind",
       reversal_case.qualifying_amount_minor_units::TEXT AS "qualifyingAmountMinorUnits",
@@ -68,8 +68,10 @@ export async function claimIneligiblePurchaseReversalCase(
       ON binding.id = reversal_case.membership_lineage_binding_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = reversal_case.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
     WHERE reversal_case.membership_lineage_binding_id = ${input.membershipLineageBindingId}
-    FOR UPDATE
+    FOR UPDATE OF reversal_case, binding, lineage
   `)
   const row = rows[0] as Omit<
     IneligiblePurchaseReversalCase,
@@ -122,7 +124,7 @@ export async function getLockedIneligiblePurchaseReversalCase(
     SELECT reversal_case.id, reversal_case.membership_source_id AS "membershipSourceId",
       reversal_case.membership_provider_lineage_id AS "membershipProviderLineageId",
       reversal_case.membership_lineage_binding_id AS "membershipLineageBindingId",
-      lineage.environment AS "providerEnvironment", lineage.application_id AS "providerApplicationId",
+      provider_context.environment AS "providerEnvironment", provider_context.application_id AS "providerApplicationId",
       lineage.provider_lineage_id AS "subscriptionId", binding.originating_invoice_id AS "originatingInvoiceId",
       reversal_case.stripe_price_id AS "stripePriceId", reversal_case.winning_source_kind AS "winningSourceKind",
       reversal_case.qualifying_amount_minor_units::TEXT AS "qualifyingAmountMinorUnits",
@@ -133,12 +135,14 @@ export async function getLockedIneligiblePurchaseReversalCase(
       ON binding.id = reversal_case.membership_lineage_binding_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = reversal_case.membership_provider_lineage_id
-    WHERE lineage.provider = 'stripe' AND lineage.environment = ${options.providerEnvironment}
-      AND lineage.application_id = ${options.providerApplicationId}
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
+    WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${options.providerEnvironment}
+      AND provider_context.application_id = ${options.providerApplicationId}
       AND lineage.provider_lineage_id = ${options.subscriptionId}
       AND binding.source_kind = 'direct'
       AND binding.originating_invoice_id = ${options.originatingInvoiceId}
-    FOR UPDATE
+    FOR UPDATE OF reversal_case, binding, lineage
   `)
   if (rows.length > 1)
     throw new Error('Stripe reversal case lookup matched more than one immutable case')

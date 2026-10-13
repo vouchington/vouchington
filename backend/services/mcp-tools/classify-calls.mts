@@ -130,13 +130,9 @@ function classifyMessage(
   const callArguments = args ?? {}
   const invalidArguments = validateToolArguments(resolution.tool.schema.parameters, callArguments)
   const selectedOption = resolution.tool.meta?.auditOption?.(callArguments) ?? null
-  const copyrightRationale =
-    !invalidArguments &&
-    resolution.tool.meta?.switch === 'copyright.mcpDecisionTools' &&
-    resolution.tool.meta.auditRationale === true &&
-    typeof callArguments.rationale === 'string'
-      ? callArguments.rationale
-      : undefined
+  const copyrightRationale = invalidArguments
+    ? undefined
+    : readCopyrightRationale(resolution.tool.meta, callArguments)
   // Without an id the request is a notification, which the server never answers or runs.
   const requestId = invalidArguments ? null : readRequestId(message)
   const routeKeys = requestId === null ? [] : toolRouteKeys(resolution.tool.meta, callArguments)
@@ -150,6 +146,19 @@ function classifyMessage(
     },
     charge: requestId !== null && routeKeys.length > 0 ? { requestId, routeKeys } : null,
   }
+}
+
+// Kept copyright tools put rationale on the call. Merged tools put it inside the envelope.
+function readCopyrightRationale(
+  meta: { switch?: string; auditRationale?: true; auditOption?: unknown } | undefined,
+  callArguments: Record<string, unknown>,
+): string | undefined {
+  if (meta?.switch !== 'copyright.mcpDecisionTools' || meta.auditRationale !== true)
+    return undefined
+  const source = meta.auditOption ? callArguments['arguments'] : callArguments
+  if (typeof source !== 'object' || source === null || Array.isArray(source)) return undefined
+  const rationale = (source as { rationale?: unknown }).rationale
+  return typeof rationale === 'string' ? rationale : undefined
 }
 
 function uncharged(event: McpCallAuditEvent): ClassifiedMessage {

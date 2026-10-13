@@ -31,7 +31,7 @@ export async function getMembershipOverview(userId: string) {
   const [membership, sourceResult, pending] = await Promise.all([
     getMembershipByUserId(userId),
     read<SourceSummaryRow>(sql`/* getMembershipOverview.sources */
-      SELECT source.id, source.source_kind, lineage.provider, product.plan,
+      SELECT source.id, source.source_kind, provider_context.provider, product.plan,
         state.effective_at, state.expires_at, state.cancelled_at,
         state.expired_at, state.past_due_at, state.paused_at, state.should_auto_renew,
         observation.renewal_membership_product_id, observation.renewal_effective_at,
@@ -49,6 +49,7 @@ export async function getMembershipOverview(userId: string) {
       INNER JOIN membership_source_states state ON state.membership_source_id = source.id
       INNER JOIN membership_products product ON product.id = state.membership_product_id
       LEFT JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
+      LEFT JOIN membership_provider_contexts provider_context ON provider_context.id = lineage.membership_provider_context_id
       LEFT JOIN membership_provider_observations observation
         ON observation.id = state.membership_provider_observation_id
       LEFT JOIN membership_provider_evidence_records evidence

@@ -13,7 +13,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "account-data-requests",
+    "queueName": "account-lifecycle",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 * * * *",
@@ -29,7 +29,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "priority": 10,
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -43,7 +43,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "account-data-requests",
+    "queueName": "account-lifecycle",
     "registration": "parallel",
     "repeat": {
       "every": 300000,
@@ -69,6 +69,36 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "backfillId": "user-deletion-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "account-lifecycle",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "userDeletionRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverUserDeletions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Recover abandoned durable ActivityPub inbox envelopes",
         "id": "activitypub-inbox-recovery",
         "kind": "scheduled-jobs",
@@ -76,7 +106,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "activitypub-inbox",
+    "queueName": "activitypub",
     "registration": "parallel",
     "repeat": {
       "every": 300000,
@@ -109,7 +139,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "activitypub-inbox",
+    "queueName": "activitypub",
     "registration": "parallel",
     "repeat": {
       "every": 300000,
@@ -575,39 +605,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Dispatch HTML boilerplate removal",
-        "id": "boilerplate_removal_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 5 * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "crawl_html_boilerplate_removal",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 5 * * *",
-    },
-    "schedulerId": "boilerplate_removal_dispatcher",
-    "template": {
-      "data": {},
-      "name": "boilerplate_removal_dispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Dispatch due hostname crawl jobs (hourly)",
         "id": "crawl_hostnames_dispatcher",
         "kind": "scheduled-jobs",
@@ -619,7 +616,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl_hostnames",
+    "queueName": "crawl-dispatch",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 * * * *",
@@ -656,7 +653,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl_hostnames",
+    "queueName": "crawl-dispatch",
     "registration": "sequential",
     "repeat": {
       "pattern": "30 2 * * *",
@@ -693,7 +690,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl_hostnames",
+    "queueName": "crawl-dispatch",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 3 * * 0",
@@ -726,7 +723,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl_hostnames",
+    "queueName": "crawl-dispatch",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 4 * * 1",
@@ -759,7 +756,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl_hostnames",
+    "queueName": "crawl-dispatch",
     "registration": "sequential",
     "repeat": {
       "pattern": "30 3 * * *",
@@ -776,6 +773,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch HTML boilerplate removal",
+        "id": "boilerplate_removal_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 5 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "crawl-dispatch",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 5 * * *",
+    },
+    "schedulerId": "boilerplate_removal_dispatcher",
+    "template": {
+      "data": {},
+      "name": "boilerplate_removal_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -2201,7 +2231,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "trigger": "[function]",
       },
     ],
-    "queueName": "rss-feed-item-categories",
+    "queueName": "rss-feed-maintenance",
     "registration": "sequential",
     "repeat": {
       "every": 300000,
@@ -2220,6 +2250,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 1,
           "key": "snapshot-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
+        "id": "reconcileTopicAliasCategoryMappings",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileTopicAliasCategoryMappings",
+    "template": {
+      "data": {},
+      "name": "processReconcileTopicAliasCategoryMappings",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "category-mapping-reconciliation",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2429,43 +2496,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
-        "id": "reconcileTopicAliasCategoryMappings",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "topic-aliases",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcileTopicAliasCategoryMappings",
-    "template": {
-      "data": {},
-      "name": "processReconcileTopicAliasCategoryMappings",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "category-mapping-reconciliation",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
         "id": "unfurl_referral_links_dispatcher",
         "kind": "scheduled-jobs",
@@ -2536,36 +2566,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "backfillId": "user-deletion-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "user-deletions",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "userDeletionRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverUserDeletions",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recalculate vote weights",
         "id": "dailyVoteWeightRecalculation",
         "kind": "scheduled-jobs",
@@ -2577,7 +2577,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "vote-weight",
+    "queueName": "vote-aggregation",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 4 * * *",
@@ -2615,7 +2615,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
     "id": "activitypub-inbox-recovery",
     "job_name": "recoverDeliveries",
-    "queue_name": "activitypub-inbox",
+    "queue_name": "activitypub",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverActivityPubInboxDeliveries",
   },
@@ -2623,7 +2623,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Delete expired durable ActivityPub inbox envelopes",
     "id": "activitypub-inbox-cleanup",
     "job_name": "cleanupExpiredDeliveries",
-    "queue_name": "activitypub-inbox",
+    "queue_name": "activitypub",
     "schedule": "every 5m",
     "triggerName": "enqueueCleanupExpiredActivityPubInboxDeliveries",
   },
@@ -2743,7 +2743,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Clean up expired data export files",
     "id": "account-data-requests-cleanup",
     "job_name": "processCleanupExpiredExports",
-    "queue_name": "account-data-requests",
+    "queue_name": "account-lifecycle",
     "schedule": "0 * * * *",
     "triggerName": "enqueueCleanupExpiredExports",
   },
@@ -2775,7 +2775,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Recalculate vote weights",
     "id": "dailyVoteWeightRecalculation",
     "job_name": "processRecalculateVoteWeightDispatcher",
-    "queue_name": "vote-weight",
+    "queue_name": "vote-aggregation",
     "schedule": "0 4 * * *",
     "triggerName": "enqueueRecalculateVoteWeightDispatcher",
   },
@@ -2927,7 +2927,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
     "id": "reconcileTopicAliasCategoryMappings",
     "job_name": "processReconcileTopicAliasCategoryMappings",
-    "queue_name": "topic-aliases",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileTopicAliasCategoryMappings",
   },
@@ -2935,7 +2935,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Drain durable RSS item category snapshots",
     "id": "reconcileRssFeedItemCategorySnapshots",
     "job_name": "processReconcileRssFeedItemCategorySnapshots",
-    "queue_name": "rss-feed-item-categories",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileRssFeedItemCategorySnapshots",
   },
@@ -3055,7 +3055,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Dispatch due hostname crawl jobs (hourly)",
     "id": "crawl_hostnames_dispatcher",
     "job_name": "enqueueCrawlHostnamesDispatcher",
-    "queue_name": "crawl_hostnames",
+    "queue_name": "crawl-dispatch",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
   },
@@ -3063,7 +3063,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Dispatch tier-1 hostname crawls (daily)",
     "id": "crawl_tier1_dispatcher",
     "job_name": "enqueueCrawlTier1Dispatcher",
-    "queue_name": "crawl_hostnames",
+    "queue_name": "crawl-dispatch",
     "schedule": "30 2 * * *",
     "triggerName": "[anonymous]",
   },
@@ -3071,7 +3071,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Clean up old crawl data (daily)",
     "id": "crawl_cleanup",
     "job_name": "crawl_cleanup",
-    "queue_name": "crawl_hostnames",
+    "queue_name": "crawl-dispatch",
     "schedule": "30 3 * * *",
     "triggerName": "[anonymous]",
   },
@@ -3079,7 +3079,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Dispatch HTML boilerplate removal",
     "id": "boilerplate_removal_dispatcher",
     "job_name": "boilerplate_removal_dispatcher",
-    "queue_name": "crawl_html_boilerplate_removal",
+    "queue_name": "crawl-dispatch",
     "schedule": "0 5 * * *",
     "triggerName": "enqueueBoilerplateRemovalDispatcher",
   },
@@ -3087,7 +3087,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Dispatch tier-2 hostname crawls (weekly)",
     "id": "crawl_tier2_dispatcher",
     "job_name": "enqueueCrawlTier2Dispatcher",
-    "queue_name": "crawl_hostnames",
+    "queue_name": "crawl-dispatch",
     "schedule": "0 3 * * 0",
     "triggerName": "[anonymous]",
   },
@@ -3103,7 +3103,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "description": "Refresh hostname crawler config (weekly)",
     "id": "refresh_hostname_crawler_dispatcher",
     "job_name": "refresh_hostname_crawler_dispatcher",
-    "queue_name": "crawl_hostnames",
+    "queue_name": "crawl-dispatch",
     "schedule": "0 4 * * 1",
     "triggerName": "[anonymous]",
   },

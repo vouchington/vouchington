@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 
 interface TestRssFeedCrawl {
@@ -15,9 +16,9 @@ export async function insertTestRssFeedCrawl(
 ): Promise<TestRssFeedCrawl> {
   const { responseCode = 200, feedData = null } = options
   const result = await write(
-    `INSERT INTO rss_feed_crawls (rss_feed_id, response_code, feed_data)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_crawls (rss_feed_id, response_code, feed_data)
      VALUES ($1, $2, $3)
-     RETURNING id`,
+     RETURNING id`),
     [rssFeedId, responseCode, feedData ? JSON.stringify(feedData) : null],
   )
   const id = result.rows[0].id as string

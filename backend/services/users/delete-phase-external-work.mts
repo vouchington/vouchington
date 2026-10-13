@@ -44,9 +44,9 @@ export async function processUserDeletionExternalWork(
       } else if (work.work_kind === 'stripe-customer') {
         try {
           await deps.sanitizeStripeCustomer(
-            work.work_key,
+            work.stripe_customer_id,
             undefined,
-            `user-deletion__${requestId}__stripe__${work.work_key}`,
+            `user-deletion__${requestId}__stripe__${work.stripe_customer_id}`,
           )
         } catch (err) {
           if (!isStripeMissingCustomerError(err)) throw err
@@ -109,8 +109,11 @@ async function runEntityRelationTopicEffects(
 
 async function getPendingExternalWork(requestId: string) {
   const { rows } = await write(sql`/* processUserDeletionExternalWork:candidate */
-    SELECT id, work_kind, work_key, relation_impact_id FROM user_deletion_external_works
-    WHERE request_id = ${requestId} AND completed_at IS NULL ORDER BY id LIMIT 1`)
+    SELECT work.id, work.work_kind, work.work_key, work.relation_impact_id,
+      lineage.provider_account_id AS stripe_customer_id
+    FROM user_deletion_external_works work
+    LEFT JOIN membership_provider_lineages lineage ON lineage.id = work.membership_provider_lineage_id
+    WHERE work.request_id = ${requestId} AND work.completed_at IS NULL ORDER BY work.id LIMIT 1`)
   return rows[0] as
     | (
         | {
@@ -118,12 +121,24 @@ async function getPendingExternalWork(requestId: string) {
             work_kind: 'entity-relation-effects'
             work_key: null
             relation_impact_id: string
+            stripe_customer_id: null
           }
         | {
             id: string
-            work_kind: Exclude<UserDeletionExternalWorkKind, 'entity-relation-effects'>
+            work_kind: 'stripe-customer'
+            work_key: null
+            relation_impact_id: null
+            stripe_customer_id: string
+          }
+        | {
+            id: string
+            work_kind: Exclude<
+              UserDeletionExternalWorkKind,
+              'entity-relation-effects' | 'stripe-customer'
+            >
             work_key: string
             relation_impact_id: null
+            stripe_customer_id: null
           }
       )
     | undefined

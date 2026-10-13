@@ -9,7 +9,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { isJwtStale } from '@data-stores/valkey/jwt-stale'
-import { voteWeightQueue } from '@queues/vote-weight/queues'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   claimPendingMembershipEntitlementEffects,
   completeMembershipEntitlementEffects,
@@ -116,7 +116,7 @@ describe('membership entitlement effects', () => {
     expect(await getTestMembershipEntitlementEffects(rawMembership.latest_change_id)).toEqual([
       expect.objectContaining({ delivered_at: expect.any(Date), delivery_claim_token: null }),
     ])
-    const jobs = await readAllQueueJobs(voteWeightQueue)
+    const jobs = await readAllQueueJobs(voteAggregation)
     expect(jobs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ data: { userId: user.id, forceRecalculate: true } }),

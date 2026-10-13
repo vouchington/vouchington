@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write, writePool } from '@data-stores/psql'
 import { EMBEDDINGS_TABLE, embeddingBloomFilter } from './_bedrock-embeddings-support.mts'
 
@@ -30,8 +31,8 @@ export async function insertTestEmbeddings(
     }
 
     await write(
-      `INSERT INTO ${EMBEDDINGS_TABLE} (content_sha256, embedding)
-       VALUES ${placeholders}`,
+      allowUnannotatedQuery(`INSERT INTO ${EMBEDDINGS_TABLE} (content_sha256, embedding)
+       VALUES ${placeholders}`),
       values,
       { client },
     )
@@ -42,7 +43,9 @@ export async function insertTestEmbeddings(
 
 export async function getEmbeddingByContentSha256(contentSha256: Buffer) {
   const { rows } = await read(
-    `SELECT content_sha256, embedding, created_at FROM ${EMBEDDINGS_TABLE} WHERE content_sha256 = $1`,
+    allowUnannotatedQuery(
+      `SELECT content_sha256, embedding, created_at FROM ${EMBEDDINGS_TABLE} WHERE content_sha256 = $1`,
+    ),
     [contentSha256],
   )
   return rows[0] ?? null
@@ -50,14 +53,18 @@ export async function getEmbeddingByContentSha256(contentSha256: Buffer) {
 
 export async function countEmbeddingsByContentSha256(contentSha256: Buffer): Promise<number> {
   const { rows } = await read(
-    `SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE} WHERE content_sha256 = $1`,
+    allowUnannotatedQuery(
+      `SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE} WHERE content_sha256 = $1`,
+    ),
     [contentSha256],
   )
   return rows[0]?.count ?? 0
 }
 
 export async function countAllEmbeddings(): Promise<number> {
-  const { rows } = await read(`SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`)
+  const { rows } = await read(
+    allowUnannotatedQuery(`SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`),
+  )
   return rows[0]?.count ?? 0
 }
 
@@ -65,10 +72,12 @@ export async function setTopicEmbeddingContentSha256(
   topicId: string,
   contentSha256: Buffer,
 ): Promise<void> {
-  await write(`UPDATE topics SET bedrock_nova_multimodal_v1_content_sha256 = $1 WHERE id = $2`, [
-    contentSha256,
-    topicId,
-  ])
+  await write(
+    allowUnannotatedQuery(
+      `UPDATE topics SET bedrock_nova_multimodal_v1_content_sha256 = $1 WHERE id = $2`,
+    ),
+    [contentSha256, topicId],
+  )
 }
 
 export async function setTopicEmbeddingContentAndInputSha256(
@@ -76,10 +85,10 @@ export async function setTopicEmbeddingContentAndInputSha256(
   contentSha256: Buffer,
 ): Promise<void> {
   await write(
-    `UPDATE topics
+    allowUnannotatedQuery(`UPDATE topics
      SET bedrock_nova_multimodal_v1_content_sha256 = $1,
          bedrock_nova_multimodal_v1_input_sha256 = $1
-     WHERE id = $2`,
+     WHERE id = $2`),
     [contentSha256, topicId],
   )
 }
@@ -90,23 +99,23 @@ export async function setTopicNameAndEmbeddingContentSha256(
   contentSha256: Buffer,
 ): Promise<void> {
   await write(
-    `
+    allowUnannotatedQuery(`
     UPDATE topics
     SET name = $1,
         bedrock_nova_multimodal_v1_content_sha256 = $2
     WHERE id = $3
-  `,
+  `),
     [name, contentSha256, topicId],
   )
 }
 
 export async function getTopicEmbeddingReference(topicId: string) {
   const { rows } = await read(
-    `
+    allowUnannotatedQuery(`
     SELECT bedrock_nova_multimodal_v1_content_sha256, bedrock_nova_multimodal_v1_embedding_created_at
     FROM topics
     WHERE id = $1
-  `,
+  `),
     [topicId],
   )
   return rows[0] ?? null
@@ -117,11 +126,11 @@ export async function setPostEmbeddingContentSha256(
   contentSha256: Buffer,
 ): Promise<void> {
   await write(
-    `UPDATE posts
+    allowUnannotatedQuery(`UPDATE posts
      SET bedrock_nova_multimodal_v1_content_sha256 = $1,
          bedrock_nova_multimodal_v1_input_sha256 = $1,
          bedrock_nova_multimodal_v1_embedding_created_at = NOW()
-     WHERE id = $2`,
+     WHERE id = $2`),
     [contentSha256, postId],
   )
 }
@@ -131,26 +140,26 @@ export async function setPostEmbeddingContentOnlySha256(
   contentSha256: Buffer,
 ): Promise<void> {
   await write(
-    `UPDATE posts
+    allowUnannotatedQuery(`UPDATE posts
      SET bedrock_nova_multimodal_v1_content_sha256 = $1,
          bedrock_nova_multimodal_v1_input_sha256 = NULL,
          bedrock_nova_multimodal_v1_embedding = NULL,
          bedrock_nova_multimodal_v1_embedding_created_at = NULL
-     WHERE id = $2`,
+     WHERE id = $2`),
     [contentSha256, postId],
   )
 }
 
 export async function getEmbeddingsJoinForPost(postId: string) {
   const { rows } = await read(
-    `
+    allowUnannotatedQuery(`
     SELECT posts.id, emb.embedding
     FROM posts
     INNER JOIN ${EMBEDDINGS_TABLE} emb
       ON posts.bedrock_nova_multimodal_v1_content_sha256 = emb.content_sha256
     WHERE posts.id = $1
       AND posts.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-  `,
+  `),
     [postId],
   )
   return rows
@@ -158,7 +167,9 @@ export async function getEmbeddingsJoinForPost(postId: string) {
 
 export async function getBatchMetadata(batchId: string) {
   const { rows } = await read(
-    'SELECT records::int, job_type, model_id FROM bedrock_embedding_batches WHERE id = $1',
+    allowUnannotatedQuery(
+      'SELECT records::int, job_type, model_id FROM bedrock_embedding_batches WHERE id = $1',
+    ),
     [batchId],
   )
   return rows[0] ?? null
@@ -170,13 +181,13 @@ export async function insertEmbeddingIfMissing(
   _tokens?: number,
 ): Promise<void> {
   await write(
-    `
+    allowUnannotatedQuery(`
     INSERT INTO ${EMBEDDINGS_TABLE} (
       content_sha256,
       embedding
     ) VALUES ($1, $2)
     ON CONFLICT (content_sha256) DO NOTHING
-  `,
+  `),
     [contentSha256, embeddingSql],
   )
   // Keep the bloom filter in sync so lookupExistingEmbedding can find the entry.

@@ -688,11 +688,11 @@ Membership projection for authorized owner and staff account reads.
     m.effective_at AS started_at,
     m.expires_at,
         CASE
-            WHEN ((lineage.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind = 'direct'::membership_source_kinds)) THEN lineage.provider_lineage_id
+            WHEN ((lineage_context.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind = 'direct'::membership_source_kinds)) THEN lineage.provider_lineage_id
             ELSE NULL::text
         END AS stripe_subscription_id,
         CASE
-            WHEN ((lineage.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind = 'direct'::membership_source_kinds)) THEN lineage.provider_account_id
+            WHEN ((lineage_context.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind = 'direct'::membership_source_kinds)) THEN lineage.provider_account_id
             ELSE NULL::text
         END AS stripe_customer_id,
     membership_grant.granted_by_id,
@@ -709,7 +709,7 @@ Membership projection for authorized owner and staff account reads.
             WHEN (stripe_mapping.provider_product_id IS NULL) THEN NULL::json
             ELSE json_build_object('amount', stripe_mapping.price_minor_units, 'currency', stripe_mapping.currency_code)
         END, 'interval', p.billing_interval, 'stripe_price_id', stripe_mapping.provider_product_id, 'retired_at', p.retired_at) AS sku
-   FROM ((((((((memberships m
+   FROM (((((((((memberships m
      JOIN membership_products p ON ((p.id = m.membership_product_id)))
      JOIN membership_sources source ON ((source.id = m.membership_source_id)))
      LEFT JOIN membership_source_states source_state ON ((source_state.membership_source_id = source.id)))
@@ -717,16 +717,14 @@ Membership projection for authorized owner and staff account reads.
      LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_record_id)))
      LEFT JOIN membership_grants membership_grant ON ((membership_grant.membership_source_id = source.id)))
      LEFT JOIN membership_provider_lineages lineage ON ((lineage.id = source.membership_provider_lineage_id)))
-     LEFT JOIN LATERAL ( SELECT membership_provider_products.provider_product_id,
-            membership_provider_products.price_minor_units,
-            membership_provider_products.currency_code
-           FROM membership_provider_products
-          WHERE ((membership_provider_products.membership_product_id = p.id) AND (membership_provider_products.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind <> 'admin_grant'::membership_source_kinds) AND (((source.source_kind = 'direct'::membership_source_kinds) AND (lineage.provider = 'stripe'::membership_provider_kinds) AND (membership_provider_products.environment = lineage.environment)) OR (source.source_kind <> 'direct'::membership_source_kinds)) AND (membership_provider_products.application_id =
-                CASE
-                    WHEN ((source.source_kind = 'direct'::membership_source_kinds) AND (lineage.provider = 'stripe'::membership_provider_kinds)) THEN lineage.application_id
-                    ELSE 'voucha-web'::text
-                END))
-          ORDER BY membership_provider_products.id DESC
+     LEFT JOIN membership_provider_contexts lineage_context ON ((lineage_context.id = lineage.membership_provider_context_id)))
+     LEFT JOIN LATERAL ( SELECT mapping.provider_product_id,
+            mapping.price_minor_units,
+            mapping.currency_code
+           FROM (membership_provider_products mapping
+             JOIN membership_provider_contexts mapping_context ON ((mapping_context.id = mapping.membership_provider_context_id)))
+          WHERE ((mapping.membership_product_id = p.id) AND (mapping_context.provider = 'stripe'::membership_provider_kinds) AND (source.source_kind <> 'admin_grant'::membership_source_kinds) AND (((source.source_kind = 'direct'::membership_source_kinds) AND (lineage_context.provider = 'stripe'::membership_provider_kinds) AND (mapping.membership_provider_context_id = lineage.membership_provider_context_id)) OR ((source.source_kind <> 'direct'::membership_source_kinds) AND (mapping_context.application_id = 'voucha-web'::text))))
+          ORDER BY mapping.id DESC
          LIMIT 1) stripe_mapping ON (true))
   WHERE (m.projection_ended_at IS NULL);
 ```

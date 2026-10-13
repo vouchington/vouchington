@@ -68,10 +68,12 @@ jobs:
       publish: ${{ steps.image-paths.outputs.runtime-build-web }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        timeout-minutes: 2
         id: image-paths
         with:
           base: ${{ github.event.before }}
@@ -87,6 +89,7 @@ jobs:
     permissions: {}
     steps:
       - run: ':'
+        timeout-minutes: 1
 
   # Reuses the web image the merge group published for this commit once its provenance verifies.
   # Only a missing image gets built, through the same smoke/Trivy composite that PR validation

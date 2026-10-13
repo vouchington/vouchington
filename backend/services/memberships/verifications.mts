@@ -1,35 +1,24 @@
 import { createHash } from 'node:crypto'
-import { beginTransaction, type QueryExecutor, read } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { createCodedError } from '@modules/on-error/create-coded-error'
-import { IDEMPOTENCY_KEY_REUSED, INVALID_INPUT, NOT_FOUND } from '@modules/on-error/error-codes'
+import { IDEMPOTENCY_KEY_REUSED, INVALID_INPUT } from '@modules/on-error/error-codes'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueProcessMembershipVerification } from '@queues/memberships/enqueues'
 import { getMembershipProviderContext } from '@voucha/config/membership-providers'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from './provider-context.mts'
 import type { MembershipPurchaseProvider } from './purchase-intent-launches.mts'
+import { loadVerification, toVerification } from './verification-read.mts'
 import {
   canonicalizeMembershipEvidence,
   createMembershipVerificationFingerprint,
-  getMembershipVerificationStatus,
   type MembershipVerification,
-  type MembershipVerificationReasonCode,
-  type VerificationLifecycle,
 } from './verification-contract.mts'
 export * from './verification-contract.mts'
 export * from './verification-recovery.mts'
+export { getMembershipVerification } from './verification-read.mts'
 
 const MAX_EVIDENCE_PLAINTEXT_BYTES = 32_768
-
-type VerificationRow = VerificationLifecycle & {
-  id: string
-  user_id: string
-  provider: MembershipPurchaseProvider
-  environment: 'test' | 'production'
-  application_id: string
-  request_fingerprint: string
-  result_code: MembershipVerificationReasonCode | null
-  created_at: Date
-}
 
 export type CreateMembershipVerificationOptions = {
   userId: string
@@ -81,6 +70,14 @@ export async function createMembershipVerificationInTransaction(
     : toDatabaseProviderContext(
         options.trustedProviderContext ?? getMembershipProviderContext(options.provider),
       )
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: options.provider,
+      environment: context.environment,
+      applicationId: context.application_id,
+    },
+    query,
+  )
   const evidenceLookupSha256 = createHash('sha256').update(serializedEvidence).digest('hex')
   const encryptedEvidence = Buffer.from(
     encryptSecret(
@@ -92,21 +89,18 @@ export async function createMembershipVerificationInTransaction(
     id: string
   }>(sql`/* createMembershipVerification.evidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
+      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      ${options.provider}, ${context.environment}, ${context.application_id},
-      ${evidenceLookupSha256}, ${encryptedEvidence}
+      ${contextId}, ${evidenceLookupSha256}, ${encryptedEvidence}
     )
-    ON CONFLICT (provider, environment, application_id, evidence_lookup_sha256) DO NOTHING
+    ON CONFLICT (membership_provider_context_id, evidence_lookup_sha256) DO NOTHING
     RETURNING id`)
   const evidenceId =
     insertedEvidence.rows[0]?.id ??
     (
       await query<{ id: string }>(sql`/* createMembershipVerification.existingEvidence */
         SELECT id FROM membership_provider_evidence_records
-        WHERE provider = ${options.provider}
-          AND environment = ${context.environment}
-          AND application_id = ${context.application_id}
+        WHERE membership_provider_context_id = ${contextId}
           AND evidence_lookup_sha256 = ${evidenceLookupSha256}
         LIMIT 1`)
     ).rows[0]?.id
@@ -114,11 +108,10 @@ export async function createMembershipVerificationInTransaction(
   const inserted = await query<{ id: string }>(sql`/* createMembershipVerification.insert */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_record_id, provider, environment, application_id
+      membership_provider_evidence_record_id, membership_provider_context_id
     ) VALUES (
       ${options.userId}, ${options.idempotencyKey}, ${requestFingerprint},
-      ${options.purchaseIntentId}, ${evidenceId}, ${options.provider},
-      ${context.environment}, ${context.application_id}
+      ${options.purchaseIntentId}, ${evidenceId}, ${contextId}
     )
     ON CONFLICT (user_id, idempotency_key) DO NOTHING
     RETURNING id`)
@@ -152,46 +145,12 @@ async function getPurchaseIntentContext(
     environment: 'test' | 'production'
     application_id: string
   }>(sql`/* createMembershipVerification.context */
-    SELECT environment, application_id FROM membership_purchase_intents
-    WHERE id = ${options.purchaseIntentId} AND user_id = ${options.userId}
-      AND provider = ${options.provider}
+    SELECT context.environment, context.application_id FROM membership_purchase_intents intent
+    INNER JOIN membership_provider_contexts context ON context.id = intent.membership_provider_context_id
+    WHERE intent.id = ${options.purchaseIntentId} AND intent.user_id = ${options.userId}
+      AND context.provider = ${options.provider}
     LIMIT 1`)
   const context = rows[0]
   if (!context) throw createCodedError(422, 'Invalid membership purchase intent.', INVALID_INPUT)
   return context
-}
-
-export async function getMembershipVerification(
-  userId: string,
-  verificationId: string,
-): Promise<MembershipVerification> {
-  const { rows } = await read<VerificationRow>(sql`/* getMembershipVerification */
-    SELECT id, user_id, provider, environment, application_id, request_fingerprint,
-      verified_at, conflicted_at, rejected_at, result_code, created_at
-    FROM membership_verifications
-    WHERE id = ${verificationId} AND user_id = ${userId}
-    LIMIT 1`)
-  const row = rows[0]
-  if (!row) throw createCodedError(404, 'Membership verification not found.', NOT_FOUND)
-  return toVerification(row)
-}
-
-async function loadVerification(query: QueryExecutor, userId: string, idempotencyKey: string) {
-  const { rows } = await query<VerificationRow>(sql`/* createMembershipVerification.load */
-    SELECT id, user_id, provider, environment, application_id, request_fingerprint,
-      verified_at, conflicted_at, rejected_at, result_code, created_at
-    FROM membership_verifications
-    WHERE user_id = ${userId} AND idempotency_key = ${idempotencyKey}
-    LIMIT 1`)
-  return rows[0] ?? null
-}
-
-function toVerification(row: VerificationRow): MembershipVerification {
-  return {
-    id: row.id,
-    provider: row.provider,
-    status: getMembershipVerificationStatus(row),
-    reason_code: row.result_code,
-    created_at: row.created_at,
-  }
 }

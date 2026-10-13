@@ -61,6 +61,7 @@ jobs:
           --tmpfs /data:rw,size=64m
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
@@ -109,6 +110,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Next.js pages-router check
@@ -138,11 +140,12 @@ jobs:
     if: inputs.lambdas
     # The Lambda architecture, so the deployment package smoke test loads the sharp binary it ships.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 15
+    timeout-minutes: 16
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Check lambda dependencies
@@ -161,11 +164,12 @@ jobs:
   static-cloudflare:
     if: inputs.cloudflare-worker
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 11
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Smoke test Cloudflare Worker runtime

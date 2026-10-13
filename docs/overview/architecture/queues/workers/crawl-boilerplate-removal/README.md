@@ -1,6 +1,6 @@
 # Crawl Boilerplate Removal Worker
 
-Source entrypoint: [backend/workers/crawl-boilerplate-removal/README.md](../../../../../../backend/workers/crawl-boilerplate-removal/README.md)
+Source entrypoint: [backend/workers/crawl-dispatch/README.md](../../../../../../backend/workers/crawl-dispatch/README.md)
 
 Worker package for boilerplate removal dispatch and page-content cleanup jobs.
 
@@ -10,12 +10,12 @@ process, and only that selected corpus is materialized for the current buffer-on
 downloaded artifact is removed after success, skip, or failure.
 
 The actual processor imports UTF-8 validation and byte-budget selection from
-[`html-file-selection.mts`](../../../../../../backend/workers/crawl-boilerplate-removal/processors/html-file-selection.mts).
+[`html-file-selection.mts`](../../../../../../backend/workers/crawl-dispatch/processors/html-file-selection.mts).
 `processors.mts` retains native extraction serialization and the persisted result/cleanup pipeline.
 
 ## Exports
 
-- `boilerplateRemoval` - worker instance for the `crawl_html_boilerplate_removal` queue.
+- `crawlDispatch` - shared worker instance for the `crawl-dispatch` queue.
 
 ## Related
 

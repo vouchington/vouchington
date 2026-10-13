@@ -78,10 +78,11 @@ export async function getMembershipByStripeSubscriptionId(
     INNER JOIN membership_sources source ON source.id = projection.membership_source_id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     WHERE source.source_kind = 'direct'
-      AND lineage.provider = ${sourceIdentity.provider}
-      AND lineage.environment = ${sourceIdentity.environment}
-      AND lineage.application_id = ${sourceIdentity.applicationId}
+      AND context.provider = ${sourceIdentity.provider}
+      AND context.environment = ${sourceIdentity.environment}
+      AND context.application_id = ${sourceIdentity.applicationId}
       AND lineage.provider_lineage_id = ${sourceIdentity.providerLineageId}
     LIMIT 1
   `,
@@ -111,6 +112,7 @@ export async function getRetainedDirectMembershipSourceByStripeIdentity(
     FROM membership_sources source
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     INNER JOIN membership_source_states source_state
       ON source_state.membership_source_id = source.id
     LEFT JOIN LATERAL (
@@ -121,9 +123,9 @@ export async function getRetainedDirectMembershipSourceByStripeIdentity(
     ) historical_membership ON true
     WHERE source.source_kind = 'direct'
       AND source.user_id IS NOT NULL
-      AND lineage.provider = ${sourceIdentity.provider}
-      AND lineage.environment = ${sourceIdentity.environment}
-      AND lineage.application_id = ${sourceIdentity.applicationId}
+      AND context.provider = ${sourceIdentity.provider}
+      AND context.environment = ${sourceIdentity.environment}
+      AND context.application_id = ${sourceIdentity.applicationId}
       AND lineage.provider_lineage_id = ${sourceIdentity.providerLineageId}
     LIMIT 1
   `,

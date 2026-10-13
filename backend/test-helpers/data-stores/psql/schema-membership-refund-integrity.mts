@@ -26,7 +26,9 @@ export async function getMembershipRefundOperationConstraintState(): Promise<Mem
     hasAdministratorRequestReference: rows.some(
       row =>
         row.constraint_type === 'f' &&
-        row.definition.includes('(membership_operation_id, stripe_idempotency_key)'),
+        row.definition.includes(
+          'FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id)',
+        ),
     ),
     hasOperationSourceReference: rows.some(
       row =>

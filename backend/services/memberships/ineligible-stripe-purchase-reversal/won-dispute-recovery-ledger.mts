@@ -1,5 +1,6 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { reconcileFailedIneligiblePurchaseReversal } from '../ineligible-stripe-purchase-reversal-reconcile.mts'
 import {
   createIneligiblePurchaseReversalIdempotencyKey,
@@ -95,16 +96,24 @@ export async function claimWonStripeDisputeRecovery(
     await query.commit()
     return null
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the locked claim reread
+  const providerContextId = await getOrCreateProviderContextId(
+    {
+      provider: 'stripe',
+      environment: reversalCase.providerEnvironment,
+      applicationId: reversalCase.providerApplicationId,
+    },
+    query,
+  )
   await query(sql`/* claimWonStripeDisputeRecovery:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     ) VALUES (
       ${reversalCase.membershipSourceId}, ${reversalCase.membershipProviderLineageId},
-      ${reversalCase.membershipLineageBindingId}, 'stripe', ${reversalCase.providerEnvironment},
-      ${reversalCase.providerApplicationId}, 'collision_resolution', ${idempotencyKey},
+      ${reversalCase.membershipLineageBindingId}, ${providerContextId}, 'collision_resolution', ${idempotencyKey},
       ${amountMinorUnits}, ${amountMinorUnits}, ${reversalCase.currency},
       ${reversalCase.periodStartedAt}, ${reversalCase.periodEndsAt}, ${reversalCase.collisionAt}
     )

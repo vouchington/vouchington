@@ -10,12 +10,12 @@
   "dependencies": {
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
-    "@vouchington/postgres": "^0.0.13",
+    "@vouchington/postgres": "^0.0.15",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.86.3",
+    "no-mistakes": "^0.88.0",
     "oxfmt": "^0.72.0",
     "smol-toml": "^1.9.1",
-    "vouchington-tooling": "^0.40.0",
+    "vouchington-tooling": "^0.41.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

@@ -124,7 +124,10 @@ describe('terminal image surface owner deletion', () => {
 
 async function probePlacementRow(placementId: string): Promise<void> {
   await using probe = await beginTransaction()
-  await probe(`SET LOCAL lock_timeout = '50ms'`)
-  await probe(`SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`, [placementId])
+  await probe(`/* testProfileImageOwnerDeletion */ SET LOCAL lock_timeout = '50ms'`)
+  await probe(
+    `/* testProfileImageOwnerDeletion */ SELECT id FROM media_placements WHERE id = $1::uuid FOR UPDATE`,
+    [placementId],
+  )
   await probe.commit()
 }

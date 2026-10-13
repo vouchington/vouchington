@@ -9,7 +9,7 @@ import {
   lockTopicAliasPublicationScopes,
   lockTopicRssFeedPublicationScopes,
 } from '@services/post-publication'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
 

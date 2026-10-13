@@ -234,7 +234,7 @@ describe('RSS category story-post publication', () => {
       try {
         await entered.promise
         await using probe = await beginTransaction()
-        await probe(`SET LOCAL lock_timeout = '50ms'`)
+        await probe(`/* testRssCategoryPublication */ SET LOCAL lock_timeout = '50ms'`)
         await expect(lockStories(probe, [story.id])).rejects.toMatchObject({ code: '55P03' })
       } finally {
         lifecycleSpy.mockRestore()

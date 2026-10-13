@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { getTopicTypeSlug } from '../../backend/types/entities/topic.mts'
 
@@ -20,7 +21,7 @@ export async function insertTestTopic(
   // - slug conflict: update name in-place (publisher type re-seeding on dirty DB)
   // - name conflict: update slug in-place (fixed-name topics re-inserted with fresh slugs)
   const result = await write(
-    `WITH
+    allowUnannotatedQuery(`WITH
      slug_match AS (
        UPDATE topics SET name = $1, topic_type = $3
        WHERE slug = $2
@@ -41,7 +42,7 @@ export async function insertTestTopic(
      SELECT id FROM ins
      UNION ALL SELECT id FROM slug_match
      UNION ALL SELECT id FROM name_match
-     LIMIT 1`,
+     LIMIT 1`),
     [name, slug, topicType, TEST_USER_ID, ZERO_SHA],
   )
   // ON CONFLICT DO NOTHING suppresses errors but the CTE snapshot predates a concurrent
@@ -50,25 +51,32 @@ export async function insertTestTopic(
   // (same name, different fresh slug) by checking slug OR normalized name.
   const id = (result.rows[0]?.id ??
     (
-      await write(`SELECT id FROM topics WHERE slug = $1 OR LOWER(name) = LOWER($2) LIMIT 1`, [
-        slug,
-        name,
-      ])
+      await write(
+        allowUnannotatedQuery(
+          `SELECT id FROM topics WHERE slug = $1 OR LOWER(name) = LOWER($2) LIMIT 1`,
+        ),
+        [slug, name],
+      )
     ).rows[0].id) as string
   if (flags.noindex !== undefined || flags.allowReviews !== undefined) {
-    await write(`UPDATE topics SET is_noindexed = $2, should_allow_reviews = $3 WHERE id = $1`, [
-      id,
-      flags.noindex ?? false,
-      flags.allowReviews ?? true,
-    ])
+    await write(
+      allowUnannotatedQuery(
+        `UPDATE topics SET is_noindexed = $2, should_allow_reviews = $3 WHERE id = $1`,
+      ),
+      [id, flags.noindex ?? false, flags.allowReviews ?? true],
+    )
   }
   await write(
-    `INSERT INTO topic_metrics (topic_id) VALUES ($1) ON CONFLICT (topic_id) DO NOTHING`,
+    allowUnannotatedQuery(
+      `INSERT INTO topic_metrics (topic_id) VALUES ($1) ON CONFLICT (topic_id) DO NOTHING`,
+    ),
     [id],
   )
   if (topicType === 'topic') {
     await write(
-      `INSERT INTO spending_category_topics (topic_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+      allowUnannotatedQuery(
+        `INSERT INTO spending_category_topics (topic_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+      ),
       [id],
     )
   }

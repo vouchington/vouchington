@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 
@@ -42,7 +43,9 @@ export async function getMembershipLedgerPartialIndexes(
 
 export async function getMembershipLineageImmutableTrigger(): Promise<{ enabled: string }[]> {
   const { rows } = await read<{ enabled: string }>(
-    `SELECT tgenabled AS enabled FROM pg_trigger WHERE tgname = 'trigger_membership_provider_lineages_immutable'`,
+    allowUnannotatedQuery(
+      `SELECT tgenabled AS enabled FROM pg_trigger WHERE tgname = 'trigger_membership_provider_lineages_immutable'`,
+    ),
   )
   return rows
 }
@@ -77,8 +80,8 @@ export async function persistUnverifiedMembershipProviderEvidence(suffix: string
     verified_at: Date | null
   }>(sql`/* persistMembershipProviderEvidenceBeforeVerification */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
-    ) VALUES ('stripe', 'test', ${`schema-evidence-${suffix}`},
+      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+    ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${`schema-evidence-${suffix}`}),
       ${suffix.replaceAll('-', '').padEnd(64, '0')}, '\x01'::bytea)
     RETURNING id, verified_at, rejected_at`)
   return rows

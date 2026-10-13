@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Test helpers for crawl dispatch tiering tests
  */
@@ -30,17 +31,21 @@ export async function createEntityRelationWithElection(
 ): Promise<string> {
   const {
     rows: [relation],
-  } = await write(sql`
+  } = await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO "relation__post__related__url" (subject_id, object_id, created_by_id)
     VALUES (${subjectId}, ${objectUrlId}, ${createdById})
     RETURNING id
-  `)
+  `),
+  )
   if (votesScoreUp > 0) {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       UPDATE "relation__post__related__url"
       SET votes_score_up = ${votesScoreUp}
       WHERE id = ${relation.id}
-    `)
+    `),
+    )
   }
   return relation.id
 }
@@ -61,8 +66,10 @@ export async function setTestPostRelatedUrlRelationScore(
  * Create a user_profile_link row for testing tiered dispatch logic.
  */
 export async function createTestUserProfileLink(userId: string, urlId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO user_profile_links (user_id, link_type, url_id)
     VALUES (${userId}, 'url', ${urlId})
-  `)
+  `),
+  )
 }

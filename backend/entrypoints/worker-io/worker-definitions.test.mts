@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { activitypub } from '@queues/activitypub/queues'
 import { enqueueReconcilePostPublication } from '@queues/post-publication/enqueues'
 import { postPublication as postPublicationQueue } from '@queues/post-publication/queues'
 import { cachePurge } from '@workers/cache-purge/workers'
@@ -41,38 +42,30 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
         'storyPostRelatedUrlProjections',
       ],
       ['post-publication', 'post-publication', 'postPublication'],
-      ['topic-ratings', 'topic-ratings', 'topicRatings'],
-      ['elections', 'elections', 'elections'],
-      ['entity-metrics-cache-refresh', 'entity-metrics-cache-refresh', 'entityMetricsCacheRefresh'],
+      ['vote-aggregation', 'vote-aggregation', 'voteAggregation'],
       ['cache-purge', 'cache-purge', 'cachePurge'],
       ['entity-listeners', 'entity-listeners', 'entitiesListeners'],
       ['emails', 'emails', 'emails'],
       ['urls-domains-blacklist', 'urls-domains-blacklist', 'urlsDomainsBlacklist'],
       ['rss-feeds', 'rss-feeds', 'rss_feeds'],
-      ['rss-feed-discoverability', 'rss-feed-discoverability', 'rssFeedDiscoverability'],
+      ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
-      ['rss-feed-item-categories', 'rss-feed-item-categories', 'rssFeedItemCategories'],
-      ['topic-aliases', 'topic-aliases', 'topicAliases'],
       ['openai_moderation_omni_single', 'openai-moderation', 'openai_moderation_omni_single'],
       ['post-mentions', 'post-mentions', 'postMentions'],
       ['psql', 'psql', 'psql'],
-      ['account-data-requests', 'account-data-requests', 'accountDataRequests'],
-      ['user-deletions', 'user-deletions', 'userDeletions'],
+      ['account-lifecycle', 'account-lifecycle', 'accountLifecycle'],
       [
         'oauth-authorization-exchange',
         'oauth-authorization-exchange',
         'oauthAuthorizationExchangeWorker',
       ],
-      ['activitypub-delivery', 'activitypub-delivery', 'activitypubDeliveryWorker'],
-      ['activitypub-inbox', 'activitypub-inbox', 'activitypubInboxWorker'],
+      ['activitypub', 'activitypub', 'activitypubWorker'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['follower-distributions', 'follower-distributions', 'followerDistributionsWorker'],
       ['sitemaps', 'sitemaps', 'sitemaps'],
       ['memberships', 'memberships', 'memberships'],
       ['notifications', 'notifications', 'notificationsWorker'],
-      ['vote-weight', 'vote-weight', 'voteWeight'],
-      ['vote-integrity', 'vote-integrity', 'voteIntegrity'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
       ['admin-imports', 'admin-imports', 'adminImports'],
@@ -80,7 +73,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['article-sync', 'article-sync', 'articleSyncWorker'],
       ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
       ['ses_inbound', 'ses-inbound', 'sesInboundWorker'],
-      ['report_integrity', 'report-integrity', 'reportIntegrity'],
       [
         'bluesky-follow-propagation',
         'bluesky-follow-propagation',
@@ -159,13 +151,18 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     }
   })
 
-  it('activitypub-inbox definition load resolves to its worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub-inbox')!
-    const worker = await definition.load()
+  it('activitypub definition load resolves to its worker', async () => {
+    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub')!
+    await activitypub.pause()
     try {
-      expect(worker).toBeDefined()
+      const worker = await definition.load()
+      try {
+        expect(worker).toBeDefined()
+      } finally {
+        await worker.close()
+      }
     } finally {
-      await worker.close()
+      await activitypub.resume()
     }
   })
 })

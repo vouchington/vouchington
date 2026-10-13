@@ -1,6 +1,6 @@
 # Crawl Boilerplate Removal System
 
-Source entrypoint: [backend/queues/crawl-boilerplate-removal/README.md](../../../../../backend/queues/crawl-boilerplate-removal/README.md)
+Source entrypoint: [backend/queues/crawl-dispatch/README.md](../../../../../backend/queues/crawl-dispatch/README.md)
 
 Nightly system that identifies and removes boilerplate HTML (headers, footers, navbars) from crawled pages by comparing multiple pages under the same hostname/parent-path.
 
@@ -8,7 +8,7 @@ Nightly system that identifies and removes boilerplate HTML (headers, footers, n
 
 ### Queues
 
-- `crawl_html_boilerplate_removal` - Handles boilerplate detection and removal
+- `crawl-dispatch` - Handles boilerplate detection and removal
   - `boilerplate_removal_dispatcher` - Daily 5 AM, finds hostname+path combos needing analysis
   - `boilerplate_removal` - Processes individual hostname+path pairs via Rust `extractDomRemovals`
 

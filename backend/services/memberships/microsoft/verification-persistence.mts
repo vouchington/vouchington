@@ -2,11 +2,13 @@ import type { QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { validateMicrosoftStoreIdKeyClaims } from './store-id-key-claims.mts'
 import type { MicrosoftStoreObservation } from './types.mts'
 
 export type Context = {
   verificationId: string
+  providerContextId: string
   userId: string
   purchaseIntentId: string | null
   evidenceId: string
@@ -47,10 +49,11 @@ export async function getContext(
   query: QueryExecutor,
 ): Promise<Context | null> {
   const { rows } = await query<Context>(sql`/* getClaimedMicrosoftStoreVerification */
-    SELECT verification.id AS "verificationId", verification.user_id AS "userId", verification.membership_purchase_intent_id AS "purchaseIntentId", verification.environment, verification.application_id AS "applicationId", evidence.id AS "evidenceId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256", evidence.rejected_at AS "evidenceRejectedAt", evidence.rejection_reason AS "evidenceRejectionReason", evidence.verified_at AS "evidenceVerifiedAt", evidence.membership_provider_lineage_id AS "evidenceLineageId"
+    SELECT verification.id AS "verificationId", verification.user_id AS "userId", verification.membership_purchase_intent_id AS "purchaseIntentId", provider_context.id AS "providerContextId", provider_context.environment, provider_context.application_id AS "applicationId", evidence.id AS "evidenceId", evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256", evidence.rejected_at AS "evidenceRejectedAt", evidence.rejection_reason AS "evidenceRejectionReason", evidence.verified_at AS "evidenceVerifiedAt", evidence.membership_provider_lineage_id AS "evidenceLineageId"
     FROM membership_verifications verification
+    INNER JOIN membership_provider_contexts provider_context ON provider_context.id = verification.membership_provider_context_id
     INNER JOIN membership_verification_processing_work_items work ON work.membership_verification_id = verification.id INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id
-    WHERE verification.id = ${id} AND verification.provider = 'microsoft_store' AND work.lease_token = ${token} AND work.lease_expires_at > clock_timestamp() AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
+    WHERE verification.id = ${id} AND provider_context.provider = 'microsoft_store' AND work.lease_token = ${token} AND work.lease_expires_at > clock_timestamp() AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL AND verification.rejected_at IS NULL
     FOR UPDATE OF verification, evidence, work`)
   return rows[0] ?? null
 }
@@ -122,8 +125,18 @@ export async function getMapping(
   const { rows } = await query<Mapping>(sql`/* getMicrosoftStoreVerificationMapping */
     SELECT mapping.id AS "membershipProviderProductId", mapping.membership_product_id AS "membershipProductId", mapping.provider_product_id AS "providerProductId", mapping.sku_id AS "skuId"
     FROM membership_provider_products mapping
-    WHERE mapping.provider = 'microsoft_store' AND mapping.environment = ${context.environment} AND mapping.application_id = ${context.applicationId} AND mapping.provider_product_id = ${evidence.productId} AND mapping.sku_id IS NOT DISTINCT FROM ${evidence.skuId}
-      AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (SELECT membership_provider_product_id FROM membership_purchase_intents WHERE id = ${context.purchaseIntentId}::UUID AND user_id = ${context.userId} AND provider = 'microsoft_store'))`)
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = mapping.membership_provider_context_id
+    WHERE provider_context.provider = 'microsoft_store'
+      AND provider_context.environment = ${context.environment}
+      AND provider_context.application_id = ${context.applicationId}
+      AND mapping.provider_product_id = ${evidence.productId}
+      AND mapping.sku_id IS NOT DISTINCT FROM ${evidence.skuId}
+      AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (
+        SELECT intent.membership_provider_product_id FROM membership_purchase_intents intent
+        WHERE intent.id = ${context.purchaseIntentId}::UUID AND intent.user_id = ${context.userId}
+          AND intent.membership_provider_context_id = mapping.membership_provider_context_id
+      ))`)
   return rows[0] ?? null
 }
 
@@ -132,10 +145,18 @@ export async function persistLineage(
   observation: MicrosoftStoreObservation,
   query: QueryExecutor,
 ): Promise<string> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'microsoft_store',
+      environment: context.environment,
+      applicationId: context.applicationId,
+    },
+    query,
+  )
   const { rows } = await query<{ id: string }>(sql`/* persistMicrosoftStoreLineage */
-    INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id, provider_account_id)
-    VALUES ('microsoft_store', ${context.environment}, ${context.applicationId}, ${observation.providerLineageId}, ${observation.providerAccountId})
-    ON CONFLICT (provider, environment, application_id, provider_lineage_id) DO NOTHING
+    INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id, provider_account_id)
+    VALUES (${contextId}, ${observation.providerLineageId}, ${observation.providerAccountId})
+    ON CONFLICT (membership_provider_context_id, provider_lineage_id) DO NOTHING
     RETURNING id`)
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{
@@ -143,7 +164,8 @@ export async function persistLineage(
     providerAccountId: string | null
   }>(sql`/* findMicrosoftStoreLineage */
     SELECT id, provider_account_id AS "providerAccountId" FROM membership_provider_lineages
-    WHERE provider = 'microsoft_store' AND environment = ${context.environment} AND application_id = ${context.applicationId} AND provider_lineage_id = ${observation.providerLineageId}
+    WHERE membership_provider_context_id = ${contextId}
+      AND provider_lineage_id = ${observation.providerLineageId}
     FOR UPDATE`)
   if (!existing[0] || existing[0].providerAccountId !== observation.providerAccountId)
     throw new ProviderMembershipSourceConflictError('Microsoft Store lineage account changed')

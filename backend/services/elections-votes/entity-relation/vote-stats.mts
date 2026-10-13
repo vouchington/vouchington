@@ -8,13 +8,13 @@ import {
 import sql from 'sql-template-strings'
 import { invalidate } from '@services/entity-cache'
 import { recordPostTopicRelationPublicationChanges } from '@services/entity-relations'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import {
   aggregateElectionVoteStatsFromPrimary,
   aggregateElectionVoteStatsFromReplica,
 } from '../shared/vote-aggregation.mts'
 import { ENTITY_RELATION_ELECTION_CONFIG } from './config.mts'
-import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'

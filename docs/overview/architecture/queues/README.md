@@ -17,7 +17,11 @@ processor reference with default priorities. Infrastructure decides the deployed
 local development runs one [`worker-cpu`](../backend/entrypoints/worker-cpu/README.md) process for all
 policy-managed queues.
 
-The [hostname crawl queue](crawl-hostnames/README.md) schedules bounded due-hostname sweeps hourly. Retained jobs preserve their cutoff and index position across capped continuations.
+The [crawl-dispatch queue](crawl-dispatch/README.md) schedules bounded due-hostname sweeps hourly. Retained jobs preserve their cutoff and index position across capped continuations.
+
+## Vote aggregation
+
+[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity in one ranked-priority IO queue. The single worker dispatches by the unchanged job names and retains election ordering lanes.
 
 ## Contents
 

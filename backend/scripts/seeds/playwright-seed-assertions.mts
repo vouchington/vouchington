@@ -56,10 +56,11 @@ const REQUIRED_SEED_DATA: SeedAssertion[] = [
         INNER JOIN LATERAL (
           SELECT provider_product.provider_product_id, provider_product.sku_id, provider_product.price_minor_units, provider_product.currency_code
           FROM membership_provider_products provider_product
+          JOIN membership_provider_contexts provider_context ON provider_context.id = provider_product.membership_provider_context_id
           WHERE provider_product.membership_product_id = product.id
-            AND provider_product.provider = 'stripe'
-            AND provider_product.environment = $1::membership_provider_environments
-            AND provider_product.application_id = 'voucha-web'
+            AND provider_context.provider = 'stripe'
+            AND provider_context.environment = $1::membership_provider_environments
+            AND provider_context.application_id = 'voucha-web'
             AND provider_product.retired_at IS NULL
           ORDER BY provider_product.id DESC
           LIMIT 1
@@ -72,9 +73,10 @@ const REQUIRED_SEED_DATA: SeedAssertion[] = [
       CROSS JOIN (SELECT COUNT(*) AS mapping_count
         FROM membership_provider_products provider_product INNER JOIN membership_products product ON product.id = provider_product.membership_product_id
           AND product.retired_at IS NULL
-        WHERE provider_product.provider = 'stripe'
-          AND provider_product.environment = $1::membership_provider_environments
-          AND provider_product.application_id = 'voucha-web'
+        INNER JOIN membership_provider_contexts provider_context ON provider_context.id = provider_product.membership_provider_context_id
+        WHERE provider_context.provider = 'stripe'
+          AND provider_context.environment = $1::membership_provider_environments
+          AND provider_context.application_id = 'voucha-web'
           AND provider_product.retired_at IS NULL
       ) active_mappings
       WHERE plans.product_count = 4 AND active_mappings.mapping_count = 4
@@ -162,7 +164,6 @@ export async function assertPlaywrightWebSearchSeedData(
     throw new Error(`Playwright seed data is incomplete: ${WEB_SEARCH_CONTENT_SNIPPET_FIXTURE}`)
   }
 }
-
 function playwrightWebSearchSeedAssertion(markdownToken: string, now: Date): SeedAssertion {
   return {
     name: WEB_SEARCH_CONTENT_SNIPPET_FIXTURE,
@@ -188,7 +189,6 @@ function playwrightWebSearchSeedAssertion(markdownToken: string, now: Date): See
     ],
   }
 }
-
 async function seedAssertionExists(assertion: SeedAssertion): Promise<boolean> {
   // Global setup seeds immediately before this assertion, so query the writer
   // connection to avoid false negatives from read-replica lag.

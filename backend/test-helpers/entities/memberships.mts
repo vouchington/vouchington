@@ -109,21 +109,22 @@ export async function createTestMembership(options: CreateTestMembershipOptions)
   await using transaction = await beginTransaction()
   const query = transaction
   const { rows } = await query(sql`/* createTestMembership */
-        WITH inserted_lineage AS (
+        WITH provider_context AS (
+          SELECT fn_upsert_membership_provider_context_id('stripe', ${providerEnvironment}, ${providerApplicationId}) AS id
+        ), inserted_lineage AS (
           INSERT INTO membership_provider_lineages (
-            provider, environment, application_id, provider_lineage_id, provider_account_id
+            membership_provider_context_id, provider_lineage_id, provider_account_id
           )
-          SELECT 'stripe', ${providerEnvironment}, ${providerApplicationId}, ${stripeSubscriptionId}, ${options.stripe_customer_id ?? null}
-          WHERE ${stripeSubscriptionId}::text IS NOT NULL
-          ON CONFLICT (provider, environment, application_id, provider_lineage_id)
+          SELECT provider_context.id, ${stripeSubscriptionId}, ${options.stripe_customer_id ?? null}
+          FROM provider_context WHERE ${stripeSubscriptionId}::text IS NOT NULL
+          ON CONFLICT (membership_provider_context_id, provider_lineage_id)
           DO NOTHING
           RETURNING id
         ), lineage AS (
           SELECT id FROM inserted_lineage
           UNION ALL
           SELECT id FROM membership_provider_lineages
-          WHERE provider = 'stripe' AND environment = ${providerEnvironment}
-            AND application_id = ${providerApplicationId}
+          WHERE membership_provider_context_id = (SELECT id FROM provider_context)
             AND provider_lineage_id = ${stripeSubscriptionId}
             AND provider_account_id IS NOT DISTINCT FROM ${options.stripe_customer_id ?? null}
             AND NOT EXISTS (SELECT 1 FROM inserted_lineage)

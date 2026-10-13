@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { getEntityRelationTableNameOrThrow } from '@voucha/types/entities/entity-relations-metadata'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@voucha/types/entities/entity-relation-tables'
@@ -22,7 +23,7 @@ export async function insertScoredPostTopicCategoryRelation(
   topicId: string,
   createdById?: string,
 ): Promise<ScoredPostTopicCategoryRelation> {
-  const query = sql`
+  const query = sql`/* insertScoredPostTopicCategoryRelation */
       INSERT INTO `.append(POST_TOPIC_CATEGORY_RELATION_TABLE).append(sql` (
         subject_id, object_id, created_by_id, votes_score_up, votes_count_up
       )
@@ -69,9 +70,11 @@ export async function setScoredPostTopicCategoryRelationScore(
 
 export async function countPostRelatedTopics(postId: string): Promise<number> {
   const { rows } = await read(
-    sql`SELECT COUNT(*)::int AS count FROM `
-      .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
-      .append(sql` WHERE subject_id = ${postId}`),
+    allowUnannotatedQuery(
+      sql`SELECT COUNT(*)::int AS count FROM `
+        .append(POST_TOPIC_CATEGORY_RELATION_TABLE)
+        .append(sql` WHERE subject_id = ${postId}`),
+    ),
   )
   return rows[0]?.count ?? 0
 }

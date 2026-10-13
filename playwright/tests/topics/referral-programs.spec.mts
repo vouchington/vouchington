@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
@@ -50,8 +51,8 @@ test.describe('Referral Programs Page', () => {
     // Insert a semantic Like (+1) for the test user on this topic.
     // topic_votes is an append-only log table with no unique constraint on (user_id, topic_id)
     await write(
-      `INSERT INTO topic_votes (user_id, topic_id, score, score_is_semantic)
-       VALUES ($1, $2, 1, TRUE)`,
+      allowUnannotatedQuery(`INSERT INTO topic_votes (user_id, topic_id, score, score_is_semantic)
+       VALUES ($1, $2, 1, TRUE)`),
       [contributorId, topicId],
     )
 

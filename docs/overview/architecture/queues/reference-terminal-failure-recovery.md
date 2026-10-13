@@ -21,7 +21,7 @@ explicit accepted-loss reason in
 
 ### User deletion recovery
 
-`user-deletions` persists the account privacy fence and deletion request before its initial enqueue.
+`account-lifecycle` deletion jobs persist the account privacy fence and deletion request before their initial enqueue.
 Every bounded batch rotates a fenced processing-attempt token before enqueueing its successor. A
 terminal process-job failure rotates its token before GlideMQ retains the failed job, while ordinary
 recovery preserves unstarted attempt tokens and replaces attempts stuck for 30 minutes. The

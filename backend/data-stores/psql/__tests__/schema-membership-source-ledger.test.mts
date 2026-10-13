@@ -124,18 +124,25 @@ describe('membership source-ledger schema', () => {
         'fk_membership_grant_activation_periods__grant_user',
         'fk_memberships__source_user',
         'fk_memberships__renewal_observation_snapshot',
-        'fk_membership_automatic_refund_receipts__operation_snapshot',
+        'fk_membership_automatic_refund_receipts__operation_context',
+        'fk_membership_operations__lineage_context',
         'membership_operations_check',
         'membership_automatic_refund_receipts_check',
       ],
     )
     const definitions = rows.map(row => `${row.table_name}:${row.definition}`).join('\n')
-    expect(definitions).toContain('provider, environment, application_id')
-    expect(definitions).toContain(
-      'remaining_refundable_minor_units <= qualifying_allocation_minor_units',
+    expect(definitions).toContain('membership_provider_context_id')
+    expect(definitions).not.toContain('provider, environment, application_id')
+    expect(rows).toContainEqual(
+      expect.objectContaining({
+        table_name: 'membership_automatic_refund_receipts',
+        constraint_name: 'fk_membership_automatic_refund_receipts__operation_context',
+        definition: expect.stringContaining(
+          'FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id)',
+        ),
+      }),
     )
     expect(definitions).toContain('amount_minor_units = 0')
-    expect(definitions).toContain('amount_minor_units <= remaining_refundable_minor_units')
     expect(definitions).toContain("source_kind <> 'admin_grant'")
     expect(definitions).toMatch(/membership_provider_observation_id IS NULL\)? OR/)
     expect(definitions).toContain("source_kind = 'admin_grant'")

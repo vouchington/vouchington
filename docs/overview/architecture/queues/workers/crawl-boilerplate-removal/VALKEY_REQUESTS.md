@@ -1,4 +1,4 @@
-# Valkey Requests — crawl-boilerplate-removal
+# Valkey Requests — crawl-boilerplate-removal jobs on crawl-dispatch
 
 Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own

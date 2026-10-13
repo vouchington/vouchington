@@ -263,7 +263,7 @@ async function holdImageRowLock(
   releaseImage: PromiseWithResolvers<void>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SELECT id FROM images WHERE id = $1::uuid FOR UPDATE`, [imageId])
+  await query(`/* testImages */ SELECT id FROM images WHERE id = $1::uuid FOR UPDATE`, [imageId])
   imageLocked.resolve()
   await releaseImage.promise
   await query.commit()
@@ -271,7 +271,7 @@ async function holdImageRowLock(
 
 async function acquirePostPublicationLockWithShortTimeout(postId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(`/* testImages */ SET LOCAL lock_timeout = '50ms'`)
   await lockPostPublication(query, postId)
   await query.commit()
 }

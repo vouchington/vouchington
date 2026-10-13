@@ -1,7 +1,7 @@
 import { getTopicsWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import { enqueueBulkReconcilePostNotifications } from '@queues/notifications/enqueues'
-import { enqueueContinueInvalidatingPostsForTopicAliases } from '@queues/topic-aliases/enqueues'
+import { enqueueContinueInvalidatingPostsForTopicAliases } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { invalidate } from '@services/entity-cache/invalidate'
 
 /**

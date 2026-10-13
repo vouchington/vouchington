@@ -15,7 +15,7 @@ import {
   getTestWebPushSubscription,
   markTestNotificationPushed,
 } from '@voucha/test-helpers'
-import { createDirectMessageNotification } from '@services/notifications/create-direct-message-notification'
+import { createDirectMessageNotifications } from '@services/notifications/create-direct-message-notification'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { deleteNotification } from '@services/notifications/mutations'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
@@ -53,7 +53,7 @@ describe('durable notification push regressions', () => {
       user2Id: recipient.id,
     })
     const subscription = await createSubscription(recipient.id, 'rotation')
-    const [first] = await createDirectMessageNotification(recipient.id, conversation.id)
+    const [first] = await createDirectMessageNotifications([recipient.id], conversation.id)
     const firstIntent = await claimNotificationPushIntent(
       { user_id: recipient.id, notification_id: first!.id },
       120,
@@ -70,7 +70,7 @@ describe('durable notification push regressions', () => {
       pushed_at: expect.any(Date),
     })
 
-    const [second] = await createDirectMessageNotification(recipient.id, conversation.id)
+    const [second] = await createDirectMessageNotifications([recipient.id], conversation.id)
     expect(second!.id).not.toBe(first!.id)
     await expect(
       getTestNotificationPushReceipt(recipient.id, second!.id, subscription.id),

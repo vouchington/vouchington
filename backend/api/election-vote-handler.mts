@@ -11,7 +11,7 @@ import {
   type ElectionVoteScore,
   type ElectionVoteMutationResult,
 } from '@services/elections-votes/shared'
-import { enqueueVoteIntegrityCheck } from '@queues/vote-integrity/enqueues'
+import { enqueueVoteIntegrityCheck } from '@queues/vote-aggregation/enqueues/vote-integrity'
 import type { VoteEventContext } from '@voucha/types/entities/election'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'

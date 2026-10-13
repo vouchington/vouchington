@@ -1,59 +1,9 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
-import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import pgvector from 'pgvector/pg'
 import { v7 as uuidv7 } from 'uuid'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { setTestPostClearanceStatus } from './post-clearance.mts'
-
-export async function updatePostEmbeddingData(data: {
-  postId: string
-  inputSha256: Buffer
-  embedding: number[]
-  tokens: number
-  createdAt?: Date
-}): Promise<void> {
-  const createdAt = data.createdAt || new Date()
-  await insertTestCentralizedEmbeddingsBulk([
-    {
-      content_sha256: data.inputSha256,
-      embedding: data.embedding,
-    },
-  ])
-  await write(sql`
-    UPDATE posts
-    SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
-      bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
-      bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
-    WHERE id = ${data.postId}
-  `)
-}
-export async function updatePostUpdatedAt(postId: string, updatedAt: Date): Promise<void> {
-  await write(sql`
-    UPDATE posts
-    SET updated_at = ${updatedAt}
-    WHERE id = ${postId}
-  `)
-}
-export async function getPostEmbeddingData(postId: string): Promise<{
-  input_sha: Buffer | null
-  created_at: Date | null
-  ban_evasion_post_embedding_input_sha: Buffer | null
-} | null> {
-  const { rows } = await read<{
-    input_sha: Buffer | null
-    created_at: Date | null
-    ban_evasion_post_embedding_input_sha: Buffer | null
-  }>(sql`
-    SELECT
-      bedrock_nova_multimodal_v1_input_sha256 AS input_sha,
-      bedrock_nova_multimodal_v1_embedding_created_at AS created_at,
-      ban_evasion_post_embedding_input_sha256 AS ban_evasion_post_embedding_input_sha
-    FROM posts
-    WHERE id = ${postId}
-  `)
-  return rows[0] || null
-}
 
 export async function insertTestPost(data: {
   id?: string
@@ -86,7 +36,7 @@ export async function insertTestPost(data: {
 }): Promise<string> {
   const sha256 = `\\x${'0'.repeat(64)}`
   const id = data.id ?? (data.createdAt ? uuidv7({ msecs: data.createdAt.getTime() }) : null)
-  const insertPostQuery = sql`
+  const insertPostQuery = sql`/* insertTestPost */
     INSERT INTO posts (
       id,
       post_type, title, markdown, created_by_id,
@@ -120,28 +70,36 @@ export async function insertTestPost(data: {
   if (clearanceStatus !== 'pending') {
     await setTestPostClearanceStatus(postId, clearanceStatus, data.createdById)
   }
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO post_slugs (post_id, slug)
     VALUES (${postId}, ${data.slug})
-  `)
+  `),
+  )
   return postId
 }
 export async function setPostDeclaredLanguage(postId: string, lang: string | null): Promise<void> {
-  await write(sql`UPDATE posts SET declared_language = ${lang} WHERE id = ${postId}`)
+  await write(
+    allowUnannotatedQuery(sql`UPDATE posts SET declared_language = ${lang} WHERE id = ${postId}`),
+  )
 }
 
 export async function deleteTestPost(postId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE posts
     SET deleted_at = NOW()
     WHERE id = ${postId}
-  `)
+  `),
+  )
 }
 
 export async function getTestPostDeletedAt(postId: string): Promise<Date | null> {
-  const { rows } = await read<{ deleted_at: Date | null }>(sql`
+  const { rows } = await read<{ deleted_at: Date | null }>(
+    allowUnannotatedQuery(sql`
     SELECT deleted_at FROM posts WHERE id = ${postId} LIMIT 1
-  `)
+  `),
+  )
   return rows[0]?.deleted_at ?? null
 }
 
@@ -150,20 +108,24 @@ export async function insertTestPostReview(
   topicId: string,
   rating = 5,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO post_review_topic_ratings (post_id, topic_id, rating)
     VALUES (${postId}, ${topicId}, ${rating})
-  `)
+  `),
+  )
 }
 /**
  * Directly set votes_score_up on a post (votes_score_net is generated as votes_score_up - votes_score_down)
  */
 export async function setPostVotesScoreUp(postId: string, scoreUp: number): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE posts
     SET votes_score_up = ${scoreUp}
     WHERE id = ${postId}
-  `)
+  `),
+  )
 }
 
 export async function updatePostTitleMarkdown(
@@ -171,12 +133,14 @@ export async function updatePostTitleMarkdown(
   title: string,
   markdown: string,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE posts
     SET title = ${title},
       markdown = ${markdown}
     WHERE id = ${postId}
-  `)
+  `),
+  )
 }
 
 export async function setTestPostContentSha(postIds: string[], sha: Buffer): Promise<void> {
@@ -197,3 +161,9 @@ export async function getPostIdsByPrivacyFilter(filter: SQLStatement | null): Pr
   const { rows } = await read<{ id: string }>(query)
   return rows.map((r: { id: string }) => r.id)
 }
+
+export {
+  updatePostEmbeddingData,
+  updatePostUpdatedAt,
+  getPostEmbeddingData,
+} from './posts-embeddings.mts'

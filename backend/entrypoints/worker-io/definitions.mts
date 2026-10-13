@@ -14,9 +14,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/post-publication/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'activitypub-inbox',
+    queueName: 'activitypub',
     load: () =>
-      import('@queues/activitypub-inbox/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/activitypub/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'entity-listeners',
@@ -41,16 +41,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/rss-feeds/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'rss-feed-item-categories',
+    queueName: 'rss-feed-maintenance',
     load: () =>
-      import('@queues/rss-feed-item-categories/enqueues/schedules').then(
+      import('@queues/rss-feed-maintenance/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
-  },
-  {
-    queueName: 'topic-aliases',
-    load: () =>
-      import('@queues/topic-aliases/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'emails',
@@ -61,16 +56,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     load: () => import('@queues/psql/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'account-data-requests',
+    queueName: 'account-lifecycle',
     load: () =>
-      import('@queues/account-data-requests/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'user-deletions',
-    load: () =>
-      import('@queues/user-deletions/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/account-lifecycle/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'oauth-authorization-exchange',
@@ -105,9 +93,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'vote-weight',
+    queueName: 'vote-aggregation',
     load: () =>
-      import('@queues/vote-weight/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/vote-aggregation/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'kagi-smallweb',

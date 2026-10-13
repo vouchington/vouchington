@@ -1,8 +1,8 @@
 # User Deletions Queue
 
-Source entrypoint: [backend/queues/user-deletions/README.md](../../../../../backend/queues/user-deletions/README.md)
+Source entrypoint: [backend/queues/account-lifecycle/enqueues/user-deletions.mts](../../../../../backend/queues/account-lifecycle/enqueues/user-deletions.mts)
 
-The `user-deletions` queue accelerates the durable account-deletion lifecycle. Processing jobs carry
+The `account-lifecycle` queue accelerates the durable account-deletion lifecycle. Processing jobs carry
 only `{ requestId, processingAttemptId }` and use
 `user-deletion__<request-id>__<processing-attempt-id>` as both job and deduplication ID.
 

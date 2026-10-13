@@ -208,6 +208,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_i
  STABLE PARALLEL SAFE
 ```
 
+## `fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_min_uuidv7(p_at timestamp with time zone)`
 
 ```sql
@@ -794,6 +803,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_image_surface_placement()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_invalid_automatic_refund_receipt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_invalid_automatic_refund_receipt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_invalid_copyright_eu_dispute_settlement_outcome`
 
 ```sql
@@ -818,6 +835,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_operation_work_le
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_invalid_membership_refund_operation_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_media_placement`
 
 ```sql
@@ -830,6 +855,22 @@ CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_context_provider_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_context_provider_mismatch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_google_play_purchase_token_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_google_play_purchase_token_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -898,18 +939,18 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_mutation()
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_membership_refund_operation_attempt_context`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_context()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reject_membership_refund_operation_attempt_mutation`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_membership_refund_request_key_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -926,6 +967,22 @@ CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_non_stripe_membership_purchase_intent_checkout`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_non_stripe_user_deletion_external_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1242,6 +1299,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at
 CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)
  RETURNS void
  LANGUAGE sql
+```
+
+## `fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)
+ RETURNS uuid
+ LANGUAGE plpgsql
 ```
 
 ## `fn_user_deletion_has_remaining_owned_data(target_user_id uuid)`

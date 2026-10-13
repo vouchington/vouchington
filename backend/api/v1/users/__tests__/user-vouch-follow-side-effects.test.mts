@@ -7,19 +7,20 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 
 describe('user vouch follow side effects', () => {
   let settleSideEffects = () => Promise.resolve()
+  let ownedVoterId: string | undefined
 
   beforeEach(async () => {
-    await activitypubDelivery.obliterate({ force: true })
+    ownedVoterId = undefined
     await blueskyFollowPropagation.obliterate({ force: true })
     const pending: Promise<unknown>[] = []
-    for (const queue of [activitypubDelivery, blueskyFollowPropagation]) {
+    for (const queue of [activitypub, blueskyFollowPropagation]) {
       const addBulk = queue.addBulk
       vi.spyOn(queue, 'addBulk').mockImplementation((...args: Parameters<typeof addBulk>) => {
         const jobs = addBulk.call(queue, ...args)
@@ -30,13 +31,21 @@ describe('user vouch follow side effects', () => {
     settleSideEffects = () => Promise.all(pending).then(() => undefined)
   })
 
-  afterEach(() => {
-    vi.mocked(activitypubDelivery.addBulk).mockRestore()
+  afterEach(async () => {
+    vi.mocked(activitypub.addBulk).mockRestore()
     vi.mocked(blueskyFollowPropagation.addBulk).mockRestore()
+    await settleSideEffects()
+    const jobs = await readAllQueueJobs(activitypub)
+    await Promise.all(
+      jobs
+        .filter(job => (job.data as DistributeActivityData).sourceUserId === ownedVoterId)
+        .map(job => job.remove()),
+    )
   })
 
   it('emits UndoFollow and Bluesky reconciliation for the follow deleted by a disavow', async () => {
     const voter = await createTestUser()
+    ownedVoterId = voter.id
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
     const relations = (await getEntityRelation(
@@ -50,7 +59,7 @@ describe('user vouch follow side effects', () => {
     await upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: -2 }])
     await settleSideEffects()
 
-    const activityJobs = await readAllQueueJobs(activitypubDelivery)
+    const activityJobs = await readAllQueueJobs(activitypub)
     const undo = activityJobs
       .map(job => job.data as DistributeActivityData)
       .find(
@@ -73,6 +82,7 @@ describe('user vouch follow side effects', () => {
 
   it('reconciles Bluesky without emitting UndoFollow when disavowing a legacy Follow', async () => {
     const voter = await createTestUser()
+    ownedVoterId = voter.id
     const target = await createTestUser()
     await insertTestLegacyLocalFollow(voter.id, target.id)
 
@@ -86,7 +96,7 @@ describe('user vouch follow side effects', () => {
         .filter(data => data.followerUserId === voter.id && data.followeeUserId === target.id),
     ).toHaveLength(1)
     expect(
-      (await readAllQueueJobs(activitypubDelivery))
+      (await readAllQueueJobs(activitypub))
         .map(job => job.data as DistributeActivityData)
         .filter(
           data =>

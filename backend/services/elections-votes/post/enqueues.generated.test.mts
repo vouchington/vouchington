@@ -2,7 +2,7 @@ import { expect, it, beforeAll, describe } from 'vitest'
 import { createTestUser, insertPostElectionVote, insertTestPost } from '@voucha/test-helpers'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { getPostElectionById } from './get-election.mts'
-import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import type { PrivateUser } from '@services/users/types'
 
 describe('enqueues.generated', () => {

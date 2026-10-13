@@ -21,7 +21,7 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
-import { elections } from '../../../queues/elections/queues.mts'
+import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import { notifications } from '@queues/notifications/queues'
 import * as postPublicationPosts from '@services/post-publication/capture-posts'
 import { createStoryPost } from '../story-posts.mts'
@@ -190,7 +190,7 @@ describe('refreshStoryPostForStory', () => {
     )) as Array<{ id: string }>
     expect(relation).toBeDefined()
 
-    const electionJobs = await readAllQueueJobs(elections)
+    const electionJobs = await readAllQueueJobs(voteAggregation)
     expect(
       electionJobs.some(job => {
         const data = job.data as { electionId?: string; relationTable?: string }

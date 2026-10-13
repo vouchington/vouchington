@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { decryptSecret } from '@modules/token-secrets'
@@ -67,13 +68,15 @@ export async function readPreservationHoldsForTest(
     released_at: Date | null
     released_by_id: string | null
     created_at: Date
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT id, account_user_id, placed_by_id, reference_ciphertext,
       released_at, released_by_id, created_at
     FROM user_legal_preservation_holds
     WHERE account_user_id = ${userId}
     ORDER BY id DESC
-  `)
+  `),
+  )
   return rows.map(row => ({
     id: row.id,
     account_user_id: row.account_user_id,

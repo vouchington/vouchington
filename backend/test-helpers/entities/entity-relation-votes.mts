@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import {
   entityRelationMetadatum,
@@ -18,10 +19,12 @@ export async function insertTestEntityRelationVote(options: {
   )
   if (!metadata?.election) throw new Error(`Invalid election relation: ${options.relationTable}`)
   await write(
-    sql`INSERT INTO `.append(getEntityRelationVoteTableName(metadata))
-      .append(sql` (user_id, subject_id, entity_relation_id, score, id)
+    allowUnannotatedQuery(
+      sql`INSERT INTO `.append(getEntityRelationVoteTableName(metadata))
+        .append(sql` (user_id, subject_id, entity_relation_id, score, id)
         VALUES (${options.userId}, ${options.subjectId},
           ${options.relationId}, ${options.score}, COALESCE(${options.id ?? null}::uuid, uuidv7()))`),
+    ),
   )
 }
 

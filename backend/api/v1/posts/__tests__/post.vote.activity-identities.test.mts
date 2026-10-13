@@ -7,8 +7,8 @@ import {
   insertPostElectionVote,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import type { PrivateUser } from '@services/users/types'
 import { upsertPostElectionVotes } from '@services/elections-votes/post'
 
@@ -17,11 +17,10 @@ describe('post vote ActivityPub identities', () => {
   let settleDelivery = () => Promise.resolve()
 
   beforeEach(async () => {
-    await activitypubDelivery.obliterate({ force: true })
     const pending: Promise<unknown>[] = []
-    const add = activitypubDelivery.add
-    vi.spyOn(activitypubDelivery, 'add').mockImplementation((...args: Parameters<typeof add>) => {
-      const job = add.call(activitypubDelivery, ...args)
+    const add = activitypub.add
+    vi.spyOn(activitypub, 'add').mockImplementation((...args: Parameters<typeof add>) => {
+      const job = add.call(activitypub, ...args)
       pending.push(job)
       return job
     })
@@ -29,8 +28,15 @@ describe('post vote ActivityPub identities', () => {
     voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
   })
 
-  afterEach(() => {
-    vi.mocked(activitypubDelivery.add).mockRestore()
+  afterEach(async () => {
+    vi.mocked(activitypub.add).mockRestore()
+    await settleDelivery()
+    const jobs = await readAllQueueJobs(activitypub)
+    await Promise.all(
+      jobs
+        .filter(job => (job.data as DistributeActivityData).sourceUserId === voter.id)
+        .map(job => job.remove()),
+    )
   })
 
   it('rotates the Like identity when re-liking after an UndoLike', async () => {
@@ -39,11 +45,11 @@ describe('post vote ActivityPub identities', () => {
     await request.authenticateAs(voter)
 
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-    let jobs = await settledDeliveryJobs(settleDelivery)
+    let jobs = await settledDeliveryJobs(settleDelivery, voter.id)
     const firstLikeId = getLikeIds(jobs, post.id)[0]
 
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
-    jobs = await settledDeliveryJobs(settleDelivery)
+    jobs = await settledDeliveryJobs(settleDelivery, voter.id)
     expect(
       jobs.some(job => {
         const data = job.data as DistributeActivityData
@@ -51,7 +57,7 @@ describe('post vote ActivityPub identities', () => {
       }),
     ).toBe(true)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
-    jobs = await settledDeliveryJobs(settleDelivery)
+    jobs = await settledDeliveryJobs(settleDelivery, voter.id)
 
     const likeIds = getLikeIds(jobs, post.id)
     expect(likeIds).toHaveLength(2)
@@ -64,21 +70,19 @@ describe('post vote ActivityPub identities', () => {
     const request = createRequest()
     await request.authenticateAs(voter)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'dislike' }).expect(204)
-    await activitypubDelivery.obliterate({ force: true })
 
     await Promise.all([
       request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
       request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204),
     ])
 
-    const jobs = await settledDeliveryJobs(settleDelivery)
+    const jobs = await settledDeliveryJobs(settleDelivery, voter.id)
     expect(getLikeIds(jobs, post.id)).toHaveLength(1)
   })
 
   it('preserves an unknown legacy Like identity and quietly skips its Undo', async () => {
     const post = await createTestPost({ user: voter })
     await insertPostElectionVote(voter.id, post.id, 1, undefined, false, true)
-    await activitypubDelivery.obliterate({ force: true })
 
     const [repeatedLike] = await upsertPostElectionVotes(voter.id, [
       { entityId: post.id, score: 1 },
@@ -89,17 +93,19 @@ describe('post vote ActivityPub identities', () => {
     await request.authenticateAs(voter)
     await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'neutral' }).expect(204)
 
-    expect(await settledDeliveryJobs(settleDelivery)).toEqual([])
+    expect(await settledDeliveryJobs(settleDelivery, voter.id)).toEqual([])
   })
 })
 
-async function settledDeliveryJobs(settle: () => Promise<void>) {
+async function settledDeliveryJobs(settle: () => Promise<void>, sourceUserId: string) {
   await settle()
-  return readAllQueueJobs(activitypubDelivery)
+  return (await readAllQueueJobs(activitypub)).filter(
+    job => (job.data as DistributeActivityData).sourceUserId === sourceUserId,
+  )
 }
 
 function getLikeIds(
-  jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+  jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
   postId: string,
 ): string[] {
   return jobs

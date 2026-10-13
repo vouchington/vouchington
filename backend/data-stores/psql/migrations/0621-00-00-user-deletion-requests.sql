@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   request_id UUID NOT NULL REFERENCES user_deletion_requests ON DELETE CASCADE,
   work_kind user_deletion_external_work_kinds NOT NULL,
   work_key TEXT,
+  membership_provider_lineage_id UUID,
   relation_impact_id UUID,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMPTZ,
@@ -94,15 +95,41 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   )),
   CHECK (char_length(work_key) <= 1024),
   CHECK (
-    (work_kind = 'entity-relation-effects' AND work_key IS NULL
+    (work_kind = 'entity-relation-effects' AND work_key IS NULL AND membership_provider_lineage_id IS NULL
       AND (completed_at IS NOT NULL OR relation_impact_id IS NOT NULL))
-    OR (work_kind <> 'entity-relation-effects' AND relation_impact_id IS NULL
+    OR (work_kind = 'stripe-customer' AND relation_impact_id IS NULL AND work_key IS NULL
+      AND membership_provider_lineage_id IS NOT NULL)
+    OR (work_kind IN ('cloudflare-cache-tag', 's3-export') AND relation_impact_id IS NULL
+      AND membership_provider_lineage_id IS NULL
       AND (completed_at IS NOT NULL OR work_key IS NOT NULL))
   ),
   CHECK (last_error_message IS NULL OR char_length(last_error_message) <= 2000),
   UNIQUE (request_id, work_kind, work_key),
+  UNIQUE (request_id, work_kind, membership_provider_lineage_id),
   UNIQUE (request_id, relation_impact_id)
 );
+ALTER TABLE user_deletion_external_works
+  ADD CONSTRAINT fk_user_deletion_external_works__provider_lineage
+  FOREIGN KEY (membership_provider_lineage_id)
+  REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE user_deletion_external_works
+  VALIDATE CONSTRAINT fk_user_deletion_external_works__provider_lineage;
+
+CREATE FUNCTION fn_reject_non_stripe_user_deletion_external_work() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.work_kind = 'stripe-customer' AND NOT EXISTS (
+    SELECT 1 FROM membership_provider_lineages lineage
+    INNER JOIN membership_provider_contexts context
+      ON context.id = lineage.membership_provider_context_id
+    WHERE lineage.id = NEW.membership_provider_lineage_id AND context.provider = 'stripe'
+  ) THEN
+    RAISE EXCEPTION 'Stripe customer deletion work requires a Stripe lineage' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_user_deletion_external_works_stripe_lineage
+BEFORE INSERT OR UPDATE ON user_deletion_external_works
+FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_user_deletion_external_work();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_external_works_updated_at
@@ -119,6 +146,11 @@ WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__relation_impact
 ON user_deletion_external_works (relation_impact_id, request_id)
 WHERE relation_impact_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__provider_lineage
+ON user_deletion_external_works (membership_provider_lineage_id)
+WHERE membership_provider_lineage_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
@@ -227,6 +259,7 @@ COMMENT ON TABLE user_deletion_external_works IS 'Required provider cleanup inte
 COMMENT ON COLUMN user_deletion_external_works.request_id IS 'Owning durable deletion request.';
 COMMENT ON COLUMN user_deletion_external_works.work_kind IS 'Provider or internal side-effect category whose successful completion gates finalization.';
 COMMENT ON COLUMN user_deletion_external_works.work_key IS 'Provider idempotency key while work is pending; cleared after completion and retention cleanup.';
+COMMENT ON COLUMN user_deletion_external_works.membership_provider_lineage_id IS 'Stripe lineage whose customer is sanitized; provider identity is read through this retained lineage.';
 COMMENT ON COLUMN user_deletion_external_works.relation_impact_id IS 'Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned.';
 COMMENT ON COLUMN user_deletion_external_works.requested_at IS 'Timestamp when the durable external-work intent was recorded.';
 COMMENT ON COLUMN user_deletion_external_works.completed_at IS 'Timestamp when the external side effect completed successfully.';

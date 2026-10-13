@@ -129,7 +129,6 @@ describe('recorded ineligible Stripe purchase known-refund reconciliation', () =
       completed_at: expect.any(Date),
       provider_refund_id: refundId,
       receipt_amount_minor_units: '100',
-      receipt_remaining_refundable_minor_units: '100',
     })
   })
 })

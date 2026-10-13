@@ -6,7 +6,7 @@ import {
   setRssFeedDiscoverabilityAsSystem,
   setRssFeedEnablementAsSystem,
 } from './discoverability.mts'
-import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { buildRssFeedUpdateFields } from './update-fields.mts'
 import { recordRssFeedDiscoverabilityPublicationChange } from './publication-change.mts'

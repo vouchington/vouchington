@@ -1,24 +1,22 @@
-import { createHash } from 'node:crypto'
-import { write, type QueryExecutor } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getKnownGooglePlayCanonicalRoot } from './canonical-root.mts'
+import { tokenDigest } from './token-digest.mts'
+import { ensureGooglePlayTokenAlias, GooglePlayLineageConflictError } from './token-alias.mts'
+export { tokenDigest } from './token-digest.mts'
+export { GooglePlayLineageConflictError } from './token-alias.mts'
+export { getLatestKnownGooglePlayPurchaseToken } from './known-lineage.mts'
 import { fetchGooglePlaySubscription } from './subscription-fetch.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 
 const MAX_LINKED_TOKEN_DEPTH = 100
-export class GooglePlayLineageConflictError extends Error {
-  constructor() {
-    super('Google Play purchase token belongs to another canonical lineage')
-    this.name = 'GooglePlayLineageConflictError'
-  }
-}
 export type GooglePlayResolvedLineage = {
   rootToken: string
   rootDigest: string
   currentSubscription: GooglePlaySubscriptionV2
-  tokens: Array<{ token: string; linkedToken: string | null }>
+  tokens: Array<{ token: string; linkedToken: string | null; fetched: boolean }>
 }
 
 /** Bounded worker-only traversal; repeated or cyclic linked tokens are rejected. */
@@ -31,7 +29,7 @@ export async function resolveGooglePlayTokenLineage(options: {
 }): Promise<GooglePlayResolvedLineage> {
   const { environment, applicationId } = options
   const seen = new Set<string>()
-  const tokens: Array<{ token: string; linkedToken: string | null }> = []
+  const tokens: GooglePlayResolvedLineage['tokens'] = []
   let token = options.purchaseToken
   let currentSubscription: GooglePlaySubscriptionV2 | undefined
   for (let depth = 0; depth < MAX_LINKED_TOKEN_DEPTH; depth++) {
@@ -69,7 +67,7 @@ export async function resolveGooglePlayTokenLineage(options: {
           err.status === 410 ||
           (err.status === 400 && err.reason === 'subscriptionExpired'))
       ) {
-        tokens.push({ token, linkedToken: null })
+        tokens.push({ token, linkedToken: null, fetched: false })
         return {
           rootToken: token,
           rootDigest: digest,
@@ -84,7 +82,11 @@ export async function resolveGooglePlayTokenLineage(options: {
       // eslint-disable-next-line no-await-in-loop -- this lookup follows the current token fetch
       const knownRoot = await getKnownGooglePlayCanonicalRoot(environment, applicationId, digest)
       if (knownRoot) {
-        tokens.push({ token, linkedToken: requiredText(subscription.linkedPurchaseToken) })
+        tokens.push({
+          token,
+          linkedToken: requiredText(subscription.linkedPurchaseToken),
+          fetched: true,
+        })
         return { rootToken: token, rootDigest: knownRoot, currentSubscription, tokens }
       }
     }
@@ -96,7 +98,7 @@ export async function resolveGooglePlayTokenLineage(options: {
         applicationId,
         tokenDigest(expiredToken),
       )
-      tokens.push({ token, linkedToken: expiredToken })
+      tokens.push({ token, linkedToken: expiredToken, fetched: true })
       return {
         rootToken: knownRoot ? expiredToken : token,
         rootDigest: knownRoot ?? digest,
@@ -105,44 +107,13 @@ export async function resolveGooglePlayTokenLineage(options: {
       }
     }
     const linkedToken = requiredText(subscription.linkedPurchaseToken)
-    tokens.push({ token, linkedToken })
+    tokens.push({ token, linkedToken, fetched: true })
     if (!linkedToken) return { rootToken: token, rootDigest: digest, currentSubscription, tokens }
     token = linkedToken
   }
   throw new Error(`Google Play linked purchase-token chain exceeded ${MAX_LINKED_TOKEN_DEPTH}`)
 }
 /** A delayed RTDN for an ancestor must recheck the newest persisted successor, not reproject stale state. */
-export async function getLatestKnownGooglePlayPurchaseToken(options: {
-  environment: 'test' | 'production'
-  applicationId: string
-  purchaseToken: string
-}): Promise<string | null> {
-  const digest = tokenDigest(options.purchaseToken)
-  const { rows } = await write<{
-    encrypted_purchase_token: Buffer
-    purchase_token_lookup_sha256: string
-  }>(sql`/* getLatestKnownGooglePlayPurchaseToken */
-    SELECT latest.encrypted_purchase_token, latest.purchase_token_lookup_sha256
-    FROM membership_google_play_purchase_tokens known
-    INNER JOIN membership_google_play_purchase_tokens latest
-      ON latest.membership_provider_lineage_id = known.membership_provider_lineage_id
-      AND latest.environment = known.environment AND latest.application_id = known.application_id
-    WHERE known.environment = ${options.environment} AND known.application_id = ${options.applicationId}
-      AND known.purchase_token_lookup_sha256 = ${digest}
-      AND NOT EXISTS (
-        SELECT 1 FROM membership_google_play_purchase_tokens successor
-        WHERE successor.membership_provider_lineage_id = known.membership_provider_lineage_id
-          AND successor.linked_purchase_token_lookup_sha256 = latest.purchase_token_lookup_sha256
-      )
-    ORDER BY latest.id DESC LIMIT 1`)
-  const latest = rows[0]
-  return latest
-    ? decryptSecret(
-        latest.encrypted_purchase_token.toString(),
-        `membership-google-play-token:${latest.purchase_token_lookup_sha256}`,
-      )
-    : null
-}
 export async function persistGooglePlayTokenLineage(
   options: {
     environment: 'test' | 'production'
@@ -150,48 +121,54 @@ export async function persistGooglePlayTokenLineage(
     resolved: GooglePlayResolvedLineage
   },
   query: QueryExecutor,
-): Promise<{ lineageId: string; submittedTokenInserted: boolean }> {
+): Promise<{ lineageId: string; submittedTokenFirstFetched: boolean }> {
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'google_play',
+      environment: options.environment,
+      applicationId: options.applicationId,
+    },
+    query,
+  )
   const { rows: inserted } = await query<{
     id: string
   }>(sql`/* persistGooglePlayTokenLineage.lineage */
-    INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-    VALUES ('google_play', ${options.environment}, ${options.applicationId}, ${options.resolved.rootDigest})
-    ON CONFLICT (provider, environment, application_id, provider_lineage_id) DO NOTHING RETURNING id`)
+    INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+    VALUES (${contextId}, ${options.resolved.rootDigest})
+    ON CONFLICT (membership_provider_context_id, provider_lineage_id) DO NOTHING RETURNING id`)
   const lineageId =
     inserted[0]?.id ??
     (
       await query<{ id: string }>(sql`/* persistGooglePlayTokenLineage.existingLineage */
-    SELECT id FROM membership_provider_lineages WHERE provider = 'google_play' AND environment = ${options.environment} AND application_id = ${options.applicationId} AND provider_lineage_id = ${options.resolved.rootDigest} FOR UPDATE`)
+    SELECT id FROM membership_provider_lineages WHERE membership_provider_context_id = ${contextId} AND provider_lineage_id = ${options.resolved.rootDigest} FOR UPDATE`)
     ).rows[0]?.id
   if (!lineageId) throw new Error('Google Play canonical lineage was not returned')
-  let submittedTokenInserted = false
-  for (const [index, item] of options.resolved.tokens.entries()) {
-    const digest = tokenDigest(item.token)
-    const linkedDigest = item.linkedToken ? tokenDigest(item.linkedToken) : null
-    const encrypted = Buffer.from(
-      encryptSecret(item.token, `membership-google-play-token:${digest}`),
-    )
+  let submittedTokenFirstFetched = false
+  for (let index = options.resolved.tokens.length - 1; index >= 0; index--) {
+    const item = options.resolved.tokens[index]!
+    let predecessor = null
+    if (item.linkedToken) {
+      // eslint-disable-next-line no-await-in-loop -- predecessor must exist before its successor FK
+      predecessor = await ensureGooglePlayTokenAlias(item.linkedToken, contextId, lineageId, query)
+    }
     // eslint-disable-next-line no-await-in-loop -- aliases share a locked canonical lineage
-    const { rows: insertedToken } = await query<{
-      id: string
-    }>(sql`/* persistGooglePlayTokenLineage.token */
-      INSERT INTO membership_google_play_purchase_tokens (environment, application_id, purchase_token_lookup_sha256, encrypted_purchase_token, membership_provider_lineage_id, linked_purchase_token_lookup_sha256)
-      VALUES (${options.environment}, ${options.applicationId}, ${digest}, ${encrypted}, ${lineageId}, ${linkedDigest})
-      ON CONFLICT (environment, application_id, purchase_token_lookup_sha256) DO NOTHING RETURNING id`)
-    if (index === 0) submittedTokenInserted = insertedToken.length === 1
-    // eslint-disable-next-line no-await-in-loop -- validate each alias before the next insertion
-    const { rows } = await query<{
-      membership_provider_lineage_id: string
-    }>(sql`/* persistGooglePlayTokenLineage.lockToken */
-      SELECT membership_provider_lineage_id FROM membership_google_play_purchase_tokens WHERE environment = ${options.environment} AND application_id = ${options.applicationId} AND purchase_token_lookup_sha256 = ${digest} FOR KEY SHARE`)
-    if (rows[0]?.membership_provider_lineage_id !== lineageId)
-      throw new GooglePlayLineageConflictError()
+    const alias = await ensureGooglePlayTokenAlias(item.token, contextId, lineageId, query)
+    if (index === 0) submittedTokenFirstFetched = item.fetched && alias.fetchedAt === null
+    if (!item.fetched) continue
+    // A reported-only alias becomes fetched on the same row; the successor FK never changes.
+    // eslint-disable-next-line no-await-in-loop -- the canonical lineage lock serializes this update
+    const { rows } = await query<{ id: string }>(sql`/* persistGooglePlayTokenLineage.markFetched */
+      UPDATE membership_google_play_purchase_tokens
+      SET fetched_at = COALESCE(fetched_at, CURRENT_TIMESTAMP),
+        linked_purchase_token_id = COALESCE(linked_purchase_token_id, ${predecessor?.id ?? null})
+      WHERE id = ${alias.id}
+        AND (${predecessor?.id ?? null}::UUID IS NULL OR linked_purchase_token_id IS NULL OR linked_purchase_token_id = ${predecessor?.id ?? null})
+      RETURNING id`)
+    if (!rows[0]) throw new GooglePlayLineageConflictError()
   }
-  return { lineageId, submittedTokenInserted }
+  return { lineageId, submittedTokenFirstFetched }
 }
-export function tokenDigest(token: string): string {
-  return createHash('sha256').update(token).digest('hex')
-}
+
 function requiredText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null
 }

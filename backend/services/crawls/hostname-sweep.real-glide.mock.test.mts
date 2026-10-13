@@ -11,9 +11,9 @@ import {
   getTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { crawlHostnamesQueue } from '@queues/crawl-hostnames/queues'
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { crawlUrls } from '@queues/crawler/queues'
-import type { CrawlHostnameDispatchCursor } from '@queues/crawl-hostnames/types'
+import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlHostnames } from './dispatch-crawl-hostnames.mts'
 import { getCrawlHostnameCandidates } from './hostname-dispatch-candidates.mts'
@@ -26,7 +26,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => origina
 const sweepStartedAt = '2099-01-15T00:00:00.000Z'
 
 describe('hostname sweep selection and completion', () => {
-  afterAll(() => Promise.all([crawlHostnamesQueue.close(), crawlUrls.close()]))
+  afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
 
   it('saves the threshold position when a one-row run budget is spent on its initial seek', async () => {
     await insertTestUrlHostname({ hostname: `initial-sweep-${randomUUID()}.example.com` })
@@ -99,13 +99,13 @@ describe('hostname sweep selection and completion', () => {
       ).count,
     ).toBe(0)
     expect(saved.at(-1)?.afterBucketDays).toBe(bucketDays)
-    const queued = await crawlHostnamesQueue.searchJobs({
+    const queued = await crawlDispatchQueue.searchJobs({
       name: 'crawl_urls_per_hostname_dispatcher',
       data: { hostname_id: hosts[3]! },
     })
     expect(queued).toHaveLength(1)
     expect(
-      await crawlHostnamesQueue.searchJobs({
+      await crawlDispatchQueue.searchJobs({
         name: 'crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hosts[0]! },
       }),
@@ -116,7 +116,7 @@ describe('hostname sweep selection and completion', () => {
     )
     expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(4)
     expect(
-      await crawlHostnamesQueue.searchJobs({
+      await crawlDispatchQueue.searchJobs({
         name: 'crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hosts[4]! },
       }),

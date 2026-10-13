@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { createTestUserDirect, blockUser, muteUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { isUserBlockedOrMuted } from './check-block-mute.mts'
+import { areUsersBlockedOrMutedEitherWay } from './check-block-mute.mts'
 
 describe('check-block-mute', () => {
   let user1: PrivateUser
@@ -23,31 +23,31 @@ describe('check-block-mute', () => {
   })
 
   it('returns false when no block or mute relation exists', async () => {
-    const result = await isUserBlockedOrMuted(user1!.id, user2!.id)
+    const result = await areUsersBlockedOrMutedEitherWay(user1!.id, user2!.id)
     expect(result).toBe(false)
   })
 
   it('returns true when user1 has blocked user2', async () => {
     await blockUser(user1!, user2!)
-    const result = await isUserBlockedOrMuted(user1!.id, user2!.id)
+    const result = await areUsersBlockedOrMutedEitherWay(user1!.id, user2!.id)
     expect(result).toBe(true)
   })
 
   it('returns true when user2 has blocked user1 (reverse direction)', async () => {
     await blockUser(user2!, user1!)
-    const result = await isUserBlockedOrMuted(user1!.id, user2!.id)
+    const result = await areUsersBlockedOrMutedEitherWay(user1!.id, user2!.id)
     expect(result).toBe(true)
   })
 
   it('returns true when user3 has muted user4', async () => {
     await muteUser(user3!, user4!)
-    const result = await isUserBlockedOrMuted(user3!.id, user4!.id)
+    const result = await areUsersBlockedOrMutedEitherWay(user3!.id, user4!.id)
     expect(result).toBe(true)
   })
 
   it('returns true when user4 has muted user3 (reverse direction)', async () => {
     await muteUser(user4!, user3!)
-    const result = await isUserBlockedOrMuted(user3!.id, user4!.id)
+    const result = await areUsersBlockedOrMutedEitherWay(user3!.id, user4!.id)
     expect(result).toBe(true)
   })
 })

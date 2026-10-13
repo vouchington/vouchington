@@ -21,7 +21,7 @@ capability-bound cleanup and publication hardening in
 This document covers connecting to the hosted deployment and the Vouchington integrations around
 the MCP server, JS client, and CLI. What gets written into sessions belongs to the
 [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). That adapter composes the portable
-`vouchington-workflow:blackboard` procedure, including its CLI fallback, with repository policy.
+`vouchington-workflow:blackboard` procedure with repository policy.
 
 ## Architecture
 
@@ -31,11 +31,9 @@ flowchart LR
   child -->|session_ensure with own id + parent id| mcp
   hook[SessionStart hook prints sessionId] --> parent
   parent -->|journal_append and the other tools| mcp[Machine-registered vouchington-tooling server]
-  parent -.->|server not connected: tell the user| fallback[Machine-installed vouchington CLI]
   scripts[Vouchington retro and probe scripts] --> js[agent-blackboard JS client]
   manual[pnpm exec manual commands] --> cli[root-installed agent-blackboard CLI]
   mcp --> lambda[Hosted deployment]
-  fallback --> lambda
   js -->|AGENT_BLACKBOARD_URL and AGENT_BLACKBOARD_TOKEN| lambda
   cli -->|same hosted connection| lambda
   lambda --> table[(Shared DynamoDB table)]
@@ -108,8 +106,9 @@ pnpm exec agent-blackboard sessions get my-session-id
 Pass the explicit `{"type": ..., ...}` payload to `append`. The CLI's `--file foo.md` convenience
 wraps Markdown as `{markdown: ...}` without the `type` field required by later pipeline stages.
 These commands are for manual inspection by a person. An agent records journal entries with the MCP
-`journal_append` tool, or its machine-installed CLI fallback, never through the worktree's
-`node_modules/.bin`.
+`journal_append` tool, never through the worktree's `node_modules/.bin`. Sandboxed Claude and Codex shell commands don't
+receive the credential; see the
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list) for each harness.
 
 ## MCP server, JS client, and CLI integration
 
@@ -140,24 +139,27 @@ and `use_tool` in Grok, and the `vouchington-tooling` namespace through `GetDyna
 `CallDynamicTool` in Cursor. Search for `journal_append` by bare name before concluding the server
 is unavailable.
 
-### CLI fallback
+### Server unavailable
 
-When the server is not registered or connected, the `blackboard` skill uses the canonical CLI
-fallback: a machine-installed `vouchington` at a verified absolute path outside the worktree,
-never the worktree's `node_modules/.bin` or `pnpm exec`. vouchington-machines installs it at
-`$HOME/vouchington-machines/node_modules/vouchington-tooling/bin/vouchington.mjs`, run with the
-absolute Node it registered for the `vouchington-tooling` server (`mcpServers.vouchington-tooling.command`
-in `~/.claude.json`, `mcp_servers.vouchington-tooling.command` in `~/.codex/config.toml`); neither is
-on `PATH`. An interactive agent tells the user it is
-falling back when it happens, and an automated session says so in its final report. Claude's and
-Codex's machine sandboxes hide `AGENT_BLACKBOARD_TOKEN` from shell commands, so a fallback append
-runs unsandboxed through the harness's normal one-command approval path; a denied approval leaves
-the record pending in the outbox, reported with its `pendingCount`.
+Agents journal through the MCP server. When it is not available, an interactive agent tells the
+user the fix, remediation first:
+
+- **Not registered:** run vouchington-machines' `./configure-agents.sh`, check it with
+  `./diagnose-agents.sh --repo <checkout>` ([setup](#1-configure-the-machine)), then reconnect
+  (`/mcp` in Claude Code, or restart Codex).
+- **Registered but disconnected:** reconnect (`/mcp` in Claude Code, or restart Codex).
+
+The worktree install does not affect the server.
+
+Last resort: the canonical `vouchington-workflow:blackboard` skill's CLI fallback is deprecated and
+being phased out. Use it only when the remediation above cannot restore the server, and tell the user
+(or the final report) that you fell back. The token is hidden from sandboxed Claude commands and Codex
+shell commands (see the [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)),
+so the fallback cannot deliver there; never ask for an unsandboxed run just to get the token.
 
 ### Automated sessions
 
-An automated session may have neither the server nor a trusted CLI: no repository registers
-either, and a host has them only when its own user configuration was run through
+An automated session may not have the server: no repository registers it, and a host has it only when its own user configuration was run through
 `./configure-agents.sh` (a profile that uses its own home directory needs
 `--home <profile home>`; whether the Auto Harness profiles do is not documented here). Nothing in this repository checks for that: there is no dispatch or
 prompt preflight, and a missing server does not stop a run. The run continues its primary work and
@@ -296,8 +298,9 @@ advisory context; emitting context cannot mechanically stop an agent.
   and registers it through `session_ensure`.
 - **Deployment probe.** Unless the run is a compaction restart or `CHECK_BLACKBOARD_SKIP=1`, the
   hook makes a bounded `sessions.list({ limit: 1 })` request and says loudly when the hosted
-  deployment cannot be reached or the credential is missing, naming the CLI fallback and the duty
-  to tell the user. A sandboxed probe reports an unavailable assessment instead of a false
+  deployment cannot be reached or the credential is missing, asking the user to fix the hosted
+  connection or credential ([setup](#3-export-the-hosted-connection)); this is separate from the
+  server-not-connected path ([Server unavailable](#server-unavailable)), which the hook cannot see. A sandboxed probe reports an unavailable assessment instead of a false
   deployment outage, because its credential and egress are deliberately withheld by the machine's
   [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list). A worktree
   without the root install gets a workspace-setup message naming the install command; journaling
@@ -373,7 +376,7 @@ Interactive writer delivery failures remain visible in the outbox. `--mode auton
 a verified read-back and does not fall back to that outbox.
 
 The [`blackboard` skill § Credential failures](../../.agents/skills/blackboard/SKILL.md#credential-failures)
-carries the matching agent-facing rule for both its MCP and CLI paths; keep the two in sync.
+carries the matching agent-facing rule; keep the two in sync.
 
 ## CI (Harness dispatch)
 

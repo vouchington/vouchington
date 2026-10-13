@@ -34,9 +34,11 @@ describe('topic rating refresh concurrency', () => {
     }
     try {
       await using probe = await beginTransaction()
-      await probe(`SET LOCAL lock_timeout = '50ms'`)
+      await probe(`/* testRatings */ SET LOCAL lock_timeout = '50ms'`)
       await expect(
-        probe(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [`topic-rating:${topicId}`]),
+        probe(`/* testRatings */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+          `topic-rating:${topicId}`,
+        ]),
       ).rejects.toMatchObject({ code: '55P03' })
       expect(refreshCompleted).toBe(false)
     } finally {

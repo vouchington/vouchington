@@ -14,7 +14,7 @@
 1. User clicks Report → `ReportDialog` opens
 2. User selects reason (optional note ≤1000 chars)
 3. `POST /api/v1/reports` → creates unresolved `moderation_reports` row
-4. Debounces a `report_integrity` check for mass-report patterns
+4. Debounces a `vote-aggregation` integrity check for mass-report patterns
 5. Admin tooling reads pending rows directly at `/reports`; community owners/moderators review community-scoped post/comment reports in `/communities/:slug/settings/moderation`
 
 **Idempotency:** One unresolved report per reporter and concrete target FK (`post_id`,

@@ -17,18 +17,21 @@ export async function acceptAndInsertAppleObservation(
   observation: AppleMembershipObservation,
   providerOrder: number,
 ): Promise<string | null> {
-  const { rowCount } = await query(sql`/* acceptAppleNotificationEvidence */
+  const { rows: evidenceRows } = await query<{
+    membership_provider_context_id: string
+  }>(sql`/* acceptAppleNotificationEvidence */
     UPDATE membership_provider_evidence_records SET verified_at = CURRENT_TIMESTAMP
-    WHERE id = ${evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
-  if (rowCount !== 1) return null
+    WHERE id = ${evidenceId} AND verified_at IS NULL AND rejected_at IS NULL
+    RETURNING membership_provider_context_id`)
+  if (!evidenceRows[0]) return null
   const { rows } = await query(sql`/* insertAppleMembershipObservation */
     INSERT INTO membership_provider_observations (
-      provider, environment, application_id, membership_provider_evidence_record_id,
+      membership_provider_context_id, membership_provider_evidence_record_id,
       membership_provider_lineage_id, membership_provider_product_id, membership_product_id,
       provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at,
       cancelled_at, expired_at, should_auto_renew
     ) VALUES (
-      'apple_app_store', ${context.environment}, ${context.applicationId}, ${evidenceId},
+      ${evidenceRows[0].membership_provider_context_id}, ${evidenceId},
       ${context.lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId},
       ${observation.providerRevision}, ${providerOrder}, ${observation.terminalAt},
       ${observation.sourceKind}, ${observation.effectiveAt}, ${observation.expiresAt},

@@ -32,13 +32,13 @@
     "@modules/stripe": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/account-lifecycle": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
-    "@queues/user-deletions": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/attribution": "workspace:^",
     "@services/batch-lookup": "workspace:^",
@@ -65,7 +65,7 @@
     "http-errors": "^2.0.1",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@modules/csv": "workspace:^",

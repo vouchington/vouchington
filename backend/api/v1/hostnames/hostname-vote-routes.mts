@@ -13,7 +13,7 @@ import {
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateHostnameElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateHostnameElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 
 const hostnameVoteHandler = createVoteHandler({
   rateLimitPrefix: 'hostname-election-vote',

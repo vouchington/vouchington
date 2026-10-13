@@ -2,7 +2,7 @@
  * RSS feeds entity helpers
  */
 
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createRandomString } from '../data.mts'
@@ -162,4 +162,17 @@ export async function updateRssFeedFollowCreatedAt(
   if (rowCount !== 1) {
     throw new Error(`updateRssFeedFollowCreatedAt: expected 1 row updated, got ${rowCount}`)
   }
+}
+
+export async function getLatestTestRssFeedDiscoverabilityChange(
+  rssFeedId: string,
+): Promise<{ is_enabled: boolean; reason: string | null } | undefined> {
+  const { rows } = await read<{ is_enabled: boolean; reason: string | null }>(
+    `/* getLatestTestRssFeedDiscoverabilityChange */
+      SELECT is_enabled, reason FROM rss_feed_setting_changes
+      WHERE rss_feed_id = $1::uuid AND change_type = 'discoverability'
+      ORDER BY id DESC LIMIT 1`,
+    [rssFeedId],
+  )
+  return rows[0]
 }

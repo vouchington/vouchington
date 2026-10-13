@@ -6,8 +6,8 @@ import {
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { enqueueKagiSmallWebSync } from '@queues/kagi-smallweb/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
-import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-weight/enqueues'
-import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/topic-aliases/enqueues'
+import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
 
 function createVoteWeightTrigger(): () => Promise<unknown> {
@@ -24,7 +24,7 @@ function createBloomFilterTrigger(entityType: BloomFilterEntityType): () => Prom
 export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   {
     id: 'topic-aliases-category-mapping-reconciliation',
-    queue_name: 'topic-aliases',
+    queue_name: 'rss-feed-maintenance',
     job_name: 'processReconcileTopicAliasCategoryMappings',
     description: 'Drain durable RSS category-mapping transitions for hashtag aliases',
     source_table: 'topic_alias_category_mapping_reconciliations',
@@ -75,7 +75,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'vote-weight-dispatch',
-    queue_name: 'vote-weight',
+    queue_name: 'vote-aggregation',
     job_name: 'processRecalculateVoteWeightDispatcher',
     description: 'Dispatch vote-weight recalculation from users',
     source_table: 'users',

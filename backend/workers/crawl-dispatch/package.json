@@ -1,0 +1,42 @@
+{
+  "name": "@workers/crawl-dispatch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared crawl dispatch and HTML boilerplate removal",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@jongleberry/vurst-html": "^0.4.3",
+    "@modules/queue-config": "workspace:^",
+    "@queues/crawl-dispatch": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@services/boilerplate-removals": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@modules/aws": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
+    "@queues/unfurl-referral-links": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

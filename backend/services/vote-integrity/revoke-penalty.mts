@@ -4,7 +4,7 @@ import {
   runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
+import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 

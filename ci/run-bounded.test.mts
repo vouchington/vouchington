@@ -1,8 +1,9 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { createOutputFixtures } from './test-helpers/run-bounded-output-fixture.mts'
 
 const script = join(process.cwd(), 'ci/run-bounded.py')
 
@@ -95,5 +96,107 @@ describe('run-bounded', () => {
       killProcessGroup(groupPidFile)
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('run-bounded output pipes', () => {
+  const fixtures = createOutputFixtures(script)
+  afterEach(() => fixtures.cleanup())
+
+  it('reaches EOF after the command exits even if a detached descendant holds stdout', async () => {
+    const { code, stdout, stderr } = await (await fixtures.launch('30', 'exit')).result
+
+    expect(code).toBe(0)
+    expect(stdout).toBe('out\n')
+    expect(stderr).toBe('err\n')
+  })
+
+  it('reaches EOF with status 124 after a deadline even if a detached descendant holds stdout', async () => {
+    const { code, stdout, stderr } = await (await fixtures.launch('1', 'hang')).result
+
+    expect(code).toBe(124)
+    expect(stdout).toBe('out\n')
+    expect(stderr).toBe('err\n')
+  })
+
+  it('drains the command and detached descendant when cleanup interrupts a hanging case', async () => {
+    const fixture = await fixtures.launch('30', 'hang')
+    await fixture.started
+    expect(fixture.wrapperRunning()).toBe(true)
+    expect(fixture.commandOpen()).toBe(true)
+    expect(fixture.descendantOpen()).toBe(true)
+
+    await fixtures.cleanup()
+    const { code, stdout, stderr } = await fixture.result
+    await fixture.commandClosed
+    await fixture.descendantClosed
+    await fixture.wrapperClosed
+    expect(code).toBe(0)
+    expect(stdout).toBe('out\n')
+    expect(stderr).toBe('err\n')
+    expect(fixture.wrapperRunning()).toBe(false)
+    expect(fixture.commandOpen()).toBe(false)
+    expect(fixture.descendantOpen()).toBe(false)
+    expect(existsSync(fixture.dir)).toBe(false)
+  })
+})
+
+describe('run-bounded downstream backpressure', () => {
+  it('drains buffered output after source closure before returning the command status', async () => {
+    const child = spawn('python3', ['ci/test-helpers/run-bounded-backpressure.py', script])
+    let stdout = ''
+    let stderr = ''
+    let observedError: Error | undefined
+    const recordError = (err: Error) => {
+      observedError ??= err
+    }
+    child.stdin.on('error', recordError)
+    child.stdout.on('data', data => {
+      stdout += data
+    })
+    child.stderr.on('data', data => {
+      stderr += data
+    })
+    const closed = new Promise<number | null>((resolve, reject) => {
+      child.once('error', reject)
+      child.once('close', resolve)
+    })
+    void closed.catch(recordError)
+    onTestFinished(async () => {
+      child.stdin.end()
+      await closed
+      if (observedError) throw observedError
+    })
+    expect(await closed).toBe(0)
+    expect(stderr).toBe('')
+    expect(JSON.parse(stdout)).toEqual({
+      status: 3,
+      stdout: `${'a'.repeat(8191)}z${'b'.repeat(4095)}y`,
+      sourceHolderStatus: 0,
+      wrapperDrained: true,
+    })
+  })
+})
+
+describe('run-bounded absent downstream descriptors', () => {
+  it.each([
+    ['stdout', '1>&-', '', 'err\n'],
+    ['stderr', '2>&-', 'out\n', ''],
+    ['both', '1>&- 2>&-', '', ''],
+  ])('preserves command status when %s is closed at entry', (_name, redirects, stdout, stderr) => {
+    const command = 'import os; os.write(1, b"out\\n"); os.write(2, b"err\\n"); raise SystemExit(3)'
+    const result = spawnSync(
+      'bash',
+      ['-c', `exec python3 "$1" 5 python3 -c "$2" ${redirects}`, 'fixture', script, command],
+      {
+        encoding: 'utf8',
+        timeout: 7000,
+      },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.signal).toBeNull()
+    expect(result.status).toBe(3)
+    expect(result.stdout).toBe(stdout)
+    expect(result.stderr).toBe(stderr)
   })
 })

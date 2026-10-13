@@ -30,7 +30,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/bookmarks": "workspace:^",
@@ -87,7 +87,7 @@
     "@vouchington/rss-parser": "^0.1.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "husky": "^9.1.7"

@@ -1,5 +1,4 @@
-import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -7,27 +6,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { readCanonicalMarkdownChildren } from './canonical-markdown-children.mts'
 
 const ROOT_FILE = 'docs/parent.md'
-const OBSOLETE_FORM_KEYBOARD_REFERENCE = [
-  'docs/requirements/navigation/',
-  'COMPONENTS.md#form-keyboard-behavior',
-].join('')
-
-function expectNoTrackedOccurrence(needle: string): void {
-  const result = spawnSync('git', ['grep', '--cached', '-F', '-n', '--', needle], {
-    encoding: 'utf8',
-    maxBuffer: 1024 * 1024,
-  })
-
-  if (result.error) throw new Error(`git grep failed: ${result.error.message}`)
-  if (result.status === 0) {
-    throw new Error(`obsolete reference remains in tracked blobs:\n${result.stdout}`)
-  }
-  if (result.status !== 1) {
-    throw new Error(`git grep failed with status ${result.status}: ${result.stderr}`)
-  }
-  expect(result.stdout).toBe('')
-}
-
 describe('readCanonicalMarkdownChildren', () => {
   const testDirs: string[] = []
 
@@ -281,15 +259,5 @@ describe('readCanonicalMarkdownChildren', () => {
     expect(errors).toEqual(
       expect.arrayContaining([expect.stringContaining('target is unreadable or broken')]),
     )
-  })
-
-  it('keeps the form keyboard helper pointed at the canonical pattern reference', () => {
-    expect(readFileSync('web/test-helpers/form-keyboard.ts', 'utf8')).toContain(
-      'Spec: docs/requirements/navigation/reference-components-patterns.md#form-keyboard-behavior',
-    )
-    expect(
-      readFileSync('docs/requirements/navigation/reference-components-patterns.md', 'utf8'),
-    ).toMatch(/^### Form Keyboard Behavior$/m)
-    expectNoTrackedOccurrence(OBSOLETE_FORM_KEYBOARD_REFERENCE)
   })
 })

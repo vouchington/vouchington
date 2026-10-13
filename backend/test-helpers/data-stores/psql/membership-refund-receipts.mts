@@ -13,8 +13,8 @@ export async function createMembershipRefundOperation(
     WITH actor AS (
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), lineage AS (
-      INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-      VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id
+      INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
       SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor RETURNING id, membership_provider_lineage_id
@@ -24,12 +24,12 @@ export async function createMembershipRefundOperation(
     )
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
-      'stripe', 'test', ${applicationId}, 'automatic_refund', ${idempotencyKey},
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'automatic_refund', ${idempotencyKey},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${collisionAt}
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id AS operation_id`)
@@ -45,8 +45,8 @@ export async function createCollisionHandlingMembershipOperation(
     WITH actor AS (
       INSERT INTO users DEFAULT VALUES RETURNING id
     ), lineage AS (
-      INSERT INTO membership_provider_lineages (provider, environment, application_id, provider_lineage_id)
-      VALUES ('stripe', 'test', ${applicationId}, ${`lineage-${randomUUID()}`}) RETURNING id
+      INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
+      VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id
     ), binding AS (
       INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id)
       SELECT lineage.id, actor.id FROM lineage CROSS JOIN actor RETURNING id, membership_provider_lineage_id
@@ -56,12 +56,12 @@ export async function createCollisionHandlingMembershipOperation(
     )
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id, operation_kind, idempotency_key,
+      membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
       period_started_at, period_ends_at, collision_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
-      'stripe', 'test', ${applicationId}, ${operationKind}, ${randomUUID()},
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${operationKind}, ${randomUUID()},
       100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${collisionAt}
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id AS operation_id`)
@@ -71,26 +71,16 @@ export async function createCollisionHandlingMembershipOperation(
 export async function createMembershipAutomaticRefundReceipt(
   operation: MembershipRefundOperation,
   providerRefundId: string,
+  currencyCode: 'eur' | null = null,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createMembershipAutomaticRefundReceipt */
     INSERT INTO membership_automatic_refund_receipts (
-      membership_operation_id, provider, environment, application_id, operation_kind,
-      provider_refund_id, amount_minor_units, remaining_refundable_minor_units, currency_code
-    ) VALUES (${operation.operationId}, 'stripe', 'test', ${operation.applicationId}, 'automatic_refund', ${providerRefundId}, 100, 100, 'usd')
+      membership_operation_id, membership_provider_context_id, provider_refund_id, amount_minor_units, currency_code
+    ) SELECT id, membership_provider_context_id, ${providerRefundId}, 100,
+      COALESCE(${currencyCode}::currency_codes, currency_code)
+      FROM membership_operations WHERE id = ${operation.operationId}
     RETURNING id`)
   return rows[0]!.id
-}
-
-export async function createMismatchedMembershipAutomaticRefundReceipt(
-  operation: MembershipRefundOperation,
-  applicationId: string,
-  providerRefundId: string,
-) {
-  return write(sql`/* mismatchMembershipAutomaticRefundReceiptContext */
-    INSERT INTO membership_automatic_refund_receipts (
-      membership_operation_id, provider, environment, application_id, operation_kind,
-      provider_refund_id, amount_minor_units, remaining_refundable_minor_units, currency_code
-    ) VALUES (${operation.operationId}, 'stripe', 'test', ${applicationId}, 'automatic_refund', ${providerRefundId}, 100, 100, 'usd')`)
 }
 
 export async function mutateMembershipAutomaticRefundReceipt(receiptId: string) {

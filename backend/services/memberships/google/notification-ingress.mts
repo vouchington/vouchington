@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from '../provider-context.mts'
 import { verifyGooglePubSubOidcJwt } from './oidc-verifier.mts'
 import { parseGooglePlayRtdn } from './rtdn.mts'
 import type { GoogleOidcTrustMaterial, GooglePlayMembershipProviderEnvironment } from './types.mts'
@@ -49,6 +50,14 @@ export async function ingestGooglePlayRtdnPush(options: {
     )
     .digest('hex')
   await using query = await beginTransaction()
+  const contextId = await getOrCreateProviderContextId(
+    {
+      provider: 'google_play',
+      environment: options.environment,
+      applicationId: options.applicationId,
+    },
+    query,
+  )
   const encrypted = Buffer.from(
     encryptSecret(
       options.rawBody.toString('utf8'),
@@ -59,17 +68,17 @@ export async function ingestGooglePlayRtdnPush(options: {
     id: string
   }>(sql`/* ingestGooglePlayRtdnPush.insertEvidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, provider_event_id,
+      membership_provider_context_id, provider_event_id,
       evidence_lookup_sha256, encrypted_evidence
-    ) VALUES ('google_play', ${options.environment}, ${options.applicationId}, ${rtdn.messageId}, ${lookup}, ${encrypted})
-    ON CONFLICT (provider, environment, application_id, provider_event_id) WHERE provider_event_id IS NOT NULL
+    ) VALUES (${contextId}, ${rtdn.messageId}, ${lookup}, ${encrypted})
+    ON CONFLICT (membership_provider_context_id, provider_event_id) WHERE provider_event_id IS NOT NULL
       DO NOTHING RETURNING id`)
   const evidenceId =
     inserted[0]?.id ??
     (
       await query<{ id: string }>(sql`/* ingestGooglePlayRtdnPush.existingEvidence */
     SELECT id FROM membership_provider_evidence_records
-    WHERE provider = 'google_play' AND environment = ${options.environment} AND application_id = ${options.applicationId}
+    WHERE membership_provider_context_id = ${contextId}::UUID
       AND provider_event_id = ${rtdn.messageId} AND evidence_lookup_sha256 = ${lookup}
     FOR KEY SHARE`)
     ).rows[0]?.id

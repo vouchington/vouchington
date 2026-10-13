@@ -6,15 +6,13 @@ Stable provider purchase or entitlement lineages used for account binding.
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                               | Nullable | Default                      | Identity | Generated | Collation | Comment                                                           |
-| --------------------- | ---------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `id`                  | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                                   |
-| `provider`            | `membership_provider_kinds`        | no       |                              |          |           |           | Provider that issued the lineage.                                 |
-| `environment`         | `membership_provider_environments` | no       |                              |          |           |           | Provider environment in which the lineage exists.                 |
-| `application_id`      | `text`                             | no       |                              |          |           |           | Provider application, bundle, or tenant identifier.               |
-| `provider_lineage_id` | `text`                             | no       |                              |          |           |           | Stable provider-defined purchase or entitlement lineage identity. |
-| `provider_account_id` | `text`                             | yes      |                              |          |           |           | Optional provider account identity observed with the lineage.     |
-| `created_at`          | `timestamp with time zone`         | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                           |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                   |
+| `membership_provider_context_id` | `uuid`                     | no       |                              |          |           |           | Provider, environment, and application that issued the lineage.   |
+| `provider_lineage_id`            | `text`                     | no       |                              |          |           |           | Stable provider-defined purchase or entitlement lineage identity. |
+| `provider_account_id`            | `text`                     | yes      |                              |          |           |           | Optional provider account identity observed with the lineage.     |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,18 +21,17 @@ _none_
 
 **Check constraints:**
 
-- `membership_provider_lineages_application_id_check`: `CHECK ((((char_length(application_id) >= 1) AND (char_length(application_id) <= 255)) AND (application_id = TRIM(BOTH FROM application_id))))`
 - `membership_provider_lineages_provider_account_id_check`: `CHECK (((provider_account_id IS NULL) OR (((char_length(provider_account_id) >= 1) AND (char_length(provider_account_id) <= 255)) AND (provider_account_id = TRIM(BOTH FROM provider_account_id)))))`
-- `membership_provider_lineages_provider_check`: `CHECK ((provider <> 'admin'::membership_provider_kinds))`
 - `membership_provider_lineages_provider_lineage_id_check`: `CHECK ((((char_length(provider_lineage_id) >= 1) AND (char_length(provider_lineage_id) <= 255)) AND (provider_lineage_id = TRIM(BOTH FROM provider_lineage_id))))`
 
 **Foreign keys:**
-_none_
+
+- `membership_provider_lineages_membership_provider_context_i_fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_membership_provider_lineages__id_context`: `CREATE UNIQUE INDEX idx_membership_provider_lineages__id_context ON public.membership_provider_lineages USING btree (id, provider, environment, application_id)`
-- `idx_membership_provider_lineages__provider_lineage`: `CREATE UNIQUE INDEX idx_membership_provider_lineages__provider_lineage ON public.membership_provider_lineages USING btree (provider, environment, application_id, provider_lineage_id)`
+- `idx_membership_provider_lineages__id_context`: `CREATE UNIQUE INDEX idx_membership_provider_lineages__id_context ON public.membership_provider_lineages USING btree (id, membership_provider_context_id)`
+- `idx_membership_provider_lineages__provider_lineage`: `CREATE UNIQUE INDEX idx_membership_provider_lineages__provider_lineage ON public.membership_provider_lineages USING btree (membership_provider_context_id, provider_lineage_id)`
 - `membership_provider_lineages_pkey`: `CREATE UNIQUE INDEX membership_provider_lineages_pkey ON public.membership_provider_lineages USING btree (id)`
 
 **Triggers:**

@@ -47,10 +47,13 @@ acquisition, not entry into a later server-side lock wait.
 
 The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts)) wraps every
 request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
-The `onQueryTiming` hook feeds it for every query, including `transaction.query()`, so unlike
-`runWithCapturedQueries` it sees in-transaction statements. Outside a scope (production, workers,
-non-API tests) the hook returns on its first line. Set `VITEST_DIAGNOSTICS=1` to print one stderr
-line for each request when the response finishes or closes early:
+The `onQueryTiming` hook feeds the active profile for every query, including `transaction.query()`,
+so unlike `runWithCapturedQueries` it sees in-transaction statements. The canonical in-process
+Vitest worker adapter creates a separate profile for each actual queue/job invocation: awaiting
+queue admission must not charge worker queries to the HTTP request's N+1 guard. Timings outside
+an explicitly created request or worker scope remain outside this capture. Set
+`VITEST_DIAGNOSTICS=1` to print one stderr line for each request when the response finishes or
+closes early:
 
 ```text
 [pg-request-profile] route=GET /v1/posts/:id queries=14 serialDepth=6 repeats=getUserById(x5),getPostMedia(x3)
@@ -66,8 +69,26 @@ line for each request when the response finishes or closes early:
   `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
   `docs/requirements/api/**` mean serial depth.
 - With diagnostics disabled, query profiles remain active and unbaselined repeats still fail tests.
-- Queries finishing after the response flushes, and Valkey commands (no command hook exists yet),
-  are not covered.
+- HTTP enforcement uses the response-finish/close snapshot; later queries are outside that
+  snapshot. Owned worker views can be read after their actual completion. Valkey commands have
+  no command hook and are not covered.
+
+### Owned worker profiles
+
+[`Worker.observeQueryProfiles`](../../../test-helpers/glide-mq-vitest-shim.mts) registers a
+synchronous subscriber before effects. Its view retains actual queue/job identities, copied query
+timings, summaries and ordered reporting failures even when logging is quiet. Register before
+admission, wait for the real producer/job completion boundary, and unsubscribe only after owned
+work settles. Read a retained job back by its admitted ID to observe its stored terminal result; an earlier
+admission receipt can still contain its original result snapshot.
+
+`request.workerProfiles()` and each worker's live child views contain invocations that actually
+inherit that asynchronous scope. They are not a complete queue inventory: SDK construction wakes
+can dispatch outside an admission's HTTP context. A per-worker subscriber owns such an invocation
+independently. Observation callbacks do not introduce asynchronous work joined to processor
+completion. Reporting faults remain on the owned view and cannot replace the processor result or
+rejection. Genuine HTTP repeats retain the existing enforcement and baseline below; this boundary
+does not filter query annotations or add exemptions.
 
 ### Enforcement and the baseline
 

@@ -1,10 +1,10 @@
 import { afterEach, describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
+import { createTestUser, readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
 import { notifications } from '@queues/notifications/queues'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import type { DistributeActivityData } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -29,14 +29,14 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(notifications, pendingEnqueues)
-    trackBulkEnqueue(activitypubDelivery, pendingEnqueues)
+    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
     await notifications.obliterate()
-    await activitypubDelivery.obliterate({ force: true })
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -52,7 +52,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   }
 
   function hasFollowDistributeJobFor(
-    jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+    jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
     targetUserId: string,
   ): boolean {
     return jobs.some(
@@ -97,7 +97,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     })
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(hasFollowDistributeJobFor(jobs, followee.id)).toBe(false)
   })
 
@@ -107,7 +107,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
     await settleEnqueues(pendingEnqueues)
-    const jobs = await readAllQueueJobs(activitypubDelivery)
+    const jobs = await readAllQueueJobs(activitypub)
     expect(hasFollowDistributeJobFor(jobs, followee.id)).toBe(true)
   })
 

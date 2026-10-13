@@ -6,8 +6,8 @@ import {
   insertTestPost,
   insertUserVouchElectionVote,
 } from '@voucha/test-helpers'
-import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
-import { elections } from '@queues/elections/queues'
+import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   enqueueElectionUpdatesForUser,
   getBulkEnqueuedJobIds,
@@ -50,8 +50,8 @@ describe('enqueueElectionUpdatesForUser', () => {
 
     const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
-    const unrelatedJob = await elections.getJob(unrelatedJobId)
-    expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
+    expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 
   it('enqueues a post election update for the voted post id', async () => {
@@ -69,7 +69,7 @@ describe('enqueueElectionUpdatesForUser', () => {
     expect(submittedJobIds).toHaveLength(1)
     const submittedJobId = submittedJobIds[0]
     if (submittedJobId === undefined) throw new Error('Expected one post election job id')
-    const job = await elections.getJob(submittedJobId)
+    const job = await voteAggregation.getJob(submittedJobId)
     expect(job?.id).toBe(submittedJobId)
     expect(job?.name).toBe('processUpdateElectionVoteStats')
     expect(job?.opts).toMatchObject({
@@ -95,7 +95,7 @@ describe('enqueueElectionUpdatesForUser', () => {
     expect(submittedJobIds).toHaveLength(1)
     const submittedJobId = submittedJobIds[0]
     if (submittedJobId === undefined) throw new Error('Expected one user vouch election job id')
-    const job = await elections.getJob(submittedJobId)
+    const job = await voteAggregation.getJob(submittedJobId)
     expect(job?.id).toBe(submittedJobId)
     expect(job?.opts).toMatchObject({
       deduplication: {
@@ -127,7 +127,7 @@ describe('enqueueElectionUpdatesForUser', () => {
 
     const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
     if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
-    const unrelatedJob = await elections.getJob(unrelatedJobId)
-    expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
+    const unrelatedJob = await voteAggregation.getJob(unrelatedJobId)
+    expect(unrelatedJob?.data).toMatchObject({ electionId: unrelatedPostId })
   })
 })

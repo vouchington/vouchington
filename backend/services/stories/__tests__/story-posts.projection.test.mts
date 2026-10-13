@@ -25,7 +25,7 @@ import { getSystemUserByUsername, upsertSystemUser } from '@services/users/syste
 import { getPrivateUserByAny } from '@services/users'
 import { createStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
-import { elections } from '../../../queues/elections/queues.mts'
+import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import type { PrivateUser } from '@services/users/types'
 
 function sha256(data: unknown): Buffer {
@@ -188,7 +188,7 @@ async function hasEntityRelationVoteStatsJob(relationId: string): Promise<boolea
   // deterministically empty once the worker drains the job to a terminal state. The shim skips the
   // state filter entirely when it is omitted (glide-mq testing.js searchJobs), so this still narrows
   // by name + data and just stops caring which state the match is in.
-  const jobs = await elections.searchJobs({
+  const jobs = await voteAggregation.searchJobs({
     name: 'processUpdateElectionVoteStats',
     data: {
       electionId: relationId,

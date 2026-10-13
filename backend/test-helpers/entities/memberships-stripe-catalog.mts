@@ -10,7 +10,10 @@ export type TestStripeCatalogMapping = {
 
 export async function clearTestStripeCatalogMappings(applicationId: string): Promise<void> {
   await write(sql`/* clearTestStripeCatalogMappings */
-    DELETE FROM membership_provider_products WHERE application_id = ${applicationId}`)
+    DELETE FROM membership_provider_products product
+    USING membership_provider_contexts context
+    WHERE context.id = product.membership_provider_context_id
+      AND context.application_id = ${applicationId}`)
 }
 
 export async function getTestStripeCatalogMappings(
@@ -18,11 +21,12 @@ export async function getTestStripeCatalogMappings(
   environment: 'test' | 'production',
 ): Promise<TestStripeCatalogMapping[]> {
   const { rows } = await read<TestStripeCatalogMapping>(sql`/* getTestStripeCatalogMappings */
-    SELECT membership_product_id, provider_product_id, sku_id, retired_at
-    FROM membership_provider_products
-    WHERE provider = 'stripe' AND environment = ${environment}
-      AND application_id = ${applicationId}
-    ORDER BY sku_id, provider_product_id`)
+    SELECT product.membership_product_id, product.provider_product_id, product.sku_id, product.retired_at
+    FROM membership_provider_products product
+    JOIN membership_provider_contexts context ON context.id = product.membership_provider_context_id
+    WHERE context.provider = 'stripe' AND context.environment = ${environment}
+      AND context.application_id = ${applicationId}
+    ORDER BY product.sku_id, product.provider_product_id`)
   return rows
 }
 
@@ -33,10 +37,10 @@ export async function createConflictingTestStripeCatalogMapping(
 ): Promise<void> {
   await write(sql`/* createConflictingTestStripeCatalogMapping */
     INSERT INTO membership_provider_products (
-      membership_product_id, provider, environment, application_id, provider_product_id,
+      membership_product_id, membership_provider_context_id, provider_product_id,
       sku_id, price_minor_units, currency_code
     )
-    SELECT id, 'stripe', ${environment}, ${applicationId}, 'price_catalog_conflict',
+    SELECT id, fn_upsert_membership_provider_context_id('stripe', ${environment}, ${applicationId}), 'price_catalog_conflict',
       ${skuId}, 500, 'usd'
     FROM membership_products
     WHERE plan = 'pro' AND billing_interval = 'monthly' AND retired_at IS NULL`)

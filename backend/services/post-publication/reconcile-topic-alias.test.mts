@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import {
   beginTransaction,
   createTestPost,
@@ -160,7 +161,9 @@ describe('topic alias publication reconciliation', () => {
     const replacementPost = await createTestPost({ user })
     await using sourceDeletionQuery = await beginTransaction()
     await sourceDeletionQuery(
-      `DELETE FROM post_topic_alias_sources WHERE post_id = $1 AND topic_alias_id = $2`,
+      allowUnannotatedQuery(
+        `DELETE FROM post_topic_alias_sources WHERE post_id = $1 AND topic_alias_id = $2`,
+      ),
       [selectedPost.id, aliasId],
     )
     await sourceDeletionQuery.commit()

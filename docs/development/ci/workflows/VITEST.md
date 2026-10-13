@@ -17,7 +17,7 @@ drains every started parallel operation before reporting distinct failures;
 subscription-client connection bounds belong to the installed Valkey dependency. The setup owner is
 [`vitest.setup.data-stores.mts`](../../../../test-helpers/vitest.setup.data-stores.mts).
 
-Credentialed projects must use workflow, job, or step `if:` gates so untrusted PRs from forks, Dependabot, or Renovate do not receive API keys, repository secrets, or OIDC-assumed cloud roles. Test suites must skip when their required env vars are absent.
+Credentialed projects must use workflow, job, or step `if:` gates so untrusted PRs from forks, Dependabot, or Renovate do not receive API keys, repository secrets, or OIDC-assumed cloud roles. Trusted workflow selection keeps keyless contexts out of credentialed projects. A selected credentialed case fails when its required credential is missing; it must not skip.
 
 Each area's path filters must trigger the owning workflow when a project’s source files, test
 files, or explicit repo fixture files change. Fixture docs that tests read directly, such as this
@@ -102,6 +102,7 @@ coverage but did not write LCOV fails its parent case.
 | `backend-openai`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`                 |
 | `backend-openrouter`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`             |
 | `backend-stripe`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`              |
+| `backend-lightpanda`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `LIGHTPANDA_TOKEN`               |
 | `backend-anthropic`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | ANTHROPIC_AUTH_TOKEN (federated) |
 | `web`                                 | `tests-web.yml`                  | `web-tests` (sharded)             | None                             |
 | `web-storybook`                       | `storybook.yml`                  | `storybook`                       | None                             |
@@ -122,7 +123,7 @@ Current conventions for future credentialed suites all use
 - Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. That list owns each project's name and `include` globs. The runner groups derive from it.
 - A credentialed suite is an informational smoke check: it is not in the `backend` gate and publishes no coverage. Gate the same behavior with a recorded-response fixture test in a unit project, named so it does not match the project's `include` glob ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)).
 
-If a Playwright or web-integration test starts requiring external credentials, gate the credential setup with `if:` and make the suite skip when the env vars are absent.
+If a Playwright or web-integration test requires external credentials, gate credentialed project selection and credential setup with the trusted workflow boundary. A selected case fails if its required credential is absent.
 
 Embedding creation capacity runs first through the normal project group-order barrier on its
 assigned shard, using the existing PostgreSQL/Valkey services and migration. Remaining selected

@@ -9,8 +9,8 @@
 
 import { vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { activitypubDelivery } from '../queues/activitypub-delivery/queues.mts'
-import type { DeliverActivityData } from '../queues/activitypub-delivery/enqueues.mts'
+import { activitypub } from '../queues/activitypub/queues.mts'
+import type { DeliverActivityData } from '../queues/activitypub/enqueues/delivery.mts'
 import type { FetchRemoteActorDocumentDeps } from '../services/remote-actors/fetch-remote-actor-document.mts'
 import {
   getOrFetchRemoteActorByKeyId,
@@ -66,7 +66,7 @@ export async function createFederatedUser(): Promise<PrivateUser> {
 }
 
 export function acceptJobsFor(
-  jobs: Awaited<ReturnType<typeof activitypubDelivery.getJobs>>,
+  jobs: Awaited<ReturnType<typeof activitypub.getJobs>>,
   followActivityId: string,
 ): Extract<DeliverActivityData, { activityType: 'Accept' }>[] {
   const acceptJobs: Extract<DeliverActivityData, { activityType: 'Accept' }>[] = []

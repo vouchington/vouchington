@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
@@ -35,16 +36,18 @@ export async function acquireEmbeddingQuotaFixture() {
     assertOpen()
     // A different valid invocation can hold the reservation for its whole test budget.
     // Acquisition has its own bounded hook budget; subsequent fixture queries remain short.
-    await client.query("SET statement_timeout = '20s'")
+    await client.query(allowUnannotatedQuery("SET statement_timeout = '20s'"))
     assertOpen()
-    await client.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [key])
+    await client.query(allowUnannotatedQuery('SELECT pg_advisory_lock(hashtextextended($1, 0))'), [
+      key,
+    ])
     acquired = true
     assertOpen()
     lease = await claimEmbeddingQuotaLease(client, key)
     assertOpen()
     restoreConfig = await initializeEmbeddingCreationConfig()
     assertOpen()
-    await client.query("SET statement_timeout = '5s'")
+    await client.query(allowUnannotatedQuery("SET statement_timeout = '5s'"))
     assertOpen()
   } catch (err) {
     prepared.resolve()
@@ -126,12 +129,12 @@ export async function acquireEmbeddingQuotaFixture() {
     if (acquired)
       await attempt(async () => {
         const { rows } = await client!.query<{ unlocked: boolean }>(
-          'SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
+          allowUnannotatedQuery('SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked'),
           [key],
         )
         if (!rows[0]?.unlocked) throw new Error('Global quota fixture lock was not released')
       })
-    await attempt(() => client?.query('RESET statement_timeout'))
+    await attempt(() => client?.query(allowUnannotatedQuery('RESET statement_timeout')))
     await attempt(() =>
       client?.release(
         errors.length

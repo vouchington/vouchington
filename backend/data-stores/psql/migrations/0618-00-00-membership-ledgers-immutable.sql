@@ -51,14 +51,14 @@ BEGIN
 
   IF ROW(
     NEW.id, NEW.membership_source_id, NEW.membership_provider_lineage_id,
-    NEW.membership_lineage_binding_id, NEW.provider, NEW.environment,
-    NEW.application_id, NEW.operation_kind, NEW.idempotency_key,
+    NEW.membership_lineage_binding_id, NEW.membership_provider_context_id,
+    NEW.operation_kind, NEW.idempotency_key,
     NEW.qualifying_allocation_minor_units, NEW.currency_code, NEW.period_started_at,
     NEW.period_ends_at, NEW.collision_at, NEW.requested_at
   ) IS DISTINCT FROM ROW(
     OLD.id, OLD.membership_source_id, OLD.membership_provider_lineage_id,
-    OLD.membership_lineage_binding_id, OLD.provider, OLD.environment,
-    OLD.application_id, OLD.operation_kind, OLD.idempotency_key,
+    OLD.membership_lineage_binding_id, OLD.membership_provider_context_id,
+    OLD.operation_kind, OLD.idempotency_key,
     OLD.qualifying_allocation_minor_units, OLD.currency_code, OLD.period_started_at,
     OLD.period_ends_at, OLD.collision_at, OLD.requested_at
   ) THEN
@@ -78,6 +78,8 @@ BEGIN
     AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
     AND EXISTS (SELECT 1 FROM membership_operation_execution_work_items work
       WHERE work.membership_operation_id = OLD.id AND work.lease_token IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM membership_automatic_refund_receipts receipt
+      WHERE receipt.membership_operation_id = OLD.id)
   THEN RETURN NEW; END IF;
 
   -- A committed receipt can independently prove completion after a worker crash.

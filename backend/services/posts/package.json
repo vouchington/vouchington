@@ -36,7 +36,7 @@
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
-    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/spam-detection": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/comments": "workspace:^",
@@ -73,7 +73,9 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@queues/cache-purge": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
+    "@ts-shared/cache": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "vitest": "^5.0.3"

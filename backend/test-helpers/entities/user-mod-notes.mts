@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -7,7 +8,8 @@ export async function insertTestUserModNote(options: {
   body: string
   communityId?: string | null
 }): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`
+  const { rows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO user_moderator_notes (target_user_id, author_user_id, community_id, body)
     VALUES (
       ${options.targetUserId},
@@ -16,6 +18,7 @@ export async function insertTestUserModNote(options: {
       ${options.body}
     )
     RETURNING id
-  `)
+  `),
+  )
   return rows[0]!.id
 }

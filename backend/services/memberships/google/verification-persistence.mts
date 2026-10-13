@@ -63,9 +63,9 @@ export async function getMapping(
     offerId: string | null
   }>(sql`/* getGooglePlayVerificationMapping */
     SELECT mapping.id AS "membershipProviderProductId", mapping.membership_product_id AS "membershipProductId", mapping.provider_product_id AS "providerProductId", mapping.base_plan_id AS "basePlanId", mapping.offer_id AS "offerId"
-    FROM membership_provider_products mapping WHERE mapping.provider = 'google_play' AND mapping.environment = ${context.environment}
-      AND mapping.application_id = ${context.applicationId}
-      AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (SELECT membership_provider_product_id FROM membership_purchase_intents WHERE id = ${context.purchaseIntentId}::UUID AND user_id = ${context.userId} AND provider = 'google_play'))`)
+    FROM membership_provider_products mapping
+    WHERE mapping.membership_provider_context_id = ${context.providerContextId}::UUID
+      AND (${context.purchaseIntentId}::UUID IS NULL OR mapping.id = (SELECT membership_provider_product_id FROM membership_purchase_intents WHERE id = ${context.purchaseIntentId}::UUID AND user_id = ${context.userId} AND membership_provider_context_id = ${context.providerContextId}::UUID))`)
   const exact = rows.find(row =>
     subscription.lineItems?.some(item => matchesExpectedGooglePlayProduct(item, row)),
   )
@@ -73,8 +73,7 @@ export async function getMapping(
   const deferred = rows.filter(row =>
     subscription.lineItems?.some(item => matchesDeferredGooglePlayReplacement(item, row)),
   )
-  // Deferred replacement identifies a product, not a base plan or offer. A purchase intent pins
-  // the target mapping; without one, do not select an arbitrary mapping for a shared product.
+  // A deferred replacement identifies a product; without a purchase intent, require one mapping.
   return deferred.length === 1 ? deferred[0]! : null
 }
 export async function acceptObservation(
@@ -92,7 +91,8 @@ export async function acceptObservation(
     }>(sql`
       /* findGooglePlayObservationForVerifiedEvidence */
       SELECT id, membership_provider_product_id FROM membership_provider_observations
-      WHERE membership_provider_evidence_record_id = ${context.evidenceId} AND provider = 'google_play'
+      WHERE membership_provider_evidence_record_id = ${context.evidenceId}
+        AND membership_provider_context_id = ${context.providerContextId}::UUID
         AND membership_provider_lineage_id = ${lineageId} FOR KEY SHARE`)
     const existingObservation = existingEvidenceObservation[0]
     if (existingObservation) {
@@ -115,7 +115,7 @@ export async function acceptObservation(
     SELECT id FROM (
       SELECT id, membership_provider_product_id, provider_revision, expires_at, terminal_at, cancelled_at, expired_at, paused_at, should_auto_renew
       FROM membership_provider_observations
-      WHERE membership_provider_lineage_id = ${lineageId} AND provider = 'google_play'
+      WHERE membership_provider_lineage_id = ${lineageId} AND membership_provider_context_id = ${context.providerContextId}::UUID
       ORDER BY provider_order DESC LIMIT 1
     ) latest
     WHERE membership_provider_product_id = ${mapping.membershipProviderProductId}
@@ -133,14 +133,14 @@ export async function acceptObservation(
     : (
         await query<{ effective_at: Date }>(sql`/* findGooglePlayInitialEffectiveAt */
           SELECT effective_at FROM membership_provider_observations
-          WHERE membership_provider_lineage_id = ${lineageId} AND provider = 'google_play'
+          WHERE membership_provider_lineage_id = ${lineageId} AND membership_provider_context_id = ${context.providerContextId}::UUID
           ORDER BY effective_at ASC LIMIT 1`)
       ).rows[0]?.effective_at
   const effectiveAt =
     observation.effectiveAt ??
     new Date(Math.min(initialEffectiveAt?.getTime() ?? Date.now(), observation.expiresAt.getTime()))
   const { rows } = await query<{ id: string }>(
-    sql`/* insertGooglePlayVerificationObservation */ INSERT INTO membership_provider_observations (provider, environment, application_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, paused_at, should_auto_renew) VALUES ('google_play', ${context.environment}, ${context.applicationId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.lifecycle === 'paused' ? (observation.terminalAt ?? effectiveAt) : null}, ${observation.autoRenews}) ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`,
+    sql`/* insertGooglePlayVerificationObservation */ INSERT INTO membership_provider_observations (membership_provider_context_id, membership_provider_evidence_record_id, membership_provider_lineage_id, membership_provider_product_id, membership_product_id, provider_revision, provider_order, terminal_at, source_kind, effective_at, expires_at, cancelled_at, expired_at, paused_at, should_auto_renew) VALUES (${context.providerContextId}, ${context.evidenceId}, ${lineageId}, ${mapping.membershipProviderProductId}, ${mapping.membershipProductId}, ${observation.providerRevision}, ${observation.providerOrder}, ${observation.terminalAt}, 'direct', ${effectiveAt}, ${observation.expiresAt}, ${observation.lifecycle === 'revoked' ? observation.terminalAt : null}, ${observation.lifecycle === 'expired' ? observation.terminalAt : null}, ${observation.lifecycle === 'paused' ? (observation.terminalAt ?? effectiveAt) : null}, ${observation.autoRenews}) ON CONFLICT (membership_provider_lineage_id, provider_revision, provider_order) DO NOTHING RETURNING id`,
   )
   if (rows[0]) return rows[0].id
   const { rows: existing } = await query<{ id: string }>(

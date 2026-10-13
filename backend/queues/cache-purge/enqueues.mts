@@ -43,8 +43,8 @@ const enqueue = createBulkEnqueueFunction<string[], { tags: string[] }, CachePur
   }),
 })
 
-// Fire-and-forget: enqueue failures are reported via onError inside createBulkEnqueueFunction.
-// Callers must invoke this with `void`, never `await`, from request/mutation paths.
+// Failures are reported by createBulkEnqueueFunction. Post-commit completion awaits this
+// admission promise; it does not imply that purge workers have finished.
 export function enqueueBulkPurgeCacheTags(tags: string[], priority?: number): EnqueueReturnType {
   const chunks = chunkTags(tags, MAX_TAGS_PER_REQUEST)
   return enqueue(chunks, { priority: priority ?? PRIORITY_DEFAULT } satisfies Partial<JobOptions>)

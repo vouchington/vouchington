@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
@@ -11,11 +12,13 @@ export async function assignReferralProgramToCard(
   cardTopicId: string,
   referralProgramId: string,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE topics
     SET referral_program_topic_id = ${referralProgramId}
     WHERE id = ${cardTopicId}
-  `)
+  `),
+  )
 }
 
 /**
@@ -35,10 +38,12 @@ export async function insertTestCard(data: {
   })
 
   // Insert into card_topics table
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO card_topics (topic_id)
     VALUES (${topicId})
-  `)
+  `),
+  )
 
   return topicId
 }
@@ -60,11 +65,13 @@ export async function insertTestReferralProgram(data: {
   })
 
   // Insert into referral_program_topics table to satisfy FK constraint
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO referral_program_topics (topic_id, enabled_at)
     VALUES (${topicId}, CURRENT_TIMESTAMP)
     ON CONFLICT (topic_id) DO NOTHING
-  `)
+  `),
+  )
 
   return topicId
 }

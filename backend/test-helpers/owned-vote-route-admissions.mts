@@ -1,0 +1,198 @@
+import { waitForOwnedVoteRouteJob } from './owned-vote-route-job-completion.mts'
+import { throwVoteRouteFailures } from './settle-vote-route-operations.mts'
+import { AsyncLocalStorage } from 'node:async_hooks'
+import type { Job, Queue, Worker } from 'glide-mq'
+import { vi } from 'vitest'
+export async function observeOwnedVoteRouteAdmissions(
+  owns: (data: unknown) => boolean,
+  observeWorkers = true,
+) {
+  const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
+  const { voteAggregation } = await import('../queues/vote-aggregation/queues.mts')
+  type Attempt = {
+    promise?: Promise<unknown>
+    calls: Array<{ kind: string; data: unknown; result?: Promise<unknown> }>
+  }
+  const ownedCall = (call: Attempt['calls'][number]) =>
+    Array.isArray(call.data) ? call.data.some(job => owns(job.data)) : owns(call.data)
+  const context = new AsyncLocalStorage<Attempt>()
+  const attempts: Attempt[] = []
+  const failures: unknown[] = []
+  const requiredKinds = new Set<string>()
+  const restores: Array<() => void> = []
+  const stopListeners: Array<() => void> = []
+  const ends = new Map<string, { failed: boolean; reason?: unknown }>()
+  const waiters = new Map<string, (end: { failed: boolean; reason?: unknown }) => void>()
+  const reads: Promise<unknown>[] = []
+  const workerDiagnostics: unknown[] = []
+  const observedKinds = new Set<string>()
+  const record = (kind: string, job: Job | undefined, failed: boolean, reason?: unknown) => {
+    if (!job?.id || !owns(job.data)) return
+    const key = `${kind}:${job.id}`
+    const end = { failed, reason }
+    ends.set(key, end)
+    waiters.get(key)?.(end)
+    waiters.delete(key)
+  }
+  const listen = (kind: string, worker: Worker) => {
+    observedKinds.add(kind)
+    const completed = (job: Job) => record(kind, job, false)
+    const failed = (job: Job | undefined, reason: unknown) => {
+      if (!job || !owns(job.data)) return
+      const reading = job.getState().then(state => {
+        if (state === 'failed') record(kind, job, true, reason)
+        else if (state === 'completed') record(kind, job, false)
+        return state
+      })
+      void reading.catch(() => undefined)
+      reads.push(reading)
+    }
+    const error = (reason: unknown) => {
+      if (!workerDiagnostics.some(other => Object.is(other, reason))) workerDiagnostics.push(reason)
+    }
+    for (const [event, handler] of [
+      ['completed', completed],
+      ['failed', failed],
+      ['error', error],
+    ] as const) {
+      stopListeners.push(() => worker.off(event, handler))
+      worker.on(event, handler)
+    }
+  }
+  const watch = (kind: string, queue: Queue) => {
+    const addReal = queue.add
+    const add = vi.spyOn(queue, 'add')
+    restores.push(() => add.mockRestore())
+    add.mockImplementation((...args) => {
+      const call: Attempt['calls'][number] = { kind, data: args[1] }
+      context.getStore()?.calls.push(call)
+      const result = Reflect.apply(addReal, queue, args)
+      call.result = result
+      void result.catch(() => undefined)
+      return result
+    })
+    const bulkReal = queue.addBulk
+    const bulk = vi.spyOn(queue, 'addBulk')
+    restores.push(() => bulk.mockRestore())
+    bulk.mockImplementation((...args) => {
+      const call: Attempt['calls'][number] = { kind, data: args[0] }
+      context.getStore()?.calls.push(call)
+      const result = Reflect.apply(bulkReal, queue, args)
+      call.result = result
+      void result.catch(() => undefined)
+      return result
+    })
+  }
+  const settle = async () => {
+    const settledAttempts = new Set<Attempt>()
+    const admittedKinds = new Set<string>()
+    const deadline = AbortSignal.timeout(25_000)
+    while (true) {
+      const ownedAttempts = attempts.filter(
+        attempt => !settledAttempts.has(attempt) && attempt.calls.some(ownedCall),
+      )
+      if (ownedAttempts.length === 0) break
+      for (const attempt of ownedAttempts) settledAttempts.add(attempt)
+      const admitted = await Promise.allSettled(ownedAttempts.map(attempt => attempt.promise!))
+      const calls = ownedAttempts.flatMap(attempt => attempt.calls.filter(ownedCall))
+      for (const result of admitted) if (result.status === 'rejected') failures.push(result.reason)
+      const jobs = new Map<string, Job>()
+      const returnedCalls = calls.filter(call => call.result !== undefined)
+      const actual = await Promise.allSettled(returnedCalls.map(call => call.result!))
+      for (let index = 0; index < actual.length; index++) {
+        const result = actual[index]!
+        if (result.status === 'rejected') continue // Retried attempt; outer promise owns failure.
+        const returned = Array.isArray(result.value) ? result.value : [result.value]
+        for (const job of returned as Array<Job | null>) {
+          if (job?.id && owns(job.data)) {
+            const kind = returnedCalls[index]!.kind
+            admittedKinds.add(voteAdmissionKind(job.name))
+            jobs.set(`${kind}:${job.id}`, job)
+          }
+        }
+      }
+      const observed = await Promise.allSettled(
+        [...jobs].map(async ([key, job]) => {
+          if (!observedKinds.has(key.slice(0, key.indexOf(':')))) return
+          await waitForOwnedVoteRouteJob(job, key, deadline, ends, waiters, workerDiagnostics)
+        }),
+      )
+      for (const result of observed) if (result.status === 'rejected') failures.push(result.reason)
+    }
+    for (const kind of requiredKinds)
+      if (!admittedKinds.has(kind))
+        failures.push(new Error(`No actual owned admission observed for ${kind}`))
+  }
+  const restoreAll = (callbacks: Array<() => void>) => {
+    for (const restore of callbacks.toReversed()) {
+      try {
+        restore()
+      } catch (err) {
+        failures.push(err)
+      }
+    }
+  }
+  const finish = async () => {
+    try {
+      await settle()
+    } catch (err) {
+      failures.push(err)
+    }
+    restoreAll(stopListeners)
+    for (const result of await Promise.allSettled(reads))
+      if (result.status === 'rejected') failures.push(result.reason)
+    restoreAll(restores)
+    waiters.clear()
+    throwVoteRouteFailures(failures)
+  }
+  try {
+    if (observeWorkers) {
+      listen(
+        'vote-aggregation',
+        (await import('../workers/vote-aggregation/workers.mts')).voteAggregation,
+      )
+    }
+    const real = retry.retryTransientEnqueue
+    const spy = vi.spyOn(retry, 'retryTransientEnqueue')
+    restores.push(() => spy.mockRestore())
+    spy.mockImplementation(fn => {
+      const attempt: Attempt = { calls: [] }
+      attempts.push(attempt)
+      const promise = context.run(attempt, () => real(fn))
+      attempt.promise = promise
+      void promise.catch(() => undefined)
+      return promise
+    })
+    watch('vote-aggregation', voteAggregation as Queue)
+  } catch (err) {
+    failures.push(err)
+    await finish()
+  }
+  return Object.assign(finish, { requireAdmission: (kind: string) => requiredKinds.add(kind) })
+}
+export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
+  return observeOwnedVoteRouteAdmissions(
+    data =>
+      typeof data === 'object' &&
+      data !== null &&
+      'userId' in data &&
+      ownedUserIds.has(String(data.userId)),
+    false,
+  )
+}
+
+function voteAdmissionKind(name: string): string {
+  switch (name) {
+    case 'processUpdateElectionVoteStats':
+      return 'elections'
+    case 'processUpdateTopicRatingStats':
+      return 'topic-ratings'
+    case 'processVoteIntegrityCheck':
+      return 'vote-integrity'
+    case 'processRecalculateUserVoteWeight':
+    case 'processRecalculateVoteWeightDispatcher':
+      return 'vote-weight'
+    default:
+      return 'vote-aggregation'
+  }
+}

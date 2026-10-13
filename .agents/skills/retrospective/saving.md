@@ -136,8 +136,7 @@ The command:
 
 Interactive save uses `--mode interactive`; a hosted delivery outage returns visible pending state
 only after the bounded private outbox durably preserves sanitized feedback. Inspect and flush through
-the `outbox_status` and `outbox_flush` tools of the `vouchington-tooling` MCP server (or the
-[blackboard skill](../blackboard/SKILL.md)'s CLI fallback), which cover the same worktree outbox.
+the `outbox_status` and `outbox_flush` tools of the `vouchington-tooling` MCP server, which cover the same worktree outbox.
 `--mode autonomous` requires verified
 read-back and does not fall back to that outbox. A successful work outcome with blocked delivery is not fully reported.
 Invalid content, identity conflicts, saturation, and persistence failure exit nonzero with `Error:`

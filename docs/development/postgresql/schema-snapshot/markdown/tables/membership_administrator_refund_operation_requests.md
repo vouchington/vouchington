@@ -27,7 +27,6 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
-- `uq_maror__operation_key`: `UNIQUE (membership_operation_id, administrator_request_key)`
 - `uq_membershi_administra_refund_operation_requests__operation_id`: `UNIQUE (membership_operation_id)`
 
 **Check constraints:**
@@ -52,7 +51,6 @@ Not partitioned — growth: unbounded.
 - `idx_membersh_administr_refund_operation_requests__membership_id`: `CREATE INDEX idx_membersh_administr_refund_operation_requests__membership_id ON public.membership_administrator_refund_operation_requests USING btree (membership_id, id DESC)`
 - `idx_membershi_administr_refund_operation_requests__issued_by_id`: `CREATE INDEX idx_membershi_administr_refund_operation_requests__issued_by_id ON public.membership_administrator_refund_operation_requests USING btree (issued_by_id, id DESC)`
 - `membership_administrator_refund_operation_requests_pkey`: `CREATE UNIQUE INDEX membership_administrator_refund_operation_requests_pkey ON public.membership_administrator_refund_operation_requests USING btree (id)`
-- `uq_maror__operation_key`: `CREATE UNIQUE INDEX uq_maror__operation_key ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id, administrator_request_key)`
 - `uq_membershi_administra_refund_operation_requests__operation_id`: `CREATE UNIQUE INDEX uq_membershi_administra_refund_operation_requests__operation_id ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id)`
 
 **Triggers:**

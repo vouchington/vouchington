@@ -61,7 +61,7 @@ documentation; do not fork portable guidance. An adapter must stop rather than a
 alone if the canonical skill is unavailable.
 
 No repository file registers an MCP server: vouchington-machines registers `vouchington-tooling`
-once per machine and pre-approves its tools. The server, its tools, and the CLI fallback are
+once per machine and pre-approves its tools. The server and its tools are
 documented in [Agent Blackboard](../docs/development/agent-blackboard.md).
 
 ## See Also

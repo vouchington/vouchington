@@ -7,4 +7,4 @@
 - The Basic Auth source/runbook table has an automated sync guard. The cross-server compatibility
   matrix remains manual because external software capabilities and versions are operator inputs.
 - Recheck the matrix against `backend/api/activitypub/e2e-round-trip.test.mts` and
-  `backend/workers/activitypub-delivery/e2e-round-trip.test.mts` before each run.
+  `backend/workers/activitypub/__tests__/e2e-round-trip.real-glide.mock.test.mts` before each run.

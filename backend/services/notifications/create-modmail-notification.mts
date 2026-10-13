@@ -1,12 +1,14 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function createModmailNotification(
-  userId: string,
+/** Upsert one modmail notification per distinct recipient in one statement. */
+export async function createModmailNotifications(
+  userIds: string[],
   conversationId: string,
   targetPath: string,
 ): Promise<Array<{ user_id: string; id: string }>> {
-  const { rows } = await write(sql`/* createModmailNotification */
+  if (userIds.length === 0) return []
+  const { rows } = await write(sql`/* createModmailNotifications */
     INSERT INTO notifications (
       user_id,
       entity_type,
@@ -16,15 +18,11 @@ export async function createModmailNotification(
       body,
       target_path
     )
-    VALUES (
-      ${userId},
-      'modmail',
-      ${conversationId},
-      'subscription',
-      'New modmail message',
-      '',
-      ${targetPath}
-    )
+    SELECT DISTINCT recipient.user_id, 'modmail'::notification_entity_types,
+      ${conversationId}::uuid, 'subscription'::notification_delivery_types,
+      'New modmail message', '', ${targetPath}
+    FROM unnest(${userIds}::uuid[]) AS recipient(user_id)
+    ORDER BY recipient.user_id ASC NULLS LAST
     ON CONFLICT (user_id, conversation_id, entity_type)
       WHERE conversation_id IS NOT NULL AND deleted_at IS NULL
     DO UPDATE SET

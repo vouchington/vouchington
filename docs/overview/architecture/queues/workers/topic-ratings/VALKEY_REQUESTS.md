@@ -12,4 +12,4 @@ connections). See `predecessor-issue#4717`.
 
 ## Notes
 
-- `updateTopicRatingStats` upserts rating stats to PSQL and then enqueues an `entity-metrics-cache-refresh` job. Cache invalidation (`invalidate.topic_metrics`, `invalidate.topics`) is performed by that separate worker — not by this worker in the same job. No application-level Valkey calls are made on the shared singleton clients in topic-ratings jobs.
+- `updateTopicRatingStats` upserts changed rating stats to PSQL and then enqueues a `processRefreshTopicMetrics` job on the shared `vote-aggregation` queue. The `voteAggregation` worker runs that refresh in a separate job; the rating-stats job itself makes no application-level Valkey calls on the shared singleton clients.

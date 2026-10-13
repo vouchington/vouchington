@@ -26,7 +26,7 @@ import {
 } from '@services/elections-votes/user-vouch'
 import { getUserVouchContextResponse } from './get-user-vouch-context-response.mts'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/elections/enqueues'
+import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import renderMarkdown from '@services/markdown'
 import {

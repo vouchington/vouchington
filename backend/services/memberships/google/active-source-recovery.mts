@@ -97,21 +97,23 @@ async function findSourcesAfterCursor(
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     INNER JOIN LATERAL (
       SELECT token.purchase_token_lookup_sha256
       FROM membership_google_play_purchase_tokens token
       WHERE token.membership_provider_lineage_id = lineage.id
+        AND token.fetched_at IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM membership_google_play_purchase_tokens successor
-          WHERE successor.membership_provider_lineage_id = lineage.id
-            AND successor.linked_purchase_token_lookup_sha256 = token.purchase_token_lookup_sha256
+          WHERE successor.linked_purchase_token_id = token.id
+            AND successor.fetched_at IS NOT NULL
         )
       ORDER BY token.id DESC
       LIMIT 1
     ) token ON true
     WHERE source.source_kind = 'direct'
       AND source.user_id IS NOT NULL
-      AND lineage.provider = 'google_play'
+      AND context.provider = 'google_play'
       AND state.cancelled_at IS NULL
       AND state.expired_at IS NULL
       AND (${cursor}::UUID IS NULL OR source.id > ${cursor}::UUID)
@@ -128,8 +130,9 @@ async function findActiveSourceSweepUpperBound(): Promise<string | null> {
     SELECT source.id FROM membership_sources source
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     WHERE source.source_kind = 'direct' AND source.user_id IS NOT NULL
-      AND lineage.provider = 'google_play' AND state.cancelled_at IS NULL AND state.expired_at IS NULL
+      AND context.provider = 'google_play' AND state.cancelled_at IS NULL AND state.expired_at IS NULL
     ORDER BY source.id DESC LIMIT 1`)
   return rows[0]?.id ?? null
 }
@@ -146,21 +149,23 @@ type ActiveSourceContext = {
 async function getActiveSourceContext(sourceId: string): Promise<ActiveSourceContext | null> {
   const { rows } = await write<ActiveSourceContext>(sql`/* getGooglePlayActiveSourceContext */
     SELECT source.id AS "sourceId", source.user_id AS "userId",
-      lineage.environment, lineage.application_id AS "applicationId",
+      context.environment, context.application_id AS "applicationId",
       token.encrypted_purchase_token AS "encryptedPurchaseToken",
       token.purchase_token_lookup_sha256 AS "purchaseTokenLookupSha256"
     FROM membership_sources source
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = source.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
     INNER JOIN LATERAL (
       SELECT token.encrypted_purchase_token, token.purchase_token_lookup_sha256
       FROM membership_google_play_purchase_tokens token
       WHERE token.membership_provider_lineage_id = lineage.id
+        AND token.fetched_at IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM membership_google_play_purchase_tokens successor
-          WHERE successor.membership_provider_lineage_id = lineage.id
-            AND successor.linked_purchase_token_lookup_sha256 = token.purchase_token_lookup_sha256
+          WHERE successor.linked_purchase_token_id = token.id
+            AND successor.fetched_at IS NOT NULL
         )
       ORDER BY token.id DESC
       LIMIT 1
@@ -168,7 +173,7 @@ async function getActiveSourceContext(sourceId: string): Promise<ActiveSourceCon
     WHERE source.id = ${sourceId}::UUID
       AND source.source_kind = 'direct'
       AND source.user_id IS NOT NULL
-      AND lineage.provider = 'google_play'
+      AND context.provider = 'google_play'
       AND state.cancelled_at IS NULL
       AND state.expired_at IS NULL`)
   return rows[0] ?? null

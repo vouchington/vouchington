@@ -32,7 +32,10 @@ describe('registered admin read projections', () => {
     expect(imported.isError).not.toBe(true)
     const batch = imported.structuredContent!['batch'] as { id: string }
     const history = await readStaffActionHistory(admin.id)
-    const result = await invoke('get_import_batch', { batch_id: batch.id })
+    const result = await invoke('read_editorial_job', {
+      option: 'import_batch',
+      arguments: { batch_id: batch.id },
+    })
     expect(result).not.toMatchObject({ isError: true })
     expect(result.structuredContent).toMatchObject({
       batch: { id: batch.id, total_rows: 1 },
@@ -80,15 +83,15 @@ describe('registered admin read projections', () => {
     const crawler = created.structuredContent!['crawler'] as { id: string }
     const before = await readStaffActionHistory(admin.id)
     for (const args of [{ hostname_id: hostnameId }, { referral_program_id: referralId }]) {
-      const listed = await invoke('list_crawlers', args)
+      const listed = await invoke('read_crawler', { option: 'list', arguments: args })
       expect(listed.isError).not.toBe(true)
       expect(listed.structuredContent).toMatchObject({
         results: [expect.objectContaining({ id: crawler.id })],
       })
     }
-    const searched = await invoke('list_crawlers', { limit: 1 })
+    const searched = await invoke('read_crawler', { option: 'list', arguments: { limit: 1 } })
     expect(searched.isError).not.toBe(true)
-    const fetched = await invoke('get_crawler', { id: crawler.id })
+    const fetched = await invoke('read_crawler', { option: 'get', arguments: { id: crawler.id } })
     expect(fetched.isError).not.toBe(true)
     expect(fetched.structuredContent).toMatchObject({ crawler: { id: crawler.id } })
     expect(await readStaffActionHistory(admin.id)).toEqual(before)

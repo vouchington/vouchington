@@ -38,6 +38,6 @@
     "@services/entity-relations": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   }
 }

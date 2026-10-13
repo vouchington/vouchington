@@ -4,8 +4,8 @@ import { vi } from 'vitest'
 
 export async function withOwnedVouchStats<Result>(targetId: string, action: () => Promise<Result>) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
-  const queue = (await import('../queues/elections/queues.mts')).elections
-  const worker = (await import('../workers/elections/workers.mts')).elections
+  const queue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
+  const worker = (await import('../workers/vote-aggregation/workers.mts')).voteAggregation
   type Admission = { jobs?: Promise<unknown>; owned: boolean }
   type End = { failed: boolean; reason?: unknown }
   const context = new AsyncLocalStorage<Admission>()

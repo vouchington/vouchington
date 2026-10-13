@@ -15,7 +15,7 @@ export async function getIneligiblePurchaseReversalCase(
     SELECT reversal_case.id, reversal_case.membership_source_id AS "membershipSourceId",
       reversal_case.membership_provider_lineage_id AS "membershipProviderLineageId",
       reversal_case.membership_lineage_binding_id AS "membershipLineageBindingId",
-      lineage.environment AS "providerEnvironment", lineage.application_id AS "providerApplicationId",
+      provider_context.environment AS "providerEnvironment", provider_context.application_id AS "providerApplicationId",
       lineage.provider_lineage_id AS "subscriptionId", binding.originating_invoice_id AS "originatingInvoiceId",
       reversal_case.stripe_price_id AS "stripePriceId", reversal_case.winning_source_kind AS "winningSourceKind",
       reversal_case.qualifying_amount_minor_units::TEXT AS "qualifyingAmountMinorUnits",
@@ -25,10 +25,12 @@ export async function getIneligiblePurchaseReversalCase(
     FROM membership_lineage_bindings binding
     INNER JOIN membership_provider_lineages lineage
       ON lineage.id = binding.membership_provider_lineage_id
+    INNER JOIN membership_provider_contexts provider_context
+      ON provider_context.id = lineage.membership_provider_context_id
     INNER JOIN membership_ineligible_purchase_reversal_cases reversal_case
       ON reversal_case.membership_lineage_binding_id = binding.id
-    WHERE lineage.provider = 'stripe' AND lineage.environment = ${options.providerEnvironment}
-      AND lineage.application_id = ${options.providerApplicationId ?? 'voucha-web'}
+    WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${options.providerEnvironment}
+      AND provider_context.application_id = ${options.providerApplicationId ?? 'voucha-web'}
       AND binding.source_kind = 'direct'
       AND binding.originating_invoice_id = ${options.originatingInvoiceId}
   `)

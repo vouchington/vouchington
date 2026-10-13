@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
@@ -51,7 +52,9 @@ export async function replayTestAutomaticCopyrightRestore(input: {
 }): Promise<string[]> {
   await using transaction = await beginTransaction()
   await lockCopyrightNoticeHoldPlacements(input.noticeId, transaction)
-  await transaction(sql`SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`)
+  await transaction(
+    sql`/* replayTestAutomaticCopyrightRestore */ SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`,
+  )
   return await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: input.noticeId,
     intentIds: [input.intentId],
@@ -70,12 +73,14 @@ export async function replayTestFailedCopyrightActionBehindHoldFence(input: {
   {
     await using transaction = await beginTransaction()
     await lockCopyrightNoticeHoldPlacements(input.noticeId, transaction)
-    await transaction(sql`SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`)
+    await transaction(
+      sql`/* replayTestFailedCopyrightActionBehindHoldFence */ SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`,
+    )
     const pid = await getTestPostgresBackendProcessId(transaction)
     replay = replayFailedCopyrightActionIntent(input)
     await waitForTestPostgresLockWaiter(pid, 'replayFailedCopyrightActionIntent:placementLock')
     await transaction(
-      sql`SELECT id FROM copyright_notice_action_work_items WHERE id = ${input.intentId} FOR UPDATE NOWAIT`,
+      sql`/* replayTestFailedCopyrightActionBehindHoldFence */ SELECT id FROM copyright_notice_action_work_items WHERE id = ${input.intentId} FOR UPDATE NOWAIT`,
     )
     await transaction.commit()
   }
@@ -84,32 +89,46 @@ export async function replayTestFailedCopyrightActionBehindHoldFence(input: {
 
 export async function cancelTestCopyrightRestorationDeadline(deadlineId: string): Promise<void> {
   await write(
-    sql`UPDATE copyright_notice_deadlines SET cancelled_at = CURRENT_TIMESTAMP WHERE id = ${deadlineId}`,
+    allowUnannotatedQuery(
+      sql`UPDATE copyright_notice_deadlines SET cancelled_at = CURRENT_TIMESTAMP WHERE id = ${deadlineId}`,
+    ),
   )
 }
 
 export async function quarantineTestCopyrightRestorationImage(imageId: string): Promise<void> {
   await write(
-    sql`UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
+    allowUnannotatedQuery(
+      sql`UPDATE images SET quarantine_pending_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
+    ),
   )
 }
 
 export async function makeTestCopyrightRestorationImageUnready(imageId: string): Promise<void> {
-  await write(sql`UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`)
+  await write(
+    allowUnannotatedQuery(
+      sql`UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`,
+    ),
+  )
 }
 
 export async function retireTestCopyrightRestorationPlacement(placementId: string): Promise<void> {
-  await write(sql`UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
-    WHERE id = ${placementId}`)
+  await write(
+    allowUnannotatedQuery(sql`UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
+    WHERE id = ${placementId}`),
+  )
 }
 
 export async function supersedeTestCopyrightRestorationPlacementRevision(
   placementId: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
-    WHERE id = ${placementId}`)
-  await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
-    WHERE id = ${placementId}`)
+  await transaction(
+    allowUnannotatedQuery(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
+    WHERE id = ${placementId}`),
+  )
+  await transaction(
+    allowUnannotatedQuery(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CASE WHEN copyright_withheld_at IS NULL THEN clock_timestamp() ELSE NULL END
+    WHERE id = ${placementId}`),
+  )
   await transaction.commit()
 }

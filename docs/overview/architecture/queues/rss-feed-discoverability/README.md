@@ -1,11 +1,11 @@
 # RSS Feed Discoverability
 
-Source entrypoint: [backend/queues/rss-feed-discoverability/README.md](../../../../../backend/queues/rss-feed-discoverability/README.md)
+Source entrypoint: [backend/queues/rss-feed-maintenance/README.md](../../../../../backend/queues/rss-feed-maintenance/README.md)
 
 Worker-owned system for evaluating whether an RSS feed should be publicly discoverable.
 
-- Queue: `rss-feed-discoverability`
-- Worker: `rssFeedDiscoverability`
+- Queue: `rss-feed-maintenance`
+- Worker: `rssFeedMaintenance`
 - Processor: `processEvaluateRssFeedDiscoverability`
 
 The processor reads the feed's owning topic score, follow count, and publisher type relation. Aggregators and forums are forced undiscoverable. Other feeds use `rss-feed-discoverability-config` thresholds. System writes preserve human overrides by refusing to change feeds whose latest discoverability row was written by a non-system user.

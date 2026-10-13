@@ -3,8 +3,8 @@ import sql from 'sql-template-strings'
 import { createVoteStatsUpdater } from '../shared/entity-service.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 import { invalidate } from '@services/entity-cache'
-import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/topic-ratings/enqueues'
-import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
+import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
+import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
 
 export const updateTopicElectionVoteStats = createVoteStatsUpdater(TOPIC_ELECTION_CONFIG, {

@@ -30,11 +30,19 @@ Service for storing, listing, mutating, and reconciling per-user notifications i
 
 ## Notification Creation Rules
 
+### Conversation notifications
+
+- For direct messages, one indexed block/mute lookup checks every recipient against the sender in both directions. A live relation suppresses that recipient's notification; other participants still receive theirs.
+- The worker upserts eligible recipients in one statement per conversation message and queues push delivery with the returned recipient and notification IDs.
+- Modmail is official community communication and bypasses the block/mute lookup.
+
 ### Community notifications
 
 - Application decisions, real role changes, and ownership transfers are inserted in the same transaction as the state change; push is queued only after commit.
 - The Monday 09:00 UTC dispatcher processes the previous closed Monday-to-Monday window in bounded recipient batches and creates one combined activity row per recipient/week.
 - Communities with no joins, departures, posts, comments, or active posters are omitted. Active vacations suppress a community only when the membership preference is enabled.
+
+Digest batches capture one business-clock instant for vacation suppression: starts are inclusive and ends are exclusive. Internal callers may bound recipients with an exclusive `afterUserId` and inclusive `throughUserId`; both predicates apply before pagination and aggregation. Omitting the upper bound preserves the scheduled global recipient stream and its `nextUserId` cursor. Activity windows retain their UUIDv7 boundaries; database audit and resource timers remain native.
 
 ### Follow and Referral Notifications
 

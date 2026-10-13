@@ -15,7 +15,7 @@ importers:
         version: 0.50.0
       '@commitlint/cli':
         specifier: ^21.2.3
-        version: 21.2.3(@types/node@26.6.4)(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)
+        version: 21.2.3(@types/node@26.6.5)(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)
       '@commitlint/config-conventional':
         specifier: ^21.2.3
         version: 21.2.3
@@ -41,8 +41,8 @@ importers:
         specifier: ^30.0.0
         version: 30.0.0
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
@@ -57,13 +57,13 @@ importers:
         version: 2.5.3
       '@vitejs/plugin-react':
         specifier: ^6.1.2
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@vitest/browser':
         specifier: ^5.0.3
-        version: 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+        version: 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/browser-playwright':
         specifier: ^5.0.3
-        version: 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+        version: 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/coverage-v8':
         specifier: ^5.0.3
         version: 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
@@ -83,8 +83,8 @@ importers:
         specifier: ^18.5.0
         version: 18.5.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
+        specifier: ^0.88.0
+        version: 0.88.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       eslint-plugin-playwright:
         specifier: ^2.12.1
         version: 2.12.1(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.41.0
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -156,10 +156,10 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -176,8 +176,8 @@ importers:
         version: link:api
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -609,7 +609,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/agents/story-clustering:
     dependencies:
@@ -765,15 +765,12 @@ importers:
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../modules/worker-queue-inventory
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../queues/account-data-requests
-      '@queues/activitypub-delivery':
+        version: link:../queues/account-lifecycle
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../queues/activitypub-delivery
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../queues/activitypub-inbox
+        version: link:../queues/activitypub
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../queues/ai-agents
@@ -789,18 +786,12 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../queues/bluesky-follow-propagation
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../queues/crawl-boilerplate-removal
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../queues/crawl-hostnames
+        version: link:../queues/crawl-dispatch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../queues/crawl-referral-links
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
@@ -843,9 +834,6 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../queues/topic-ratings
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../queues/unfurl-referral-links
@@ -855,12 +843,9 @@ importers:
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../queues/user-rss-feed-imports
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-integrity
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
@@ -1312,8 +1297,8 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
       valkyries:
         specifier: ^0.8.2
         version: 0.8.2
@@ -1340,8 +1325,8 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
@@ -1362,7 +1347,7 @@ importers:
         version: 7.3.1(supports-color@10.2.2)
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/config:
     dependencies:
@@ -1402,7 +1387,7 @@ importers:
     devDependencies:
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/data-stores/psql:
     dependencies:
@@ -1431,8 +1416,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.15
+        version: 0.0.15
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -1440,12 +1425,12 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -1469,8 +1454,8 @@ importers:
         version: 0.8.2
     devDependencies:
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/data-stores/valkey-core:
     dependencies:
@@ -1638,8 +1623,8 @@ importers:
         specifier: ^5.0.6
         version: 5.0.6
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -1685,12 +1670,9 @@ importers:
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -1715,15 +1697,12 @@ importers:
       '@workers/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../workers/bedrock-embeddings-batch
-      '@workers/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../workers/crawl-boilerplate-removal
       '@workers/crawl-browser':
         specifier: workspace:^
         version: link:../../workers/crawl-browser
-      '@workers/crawl-hostnames':
+      '@workers/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../workers/crawl-hostnames
+        version: link:../../workers/crawl-dispatch
       '@workers/crawl-referral-links':
         specifier: workspace:^
         version: link:../../workers/crawl-referral-links
@@ -1757,12 +1736,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
-      '@queues/activitypub-inbox':
+        version: link:../../queues/account-lifecycle
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
+        version: link:../../queues/activitypub
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -1796,9 +1775,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -1811,27 +1790,18 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
-      '@queues/user-deletions':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/user-deletions
-      '@queues/vote-weight':
+        version: link:../../queues/vote-aggregation
+      '@workers/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
-      '@workers/account-data-requests':
+        version: link:../../workers/account-lifecycle
+      '@workers/activitypub':
         specifier: workspace:^
-        version: link:../../workers/account-data-requests
-      '@workers/activitypub-delivery':
-        specifier: workspace:^
-        version: link:../../workers/activitypub-delivery
-      '@workers/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../workers/activitypub-inbox
+        version: link:../../workers/activitypub
       '@workers/admin-imports':
         specifier: workspace:^
         version: link:../../workers/admin-imports
@@ -1856,18 +1826,12 @@ importers:
       '@workers/crawl-embeds':
         specifier: workspace:^
         version: link:../../workers/crawl-embeds
-      '@workers/elections':
-        specifier: workspace:^
-        version: link:../../workers/elections
       '@workers/emails':
         specifier: workspace:^
         version: link:../../workers/emails
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../../workers/entity-listeners
-      '@workers/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../workers/entity-metrics-cache-refresh
       '@workers/find-your-friends':
         specifier: workspace:^
         version: link:../../workers/find-your-friends
@@ -1898,15 +1862,9 @@ importers:
       '@workers/psql':
         specifier: workspace:^
         version: link:../../workers/psql
-      '@workers/report-integrity':
+      '@workers/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../workers/report-integrity
-      '@workers/rss-feed-discoverability':
-        specifier: workspace:^
-        version: link:../../workers/rss-feed-discoverability
-      '@workers/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../workers/rss-feed-item-categories
+        version: link:../../workers/rss-feed-maintenance
       '@workers/rss-feeds':
         specifier: workspace:^
         version: link:../../workers/rss-feeds
@@ -1931,27 +1889,15 @@ importers:
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
-      '@workers/topic-aliases':
-        specifier: workspace:^
-        version: link:../../workers/topic-aliases
-      '@workers/topic-ratings':
-        specifier: workspace:^
-        version: link:../../workers/topic-ratings
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../workers/urls-domains-blacklist
-      '@workers/user-deletions':
-        specifier: workspace:^
-        version: link:../../workers/user-deletions
       '@workers/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../workers/user-rss-feed-imports
-      '@workers/vote-integrity':
+      '@workers/vote-aggregation':
         specifier: workspace:^
-        version: link:../../workers/vote-integrity
-      '@workers/vote-weight':
-        specifier: workspace:^
-        version: link:../../workers/vote-weight
+        version: link:../../workers/vote-aggregation
 
   backend/mcp:
     dependencies:
@@ -1973,15 +1919,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../queues/elections
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
@@ -2366,7 +2309,7 @@ importers:
         version: 2.0.5
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/modules/bluesky-oauth:
     dependencies:
@@ -2447,8 +2390,8 @@ importers:
   backend/modules/model-providers:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.131.0
-        version: 0.131.0(zod@4.6.5)
+        specifier: ^0.133.0
+        version: 0.133.0(zod@4.6.5)
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../openai-utils
@@ -2630,11 +2573,11 @@ importers:
         version: 0.5.3
       stripe:
         specifier: ^23.0.0
-        version: 23.0.0(@types/node@26.6.4)
+        version: 23.0.0(@types/node@26.6.5)
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
 
   backend/modules/structured-decisions:
     dependencies:
@@ -2717,7 +2660,7 @@ importers:
 
   backend/modules/worker-queue-inventory: {}
 
-  backend/queues/account-data-requests:
+  backend/queues/account-lifecycle:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -2732,22 +2675,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/activitypub-delivery:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
-
-  backend/queues/activitypub-inbox:
+  backend/queues/activitypub:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -2764,6 +2692,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2908,7 +2839,19 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/crawl-boilerplate-removal:
+  backend/queues/crawl-browser:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/queues/crawl-dispatch:
     dependencies:
       '@data-stores/valkey':
         specifier: workspace:^
@@ -2926,38 +2869,11 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/crawl-browser:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/crawl-embeds:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/crawl-hostnames:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2989,18 +2905,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/queues/elections:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/emails:
     dependencies:
@@ -3038,25 +2942,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/entity-metrics-cache-refresh:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/find-your-friends:
     dependencies:
@@ -3162,8 +3047,8 @@ importers:
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
 
   backend/queues/notifications:
     dependencies:
@@ -3244,31 +3129,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/report-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/rss-feed-discoverability:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/rss-feed-item-categories:
+  backend/queues/rss-feed-maintenance:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -3279,6 +3140,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/rss-feeds:
     dependencies:
@@ -3358,30 +3222,6 @@ importers:
         specifier: workspace:^
         version: link:../../types
 
-  backend/queues/topic-aliases:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-
-  backend/queues/topic-ratings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/unfurl-referral-links:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3415,21 +3255,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/user-deletions:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/user-rss-feed-imports:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3442,19 +3267,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/vote-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/vote-weight:
+  backend/queues/vote-aggregation:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -3468,6 +3281,13 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/rss:
     dependencies:
@@ -3514,9 +3334,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../queues/vote-weight
+        version: link:../queues/vote-aggregation
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
@@ -3686,8 +3506,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       husky:
         specifier: ^9.1.7
@@ -3767,8 +3587,8 @@ importers:
         version: 3.3.1
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/yauzl':
         specifier: ^3.4.0
         version: 3.4.0
@@ -3825,8 +3645,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/admin-imports:
     dependencies:
@@ -3998,9 +3818,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../ap-post-likes
@@ -4037,7 +3857,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/ap-post-likes:
     dependencies:
@@ -4053,7 +3873,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/api-egress-proxy:
     dependencies:
@@ -4209,8 +4029,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -4399,7 +4219,7 @@ importers:
         version: link:../../../ts-shared/deploy-environment
       '@vouchington/image-resize':
         specifier: ^0.2.0
-        version: 0.2.0(@types/node@26.6.4)
+        version: 0.2.0(@types/node@26.6.5)
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -4468,8 +4288,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4581,9 +4401,9 @@ importers:
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
-      '@queues/entity-metrics-cache-refresh':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
+        version: link:../../queues/vote-aggregation
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
@@ -4636,7 +4456,7 @@ importers:
     devDependencies:
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/captcha:
     dependencies:
@@ -4722,8 +4542,8 @@ importers:
         version: 2.2.2
     devDependencies:
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/comments:
     dependencies:
@@ -4870,8 +4690,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@queues/cache-purge':
         specifier: workspace:^
@@ -4947,8 +4767,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -5025,8 +4845,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -5147,8 +4967,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5157,11 +4977,11 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.15
+        version: 0.0.15
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/countries:
     dependencies:
@@ -5446,12 +5266,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-embeds':
         specifier: workspace:^
         version: link:../../queues/crawl-embeds
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -5661,8 +5481,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@services/oauth-accounts':
         specifier: workspace:^
@@ -5707,9 +5527,9 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
+        version: link:../../queues/crawl-dispatch
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
@@ -5973,21 +5793,18 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@queues/topic-ratings':
+        version: link:../../queues/rss-feed-maintenance
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/topic-ratings
+        version: link:../../queues/vote-aggregation
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
@@ -6179,8 +5996,8 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6277,8 +6094,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/entity-links:
     dependencies:
@@ -6416,9 +6233,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../../queues/bluesky-follow-propagation
@@ -6428,9 +6245,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
+        version: link:../../queues/rss-feed-maintenance
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -6464,7 +6281,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/feature-flags:
     dependencies:
@@ -6744,9 +6561,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -6772,8 +6589,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6821,8 +6638,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6986,8 +6803,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -7054,8 +6871,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -7196,8 +7013,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@data-stores/valkey-core':
         specifier: workspace:^
@@ -7311,9 +7128,9 @@ importers:
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
@@ -7388,9 +7205,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -7416,8 +7233,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -7665,9 +7482,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/report-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/report-integrity
+        version: link:../../queues/vote-aggregation
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases
@@ -7960,7 +7777,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/oauth:
     dependencies:
@@ -8019,8 +7836,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8040,9 +7857,9 @@ importers:
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
@@ -8112,8 +7929,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8470,9 +8287,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
@@ -8735,9 +8552,9 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
+        version: link:../../queues/rss-feed-maintenance
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
@@ -8841,9 +8658,15 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@queues/cache-purge':
+        specifier: workspace:^
+        version: link:../../queues/cache-purge
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../entity-listener-reconciliation
+      '@ts-shared/cache':
+        specifier: workspace:^
+        version: link:../../../ts-shared/cache
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -8852,7 +8675,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/prioritized-referral-links:
     dependencies:
@@ -8905,15 +8728,12 @@ importers:
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../../modules/worker-queue-inventory
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
-      '@queues/activitypub-delivery':
+        version: link:../../queues/account-lifecycle
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
+        version: link:../../queues/activitypub
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
@@ -8941,36 +8761,27 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
-      '@queues/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
       '@queues/crawl-embeds':
         specifier: workspace:^
         version: link:../../queues/crawl-embeds
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends
@@ -9010,15 +8821,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/report-integrity':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/report-integrity
-      '@queues/rss-feed-discoverability':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -9034,30 +8839,18 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../../queues/topic-ratings
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../queues/user-rss-feed-imports
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-integrity
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -9397,8 +9190,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -9540,9 +9333,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
@@ -9610,8 +9403,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@services/read-states':
         specifier: workspace:^
@@ -9658,12 +9451,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -9737,8 +9527,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -10118,14 +9908,14 @@ importers:
         version: 2.2.2
       stripe:
         specifier: ^23.0.0
-        version: 23.0.0(@types/node@26.6.4)
+        version: 23.0.0(@types/node@26.6.5)
     devDependencies:
       '@services/users':
         specifier: workspace:^
         version: link:../users
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10143,11 +9933,11 @@ importers:
         version: link:../stripe
       stripe:
         specifier: ^23.0.0
-        version: 23.0.0(@types/node@26.6.4)
+        version: 23.0.0(@types/node@26.6.5)
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
 
   backend/services/tag-limits:
     dependencies:
@@ -10234,9 +10024,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/topic-aliases':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/topic-aliases
+        version: link:../../queues/rss-feed-maintenance
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -10329,15 +10119,15 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
-      '@queues/topic-aliases':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/topic-aliases
+        version: link:../../queues/rss-feed-maintenance
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
@@ -10660,8 +10450,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -10964,8 +10754,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/user-referral-program-links:
     dependencies:
@@ -11079,6 +10869,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/account-lifecycle':
+        specifier: workspace:^
+        version: link:../../queues/account-lifecycle
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -11094,12 +10887,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/user-deletions':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/user-deletions
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../account-data-requests
@@ -11179,8 +10969,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@modules/csv':
         specifier: workspace:^
@@ -11246,9 +11036,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -11268,8 +11058,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -11292,9 +11082,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/elections':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/elections
+        version: link:../../queues/vote-aggregation
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -11314,8 +11104,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -11368,7 +11158,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/web-search:
     dependencies:
@@ -11503,8 +11293,8 @@ importers:
         specifier: ^6.2.12
         version: 6.2.12
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       openai:
         specifier: ^7.32.0
         version: 7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -11516,7 +11306,7 @@ importers:
         version: 0.3.0
       sharp:
         specifier: ^0.35.5
-        version: 0.35.5(@types/node@26.6.4)
+        version: 0.35.5(@types/node@26.6.5)
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11527,14 +11317,14 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
       valkyries:
         specifier: ^0.8.2
         version: 0.8.2
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -11547,13 +11337,13 @@ importers:
         version: 7.2.1
       stripe:
         specifier: ^23.0.0
-        version: 23.0.0(@types/node@26.6.4)
+        version: 23.0.0(@types/node@26.6.5)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/types:
     dependencies:
@@ -11624,7 +11414,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/account-data-requests:
+  backend/workers/account-lifecycle:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -11638,27 +11428,40 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/account-data-requests':
+      '@queues/account-lifecycle':
         specifier: workspace:^
-        version: link:../../queues/account-data-requests
+        version: link:../../queues/account-lifecycle
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../../services/account-data-requests
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../../services/user-deletions
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
-  backend/workers/activitypub-delivery:
+  backend/workers/activitypub:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@modules/activitypub-inbox-storage-policy':
+        specifier: workspace:^
+        version: link:../../modules/activitypub-inbox-storage-policy
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
@@ -11668,15 +11471,18 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@queues/activitypub-delivery':
+      '@queues/activitypub':
         specifier: workspace:^
-        version: link:../../queues/activitypub-delivery
+        version: link:../../queues/activitypub
       '@services/activitypub-delivery':
         specifier: workspace:^
         version: link:../../services/activitypub-delivery
       '@services/ap-actor-keys':
         specifier: workspace:^
         version: link:../../services/ap-actor-keys
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../../services/ap-inbox-activities
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -11687,15 +11493,18 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@services/ap-inbox-activities':
+      '@services/bookmarks':
         specifier: workspace:^
-        version: link:../../services/ap-inbox-activities
+        version: link:../../services/bookmarks
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../../services/remote-actors
+      '@services/route-rate-limits':
+        specifier: workspace:^
+        version: link:../../services/route-rate-limits
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -11705,40 +11514,6 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-
-  backend/workers/activitypub-inbox:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/activitypub-inbox-storage-policy':
-        specifier: workspace:^
-        version: link:../../modules/activitypub-inbox-storage-policy
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
-      '@queues/activitypub-inbox':
-        specifier: workspace:^
-        version: link:../../queues/activitypub-inbox
-      '@services/ap-inbox-activities':
-        specifier: workspace:^
-        version: link:../../services/ap-inbox-activities
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/http-signatures':
-        specifier: workspace:^
-        version: link:../../modules/http-signatures
-      '@services/route-rate-limits':
-        specifier: workspace:^
-        version: link:../../services/route-rate-limits
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/workers/admin-imports:
     dependencies:
@@ -11932,7 +11707,7 @@ importers:
         version: 8.11.2
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/workers/article-sync:
     dependencies:
@@ -12188,49 +11963,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/crawl-boilerplate-removal:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@jongleberry/vurst-html':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/crawl-boilerplate-removal':
-        specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
-      '@services/boilerplate-removals':
-        specifier: workspace:^
-        version: link:../../services/boilerplate-removals
-      '@services/crawlers':
-        specifier: workspace:^
-        version: link:../../services/crawlers
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../../services/crawls
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/aws':
-        specifier: workspace:^
-        version: link:../../modules/aws
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
-      '@services/urls-hostnames':
-        specifier: workspace:^
-        version: link:../../services/urls-hostnames
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/workers/crawl-browser:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12283,6 +12015,67 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/workers/crawl-dispatch:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@jongleberry/vurst-html':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@queues/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../../queues/crawl-dispatch
+      '@queues/crawler':
+        specifier: workspace:^
+        version: link:../../queues/crawler
+      '@services/boilerplate-removals':
+        specifier: workspace:^
+        version: link:../../services/boilerplate-removals
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../../services/crawlers
+      '@services/crawls':
+        specifier: workspace:^
+        version: link:../../services/crawls
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@queues/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/crawl-referral-links
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
+      '@queues/unfurl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/unfurl-referral-links
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../../services/urls-hostnames
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/workers/crawl-embeds:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12300,43 +12093,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/crawl-hostnames:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/crawl-hostnames':
-        specifier: workspace:^
-        version: link:../../queues/crawl-hostnames
-      '@queues/crawler':
-        specifier: workspace:^
-        version: link:../../queues/crawler
-      '@services/crawlers':
-        specifier: workspace:^
-        version: link:../../services/crawlers
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../../services/crawls
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/crawl-referral-links
-      '@queues/find-your-friends':
-        specifier: workspace:^
-        version: link:../../queues/find-your-friends
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/unfurl-referral-links
 
   backend/workers/crawl-referral-links:
     dependencies:
@@ -12402,24 +12158,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/workers/elections:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/elections':
-        specifier: workspace:^
-        version: link:../../queues/elections
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/emails:
     dependencies:
@@ -12496,18 +12234,15 @@ importers:
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
-      '@queues/crawl-boilerplate-removal':
+      '@queues/crawl-dispatch':
         specifier: workspace:^
-        version: link:../../queues/crawl-boilerplate-removal
+        version: link:../../queues/crawl-dispatch
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/language-detection':
         specifier: workspace:^
         version: link:../../queues/language-detection
@@ -12523,15 +12258,15 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
-      '@queues/rss-feed-item-categories':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../queues/rss-feed-maintenance
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
-      '@queues/vote-weight':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-weight
+        version: link:../../queues/vote-aggregation
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -12605,24 +12340,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/workers/entity-metrics-cache-refresh:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../../services/entity-fetch
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/find-your-friends:
     dependencies:
@@ -12733,7 +12450,7 @@ importers:
         version: 2.0.1
       sharp:
         specifier: ^0.35.5
-        version: 0.35.5(@types/node@26.6.4)
+        version: 0.35.5(@types/node@26.6.5)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -12837,8 +12554,8 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12982,9 +12699,6 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12997,6 +12711,9 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
@@ -13018,7 +12735,7 @@ importers:
         version: link:../../test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/workers/psql:
     dependencies:
@@ -13048,35 +12765,7 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/report-integrity:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/report-integrity':
-        specifier: workspace:^
-        version: link:../../queues/report-integrity
-      '@services/report-integrity':
-        specifier: workspace:^
-        version: link:../../services/report-integrity
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/rss-feed-discoverability:
+  backend/workers/rss-feed-maintenance:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -13084,36 +12773,34 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/rss-feed-discoverability':
+      '@queues/rss-feed-maintenance':
         specifier: workspace:^
-        version: link:../../queues/rss-feed-discoverability
-      '@services/rss-feeds':
+        version: link:../../queues/rss-feed-maintenance
+      '@services/entity-cache':
         specifier: workspace:^
-        version: link:../../services/rss-feeds
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/rss-feed-item-categories:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
+        version: link:../../services/entity-cache
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../../queues/notifications
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/rss-feeds:
     dependencies:
@@ -13200,8 +12887,8 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       mailparser:
-        specifier: ^3.9.36
-        version: 3.9.36
+        specifier: ^3.9.38
+        version: 3.9.38
     devDependencies:
       '@types/mailparser':
         specifier: ^3.9.0
@@ -13330,58 +13017,6 @@ importers:
         specifier: workspace:^
         version: link:../../modules/aws
 
-  backend/workers/topic-aliases:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../../queues/rss-feed-item-categories
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
-      '@services/rss-feed-items':
-        specifier: workspace:^
-        version: link:../../services/rss-feed-items
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../../services/rss-feeds
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/topic-ratings:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/topic-ratings':
-        specifier: workspace:^
-        version: link:../../queues/topic-ratings
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/workers/unfurl-referral-links:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -13432,27 +13067,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/user-deletions:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../../queues/user-deletions
-      '@services/user-deletions':
-        specifier: workspace:^
-        version: link:../../services/user-deletions
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/workers/user-rss-feed-imports:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -13471,7 +13085,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/vote-integrity:
+  backend/workers/vote-aggregation:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -13482,27 +13096,24 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
-      '@queues/vote-integrity':
+      '@queues/vote-aggregation':
         specifier: workspace:^
-        version: link:../../queues/vote-integrity
+        version: link:../../queues/vote-aggregation
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../../services/entity-fetch
+      '@services/report-integrity':
+        specifier: workspace:^
+        version: link:../../services/report-integrity
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
       '@services/vote-integrity':
         specifier: workspace:^
         version: link:../../services/vote-integrity
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/vote-weight:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/vote-weight':
-        specifier: workspace:^
-        version: link:../../queues/vote-weight
       '@services/vote-weight':
         specifier: workspace:^
         version: link:../../services/vote-weight
@@ -13510,6 +13121,12 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -13535,8 +13152,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -13559,8 +13176,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13576,7 +13193,7 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -13585,7 +13202,7 @@ importers:
     dependencies:
       '@sentry/cloudflare':
         specifier: ^11.6.0
-        version: 11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4))
+        version: 11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -13624,8 +13241,8 @@ importers:
         specifier: ^5.20261011.1
         version: 5.20261011.1
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
@@ -13634,10 +13251,10 @@ importers:
         version: 0.28.2
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       wrangler:
         specifier: ^4.149.0
-        version: 4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4)
+        version: 4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5)
 
   email-templates:
     dependencies:
@@ -13661,8 +13278,8 @@ importers:
         specifier: workspace:^
         version: link:../ts-shared/languages
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -13683,7 +13300,7 @@ importers:
         version: 6.11.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   lambdas/image-resize:
     dependencies:
@@ -13704,7 +13321,7 @@ importers:
         version: link:../../ts-shared/url-signing
       '@vouchington/image-resize':
         specifier: ^0.2.0
-        version: 0.2.0(@types/node@26.6.4)
+        version: 0.2.0(@types/node@26.6.5)
       '@vouchington/media':
         specifier: ^0.2.0
         version: 0.2.0
@@ -13713,7 +13330,7 @@ importers:
         version: 0.44.3
       sharp:
         specifier: ^0.35.5
-        version: 0.35.5(@types/node@26.6.4)
+        version: 0.35.5(@types/node@26.6.5)
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -13722,8 +13339,8 @@ importers:
         specifier: ^8.10.164
         version: 8.10.164
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -13735,7 +13352,7 @@ importers:
         version: 0.28.2
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   lambdas/shared:
     dependencies:
@@ -13753,11 +13370,11 @@ importers:
         version: link:../../ts-shared/utils
     devDependencies:
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   playwright:
     devDependencies:
@@ -13772,7 +13389,7 @@ importers:
         version: link:../backend/test-helpers
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   static-code-analysis:
     dependencies:
@@ -13783,14 +13400,14 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.15
+        version: 0.0.15
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       oxfmt:
         specifier: ^0.72.0
         version: 0.72.0
@@ -13798,8 +13415,8 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -13809,7 +13426,7 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vitest:
         specifier: ^5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   ts-shared/cache:
     dependencies:
@@ -13881,8 +13498,8 @@ importers:
         specifier: ^6.2.12
         version: 6.2.12
       uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
+        specifier: ^14.0.3
+        version: 14.0.3
 
   ts-shared/ui-messages:
     dependencies:
@@ -13999,7 +13616,7 @@ importers:
         version: 1.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@sentry/nextjs':
         specifier: ^11.6.0
-        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261011.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4))
+        version: 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261011.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -14089,7 +13706,7 @@ importers:
         version: 0.0.1
       sharp:
         specifier: ^0.35.5
-        version: 0.35.5(@types/node@26.6.4)
+        version: 0.35.5(@types/node@26.6.5)
       shiki:
         specifier: ^4.5.0
         version: 4.5.0
@@ -14111,7 +13728,7 @@ importers:
         version: 10.6.1(@vitest/browser-playwright@5.0.3)(@vitest/browser@5.0.3)(@vitest/runner@4.1.11)(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vitest@5.0.3)
       '@storybook/nextjs-vite':
         specifier: ^10.6.1
-        version: 10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -14125,8 +13742,8 @@ importers:
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -14143,8 +13760,8 @@ importers:
         specifier: ^30.1.2
         version: 30.1.2(@noble/hashes@2.4.0)
       no-mistakes:
-        specifier: ^0.86.3
-        version: 0.86.3
+        specifier: ^0.88.0
+        version: 0.88.0(vitest@5.0.3)
       storybook:
         specifier: ^10.6.1
         version: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
@@ -14156,10 +13773,10 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vite:
         specifier: ^8.3.4
-        version: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+        version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
-        specifier: ^0.40.0
-        version: 0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3)
+        specifier: ^0.41.0
+        version: 0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3)
 
 packages:
 
@@ -14170,8 +13787,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/sdk@0.131.0':
-    resolution: {integrity: sha512-9+PepoU7qVMmM70jSahdnfcMHAvAnzhMOLv2W9WjRLO+OG/MAiBETkwKZqv7KIJ1Cj5h8eZ019bHzZaq+Mbepw==}
+  '@anthropic-ai/sdk@0.133.0':
+    resolution: {integrity: sha512-jlqUN8p8ESTJj+GJnA4KjzbEfF1waEoGzRT8jwytlYGFFgv+/DUQOxlYGvYw10UzhD1kwLqYzxvA3FrTB2YWuQ==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -18628,8 +18245,8 @@ packages:
   '@types/node@25.9.5':
     resolution: {integrity: sha512-OScDchr2fwuUmWdf4kZ9h7PcJiYDVInhJizG/biAq3cAvqwYktuy/TYGGdZNMtNTFUP7rnb0NU4TUdm82kt4Rg==}
 
-  '@types/node@26.6.4':
-    resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
+  '@types/node@26.6.5':
+    resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
   '@types/nodemailer@8.0.2':
     resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
@@ -19055,8 +18672,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.13':
-    resolution: {integrity: sha512-/bkQ5ury6ISf8v7mwpEIrcQAQvrklpoD6cYVvTNav5k7qJqs9tzu4925tfHofSBdBK1I1Pxd+cuIET6FH74MQg==}
+  '@vouchington/postgres@0.0.15':
+    resolution: {integrity: sha512-sJouSE28dnGonuwvgvDzCt9LNd8wf4aY21jnG+31EY1MVnztlogGUio7FXchBSay5jdyeBkZ3ePBM09HAvSy4Q==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.2':
@@ -19996,8 +19613,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.86.3:
-    resolution: {integrity: sha512-/sq9RQ8bKR4x14a90uTB+8KevDdMjZX8Zi/YmHyEDVJMylnQdZ8EixPFxdA7F7P3A2pWtdgYkYBytfWc5ge8FA==}
+  eslint-plugin-no-mistakes@0.88.0:
+    resolution: {integrity: sha512-udup6J4CI2HxwzZ3ZVN+mAZNWNrhze9k5csi24swUt2o6tkoKfGGu0rVm4CBKnIgyggltXzDoXeRU9/nuE8zCw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -21044,8 +20661,8 @@ packages:
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
 
-  mailparser@3.9.36:
-    resolution: {integrity: sha512-Fng3OmPN7khG0oVHDwwBIOYxjGu7kFxEuN6NnVV1H2tQYCIWjqvjK6cKvhj2r3XQVToVabP0b4HF+N7YgNdXFQ==}
+  mailparser@3.9.38:
+    resolution: {integrity: sha512-CeSx2cx6MgFzuFPx2bnyGNmJABiMWvGJbrotOv6Ve47aQhlfCHO7cGd2CJHGVC3klfWjjcJ9itXDOdj2xXZFYg==}
     engines: {node: '>=20.0.0'}
 
   make-dir@4.0.0:
@@ -21348,31 +20965,36 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.86.3:
-    resolution: {integrity: sha512-6E1FL/knZ/XvIawTMkYnu21DpqiIWwhY/3OHDmzywiIPtvTFssfhrLfKSQLYZ9e9ofl5c2RyaUqOZ1hgTZ50OA==}
+  no-mistakes-darwin-arm64@0.88.0:
+    resolution: {integrity: sha512-mMyHG/r7Suvf52kHrIZXUqUT5aS17ZnyVxDn8UmkDVJzj26YroyKncwjoBnZwtRNzRyRQyIQIijpxLaWHqPMhw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.86.3:
-    resolution: {integrity: sha512-5iXNx/DACtwXfaeetYAJUSiBy7ls+mzOx/n7l6w+A8PAIBFbPRTfL08DjLMJgZvkD7WFwO4xPHgjP3OFuSVZkw==}
+  no-mistakes-linux-arm64-gnu@0.88.0:
+    resolution: {integrity: sha512-KJgUpwEe63qn7zYOCOaAGEARcXTxPeibe0iVcFV4/Vdt7HlRvgVN174wFvgRU1UBEND7hFfV51wChDuEUT74oQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.86.3:
-    resolution: {integrity: sha512-wYxaaGm+mr3GocYgrToQ9w5Jqn3+WcUsGU3jgdE8B1UTTljV1g2xQKl19CpRax3a8sOQTC4+jXk3CzluoOdB5Q==}
+  no-mistakes-linux-x64-gnu@0.88.0:
+    resolution: {integrity: sha512-CQ9HR1T3PKHgKcV5oIK4X0KSmldoWZ44y9GlcT7YKEO5aXpY2JjRISdtH9cH0SjcM0bFaiubhgZ3KzKCUi/RnA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.86.3:
-    resolution: {integrity: sha512-bWjImeoigJswfs1/ZrFlkvmoumJZLU5bYPZ+Z6yxY7ldY9gSn8rmtqxHGIdu9RVCCu00cuji7E7Ddoa5S+tSYQ==}
+  no-mistakes-win32-x64-msvc@0.88.0:
+    resolution: {integrity: sha512-zDzwEc2wEjbLmy+C7IRm1VuAANbvlvAdEwHoPdGB2cOKjeMXT4cLqAbA2IZBRYOchqJAvbnln2KWPawToVZTUA==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.86.3:
-    resolution: {integrity: sha512-WIANg4Eebssclx4KU9FRxiWFtBLYnSWiT3GeT3PpN6bgyJAnmQAxxq66hlUXn7dVd8CaxGGbUJkXVWgbv18W0Q==}
+  no-mistakes@0.88.0:
+    resolution: {integrity: sha512-iEhVz+SDcKlaO2pgQy5o7h6Xe+oiHOHinwKvoHf2dBTCgOp5fnN3VQtik0HiMxaD4Ku7EZD9zde7kcVfJRhaBA==}
     hasBin: true
+    peerDependencies:
+      vitest: ^5.0.3
+    peerDependenciesMeta:
+      vitest:
+        optional: true
 
   node-app-attest@1.0.1:
     resolution: {integrity: sha512-r46D8plIJSFk3yH67REVSxvdk2gi7MVWeYi9HrwC3ZspbyDSxnkvGmGqLvl9uabsCWX9ldN9ZdwLcxFQRDidfQ==}
@@ -21398,10 +21020,6 @@ packages:
   node-releases@2.0.56:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
-
-  nodemailer@10.0.14:
-    resolution: {integrity: sha512-eJoLFKg55fesSlzUekmfOv/SBXh4KUYT8oiQc2RLP0tfG0rbNMJBK7wgHJwXTJwqyKlSJMz9UzDZ4v+aHEvo8g==}
-    engines: {node: '>=20.0.0'}
 
   nodemailer@10.1.0:
     resolution: {integrity: sha512-fXW8AulB25aOTuwfRYV6lqHyfz2VM4rr4SGXH03mE7x5znEUpzL5mu6anARUpZN7744Ziwkmr4AxSLPJsBQspg==}
@@ -22726,8 +22344,8 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  uuid@14.0.2:
-    resolution: {integrity: sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ==}
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
 
   validator@13.15.35:
@@ -22850,8 +22468,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.40.0:
-    resolution: {integrity: sha512-4UgaT1dUDL5C6LdNU+4QX2vtlWwU+B24IBQHyFsZLi7XMuwW/U/Fx4EiplnEpEIy4F7xf/re9CF4YEnZx86LHg==}
+  vouchington-tooling@0.41.0:
+    resolution: {integrity: sha512-vnFCkcM65lJ4Bh8Hk5ecD02d3GPBpxwTAfdjvfEfnFixYeddjGArl023FAD3xd5XxqG1Zz4cGCoCiFM47GEO4w==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -23105,7 +22723,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@0.131.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@0.133.0(zod@4.6.5)':
     dependencies:
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.1.1
@@ -23874,12 +23492,12 @@ snapshots:
 
   '@cloudflare/workers-types@5.20261011.1': {}
 
-  '@commitlint/cli@21.2.3(@types/node@26.6.4)(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)':
+  '@commitlint/cli@21.2.3(@types/node@26.6.5)(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)':
     dependencies:
       '@commitlint/config-conventional': 21.2.3
       '@commitlint/format': 21.2.3
       '@commitlint/lint': 21.2.3
-      '@commitlint/load': 21.2.3(@types/node@26.6.4)(@typescript/typescript6@6.0.2)
+      '@commitlint/load': 21.2.3(@types/node@26.6.5)(@typescript/typescript6@6.0.2)
       '@commitlint/read': 21.2.3(conventional-commits-parser@7.1.2)
       '@commitlint/types': 21.2.3
       tinyexec: 1.3.1
@@ -23924,14 +23542,14 @@ snapshots:
       '@commitlint/rules': 21.2.3
       '@commitlint/types': 21.2.3
 
-  '@commitlint/load@21.2.3(@types/node@26.6.4)(@typescript/typescript6@6.0.2)':
+  '@commitlint/load@21.2.3(@types/node@26.6.5)(@typescript/typescript6@6.0.2)':
     dependencies:
       '@commitlint/config-validator': 21.2.3
       '@commitlint/execute-rule': 21.0.1
       '@commitlint/resolve-extends': 21.2.3
       '@commitlint/types': 21.2.3
       cosmiconfig: 9.0.2(@typescript/typescript6@6.0.2)
-      cosmiconfig-typescript-loader: 6.3.0(@types/node@26.6.4)(@typescript/typescript6@6.0.2)(cosmiconfig@9.0.2(@typescript/typescript6@6.0.2))
+      cosmiconfig-typescript-loader: 6.3.0(@types/node@26.6.5)(@typescript/typescript6@6.0.2)(cosmiconfig@9.0.2(@typescript/typescript6@6.0.2))
       es-toolkit: 1.52.0
       is-plain-obj: 4.1.0
       picocolors: 1.1.1
@@ -24522,11 +24140,11 @@ snapshots:
 
   '@jongleberry/vurst-runtime@0.4.3': {}
 
-  '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       glob: 13.0.6
       react-docgen-typescript: 2.4.0(@typescript/typescript6@6.0.2)
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
     optionalDependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
@@ -26839,7 +26457,7 @@ snapshots:
       rollup: 4.63.4
       webpack: 5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)
 
-  '@sentry/cloudflare@11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4))':
+  '@sentry/cloudflare@11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/conventions': 0.26.0
@@ -26849,7 +26467,7 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261011.1
-      wrangler: 4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4)
+      wrangler: 4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5)
 
   '@sentry/conventions@0.26.0': {}
 
@@ -26861,13 +26479,13 @@ snapshots:
     dependencies:
       '@sentry/core': 11.6.0
 
-  '@sentry/nextjs@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261011.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4))':
+  '@sentry/nextjs@11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@cloudflare/workers-types@5.20261011.1)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@rollup/plugin-commonjs': 28.0.1(rollup@4.63.4)
       '@sentry/browser-utils': 11.6.0
       '@sentry/bundler-plugins': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
-      '@sentry/cloudflare': 11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4))
+      '@sentry/cloudflare': 11.6.0(@cloudflare/workers-types@5.20261011.1)(wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5))
       '@sentry/conventions': 0.26.0
       '@sentry/core': 11.6.0
       '@sentry/node': 11.6.0(@babel/core@7.29.7(supports-color@10.2.2))(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
@@ -27099,18 +26717,18 @@ snapshots:
       '@storybook/icons': 2.1.0(react@19.3.0)
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
     optionalDependencies:
-      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
-      '@vitest/browser-playwright': 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+      '@vitest/browser-playwright': 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/runner': 4.1.11
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - react
 
-  '@storybook/builder-vite@10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/builder-vite@10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       ts-dedent: 2.3.0
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
 
   '@storybook/global@5.0.0': {}
 
@@ -27118,18 +26736,18 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@storybook/nextjs-vite@10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/nextjs-vite@10.6.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
-      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)
-      '@storybook/react-vite': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@storybook/react-vite': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       next: 16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       styled-jsx: 5.1.6(@babel/core@7.29.7(supports-color@10.2.2))(react@19.3.0)
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      vite-plugin-storybook-nextjs: 10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite-plugin-storybook-nextjs: 10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -27149,11 +26767,11 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/react-vite@10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
-      '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(@typescript/typescript6@6.0.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
-      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@storybook/builder-vite': 10.6.1(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@storybook/react': 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)
       empathic: 2.0.1
       magic-string: 1.4.2
@@ -27163,7 +26781,7 @@ snapshots:
       resolve: 1.22.12
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       tsconfig-paths: 4.2.0
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
     optionalDependencies:
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
@@ -27296,7 +26914,7 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
     optionalDependencies:
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   '@testing-library/react@16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -27345,7 +26963,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/chai@5.2.3':
     dependencies:
@@ -27354,13 +26972,13 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/cookiejar@2.1.5': {}
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/d3-array@3.2.2': {}
 
@@ -27412,7 +27030,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.1':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       '@types/qs': 6.15.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -27431,7 +27049,7 @@ snapshots:
 
   '@types/jsdom@30.0.0':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       '@types/tough-cookie': 4.0.5
       parse5: 8.0.1
       undici-types: 8.10.0
@@ -27441,13 +27059,13 @@ snapshots:
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/jsrsasign@10.5.15': {}
 
   '@types/mailparser@3.9.0':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       iconv-lite: 0.6.3
 
   '@types/mdast@4.0.4':
@@ -27456,7 +27074,7 @@ snapshots:
 
   '@types/memcached@2.2.10':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/methods@1.1.4': {}
 
@@ -27464,24 +27082,24 @@ snapshots:
 
   '@types/node-fetch@2.6.13':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       form-data: 4.0.6
 
   '@types/node@25.9.5':
     dependencies:
       undici-types: 7.24.6
 
-  '@types/node@26.6.4':
+  '@types/node@26.6.5':
     dependencies:
       undici-types: 8.9.0
 
   '@types/nodemailer@8.0.2':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/pg-copy-streams@1.2.5':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       '@types/pg': 8.23.1
 
   '@types/pg-pool@2.0.7':
@@ -27490,13 +27108,13 @@ snapshots:
 
   '@types/pg@8.15.6':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       pg-protocol: 1.16.1
       pg-types: 2.2.0
 
   '@types/pg@8.23.1':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       pg-protocol: 1.16.1
       pg-types: 2.2.0
 
@@ -27518,18 +27136,18 @@ snapshots:
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/superagent@8.1.11':
     dependencies:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       form-data: 4.0.6
 
   '@types/supertest@7.2.1':
@@ -27547,19 +27165,19 @@ snapshots:
 
   '@types/web-push@3.6.4':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/yauzl@3.4.0':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@types/yazl@3.3.1':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@typescript-eslint/parser@8.71.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
@@ -27709,37 +27327,37 @@ snapshots:
       '@valkey/valkey-glide-linux-x64-gnu': 2.5.3
       '@valkey/valkey-glide-linux-x64-musl': 2.5.3
 
-  '@vitejs/plugin-react@6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@vitejs/plugin-react@6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
 
-  '@vitest/browser-playwright@5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)':
+  '@vitest/browser-playwright@5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)':
     dependencies:
-      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
-      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       playwright: 1.64.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - bufferutil
       - msw
       - utf-8-validate
       - vite
 
-  '@vitest/browser@5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)':
+  '@vitest/browser@5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)':
     dependencies:
       '@blazediff/core': 1.10.0
-      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@vitest/ui': 5.0.3(vitest@5.0.3)
       '@vitest/utils': 5.0.3
       magic-string: 1.4.2
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
@@ -27757,9 +27375,9 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     optionalDependencies:
-      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+      '@vitest/browser': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -27775,14 +27393,14 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.1
 
-  '@vitest/mocker@5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@vitest/mocker@5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.3
       estree-walker: 3.0.3
       magic-string: 1.4.2
     optionalDependencies:
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -27817,7 +27435,7 @@ snapshots:
       pathe: 2.0.3
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -27869,10 +27487,10 @@ snapshots:
 
   '@vouchington/http-transport@0.0.0': {}
 
-  '@vouchington/image-resize@0.2.0(@types/node@26.6.4)':
+  '@vouchington/image-resize@0.2.0(@types/node@26.6.5)':
     dependencies:
       negotiator: 1.1.0
-      sharp: 0.35.5(@types/node@26.6.4)
+      sharp: 0.35.5(@types/node@26.6.5)
     transitivePeerDependencies:
       - '@types/node'
 
@@ -27898,7 +27516,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.13':
+  '@vouchington/postgres@0.0.15':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1
@@ -27944,7 +27562,7 @@ snapshots:
 
   '@vouchington/uuid-v7@0.0.0':
     dependencies:
-      uuid: 14.0.2
+      uuid: 14.0.3
 
   '@vouchington/worker-runtime@0.1.1(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
     dependencies:
@@ -28445,9 +28063,9 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
-  cosmiconfig-typescript-loader@6.3.0(@types/node@26.6.4)(@typescript/typescript6@6.0.2)(cosmiconfig@9.0.2(@typescript/typescript6@6.0.2)):
+  cosmiconfig-typescript-loader@6.3.0(@types/node@26.6.5)(@typescript/typescript6@6.0.2)(cosmiconfig@9.0.2(@typescript/typescript6@6.0.2)):
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       cosmiconfig: 9.0.2(@typescript/typescript6@6.0.2)
       jiti: 2.6.1
       typescript: '@typescript/typescript6@6.0.2'
@@ -28472,7 +28090,7 @@ snapshots:
       monocart-coverage-reports: 2.13.0
     optionalDependencies:
       '@vitest/coverage-v8': 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   cross-spawn@7.0.6:
     dependencies:
@@ -28735,7 +28353,7 @@ snapshots:
   engine.io@6.6.10(supports-color@10.2.2):
     dependencies:
       '@types/cors': 2.8.19
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       '@types/ws': 8.18.1
       accepts: 1.3.8
       cookie: 0.7.2
@@ -28827,7 +28445,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.86.3(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-no-mistakes@0.88.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -29479,7 +29097,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       merge-stream: 2.0.0
       supports-color: 8.1.1
     optional: true
@@ -29848,7 +29466,7 @@ snapshots:
       '@babel/types': 7.29.8
       source-map-js: 1.2.2
 
-  mailparser@3.9.36:
+  mailparser@3.9.38:
     dependencies:
       '@zone-eu/mailsplit': 5.4.20
       encoding-japanese: 2.4.0
@@ -29857,7 +29475,7 @@ snapshots:
       iconv-lite: 0.7.3
       libmime: 5.4.7
       linkify-it: 5.0.2
-      nodemailer: 10.0.14
+      nodemailer: 10.1.0
       punycode.js: 2.3.1
       tlds: 1.261.0
 
@@ -30205,10 +29823,10 @@ snapshots:
 
   min-indent@1.0.1: {}
 
-  miniflare@5.20261006.1-alpha(@types/node@26.6.4):
+  miniflare@5.20261006.1-alpha(@types/node@26.6.5):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
-      sharp: 0.35.5(@types/node@26.6.4)
+      sharp: 0.35.5(@types/node@26.6.5)
       undici: 7.29.1
       workerd: 1.20261006.1
       ws: 8.21.0
@@ -30338,24 +29956,25 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.86.3:
+  no-mistakes-darwin-arm64@0.88.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.86.3:
+  no-mistakes-linux-arm64-gnu@0.88.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.86.3:
+  no-mistakes-linux-x64-gnu@0.88.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.86.3:
+  no-mistakes-win32-x64-msvc@0.88.0:
     optional: true
 
-  no-mistakes@0.86.3:
+  no-mistakes@0.88.0(vitest@5.0.3):
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.86.3
-      no-mistakes-linux-arm64-gnu: 0.86.3
-      no-mistakes-linux-x64-gnu: 0.86.3
-      no-mistakes-win32-x64-msvc: 0.86.3
+      no-mistakes-darwin-arm64: 0.88.0
+      no-mistakes-linux-arm64-gnu: 0.88.0
+      no-mistakes-linux-x64-gnu: 0.88.0
+      no-mistakes-win32-x64-msvc: 0.88.0
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   node-app-attest@1.0.1:
     dependencies:
@@ -30376,8 +29995,6 @@ snapshots:
       formdata-polyfill: 4.0.10
 
   node-releases@2.0.56: {}
-
-  nodemailer@10.0.14: {}
 
   nodemailer@10.1.0: {}
 
@@ -30888,7 +30505,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       long: 5.3.2
 
   proxy-addr@2.0.8:
@@ -31319,7 +30936,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  sharp@0.35.5(@types/node@26.6.4):
+  sharp@0.35.5(@types/node@26.6.5):
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -31350,7 +30967,7 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   shebang-command@2.0.0:
     dependencies:
@@ -31588,9 +31205,9 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stripe@23.0.0(@types/node@26.6.4):
+  stripe@23.0.0(@types/node@26.6.5):
     optionalDependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   strnum@2.4.2:
     dependencies:
@@ -31935,7 +31552,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  uuid@14.0.2: {}
+  uuid@14.0.3: {}
 
   validator@13.15.35: {}
 
@@ -31972,7 +31589,7 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-plugin-storybook-nextjs@10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vite-plugin-storybook-nextjs@10.6.1(@typescript/typescript6@6.0.2)(next@16.4.0(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       '@next/env': 16.4.0
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
@@ -31984,25 +31601,25 @@ snapshots:
       semver: 7.8.5
       storybook: 10.6.1(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       ts-dedent: 2.3.0
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       globrex: 0.1.2
       tsconfck: 3.1.6(@typescript/typescript6@6.0.2)
     optionalDependencies:
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1):
+  vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -32010,17 +31627,17 @@ snapshots:
       rolldown: 1.2.13
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       esbuild: 0.28.2
       fsevents: 2.3.3
       jiti: 2.7.0
       terser: 5.49.0
       yaml: 2.9.1
 
-  vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -32031,19 +31648,19 @@ snapshots:
       tinybench: 6.2.0
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
-      '@types/node': 26.6.4
-      '@vitest/browser-playwright': 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
+      '@types/node': 26.6.5
+      '@vitest/browser-playwright': 5.0.3(playwright@1.64.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/coverage-v8': 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
       '@vitest/ui': 5.0.3(vitest@5.0.3)
       jsdom: 30.1.2(@noble/hashes@2.4.0)
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.40.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.86.3)(supports-color@10.2.2)(vitest@5.0.3):
+  vouchington-tooling@0.41.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.88.0(vitest@5.0.3))(supports-color@10.2.2)(vitest@5.0.3):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -32061,9 +31678,9 @@ snapshots:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@typescript/typescript6': 6.0.2
       agent-blackboard: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
-      no-mistakes: 0.86.3
+      no-mistakes: 0.88.0(vitest@5.0.3)
       typescript: '@typescript/typescript6@6.0.2'
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - eslint
       - supports-color
@@ -32180,13 +31797,13 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20261006.1
       '@cloudflare/workerd-windows-64': 1.20261006.1
 
-  wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.4):
+  wrangler@4.149.0(@cloudflare/workers-types@5.20261011.1)(@types/node@26.6.5):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261006.1)
       blake3-wasm: 2.1.5
       esbuild: 0.28.2
-      miniflare: 5.20261006.1-alpha(@types/node@26.6.4)
+      miniflare: 5.20261006.1-alpha(@types/node@26.6.5)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20261006.1

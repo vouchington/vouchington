@@ -1,5 +1,6 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getOrCreateProviderContextId } from './provider-context.mts'
 import { createIneligiblePurchaseCancellationIdempotencyKey } from './ineligible-stripe-purchase-reversal-idempotency.mts'
 import { IneligiblePurchaseReversalInProgressError } from './ineligible-stripe-purchase-reversal-execution.mts'
 import type { ClaimedCancellation } from './ineligible-stripe-purchase-reversal-types.mts'
@@ -20,22 +21,26 @@ export async function claimIneligiblePurchaseCancellationOperation(
     providerApplicationId,
     subscriptionId,
   )
+  // ast-grep-ignore: no-three-sequential-awaits -- the context must exist before the operation insert, which must precede the locked claim reread
+  const providerContextId = await getOrCreateProviderContextId(
+    { provider: 'stripe', environment: providerEnvironment, applicationId: providerApplicationId },
+    query,
+  )
   await query(sql`/* claimIneligiblePurchaseCancellation:insert */
     INSERT INTO membership_operations (
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
-      provider, environment, application_id,
+      membership_provider_context_id,
       operation_kind, idempotency_key
     ) VALUES (
       ${membershipSourceId}, ${membershipProviderLineageId}, ${membershipLineageBindingId},
-      'stripe', ${providerEnvironment}, ${providerApplicationId},
+      ${providerContextId},
       'cancel_source', ${idempotencyKey}
-    ) ON CONFLICT (provider, environment, application_id, idempotency_key) DO NOTHING
+    ) ON CONFLICT (membership_provider_context_id, idempotency_key) DO NOTHING
   `)
   const { rows } = await query(sql`/* claimIneligiblePurchaseCancellation:lock */
     SELECT operation.id, operation.completed_at IS NOT NULL AS completed
     FROM membership_operations operation
-    WHERE operation.provider = 'stripe' AND operation.environment = ${providerEnvironment}
-      AND operation.application_id = ${providerApplicationId} AND operation.idempotency_key = ${idempotencyKey}
+    WHERE operation.membership_provider_context_id = ${providerContextId}::UUID AND operation.idempotency_key = ${idempotencyKey}
       AND operation.membership_lineage_binding_id = ${membershipLineageBindingId}
     FOR UPDATE
   `)

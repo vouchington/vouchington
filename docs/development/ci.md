@@ -246,3 +246,5 @@ executing product source.
 - <a id="workspace-cross-reference"></a>[Workspace Cross-Reference](reference-ci-workspace-cross-reference.md)
 - <a id="adding-a-trustedcredentialed-ci-job"></a>[Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md)
 - <a id="ci-job-timeout-budgets"></a>[CI Job Timeout Budgets](reference-ci-ci-job-timeout-budgets.md)
+
+See [catalog compilation and the tracked form keyboard reference check](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog) for their static CI ownership.

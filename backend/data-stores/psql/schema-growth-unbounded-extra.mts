@@ -142,6 +142,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'membership_lineage_bindings',
   'membership_operations',
   'membership_products',
+  'membership_provider_contexts',
   'membership_provider_evidence_records',
   'membership_provider_lineages',
   'membership_provider_observations',

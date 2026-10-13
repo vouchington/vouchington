@@ -1,8 +1,8 @@
 # Topic Ratings Worker
 
-Source entrypoint: [backend/workers/topic-ratings/README.md](../../../../../../backend/workers/topic-ratings/README.md)
+Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Worker package for topic rating-stat refresh jobs.
+Shared `vote-aggregation` worker handles topic rating-stat refresh jobs.
 
 Refreshes are serialized per topic in PostgreSQL and calculate, compare, and write from the same
 primary transaction. Concurrent queue and publication-reconciliation refreshes therefore cannot
@@ -10,7 +10,7 @@ overwrite a newer aggregate with an older snapshot.
 
 ## Exports
 
-- `topicRatings` - worker instance for the `topic-ratings` queue.
+- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
 
 ## Related
 

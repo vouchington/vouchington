@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
@@ -11,8 +12,8 @@ export async function createMembershipProviderEvidence(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerificationEvidence */
     INSERT INTO membership_provider_evidence_records (
-      provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
-    ) VALUES ('stripe', 'test', ${fixture.applicationId},
+      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+    ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}),
       ${randomUUID().replaceAll('-', '').padEnd(64, 'b')}, '\x01'::bytea) RETURNING id`)
   return rows[0]!.id
 }
@@ -26,9 +27,9 @@ export async function createMembershipVerification(
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerification */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_record_id, provider, environment, application_id
+      membership_provider_evidence_record_id, membership_provider_context_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${intentId}, ${evidenceId},
-      'stripe', 'test', ${fixture.applicationId}) RETURNING id`)
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId})) RETURNING id`)
   return rows[0]!.id
 }
 
@@ -40,9 +41,9 @@ export function createDuplicateMembershipVerification(
   return write(sql`/* rejectDuplicateMembershipVerificationIdempotencyKey */
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
-      provider, environment, application_id
+      membership_provider_context_id
     ) VALUES (${fixture.userId}, ${idempotencyKey}, ${fixture.requestFingerprint}, ${evidenceId},
-      'stripe', 'test', ${fixture.applicationId})`)
+      fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}))`)
 }
 
 export function completeMembershipVerificationWithoutResult(
@@ -82,19 +83,21 @@ export function createCrossOwnerMembershipVerification(
     WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id)
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_purchase_intent_id,
-      membership_provider_evidence_record_id, provider, environment, application_id
+      membership_provider_evidence_record_id, membership_provider_context_id
     ) VALUES (
       (SELECT id FROM actor), ${randomUUID()},
-      ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, 'stripe', 'test', ${fixture.applicationId})`)
+      ${fixture.requestFingerprint}, ${intentId}, ${evidenceId}, fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}))`)
 }
 
 export async function createMembershipAuditUser(): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`INSERT INTO users DEFAULT VALUES RETURNING id`)
+  const { rows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`INSERT INTO users DEFAULT VALUES RETURNING id`),
+  )
   return rows[0]!.id
 }
 
 export function deleteMembershipAuditUser(userId: string): Promise<WriteResult> {
-  return write(sql`DELETE FROM users WHERE id = ${userId}`)
+  return write(allowUnannotatedQuery(sql`DELETE FROM users WHERE id = ${userId}`))
 }
 
 export async function getMembershipAuditOwnership(
@@ -110,10 +113,12 @@ export async function getMembershipAuditOwnership(
   const { rows } = await read<{
     intent_user_id: string | null
     verification_user_id: string | null
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT intent.user_id AS intent_user_id, verification.user_id AS verification_user_id
     FROM membership_purchase_intents intent
     INNER JOIN membership_verifications verification ON verification.id = ${verificationId}
-    WHERE intent.id = ${intentId}`)
+    WHERE intent.id = ${intentId}`),
+  )
   return rows[0]
 }

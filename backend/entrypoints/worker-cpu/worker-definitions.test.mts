@@ -37,16 +37,11 @@ describe('worker-cpu worker definitions', () => {
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
       ['crawl_urls', '/backend/workers/crawler/workers.mts', 'crawlUrls'],
-      ['crawl_hostnames', '/backend/workers/crawl-hostnames/workers.mts', 'crawlHostnames'],
+      ['crawl-dispatch', '/backend/workers/crawl-dispatch/workers.mts', 'crawlDispatch'],
       [
         'crawl_referral_links',
         '/backend/workers/crawl-referral-links/workers.mts',
         'crawlReferralLinks',
-      ],
-      [
-        'crawl_html_boilerplate_removal',
-        '/backend/workers/crawl-boilerplate-removal/workers.mts',
-        'boilerplateRemoval',
       ],
       ['crawl_browser', '/backend/workers/crawl-browser/workers.mts', 'crawlBrowser'],
       [

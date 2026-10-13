@@ -3,6 +3,7 @@ import { mkdir, open, readFile, rmdir, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { PoolClient } from '@data-stores/psql/types'
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 
 /** Same-host quarantine survives a fixture owner's exit; it never expires by PID or age. */
 export async function claimEmbeddingQuotaLease(client: PoolClient, key: string) {
@@ -15,9 +16,9 @@ export async function claimEmbeddingQuotaLease(client: PoolClient, key: string) 
     address: string | null
     port: number | null
   }>(
-    `SELECT current_database() AS database, oid::text AS oid,
+    allowUnannotatedQuery(`SELECT current_database() AS database, oid::text AS oid,
       inet_server_addr()::text AS address, inet_server_port() AS port
-    FROM pg_database WHERE datname = current_database()`,
+    FROM pg_database WHERE datname = current_database()`),
   )
   const identity = rows[0]
   if (

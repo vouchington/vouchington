@@ -112,7 +112,7 @@ export async function withLockedTestMediaDeliveryRecord<T>(
 ): Promise<T> {
   await using transaction = await beginTransaction()
   await transaction(
-    sql`SELECT id FROM media_delivery_registry_records WHERE id = ${mediaDeliveryRegistryRecordId}::uuid FOR UPDATE`,
+    sql`/* fenceTestMediaDeliveryRegistry */ SELECT id FROM media_delivery_registry_records WHERE id = ${mediaDeliveryRegistryRecordId}::uuid FOR UPDATE`,
   )
   return await run()
 }

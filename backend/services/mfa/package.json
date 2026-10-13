@@ -28,7 +28,7 @@
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@queues/vote-weight": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/passkeys": "workspace:^",
     "@services/totp": "workspace:^",
@@ -37,7 +37,7 @@
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

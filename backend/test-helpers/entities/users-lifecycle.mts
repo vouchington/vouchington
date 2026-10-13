@@ -1,40 +1,49 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, type TransactionQuery, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function softDeleteUser(userId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET deleted_at = CURRENT_TIMESTAMP
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function softDeleteUserDaysAgo(userId: string, daysAgo: number): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET deleted_at = CURRENT_TIMESTAMP - make_interval(days => ${daysAgo})
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function softDeleteUserAt(userId: string, deletedAt: Date): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET deleted_at = ${deletedAt}
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function restoreUser(userId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET deleted_at = NULL
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function hardDeleteTestUser(userId: string): Promise<void> {
-  await write(sql`DELETE FROM users WHERE id = ${userId}`)
+  await write(allowUnannotatedQuery(sql`DELETE FROM users WHERE id = ${userId}`))
 }
 
 export async function hardDeleteTestUserWithLockTimeout(
@@ -107,11 +116,13 @@ export async function getTestUserRaw(userId: string): Promise<{
   platform_account_kind: 'official' | 'system' | null
   vote_weight_recalculated_at: Date | null
 } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT id, username, markdown, deleted_at, platform_account_kind, vote_weight_recalculated_at
     FROM users
     WHERE id = ${userId}
-  `)
+  `),
+  )
   return (
     (rows[0] as {
       id: string
@@ -182,11 +193,4 @@ export async function unsuspendTestUser(userId: string): Promise<void> {
   `)
 }
 
-export async function clearMfaForUser(userId: string): Promise<void> {
-  await write(sql`DELETE FROM user_passkeys WHERE user_id = ${userId}`)
-  await write(sql`DELETE FROM user_totp_authenticators WHERE user_id = ${userId}`)
-}
-
-export async function setUserMarkdown(userId: string, markdown: string): Promise<void> {
-  await write(sql`UPDATE users SET markdown = ${markdown} WHERE id = ${userId}`)
-}
+export { clearMfaForUser, setUserMarkdown } from './users-test-account-state.mts'

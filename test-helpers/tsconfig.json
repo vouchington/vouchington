@@ -25,12 +25,8 @@
       "@data-stores/graceful-shutdown": ["../backend/data-stores/graceful-shutdown/index.mts"],
       "@data-stores/psql/pool-metrics": ["../backend/data-stores/psql/pool-metrics.mts"],
       "@workers/bloom-filters/workers": ["../backend/workers/bloom-filters/workers.mts"],
-      "@workers/topic-ratings/workers": ["../backend/workers/topic-ratings/workers.mts"],
-      "@workers/elections/workers": ["../backend/workers/elections/workers.mts"],
-      "@workers/entity-listeners/workers": ["../backend/workers/entity-listeners/workers.mts"],
-      "@workers/entity-metrics-cache-refresh/workers": [
-        "../backend/workers/entity-metrics-cache-refresh/workers.mts"
-      ]
+      "@workers/vote-aggregation/workers": ["../backend/workers/vote-aggregation/workers.mts"],
+      "@workers/entity-listeners/workers": ["../backend/workers/entity-listeners/workers.mts"]
     }
   },
   "include": [

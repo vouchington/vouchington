@@ -14,6 +14,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Build backend email templates
@@ -87,6 +88,9 @@ jobs:
       - name: Check native localization resources
         run: node ci/check-live-native-resources.mts
         timeout-minutes: 2
+      - name: Compile local development localization catalog
+        run: node dev/localization/local-catalog.mts
+        timeout-minutes: 2
       - name: Check localization catalog format
         run: pnpm exec vouchington-localization format --check --source localization/catalog
         timeout-minutes: 2
@@ -122,6 +126,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Install CI tools via mise

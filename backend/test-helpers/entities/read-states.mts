@@ -10,9 +10,9 @@ export async function readStateExists(
   entityId: string,
 ): Promise<boolean> {
   const { table, column } = getReadStateStorageConfig(type)
-  const { rows } = await read(`SELECT 1 FROM ${table} WHERE user_id = $1 AND ${column} = $2`, [
-    userId,
-    entityId,
-  ])
+  const { rows } = await read(
+    `/* testReadStates */ SELECT 1 FROM ${table} WHERE user_id = $1 AND ${column} = $2`,
+    [userId, entityId],
+  )
   return rows.length > 0
 }

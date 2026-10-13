@@ -18,10 +18,10 @@ import {
 } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
-  'account-data-requests/account-data-requests-cleanup',
-  'account-data-requests/accountDataRequestRecovery',
-  'activitypub-inbox/activitypub-inbox-recovery',
-  'activitypub-inbox/activitypub-inbox-cleanup',
+  'account-lifecycle/account-data-requests-cleanup',
+  'account-lifecycle/accountDataRequestRecovery',
+  'activitypub/activitypub-inbox-recovery',
+  'activitypub/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',
@@ -34,12 +34,12 @@ const EXPECTED_SCHEDULED_JOBS = [
   'bedrock-embeddings-batch/reconcile_existing_posts',
   'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
   'bedrock-embeddings-batch/post_trigger_recovery',
-  'crawl_html_boilerplate_removal/boilerplate_removal_dispatcher',
-  'crawl_hostnames/crawl_cleanup',
-  'crawl_hostnames/crawl_hostnames_dispatcher',
-  'crawl_hostnames/crawl_tier1_dispatcher',
-  'crawl_hostnames/crawl_tier2_dispatcher',
-  'crawl_hostnames/refresh_hostname_crawler_dispatcher',
+  'crawl-dispatch/boilerplate_removal_dispatcher',
+  'crawl-dispatch/crawl_cleanup',
+  'crawl-dispatch/crawl_hostnames_dispatcher',
+  'crawl-dispatch/crawl_tier1_dispatcher',
+  'crawl-dispatch/crawl_tier2_dispatcher',
+  'crawl-dispatch/refresh_hostname_crawler_dispatcher',
   'crawl_referral_links/crawl_referral_links_dispatcher',
   'emails/dispatchApiKeyExpiryReminders',
   'emails/dispatchCommunityModerationSummaryEmails',
@@ -82,8 +82,8 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/refresh-rss-feed-crawl-tiers',
   'psql/refresh-top-hashtags',
   'rss-feeds/dispatchRssFeeds',
-  'rss-feed-item-categories/reconcileRssFeedItemCategorySnapshots',
-  'topic-aliases/reconcileTopicAliasCategoryMappings',
+  'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
+  'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
   'ses_inbound/ses-inbound-reconciliation',
   'sitemaps/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
   'sitemaps/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
@@ -91,15 +91,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'story-post-related-url-projections/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
-  'user-deletions/userDeletionRecovery',
-  'vote-weight/dailyVoteWeightRecalculation',
+  'account-lifecycle/userDeletionRecovery',
+  'vote-aggregation/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 84 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
+  it('imports the exact 27 manifests and 75 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(27)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

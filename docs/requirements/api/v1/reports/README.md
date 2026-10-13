@@ -124,4 +124,4 @@ IDs when they accumulate multiple pages.
 ## Related
 
 - Service: [`backend/services/moderation-reports/`](../../../../overview/architecture/services/moderation-reports/README.md)
-- Integrity queue: [`backend/queues/report-integrity/`](../../../../overview/architecture/queues/report-integrity/README.md)
+- Integrity queue: [`backend/queues/vote-aggregation/`](../../../../overview/architecture/queues/report-integrity/README.md)

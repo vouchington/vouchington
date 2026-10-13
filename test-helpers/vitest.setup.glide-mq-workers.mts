@@ -12,7 +12,5 @@ Logger.setLoggerConfig('error')
 // closes its own stub worker per-test via `createWorker`/`closeAndUnregisterGlideMQInstance` (#11013).
 // See docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#live-glidemq-workers-must-not-leak-across-isolatefalse-files.
 import '@workers/bloom-filters/workers'
-import '@workers/topic-ratings/workers'
-import '@workers/elections/workers'
+import '@workers/vote-aggregation/workers'
 import '@workers/entity-listeners/workers'
-import '@workers/entity-metrics-cache-refresh/workers'

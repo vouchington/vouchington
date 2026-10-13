@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { readEnqueuedJob } from '@voucha/test-helpers'
 import { acceptJobsFor } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { activitypubDelivery } from '@queues/activitypub-delivery/queues'
-import { enqueueDeliverAcceptActivity } from '@queues/activitypub-delivery/enqueues'
+import { activitypub } from '@queues/activitypub/queues'
+import { enqueueDeliverAcceptActivity } from '@queues/activitypub/enqueues/delivery'
 
 describe('acceptJobsFor', () => {
   it('selects an Accept job returned by the real enqueue function', async () => {
@@ -15,7 +15,7 @@ describe('acceptJobsFor', () => {
       followActivityId,
       followActorUri: `https://remote.example/users/${actorId}`,
     })
-    const acceptJob = await readEnqueuedJob(activitypubDelivery, enqueued)
+    const acceptJob = await readEnqueuedJob(activitypub, enqueued)
 
     expect(acceptJobsFor([acceptJob], followActivityId)).toEqual([acceptJob.data])
   })

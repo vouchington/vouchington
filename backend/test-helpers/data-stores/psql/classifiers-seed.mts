@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -21,14 +22,19 @@ export async function getLocalClassifierBySlug(slug: string): Promise<{
     id: string
     activated_at: Date | null
     deactivated_at: Date | null
-  }>(sql`SELECT id, activated_at, deactivated_at FROM classifiers WHERE slug = ${slug}`)
+  }>(
+    sql`/* getLocalClassifierBySlug */ SELECT id, activated_at, deactivated_at FROM classifiers WHERE slug = ${slug}`,
+  )
   return rows[0] ?? null
 }
 
 export async function listLocalActiveClassifierPromptVersions(
   classifierId: string,
 ): Promise<{ id: string; model_name: string }[]> {
-  const { rows } = await write<{ id: string; model_name: string }>(sql`
+  const { rows } = await write<{
+    id: string
+    model_name: string
+  }>(sql`/* listLocalActiveClassifierPromptVersions */
     SELECT id, model_name FROM classifier_prompt_versions
     WHERE classifier_id = ${classifierId}
       AND activated_at IS NOT NULL AND deactivated_at IS NULL
@@ -40,12 +46,14 @@ export async function listLocalActiveClassifierPromptVersions(
 // used by seed generators (like 0635-00-02-seed-tagging-classifier) that intentionally seed only a
 // system user, not an agent.
 export async function countLocalAgentsForSystemUsername(username: string): Promise<number> {
-  const { rows } = await write<{ count: number }>(sql`
+  const { rows } = await write<{ count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM agents a
     JOIN users u ON u.id = a.system_user_id
     WHERE u.username = ${username}
-  `)
+  `),
+  )
   return rows[0]?.count ?? 0
 }
 
@@ -63,7 +71,8 @@ type LocalClassifierSeedFacts = {
 // The seeded shape of a classifier: its candidate kind, its stored candidates (none for a
 // community_prompt classifier) and the one active prompt revision with its default thresholds.
 export async function getLocalClassifierSeedFacts(slug: string): Promise<LocalClassifierSeedFacts> {
-  const { rows } = await write<LocalClassifierSeedFacts>(sql`
+  const { rows } = await write<LocalClassifierSeedFacts>(
+    allowUnannotatedQuery(sql`
     SELECT classifier.candidate_kind::text,
       (SELECT COUNT(*)::int FROM classifier_candidates
         WHERE classifier_id = classifier.id) AS stored_candidates,
@@ -79,6 +88,7 @@ export async function getLocalClassifierSeedFacts(slug: string): Promise<LocalCl
       AND prompt.deleted_at IS NULL
     LEFT JOIN users actor ON actor.id = classifier.created_by_id
     WHERE classifier.slug = ${slug}
-  `)
+  `),
+  )
   return rows[0]!
 }

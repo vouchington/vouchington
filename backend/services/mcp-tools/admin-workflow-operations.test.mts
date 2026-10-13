@@ -31,29 +31,31 @@ describe('registered operations guard boundaries', () => {
   })
 
   it.each([
-    ['run_scheduled_job', 'site-operations:jobs'],
-    ['run_backfill', 'site-operations:jobs'],
-    ['update_dynamic_config_namespace', 'site-operations:config'],
-  ] as const)('%s refuses an unknown target before history or dispatch', async (name, scope) => {
-    const admin = await createTestUser({ administrator: true })
-    const unknown = `admin-workflow-${randomUUID()}`
-    const args =
-      name === 'update_dynamic_config_namespace'
-        ? { namespace: unknown, config: {} }
-        : { id: unknown }
-    const result = await callMcpTool(
-      name,
-      args,
-      { ...admin, membership_plan: null },
-      ['site-operations:read', scope],
-      ADMIN_MCP_SERVER_CONFIG,
-    )
-    expect(result.isError).toBe(true)
-    const block = result.content[0]!
-    if (block.type !== 'text') throw new Error('Expected typed error')
-    expect(JSON.parse(block.text)).toMatchObject({ error: { status: 404, retryable: false } })
-    expect(await readStaffActionHistory(admin.id)).toEqual([])
-  })
+    ['run_operational_job', 'scheduled', 'site-operations:jobs'],
+    ['run_operational_job', 'backfill', 'site-operations:jobs'],
+    ['update_dynamic_config_namespace', null, 'site-operations:config'],
+  ] as const)(
+    '%s %s refuses an unknown target before history or dispatch',
+    async (name, option, scope) => {
+      const admin = await createTestUser({ administrator: true })
+      const unknown = `admin-workflow-${randomUUID()}`
+      const args = option
+        ? { option, arguments: { id: unknown } }
+        : { namespace: unknown, config: {} }
+      const result = await callMcpTool(
+        name,
+        args,
+        { ...admin, membership_plan: null },
+        ['site-operations:read', scope],
+        ADMIN_MCP_SERVER_CONFIG,
+      )
+      expect(result.isError).toBe(true)
+      const block = result.content[0]!
+      if (block.type !== 'text') throw new Error('Expected typed error')
+      expect(JSON.parse(block.text)).toMatchObject({ error: { status: 404, retryable: false } })
+      expect(await readStaffActionHistory(admin.id)).toEqual([])
+    },
+  )
 
   it('rejects an invalid registered config field without changing its state or history', async () => {
     const admin = await createTestUser({ administrator: true })

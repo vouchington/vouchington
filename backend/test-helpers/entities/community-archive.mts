@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -5,11 +6,13 @@ export async function archiveTestCommunity(options: {
   communityId: string
   archivedById: string
 }): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE communities
     SET archived_at = CURRENT_TIMESTAMP,
         archived_by_id = ${options.archivedById}
-    WHERE id = ${options.communityId}`)
+    WHERE id = ${options.communityId}`),
+  )
 }
 
 /** Marks a community deleted without clearing posts.community_id. */
