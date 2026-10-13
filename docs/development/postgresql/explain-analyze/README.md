@@ -296,7 +296,9 @@ the annotated-statement total. Leading SQL comments after the annotation do not 
 the complete SQL text still has to match a capture exactly. The report rejects an artifact whose
 completed-scenario list or captured scenarios differ from the registered manifest, even when a
 failed final scenario already emitted one plan. Cursor helper calls from the root PostgreSQL
-package and its cursor subpath are included. An annotated statement with an interpolated first
+package and its cursor subpath are included once when both extractors find the same call. Dynamic
+notification recipient queries use a literal annotation for each caller so both reads appear in
+the inventory. An annotated statement with an interpolated first
 SQL token stays in the read inventory for review because its verb cannot be proven statically.
 Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 

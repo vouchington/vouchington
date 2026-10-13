@@ -175,7 +175,13 @@ export async function reportCoverage(
       executorNames: cursorNames,
     }),
   ])
-  return buildCoverageReport([...rootFacts, ...cursorSubpathFacts], results)
+  // Both import passes can find the same cursor call. Keep one fact per source callsite.
+  const factKey = (fact: SqlFact) => JSON.stringify(fact)
+  const rootKeys = new Set(rootFacts.map(factKey))
+  return buildCoverageReport(
+    [...rootFacts, ...cursorSubpathFacts.filter(fact => !rootKeys.has(factKey(fact)))],
+    results,
+  )
 }
 
 if (import.meta.main) {
