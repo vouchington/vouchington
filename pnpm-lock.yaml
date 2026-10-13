@@ -5881,6 +5881,9 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
@@ -6013,6 +6016,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1

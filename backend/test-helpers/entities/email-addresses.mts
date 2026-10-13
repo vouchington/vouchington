@@ -5,7 +5,6 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 
 import { read, write, beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { ValkeyCache } from '@data-stores/valkey/cache'
 import sql from 'sql-template-strings'
 import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-domain-hostname.mts'
 
@@ -163,16 +162,4 @@ export async function getLatestEmailAddressLoginTokenHash(
   `),
   )
   return (rows[0]?.token as string | null) ?? null
-}
-
-/**
- * Invalidate email domain validation cache
- */
-export async function invalidateEmailDomainCaches(): Promise<void> {
-  const cache = new ValkeyCache({
-    prefix: 'email-domain-validation',
-    ttlSeconds: 3_600,
-  })
-
-  await cache.invalidate()
 }

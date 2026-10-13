@@ -60,18 +60,15 @@ describe('sync-db', () => {
       name: `sync-db-email-${suffix}`,
       url: 'https://example.com/email-blacklist.txt',
     })
+    const domain = `email-blocked-${suffix}.com`
+    await caches.email_domain_validation.set(domain, { success: true })
 
-    const result = await syncDomainsWithDatabase(
-      sourceId,
-      new Response(`email-blocked-${suffix}.com\n`),
-      'email',
-    )
+    const result = await syncDomainsWithDatabase(sourceId, new Response(`${domain}\n`), 'email')
 
     expect(result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
-    await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([
-      `email-blocked-${suffix}.com`,
-    ])
-    const hostnameId = await resolveEmailDomainHostnameId(`reader@email-blocked-${suffix}.com`)
+    await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([domain])
+    await expect(caches.email_domain_validation.get(domain)).resolves.toBeNull()
+    const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
     if (!hostnameId) throw new Error('Expected email blocklist hostname')
     const bucketDays = 30000 + Math.floor(Math.random() * 1000)
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)

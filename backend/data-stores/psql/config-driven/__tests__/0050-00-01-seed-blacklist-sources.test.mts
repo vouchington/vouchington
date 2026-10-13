@@ -25,9 +25,10 @@ describe('0050-00-01-seed-blacklist-sources', () => {
     expect(sql).toContain('source.url IS DISTINCT FROM input.url')
   })
 
-  it('does not touch etag or last_fetched_at', () => {
+  it('clears conditional headers on source changes but preserves fetch history', () => {
     const sql = generateSeedBlacklistSourcesSQL()
-    expect(sql).not.toContain('etag')
+    expect(sql).toContain('etag = NULL')
+    expect(sql).toContain('last_modified_at = NULL')
     expect(sql).not.toContain('last_fetched_at')
   })
 

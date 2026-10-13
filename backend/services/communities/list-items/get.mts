@@ -72,7 +72,8 @@ export async function searchCommunityListItems(
     query.append(sql` AND `).append(eligibility)
   }
   if (itemType === 'url_hostname' && !options?.currentUser?.roles.includes('administrator')) {
-    query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL`)
+    query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
+      AND NOT candidate_hostname.is_blocked`)
   }
 
   if (cursorOrderIndex !== undefined && cursorId !== undefined) {
@@ -157,7 +158,8 @@ export async function getCommunityListItemCounts(
         WHERE list_item.community_id = ${communityId}
           AND list_item.removed_at IS NULL`)
       if (!options?.currentUser?.roles.includes('administrator')) {
-        query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL`)
+        query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
+          AND NOT candidate_hostname.is_blocked`)
       }
     } else {
       query.append(sql` list_item

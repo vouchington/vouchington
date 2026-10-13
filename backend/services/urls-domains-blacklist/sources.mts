@@ -8,6 +8,11 @@ import {
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { invalidateSourceHostnameCaches } from './source-cache.mts'
+import { enqueueUrlBlocklistRebuild, invalidateUrlBlocklistReadyMarker } from './bloom-filter.mts'
+import {
+  enqueueEmailBlocklistRebuild,
+  invalidateEmailBlocklistReadyMarker,
+} from './email-bloom-filter.mts'
 import {
   BLACKLISTS,
   type DomainBlacklistType,
@@ -70,7 +75,9 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
       OR target.url IS DISTINCT FROM input.url
     ) THEN UPDATE SET
       type = input.type,
-      url = input.url
+      url = input.url,
+      etag = NULL,
+      last_modified_at = NULL
     WHEN NOT MATCHED THEN
       INSERT (type, name, url)
       VALUES (input.type, input.name, input.url)
@@ -78,9 +85,14 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
     options,
   )
   if (changedTypes.rows.length > 0) {
-    registerPostCommitAction(options.query!, () =>
-      invalidateSourceHostnameCaches(changedTypes.rows.map(row => row.id)),
-    )
+    registerPostCommitAction(options.query!, async () => {
+      await Promise.all([
+        invalidateUrlBlocklistReadyMarker(),
+        invalidateEmailBlocklistReadyMarker(),
+      ])
+      await Promise.all([enqueueUrlBlocklistRebuild(), enqueueEmailBlocklistRebuild()])
+      await invalidateSourceHostnameCaches(changedTypes.rows.map(row => row.id))
+    })
   }
 }
 

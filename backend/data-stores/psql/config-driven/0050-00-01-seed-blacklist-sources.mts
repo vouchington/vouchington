@@ -30,7 +30,9 @@ ${rows}
 ON CONFLICT (name) DO NOTHING;
 
 UPDATE domain_blocklist_sources source
-SET type = input.type::domain_blocklist_types
+SET type = input.type::domain_blocklist_types,
+    etag = NULL,
+    last_modified_at = NULL
 FROM (VALUES
 ${rows}
 ) AS input(type, name, url)
@@ -38,7 +40,9 @@ WHERE source.name = input.name
   AND source.type IS DISTINCT FROM input.type::domain_blocklist_types;
 
 UPDATE domain_blocklist_sources source
-SET url = input.url
+SET url = input.url,
+    etag = NULL,
+    last_modified_at = NULL
 FROM (VALUES
 ${rows}
 ) AS input(type, name, url)

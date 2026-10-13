@@ -24,5 +24,6 @@ export const CACHE_TTLS_SECONDS = {
   urls: ONE_DAY_IN_SECONDS,
   urls_lookup: ONE_DAY_IN_SECONDS,
   url_hostnames: ONE_DAY_IN_SECONDS,
+  email_domain_validation: ONE_HOUR_IN_SECONDS,
   hostname_elections: FIVE_MINUTES_IN_SECONDS,
 }

@@ -60,7 +60,10 @@ app
       community_list_items: indexById(result.results),
       url_hostnames: getUrlHostnamesByAnyBatch(entityIds).then(hostnames =>
         hostnames.reduce<Record<string, unknown>>((acc, hostname) => {
-          if (hostname) acc[hostname.id] = hostname
+          if (hostname) {
+            const { publicly_introduced_at: _introduction, ...responseHostname } = hostname
+            acc[hostname.id] = responseHostname
+          }
           return acc
         }, {}),
       ),

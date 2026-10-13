@@ -121,6 +121,14 @@ BEGIN
       WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources
       ELSE 'url_blocklist'::url_hostname_block_sources
     END;
+  IF NEW.type = 'url' THEN
+    UPDATE url_hostnames host
+    SET publicly_introduced_at = COALESCE(host.publicly_introduced_at, CURRENT_TIMESTAMP)
+    FROM blocklisted_domains domain
+    WHERE domain.source_id = NEW.id
+      AND domain.url_hostname_id = host.id
+      AND host.publicly_introduced_at IS NULL;
+  END IF;
   RETURN NULL;
 END;
 $$;
@@ -133,7 +141,7 @@ CREATE OR REPLACE TRIGGER trigger_update_domain_blocklist_hostname_block_source
 COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_insert() IS 'Project active URL blocks into hostname crawl policy once per insert statement.';
 COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_update() IS 'Recompute crawl policy for URL block changes once per update statement.';
 COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_delete() IS 'Recompute crawl policy for URL block removals once per delete statement.';
-COMMENT ON FUNCTION fn_update_domain_blocklist_hostname_block_source() IS 'Keep projected block kinds aligned with the configured source type.';
+COMMENT ON FUNCTION fn_update_domain_blocklist_hostname_block_source() IS 'Keep projected block kinds aligned with the configured source type and permanently introduce URL-source domains to public hostname reads.';
 
 COMMENT ON TABLE url_hostname_blocks IS 'Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintained from this table and must not be written directly in app code. Canonical insert-then-cancel pattern. See community_bans for reference.';
 COMMENT ON COLUMN url_hostname_blocks.url_hostname_id IS 'The blocked hostname.';

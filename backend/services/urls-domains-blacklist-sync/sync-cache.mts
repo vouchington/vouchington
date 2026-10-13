@@ -1,5 +1,6 @@
 import type { PoolClient } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
+import { caches } from '@services/entity-cache/caches'
 import { getEntityCacheWorkLimit } from '@services/entity-cache/work-limits'
 
 export const ADDED_DOMAINS_TABLE = 'tmp_domain_blacklist_added_domains'
@@ -22,8 +23,12 @@ export async function invalidateChangedHostnameCaches(client: PoolClient): Promi
       [after, batchSize],
     )
     if (rows.length === 0) return
+    const domains = rows.map(row => row.domain)
     // oxlint-disable-next-line no-await-in-loop -- invalidate committed batches before advancing the cursor.
-    await invalidate.url_hostnames(...rows.map(row => row.domain))
+    await Promise.all([
+      invalidate.url_hostnames(...domains),
+      caches.email_domain_validation.invalidateCacheGetByAny(...domains),
+    ])
     after = rows.at(-1)!.domain
   }
 }

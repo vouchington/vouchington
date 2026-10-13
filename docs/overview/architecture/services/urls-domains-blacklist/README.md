@@ -33,6 +33,12 @@ warmup/mutation helpers. We keep track of hostnames.
 - Blocklist sources are stored in `domain_blocklist_sources` with a `BIGINT` lookup id. `upsertBlacklistSources()` takes an advisory transaction lock and uses PostgreSQL 18 `MERGE` to update configured sources and insert missing ones without burning identity sequence values for existing rows.
 - BlocklistProject sources use the raw GitHub `alt-version/*-nl.txt` files because the service stores plain domain lists without hosts-file IP prefixes.
 - URL and email Bloom filters use ready-aware Valkey Lua probes. Warmup enqueues rebuilds but does not create empty filters, because a fast negative from a partial filter would incorrectly bypass the authoritative database blacklist check.
+- Bloom readiness keys include the configured source-name/type fingerprint, so changing a source
+  classification makes the old completed filter unreadable until the worker rebuilds it. A runtime
+  source update also clears conditional fetch headers, invalidates both ready markers, enqueues
+  rebuilds, and evicts hostname and email-validation cache entries for that source's domains in
+  bounded batches. Reclassifying an email source as a URL source permanently introduces its
+  hostnames to public reads; changing it back never clears that introduction.
 
 Downloading, diffing, and writing new/removed domains for a source lives in
 [`@services/urls-domains-blacklist-sync`](../urls-domains-blacklist-sync/README.md) — split

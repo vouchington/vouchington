@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { getDomainBlacklistSourceTypeVersion } from '@voucha/types/entities/domain-blacklist-source'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { CACHE_TTLS_SECONDS } from './config.mts'
 import {
@@ -98,6 +99,10 @@ export const caches = {
   url_hostnames: new ValkeyCache({
     prefix: 'url_hostnames',
     ttlSeconds: CACHE_TTLS_SECONDS.url_hostnames,
+  }),
+  email_domain_validation: new ValkeyCache({
+    prefix: `email-domain-validation:${getDomainBlacklistSourceTypeVersion()}`,
+    ttlSeconds: CACHE_TTLS_SECONDS.email_domain_validation,
   }),
   hostname_elections: new ValkeyCache({
     prefix: 'hostname_elections',

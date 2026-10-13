@@ -1,12 +1,10 @@
-import { ValkeyCache } from '@data-stores/valkey/cache'
+import { caches } from '@services/entity-cache/caches'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { EmailDomainInvalidError } from './errors.mts'
 import { checkEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { resolveMxRecords, DnsTimeoutError } from './resolve-mx.mts'
-
-const CACHE_TTL_SECONDS = 3600 // 1 hour
 
 // example.com, example.net, and example.org publish no MX records, so Vitest cannot prove
 // "this domain can receive mail" with a real lookup. `.invalid` and `.test` stay empty.
@@ -23,11 +21,6 @@ let resolveMxRecordsForValidation =
 
 type DomainValidationResult = { success: true } | { success: false; reason: string }
 
-const cache = new ValkeyCache({
-  prefix: 'email-domain-validation',
-  ttlSeconds: CACHE_TTL_SECONDS,
-})
-
 async function performDomainValidation(normalizedDomain: string): Promise<DomainValidationResult> {
   // `!== false` treats missing/undefined as enabled — matches defaultFields: { emailBlocklistBloomFilterEnabled: true }
   const emailBlocklistBloomFilterEnabled =
@@ -42,7 +35,7 @@ async function performDomainValidation(normalizedDomain: string): Promise<Domain
       // Bloom filter says definitely not in email blocklist — skip the EXISTS subquery.
       // Trade-off: domains added to the blacklist after the last bloom filter rebuild
       // (weekly) will pass this check until the filter is rebuilt. A cached "valid"
-      // result (CACHE_TTL_SECONDS = 1hr) can further extend that window. This is
+      // result (one hour) can further extend that window. This is
       // acceptable because false negatives here are transient and bounded; the filter
       // is rebuilt weekly, and the bloom filter fast path only affects the no-op common
       // case (legitimate domains that are definitely not blocked).
@@ -84,7 +77,8 @@ async function performDomainValidation(normalizedDomain: string): Promise<Domain
   return { success: true }
 }
 
-const performDomainValidationCached = cache.cacheGetByAny(performDomainValidation)
+const performDomainValidationCached =
+  caches.email_domain_validation.cacheGetByAny(performDomainValidation)
 
 export async function validateEmailDomain(domain: string): Promise<void> {
   const normalizedDomain = domain.toLowerCase().trim()

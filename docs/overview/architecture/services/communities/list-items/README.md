@@ -67,6 +67,9 @@ Community list management requires ownership or moderator role:
 ### `searchCommunityListItems(communityId, options?)`
 
 Search items in a community list with cursor pagination.
+For hostname items, anonymous and non-administrator reads omit private email-only identities
+and blocked hostnames from both results and counts. Existing administrator moderation reads
+retain access. Public API responses omit the internal `publicly_introduced_at` marker.
 
 **Parameters:**
 

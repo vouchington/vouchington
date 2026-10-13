@@ -6,7 +6,6 @@ import {
   suspendTestUser,
   unsuspendTestUser,
   overrideDynamicConfigFieldsForTest,
-  invalidateEmailDomainCaches,
 } from '@voucha/test-helpers'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
@@ -44,7 +43,6 @@ describe('Email Address Authentication Routes', () => {
     anonymousSessionId = sid
     deviceToken = tokens.deviceToken.token
     sessionToken = tokens.sessionToken.token
-    await invalidateEmailDomainCaches()
   }, 30_000)
 
   afterEach(async () => {
