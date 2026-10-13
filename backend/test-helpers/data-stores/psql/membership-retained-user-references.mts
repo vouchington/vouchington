@@ -2,7 +2,10 @@ import { createTestRetainedMembershipIdentity } from '../../entities/retained-id
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
-import { createTestAdministratorRefundOperation } from '../../entities/membership-refund-reconciliation-schema.mts'
+import {
+  createTestAdministratorRefundOperation,
+  createTestLinkedRefundReceiptRequest,
+} from '../../entities/membership-refund-reconciliation-schema.mts'
 import { createLocalTestUser } from './users.mts'
 
 export const membershipRetainedUserReferences = [
@@ -74,16 +77,22 @@ async function insertRefund(
   issuedById: string | null,
   membershipId?: string,
 ): Promise<void> {
-  const { sourceId } = await createAdminGrantSource()
   const admin = issuedById !== null
+  const operation = admin ? await createTestAdministratorRefundOperation() : null
+  const { sourceId } = operation
+    ? { sourceId: operation.membershipSourceId }
+    : await createAdminGrantSource()
+  const requestKey = operation
+    ? (await createTestLinkedRefundReceiptRequest(operation)).requestKey
+    : null
   await write(sql`/* insertRetainedReferenceRefund */
     INSERT INTO membership_refunds (
-      membership_id, membership_source_id, user_id, stripe_refund_id, stripe_charge_id,
+      membership_operation_id, membership_id, membership_source_id, user_id, stripe_refund_id, stripe_charge_id,
       stripe_idempotency_key, admin_request_fingerprint, amount_minor_units, currency_code,
       reason, issued_by_id, source
     ) VALUES (
-      ${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${sourceId}, ${userId}::uuid, ${`re_${randomUUID()}`}, ${`ch_${randomUUID()}`},
-      ${admin ? `request-${randomUUID()}` : null}, ${admin ? 'c'.repeat(64) : null}, 100, 'usd',
+      ${operation?.id ?? null}, ${membershipId ?? (await createTestRetainedMembershipIdentity())}, ${sourceId}, ${userId}::uuid, ${`re_${randomUUID()}`}, ${`ch_${randomUUID()}`},
+      ${requestKey}, ${admin ? 'c'.repeat(64) : null}, 100, 'usd',
       'other', ${issuedById}::uuid, ${admin ? 'admin' : 'stripe_dashboard'}::membership_refund_sources
     )`)
 }
