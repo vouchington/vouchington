@@ -139,5 +139,10 @@ app.route('/api/v1/users/:idOrSlug/domains/:listType').get(async (ctx: Context) 
   )
   const hostnames = await getUserHostnamesCollection(resolved.target.id, listType, pagination)
 
-  ctx.json(hostnames)
+  ctx.json({
+    page_info: hostnames.page_info,
+    results: hostnames.results.map(
+      ({ publicly_introduced_at: _introduced, ...hostname }) => hostname,
+    ),
+  })
 })

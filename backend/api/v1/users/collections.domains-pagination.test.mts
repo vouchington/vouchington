@@ -51,6 +51,7 @@ describe('GET /api/v1/users/:idOrSlug/domains/:listType pagination', () => {
       .expect(200)
 
     expect(page1.body.results).toHaveLength(2)
+    expect(page1.body.results[0]).not.toHaveProperty('publicly_introduced_at')
     expect(page1.body.page_info.has_next_page).toBe(true)
     expect(page2.body.results).toHaveLength(1)
     expect(page2.body.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
