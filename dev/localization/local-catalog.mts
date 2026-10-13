@@ -10,6 +10,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 import { compileLocalizationSqlite, loadCatalogDirectory } from '@vouchington/localization-compiler'
 
 export const LOCAL_CATALOG_RELATIVE_PATH = '.local/localization/catalog.sqlite'
@@ -50,6 +51,13 @@ export function catalogRevision(
   return hash.digest('hex')
 }
 
+export function localCatalogPaths(worktreeRoot: string = WORKTREE_ROOT) {
+  return {
+    output: join(resolve(worktreeRoot), LOCAL_CATALOG_RELATIVE_PATH),
+    source: join(resolve(worktreeRoot), 'localization/catalog'),
+  }
+}
+
 export async function ensureLocalLocalizationCatalog({
   output = join(WORKTREE_ROOT, LOCAL_CATALOG_RELATIVE_PATH),
   source = join(WORKTREE_ROOT, 'localization/catalog'),
@@ -88,5 +96,8 @@ export async function ensureLocalLocalizationCatalog({
 }
 
 if (import.meta.main) {
-  process.stdout.write(`${await ensureLocalLocalizationCatalog()}\n`)
+  const { values } = parseArgs({ options: { 'worktree-root': { type: 'string' } } })
+  process.stdout.write(
+    `${await ensureLocalLocalizationCatalog(localCatalogPaths(values['worktree-root']))}\n`,
+  )
 }

@@ -1,3 +1,4 @@
+import { checkFormKeyboardReference } from './form-keyboard-reference-guard.mts'
 import { checkBoundedWorkTunables } from './bounded-work-tunables.mts'
 import {
   workTunableAllowlist,
@@ -71,6 +72,17 @@ export async function checkRepoFilePolicy(
   const injectedSnapshot = options.schemaSnapshot !== undefined
   errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
+  if (
+    !injectedSnapshot ||
+    trackedFileSet.has('web/test-helpers/form-keyboard.ts') ||
+    trackedFileSet.has('docs/requirements/navigation/reference-components-patterns.md')
+  ) {
+    try {
+      checkFormKeyboardReference(ctx.repoRoot)
+    } catch (err) {
+      errors.push(`::error::${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)

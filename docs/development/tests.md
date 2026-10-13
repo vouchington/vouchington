@@ -69,3 +69,5 @@ Gating coverage of the request we build and the response we handle comes from re
 - <a id="playwright-matchers-and-helpers"></a>[Playwright Matchers and Helpers](reference-tests-playwright-matchers-and-helpers.md)
 - <a id="schema-checks"></a>[Schema Checks](reference-tests-schema-checks.md)
 - <a id="translation-catalog-and-locale-checks"></a>[Translation Catalog and Locale Checks](reference-tests-translation-catalog-and-locale-checks.md)
+
+See [catalog compilation and the tracked form keyboard reference check](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog) for their static CI ownership.
