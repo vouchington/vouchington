@@ -45,6 +45,7 @@ describe('hostname sweep selection and completion', () => {
   })
 
   it('caps both due ranges, excludes recent completion, and resumes beyond queued hosts', async () => {
+    const owner = await createTestUser()
     const hosts: string[] = []
     const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
     for (const sweptAt of [
@@ -57,6 +58,7 @@ describe('hostname sweep selection and completion', () => {
     ]) {
       const hostname = `sweep-${randomUUID()}.example.com`
       const host = await insertTestUrlHostname({ hostname })
+      await insertTestUrlDirect(owner.id, `https://${hostname}/crawlable`)
       if (!hosts.length) await insertTestDomainBlacklist(hostname)
       await setTestHostnameCrawlSweep(host, bucketDays, sweptAt)
       hosts.push(host)

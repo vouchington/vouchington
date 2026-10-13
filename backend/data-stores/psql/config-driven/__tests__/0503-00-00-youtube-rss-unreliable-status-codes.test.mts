@@ -15,7 +15,10 @@ describe('youtube RSS unreliable status code seed', () => {
     expect(sql).toContain('SELECT hostname, TRUE, is_blocked')
     expect(sql).toContain('FROM inherited\n  ORDER BY inherited.hostname')
     expect(sql).toContain('WHERE hostname IN (SELECT hostname FROM existing)')
-    expect(sql).toContain('AND unreliable_status_codes IS NULL')
+    expect(sql).toContain('AND (unreliable_status_codes IS NULL OR publicly_introduced_at IS NULL)')
+    expect(sql).toContain(
+      'publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)',
+    )
     expect(sql).toContain('INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)')
     expect(sql).toContain("'parent_hostname'")
   })

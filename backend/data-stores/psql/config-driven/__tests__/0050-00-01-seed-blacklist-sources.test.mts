@@ -18,11 +18,11 @@ describe('0050-00-01-seed-blacklist-sources', () => {
     }
   })
 
-  it('uses ON CONFLICT (name) for idempotency', () => {
+  it('inserts safely and only updates changed source metadata', () => {
     const sql = generateSeedBlacklistSourcesSQL()
-    expect(sql).toContain('ON CONFLICT (name) DO UPDATE SET')
-    expect(sql).toContain('type = EXCLUDED.type')
-    expect(sql).toContain('url = EXCLUDED.url')
+    expect(sql).toContain('ON CONFLICT (name) DO NOTHING')
+    expect(sql).toContain('source.type IS DISTINCT FROM input.type::domain_blocklist_types')
+    expect(sql).toContain('source.url IS DISTINCT FROM input.url')
   })
 
   it('does not touch etag or last_fetched_at', () => {

@@ -53,11 +53,22 @@ describe('0080-00-01a-staging-rss-feeds environment gate', () => {
     expect(generateStagingRssFeedsSQL()).not.toBe('')
   })
 
-  it('emits only insert-only statements on staging', async () => {
+  it('only promotes hostname visibility in addition to insert-only feed statements', async () => {
     const statements = splitSqlStatements(stripSqlComments(generateStagingRssFeedsSQL('staging')))
     expect(statements.length).toBeGreaterThan(0)
-    for (const statement of statements) expect(statement).toMatch(/^\s*INSERT INTO /i)
-    expect(statements.join('\n')).not.toMatch(/DO UPDATE|\bUPDATE\b|\bDELETE\b/i)
+    const hostnamePromotions = statements.filter(statement => /^\s*UPDATE\b/i.test(statement))
+    expect(hostnamePromotions).toHaveLength(STAGING_RSS_FEEDS.length)
+    for (const statement of hostnamePromotions) {
+      expect(statement.trim()).toMatch(
+        /^UPDATE url_hostnames SET publicly_introduced_at = COALESCE\(publicly_introduced_at, CURRENT_TIMESTAMP\)\s+WHERE hostname = '[^']+' AND publicly_introduced_at IS NULL$/i,
+      )
+    }
+    for (const statement of statements.filter(
+      statement => !hostnamePromotions.includes(statement),
+    )) {
+      expect(statement).toMatch(/^\s*INSERT INTO /i)
+    }
+    expect(statements.join('\n')).not.toMatch(/DO UPDATE|\bDELETE\b/i)
   })
 })
 

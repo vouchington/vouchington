@@ -8,7 +8,9 @@ export default function generateSeedAdminUserSQL(): string {
 
   parts.push(`
 INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES ('voucha.ai', CURRENT_TIMESTAMP)
-ON CONFLICT (hostname) DO UPDATE SET publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at);
+ON CONFLICT (hostname) DO NOTHING;
+UPDATE url_hostnames SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+WHERE hostname = 'voucha.ai' AND publicly_introduced_at IS NULL;
 
 INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
 SELECT u.id, 'jong@voucha.ai', email_domain.id, TRUE
