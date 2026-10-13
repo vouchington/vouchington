@@ -1,6 +1,10 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
-import { createTestUser, insertTestCommunity, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUser,
+  insertTestCommunity,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { getPendingApplicationForUser, getPendingApplicationCommunityIds } from './pending.mts'
 import type { PrivateUser } from '@services/users/types'
