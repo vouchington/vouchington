@@ -65,9 +65,11 @@ def run(proc: subprocess.Popen[bytes], seconds: int) -> int:
 
 
 def command_outputs(targets: list[int | None]):
-    """Keep regular-file open descriptions; share one pipe for merged stream sinks."""
+    """Inherit non-stream descriptors; share one pipe for merged stream sinks."""
     outputs = [
-        fd if fd is not None and stat.S_ISREG(os.fstat(fd).st_mode) else subprocess.PIPE
+        subprocess.PIPE
+        if fd is None or stat.S_ISFIFO(os.fstat(fd).st_mode) or stat.S_ISSOCK(os.fstat(fd).st_mode)
+        else fd
         for fd in targets
     ]
     if all(fd is not None for fd in targets):

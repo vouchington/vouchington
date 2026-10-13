@@ -1,13 +1,18 @@
 """Exercise native merged sinks and independent regular-file open descriptions."""
+import errno
 import json
 import os
+import pty
 import socket
 import subprocess
 import sys
 import tempfile
+import tty
 
 script, mode = sys.argv[1:]
 command = 'import os; os.write(1, b"a" * 1048576); os.write(2, b"Z"); raise SystemExit(3)'
+if mode == 'terminal':
+    command = 'import os; assert os.isatty(1) and os.isatty(2); ' + command.removeprefix('import os; ')
 with tempfile.TemporaryDirectory(prefix='bounded-merged-') as directory:
     if mode == 'independent-files':
         path = directory + '/output'
@@ -31,6 +36,9 @@ with tempfile.TemporaryDirectory(prefix='bounded-merged-') as directory:
             reader, writer = socket.socketpair()
             writer.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024)
             read_fd, write_fd = reader.fileno(), writer.fileno()
+        elif mode == 'terminal':
+            read_fd, write_fd = pty.openpty()
+            tty.setraw(write_fd)
         else:
             read_fd, write_fd = os.pipe()
         proc = None
@@ -42,7 +50,15 @@ with tempfile.TemporaryDirectory(prefix='bounded-merged-') as directory:
             else:
                 os.close(write_fd)
             chunks = []
-            while chunk := os.read(read_fd, 128):
+            while True:
+                try:
+                    chunk = os.read(read_fd, 128)
+                except OSError as err:
+                    if mode != 'terminal' or err.errno != errno.EIO:
+                        raise
+                    break
+                if not chunk:
+                    break
                 chunks.append(chunk)
             data = b''.join(chunks)
             status = proc.wait()

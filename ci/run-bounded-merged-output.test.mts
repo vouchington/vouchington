@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 const script = join(process.cwd(), 'ci/run-bounded.py')
 
 describe('run-bounded merged output ordering', () => {
-  it.each(['pipe', 'socket', 'regular', 'independent-files'])(
+  it.each(['pipe', 'socket', 'regular', 'independent-files', 'terminal'])(
     'preserves sequential writes and open descriptions for %s',
     mode => {
       const result = spawnSync(
