@@ -16,7 +16,10 @@ export type PostCommitCompletion = {
 type CompletionListener = (event: PostCommitCompletion) => undefined
 const listeners = new Set<CompletionListener>()
 
-/** Register before the mutation; unsubscribe only after owned completions settle. */
+/**
+ * @public Producer-completion observers use this documented service boundary without replacing
+ * the producer. Register before mutation; unsubscribe only after owned completions settle.
+ */
 export function onPostCommitCompletion(listener: CompletionListener): () => void {
   listeners.add(listener)
   return () => {
