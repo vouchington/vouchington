@@ -53,8 +53,7 @@ export async function getTrendingTopics(
     cursorId = cursor.id
   }
 
-  const query = sql`/* getTrendingTopics */
-    WITH post_tags AS (
+  const query = sql`post_tags AS (
       SELECT
         r.object_id AS topic_id,
         (COUNT(*) * 5)::DOUBLE PRECISION AS score,
@@ -113,7 +112,11 @@ export async function getTrendingTopics(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read<TrendingTopicMetric>(query)
+  const { rows } = await read<TrendingTopicMetric>(
+    `/* getTrendingTopics */
+    WITH ${query.text}`,
+    query.values,
+  )
 
   // Check if there are more results than requested
   const hasNextPage = rows.length > safeLimit
