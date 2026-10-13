@@ -10,6 +10,7 @@ export const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
 export async function invalidateChangedHostnameCaches(client: PoolClient): Promise<void> {
   const batchSize = getEntityCacheWorkLimit('delete_keys_per_batch')
   let after = ''
+  // no-mistakes-disable-next-line query-reached-per-item: session-local temp tables require bounded keyset reads on this one client
   for (;;) {
     // oxlint-disable-next-line no-await-in-loop -- the indexed keyset query reads one bounded batch at a time.
     const { rows } = await client.query<{ domain: string }>(

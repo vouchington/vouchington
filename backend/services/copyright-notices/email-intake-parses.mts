@@ -11,7 +11,6 @@ import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
   copyrightEmailIntakePurpose,
-  type CopyrightEmailAttachmentInput,
   type CopyrightEmailIntake,
   type CopyrightEmailIntakeForAgent,
 } from './email-intakes.mts'
@@ -19,7 +18,10 @@ import {
   recordCopyrightEmailThreadReferences,
   type CopyrightEmailThreadMatch,
 } from './email-threading.mts'
-import { validateCopyrightEmailParseInput } from './email-intake-parse-input.mts'
+import {
+  validateCopyrightEmailParseInput,
+  type CopyrightEmailParseInput,
+} from './email-intake-parse-input.mts'
 import {
   copyrightEmailReplyHeaders,
   decryptCopyrightEmailReplyHeaders,
@@ -30,19 +32,7 @@ import {
   type AttachmentCiphertexts,
   type ParseCiphertexts,
 } from './email-intake-agent.mts'
-export type CopyrightEmailParseInput =
-  | {
-      status: 'succeeded'
-      fromEmail: string
-      fromName?: string
-      subject: string
-      bodyText: string
-      messageId: string | null
-      inReplyTo?: string[]
-      replyReferences: string[]
-      attachments: CopyrightEmailAttachmentInput[]
-    }
-  | { status: 'failed'; error: string }
+export type { CopyrightEmailParseInput } from './email-intake-parse-input.mts'
 
 export async function recordCopyrightEmailParse(
   intake: CopyrightEmailIntake,

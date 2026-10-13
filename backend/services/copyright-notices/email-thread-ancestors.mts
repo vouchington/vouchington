@@ -7,6 +7,7 @@ export async function lockCopyrightEmailThreadTokens(
   transaction: TransactionQuery,
   lookupTokens: readonly string[],
 ): Promise<void> {
+  // no-mistakes-disable-next-line query-reached-per-item: shared token locks must be acquired in deterministic order on this transaction
   for (const lookupToken of [...new Set(lookupTokens)].toSorted()) {
     // oxlint-disable-next-line no-await-in-loop -- deterministic advisory-lock order prevents crossed replies from deadlocking
     await transaction(sql`/* lockCopyrightEmailThreadTokens */

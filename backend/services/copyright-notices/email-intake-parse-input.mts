@@ -1,6 +1,20 @@
 import assert from 'http-assert'
-import type { CopyrightEmailParseInput } from './email-intake-parses.mts'
+import type { CopyrightEmailAttachmentInput } from './email-intakes.mts'
 import { copyrightEmailReplyHeaders } from './email-thread-references.mts'
+
+export type CopyrightEmailParseInput =
+  | {
+      status: 'succeeded'
+      fromEmail: string
+      fromName?: string
+      subject: string
+      bodyText: string
+      messageId: string | null
+      inReplyTo?: string[]
+      replyReferences: string[]
+      attachments: CopyrightEmailAttachmentInput[]
+    }
+  | { status: 'failed'; error: string }
 
 export function validateCopyrightEmailParseInput(input: CopyrightEmailParseInput): void {
   if (input.status === 'failed') {

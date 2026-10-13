@@ -28,6 +28,7 @@ export async function recordCopyrightEmailThreadReferences(input: {
   const referenceRows = buildCopyrightEmailThreadReferenceRows(input)
   await using transaction = await beginTransaction()
   if (referenceRows.length > 0) {
+    // ast-grep-ignore: no-three-sequential-awaits -- token locks precede reference insertion, which must precede ancestor resolution in this transaction
     await lockCopyrightEmailThreadTokens(
       transaction,
       referenceRows.map(row => row.lookup_token),

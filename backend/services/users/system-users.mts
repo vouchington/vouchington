@@ -4,7 +4,7 @@ import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getPrivateUserByAny } from './get.mts'
-import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
+import { resolveEmailDomainHostnameIds } from '@services/email-address-validator/email-domain-context'
 import {
   AUTOTAGGER_AGENT_SYSTEM_USERNAME,
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
@@ -79,8 +79,9 @@ export const upsertAdminEmailAddresses = async (
   const primaryCount = emails.filter(e => e.isPrimary).length
   assert(primaryCount <= 1, 422, 'At most one email address can be marked as primary')
   await using query = await beginTransaction()
-  const emailDomainHostnameIds = await Promise.all(
-    emails.map(({ email }) => resolveEmailDomainHostnameId(email, { query })),
+  const emailDomainHostnameIds = await resolveEmailDomainHostnameIds(
+    emails.map(({ email }) => email),
+    { query },
   )
   // Clear existing primary flag first to avoid violating the unique partial index
   // on (user_id) WHERE is_primary = TRUE when primary email changes.

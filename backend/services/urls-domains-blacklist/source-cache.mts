@@ -8,6 +8,7 @@ export async function invalidateSourceHostnameCaches(
   sourceIds: Array<string | number>,
 ): Promise<void> {
   const batchSize = getEntityCacheWorkLimit('delete_keys_per_batch')
+  // no-mistakes-disable-next-line query-reached-per-item: each source uses indexed bounded keyset pages before cache eviction
   for (const sourceId of sourceIds) {
     let after = ''
     for (;;) {

@@ -4,29 +4,23 @@ import { invalidate } from '@services/entity-cache/invalidate'
 
 export type HostnameProvenance = 'public' | 'private_email'
 
+export function normalizeUrlHostname(value: string): string {
+  try {
+    return new URL(
+      value.startsWith('http://') || value.startsWith('https://') ? value : `https://${value}`,
+    ).hostname
+  } catch {
+    return value
+  }
+}
+
 export const upsertUrlHostnames = async (
   userId: string | null,
   hostnames: string[],
   options: QueryOptions = {},
   provenance: HostnameProvenance = 'public',
 ): Promise<Map<string, string>> => {
-  const normalizedHostnames = [
-    ...new Set(
-      hostnames.flat(Infinity).map(x => {
-        try {
-          // If it's already a full URL, parse it directly
-          if (x.startsWith('http://') || x.startsWith('https://')) {
-            return new URL(x).hostname
-          }
-          // Otherwise, prepend https://
-          return new URL(`https://${x}`).hostname
-        } catch {
-          // If URL parsing fails, return as-is (might be invalid, but let the database handle it)
-          return x
-        }
-      }),
-    ),
-  ]
+  const normalizedHostnames = [...new Set(hostnames.flat(Infinity).map(normalizeUrlHostname))]
 
   if (normalizedHostnames.length === 0) {
     return new Map()
