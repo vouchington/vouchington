@@ -9,6 +9,7 @@ import { COMMUNITIES_CORE_DECLARATIONS } from './communities-core'
 import { COMMUNITY_AUTOMATION_DECLARATIONS } from './community-automation'
 import { COMMUNITY_LISTS_MODERATION_DECLARATIONS } from './community-lists-moderation'
 import { CONTENT_REFERRALS_DECLARATIONS } from './content-referrals'
+import { TOPIC_DECLARATIONS } from './topics'
 import { DYNAMIC_CONFIG_DECLARATIONS } from './dynamic-config'
 import { ENGINEERING_DECLARATIONS } from './engineering'
 import { ENTITY_RELATIONS_DECLARATIONS } from './entity-relations'
@@ -36,6 +37,7 @@ export const WEB_API_FIXTURE_DECLARATIONS = [
   ...COMMUNITY_AUTOMATION_DECLARATIONS,
   ...COMMUNITY_LISTS_MODERATION_DECLARATIONS,
   ...CONTENT_REFERRALS_DECLARATIONS,
+  ...TOPIC_DECLARATIONS,
   ...DYNAMIC_CONFIG_DECLARATIONS,
   ...ENGINEERING_DECLARATIONS,
   ...ENTITY_RELATIONS_DECLARATIONS,

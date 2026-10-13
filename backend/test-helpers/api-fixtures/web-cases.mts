@@ -121,7 +121,6 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
       topic: publicTopicWithLogoPlacement,
       html: '',
       topic_election: topicElection,
-      topic_metrics: null,
       topic_categories: [],
       topic_parents: [],
       topic_children: [],

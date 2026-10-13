@@ -92016,7 +92016,7 @@
       "migratedFrom": ["backend/api/v1/topics/topic-routes/topic-detail-route.mts"],
       "path": "/api/v1/topics/test-topic",
       "responseSchema": {
-        "hash": "5f67aeca95b08e0a1f9edf8ae81b0d9fb70996118a32413b4af87285733a500a",
+        "hash": "8b6ed72d4637ad217ef6427c21fe267ede8a9897d1eecd079e232764d17d5c4d",
         "key": "web.topics.show.default"
       },
       "route": {

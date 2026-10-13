@@ -118,7 +118,7 @@ export interface WebFixtureServerEndpointContext {
   >
   readonly topics: Pick<
     typeof import('@/lib/api/server/topics'),
-    'getPublisherTypes' | 'getTopics' | 'getUserTags'
+    'getPublisherTypes' | 'getTopic' | 'getTopics' | 'getUserTags'
   >
   readonly trendingReferralPrograms: Pick<
     typeof import('@/lib/api/server/trending-referral-programs'),
