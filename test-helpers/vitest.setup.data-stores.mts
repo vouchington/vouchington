@@ -34,20 +34,26 @@ process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS ??=
 
 const emitSetupTiming = process.env.VITEST_DIAGNOSTICS === '1'
 
+function emitSetupDiagnostic(message: string): void {
+  try {
+    writeSync(2, message)
+  } catch {
+    // Diagnostics must not prevent setup or replace its original failure.
+  }
+}
+
 async function timedSetupPhase<T>(phase: string, run: () => Promise<T>): Promise<T> {
-  if (emitSetupTiming) writeSync(2, `[vitest-setup] phase=${phase} start\n`)
+  if (emitSetupTiming) emitSetupDiagnostic(`[vitest-setup] phase=${phase} start\n`)
   const start = performance.now()
   try {
     const result = await run()
     if (emitSetupTiming)
-      writeSync(
-        2,
+      emitSetupDiagnostic(
         `[vitest-setup] phase=${phase} done ms=${Math.round(performance.now() - start)}\n`,
       )
     return result
   } catch (err) {
-    writeSync(
-      2,
+    emitSetupDiagnostic(
       `[vitest-setup] phase=${phase} failed ms=${Math.round(performance.now() - start)}\n`,
     )
     throw err
