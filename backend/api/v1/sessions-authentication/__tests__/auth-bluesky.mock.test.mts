@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { withTestEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-transition'
+import { withPrivateIdentityCacheFill } from '@voucha/test-helpers/private-identity-cache'
 import { version as uuidVersion } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -225,7 +226,8 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
     const user = await createTestUser()
     await request.authenticateAs(user)
 
-    const before = await request.get('/api/v1/my/identity').expect(200)
+    const readIdentity = () => request.get('/api/v1/my/identity').expect(200)
+    const before = await withPrivateIdentityCacheFill(user.id, readIdentity)
     expect(before.body.identity.bluesky_account).toBeNull()
 
     const did = fakeDid()

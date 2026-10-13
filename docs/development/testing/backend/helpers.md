@@ -149,6 +149,11 @@ the same key to repopulate: read it (the read recomputes from the database) or s
 fills only the id key, so a test that asserts a username key was cleared must first read by username.
 These caches are filled by a fire-and-forget write, which is why the warm-up before the operation is
 the part worth polling.
+[`withPrivateIdentityCacheFill`](../../../../backend/test-helpers/private-identity-cache.mts)
+registers before the initial identity read, joins the producer's public cache-set or cache-hit
+receipt for the owned key, drains its call-through script promises, then asserts the real cached
+null Bluesky account. It neither polls nor seeds the cache.
+Its optional write gate must release idempotently; cleanup releases it before joining owned work.
 
 ## `onceElectionVoteStatsCompleted`
 
