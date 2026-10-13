@@ -2,11 +2,11 @@
 
 Source entrypoint: [backend/services/oauth-linkedin/README.md](../../../../../backend/services/oauth-linkedin/README.md)
 
-LinkedIn OAuth provider — exchanges authorization codes with PKCE, fetches the userinfo endpoint, and upserts OAuth accounts.
+LinkedIn OAuth provider — exchanges authorization codes, fetches the userinfo endpoint, and upserts OAuth accounts. Web redirects supply PKCE; the server-begun broker uses a confidential client exchange and retains its separate native completion proof.
 
 ## Key exports
 
-- `upsertLinkedInAccount(code, redirectUri, codeVerifier, options)` — exchanges the PKCE authorization code for a LinkedIn access token, fetches LinkedIn userinfo, and upserts the OAuth account. Broker callers pass a bounded abort signal and an exact authorization/claim pair so account persistence and completion readiness commit atomically.
+- `upsertLinkedInAccount(code, redirectUri, codeVerifier, options)` — exchanges an authorization code for a LinkedIn access token, including the web PKCE verifier when supplied. Broker callers omit that provider verifier and pass a bounded abort signal plus an exact authorization/claim pair so account persistence and completion readiness commit atomically.
 
 ## Related
 

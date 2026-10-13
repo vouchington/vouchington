@@ -53,7 +53,7 @@ describe('OAuth authorization broker callback', () => {
       facebook: { scope: 'email,user_friends', pkce: false },
       x: { scope: 'tweet.read users.read follows.read offline.access', pkce: true },
       github: { scope: 'read:user user:email', pkce: true },
-      linkedin: { scope: 'openid profile email', pkce: true },
+      linkedin: { scope: 'openid profile email', pkce: false },
     } as const
 
     for (const [provider, expected] of Object.entries(expectations)) {

@@ -38,12 +38,11 @@ export function buildProviderAuthorizationUrl(options: {
         code_challenge_method: 'S256',
       })
     case 'linkedin':
+      // This broker uses a confidential HTTPS callback, not LinkedIn's separate native-PKCE endpoint.
       return withQuery('https://www.linkedin.com/oauth/v2/authorization', {
         ...shared,
         client_id: options.clientId,
         scope: 'openid profile email',
-        code_challenge: options.codeChallenge,
-        code_challenge_method: 'S256',
       })
   }
 }

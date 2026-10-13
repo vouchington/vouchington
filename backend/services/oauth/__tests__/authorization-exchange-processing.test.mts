@@ -246,15 +246,15 @@ describe('OAuth authorization provider exchange processing', () => {
     )
   })
 
-  it('routes a claimed LinkedIn code with its PKCE verifier and durable claim', async () => {
+  it('routes a claimed LinkedIn code through confidential exchange and durable claim', async () => {
     const dependencies = exchangeDependencies('linkedin')
     await processOAuthAuthorizationExchange('flow-id', dependencies)
 
-    expect(dependencies.decryptVerifier).toHaveBeenCalledWith('flow-id', 'encrypted-verifier')
+    expect(dependencies.decryptVerifier).not.toHaveBeenCalled()
     expect(dependencies.upsertLinkedIn).toHaveBeenCalledWith(
       'provider-code',
       'https://example.com/callback',
-      'provider-verifier',
+      undefined,
       expect.objectContaining({
         authorizationId: 'flow-id',
         authorizationClaimId: 'claim-id',

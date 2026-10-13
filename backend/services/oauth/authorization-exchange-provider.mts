@@ -43,7 +43,7 @@ export async function exchangeClaimedOAuthAuthorization(
 ): Promise<void> {
   const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
   const codeVerifier =
-    authorization.provider === 'facebook'
+    authorization.provider === 'facebook' || authorization.provider === 'linkedin'
       ? undefined
       : dependencies.decryptVerifier(authorization.id, authorization.pkce_verifier_ciphertext)
   await ownership?.persist(authorization.exchange_claim_id, true)
@@ -74,12 +74,10 @@ export async function exchangeClaimedOAuthAuthorization(
       })
       break
     case 'linkedin':
-      if (codeVerifier === undefined)
-        throw new Error('LinkedIn provider admission requires its PKCE verifier')
       await dependencies.upsertLinkedIn(
         code,
         authorization.redirect_uri,
-        codeVerifier,
+        undefined,
         completionOptions,
       )
   }

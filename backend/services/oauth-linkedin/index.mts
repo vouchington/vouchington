@@ -26,7 +26,7 @@ type LinkedInUserInfo = {
 async function exchangeLinkedInAuthorizationCode(
   code: string,
   redirectUri: string,
-  codeVerifier: string,
+  codeVerifier: string | undefined,
   signal?: AbortSignal,
 ): Promise<LinkedInTokenResponse> {
   if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
@@ -42,7 +42,7 @@ async function exchangeLinkedInAuthorizationCode(
       redirect_uri: redirectUri,
       client_id: LINKEDIN_CLIENT_ID,
       client_secret: LINKEDIN_CLIENT_SECRET,
-      code_verifier: codeVerifier,
+      ...(codeVerifier === undefined ? {} : { code_verifier: codeVerifier }),
     }).toString(),
     signal,
   })
@@ -71,7 +71,7 @@ async function fetchLinkedInUserInfo(
 export async function upsertLinkedInAccount(
   code: string,
   redirectUri: string,
-  codeVerifier: string,
+  codeVerifier: string | undefined,
   options: {
     authorizationId?: string
     authorizationClaimId?: string
