@@ -19,11 +19,7 @@ export async function isHostnameDispatchable(hostname: string): Promise<boolean>
     WHERE uh.hostname = ${hostname}
       AND uh.is_crawlable
       AND NOT uh.is_blocked
-      AND NOT EXISTS (
-        SELECT 1 FROM blocklisted_domains db
-        JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-        WHERE db.domain = uh.hostname AND dbs.type = 'url'::domain_blocklist_types
-      )
+      AND EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id)
     LIMIT 1
   `)
   return result.rows.length > 0

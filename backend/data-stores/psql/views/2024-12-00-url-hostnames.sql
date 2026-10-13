@@ -4,6 +4,7 @@ CREATE OR REPLACE VIEW view_url_hostnames AS
     'hostname' AS __entity_type,
     url_hostnames.id,
     url_hostnames.hostname,
+    url_hostnames.publicly_introduced_at,
     url_hostnames.is_blocked,
     url_hostnames.is_crawlable,
     url_hostnames.should_skip_web_risk,

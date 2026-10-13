@@ -1,10 +1,13 @@
 import { write, read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 
+export type HostnameProvenance = 'public' | 'private_email'
+
 export const upsertUrlHostnames = async (
   userId: string | null,
   hostnames: string[],
   options: QueryOptions = {},
+  provenance: HostnameProvenance = 'public',
 ): Promise<Map<string, string>> => {
   const normalizedHostnames = [
     ...new Set(
@@ -45,6 +48,17 @@ export const upsertUrlHostnames = async (
   // Filter: only insert missing hostnames
   const missingHostnames = normalizedHostnames.filter(hostname => !existingMap.has(hostname))
 
+  if (provenance === 'public' && existingMap.size > 0) {
+    await write(
+      `/* upsertUrlHostnames:promotePublic */
+      UPDATE url_hostnames
+      SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+      WHERE id = ANY($1::uuid[]) AND publicly_introduced_at IS NULL`,
+      [[...existingMap.values()]],
+      options,
+    )
+  }
+
   if (missingHostnames.length === 0) {
     return existingMap // All exist, skip write
   }
@@ -78,19 +92,22 @@ export const upsertUrlHostnames = async (
         FALSE AS should_skip_web_risk
       FROM input
     )
-    INSERT INTO url_hostnames (hostname, created_by_id, is_crawlable, is_blocked, should_skip_web_risk)
+    INSERT INTO url_hostnames (hostname, created_by_id, is_crawlable, is_blocked, should_skip_web_risk, publicly_introduced_at)
     SELECT
       hostname,
       $2,
       true,
       is_blocked,
-      should_skip_web_risk
+      should_skip_web_risk,
+      CASE WHEN $3::boolean THEN CURRENT_TIMESTAMP ELSE NULL END
     FROM inherited
     ORDER BY hostname
-    ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
+    ON CONFLICT (hostname) DO UPDATE SET
+      hostname = EXCLUDED.hostname,
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
     RETURNING id, hostname, is_blocked
   `,
-    [missingHostnames, userId || null],
+    [missingHostnames, userId || null, provenance === 'public'],
     options,
   )
 

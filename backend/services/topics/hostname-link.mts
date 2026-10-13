@@ -69,6 +69,15 @@ async function updateTopicHostnameId(
     `,
     options,
   )
+  if (hostnameId) {
+    await write(
+      sql`/* updateTopicHostnameId:promotePublic */
+        UPDATE url_hostnames
+        SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+        WHERE id = ${hostnameId}::uuid AND publicly_introduced_at IS NULL`,
+      options,
+    )
+  }
 }
 async function assignHostnameToTopic(
   topicId: string,

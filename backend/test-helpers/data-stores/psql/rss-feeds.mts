@@ -27,8 +27,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
 
   const { rows: hostnameRows } = await write<{ id: string }>(
     allowUnannotatedQuery(sql`
-    INSERT INTO url_hostnames (hostname)
-    VALUES (${`feed-${random}.example.com`})
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    VALUES (${`feed-${random}.example.com`}, CURRENT_TIMESTAMP)
     RETURNING id
   `),
   )

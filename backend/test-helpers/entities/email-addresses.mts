@@ -79,7 +79,7 @@ export async function addDisposableEmailForUser(
   `),
   )
   const sourceId = sourceRows[0].id
-  const blockedHostnameId = await upsertTestHostnameId(domain)
+  const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
     allowUnannotatedQuery(sql`
@@ -112,7 +112,7 @@ export async function addDisposableDomain(domain: string): Promise<void> {
   `),
   )
   const sourceId = sourceRows[0].id
-  const blockedHostnameId = await upsertTestHostnameId(domain)
+  const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
     allowUnannotatedQuery(sql`

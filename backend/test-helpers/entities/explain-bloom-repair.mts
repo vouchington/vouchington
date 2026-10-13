@@ -51,8 +51,8 @@ export async function insertExplainBloomRepairSources(
     ON CONFLICT DO NOTHING`)
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO url_hostnames (hostname)
-    SELECT DISTINCT fixture.key || '.example.com'
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    SELECT DISTINCT fixture.key || '.example.com', CURRENT_TIMESTAMP
     FROM jsonb_to_recordset($1::jsonb) fixture(key text)
     ON CONFLICT (hostname) DO NOTHING`,
     [JSON.stringify(rows)],
@@ -97,8 +97,8 @@ export async function insertExplainHostnameFlagSources(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(
-    `/* insertExplainHostnameFlagSources */ INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at)
-    SELECT id, hostname, crawlable, updated_at FROM jsonb_to_recordset($1::jsonb)
+    `/* insertExplainHostnameFlagSources */ INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at, publicly_introduced_at)
+    SELECT id, hostname, crawlable, updated_at, CURRENT_TIMESTAMP FROM jsonb_to_recordset($1::jsonb)
       AS fixture(id uuid, hostname text, crawlable boolean, updated_at timestamptz) ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows)],
   )

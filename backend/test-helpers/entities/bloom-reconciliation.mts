@@ -39,8 +39,8 @@ export async function insertTestBloomRepairSources(userId: string, postId: strin
   )
   await transaction(
     `/* insertTestBloomRepairSources */
-    INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at)
-    VALUES ($1, $2, false, $3), ($4, $5, false, $3)`,
+    INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at, publicly_introduced_at)
+    VALUES ($1, $2, false, $3, CURRENT_TIMESTAMP), ($4, $5, false, $3, CURRENT_TIMESTAMP)`,
     [hostnameId, `unblocked-${domain}`, inside, blockedHostnameId, domain],
   )
   const { rows: sources } = await transaction<{ id: number }>(

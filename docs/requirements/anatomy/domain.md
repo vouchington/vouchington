@@ -12,15 +12,19 @@
 
 DB table: `url_hostnames`
 
-| Field              | Notes                                                             |
-| ------------------ | ----------------------------------------------------------------- |
-| `id`               | UUID                                                              |
-| `hostname`         | The hostname string (e.g. `example.com`)                          |
-| `votes_score_net`  | Magnitude-weighted net semantic score (API-visible, not rendered) |
-| `votes_count_up`   | Total positive semantic choices                                   |
-| `votes_count_down` | Total negative semantic choices                                   |
+| Field                    | Notes                                                             |
+| ------------------------ | ----------------------------------------------------------------- |
+| `id`                     | UUID                                                              |
+| `hostname`               | The hostname string (e.g. `example.com`)                          |
+| `publicly_introduced_at` | First public introduction; NULL for email-only identity           |
+| `votes_score_net`        | Magnitude-weighted net semantic score (API-visible, not rendered) |
+| `votes_count_up`         | Total positive semantic choices                                   |
+| `votes_count_down`       | Total negative semantic choices                                   |
 
 Hostname policy flags are non-null booleans: `is_crawlable` defaults to `true` and `is_blocked` defaults to `false`. False crawlability disables outbound crawling; a blocked hostname is excluded from site surfaces. [Hostname policy](../../overview/architecture/services/urls-hostnames/README.md) owns reader and admin-filter semantics.
+
+Public domain surfaces include only hostnames with `publicly_introduced_at`; staff can inspect
+email-only identities without publishing them. The timestamp is set once and never cleared.
 
 ## States
 

@@ -210,6 +210,22 @@ describe('hostname policy reads', () => {
     expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
   })
 
+  it('reclassifies an existing projected block when its source type changes', async () => {
+    const domain = `source-type-${randomUUID()}.test`
+    const sourceName = `source-type-${sourceNameSuffix()}`
+    const source = { name: sourceName, url: 'https://example.com/source-type.txt' }
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    sourceIds.push(await createTestBlacklistSource({ ...source, type: 'url' }))
+    await insertTestDomainBlacklist(domain, sourceName)
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+
+    await createTestBlacklistSource({ ...source, type: 'email' })
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+
+    await createTestBlacklistSource({ ...source, type: 'url' })
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+  })
+
   it.each(['url', 'email'] as const)(
     'keeps an inherited parent block when a %s feed is removed',
     async sourceType => {

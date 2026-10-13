@@ -17,6 +17,11 @@ that actually runs syncs, not by every consumer of the base lookup/check service
 4. Drop staging tables and release the writer client.
 5. Enqueue a separate URL or email Bloom-filter rebuild job after commit.
 
+The database projects each domain diff into hostname block history and updates URL crawl policy
+once per statement, including bulk syncs. Changing a configured source between URL and email
+reclassifies its active projected blocks in the same transaction; email blocks do not block URL
+crawls.
+
 ## Public Helpers
 
 - `syncBlacklistSource(sourceId, url, sourceType?, dependencies?)` — fetches the source (with

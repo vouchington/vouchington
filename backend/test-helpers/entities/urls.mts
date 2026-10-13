@@ -55,9 +55,10 @@ export async function insertTestUrlDirect(
   if (!isPublicHostname(normalizedUrl.hostname)) return null
 
   const hostnameResult = await write(sql`/* insertTestUrlDirect */
-    INSERT INTO url_hostnames (hostname)
-    VALUES (${normalizedUrl.hostname})
-    ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    VALUES (${normalizedUrl.hostname}, CURRENT_TIMESTAMP)
+    ON CONFLICT (hostname) DO UPDATE SET
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
     RETURNING id
   `)
   const hostnameId: string = hostnameResult.rows[0].id
@@ -151,7 +152,7 @@ export async function createTestUrlWithHostname(): Promise<string> {
   const uid = randomUUID()
   const hostname = `test-${uid.slice(0, 8)}.example.com`
   const hostnameResult = await write(
-    sql`/* createTestUrlWithHostname */ INSERT INTO url_hostnames (hostname) VALUES (${hostname}) RETURNING id`,
+    sql`/* createTestUrlWithHostname */ INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES (${hostname}, CURRENT_TIMESTAMP) RETURNING id`,
   )
   const hostnameId: string = hostnameResult.rows[0].id
   return insertTestUrl({ url: `https://${hostname}/path`, hostnameId })
@@ -168,7 +169,7 @@ export async function createTestRedirectUrl(options: {
   const uid = randomUUID()
   const hostname = `redirect-${uid.slice(0, 8)}.example.com`
   const hostnameResult = await write(
-    sql`/* createTestRedirectUrl */ INSERT INTO url_hostnames (hostname) VALUES (${hostname}) RETURNING id`,
+    sql`/* createTestRedirectUrl */ INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES (${hostname}, CURRENT_TIMESTAMP) RETURNING id`,
   )
   const hostnameId: string = hostnameResult.rows[0].id
   const urlString = `https://${hostname}/path`

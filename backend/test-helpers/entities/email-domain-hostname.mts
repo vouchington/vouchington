@@ -7,20 +7,22 @@ export async function upsertTestEmailDomainHostnameId(
   emailAddress: string,
   options: QueryOptions = {},
 ): Promise<string> {
-  const domain = emailAddress.split('@', 2)[1]?.toLowerCase()
+  const domain = emailAddress.slice(emailAddress.lastIndexOf('@') + 1).toLowerCase()
   if (!domain) throw new Error('Test email address has no domain')
-  return upsertTestHostnameId(domain, options)
+  return upsertTestHostnameId(domain, options, 'private_email')
 }
 
 export async function upsertTestHostnameId(
   hostname: string,
   options: QueryOptions = {},
+  provenance: 'public' | 'private_email' = 'public',
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(
     sql`/* upsertTestHostnameId */
-      INSERT INTO url_hostnames (hostname)
-      VALUES (${new URL(`https://${hostname}`).hostname})
-      ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
+      INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+      VALUES (${new URL(`https://${hostname}`).hostname}, CASE WHEN ${provenance === 'public'}::boolean THEN CURRENT_TIMESTAMP ELSE NULL END)
+      ON CONFLICT (hostname) DO UPDATE SET
+        publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
       RETURNING id
     `,
     options,

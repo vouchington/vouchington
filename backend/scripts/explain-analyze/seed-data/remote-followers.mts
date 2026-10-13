@@ -118,8 +118,10 @@ async function seedRemoteFollowerDirectories(): Promise<void> {
       extensionRows.push(`($${extensionValues.length})`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname)
-         VALUES ${hostnameRows.join(', ')} ON CONFLICT DO NOTHING`,
+      `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname, publicly_introduced_at)
+         SELECT input.id, input.hostname, CURRENT_TIMESTAMP
+         FROM (VALUES ${hostnameRows.join(', ')}) AS input(id, hostname)
+         WHERE TRUE ON CONFLICT DO NOTHING`,
       hostnameValues,
     )
     await query(

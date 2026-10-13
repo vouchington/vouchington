@@ -170,10 +170,19 @@ describe('hasVerifiedNonDisposableEmail', () => {
       name: sourceName,
       url: 'https://example.com/email-policy.txt',
     })
+    const source = { name: sourceName, url: 'https://example.com/email-policy.txt' }
     try {
       await invalidateVerifiedEmailCache(user.id)
       await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
       await insertTestDomainBlacklist(domain, sourceName)
+      await invalidateVerifiedEmailCache(user.id)
+      await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(false)
+
+      await createTestBlacklistSource({ ...source, type: 'url' })
+      await invalidateVerifiedEmailCache(user.id)
+      await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
+
+      await createTestBlacklistSource({ ...source, type: 'email' })
       await invalidateVerifiedEmailCache(user.id)
       await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(false)
     } finally {

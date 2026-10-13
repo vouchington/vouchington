@@ -2,6 +2,12 @@ import { it, expect, describe } from 'vitest'
 import { upsertUrlHostnames } from './upsert.mts'
 import { getUrlHostnameById } from './get.mts'
 import { getLocalHostnamePolicy } from './policies.mts'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
+import { addUrl } from '../urls/upsert.mts'
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import { createTestUser } from '@voucha/test-helpers'
 
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -90,5 +96,78 @@ describe('upsert.generated', () => {
     const hostnameId2 = [...hostnamesMap2.values()][0]
 
     expect(hostnameId1).toBe(hostnameId2)
+  })
+
+  it('keeps an email-only hostname private and out of crawl work', async () => {
+    const domain = `email-private-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const bucketDays = 31000 + Math.floor(Math.random() * 1000)
+    await write(sql`/* testEmailOnlyHostnameCrawl */
+      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+  })
+
+  it('does not dispatch a public staff hostname until it has URL work', async () => {
+    const domain = `staff-url-less-${crypto.randomUUID()}.example.com`
+    const staff = await createTestUser({ administrator: true })
+    const hostnameId = (await upsertUrlHostnames(staff.id, [domain])).get(domain)
+    if (!hostnameId) throw new Error('Expected staff hostname')
+    const bucketDays = 29000 + Math.floor(Math.random() * 1000)
+    await write(sql`/* testStaffHostnameWithoutUrl */
+      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
+  })
+
+  it('promotes a private email hostname once when a URL arrives, retaining its ID', async () => {
+    const domain = `email-promoted-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`writer@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const bucketDays = 32000 + Math.floor(Math.random() * 700)
+    await write(sql`/* testEmailHostnamePromotion */
+      UPDATE url_hostnames SET age_threshold_days = ${bucketDays} WHERE id = ${hostnameId}`)
+    await addUrl(null, `https://${domain}/first`)
+
+    const firstIntroduction = (await getUrlHostnameById(hostnameId))?.publicly_introduced_at
+    expect(firstIntroduction).toBeInstanceOf(Date)
+    expect(await resolveEmailDomainHostnameId(`other@${domain}`)).toBe(hostnameId)
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toEqual(
+      firstIntroduction,
+    )
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.some(row => row.id === hostnameId)).toBe(true)
   })
 })

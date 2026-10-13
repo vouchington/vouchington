@@ -14,6 +14,7 @@ export async function getNextCrawlHostnameBucket(afterDays: number) {
   const { rows } = await read<{ age_threshold_days: number }>(sql`/* nextCrawlHostnameBucket */
     SELECT age_threshold_days FROM url_hostnames
     WHERE is_crawlable AND NOT is_blocked AND age_threshold_days > ${afterDays}::integer
+      AND EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = url_hostnames.id)
     ORDER BY age_threshold_days LIMIT 1
   `)
   return rows[0]?.age_threshold_days
@@ -27,6 +28,7 @@ export async function getCrawlHostnameCandidates(
     SELECT id, 0 AS range, crawl_swept_at
     FROM url_hostnames uh
     WHERE uh.is_crawlable AND NOT uh.is_blocked
+      AND EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id)
       AND uh.age_threshold_days = ${cursor.bucketDays}
       AND uh.crawl_swept_at IS NULL
       AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
@@ -35,6 +37,7 @@ export async function getCrawlHostnameCandidates(
     SELECT id, 1 AS range, crawl_swept_at
     FROM url_hostnames uh
     WHERE uh.is_crawlable AND NOT uh.is_blocked
+      AND EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id)
       AND uh.age_threshold_days = ${cursor.bucketDays}
       AND uh.crawl_swept_at < ${cursor.sweepStartedAt}::timestamptz
         - ${cursor.bucketDays}::integer * INTERVAL '1 day'

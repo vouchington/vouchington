@@ -41,8 +41,8 @@ inherited AS (
   FROM missing
 ),
 inserted AS (
-  INSERT INTO url_hostnames (hostname, is_crawlable, is_blocked, should_skip_web_risk, unreliable_status_codes)
-  SELECT hostname, TRUE, is_blocked, should_skip_web_risk, ARRAY[404]::SMALLINT[]
+  INSERT INTO url_hostnames (hostname, is_crawlable, is_blocked, should_skip_web_risk, unreliable_status_codes, publicly_introduced_at)
+  SELECT hostname, TRUE, is_blocked, should_skip_web_risk, ARRAY[404]::SMALLINT[], CURRENT_TIMESTAMP
   FROM inherited
   ORDER BY inherited.hostname
   ON CONFLICT (hostname) DO NOTHING
@@ -50,9 +50,10 @@ inserted AS (
 ),
 updated AS (
   UPDATE url_hostnames
-  SET unreliable_status_codes = ARRAY[404]::SMALLINT[]
+  SET unreliable_status_codes = COALESCE(unreliable_status_codes, ARRAY[404]::SMALLINT[]),
+      publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
   WHERE hostname IN (SELECT hostname FROM existing)
-    AND unreliable_status_codes IS NULL
+    AND (unreliable_status_codes IS NULL OR publicly_introduced_at IS NULL)
   RETURNING id
 ),
 inherited_blocks AS (

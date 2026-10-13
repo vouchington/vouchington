@@ -133,6 +133,7 @@ function buildDomainsQuery() {
     SELECT CONCAT('/domain/', hostname) AS path, updated_at
     FROM url_hostnames
     WHERE NOT is_blocked
+      AND publicly_introduced_at IS NOT NULL
       AND votes_count_up > 0
     ORDER BY votes_score_net DESC, id DESC
   `

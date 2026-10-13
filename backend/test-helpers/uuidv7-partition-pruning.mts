@@ -159,7 +159,7 @@ async function createFixture(query: TransactionQuery): Promise<Fixture> {
     throw new Error('Canonical crawl key/index mismatch')
   const hostname = `pruning-${randomUUID()}.example.com`
   const host = await query<{ id: string }>(
-    '/* insertCanonicalPruningHostname */ INSERT INTO url_hostnames (hostname) VALUES ($1) RETURNING id',
+    '/* insertCanonicalPruningHostname */ INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES ($1, CURRENT_TIMESTAMP) RETURNING id',
     [hostname],
   )
   const url = await query<{ id: string }>(

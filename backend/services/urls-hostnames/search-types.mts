@@ -10,4 +10,5 @@ export type SearchUrlHostnamesOptions = {
   limit?: number
   sort?: 'trust'
   after?: string
+  includePrivate?: boolean
 }

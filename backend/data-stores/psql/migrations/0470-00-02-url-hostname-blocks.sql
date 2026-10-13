@@ -36,28 +36,104 @@ CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id
   ON url_hostname_blocks (domain_blocklist_source_id)
   WHERE domain_blocklist_source_id IS NOT NULL;
 
--- Trigger: keep url_hostnames.blocked in sync with active block history rows.
--- A hostname is blocked iff at least one url_hostname_blocks row exists with lifted_at IS NULL.
+-- Project active URL blocks in one update per statement. Email blocks never change crawl policy.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_project_url_hostname_blocked()
+CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_insert()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  UPDATE url_hostnames
-  SET is_blocked = EXISTS (
-    SELECT 1 FROM url_hostname_blocks
-    WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)
-      AND lifted_at IS NULL
-      AND blocked_source <> 'email_blocklist'
+  WITH affected AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
   )
-  WHERE id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id);
+  UPDATE url_hostnames host SET is_blocked = TRUE
+  FROM affected WHERE host.id = affected.id AND NOT host.is_blocked;
   RETURN NULL;
 END;
 $$;
 
-CREATE OR REPLACE TRIGGER trigger_sync_url_hostname_blocked
-  AFTER INSERT OR UPDATE OF lifted_at OR DELETE
-  ON url_hostname_blocks
-  FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked();
+CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_insert
+  AFTER INSERT ON url_hostname_blocks
+  REFERENCING NEW TABLE AS inserted_blocks
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_insert();
+
+CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_update()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  WITH affected AS MATERIALIZED (
+    SELECT url_hostname_id AS id FROM prior_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    UNION
+    SELECT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), states AS MATERIALIZED (
+    SELECT affected.id, EXISTS (
+      SELECT 1 FROM url_hostname_blocks block
+      WHERE block.url_hostname_id = affected.id
+        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'
+    ) AS is_blocked FROM affected
+  )
+  UPDATE url_hostnames host SET is_blocked = states.is_blocked
+  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_update
+  AFTER UPDATE ON url_hostname_blocks
+  REFERENCING OLD TABLE AS prior_blocks NEW TABLE AS updated_blocks
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_update();
+
+CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_delete()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  WITH affected AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), states AS MATERIALIZED (
+    SELECT affected.id, EXISTS (
+      SELECT 1 FROM url_hostname_blocks block
+      WHERE block.url_hostname_id = affected.id
+        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'
+    ) AS is_blocked FROM affected
+  )
+  UPDATE url_hostnames host SET is_blocked = states.is_blocked
+  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_update_url_hostname_blocked_after_delete
+  AFTER DELETE ON url_hostname_blocks
+  REFERENCING OLD TABLE AS deleted_blocks
+  FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_delete();
+
+CREATE OR REPLACE FUNCTION fn_update_domain_blocklist_hostname_block_source()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE url_hostname_blocks block
+  SET blocked_source = CASE NEW.type
+    WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources
+    ELSE 'url_blocklist'::url_hostname_block_sources
+  END
+  WHERE block.domain_blocklist_source_id = NEW.id
+    AND block.lifted_at IS NULL
+    AND block.blocked_source IS DISTINCT FROM CASE NEW.type
+      WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources
+      ELSE 'url_blocklist'::url_hostname_block_sources
+    END;
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_update_domain_blocklist_hostname_block_source
+  AFTER UPDATE OF type ON domain_blocklist_sources
+  FOR EACH ROW WHEN (OLD.type IS DISTINCT FROM NEW.type)
+  EXECUTE FUNCTION fn_update_domain_blocklist_hostname_block_source();
+
+COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_insert() IS 'Project active URL blocks into hostname crawl policy once per insert statement.';
+COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_update() IS 'Recompute crawl policy for URL block changes once per update statement.';
+COMMENT ON FUNCTION fn_update_url_hostname_blocked_after_delete() IS 'Recompute crawl policy for URL block removals once per delete statement.';
+COMMENT ON FUNCTION fn_update_domain_blocklist_hostname_block_source() IS 'Keep projected block kinds aligned with the configured source type.';
 
 COMMENT ON TABLE url_hostname_blocks IS 'Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintained from this table and must not be written directly in app code. Canonical insert-then-cancel pattern. See community_bans for reference.';
 COMMENT ON COLUMN url_hostname_blocks.url_hostname_id IS 'The blocked hostname.';

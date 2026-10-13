@@ -75,7 +75,10 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
-  if (!hostname || (hostname.is_blocked && !canSeeModeration)) {
+  if (
+    !hostname ||
+    ((!hostname.publicly_introduced_at || hostname.is_blocked) && !canSeeModeration)
+  ) {
     ctx.setStatus(404)
     return ctx.json({ error: 'Hostname not found' })
   }

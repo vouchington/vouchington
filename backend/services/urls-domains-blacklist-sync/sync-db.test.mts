@@ -2,9 +2,15 @@ import { expect, it, describe } from 'vitest'
 import {
   countBlacklistEntriesBySource,
   createTestBlacklistSource,
+  getTestHostnameRow,
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
 } from '@voucha/test-helpers'
+import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
+import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { write } from '@data-stores/psql'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
@@ -31,6 +37,17 @@ describe('sync-db', () => {
       `new-a-${suffix}.com`,
       `new-b-${suffix}.com`,
     ])
+
+    const domains = [`new-a-${suffix}.com`, `new-b-${suffix}.com`]
+    const hostnameIds = await upsertUrlHostnames(null, domains)
+    for (const domain of domains) {
+      expect((await getTestHostnameRow(hostnameIds.get(domain)!))?.is_blocked).toBe(true)
+    }
+
+    await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+    for (const domain of domains) {
+      expect((await getTestHostnameRow(hostnameIds.get(domain)!))?.is_blocked).toBe(false)
+    }
   })
 
   it('syncDomainsWithDatabase stages email domains in SQL and applies database changes', async () => {
@@ -51,6 +68,26 @@ describe('sync-db', () => {
     await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([
       `email-blocked-${suffix}.com`,
     ])
+    const hostnameId = await resolveEmailDomainHostnameId(`reader@email-blocked-${suffix}.com`)
+    if (!hostnameId) throw new Error('Expected email blocklist hostname')
+    const bucketDays = 30000 + Math.floor(Math.random() * 1000)
+    await write(
+      `/* testEmailBlocklistCrawl */
+      UPDATE url_hostnames SET age_threshold_days = $1 WHERE id = $2`,
+      [bucketDays, hostnameId],
+    )
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.some(row => row.id === hostnameId)).toBe(false)
   })
 
   it.each(['url', 'email'] as const)(

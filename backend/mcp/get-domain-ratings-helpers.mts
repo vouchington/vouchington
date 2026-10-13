@@ -73,7 +73,11 @@ export async function getRatingsForUrl(url: string): Promise<ToolResult> {
 
 export async function getRatingsForHostname(hostname: string): Promise<ToolResult> {
   const resolvedHostname = await getUrlHostnameByAnyCached(hostname)
-  if (!resolvedHostname) {
+  if (
+    !resolvedHostname ||
+    !resolvedHostname.publicly_introduced_at ||
+    resolvedHostname.is_blocked
+  ) {
     return { success: false, error: 'Hostname not found.' }
   }
 

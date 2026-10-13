@@ -2,6 +2,7 @@ export type ViewHostname = {
   __entity_type: 'hostname'
   id: string
   hostname: string
+  publicly_introduced_at: Date | null
   topic_id: string | null
   is_blocked: boolean
   is_crawlable: boolean
@@ -19,7 +20,7 @@ export type PublicViewHostname = Pick<
 
 export type ViewHostnameWithoutElection = Omit<
   ViewHostname,
-  'votes_score_net' | 'votes_count_up' | 'votes_count_down'
+  'votes_score_net' | 'votes_count_up' | 'votes_count_down' | 'publicly_introduced_at'
 >
 
 export function stripHostnameElectionFields(hostname: ViewHostname): ViewHostnameWithoutElection {
@@ -27,6 +28,7 @@ export function stripHostnameElectionFields(hostname: ViewHostname): ViewHostnam
     votes_score_net: _score,
     votes_count_up: _up,
     votes_count_down: _down,
+    publicly_introduced_at: _introduced,
     ...hostnameWithoutElection
   } = hostname
   return hostnameWithoutElection

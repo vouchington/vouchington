@@ -7,7 +7,7 @@ async function seedPlaywrightCrawlersAndCrawls(
 ): Promise<void> {
   /* v8 ignore stop */
   await query(
-    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO url_hostnames (id, hostname, is_crawlable) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE) ON CONFLICT (hostname) DO UPDATE SET is_crawlable = EXCLUDED.is_crawlable`,
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO url_hostnames (id, hostname, is_crawlable, publicly_introduced_at) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE, CURRENT_TIMESTAMP), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE, CURRENT_TIMESTAMP), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE, CURRENT_TIMESTAMP), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE, CURRENT_TIMESTAMP), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE, CURRENT_TIMESTAMP) ON CONFLICT (hostname) DO UPDATE SET is_crawlable = EXCLUDED.is_crawlable, publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)`,
   )
   // Insert the history row so blocked-site.com has a url_hostname_blocks entry that the
   // trigger-maintained url_hostnames.is_blocked column stays consistent with, and so

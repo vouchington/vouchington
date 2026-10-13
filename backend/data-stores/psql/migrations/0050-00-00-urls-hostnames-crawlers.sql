@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   CHECK (char_length(hostname) <= 255),
   CHECK (hostname = LOWER(hostname)),
   CHECK (hostname = TRIM(hostname)),
+  publicly_introduced_at TIMESTAMPTZ,
 
   is_blocked BOOLEAN NOT NULL DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
   is_crawlable BOOLEAN NOT NULL DEFAULT TRUE, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
@@ -88,6 +89,8 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN url_hostnames.publicly_introduced_at IS 'First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.';
 
 -- These address tables are created before url_hostnames; each stores the domain identity
 -- resolved when the address is written, and never copies the hostname's block state.

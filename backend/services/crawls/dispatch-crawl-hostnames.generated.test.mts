@@ -5,6 +5,7 @@ import {
   isHostnameDispatchable,
 } from '@voucha/test-helpers/entities/url-hostnames'
 import { insertTestDomainBlacklist } from '@voucha/test-helpers/entities/domain-blacklists'
+import { addUrl } from '@services/urls/upsert'
 
 describe('dispatchCrawlHostnames', () => {
   it('should not dispatch hostnames that are in the domain blacklist', async () => {
@@ -23,6 +24,7 @@ describe('dispatchCrawlHostnames', () => {
       is_crawlable: true,
       is_blocked: false,
     })
+    await addUrl(null, `https://${crawlableHostname}/first`)
     // Add one to the domain blacklist
     await insertTestDomainBlacklist(blockedHostname)
 

@@ -1,4 +1,5 @@
 import { expect, it, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import {
   createTestUser,
   getUrlHostnameTopicId,
@@ -7,8 +8,26 @@ import {
 } from '@voucha/test-helpers'
 import { linkHostnameToSourceTopic, setTopicHostnameLink } from './hostname-link.mts'
 import { getTopicByAny } from './get.mts'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getUrlHostnameById } from '../urls-hostnames/get.mts'
 
 describe('hostname-link', () => {
+  it('promotes an existing email-only hostname when a topic links it by ID', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const topicId = await insertTestTopic({
+      name: `Email Domain Topic ${suffix}`,
+      slug: `email-domain-topic-${suffix}`,
+      createdById: user.id,
+    })
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@topic-${suffix}.example.com`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+
+    await setTopicHostnameLink(topicId, hostnameId)
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+  })
+
   it('setTopicHostnameLink links topic and hostname in both directions', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)

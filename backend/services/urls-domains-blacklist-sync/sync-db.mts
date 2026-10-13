@@ -10,32 +10,16 @@ import { pipeline } from 'node:stream/promises'
 import onError from '@modules/on-error'
 import { readNormalizedDomains } from './sync-utils.mts'
 import {
-  enqueueUrlBlocklistRebuild,
-  invalidateUrlBlocklistReadyMarker,
-} from '@services/urls-domains-blacklist/bloom-filter'
-import {
-  enqueueEmailBlocklistRebuild,
-  invalidateEmailBlocklistReadyMarker,
-} from '@services/urls-domains-blacklist/email-bloom-filter'
+  rebuildBloomForSource,
+  defaultBloomRebuildDependencies,
+  type BloomRebuildDependencies,
+} from './sync-bloom.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
 const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'
 const ADDED_DOMAINS_TABLE = 'tmp_domain_blacklist_added_domains'
 const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
-interface BloomRebuildDependencies {
-  invalidateEmailReadyMarker: () => Promise<unknown>
-  invalidateUrlReadyMarker: () => Promise<unknown>
-  enqueueEmailRebuild: () => Promise<void>
-  enqueueUrlRebuild: () => Promise<void>
-}
-
-const defaultBloomRebuildDependencies: BloomRebuildDependencies = {
-  invalidateEmailReadyMarker: invalidateEmailBlocklistReadyMarker,
-  invalidateUrlReadyMarker: invalidateUrlBlocklistReadyMarker,
-  enqueueEmailRebuild: enqueueEmailBlocklistRebuild,
-  enqueueUrlRebuild: enqueueUrlBlocklistRebuild,
-}
 async function* generateDomainCsvRows(response: Response): AsyncGenerator<string> {
   for await (const domain of readNormalizedDomains(response)) {
     yield `"${domain.replaceAll('"', '""')}"\n`
@@ -52,19 +36,13 @@ export async function syncDomainsWithDatabase(
   try {
     await stageDesiredDomains(client, response)
     await using transaction = await beginTransaction({ client })
-    result = await applyDesiredDomains(transaction, sourceId)
+    result = await applyDesiredDomains(transaction, sourceId, sourceType)
     await transaction.commit()
   } finally {
     await dropSyncTempTables(client).catch(onError)
     client.release()
   }
-  if (sourceType === 'email') {
-    await bloomRebuildDependencies.invalidateEmailReadyMarker()
-    await bloomRebuildDependencies.enqueueEmailRebuild()
-  } else {
-    await bloomRebuildDependencies.invalidateUrlReadyMarker()
-    await bloomRebuildDependencies.enqueueUrlRebuild()
-  }
+  await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
   return result
 }
 async function stageDesiredDomains(client: PoolClient, response: Response): Promise<void> {
@@ -94,9 +72,10 @@ async function materializeDesiredDomains(client: PoolClient): Promise<void> {
 async function applyDesiredDomains(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
 ): Promise<SyncBlacklistSourceResult> {
   await prepareDomainDiff(query, sourceId)
-  return applyPreparedDomainDiff(query, sourceId)
+  return applyPreparedDomainDiff(query, sourceId, sourceType)
 }
 async function prepareDomainDiff(
   query: TransactionQuery,
@@ -140,6 +119,7 @@ async function materializeDomainDiff(
 async function applyPreparedDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
 ): Promise<SyncBlacklistSourceResult> {
   const [{ rows: addedRows }, { rows: removedRows }] = await Promise.all([
     query<{ count: string }>(
@@ -149,7 +129,7 @@ async function applyPreparedDomainDiff(
       `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${REMOVED_DOMAINS_TABLE}`,
     ),
   ])
-  await persistDomainDiff(query, sourceId)
+  await persistDomainDiff(query, sourceId, sourceType)
   return {
     skipped: false,
     domainsAdded: Number(addedRows[0]?.count ?? 0),
@@ -159,15 +139,21 @@ async function applyPreparedDomainDiff(
 async function persistDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
 ): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- hostname FK owners must exist before block rows; ordered insert/delete projects policy in one transaction.
   await query(
     `/* syncDomainsWithDatabase */
-      INSERT INTO url_hostnames (hostname)
-      SELECT domain FROM ${ADDED_DOMAINS_TABLE}
+      INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+      SELECT domain, CASE WHEN $1::text = 'url' THEN CURRENT_TIMESTAMP ELSE NULL END
+      FROM ${ADDED_DOMAINS_TABLE}
       ORDER BY domain
-      ON CONFLICT (hostname) DO NOTHING
+      ON CONFLICT (hostname) DO UPDATE SET
+        publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
+      WHERE EXCLUDED.publicly_introduced_at IS NOT NULL
+        AND url_hostnames.publicly_introduced_at IS NULL
     `,
+    [sourceType],
   )
   await query(
     `/* syncDomainsWithDatabase */

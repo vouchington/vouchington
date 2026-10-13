@@ -131,9 +131,10 @@ export async function insertLanguageDetectionCrawlForTest(params: {
   const hostnameResult = await write<{
     id: string
   }>(sql`/* insertLanguageDetectionCrawlHostnameForTest */
-    INSERT INTO url_hostnames (hostname)
-    VALUES (${params.hostname})
-    ON CONFLICT (hostname) DO UPDATE SET hostname = EXCLUDED.hostname
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    VALUES (${params.hostname}, CURRENT_TIMESTAMP)
+    ON CONFLICT (hostname) DO UPDATE SET
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
     RETURNING id
   `)
   const hostnameId = hostnameResult.rows[0]!.id

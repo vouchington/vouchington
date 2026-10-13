@@ -40,7 +40,11 @@ app
       query: communityPageQueryInput(ctx.query),
     })
 
-    const result = await searchCommunityListItems(community.id, 'url_hostname', { limit, after })
+    const result = await searchCommunityListItems(community.id, 'url_hostname', {
+      limit,
+      after,
+      currentUser,
+    })
     const entityIds = result.results.map(item => item.entity_id)
 
     if (!currentUser) {

@@ -3,6 +3,7 @@
 [Back to Hostnames API](../../../../../backend/api/v1/hostnames/README.md#get-apiv1hostnamestop)
 
 List top trusted domains across all topics, ranked by net vote score (`votes_score_net DESC`).
+Hostnames known only through email addresses or email blocklists stay private; administrators can see them.
 
 Query parameters:
 

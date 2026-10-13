@@ -4,7 +4,8 @@
 
 Returns the hostname record plus all crawlers associated with it.
 
-Non-admin users receive a 404 for blocked hostnames.
+Non-admin users receive a 404 for blocked hostnames and private email-only hostname identities.
+Administrators can inspect both.
 
 Response: `{ hostname, crawlers: [...], hostname_election: {...} }`
 
