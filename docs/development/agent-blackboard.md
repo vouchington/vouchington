@@ -7,7 +7,7 @@ MCP server, which
 [vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)
 registers once per machine in every harness. No repository file registers an MCP server, plugin, or
 marketplace. The root `package.json` installs `agent-blackboard` as a development dependency for the
-retrospective scripts and the snapshot CLI. Vouchington connects to a **hosted deployment**; there
+snapshot CLI and repository tests. Vouchington connects to a **hosted deployment**; there
 is no local server or database to run.
 
 The package supplies the file-backed `snapshot_export`, `snapshot partition`, and `snapshot cleanup`
@@ -113,9 +113,9 @@ receive the credential; see the
 ## MCP server, JS client, and CLI integration
 
 The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) records feedback through the
-machine-registered `vouchington-tooling` MCP server, which exposes seven tools: `journal_append`,
-`journal_entries`, `outbox_status`, `outbox_flush`, `session_ensure`, `snapshot_export`, and
-`session_archive`. One `journal_append` call carries the note as `markdown` plus mode, source-event
+machine-registered `vouchington-tooling` MCP server, which exposes nine tools: `journal_append`,
+`journal_entries`, `outbox_status`, `outbox_flush`, `session_ensure`, `snapshot_export`,
+`session_archive`, `retrospective_check`, and `retrospective_save`. One `journal_append` call carries the note as `markdown` plus mode, source-event
 id, work outcome, feedback coverage, and repositories; the server builds the validated feedback
 envelope and owns its `timestamp`. An event is its session, source-event id, and content, never its
 timestamp, so a retry is the identical call and reports the stored timestamp, while different
@@ -123,7 +123,7 @@ content under the same source-event id is an `event-conflict`. Raw provider tool
 that delivery contract. Each entry's `data.repositories` lists the repositories it concerns
 (`vouchington/vouchington` unless the caller lists others), and the session's `data.repositories`
 keeps their cumulative union. Interactive mode retains a failed delivery in the worktree's
-`.local/blackboard-outbox`, the same directory `dev/retrospective-save.mts` uses by default;
+`.local/blackboard-outbox`, the same directory `retrospective_save` uses;
 `outbox_flush` delivers every retained record in the worktree, and `journal_append`,
 `outbox_status`, and `outbox_flush` report two counts: `pendingCount` is the calling session's
 unsent records and `worktreePendingCount` is every session's. Autonomous mode has no outbox.
@@ -212,11 +212,14 @@ summaries and completes archival. A group larger than 1 MiB is an explicit failu
 splits a session or silently exceeds the inspection bound. If partitioning fails before a partition
 directory exists, cleanup receives the validated snapshot path and cleanup token without a directory.
 
-Retrospective persistence deliberately remains script-only:
-`dev/retrospective-save.mts` validates UTF-8, required sections, failure grammar, and front matter;
-checks for an existing retrospective; appends typed provenance; and verifies the write by reading
-it back. `journal_append` writes journal entries only and would bypass those repository-owned
-invariants for a retrospective.
+Retrospective persistence goes through `retrospective_check` and `retrospective_save`, never
+`journal_append`. `retrospective_save` runs the repository policy module `dev/agent-policy.mts`
+(declared as `"vouchington-tooling": { "policy": "dev/agent-policy.mts" }` in the root
+`package.json`) in a fresh child process without blackboard credentials; its
+`validateRetrospective` export checks required sections, failure grammar, and the front matter
+(`key: <JSON value>` lines), and any error rejects the save with nothing written. The server appends
+typed provenance and verifies the write by reading it back. `journal_append` writes journal entries
+only and would bypass those repository-owned invariants for a retrospective.
 
 The repository's policy tests pin that no `PreToolUse` matcher can match an `mcp__` tool name,
 because the Bash gates never see MCP calls, and that no repository file registers a server or
@@ -244,9 +247,10 @@ fallback.
 
 ### Root Codex sessions
 
-An interactive root Codex process explicitly identifies itself to the retrospective scripts with
-`--root-codex`; its MCP calls instead carry the explicit `sessionId` the SessionStart check
-printed. Once at the beginning of a new root session with no
+The `retrospective_check` and `retrospective_save` tools take the explicit `sessionId` the
+SessionStart check printed, so retrospectives need no root-Codex flags. The remaining
+`dev/agent-session-id/resolve.mts` resolver still accepts `--root-codex`; an interactive root Codex
+process uses it to identify itself. Once at the beginning of a new root session with no
 `CODEX_THREAD_ID`, it also passes `--new-root-codex-session`, which ignores any old fallback and
 persists a fresh URL-safe `codex-<UUID>` at the ignored `.local/codex-session-id`. Later root
 invocations reuse that value with only `--root-codex`. A real `CODEX_THREAD_ID` always wins; on a
@@ -313,19 +317,19 @@ interactive pending feedback.
 ## Interactive pending delivery
 
 The shared retrospective composer emits validated `work_outcome` and `feedback_coverage` front
-matter. `dev/retrospective-save.mts save --mode interactive|autonomous --file <path>` preserves
-these fields in the stored envelope and rejects contradictory explicit metadata flags. Delivery
-mode remains a required trusted CLI option. See the [save contract](../../.agents/skills/retrospective/saving.md)
-for staging and replay recipes, including manually prepared files. The Vouchington composer
-also stages canonical `repositories`; save preserves the list and rejects conflicting
-`--repository` flags. Manually staged files without repository metadata use explicit flags or
-the current default.
-The `compose --input <json-file>` adapter accepts serializable facts and transcript options, then
+matter. `retrospective_save` takes `mode`, `workOutcome`, and `feedbackCoverage` as arguments and
+rejects front matter that contradicts them. See the
+[save contract](../../.agents/skills/retrospective/saving.md) for the tool arguments, including a
+hand-written `markdown` document. The `compose` argument builds `repositories` front matter; the
+tool preserves the list and rejects a conflicting `repositories` argument.
+The `compose` argument accepts serializable facts and transcript options, then
 constructs its own journal collector from the same session's hosted journal and builds
 `## CI Failures` and `## Sandbox & Permission Audit` from the journal entries alone. A session
 unknown to the hosted blackboard reports both as unavailable. Caller
-JSON cannot supply a collector, credential environment, executable callback, or direct transcript
-path; discovery is bound to the composition session ID.
+input cannot supply a collector, credential environment, executable callback, or direct transcript
+path; facts accept no `repo`, and a pull request in another repository is recorded as
+`{status: "not-assessed", reason}`. Transcript discovery is bound to the harness session that
+launched the server.
 
 `journal_append` and the retrospective writer take an explicit mode (`interactive` or
 `autonomous`). Interactive delivery failures preserve the shared writer's sanitized feedback record
@@ -403,9 +407,9 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 
 ## Files
 
-| File                         | Purpose                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `package.json`               | Pins the published package as a root development dependency                          |
-| `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                |
-| `dev/check-blackboard.mts`   | SessionStart check: prints the hook's session id and probes the hosted connection    |
-| `dev/retrospective-save.mts` | Validated retrospective writer and precheck; the only retrospective persistence path |
+| File                        | Purpose                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `package.json`              | Pins the published package as a root development dependency                                  |
+| `dev/blackboard/client.mts` | Resolves the hosted URL/token and constructs the published JS clients                        |
+| `dev/check-blackboard.mts`  | SessionStart check: prints the hook's session id and probes the hosted connection            |
+| `dev/agent-policy.mts`      | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |

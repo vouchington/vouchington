@@ -68,7 +68,7 @@ other shape below is fully determined structurally and needs no entry content in
 subagent then returns one compact disposition summary: partition index, deduplicated evidence
 themes — each carrying the session IDs that contributed to it, a mapping the root preserves through
 every later merge and deduplication — and each session's disposition. Classify a session's entries
-by `data.type`, per `dev/retrospective-save/retrospective-entry.mts` (`data.type === "retrospective"`
+by `data.type`, per `dev/retrospective-distill/retrospective-entry.mts` (`data.type === "retrospective"`
 marks a retrospective entry), `dev/retrospective-distill/checkpoint-entry.mts` (`isCheckpointEntry`
 marks a historic hook-written journal entry via a structural `data.checkpoint` field, never the
 rendered `## Auto-append: ` heading; hooks no longer append these, so they remain only until

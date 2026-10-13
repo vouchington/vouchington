@@ -33,7 +33,7 @@ Status: none observed
 ${UNASSESSED_RETROSPECTIVE_SECTIONS}`
 
 function doc(frontMatter: string[] = []): string {
-  return ['---', 'date: 2026-10-12', 'issues: []', 'prs: []', ...frontMatter, '---', BODY].join(
+  return ['---', 'date: "2026-10-12"', 'issues: []', 'prs: []', ...frontMatter, '---', BODY].join(
     '\n',
   )
 }
@@ -65,8 +65,47 @@ describe('validateRetrospective', () => {
   })
 
   it('rejects bad front matter', () => {
-    const { errors } = validateRetrospective(input(doc().replace('date: 2026-10-12\n', '')))
+    const { errors } = validateRetrospective(input(doc().replace('date: "2026-10-12"\n', '')))
     expect(errors).toEqual([expect.stringContaining('missing a non-empty "date" field')])
+  })
+
+  it('rejects plain YAML front matter values', () => {
+    const { errors } = validateRetrospective(
+      input(doc().replace('date: "2026-10-12"', 'date: 2026-10-12')),
+    )
+    expect(errors).toEqual([expect.stringContaining('"date" is not a JSON value')])
+  })
+
+  it('rejects a front matter line that is not key: value', () => {
+    const { errors } = validateRetrospective(input(doc(['- block-list'])))
+    expect(errors).toEqual([expect.stringContaining('is not "key: <JSON value>"')])
+  })
+
+  it('accepts CRLF front matter', () => {
+    expect(validateRetrospective(input(doc().replace(/\n/g, '\r\n')))).toEqual({ errors: [] })
+  })
+
+  it.each([
+    ['work_outcome: "success"', 'both work_outcome and feedback_coverage'],
+    ['session_id: ""', '"session_id" field must be a non-empty string'],
+    ['session_id: "bad id"', '"session_id" field must be a valid session id'],
+  ])('rejects front matter %s', (line, message) => {
+    const { errors } = validateRetrospective(input(doc([line])))
+    expect(errors).toEqual([expect.stringContaining(message)])
+  })
+
+  it('rejects an invalid reference', () => {
+    const { errors } = validateRetrospective(input(doc().replace('prs: []', 'prs: [0]')))
+    expect(errors).toEqual([expect.stringContaining('references must be positive integers')])
+  })
+
+  it('accepts paired generated metadata and a session id', () => {
+    const lines = [
+      `session_id: "${SESSION_ID}"`,
+      'work_outcome: "success"',
+      'feedback_coverage: {"status":"partial","sources":[],"droppedCount":0}',
+    ]
+    expect(validateRetrospective(input(doc(lines)))).toEqual({ errors: [] })
   })
 
   it('rejects a missing front-matter block', () => {

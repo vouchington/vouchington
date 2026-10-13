@@ -1,4 +1,3 @@
-import { parse as load } from 'yaml'
 import type { FeedbackReference } from 'vouchington-tooling/agent-blackboard'
 
 import { isValidSessionId } from '../agent-session-id/valid-id.mts'
@@ -18,7 +17,7 @@ export type FrontMatterFields = {
 // provenance-field-set contract, it is not a first-class entry field — it stays
 // readable only inside the stored markdown's own front matter.
 export function parseFrontMatter(markdown: string): FrontMatterFields {
-  const lines = markdown.split('\n')
+  const lines = markdown.split('\n').map(line => line.replace(/\r$/, ''))
   if (lines[0] !== FRONT_MATTER_DELIMITER) {
     throw new Error('retrospective doc is missing a front-matter block (must start with "---")')
   }
@@ -27,16 +26,18 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     throw new Error('retrospective doc front-matter block is not closed with a second "---"')
   }
 
-  let parsed: unknown
-  try {
-    parsed = load(lines.slice(1, endIndex).join('\n'))
-  } catch (err) {
-    throw new Error(`retrospective doc front matter is not valid YAML: ${String(err)}`, {
-      cause: err,
-    })
-  }
-  if (typeof parsed !== 'object' || parsed === null) {
-    throw new Error('retrospective doc front matter must be a YAML mapping')
+  const parsed: Record<string, unknown> = {}
+  for (const line of lines.slice(1, endIndex)) {
+    const match = /^([a-z_]+): (.*)$/.exec(line)
+    if (!match)
+      throw new Error(`retrospective doc front matter line is not "key: <JSON value>": ${line}`)
+    try {
+      parsed[match[1]] = JSON.parse(match[2])
+    } catch (err) {
+      throw new Error(`retrospective doc front matter "${match[1]}" is not a JSON value`, {
+        cause: err,
+      })
+    }
   }
 
   const {
@@ -47,7 +48,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     session_id: sessionId,
     work_outcome: workOutcome,
     feedback_coverage: feedbackCoverage,
-  } = parsed as Record<string, unknown>
+  } = parsed
   if ((workOutcome !== undefined) !== (feedbackCoverage !== undefined))
     throw new Error(
       'retrospective front matter must provide both work_outcome and feedback_coverage',

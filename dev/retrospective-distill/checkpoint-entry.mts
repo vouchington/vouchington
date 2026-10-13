@@ -5,7 +5,7 @@ import type { SessionEntry } from 'agent-blackboard'
 // `type: "journal"` and carry this structural `checkpoint` field, which is the only marker that
 // tells one apart from an agent-written entry — the rendered markdown heading is never inspected
 // (#10978). Session-shape classification (shape.mts) reads it so those sessions stay
-// `checkpoint-only`; mirrors dev/retrospective-save/retrospective-entry.mts (#9149).
+// `checkpoint-only`; mirrors dev/retrospective-distill/retrospective-entry.mts (#9149).
 const CHECKPOINT_KINDS = ['compaction', 'command-failure', 'pr-create', 'push'] as const
 
 const CHECKPOINT_ENTRY_FIELD = 'checkpoint'

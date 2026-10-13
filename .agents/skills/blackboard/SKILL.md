@@ -22,7 +22,7 @@ No repository registers an MCP server, plugin, or marketplace. vouchington-machi
 
 ## Vouchington additions
 
-Retrospectives are saved only through `node dev/retrospective-save.mts`, never `journal_append`.
+Retrospectives are saved only through the `retrospective_check` and `retrospective_save` tools (see the [retrospective skill](../retrospective/SKILL.md)), never `journal_append`.
 Hooks do not journal on your behalf, so your contemporaneous entries are the only journal source.
 
 The SessionStart hook prints `Blackboard sessionId: <id>`. Pass it as the explicit `sessionId` of

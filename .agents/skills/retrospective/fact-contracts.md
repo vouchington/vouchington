@@ -6,7 +6,7 @@ the canonical retrospective skill's evidence boundary.
 
 ## Transcript Facts
 
-`pnpm exec vouchington retrospective-transcript` resolves Codex from `CODEX_THREAD_ID` and nested
+The `compose.transcript` input of `retrospective_save` resolves Codex from `CODEX_THREAD_ID` and nested
 `~/.codex/sessions/**/rollout-*<id>.jsonl` files, including recursive subagents; otherwise it
 resolves Claude Code from `CLAUDE_CODE_SESSION_ID` and `~/.claude/projects/*/<id>.jsonl`, including
 sibling subagent files. Codex takes precedence when both environment IDs exist.
@@ -17,16 +17,18 @@ parent and siblings, not only its children — so recursive traversal follows an
 calls`/`Subagent tokens` therefore reflect only genuine descendants; a leaf session that
 merely ran alongside other threads (rather than spawning any) reports zero subagents.
 
-For a detached session, pass `--session-id <id>` to search both roots, or `--jsonl <path>` for a
-manually recovered transcript (`--jsonl` takes precedence over `--session-id`).
+The transcript is found by `compose.transcript.harnessSessionId`, else by the call's `sessionId`
+when it is a UUID, in the default session roots; a transcript path cannot be supplied. Reads are
+bound to the harness session that launched the server, so after `/clear` or a thread switch
+reconnect the server or pass `{status, reason}`.
 
-When no matching transcript or supported, internally consistent schema can be resolved, the command
-prints `=== Transcript Facts ===` with `Status: unavailable (<reason>)` and exits 0. Use that status
+When no matching transcript or supported, internally consistent schema can be resolved, the composer
+records `=== Transcript Facts ===` with `Status: unavailable (<reason>)`. Use that status
 instead of estimating the numbers yourself.
 
 `Push commands attempted: N` counts every `git push` invocation seen in the transcript, not
 verified remote updates — a push that fails or is rejected still increments it.
-`pnpm exec vouchington retrospective-facts` (in `## Verifiable Facts`) separately derives the
+The `compose.facts` collection (in `## Verifiable Facts`) separately derives the
 reflog-verified update count (`remote_update_count`/`push_like_update_count`). Attempts exceeding
 verified updates is expected, not a discrepancy to explain away — it means at least one push
 failed or was rejected.
@@ -69,9 +71,9 @@ are out of scope unless their failure was emitted inside a GitHub Actions job. N
 logs, environment dumps, credentials, or tokens into the retrospective.
 
 This grammar is enforced programmatically by `validateRetroDoc` in
-[`dev/retrospective-validate.mts`](../../../dev/retrospective-validate.mts) — `node
-dev/retrospective-save.mts save` runs it on the staged doc before appending, and rejects a
-malformed section before any agent-blackboard call. If this doc and the validator ever disagree,
+[`dev/retrospective-validate.mts`](../../../dev/retrospective-validate.mts) — the checkout policy
+(`dev/agent-policy.mts`) runs it on the document inside `retrospective_save` before appending, and
+rejects a malformed section before any agent-blackboard call. If this doc and the validator ever disagree,
 the validator wins; treat the mismatch as a bug in this doc.
 
 ## Required assessments

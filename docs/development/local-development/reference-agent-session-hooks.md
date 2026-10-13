@@ -23,5 +23,5 @@ Cursor and Grok run the `.claude/settings.json` hooks below through Claude-compa
 
 Codex hooks consume their explicit payload `session_id` directly and never write the root-only
 `.local/codex-session-id`: hook metadata cannot distinguish an interactive root from a spawned
-Codex child. The interactive root CLI uses `--root-codex` and, once for an absent-thread new
-session, `--new-root-codex-session`; children never use either flag.
+Codex child. The session-id resolver's interactive root CLI uses `--root-codex` and, once for an
+absent-thread new session, `--new-root-codex-session`; children never use either flag.
