@@ -2,7 +2,10 @@ import { getNotificationsWorkLimit } from './work-limits.mts'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function listCommunityActivityDigestRecipientPage(afterUserId?: string) {
+export async function listCommunityActivityDigestRecipientPage(
+  afterUserId?: string,
+  throughUserId?: string,
+) {
   const COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE = getNotificationsWorkLimit(
     'community_digest_recipient_batch_size',
   )
@@ -22,6 +25,7 @@ export async function listCommunityActivityDigestRecipientPage(afterUserId?: str
       )
   `
   if (afterUserId) query.append(sql` AND cm.user_id > ${afterUserId}`)
+  if (throughUserId) query.append(sql` AND cm.user_id <= ${throughUserId}`)
   query.append(
     sql` ORDER BY cm.user_id LIMIT ${COMMUNITY_ACTIVITY_DIGEST_RECIPIENT_BATCH_SIZE + 1}`,
   )

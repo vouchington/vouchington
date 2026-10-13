@@ -6,9 +6,11 @@ export async function aggregateCommunityActivityDigestBatch(input: {
   recipientIds: string[]
   windowStart: Date
   windowEnd: Date
+  now?: Date
   windowStartId: string
   windowEndId: string
 }): Promise<Array<CommunityActivityDigestCounts & { user_id: string }>> {
+  const now = input.now ?? new Date()
   const { rows } = await read<CommunityActivityDigestCounts & { user_id: string }>(sql`
     /* aggregateCommunityActivityDigestBatch */
     WITH eligible AS (
@@ -21,8 +23,8 @@ export async function aggregateCommunityActivityDigestBatch(input: {
           SELECT 1 FROM user_suspensions us WHERE us.user_id = cm.user_id AND us.lifted_at IS NULL)
         AND (NOT cm.should_suppress_community_digests_while_on_vacation OR NOT EXISTS (
           SELECT 1 FROM community_member_vacations v WHERE v.community_id = cm.community_id
-            AND v.user_id = cm.user_id AND v.starts_at <= CURRENT_TIMESTAMP
-            AND (v.ends_at IS NULL OR v.ends_at > CURRENT_TIMESTAMP)))
+            AND v.user_id = cm.user_id AND v.starts_at <= ${now}
+            AND (v.ends_at IS NULL OR v.ends_at > ${now})))
     ), community_ids AS (SELECT DISTINCT community_id FROM eligible),
     joins AS (
       SELECT cm.community_id, count(*)::int AS value FROM community_members cm
