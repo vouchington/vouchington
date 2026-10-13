@@ -70083,7 +70083,7 @@
         "idx_oauth_refresh_tokens__expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id)",
+          "definition": "CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, family_id, generation, id)",
           "includedColumns": [],
           "keys": [
             {
@@ -70092,6 +70092,20 @@
               "expression": "expires_at",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "family_id",
+              "descending": false,
+              "expression": "family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
             },
             {
               "column": "id",
