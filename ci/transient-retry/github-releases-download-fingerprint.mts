@@ -1,15 +1,28 @@
 /**
- * Shared "GitHub Releases CDN flake" classifier (see AGENTS.md § "How to broaden a
- * fingerprint"). Several tools (gitleaks, Lychee, and Trivy) each download a
- * pinned asset from `.../releases/download/...` at CI setup time and can hit the same class
- * of transient CDN failure — an HTTP 5xx/000 response, a curl transport failure, or a
- * timeout — even though each tool's own log text and terminal-failure marker differ.
+ * Shared GitHub Releases download classifiers.
  *
- * Callers own their own consumer anchor: find their tool-specific terminal-failure marker,
- * slice the log from there, then call this to classify whether that slice looks like a
- * transient CDN flake for the given asset. This function does not itself decide *which* job
- * or terminal marker is in scope — only whether the failure mode is a CDN flake.
+ * Gitleaks and Lychee download pinned assets through `ci/install-github-release.sh`.
+ * Callers keep their own job, installer, and terminal-exit anchors, then call these helpers
+ * on that anchored slice. The helpers do not decide which job or terminal marker is in scope.
+ *
+ * Curl `(22)` with HTTP 000/5xx stays on `hasCurlGithubReleaseTransportFailure`.
+ * `isGithubReleasesDownloadFlake` still requires the asset URL and does not treat curl `(22)`
+ * alone as a CDN flake.
  */
+
+const curlOperationTimeout = 'curl: (28)'
+const curlRecvFailure = 'curl: (56)'
+const curlHttpStatusFailure = /curl: \(22\).* (?:000|5\d\d)/
+
+/** Curl transport failure printed by `ci/install-github-release.sh` before its own exit. */
+export function hasCurlGithubReleaseTransportFailure(log: string): boolean {
+  return (
+    log.includes(curlOperationTimeout) ||
+    log.includes(curlRecvFailure) ||
+    curlHttpStatusFailure.test(log)
+  )
+}
+
 export function isGithubReleasesDownloadFlake(
   logSlice: string,
   assetUrlSubstring: string,
@@ -18,8 +31,8 @@ export function isGithubReleasesDownloadFlake(
     logSlice.includes(assetUrlSubstring) &&
     (/HTTP (?:000|5\d\d)/.test(logSlice) ||
       /Unexpected HTTP response: 5\d\d/.test(logSlice) ||
-      logSlice.includes('curl: (28)') ||
-      logSlice.includes('curl: (56)') ||
+      logSlice.includes(curlOperationTimeout) ||
+      logSlice.includes(curlRecvFailure) ||
       /tim(?:e|ed) out|timeout/i.test(logSlice))
   )
 }
