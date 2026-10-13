@@ -108,6 +108,26 @@ export async function linkTestGooglePlayTokenToForeignContext(
     WHERE id = ${tokenId}`)
 }
 
+export async function rewriteTestGooglePlayTokenDigest(tokenId: string): Promise<void> {
+  const digest = createHash('sha256').update(randomUUID()).digest('hex')
+  await write(sql`/* rewriteTestGooglePlayTokenDigest */
+    UPDATE membership_google_play_purchase_tokens
+    SET purchase_token_lookup_sha256 = ${digest}
+    WHERE id = ${tokenId}`)
+}
+
+export async function overwriteTestGooglePlayTokenFetchedAt(tokenId: string): Promise<void> {
+  await write(sql`/* overwriteTestGooglePlayTokenFetchedAt */
+    UPDATE membership_google_play_purchase_tokens
+    SET fetched_at = fetched_at + INTERVAL '1 second'
+    WHERE id = ${tokenId}`)
+}
+
+export async function deleteTestGooglePlayTokenAlias(tokenId: string): Promise<void> {
+  await write(sql`/* deleteTestGooglePlayTokenAlias */
+    DELETE FROM membership_google_play_purchase_tokens WHERE id = ${tokenId}`)
+}
+
 export async function createTestMalformedGooglePlayMembershipVerification(options: {
   applicationId: string
   userId: string

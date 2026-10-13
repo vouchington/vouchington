@@ -20,6 +20,33 @@ ALTER TABLE membership_google_play_purchase_tokens
 CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context
   BEFORE INSERT OR UPDATE ON membership_google_play_purchase_tokens
   FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('google_play');
+CREATE OR REPLACE FUNCTION fn_reject_membership_google_play_purchase_token_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Google Play token aliases cannot be deleted';
+  END IF;
+
+  IF ROW(
+    NEW.id, NEW.membership_provider_context_id, NEW.purchase_token_lookup_sha256,
+    NEW.encrypted_purchase_token, NEW.membership_provider_lineage_id
+  ) IS DISTINCT FROM ROW(
+    OLD.id, OLD.membership_provider_context_id, OLD.purchase_token_lookup_sha256,
+    OLD.encrypted_purchase_token, OLD.membership_provider_lineage_id
+  ) OR (OLD.fetched_at IS NOT NULL AND NEW.fetched_at IS DISTINCT FROM OLD.fetched_at)
+    OR (OLD.linked_purchase_token_id IS NOT NULL
+      AND NEW.linked_purchase_token_id IS DISTINCT FROM OLD.linked_purchase_token_id)
+  THEN
+    RAISE EXCEPTION 'Google Play token aliases only allow first-fetch and predecessor enrichment';
+  END IF;
+
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_google_play_purchase_tokens_guard
+  BEFORE UPDATE OR DELETE ON membership_google_play_purchase_tokens
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_google_play_purchase_token_mutation();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__context_token ON membership_google_play_purchase_tokens (membership_provider_context_id, purchase_token_lookup_sha256);
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__lineage ON membership_google_play_purchase_tokens (membership_provider_lineage_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_purchase_tokens__successor ON membership_google_play_purchase_tokens (linked_purchase_token_id) WHERE linked_purchase_token_id IS NOT NULL;

@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  deleteTestGooglePlayTokenAlias,
   getTestGooglePlayTokenAlias,
   linkTestGooglePlayTokenToForeignContext,
+  overwriteTestGooglePlayTokenFetchedAt,
   persistTestGooglePlayResolvedLineage,
   persistTestGooglePlayTokenLineage,
+  rewriteTestGooglePlayTokenDigest,
 } from '@voucha/test-helpers/google-play-memberships-persistence'
 import {
   GooglePlayLineageConflictError,
@@ -17,6 +20,33 @@ import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play token lineage', () => {
+  it('keeps a fetched token alias identity and first fetch immutable', async () => {
+    const applicationId = `ai.voucha.lineage-${randomUUID()}`
+    const predecessor = `predecessor-${randomUUID()}`
+    const token = `token-${randomUUID()}`
+    const digest = tokenDigest(token)
+    await persistTestGooglePlayResolvedLineage({
+      applicationId,
+      resolved: {
+        rootToken: predecessor,
+        rootDigest: tokenDigest(predecessor),
+        currentSubscription: {},
+        tokens: [{ token, linkedToken: predecessor, fetched: true }],
+      },
+    })
+    const alias = await getTestGooglePlayTokenAlias({ applicationId, digest })
+    expect(alias?.fetchedAt).toBeInstanceOf(Date)
+    expect(alias?.linkedId).not.toBeNull()
+    await expect(rewriteTestGooglePlayTokenDigest(alias!.id)).rejects.toMatchObject({
+      code: 'P0001',
+    })
+    await expect(overwriteTestGooglePlayTokenFetchedAt(alias!.id)).rejects.toMatchObject({
+      code: 'P0001',
+    })
+    await expect(deleteTestGooglePlayTokenAlias(alias!.id)).rejects.toMatchObject({ code: 'P0001' })
+    expect(await getTestGooglePlayTokenAlias({ applicationId, digest })).toEqual(alias)
+  })
+
   it('deduplicates a reported predecessor and preserves its first fetched timestamp on replay', async () => {
     const applicationId = `ai.voucha.lineage-${randomUUID()}`
     const predecessor = `predecessor-${randomUUID()}`
