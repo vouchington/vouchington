@@ -77,7 +77,12 @@ Code exchange locks the code row before validating and atomically writes its tok
 rotation locks the family and presented token before consuming it and creating one successor. Reuse
 revokes the family and every access token derived from it. Every access token has a non-null,
 composite foreign key to the same grant and refresh family, so cross-grant revocation state is
-unrepresentable. Suspended grant owners cannot exchange, refresh, or authenticate credentials.
+unrepresentable. A suspended grant owner cannot approve a new authorization or exchange an
+authorization code. An existing grant can still refresh, and access-token validation does not
+reject it for suspension. The user MCP server decides suspension on each request: only a suspended
+owner with a current Plus or Pro plan authenticates there, and only for the tools that declare
+suspended access. Every other suspended owner, including every caller of the admin server, is
+rejected at that authentication step.
 
 ## Management
 

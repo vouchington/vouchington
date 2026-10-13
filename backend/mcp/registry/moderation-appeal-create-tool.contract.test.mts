@@ -259,7 +259,7 @@ describe('create_moderation_appeal — real store', () => {
     await expectNothingWritten(caller.id)
   })
 
-  it('requires the write scope, the Plus plan and an unsuspended owner', async () => {
+  it('requires the write scope and the Plus plan, and admits a suspended Plus owner', async () => {
     const caller = await createTestPlusMcpCaller()
     const input = args(await warningFor(caller.id))
 
@@ -269,13 +269,29 @@ describe('create_moderation_appeal — real store', () => {
     expect(
       await callRejectedMcpTool({ ...caller, membership_plan: null }, TOOL, input, SCOPES),
     ).toContain('requires a higher plan')
+    await expectNothingWritten(caller.id)
+
     await suspendTestUser(caller.id)
     try {
-      expect(await callRejectedMcpTool(caller, TOOL, input, SCOPES)).toContain('suspended')
+      expect(
+        await callStructuredMcpTool({ ...caller, suspended: true }, TOOL, input, SCOPES),
+      ).toMatchObject({ success: true, is_duplicate: false })
     } finally {
       await unsuspendTestUser(caller.id)
     }
+    expect(await countTestModerationAppealsByAppellant(caller.id)).toBe(1)
 
-    await expectNothingWritten(caller.id)
+    const free = await createTestUser()
+    await suspendTestUser(free.id)
+    expect(
+      await callRejectedMcpTool(
+        { ...free, membership_plan: null, suspended: true },
+        TOOL,
+        args(await warningFor(free.id)),
+        SCOPES,
+      ),
+    ).toContain('requires a higher plan')
+    await unsuspendTestUser(free.id)
+    await expectNothingWritten(free.id)
   })
 })

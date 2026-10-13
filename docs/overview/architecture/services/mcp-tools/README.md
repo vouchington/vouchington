@@ -119,12 +119,21 @@ trending query parameters, so contract tests pin `after` and `limit`.
 
 Each `tools/call` request re-enforces the same checks as `tools/list`:
 
-1. Tool surface must match the route config: `mcp` for `/api/v1/mcp`, `admin_mcp` for `/api/v1/admin/mcp`
-2. Role check (`isToolAllowedForUser`)
-3. Plan check (`isToolAllowedForPlan`)
-4. Operator switch check: a disabled tool is `not_found`, with no tool name in its audit row and
+1. Suspension. `authenticateMcpBearer` reloads the owner on every request. A suspended owner
+   authenticates only on the user server, and only while `membership_plan` is `plus` or `pro` from
+   `view_current_paid_memberships`. That principal is marked `suspended`. Listing and calling then
+   admit only tools with `meta.suspendedAccess` (`create_moderation_appeal` and
+   `read_my_moderation_appeals`). Any other tool is an in-band denial whose message is the slug
+   `suspended`, audited as `suspended`, before role, plan, and scope. Every other suspended owner
+   is `invalid`, including every suspended owner on the admin server, and writes no audit row.
+   Lifting the suspension or losing the paid plan takes effect on the next request. There is no
+   special case for `paused` or `pause_collection`.
+2. Tool surface must match the route config: `mcp` for `/api/v1/mcp`, `admin_mcp` for `/api/v1/admin/mcp`
+3. Role check (`isToolAllowedForUser`)
+4. Plan check (`isToolAllowedForPlan`)
+5. Operator switch check: a disabled tool is `not_found`, with no tool name in its audit row and
    no scope step-up. The request uses one switch snapshot for listing and calling.
-5. Scope check: every surfaced tool declares nonempty canonical required scopes; missing scopes
+6. Scope check: every surfaced tool declares nonempty canonical required scopes; missing scopes
    hide the tool and reject direct calls.
 
 `authorizeMcpTool` in `resolve-tool-call.mts` is the single policy for both, so listing and calling
@@ -140,8 +149,9 @@ compatible superset while resource-scoped credentials are preferred.
 
 `McpServerConfig.acceptsApiKeys` is `true` for the user route and `false` for the admin route.
 `authenticateMcpBearer` always tries OAuth first (`validateOAuthAccessToken`, which owns expiry,
-revocation of the token, grant, and client, user deletion or suspension, and the exact protected
-resource) and reaches the API-key path only when the route accepts keys. An API key sent to
+revocation of the token, grant, and client, user deletion, and the exact protected resource) and
+reaches the API-key path only when the route accepts keys. Grant-user suspension is not an
+access-token or refresh check; the rule above decides it for both credentials. An API key sent to
 `/api/v1/admin/mcp` therefore fails as an unrecognized credential: `401` with an `invalid_token`
 challenge. `mcp.admin:read` and `mcp.admin:write` accept only the `oauth` scope surface, so API-key
 creation rejects them too.
@@ -177,16 +187,16 @@ Every call a verified principal makes to the user or admin route writes an appen
 principal is an OAuth access token on either route, or an API key on the user route. The table is
 range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived from the id.
 
-| Column                                   | Contents                                                                                                                                                               |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor_user_id`                          | Credential owner, through `retained_user_identities`, so the record survives hard deletion                                                                             |
-| `oauth_client_id`, `api_key_id`          | Exactly one is set (a `CHECK`): a foreign key to the OAuth client the token was issued to, or to the API key's `retained_api_key_identities` row                       |
-| `resource`                               | Protected resource URL of the route called                                                                                                                             |
-| `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                            |
-| `tool_option`                            | Selected registered option for a merged tool, otherwise `NULL`                                                                                                         |
-| `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
-| `copyright_rationale_ciphertext`         | Typed encrypted rationale for an admitted, validated copyright decision call; bound to the audit event id                                                              |
-| `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |
+| Column                                   | Contents                                                                                                                                                                            |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `actor_user_id`                          | Credential owner, through `retained_user_identities`, so the record survives hard deletion                                                                                          |
+| `oauth_client_id`, `api_key_id`          | Exactly one is set (a `CHECK`): a foreign key to the OAuth client the token was issued to, or to the API key's `retained_api_key_identities` row                                    |
+| `resource`                               | Protected resource URL of the route called                                                                                                                                          |
+| `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                                         |
+| `tool_option`                            | Selected registered option for a merged tool, otherwise `NULL`                                                                                                                      |
+| `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `suspended`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
+| `copyright_rationale_ciphertext`         | Typed encrypted rationale for an admitted, validated copyright decision call; bound to the audit event id                                                                           |
+| `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                                    |
 
 - **One row per JSON-RPC message.** A batch writes its rows in order under one correlation id in a
   single insert; a batch above 25 messages is refused with `413` and one `invalid_request` row.

@@ -25,6 +25,7 @@ const tool: MergedToolSource<Args, Result> = {
     surfaces: ['mcp'],
     title: 'Get My Moderation Appeal',
     requiredScopes: { mcp: ['appeals:read'] },
+    suspendedAccess: true,
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/appeals/:id' }],
     outputSchema: successSchema({ appeal: APPEAL_SCHEMA }),

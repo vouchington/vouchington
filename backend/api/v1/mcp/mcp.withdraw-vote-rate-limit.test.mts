@@ -158,7 +158,13 @@ describe('MCP withdraw vote shares the REST vote budget', () => {
     ).toMatchObject({ status: 404 })
     await suspendTestUser(user.id)
     suspended.push(user.id)
-    await withdraw(token, relationId).expect(401)
+    // A suspended Plus owner still authenticates. Withdrawal is not an appeal tool, so the call is
+    // denied in band and the remaining vote stays unspent.
+    expect((await withdraw(token, relationId).expect(200)).body).toEqual({
+      jsonrpc: '2.0',
+      id: 1,
+      error: { code: -32600, message: 'MCP error -32600: suspended' },
+    })
     await unsuspendTestUser(user.id)
     suspended.pop()
 

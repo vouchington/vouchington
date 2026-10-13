@@ -26,6 +26,7 @@ type UserForClassification = {
   id: string
   roles: readonly string[]
   membership_plan: 'plus' | 'pro' | null
+  suspended?: boolean
 }
 
 const INVALID_REQUEST: McpCallAuditEvent = {

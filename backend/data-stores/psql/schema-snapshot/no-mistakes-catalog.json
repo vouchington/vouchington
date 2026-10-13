@@ -550,6 +550,7 @@
         "not_found",
         "role_denied",
         "plan_denied",
+        "suspended",
         "scopes_undeclared",
         "insufficient_scope",
         "rate_limited"
@@ -49798,7 +49799,7 @@
           "validated": true
         },
         "mcp_call_audit_events_outcome_check": {
-          "definition": "CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))",
+          "definition": "CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'suspended'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))",
           "validated": true
         },
         "mcp_call_audit_events_resource_check": {

@@ -243,7 +243,7 @@ describe('user MCP call audit', () => {
       await expect(readTestMcpCallAuditEvents(user.id)).resolves.toEqual([])
     })
 
-    it('writes no audit row for an access token whose owner is suspended', async () => {
+    it('writes no audit row for an access token whose suspended owner has no paid plan', async () => {
       const user = await createTestUser()
       const { tokens } = await issueTestOAuthTokensForClient(user, { scope: 'topics:read' })
       await suspendTestUser(user.id)

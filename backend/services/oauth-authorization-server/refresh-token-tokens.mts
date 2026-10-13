@@ -96,12 +96,6 @@ async function lockRefreshToken(
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
      JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
      WHERE refresh.token_hash = $1
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_suspensions AS suspension
-         WHERE suspension.user_id = oauth_grant.user_id
-           AND suspension.lifted_at IS NULL
-       )
      FOR UPDATE OF refresh, family, oauth_grant`,
     [hashToken(OAUTH_SECRET_PURPOSES.refreshToken, rawToken)],
   )

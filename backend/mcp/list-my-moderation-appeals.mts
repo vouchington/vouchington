@@ -38,6 +38,7 @@ const tool: MergedToolSource<Args, Result> = {
     surfaces: ['mcp'],
     title: 'List My Moderation Appeals',
     requiredScopes: { mcp: ['appeals:read'] },
+    suspendedAccess: true,
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/appeals' }],
     outputSchema: foundOrNotFoundSchema({

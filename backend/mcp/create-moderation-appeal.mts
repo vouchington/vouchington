@@ -8,7 +8,7 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { APPEAL_SCHEMA, toMcpAppeal, type McpAppeal } from './mcp-case-output.mts'
 import { successSchema } from './output-schema-shapes.mts'
-import { requireActiveToolUser } from './private-user.mts'
+import { requirePrivateToolUser } from './private-user.mts'
 
 type Args = {
   idempotency_key: string
@@ -25,7 +25,7 @@ const tool: Tool<Args, Result> = {
     name: 'create_moderation_appeal',
     type: 'function',
     description:
-      "Appeal a moderation decision against the current user: a warning, a community ban or the removal of one of their posts. target_type says which and target_id is the id of the warning, the ban or the removed post. post_removal_kind is only for a removal, and tells a platform removal from a community removal when the post has both. appeal_reason is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND when the decision does not exist or is already revoked or lifted, with FORBIDDEN when it is not the current user's, and with INVALID_INPUT when the post has not been removed. Appealing a decision that already has an open appeal from the user updates that appeal and returns is_duplicate true. Moderators decide the appeal; read the outcome with read_my_moderation_appeals (option get). A suspended account cannot use MCP at all, so an account suspension is appealed on the web. Returns the appeal.",
+      "Appeal a moderation decision against the current user: a warning, a community ban or the removal of one of their posts. target_type says which and target_id is the id of the warning, the ban or the removed post. post_removal_kind is only for a removal, and tells a platform removal from a community removal when the post has both. appeal_reason is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND when the decision does not exist or is already revoked or lifted, with FORBIDDEN when it is not the current user's, and with INVALID_INPUT when the post has not been removed. Appealing a decision that already has an open appeal from the user updates that appeal and returns is_duplicate true. Moderators decide the appeal; read the outcome with read_my_moderation_appeals (option get). A suspended Plus or Pro member can file this appeal. An account suspension itself is appealed on the web. Returns the appeal.",
     parameters: {
       type: 'object',
       properties: {
@@ -52,13 +52,14 @@ const tool: Tool<Args, Result> = {
     surfaces: ['mcp'],
     title: 'Appeal Moderation Decision',
     plan: 'plus',
+    suspendedAccess: true,
     requiredScopes: { mcp: ['appeals:read', 'appeals:write'] },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/appeals' }],
     outputSchema: successSchema({ appeal: APPEAL_SCHEMA, is_duplicate: { type: 'boolean' } }),
   },
   function: currentUser => async (args, invocationContext) => {
-    const user = await requireActiveToolUser(currentUser)
+    const user = await requirePrivateToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
     const input = parseCreateModerationAppealInput({
       target_type: args.target_type,
