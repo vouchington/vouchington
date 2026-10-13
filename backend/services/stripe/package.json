@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@services/users": "workspace:^",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "@voucha/test-helpers": "workspace:^"
   }
 }
