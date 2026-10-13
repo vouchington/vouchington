@@ -1,5 +1,6 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { read } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
 import onError from '@modules/on-error'
 import { chunkArray } from '@services/rss-feed-items/processing-limits'
@@ -42,7 +43,7 @@ export async function persistFeedMetadataAndReconcileLanguage(
   oldFeedType: 'article' | 'podcast' | 'video' | 'mixed' | null = null,
   deps: ReconcileLanguageDeps = {},
 ): Promise<void> {
-  const readFn = deps.readImpl ?? read
+  const readFn: QueryExecutor = deps.readImpl ?? read
   const updateRssFeedByIdFn = deps.updateRssFeedByIdImpl ?? updateRssFeedById
   const enqueueBulkLanguageDetectionFn =
     deps.enqueueBulkLanguageDetectionImpl ?? enqueueBulkLanguageDetection
@@ -117,7 +118,7 @@ async function reenqueueItemLanguageDetectionIfNeeded(
   rssFeedId: string,
   declaredLanguage: string | null,
   oldDeclaredLanguage: string | null,
-  readFn: typeof read,
+  readFn: QueryExecutor,
   enqueueBulkLanguageDetectionFn: typeof enqueueBulkLanguageDetection,
 ): Promise<void> {
   const RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE = getRssFeedItemsWorkLimit('enqueue_batch_size')

@@ -22,6 +22,8 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/users/get-public-batch.mts',
         'backend/services/crawls/get-html-by-url-ids.mts',
         'backend/services/bedrock-embeddings-batch/orchestrator/results.mts',
+        'backend/services/users/get.mts',
+        'backend/services/rss-feeds/reconcile-item-language.mts',
       ]
       const sources = paths.map(fileName => ({
         fileName,
@@ -35,6 +37,9 @@ describe('current EXPLAIN read inventory', () => {
         'getPublicUsersByAnyBatch',
         'getLatestHtmlByUrlIds',
         'downloadBatchResults',
+        'getPublicUserByAny',
+        'getPrivateUserByAny',
+        'reenqueueItemLanguageDetectionIfNeeded',
       ]) {
         expect(names.filter(candidate => candidate === name)).toHaveLength(1)
       }
