@@ -53,11 +53,6 @@ export function buildCoverageReport(
     existing.push(result)
     captures.set(annotation, existing)
   }
-  const annotationCounts = new Map<string, number>()
-  for (const fact of facts) {
-    if (fact.annotation)
-      annotationCounts.set(fact.annotation, (annotationCounts.get(fact.annotation) ?? 0) + 1)
-  }
   let annotatedStatements = 0
   let reads = 0
   let coveredReads = 0
@@ -76,9 +71,7 @@ export function buildCoverageReport(
       matchingCaptures.some(result =>
         matchesCapturedSql(fact.sqlText, annotation, result.query_text),
       )
-    const uniqueIncomplete =
-      !fact.complete && fact.kind !== 'dynamic' && (annotationCounts.get(annotation) ?? 0) === 1
-    if (matchingCaptures.length > 0 && (exactMatch || uniqueIncomplete)) {
+    if (matchingCaptures.length > 0 && exactMatch) {
       coveredReads++
       continue
     }

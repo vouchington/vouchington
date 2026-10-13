@@ -26,9 +26,7 @@ export async function getPrioritizedReferralLinks(
   )
   const all = options?.all ?? false
 
-  const query = sql`/* getPrioritizedReferralLinks */
-WITH
-excluded_users AS (
+  const query = sql`excluded_users AS (
   SELECT object_id AS user_id FROM relation__user__mute__user
   WHERE subject_id = ${currentUserId}::uuid AND deleted_at IS NULL
   UNION ALL
@@ -184,6 +182,11 @@ ranked AS (
   appendPrioritizedRankingColumns(query)
   appendPrioritizedLinksQuery(query, { all, limit })
 
-  const { rows } = await read(query)
+  const { rows } = await read(
+    `/* getPrioritizedReferralLinks */
+WITH
+${query.text}`,
+    query.values,
+  )
   return buildPrioritizedReferralLinksResult(rows as PrioritizedReferralLink[])
 }
