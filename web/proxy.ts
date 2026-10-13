@@ -4,6 +4,7 @@ import { decodeSessionJwt } from '@ts-shared/session-jwt'
 import { isBackendPath, shouldBypassProxyPath } from '@/lib/utils/routes'
 import { safeFeatureFlagCookiePart } from '@/lib/feature-flags/shared'
 import { recordProxyReferralAttribution, refreshProxySession } from '@/lib/api/server/proxy'
+import { tagPostDetailCacheFill } from '@/lib/api/server/post-detail-cache-tags'
 import { LANDING_PAGE_HANDLE_RE } from '@/lib/utils/path'
 import { hasGlobalPrivacyControlHeader } from '@/lib/privacy/global-privacy-control'
 
@@ -171,6 +172,8 @@ async function proxy(request: NextRequest) {
   const response = rewriteUrl
     ? NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } })
+
+  await tagPostDetailCacheFill(response, request, backendUrl)
 
   // Set validated session cookies for authenticated sessions refreshed by the backend.
   // Anonymous sessions are handled by the Cloudflare Worker (Set-Cookie already sent).

@@ -11,6 +11,7 @@ const {
   const cookiesSet = vi.fn<VitestLooseMock>()
   const nextResponseNext = vi.fn<VitestLooseMock>(() => ({
     cookies: { set: cookiesSet },
+    headers: new Headers(),
   }))
   const nextResponseRewrite = vi.fn<VitestLooseMock>(() => ({
     cookies: { set: cookiesSet },
@@ -105,7 +106,7 @@ function installProxyTestDoubles() {
   })
   vi.stubGlobal('fetch', fetchMock)
   vi.mocked(isbot).mockReturnValue(false)
-  mockNextResponseNext.mockReturnValue({ cookies: { set: mockCookiesSet } })
+  mockNextResponseNext.mockReturnValue({ cookies: { set: mockCookiesSet }, headers: new Headers() })
   mockNextResponseRewrite.mockReturnValue({ cookies: { set: mockCookiesSet } })
   mockAfter.mockImplementation((fn: () => unknown) => fn())
   mockDecodeSessionJwt.mockReturnValue(null)

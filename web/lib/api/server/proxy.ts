@@ -1,5 +1,36 @@
 import { buildWorkerSecretHeader } from '../worker-secret'
 import { buildWebClientInfoHeaders } from './client-info'
+import { isValidCacheTag } from '@vouchington/utils/cache-tags'
+
+export async function getPostAuthorCacheTag(
+  backendUrl: string,
+  idOrSlug: string,
+): Promise<{ ok: true; tag: string | null } | { ok: false }> {
+  try {
+    const url = buildBackendApiUrl(backendUrl, `/api/v1/posts/${idOrSlug}`)
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        ...buildWorkerSecretHeader(),
+        ...buildWebClientInfoHeaders(),
+      },
+      signal: AbortSignal.timeout(3000),
+    })
+    if (!response.ok) {
+      await response.body?.cancel()
+      return { ok: false }
+    }
+    const tag = response.headers.get('Cache-Tag')
+    await response.body?.cancel()
+    if (tag !== null && (!isValidCacheTag(tag) || !tag.startsWith('user:'))) {
+      return { ok: false }
+    }
+    return { ok: true, tag }
+  } catch {
+    return { ok: false }
+  }
+}
 
 export interface ProxySessionResponse {
   uid?: string | null

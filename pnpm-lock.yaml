@@ -13623,6 +13623,9 @@ importers:
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
+      '@ts-shared/cache':
+        specifier: workspace:^
+        version: link:../ts-shared/cache
       '@ts-shared/data-points':
         specifier: workspace:^
         version: link:../ts-shared/data-points
@@ -13662,6 +13665,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.2.0
         version: 0.2.0
+      '@vouchington/utils':
+        specifier: ^0.5.3
+        version: 0.5.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

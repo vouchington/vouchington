@@ -240,16 +240,12 @@ describe('CachedOrigin.fetch', () => {
     globalThis.fetch = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('ok', { headers: { 'content-type': 'text/html' } })),
     ) as unknown as typeof fetch
-
-    // /user/alice is a web-rendered detail page — needs WEB_ORIGIN (not BACKEND_ORIGIN) so
-    // resolveOrigin() succeeds and the request reaches the Cache-Tag-setting code below.
     const origin = buildOrigin(
       { audience: 'anon', isRsc: false },
       { WEB_ORIGIN: 'https://web.example.com' },
     )
     const taggedResponse = await origin.fetch(new Request('https://voucha.ai/user/alice'))
     expect(taggedResponse.headers.get('Cache-Tag')).toBe('user:alice')
-
     const fallbackResponse = await origin.fetch(new Request('https://voucha.ai/'))
     expect(fallbackResponse.headers.get('Cache-Tag')).toBe('html')
   })
@@ -257,7 +253,9 @@ describe('CachedOrigin.fetch', () => {
   it('adds an origin dependency tag to a post detail cache entry', async () => {
     let originTag = 'user:author-id'
     globalThis.fetch = vi.fn<VitestLooseMock>(() =>
-      Promise.resolve(new Response('ok', { headers: { 'Cache-Tag': originTag } })),
+      Promise.resolve(
+        new Response('ok', { headers: { 'Cache-Tag': originTag, 'content-type': 'text/html' } }),
+      ),
     ) as unknown as typeof fetch
     const origin = buildOrigin(
       { audience: 'anon', isRsc: false },
@@ -265,6 +263,11 @@ describe('CachedOrigin.fetch', () => {
     )
     const response = await origin.fetch(new Request('https://voucha.ai/api/v1/posts/post-id'))
     expect(response.headers.get('Cache-Tag')).toBe('post:post-id,user:author-id')
+    const html = await buildOrigin(
+      { audience: 'anon', isRsc: false },
+      { WEB_ORIGIN: 'https://web.example.com' },
+    ).fetch(new Request('https://voucha.ai/discussion/post-id'))
+    expect(html.headers.get('Cache-Tag')).toBe('post:post-id,user:author-id')
     originTag = 'user:author-id,post:other-post'
     const malformed = await origin.fetch(new Request('https://voucha.ai/api/v1/posts/post-id'))
     expect(malformed.headers.get('Cache-Tag')).toBe('post:post-id')
