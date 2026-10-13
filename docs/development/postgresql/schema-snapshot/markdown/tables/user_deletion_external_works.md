@@ -54,4 +54,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_user_deletion_external_works_stripe_lineage`: `CREATE TRIGGER trigger_user_deletion_external_works_stripe_lineage BEFORE INSERT OR UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_user_deletion_external_work()`
 - `trigger_user_deletion_external_works_updated_at`: `CREATE TRIGGER trigger_user_deletion_external_works_updated_at BEFORE UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -1602,6 +1602,9 @@
     "fn_reject_non_stripe_membership_purchase_intent_checkout": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_reject_non_stripe_user_deletion_external_work": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.work_kind = 'stripe-customer' AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_lineages lineage\n    INNER JOIN membership_provider_contexts context\n      ON context.id = lineage.membership_provider_context_id\n    WHERE lineage.id = NEW.membership_provider_lineage_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'Stripe customer deletion work requires a Stripe lineage' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_reject_ownerless_image_surface_retirement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  FOR UPDATE;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -57022,11 +57025,11 @@
       "comment": "Append-only financial ledger of Stripe refunds issued or reconciled.",
       "foreignKeys": {
         "fk_membership_refunds__administrator_request": {
-          "columns": ["membership_operation_id"],
-          "definition": "FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE RESTRICT",
+          "columns": ["membership_operation_id", "stripe_idempotency_key"],
+          "definition": "FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["membership_operation_id"],
+          "referencedColumns": ["membership_operation_id", "administrator_request_key"],
           "referencedTable": "membership_administrator_refund_operation_requests",
           "validated": true
         },
@@ -120740,6 +120743,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_user_deletion_external_works_stripe_lineage": "CREATE TRIGGER trigger_user_deletion_external_works_stripe_lineage BEFORE INSERT OR UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_reject_non_stripe_user_deletion_external_work()",
         "trigger_user_deletion_external_works_updated_at": "CREATE TRIGGER trigger_user_deletion_external_works_updated_at BEFORE UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {

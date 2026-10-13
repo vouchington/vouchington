@@ -971,6 +971,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_inten
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_non_stripe_user_deletion_external_work`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_ownerless_image_surface_retirement`
 
 ```sql
