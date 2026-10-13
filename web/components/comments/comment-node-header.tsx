@@ -102,7 +102,7 @@ export function CommentNodeHeader(props: CommentNodeHeaderProps) {
             </>
           )}
           {t('extracted.comments.commentNodeHeader.childrenCount_8f9bff0a', {
-            childrenCount: props.childrenCount,
+            count: props.childrenCount,
           })}
         </span>
       )}

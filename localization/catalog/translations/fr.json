@@ -646,7 +646,7 @@
 {"id":"copy.extracted.comments.commentNodeEditForm.editComment_4f346f77","value":"Modifier le commentaire"},
 {"id":"copy.extracted.comments.commentNodeEditForm.failedToSaveComment_78443791","value":"Impossible d'enregistrer le commentaire"},
 {"id":"copy.extracted.comments.commentNodeEditForm.saving_dc85af8f","value":"Enregistrement en cours..."},
-{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":"{childrenCount} children"},
+{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":{"one":"{count} réponse","other":"{count} réponses"}},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentMetadataRow_8a8a973e","value":"Réduire la ligne de métadonnées du commentaire"},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentThread_24e66c3a","value":"Réduire le fil de commentaires"},
 {"id":"copy.extracted.comments.commentNodeHeader.expandCommentMetadataRow_4e8596a4","value":"Développer la ligne de métadonnées du commentaire"},

@@ -646,7 +646,7 @@
 {"id":"copy.extracted.comments.commentNodeEditForm.editComment_4f346f77","value":"Edit comment"},
 {"id":"copy.extracted.comments.commentNodeEditForm.failedToSaveComment_78443791","value":"Failed to save comment"},
 {"id":"copy.extracted.comments.commentNodeEditForm.saving_dc85af8f","value":"Saving..."},
-{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":"{childrenCount} children"},
+{"id":"copy.extracted.comments.commentNodeHeader.childrenCount_8f9bff0a","value":{"one":"{count} reply","other":"{count} replies"}},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentMetadataRow_8a8a973e","value":"Collapse comment metadata row"},
 {"id":"copy.extracted.comments.commentNodeHeader.collapseCommentThread_24e66c3a","value":"Collapse comment thread"},
 {"id":"copy.extracted.comments.commentNodeHeader.expandCommentMetadataRow_4e8596a4","value":"Expand comment metadata row"},
