@@ -79,8 +79,8 @@ export async function insertTestUrlHostname(options: {
   is_crawlable?: boolean
 }): Promise<string> {
   const result = options.id
-    ? await write(sql`INSERT INTO url_hostnames (id, hostname, is_crawlable)
-        VALUES (${options.id}, ${options.hostname}, ${options.is_crawlable ?? false}) RETURNING id`)
+    ? await write(sql`/* insertTestUrlHostname:explicitId */ INSERT INTO url_hostnames (id, hostname, is_crawlable, is_emailable)
+        VALUES (${options.id}, ${options.hostname}, ${options.is_crawlable ?? false}, ${options.is_emailable === undefined ? null : options.is_emailable}) RETURNING id`)
     : await write(buildInsertUrlHostnameQuery(options.hostname, options, true))
   const hostnameId = result.rows[0].id as string
   // If is_blocked is requested, insert a history row so getTestHostnameRow returns consistent results.

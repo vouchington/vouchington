@@ -36,7 +36,7 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | crawl_referral_links                         | crawl_referral_link                            | crawl                                    | 10               |
 | crawl-dispatch                               | boilerplate_removal_dispatcher                 | —                                        | 100              |
 | crawl-dispatch                               | boilerplate_removal                            | —                                        | 10               |
-| crawl-dispatch                               | crawl-dispatch_dispatcher                      | —                                        | 100              |
+| crawl-dispatch                               | crawl_hostnames_dispatcher                     | —                                        | 100              |
 | crawl-dispatch                               | enqueueCrawlHostnamesDispatcher                | —                                        | 100              |
 | crawl-dispatch                               | crawl_urls_per_hostname_dispatcher             | —                                        | 100              |
 | crawl-dispatch                               | crawl_tier1_dispatcher                         | —                                        | 100              |
