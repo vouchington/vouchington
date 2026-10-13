@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { finalizePostUpdateAndDeliver } from './post-commit-delivery.mts'
 import type { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { startPostCacheInvalidation } from '@services/entity-cache/invalidate'
 import type onError from '@modules/on-error'
 import { onPostCommitCompletion, type PostCommitCompletion } from '../post-commit-completion.mts'
 import {
@@ -24,7 +24,10 @@ describe('finalizePostUpdateAndDeliver', () => {
   it('returns the transaction-captured post and sends one update event', async () => {
     const input = await fixture()
     const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
-    const invalidatePosts = vi.fn<typeof invalidate.posts>().mockResolvedValue(undefined)
+    const invalidatePosts = vi.fn<typeof startPostCacheInvalidation>().mockReturnValue({
+      completion: Promise.resolve(),
+      rejectionReported: false,
+    })
     await expect(
       finalizePostUpdateAndDeliver(input, { enqueueOnPostUpdated: enqueueUpdate, invalidatePosts }),
     ).resolves.toBe(input.updatedPost)
@@ -43,7 +46,10 @@ describe('finalizePostUpdateAndDeliver', () => {
         { ...input, changes: {}, contentChanged: false },
         {
           enqueueOnPostUpdated: enqueueUpdate,
-          invalidatePosts: vi.fn<typeof invalidate.posts>().mockRejectedValue(error),
+          invalidatePosts: vi.fn<typeof startPostCacheInvalidation>().mockReturnValue({
+            completion: Promise.reject(error),
+            rejectionReported: false,
+          }),
           onError: reportError,
         },
       ),
@@ -62,7 +68,7 @@ describe('finalizePostUpdateAndDeliver', () => {
       finalizePostUpdateAndDeliver(input, {
         invalidatePosts: () => {
           starts.push('cache')
-          return cache.promise
+          return { completion: cache.promise, rejectionReported: false }
         },
         enqueueOnPostUpdated: () => {
           starts.push('queue')
@@ -109,7 +115,7 @@ describe('finalizePostUpdateAndDeliver', () => {
           invalidatePosts: () => {
             const failure = Promise.withResolvers<void>()
             failure.reject(undefined)
-            return failure.promise
+            return { completion: failure.promise, rejectionReported: false }
           },
           enqueueOnPostUpdated: () => Promise.resolve(),
           onError: () => {

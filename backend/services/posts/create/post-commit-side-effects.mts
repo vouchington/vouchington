@@ -34,8 +34,11 @@ export async function applyPostCommitSideEffects(
   await settlePostCommitEffects(
     { postId: post.id, slug: post.slug, kind: 'created' },
     [
-      () => resolvedDependencies.addEntityBloomKeys('posts', bloomKeys),
-      () => resolvedDependencies.enqueueOnPostCreated(post.id),
+      { start: () => resolvedDependencies.addEntityBloomKeys('posts', bloomKeys) },
+      {
+        start: () => resolvedDependencies.enqueueOnPostCreated(post.id),
+        isRejectionReported: () => true,
+      },
     ],
     resolvedDependencies.onError,
   )

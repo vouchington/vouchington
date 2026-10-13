@@ -88,7 +88,7 @@ describe('applyPostCommitSideEffects', () => {
         status: 'rejected',
         reason: error,
       })
-      expect(report).toHaveBeenCalledWith(error)
+      expect(report).toHaveBeenCalledExactlyOnceWith(error)
     } finally {
       bloom.resolve()
       off()
