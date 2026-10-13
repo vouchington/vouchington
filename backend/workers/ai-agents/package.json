@@ -61,7 +61,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.18.0",
-    "openai": "^7.30.0",
+    "openai": "^7.32.0",
     "p-map": "^7.1.0"
   },
   "devDependencies": {
