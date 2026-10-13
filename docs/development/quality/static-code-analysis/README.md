@@ -491,7 +491,9 @@ Clean import safety rules remain errors; module-style rules deliberately allow n
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
-fan-in probe. Generic missing/over-cap job timeouts and step-exceeds-job checks live in
+fan-in probe. `github-actions-step-timeouts` requires a bounded deadline on every authored
+workflow step; [Step Timeouts](../../ci/workflows/reference-step-timeouts.md) owns the budgets.
+Generic missing/over-cap job timeouts and step-exceeds-job checks live in
 `github-actions-job-timeouts`. Workflow tests must not restate `timeout-minutes` literals; that is
 `github-actions-test-timeout-literals`.
 
