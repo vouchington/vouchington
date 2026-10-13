@@ -168,3 +168,22 @@ export async function lockTestOAuthRetentionFamily(
     [clientId],
   )
 }
+
+/** Put a root after its replacement in UUID order to model writers on separate replicas. */
+export async function setTestOAuthRefreshRootAfterReplacement(
+  clientId: string,
+): Promise<{ rootId: string; replacementId: string }> {
+  const result = await write<{ rootId: string; replacementId: string }>(
+    `/* setTestOAuthRefreshRootAfterReplacement */
+     UPDATE oauth_refresh_tokens AS root SET id = uuidv7(interval '1 day')
+     FROM oauth_refresh_token_families AS family
+     JOIN oauth_grants AS grant_row ON grant_row.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = grant_row.client_id
+     WHERE root.family_id = family.id AND client.client_id = $1
+       AND root.generation = 0 AND root.replaced_by_token_id IS NOT NULL
+     RETURNING root.id AS "rootId", root.replaced_by_token_id AS "replacementId"`,
+    [clientId],
+  )
+  if (!result.rows[0]) throw new Error('Test OAuth replacement chain is missing')
+  return result.rows[0]
+}

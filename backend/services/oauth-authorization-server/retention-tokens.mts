@@ -37,6 +37,11 @@ export async function deleteExpiredOAuthRetentionTokens(
     'OAuth retention token table',
   )
   const familyColumn = table === 'oauth_access_tokens' ? 'refresh_family_id' : 'family_id'
+  // A replacement can have a lower UUID than its predecessor across API replicas. Refresh
+  // generations are the chain order; page roots before replacements so a small limit progresses.
+  const chainOrder = table === 'oauth_refresh_tokens' ? 'artifact.generation, ' : ''
+  const expiryChainOrder =
+    table === 'oauth_refresh_tokens' ? 'artifact.family_id, artifact.generation, ' : ''
   // Never invoke SET NULL against a predecessor the retention transaction did not lock.
   const noPredecessor =
     table === 'oauth_refresh_tokens'
@@ -53,7 +58,7 @@ export async function deleteExpiredOAuthRetentionTokens(
      WITH page AS MATERIALIZED (
        SELECT artifact.id FROM ${tokenTable} AS artifact
        WHERE artifact.${familyColumn} = ANY($1::uuid[])
-       ORDER BY artifact.${familyColumn}, artifact.id LIMIT $2
+       ORDER BY artifact.${familyColumn}, ${chainOrder}artifact.id LIMIT $2
      ), candidates AS MATERIALIZED (
        SELECT locked.id FROM page
        CROSS JOIN LATERAL (
@@ -74,7 +79,7 @@ export async function deleteExpiredOAuthRetentionTokens(
        SELECT artifact.id FROM ${tokenTable} AS artifact
        WHERE artifact.expires_at <= $1
          AND ($2::timestamptz IS NULL OR artifact.expires_at >= $2)
-       ORDER BY artifact.expires_at, artifact.id LIMIT $3
+       ORDER BY artifact.expires_at, ${expiryChainOrder}artifact.id LIMIT $3
      ), candidates AS MATERIALIZED (
        SELECT locked.id FROM page
        CROSS JOIN LATERAL (

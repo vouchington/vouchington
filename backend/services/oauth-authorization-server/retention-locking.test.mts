@@ -8,6 +8,7 @@ import {
   lockTestOAuthRetentionRemainingAccessToken,
   lockTestOAuthRetentionPredecessor,
   prepareTestOAuthRetentionRows,
+  setTestOAuthRefreshRootAfterReplacement,
 } from '@voucha/test-helpers/entities/oauth-retention'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { exchangeOAuthAuthorizationCode, exchangeOAuthRefreshToken } from './index.mts'
@@ -107,4 +108,55 @@ describe('OAuth retention replacement-chain locking', () => {
     await resumed.commit()
     expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(0)
   })
+
+  it.each(['expired-family', 'own-expiry'] as const)(
+    'pages refresh roots before lower UUID replacements for %s cleanup',
+    async mode => {
+      const owner = await createTestUserDirect()
+      const flow = await createTestApprovedOAuthAuthorization(owner)
+      const tokens = await exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      })
+      await exchangeOAuthRefreshToken({
+        clientId: flow.client.client_id,
+        refreshToken: tokens.refresh_token,
+      })
+      const window = createTestExpiryWindow()
+      await prepareTestOAuthRetentionRows(flow.client.client_id, {
+        expiresAt:
+          mode === 'expired-family' ? window.firstEligibleDate : window.afterUpperBoundDate,
+        childExpiresAt: window.firstEligibleDate,
+        only: 'family',
+      })
+      const { rootId, replacementId } = await setTestOAuthRefreshRootAfterReplacement(
+        flow.client.client_id,
+      )
+      expect(rootId.localeCompare(replacementId)).toBeGreaterThan(0)
+
+      for (const remaining of [1, 0]) {
+        await using removing = await beginTransaction()
+        const familyIds =
+          mode === 'expired-family'
+            ? await lockExpiredOAuthRetentionFamilies(removing, window, 1)
+            : []
+        expect(
+          await deleteExpiredOAuthRetentionTokens(
+            removing,
+            'oauth_refresh_tokens',
+            window,
+            1,
+            familyIds,
+            mode === 'own-expiry',
+          ),
+        ).toBe(1)
+        await removing.commit()
+        expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).refresh).toBe(
+          remaining,
+        )
+      }
+    },
+  )
 })

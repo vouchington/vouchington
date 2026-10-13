@@ -127,6 +127,8 @@ cleanup transactions commit. The full refresh-token expiry index also covers
 consumed and revoked tokens, which remain eligible for independent expiry cleanup. A refresh
 replacement with a surviving predecessor is retained until the predecessor can be removed,
 avoiding foreign-key SET NULL waits on skipped locks.
+Refresh-token pages order by family generation within the bounded candidate page, so a
+replacement whose UUID sorts before its predecessor cannot repeatedly hide that chain root.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

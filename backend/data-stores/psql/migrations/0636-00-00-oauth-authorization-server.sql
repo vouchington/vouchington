@@ -291,7 +291,7 @@ ON oauth_refresh_tokens (replaced_by_token_id)
 WHERE replaced_by_token_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens__expiry
-ON oauth_refresh_tokens (expires_at, id);
+ON oauth_refresh_tokens (expires_at, family_id, generation, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_access_tokens (
