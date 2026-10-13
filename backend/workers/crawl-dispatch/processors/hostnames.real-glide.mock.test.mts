@@ -30,6 +30,7 @@ import {
   setTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
@@ -68,7 +69,26 @@ async function crawlableUrl(path: string) {
   onTestFinished(() => deleteTestRobotsTxtCache(hostname))
   return { user, url, hostname }
 }
-
+async function isolatedTierUrl() {
+  const user = await createTestUser()
+  const hostname = `tier-${randomUUID()}.example.com`
+  const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
+  const msecs = Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)
+  const urlId = getMinUUIDv7ForDate(new Date(msecs))
+  await insertTestCrawlDispatchPlanUrls({ ids: [urlId], hostname, hostnameId, actorId: user.id })
+  await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+  onTestFinished(async () => {
+    await updateUrlHostname(hostnameId, { is_crawlable: false })
+    const ownedJobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })
+    await Promise.all(ownedJobs.map(job => job.remove()))
+    await deleteTestRobotsTxtCache(hostname)
+  })
+  const cursor = {
+    sweepStartedAt: new Date(msecs + 1).toISOString(),
+    afterId: getMinUUIDv7ForDate(new Date(msecs - 1)),
+  }
+  return { user, urlId, cursor }
+}
 async function runJob(
   name: string,
   data: Record<string, unknown> = {},
@@ -168,31 +188,23 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   })
 
   it('dispatches a Tier 1 profile URL to the crawl queue', async () => {
-    const { user, url } = await crawlableUrl('tier-one')
-    await createTestUserProfileLink(user.id, url.id)
-    const cursor = {
-      sweepStartedAt: new Date(Date.now() + 60_000).toISOString(),
-      afterId: getMinUUIDv7ForDate(new Date(Date.now() - 60_000)),
-    }
+    const { user, urlId, cursor } = await isolatedTierUrl()
+    await createTestUserProfileLink(user.id, urlId)
     const result = await runJob('crawl_tier1_dispatcher', { cursor })
     expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } })).length,
+      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })).length,
     ).toBeGreaterThan(0)
   })
 
   it('dispatches a Tier 2 neutral relation URL to the crawl queue', async () => {
-    const { user, url } = await crawlableUrl('tier-two')
+    const { user, urlId, cursor } = await isolatedTierUrl()
     const post = await createTestPost({ user })
-    await createEntityRelationWithElection(post.id, url.id, user.id, 0)
-    const cursor = {
-      sweepStartedAt: new Date(Date.now() + 60_000).toISOString(),
-      afterId: getMinUUIDv7ForDate(new Date(Date.now() - 60_000)),
-    }
+    await createEntityRelationWithElection(post.id, urlId, user.id, 0)
     const result = await runJob('crawl_tier2_dispatcher', { cursor })
     expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } })).length,
+      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })).length,
     ).toBeGreaterThan(0)
   })
 
