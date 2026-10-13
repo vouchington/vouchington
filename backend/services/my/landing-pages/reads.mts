@@ -4,7 +4,7 @@ import { validateUUID } from '@modules/utils'
 import assert from 'http-assert'
 import type { LandingPage, LandingPageItemRow } from './types.mts'
 import { lockUserLandingPages } from './shared.mts'
-import type { TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 
 export async function getLockedLandingPageRowForUser(
   userId: string,
@@ -22,13 +22,14 @@ export async function getLandingPageRowForUser(
 ): Promise<LandingPage> {
   validateUUID(userId)
   validateUUID(pageId)
-  const executor = options?.query ?? read
-  const { rows } = await executor(sql`/* getLandingPageRowForUser */
+  const execute = (query: QueryExecutor) =>
+    query(sql`/* getLandingPageRowForUser */
     SELECT id, user_id, title, subtitle, slug, is_default, created_at, updated_at
     FROM user_landing_pages
     WHERE id = ${pageId} AND user_id = ${userId}
     LIMIT 1
   `)
+  const { rows } = await execute(options?.query ?? read)
   assert(rows[0], 404, 'Landing page not found')
   return rows[0] as LandingPage
 }

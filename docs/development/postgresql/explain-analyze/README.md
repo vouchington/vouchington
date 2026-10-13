@@ -310,7 +310,9 @@ pnpm run explain:coverage -- /path/to/results.json
 The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
 sources, excluding SQL issued only by the EXPLAIN replay infrastructure. When an annotation names
 multiple source statements, including writes, it counts an exact complete SQL
-match as covered and displays any incomplete matches separately as ambiguous. Complete bounded
+match as covered and displays any incomplete matches separately as ambiguous. Dynamic SQL
+remains ambiguous after a same-named capture because one source call can execute several shapes.
+Complete bounded
 cursor SQL also matches the cursor API's exact outer `SELECT`/`LIMIT` wrapper around that source.
 It never normalizes
 SQL literal whitespace or guessed placeholders. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)

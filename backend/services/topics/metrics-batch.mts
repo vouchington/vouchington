@@ -48,7 +48,7 @@ export const getTopicMetricsByAnyBatch = async (
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
   const { rows } = await read<TopicMetricsBatchRow>(
-    buildTopicMetricsBatchQuery(inputCtes.ctes),
+    `/* getTopicMetricsByAnyBatch */${buildTopicMetricsBatchQuery(inputCtes.ctes)}`,
     inputCtes.values,
     options,
   )

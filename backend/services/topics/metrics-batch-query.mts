@@ -1,5 +1,5 @@
 export function buildTopicMetricsBatchQuery(inputCtes: string): string {
-  return `/* getTopicMetricsByAnyBatch */
+  return `
     -- no-mistakes-disable-next-line postgres-required-predicates: dynamic input CTE interpolation
     -- breaks structural SQL parsing; id_lookups/slug_lookups filter deleted and merged topics.
     WITH ${inputCtes},

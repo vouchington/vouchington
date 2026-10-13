@@ -12,7 +12,7 @@ The test uses the configured analyzer rather than injecting a plugin; see the
 in the normal CI checker; [translation checks](reference-tests-translation-catalog-and-locale-checks.md)
 owns the small-fixture unit boundary.
 
-Run `pnpm exec vitest run --project static-analysis-tools static-code-analysis/repo-file-policy/explain-coverage.test.mts`
+Run `pnpm exec vitest run --project static-analysis-tools static-code-analysis/repo-file-policy/explain-coverage.test.mts static-code-analysis/repo-file-policy/explain-coverage-extractors.test.mts`
 for the local-only `pnpm run explain:coverage` classifier, exact query-shape matching, and partial
 artifact rejection. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).
 

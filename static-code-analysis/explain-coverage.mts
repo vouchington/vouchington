@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { extractExecutedPostgresSql } from 'no-mistakes'
 import { LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
 import { EXPLAIN_SCENARIO_MANIFEST } from '../backend/scripts/explain-analyze/scenario-manifest.mts'
-import { matchesCapturedSql } from './explain-coverage-sql.mts'
+import { isRead, matchesCapturedSql } from './explain-coverage-sql.mts'
 import {
   latestResultsPath,
   readCompletedExplainResults,
@@ -10,6 +10,8 @@ import {
   type CapturedResult,
   type Source,
 } from './explain-coverage-files.mts'
+
+export { isRead } from './explain-coverage-sql.mts'
 
 type SqlFact = Awaited<ReturnType<typeof extractExecutedPostgresSql>>[number]
 
@@ -26,28 +28,6 @@ export interface CoverageReport {
   coveredReads: number
   uncoveredReads: UncoveredRead[]
   ambiguousReads: UncoveredRead[]
-}
-
-export function isRead(sqlText: string | null): boolean {
-  if (!sqlText) return false
-  let statement = sqlText.trimStart()
-  for (;;) {
-    const withoutComment = statement
-      .replace(/^(?:\/\*[\s\S]*?\*\/|--[^\r\n]*(?:\r\n?|\n|$))/, '')
-      .trimStart()
-    if (withoutComment === statement) break
-    statement = withoutComment
-  }
-  if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
-  // The released extractor keeps an interpolated leading token as a placeholder. Its SQL
-  // verb is unknown, so retain the annotated statement for review rather than hiding it.
-  if (/^sql_placeholder_\d+\b/.test(statement)) return true
-  return (
-    /^WITH\b/i.test(statement) &&
-    !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(
-      statement.replace(/\bFOR\s+(?:NO\s+KEY\s+)?UPDATE\b/gi, ''),
-    )
-  )
 }
 
 export function stripPlanCacheMode(name: string): string {
@@ -96,7 +76,8 @@ export function buildCoverageReport(
       matchingCaptures.some(result =>
         matchesCapturedSql(fact.sqlText, annotation, result.query_text),
       )
-    const uniqueIncomplete = !fact.complete && (annotationCounts.get(annotation) ?? 0) === 1
+    const uniqueIncomplete =
+      !fact.complete && fact.kind !== 'dynamic' && (annotationCounts.get(annotation) ?? 0) === 1
     if (matchingCaptures.length > 0 && (exactMatch || uniqueIncomplete)) {
       coveredReads++
       continue

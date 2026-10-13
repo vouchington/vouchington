@@ -36,12 +36,77 @@ describe('EXPLAIN extractor overlap', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report).toMatchObject({ annotatedStatements: 7, reads: 4, coveredReads: 2 })
-      expect(report.ambiguousReads).toEqual([])
+      expect(report).toMatchObject({ annotatedStatements: 7, reads: 4, coveredReads: 0 })
+      expect(report.ambiguousReads.map(read => read.name)).toEqual([
+        'selectRssFeedItemNotificationRecipientBatch',
+        'selectPostNotificationRecipientBatch',
+      ])
       expect(report.uncoveredReads.map(read => read.name)).toEqual([
         'selectCreatedNotificationBatch',
         'containsReferralLinks',
       ])
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('inventories aliased executors and imported SQL builders at their runtime callsites', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-read-owners-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const paths = [
+        'backend/services/bluesky-accounts/link-authorization.mts',
+        'backend/services/my/landing-pages/reads.mts',
+        'backend/services/topics/metrics-batch.mts',
+        'backend/services/users/metrics-batch.mts',
+      ]
+      const sources = paths.map(fileName => ({
+        fileName,
+        source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
+      }))
+      const report = await reportCoverage(sources, resultsPath, ['fixture'])
+      expect(report.uncoveredReads.map(read => read.name)).toEqual(
+        expect.arrayContaining([
+          'readBlueskyLinkAuthorization',
+          'getLandingPageRowForUser',
+          'getTopicMetricsByAnyBatch',
+          'getUserMetricsByAnyBatch',
+        ]),
+      )
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
+  it('leaves a dynamic topic branch ambiguous after a same-named scenario captures one shape', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-topic-branch-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [
+            {
+              name: 'getTopicByAny',
+              query_text: '/* getTopicByAny */ WITH candidates AS (SELECT id FROM topics)',
+              scenario_id: 'fixture',
+            },
+          ],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const fileName = 'backend/services/topics/get.mts'
+      const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
+      const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
+      expect(report.ambiguousReads.map(read => read.name)).toContain('getTopicByAny')
+      expect(report.coveredReads).toBe(0)
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
