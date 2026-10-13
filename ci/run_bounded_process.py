@@ -6,6 +6,7 @@ import errno
 import fcntl
 import os
 import signal
+import stat
 import subprocess
 from contextlib import contextmanager
 
@@ -62,3 +63,20 @@ def run(proc: subprocess.Popen[bytes], seconds: int) -> int:
         return 124
 
 
+
+def command_outputs(targets: list[int | None]):
+    """Keep regular-file open descriptions; share one pipe for merged stream sinks."""
+    outputs = [
+        fd if fd is not None and stat.S_ISREG(os.fstat(fd).st_mode) else subprocess.PIPE
+        for fd in targets
+    ]
+    if all(fd is not None for fd in targets):
+        left, right = (os.fstat(fd) for fd in targets)
+        stream = stat.S_ISFIFO(left.st_mode) or stat.S_ISSOCK(left.st_mode)
+        same_endpoint = (left.st_dev, left.st_ino, left.st_mode) == (
+            right.st_dev, right.st_ino, right.st_mode
+        )
+        same_flags = fcntl.fcntl(targets[0], fcntl.F_GETFL) == fcntl.fcntl(targets[1], fcntl.F_GETFL)
+        if stream and same_endpoint and same_flags:
+            outputs[1] = subprocess.STDOUT
+    return dict(stdout=outputs[0], stderr=outputs[1])

@@ -14,7 +14,7 @@ import threading
 import termios
 import time
 
-from run_bounded_process import output_sinks, run, signal_group
+from run_bounded_process import command_outputs, output_sinks, run, signal_group
 
 RELAY_JOIN_SECONDS = 3
 
@@ -127,16 +127,16 @@ def main() -> None:
 
 def execute(seconds: int, targets: list[int | None]) -> None:
     proc = subprocess.Popen(
-        sys.argv[2:], stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
+        sys.argv[2:], **command_outputs(targets), start_new_session=True
     )
-    assert proc.stdout is not None and proc.stderr is not None
     relays: list[Relay] = []
     started: list[Relay] = []
     errors: list[BaseException] = []
     status = 1
     try:
         for stream, fd in zip((proc.stdout, proc.stderr), targets):
-            relays.append(Relay(stream, fd))
+            if stream is not None:
+                relays.append(Relay(stream, fd))
         for thread in relays:
             thread.start()
             started.append(thread)
@@ -165,7 +165,8 @@ def execute(seconds: int, targets: list[int | None]) -> None:
                 errors.append(thread.error)
         for stream in (proc.stdout, proc.stderr):
             try:
-                stream.close()
+                if stream is not None:
+                    stream.close()
             except BaseException as err:
                 errors.append(err)
         for thread in relays:
