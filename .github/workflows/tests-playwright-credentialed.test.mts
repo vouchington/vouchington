@@ -3,7 +3,18 @@
 // This is the exact bug class fixed in PR #4358 commit 6:
 // the filter name was added to the job's if-condition but not to the detect-changes step,
 // so the job never ran on path-matched PRs.
-import { readFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
@@ -55,6 +66,88 @@ function extractFilterOutputs(ifCondition: string): string[] {
 }
 
 describe('trusted/credentialed CI job path-filter wiring', () => {
+  it('bounds the credentialed command with setup and cleanup headroom and preserves a failing status', () => {
+    const workflow = load(credentialedWorkflowText) as {
+      jobs: Record<
+        string,
+        {
+          'timeout-minutes': number
+          steps: Array<{ id?: string; run?: string; 'timeout-minutes'?: number }>
+        }
+      >
+    }
+    const job = workflow.jobs['playwright-credentialed-tests']!
+    const step = job.steps.find(candidate => candidate.id === 'run-playwright-credentialed')!
+    expect(420 + 10).toBeLessThan(step['timeout-minutes']! * 60)
+    expect(step['timeout-minutes']).toBeLessThanOrEqual(job['timeout-minutes'])
+    const directory = mkdtempSync(join(tmpdir(), 'credentialed-bounded-step-'))
+    try {
+      mkdirSync(join(directory, 'ci'))
+      writeFileSync(join(directory, 'ci/run-bounded.py'), readFileSync('ci/run-bounded.py'))
+      const python = spawnSync('python3', ['-c', 'import sys; print(sys.executable)'], {
+        encoding: 'utf8',
+        timeout: 5000,
+      })
+      expect(python.status).toBe(0)
+      writeFileSync(
+        join(directory, 'python3'),
+        [
+          '#!/usr/bin/env bash',
+          'printf \'%s\\n\' "$@" > "$BOUND_ARGS"',
+          'exec "$REAL_PYTHON" "$@"',
+        ].join('\n'),
+      )
+      writeFileSync(
+        join(directory, 'pnpm'),
+        ['#!/usr/bin/env bash', 'printf \'%s\\n\' "$@" > "$PLAYWRIGHT_ARGS"', 'exit 7'].join('\n'),
+      )
+      writeFileSync(join(directory, 'date'), '#!/usr/bin/env bash\nprintf "1000000\\n"\n')
+      chmodSync(join(directory, 'date'), 0o755)
+      chmodSync(join(directory, 'python3'), 0o755)
+      chmodSync(join(directory, 'pnpm'), 0o755)
+      const result = spawnSync('bash', ['-c', step.run!], {
+        cwd: directory,
+        encoding: 'utf8',
+        timeout: 5000,
+        env: {
+          ...process.env,
+          PATH: `${directory}:${process.env.PATH ?? ''}`,
+          GITHUB_WORKSPACE: directory,
+          GITHUB_OUTPUT: join(directory, 'outputs'),
+          CREDENTIALED_JOB_DEADLINE_EPOCH: String(1_000_000 + 780),
+          REAL_PYTHON: python.stdout.trim(),
+          BOUND_ARGS: join(directory, 'bounded-args'),
+          PLAYWRIGHT_ARGS: join(directory, 'playwright-args'),
+        },
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.status).toBe(7)
+      expect(existsSync(join(directory, 'bounded-args'))).toBe(true)
+      expect(readFileSync(join(directory, 'bounded-args'), 'utf8').trim().split('\n')).toEqual([
+        join(directory, 'ci/run-bounded.py'),
+        '420',
+        'pnpm',
+        'exec',
+        './ci/with-node-test-options',
+        'playwright',
+        'test',
+        '--config',
+        'playwright.credentialed.config.mts',
+      ])
+      expect(readFileSync(join(directory, 'playwright-args'), 'utf8').trim().split('\n')).toEqual([
+        'exec',
+        './ci/with-node-test-options',
+        'playwright',
+        'test',
+        '--config',
+        'playwright.credentialed.config.mts',
+      ])
+      expect(readFileSync(join(directory, 'outputs'), 'utf8')).toBe('retried=false\n')
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('uses the shared Playwright setup action for browser installs', () => {
     expect(credentialedWorkflowText).toContain('uses: ./.github/actions/setup-playwright')
     expect(credentialedWorkflowText).not.toContain("ubicloud: 'true'")
