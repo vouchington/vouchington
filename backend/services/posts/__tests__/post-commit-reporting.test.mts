@@ -85,13 +85,76 @@ describe('post-commit failure reporting ownership', () => {
           },
           { onError: report },
         ),
-      async (result, events) => {
+      async (result, events, run) => {
         expect(result).toBe(post)
         expect(events).toHaveLength(1)
         expect((await events[0]!.completion).operations).toEqual([
           { status: 'rejected', reason: failure },
         ])
         expect(report).toHaveBeenCalledExactlyOnceWith(failure)
+        await expect(run(() => invalidate.posts(post))).resolves.toBeUndefined()
+        expect(report).toHaveBeenCalledExactlyOnceWith(failure)
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure),
+        ).toHaveLength(1)
+      },
+    )
+  })
+
+  it('retains a real update admission rejection and its payload without a second report', async () => {
+    const { post } = await createPostCompletionFixture()
+    const failure = new Error('Owned update admission failure')
+    const outerReport = vi.fn<typeof onError>()
+    const original = entitiesListeners.add
+    const admittedCalls: { name: string; data: unknown }[] = []
+    await withPostCommitFailureObservation(
+      post.id,
+      restore => {
+        const spy = vi.spyOn(entitiesListeners, 'add')
+        restore(() => spy.mockRestore())
+        spy.mockImplementation((name, data, options) => {
+          if (
+            name === 'processPostUpdated' &&
+            data &&
+            typeof data === 'object' &&
+            'id' in data &&
+            data.id === post.id
+          ) {
+            admittedCalls.push({ name, data })
+            return Promise.reject(failure)
+          }
+          return original.call(entitiesListeners, name, data, options)
+        })
+      },
+      () =>
+        finalizePostUpdateAndDeliver(
+          {
+            changes: {},
+            contentChanged: false,
+            previousPost: post,
+            updatedPost: post,
+            shouldEnqueuePostUpdated: true,
+          },
+          { onError: outerReport },
+        ),
+      async (result, events) => {
+        expect(result).toBe(post)
+        expect(admittedCalls).toEqual([
+          {
+            name: 'processPostUpdated',
+            data: { id: post.id, contentChanged: false },
+          },
+        ])
+        expect(events).toHaveLength(1)
+        const settlement = await events[0]!.completion
+        expect(settlement.operations).toEqual([
+          { status: 'fulfilled', value: undefined },
+          { status: 'rejected', reason: failure },
+        ])
+        expect(outerReport).not.toHaveBeenCalled()
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure),
+        ).toHaveLength(1)
       },
     )
   })
