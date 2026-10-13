@@ -69,3 +69,5 @@ Gating coverage of the request we build and the response we handle comes from re
 - <a id="playwright-matchers-and-helpers"></a>[Playwright Matchers and Helpers](reference-tests-playwright-matchers-and-helpers.md)
 - <a id="schema-checks"></a>[Schema Checks](reference-tests-schema-checks.md)
 - <a id="translation-catalog-and-locale-checks"></a>[Translation Catalog and Locale Checks](reference-tests-translation-catalog-and-locale-checks.md)
+
+The static-code-analysis job owns the full local development catalog compilation (`node dev/localization/local-catalog.mts`) and tracked form keyboard reference audit (`node ci/check-live-form-keyboard-reference.mts`). Their unit tests exercise finite catalog and Git-index fixtures. See [the check inventory](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog).

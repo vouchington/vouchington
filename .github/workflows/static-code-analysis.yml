@@ -87,6 +87,12 @@ jobs:
       - name: Check native localization resources
         run: node ci/check-live-native-resources.mts
         timeout-minutes: 2
+      - name: Compile local development localization catalog
+        run: node dev/localization/local-catalog.mts
+        timeout-minutes: 2
+      - name: Check form keyboard reference
+        run: node ci/check-live-form-keyboard-reference.mts
+        timeout-minutes: 1
       - name: Check localization catalog format
         run: pnpm exec vouchington-localization format --check --source localization/catalog
         timeout-minutes: 2

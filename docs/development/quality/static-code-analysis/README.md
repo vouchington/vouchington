@@ -99,6 +99,14 @@ against the real catalog compiler in all four web locales and all public request
 [translation catalog and locale checks](../../reference-tests-translation-catalog-and-locale-checks.md)
 for the detailed check and test reference.
 
+## Form keyboard reference and local catalog
+
+Static CI runs `node ci/check-live-form-keyboard-reference.mts` once to inspect tracked index
+blobs for obsolete form keyboard links and require the canonical helper reference and heading.
+Its unit tests use tiny synthetic Git indexes; untracked files neither fail nor satisfy the guard.
+The static job also runs `node dev/localization/local-catalog.mts` once to compile the full local
+development catalog. CLI unit tests use finite worktree fixtures through `--worktree-root`.
+
 ## Markdown Information Architecture Gates
 
 `no-mistakes` enforces two repository-wide Markdown gates over tracked documentation
