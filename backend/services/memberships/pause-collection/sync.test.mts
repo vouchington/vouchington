@@ -119,6 +119,9 @@ describe('membership pause collection', () => {
     expect(failed?.leaseToken).toBeNull()
     expect(failed!.availableAt.getTime()).toBeGreaterThan(Date.now())
     await syncMembershipPauseCollection(job!)
+    expect(update).toHaveBeenCalledTimes(1)
+    await backdateTestMembershipPauseCollectionAvailableAt(member.id)
+    await syncMembershipPauseCollection(job!)
 
     expect(update).toHaveBeenCalledTimes(2)
   })
@@ -135,6 +138,7 @@ describe('membership pause collection', () => {
     const [job] = await readTestPauseCollectionSyncJobs(member.id)
 
     await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('accepted response lost')
+    await backdateTestMembershipPauseCollectionAvailableAt(member.id)
     await syncMembershipPauseCollection(job!)
 
     expect(update).toHaveBeenCalledTimes(1)
@@ -165,7 +169,7 @@ describe('membership pause collection', () => {
     expect(update).toHaveBeenCalledTimes(1)
   })
 
-  it('reacquires a released dispatcher lease and retries Stripe', async () => {
+  it('does not reacquire a released lease before available_at', async () => {
     const member = await createTestUser()
     await createTestPauseCollectionDirectSubscription(member.id)
     update.mockRejectedValueOnce(new Error('stripe timeout'))
@@ -177,7 +181,7 @@ describe('membership pause collection', () => {
     await expect(syncMembershipPauseCollection(stale)).rejects.toThrow('stripe timeout')
     await syncMembershipPauseCollection(stale)
 
-    expect(update).toHaveBeenCalledTimes(2)
+    expect(update).toHaveBeenCalledTimes(1)
     await deleteTestMembershipPauseCollectionWork(member.id)
   })
 
@@ -249,6 +253,7 @@ describe('membership pause collection', () => {
     const [job] = await readTestPauseCollectionSyncJobs(member.id)
 
     await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
+    await backdateTestMembershipPauseCollectionAvailableAt(member.id)
     await syncMembershipPauseCollection(job!)
 
     expect(update).toHaveBeenCalledTimes(2)

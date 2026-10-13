@@ -31,7 +31,7 @@ export async function confirmMembershipPauseCollectionLease(input: {
   return rows[0] ?? null
 }
 
-/** Claims an unleased or expired generation and reports the open suspension. */
+/** Claims a due unleased generation or an expired lease, and reports the open suspension. */
 export async function claimMembershipPauseCollection(input: {
   userId: string
   requestedAt: string
@@ -46,7 +46,10 @@ export async function claimMembershipPauseCollection(input: {
           attempt_count = attempt_count + 1
         WHERE user_id = ${input.userId}
           AND requested_at = ${input.requestedAt}::timestamptz
-          AND (lease_token IS NULL OR lease_expires_at <= clock_timestamp())
+          AND (
+            (lease_token IS NULL AND available_at <= clock_timestamp())
+            OR lease_expires_at <= clock_timestamp()
+          )
         RETURNING user_id, lease_token, attempt_count
       )
       SELECT claimed.lease_token AS "leaseToken",
