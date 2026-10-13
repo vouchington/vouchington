@@ -18,10 +18,11 @@ export const getPostMetricsByAny = async (
   }
 
   const idOrSlugValue = isId ? idOrSlug : idOrSlug.toLowerCase()
-  const query = sql``
+  const builtQuery = (() => {
+    const query = sql``
 
-  if (isSlugValue) {
-    query.append(sql`
+    if (isSlugValue) {
+      query.append(sql`
       slug_lookup AS (
         SELECT post_id
         FROM post_slugs
@@ -29,16 +30,16 @@ export const getPostMetricsByAny = async (
         LIMIT 1
       ),
     `)
-  }
+    }
 
-  query.append(sql`
+    query.append(sql`
     base_post AS (
       SELECT id, updated_at
       FROM posts
       WHERE id =
   `)
-  query.append(isId ? sql`${idOrSlugValue}` : sql`(SELECT post_id FROM slug_lookup)`)
-  query.append(sql`
+    query.append(isId ? sql`${idOrSlugValue}` : sql`(SELECT post_id FROM slug_lookup)`)
+    query.append(sql`
       LIMIT 1
     )
     SELECT
@@ -50,8 +51,8 @@ export const getPostMetricsByAny = async (
         WHERE candidate_post.root_post_id = base_post.id
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
+    query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
+    query.append(sql`
       ) AS count__descendants,
       (
         SELECT COUNT(*)::bigint
@@ -61,8 +62,8 @@ export const getPostMetricsByAny = async (
           AND candidate_post.post_type = 'comment'
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
+    query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
+    query.append(sql`
       ) AS count__children,
       (
         SELECT COUNT(*)::bigint
@@ -84,8 +85,8 @@ export const getPostMetricsByAny = async (
           SELECT parent_post_id FROM ancestor_chain WHERE parent_post_id IS NOT NULL
         )
           AND `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
+    query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
+    query.append(sql`
       ) AS count__ancestors,
       (
         SELECT COUNT(*)::bigint
@@ -112,13 +113,20 @@ export const getPostMetricsByAny = async (
         )
           AND candidate_post.id > base_post.id -- UUIDv7 partition pruning
           AND `)
-  query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
-  query.append(sql`
+    query.append(buildPublicPostEligibilityFilter('candidate_post', 'root_post'))
+    query.append(sql`
       ) AS updated_at
     FROM base_post
   `)
 
-  const { rows } = await read(`/* getPostMetricsByAny */ WITH ${query.text}`, query.values, options)
+    return query
+  })()
+
+  const { rows } = await read(
+    `/* getPostMetricsByAny */ WITH ${builtQuery.text}`,
+    builtQuery.values,
+    options,
+  )
 
   if (!rows[0]) return null
 
