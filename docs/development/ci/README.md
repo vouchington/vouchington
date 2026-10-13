@@ -19,6 +19,7 @@ Use these owner indexes for the detailed subdomains.
 - [Core CI](workflows/reference-core-ci.md)
 - [Deploy And Release](workflows/reference-deploy-and-release.md)
 - [Docker Image Path Filters](workflows/reference-docker-image-path-filters.md)
+- [Executed Script Path Filters](workflows/reference-executed-script-path-filters.md)
 - [Extracted Shell Scripts](workflows/reference-extracted-shell-scripts.md)
 - [Fix Main dependency policy](workflows/reference-fix-main-dependency-policy.md)
 - [Fixed-Branch Automation PRs](workflows/reference-fixed-branch-automation-prs.md)
