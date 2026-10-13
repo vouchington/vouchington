@@ -947,6 +947,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_membership_refund_request_key_mismatch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_moderation_appeal_resolution`
 
 ```sql

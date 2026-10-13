@@ -1575,6 +1575,9 @@
     "fn_reject_membership_refund_operation_attempt_mutation()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;\n  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.membership_provider_context_id, NEW.attempt_ordinal, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.membership_provider_context_id, OLD.attempt_ordinal, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
     },
+    "fn_reject_membership_refund_request_key_mismatch()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_request_key_mismatch()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE saved_request_key TEXT;\nBEGIN\n  IF NEW.source = 'admin' THEN\n    SELECT request.administrator_request_key INTO saved_request_key\n    FROM membership_administrator_refund_operation_requests request\n    WHERE request.membership_operation_id = NEW.membership_operation_id;\n    IF saved_request_key IS DISTINCT FROM NEW.stripe_idempotency_key THEN\n      RAISE EXCEPTION 'administrator refund receipt key does not match its request' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_reject_moderation_appeal_resolution()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL\n    AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.resolved_at IS DISTINCT FROM NEW.resolved_at\n    OR OLD.resolution_action IS DISTINCT FROM NEW.resolution_action THEN\n    RAISE EXCEPTION 'moderation appeal resolution is immutable once set';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -51743,38 +51746,6 @@
           "unique": true,
           "valid": true
         },
-        "uq_maror__operation_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_maror__operation_key ON public.membership_administrator_refund_operation_requests USING btree (membership_operation_id, administrator_request_key)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "membership_operation_id",
-              "descending": false,
-              "expression": "membership_operation_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "administrator_request_key",
-              "descending": false,
-              "expression": "administrator_request_key",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "uq_membershi_administra_refund_operation_requests__operation_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -51813,9 +51784,6 @@
         }
       },
       "uniqueConstraints": {
-        "uq_maror__operation_key": {
-          "columns": ["membership_operation_id", "administrator_request_key"]
-        },
         "uq_membershi_administra_refund_operation_requests__operation_id": {
           "columns": ["membership_operation_id"]
         }
@@ -59930,10 +59898,10 @@
       "comment": "Append-only financial ledger of Stripe refunds issued or reconciled.",
       "foreignKeys": {
         "fk_membership_refunds__administrator_request": {
-          "columns": ["membership_operation_id", "stripe_idempotency_key"],
+          "columns": ["membership_operation_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
-          "referencedColumns": ["membership_operation_id", "administrator_request_key"],
+          "referencedColumns": ["membership_operation_id"],
           "referencedTable": "membership_administrator_refund_operation_requests",
           "validated": true
         },
@@ -60250,6 +60218,9 @@
       "triggers": {
         "trigger_membership_refunds_guard": {
           "definition": "CREATE TRIGGER trigger_membership_refunds_guard BEFORE DELETE OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_mutation()"
+        },
+        "trigger_membership_refunds_request_key": {
+          "definition": "CREATE TRIGGER trigger_membership_refunds_request_key BEFORE INSERT OR UPDATE ON public.membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_request_key_mismatch()"
         }
       },
       "uniqueConstraints": {}
