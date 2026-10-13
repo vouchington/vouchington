@@ -10,10 +10,9 @@ export const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
 export async function invalidateChangedHostnameCaches(client: PoolClient): Promise<void> {
   const batchSize = getEntityCacheWorkLimit('delete_keys_per_batch')
   let after = ''
-  // no-mistakes-disable-next-line query-reached-per-item: session-local temp tables require bounded keyset reads on this one client
   for (;;) {
     // oxlint-disable-next-line no-await-in-loop -- the indexed keyset query reads one bounded batch at a time.
-    const { rows } = await client.query<{ domain: string }>(
+    const { rows } = await client.query<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
       `/* invalidateChangedHostnameCaches */
       SELECT domain FROM (
         SELECT domain FROM ${ADDED_DOMAINS_TABLE} WHERE domain > $1::text

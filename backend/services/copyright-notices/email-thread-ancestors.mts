@@ -7,13 +7,15 @@ export async function lockCopyrightEmailThreadTokens(
   transaction: TransactionQuery,
   lookupTokens: readonly string[],
 ): Promise<void> {
-  // no-mistakes-disable-next-line query-reached-per-item: shared token locks must be acquired in deterministic order on this transaction
-  for (const lookupToken of [...new Set(lookupTokens)].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- deterministic advisory-lock order prevents crossed replies from deadlocking
-    await transaction(sql`/* lockCopyrightEmailThreadTokens */
-      SELECT pg_advisory_xact_lock(hashtextextended(${lookupToken}, 0))
-    `)
-  }
+  const tokens = [...new Set(lookupTokens)].toSorted()
+  if (tokens.length === 0) return
+  await transaction(sql`/* lockCopyrightEmailThreadTokens */
+    SELECT pg_advisory_xact_lock(hashtextextended(ordered.lookup_token, 0))
+    FROM (
+      SELECT unnest(${tokens}::text[]) AS lookup_token
+      ORDER BY lookup_token
+    ) ordered
+  `)
 }
 
 export async function insertCopyrightEmailThreadReferences(

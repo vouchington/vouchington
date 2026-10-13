@@ -8,12 +8,11 @@ export async function invalidateSourceHostnameCaches(
   sourceIds: Array<string | number>,
 ): Promise<void> {
   const batchSize = getEntityCacheWorkLimit('delete_keys_per_batch')
-  // no-mistakes-disable-next-line query-reached-per-item: each source uses indexed bounded keyset pages before cache eviction
   for (const sourceId of sourceIds) {
     let after = ''
     for (;;) {
       // oxlint-disable-next-line no-await-in-loop -- the source-leading index bounds each keyset read.
-      const { rows } = await write<{ domain: string }>(
+      const { rows } = await write<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
         `/* invalidateSourceHostnameCaches */
         SELECT domain FROM blocklisted_domains
         WHERE source_id = $1::bigint AND domain > $2::text
