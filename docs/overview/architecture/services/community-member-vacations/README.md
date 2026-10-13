@@ -49,8 +49,16 @@ Date rejects before writing. Clear and preference setters have no clock dependen
 
 Omitting the dependency retains native PostgreSQL `now()` for starts and reads. `created_at`
 and `updated_at` remain native audit defaults/triggers. REST callers omit the dependency,
-and the downstream exclusion queries below retain their native clock. An injected service
-as-of time does not change the database clock or make all downstream readers logical.
+and omitted dependencies in downstream exclusion queries retain their native clock. An injected
+service as-of time does not change the database clock or make all downstream readers logical.
+
+`openModInternalThread` accepts an optional internal fourth argument `{ clock: () => Date }`
+for its new-thread vacation decision. It samples and validates the Date once before querying;
+both report and post-review branches use that same instant for the start-inclusive, end-exclusive
+vacation interval. Without this argument the query still uses native PostgreSQL `now()`.
+Conversation audit timestamps, UUID generation, REST inputs and existing-thread fetches retain
+their normal behavior. Moderation-summary communities already evaluate vacation suppression
+at their explicit `windowEnd`; the independent digest-suppression preference still applies.
 
 The direct-module `getMyCommunityVacation` reader is not exported by the service barrel;
 the public example uses the existing exported `getMyCommunityVacationSettings`.
@@ -59,7 +67,7 @@ the public example uses the existing exported `getMyCommunityVacationSettings`.
 
 Vacation exclusion is applied inline in SQL subqueries at these exclusion surfaces:
 
-1. `backend/services/moderation-threads/create.mts` — `addModParticipants()`: on-vacation
+1. `backend/services/moderation-threads/participants.mts` — `addModParticipants()`: on-vacation
    mods are excluded from the `mod_internal` thread participant insert.
 2. `backend/services/notifications/get-conversation-notification-context.mts` — modmail
    recipient query: on-vacation mods are excluded from notification dispatch.
