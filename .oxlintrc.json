@@ -832,6 +832,9 @@
     "no-mistakes/no-import-only-test-files": "error",
     "no-mistakes/no-placeholder-never-type-exports": "error",
     "no-mistakes/test-no-delayed-rejects": "error",
+    // R6. eslint-plugin-no-mistakes test-no-skips (jonathanong/no-mistakes#1565)
+    // replaces the interim ast-grep rule. The installed scan has no remaining skips.
+    "no-mistakes/test-no-skips": "error",
     "no-mistakes/test-no-shared-state": "error",
     "no-mistakes/require-options-on-imported-call": [
       "error",

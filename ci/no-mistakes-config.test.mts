@@ -145,6 +145,7 @@ describe('no-mistakes config', () => {
       expect.objectContaining({ specifier: './static-code-analysis/oxlint-plugin/src/index.mts' }),
     )
     expect(oxlint.rules['no-mistakes/test-no-shared-state']).toBe('error')
+    expect(oxlint.rules['no-mistakes/test-no-skips']).toBe('error')
     expect(oxlint.rules['no-mistakes/module-mock-boundary']).toEqual([
       'error',
       expect.objectContaining({
