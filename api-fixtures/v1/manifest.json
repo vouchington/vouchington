@@ -51795,6 +51795,73 @@
       "source": "backend/api/v1/topics/topics.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/topics/:idOrSlug": {
+      "bodyKind": "content",
+      "hash": "a3a3ec6e1d48df4ad77a48d4af78c57fa96597c8a3506e4c4c649463cb33538a",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/topics/:idOrSlug",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": {
+            "type": "unknown"
+          },
+          "properties": {
+            "topic": {
+              "required": true,
+              "schema": {
+                "additionalProperties": {
+                  "type": "unknown"
+                },
+                "properties": {
+                  "logo_image_placement": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "image_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "placement_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "placement_revision": {
+                              "required": true,
+                              "schema": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/topics/topic-routes/topic-detail-route.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
       "bodyKind": "content",
       "hash": "6587342a9902bb9e36b8dd90e5688deb45f918642947d9da594c6cfce294a2c0",
@@ -91919,7 +91986,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/topics",
       "bodyFile": "responses/web.topics.search.default.json",
-      "consumers": ["web", "dotnet-core"],
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "web.topics.search.default",
       "method": "GET",
       "migratedFrom": ["web/test-helpers/api-responses/topics.ts"],
@@ -91928,11 +91995,35 @@
         "q": "tech"
       },
       "responseSchema": {
-        "hash": "e5aae61275902740b189d987098762fe3f5e13ed92f3f942e0f5ed5fec9f58c8",
+        "hash": "5376c6b6489742fab71a232d5852d5f08daeaed3f9ad053a2e6300e864825a13",
         "key": "web.topics.search.default"
       },
       "route": {
         "routeTemplate": "/api/v1/topics"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/topics/:idOrSlug",
+      "bodyFile": "responses/web.topics.show.default.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "web.topics.show.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/topics/topic-routes/topic-detail-route.mts"],
+      "path": "/api/v1/topics/test-topic",
+      "responseSchema": {
+        "hash": "5f67aeca95b08e0a1f9edf8ae81b0d9fb70996118a32413b4af87285733a500a",
+        "key": "web.topics.show.default"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "test-topic"
+        },
+        "routeTemplate": "/api/v1/topics/:idOrSlug"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"

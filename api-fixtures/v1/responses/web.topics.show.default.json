@@ -1,0 +1,56 @@
+{
+  "html": "",
+  "topic": {
+    "__entity_type": "topic",
+    "aliases": [],
+    "created_at": "2026-01-01T00:00:00Z",
+    "created_by": {
+      "__entity_type": "user",
+      "account_type": null,
+      "id": "user-1",
+      "roles": [],
+      "username": "testuser"
+    },
+    "hero_image_id": null,
+    "hero_image_placement": null,
+    "homepage_url_id": null,
+    "hostname": null,
+    "hostname_id": null,
+    "id": "topic-1",
+    "is_noindexed": false,
+    "lingua_rs_detected_language": null,
+    "logo_image_id": "00000000-0000-7000-8000-000000000205",
+    "logo_image_placement": {
+      "image_id": "00000000-0000-7000-8000-000000000205",
+      "placement_id": "00000000-0000-7000-8000-000000000306",
+      "placement_revision": 3
+    },
+    "markdown": "",
+    "name": "Test Topic",
+    "referral_program_id": null,
+    "referral_program_slug": null,
+    "rewards_program_id": null,
+    "should_allow_reviews": true,
+    "slug": "test-topic",
+    "topic_type": "topic",
+    "updated_by": {
+      "__entity_type": "user",
+      "account_type": null,
+      "id": "user-1",
+      "roles": [],
+      "username": "testuser"
+    }
+  },
+  "topic_categories": [],
+  "topic_children": [],
+  "topic_content_update": null,
+  "topic_election": {
+    "__entity_type": "topic_election",
+    "id": "topic-1",
+    "votes_count_down": 1,
+    "votes_count_up": 6,
+    "votes_score_net": 5
+  },
+  "topic_metrics": null,
+  "topic_parents": []
+}

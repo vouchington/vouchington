@@ -9,6 +9,17 @@ import { growthMetricsBody } from './web-growth-metrics-data.mts'
 import { webMembershipRefundApiFixtureCases } from './web-membership-refund-cases.mts'
 import { webRssFeedCategoryApiFixtureCases } from './web-rss-feed-category-cases.mts'
 
+const publicTopicWithLogoPlacement = {
+  ...topic,
+  logo_image_id: '00000000-0000-7000-8000-000000000205',
+  logo_image_placement: {
+    placement_id: '00000000-0000-7000-8000-000000000306',
+    placement_revision: 3,
+    image_id: '00000000-0000-7000-8000-000000000205',
+  },
+  hero_image_placement: null,
+}
+
 export const webApiFixtureCases: ApiFixtureCase[] = [
   ...webMembershipRefundApiFixtureCases,
   ...webRssFeedCategoryApiFixtureCases,
@@ -88,13 +99,36 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
         },
       ],
       page_info: pageInfo,
-      topics: { [topic.id]: topic },
+      topics: { [topic.id]: publicTopicWithLogoPlacement },
       topic_elections: { [topic.id]: topicElection },
       election_votes: { [topic.id]: electionVotes[topic.id] },
       topics_metrics: {},
     },
-    consumers: ['web', 'dotnet-core'],
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/test-helpers/api-responses/topics.ts'],
+  },
+  {
+    id: 'web.topics.show.default',
+    method: 'GET',
+    path: '/api/v1/topics/test-topic',
+    route: {
+      routeTemplate: '/api/v1/topics/:idOrSlug',
+      pathParams: { idOrSlug: 'test-topic' },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      topic: publicTopicWithLogoPlacement,
+      html: '',
+      topic_election: topicElection,
+      topic_metrics: null,
+      topic_categories: [],
+      topic_parents: [],
+      topic_children: [],
+      topic_content_update: null,
+    },
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/topics/topic-routes/topic-detail-route.mts'],
   },
   {
     id: 'web.topics.mutation.default',
