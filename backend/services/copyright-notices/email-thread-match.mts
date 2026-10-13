@@ -97,7 +97,7 @@ async function findInboundCopyrightEmailThreadMatch(
   matchQuery.append(sql`
       ) AS "matchedLookup"
     FROM ancestors
-    JOIN copyright_notice_email_intake_notice_links link
+    LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = ancestors.intake_id
     GROUP BY link.copyright_notice_id
     ORDER BY link.copyright_notice_id
@@ -105,7 +105,7 @@ async function findInboundCopyrightEmailThreadMatch(
   `)
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
-    noticeId: string
+    noticeId: string | null
     matchedIntakeId: string | null
     matchedLookup: string | null
   }>(matchQuery)
@@ -113,7 +113,8 @@ async function findInboundCopyrightEmailThreadMatch(
   if (rows.length > 1)
     return { status: 'conflict', noticeId: null, matchedIntakeId: null, matchedLookup: null }
   const row = rows[0]
-  if (!row) return { status: 'none', noticeId: null, matchedIntakeId: null, matchedLookup: null }
+  if (!row?.noticeId)
+    return { status: 'none', noticeId: null, matchedIntakeId: null, matchedLookup: null }
   return { status: 'match', ...row }
 }
 

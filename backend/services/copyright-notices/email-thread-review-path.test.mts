@@ -206,12 +206,28 @@ describe('copyright email review path', () => {
 
     await expectManualReview(moderator, reply.intakeId, 'duplicate_message_id')
   })
+
+  it('leaves a reply unlinked while a known ancestor has no case', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const linkedMessageId = copyrightEmailMessageId()
+    const waitingMessageId = copyrightEmailMessageId()
+    await promoteInitialCopyrightEmail({ moderator, messageId: linkedMessageId })
+    await recordThreadedCopyrightEmail({ messageId: waitingMessageId, replyReferences: [] })
+    const reply = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      inReplyTo: [linkedMessageId],
+      replyReferences: [waitingMessageId],
+    })
+
+    expect(reply.match).toBeNull()
+    await expectManualReview(moderator, reply.intakeId, 'unresolved_thread')
+  })
 })
 
 async function expectManualReview(
   moderator: Awaited<ReturnType<typeof createTestUser>>,
   intakeId: string,
-  reviewPath: 'duplicate_message_id' | 'ancestor_notice_conflict',
+  reviewPath: 'duplicate_message_id' | 'ancestor_notice_conflict' | 'unresolved_thread',
 ) {
   const queued = await searchCopyrightStaffEmailIntakes(moderator, {
     limit: 5,
