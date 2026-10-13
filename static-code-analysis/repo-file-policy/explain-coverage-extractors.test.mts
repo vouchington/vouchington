@@ -59,8 +59,10 @@ describe('EXPLAIN extractor overlap', () => {
         'backend/services/posts/metrics-batch.mts',
         'backend/services/remote-actors/list-followers-of-user.mts',
         'backend/services/topics/metrics-batch.mts',
+        'backend/services/trending-communities/get-trending-communities.mts',
         'backend/services/users/follow-context-queries.mts',
         'backend/services/users/metrics-batch.mts',
+        'backend/services/vote-weight/gather-factors.mts',
         'backend/services/vote-integrity/get-penalties.mts',
       ]
       const sources = paths.map(fileName => ({
@@ -90,7 +92,9 @@ describe('EXPLAIN extractor overlap', () => {
           'getPostMetricsByAnyBatch',
           'listRemoteFollowerInboxPage',
           'getTopicMetricsByAnyBatch',
+          'getTrendingCommunities',
           'getUserMetricsByAnyBatch',
+          'gatherVoteWeightFactors',
           'getFollowedUsersByElectionVote',
           'getVoteWeightPenalties',
           'selectPostNotificationRecipientBatch',

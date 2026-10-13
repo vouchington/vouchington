@@ -24,19 +24,21 @@ describe('getTrendingCommunities query shape', () => {
     })
 
     const result = await getTrendingCommunities({ limit: 10 }, { read: mockRead })
-    const query = mockRead.mock.calls[0]![0] as { text: string }
+    const query = mockRead.mock.calls[0]![0] as string
+    const values = mockRead.mock.calls[0]![1] as unknown[]
 
-    expect(query.text).toContain('/* getTrendingCommunities */')
-    expect(query.text).not.toContain('view_community_metrics')
-    expect(query.text).toContain('FROM community_members')
-    expect(query.text).toContain('GROUP BY cm.community_id')
-    expect(query.text).toContain('GROUP BY r.object_id')
-    expect(query.text).toContain('COALESCE(mc.member_count, 0) AS member_count')
-    expect(query.text).toContain('COALESCE(cand.post_count, 0) AS post_count')
-    expect(query.text).toContain('WITH candidate_reviewed_posts AS')
-    expect(query.text).toContain('windowed_post_counts AS')
-    expect(query.text).toContain('candidates AS')
-    expect(query.text).toContain('INNER JOIN candidates cand')
+    expect(query).toContain('/* getTrendingCommunities */')
+    expect(query).not.toContain('view_community_metrics')
+    expect(query).toContain('FROM community_members')
+    expect(query).toContain('GROUP BY cm.community_id')
+    expect(query).toContain('GROUP BY r.object_id')
+    expect(query).toContain('COALESCE(mc.member_count, 0) AS member_count')
+    expect(query).toContain('COALESCE(cand.post_count, 0) AS post_count')
+    expect(query).toContain('WITH candidate_reviewed_posts AS')
+    expect(query).toContain('windowed_post_counts AS')
+    expect(query).toContain('candidates AS')
+    expect(query).toContain('INNER JOIN candidates cand')
+    expect(values.at(-1)).toBe(11)
     expect(result.communities[0]).toMatchObject({
       id: mockCommunityId,
       member_count: 0,

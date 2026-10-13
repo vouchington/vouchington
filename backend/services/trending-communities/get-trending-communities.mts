@@ -1,5 +1,6 @@
 import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
@@ -149,7 +150,14 @@ export async function getTrendingCommunities(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await dependencies.read(query)
+  const prefix = '/* getTrendingCommunities */\n    WITH '
+  if (!query.text.startsWith(prefix)) throw new Error('Trending communities SQL prefix changed')
+  const execute = (executor: QueryExecutor) =>
+    executor(
+      `/* getTrendingCommunities */\n    WITH ${query.text.slice(prefix.length)}`,
+      query.values,
+    )
+  const { rows } = await execute(dependencies.read)
 
   const hasNextPage = rows.length > safeLimit
   const communities = rows.slice(0, safeLimit) as TrendingCommunity[]

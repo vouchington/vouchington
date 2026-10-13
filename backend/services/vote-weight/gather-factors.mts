@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { VoteWeightFactors } from './calculate.mts'
 
@@ -19,8 +20,8 @@ export async function gatherVoteWeightFactors(
 ): Promise<GatheredFactors | null> {
   const reader = dependencies?.read ?? read
   const writer = dependencies?.write ?? write
-  const query = opts?.readFromWriter ? writer : reader
-  const { rows } = await query(sql`/* gatherVoteWeightFactors */
+  const execute = (query: QueryExecutor) =>
+    query(sql`/* gatherVoteWeightFactors */
     WITH oauth_stats AS (
       SELECT
         COUNT(*) AS oauth_count,
@@ -89,6 +90,7 @@ export async function gatherVoteWeightFactors(
     WHERE u.id = ${userId}
       AND u.deleted_at IS NULL
   `)
+  const { rows } = await execute(opts?.readFromWriter ? writer : reader)
 
   const row = rows[0]
   if (!row) return null
