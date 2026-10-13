@@ -46,3 +46,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_membership_google_play_purchase_tokens_context`: `CREATE TRIGGER trigger_membership_google_play_purchase_tokens_context BEFORE INSERT OR UPDATE ON public.membership_google_play_purchase_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_context_provider_mismatch('google_play')`
+- `trigger_membership_google_play_purchase_tokens_guard`: `CREATE TRIGGER trigger_membership_google_play_purchase_tokens_guard BEFORE DELETE OR UPDATE ON public.membership_google_play_purchase_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_google_play_purchase_token_mutation()`

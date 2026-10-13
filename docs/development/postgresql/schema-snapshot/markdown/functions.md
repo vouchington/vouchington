@@ -867,6 +867,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_context_provider_mismatch
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_membership_google_play_purchase_token_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_google_play_purchase_token_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_grant_activation_period_mutation`
 
 ```sql
