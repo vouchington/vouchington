@@ -21,6 +21,8 @@ export type MembershipsJobs =
   | 'processSendRenewalPriceIncreaseEmail'
   | 'dispatchMembershipRefundReconciliation'
   | 'reconcileMembershipRefundOperation'
+  | 'dispatchMembershipPauseCollection'
+  | 'syncMembershipPauseCollection'
 
 export type ProcessStripeEventData = {
   stripeEventRecordId: string
@@ -57,4 +59,10 @@ export type ProcessSendRenewalPriceIncreaseEmailData = {
 export type ReconcileMembershipRefundOperationData = {
   operationId: string
   leaseToken: string
+}
+
+export type SyncMembershipPauseCollectionData = {
+  userId: string
+  requestedAt: string
+  leaseToken?: string
 }

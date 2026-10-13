@@ -49,6 +49,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'heartbeat/publish-glidemq-stats',
   'images/cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
+  'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',
   'memberships/membershipEntitlementEffects',
   'memberships/membershipGrantExpiry',
@@ -97,7 +98,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 27 manifests and 83 live jobs', () => {
+  it('imports the exact 27 manifests and 75 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(27)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -147,7 +148,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(67)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(68)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

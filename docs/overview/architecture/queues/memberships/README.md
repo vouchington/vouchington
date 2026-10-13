@@ -56,6 +56,16 @@ Job queue for membership lifecycle events.
 - `reconcileMembershipRefundOperation` (worker, priority 10): performs one lease-fenced Stripe
   refund/cancellation reconciliation. It retries three queue deliveries with exponential 5-second
   jitter; durable retries use `5m * 2^min(ordinal, 8)` and are capped at 24 hours.
+- `dispatchMembershipPauseCollection` (dispatcher, priority 100): every minute claims due
+  `membership_pause_collection_work_items` rows and enqueues one child per lease. A Stripe failure
+  clears the lease, records `last_failed_at` and `last_failure_message`, and sets `available_at`
+  to the refund backoff: 5 minutes times 2^min(`attempt_count` - 1, 8), capped at 24 hours.
+  There is no terminal give-up.
+- `syncMembershipPauseCollection` (worker, priority 10): sets or clears Stripe `pause_collection`
+  for that generation. It retries five deliveries with exponential 5-second jitter. Each failed
+  Stripe attempt logs the error code and schedules that backoff. The membership stays active.
+  The durable matrix is
+  [suspension pause collection](../../services/memberships/reference-suspension-pause-collection.md).
 
 ## Schedule
 
@@ -74,6 +84,9 @@ Job queue for membership lifecycle events.
 - `stripeCatalogReconciliation`: every 5 minutes, and once immediately after schedule registration
 - `dispatchMembershipRefundReconciliation`: every 5 minutes; `charge.refunded` is a receipt-first,
   best-effort targeted wake, while this schedule is authoritative for missed queue work
+- `dispatchMembershipPauseCollection`: every minute; the suspension transaction's best-effort
+  enqueue is an early wake, and this schedule recovers a lost enqueue from PostgreSQL. A failed
+  Stripe update stays unclaimed until its `available_at` backoff.
 
 ## Deduplication
 
@@ -107,6 +120,12 @@ Job queue for membership lifecycle events.
 - Microsoft Store active sources: a cursor records both the last accepted source and an upper bound
   frozen at the start of each pass. A CAS winner advances only after its child jobs are accepted,
   then queues one ordered continuation for a full page; the hourly schedule recovers a lost chain.
+
+- Pause collection: `membership-pause-collection__<user-id>__<requested-at-ms>__<lease-or-pending>`
+  is the job ID and simple deduplication ID. Ordering key `pause-collection:<user-id>` has
+  concurrency 1. The dispatcher uses throttle identity `membership-pause-collection-dispatch` for
+  one minute. PostgreSQL `requested_at` is the generation; the Stripe key omits the lease token.
+  See [suspension pause collection](../../services/memberships/reference-suspension-pause-collection.md).
 
 The membership-verification durable transition matrix lives in the
 [service README](../../services/memberships/README.md#membership-verification-transitions), where

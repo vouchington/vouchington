@@ -7355,6 +7355,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../memberships
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases
@@ -10911,6 +10914,9 @@ importers:
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../memberships
       '@services/mfa':
         specifier: workspace:^
         version: link:../mfa

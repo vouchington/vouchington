@@ -1353,6 +1353,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover Stripe pause-collection work lost after a suspension change",
+        "id": "dispatchMembershipPauseCollection",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "dispatchMembershipPauseCollection",
+    "template": {
+      "data": {},
+      "name": "dispatchMembershipPauseCollection",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Reconcile the Stripe membership catalog",
         "id": "stripeCatalogReconciliation",
         "kind": "scheduled-jobs",
@@ -2857,6 +2890,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "memberships",
     "schedule": "every 5m",
     "triggerName": "enqueueDispatchMembershipRefundReconciliation",
+  },
+  {
+    "description": "Recover Stripe pause-collection work lost after a suspension change",
+    "id": "dispatchMembershipPauseCollection",
+    "job_name": "dispatchMembershipPauseCollection",
+    "queue_name": "memberships",
+    "schedule": "every 1m",
+    "triggerName": "enqueueDispatchMembershipPauseCollection",
   },
   {
     "description": "Reconcile the Stripe membership catalog",

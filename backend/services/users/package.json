@@ -47,6 +47,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
+    "@services/memberships": "workspace:^",
     "@services/mfa": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/oauth-accounts": "workspace:^",

@@ -103,6 +103,8 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | memberships                                  | processSendRenewalPriceIncreaseEmail           | —                                        | 10               |
 | memberships                                  | dispatchMembershipRefundReconciliation         | —                                        | 100              |
 | memberships                                  | reconcileMembershipRefundOperation             | —                                        | 10               |
+| memberships                                  | dispatchMembershipPauseCollection              | —                                        | 100              |
+| memberships                                  | syncMembershipPauseCollection                  | `pause-collection:<user-id>`             | 10               |
 | notifications                                | processReconcilePostNotifications              | —                                        | 10               |
 | notifications                                | processReconcileRssFeedItemNotifications       | —                                        | 10               |
 | notifications                                | processDeliverNotificationPushIntent           | —                                        | 10               |

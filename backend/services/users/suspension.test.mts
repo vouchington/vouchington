@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
+  deleteTestMembershipPauseCollectionWork,
+  getTestMembershipPauseCollectionRequestedAt,
   safeUsername,
   suspendTestUser,
   suspendTestUserGetId,
@@ -64,6 +66,19 @@ describe('suspendUser', () => {
     })
   })
 
+  it('records one pause-collection generation and keeps it when suspend is repeated', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const user = await createTestUser({ username: safeUsername('suspend-pause') })
+
+    await suspendUser(admin, user.id, 'allow', 'abuse')
+    const requestedAt = await getTestMembershipPauseCollectionRequestedAt(user.id)
+
+    expect(requestedAt).toBeInstanceOf(Date)
+    await expect(suspendUser(admin, user.id, 'allow')).rejects.toMatchObject({ status: 409 })
+    await expect(getTestMembershipPauseCollectionRequestedAt(user.id)).resolves.toEqual(requestedAt)
+    await deleteTestMembershipPauseCollectionWork(user.id)
+  })
+
   it('returns 409 for already-suspended user', async () => {
     const admin = await createTestUser({ administrator: true })
     const user = await createTestUser({ username: safeUsername('suspend-already') })
@@ -76,6 +91,20 @@ describe('suspendUser', () => {
 })
 
 describe('unsuspendUser', () => {
+  it('records a new pause-collection generation when the suspension is lifted', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const user = await createTestUser({ username: safeUsername('unsuspend-pause') })
+    await suspendUser(admin, user.id, 'allow')
+    const suspendedAt = await getTestMembershipPauseCollectionRequestedAt(user.id)
+
+    await unsuspendUser(admin, user.id)
+    const liftedAt = await getTestMembershipPauseCollectionRequestedAt(user.id)
+
+    expect(liftedAt).toBeInstanceOf(Date)
+    expect(liftedAt?.getTime()).not.toBe(suspendedAt?.getTime())
+    await deleteTestMembershipPauseCollectionWork(user.id)
+  })
+
   it('lifts the active suspension so suspended_at is null', async () => {
     const refreshTopHashtags = vi.spyOn(psqlEnqueues, 'enqueueRefreshTopHashtags')
     const admin = await createTestUser({ administrator: true })

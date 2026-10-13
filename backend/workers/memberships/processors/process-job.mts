@@ -7,8 +7,13 @@ import {
   reconcileStripeMembershipCatalog,
   dispatchDueRefundReconciliations,
   reconcileMembershipRefundOperation,
+  dispatchDuePauseCollectionWork,
+  syncMembershipPauseCollection,
 } from '@services/memberships'
-import { enqueueReconcileMembershipRefundOperation } from '@queues/memberships/enqueues'
+import {
+  enqueueReconcileMembershipRefundOperation,
+  enqueueSyncMembershipPauseCollection,
+} from '@queues/memberships/enqueues'
 import { processMembershipVerification } from '@services/memberships/process-verification'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
 import {
@@ -49,6 +54,8 @@ type MembershipJobProcessors = {
   reconcileStripeMembershipCatalog: typeof reconcileStripeMembershipCatalog
   dispatchMembershipRefundReconciliation: typeof dispatchMembershipRefundReconciliation
   reconcileMembershipRefundOperation: typeof reconcileMembershipRefundOperation
+  dispatchMembershipPauseCollection: typeof dispatchMembershipPauseCollection
+  syncMembershipPauseCollection: typeof syncMembershipPauseCollection
 }
 
 const PROCESSORS: MembershipJobProcessors = {
@@ -74,6 +81,13 @@ const PROCESSORS: MembershipJobProcessors = {
   reconcileStripeMembershipCatalog,
   dispatchMembershipRefundReconciliation,
   reconcileMembershipRefundOperation,
+  dispatchMembershipPauseCollection,
+  syncMembershipPauseCollection,
+}
+
+async function dispatchMembershipPauseCollection(): Promise<void> {
+  const leases = await dispatchDuePauseCollectionWork()
+  await Promise.all(leases.map(lease => enqueueSyncMembershipPauseCollection(lease)))
 }
 
 async function dispatchMembershipRefundReconciliation(): Promise<void> {
@@ -161,6 +175,12 @@ export async function processMembershipJob(job: Job, processors = PROCESSORS): P
         id: (job.data as { operationId: string }).operationId,
         leaseToken: (job.data as { leaseToken: string }).leaseToken,
       })
+      return
+    case 'dispatchMembershipPauseCollection':
+      await processors.dispatchMembershipPauseCollection()
+      return
+    case 'syncMembershipPauseCollection':
+      await processors.syncMembershipPauseCollection(job.data)
       return
     default:
       throw new Error(`Unknown job name: ${job.name}`)

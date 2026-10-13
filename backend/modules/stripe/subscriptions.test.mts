@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
-import { cancelStripeSubscriptionImmediately, getStripeSubscription } from './subscriptions.mts'
+import {
+  cancelStripeSubscriptionImmediately,
+  getStripeSubscription,
+  updateStripeSubscriptionPauseCollection,
+} from './subscriptions.mts'
 
 describe('stripe subscriptions module', () => {
   beforeEach(() => {
@@ -21,6 +25,29 @@ describe('stripe subscriptions module', () => {
     expect(retrieve).toHaveBeenCalledWith('sub_123', {
       expand: ['schedule.phases.items.price'],
     })
+  })
+
+  it('pauses collection with void and clears it with the same idempotency key style', async () => {
+    const update = vi.fn<VitestLooseMock>().mockResolvedValue({ id: 'sub_pause' })
+    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
+      subscriptions: { update },
+    } as never)
+
+    await updateStripeSubscriptionPauseCollection('sub_pause', 'void', 'pause-key')
+    await updateStripeSubscriptionPauseCollection('sub_pause', 'clear', 'clear-key')
+
+    expect(update).toHaveBeenNthCalledWith(
+      1,
+      'sub_pause',
+      { pause_collection: { behavior: 'void' } },
+      { idempotencyKey: 'pause-key' },
+    )
+    expect(update).toHaveBeenNthCalledWith(
+      2,
+      'sub_pause',
+      { pause_collection: '' },
+      { idempotencyKey: 'clear-key' },
+    )
   })
 
   it('cancels subscriptions immediately', async () => {

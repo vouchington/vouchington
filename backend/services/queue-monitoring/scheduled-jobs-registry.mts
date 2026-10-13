@@ -39,6 +39,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'microsoftStoreSourceRecovery',
   'membershipVerificationRecovery',
   'dispatchMembershipRefundReconciliation',
+  'dispatchMembershipPauseCollection',
   'stripeCatalogReconciliation',
   'renewalNotificationCheck',
   'blacklistDispatcher',

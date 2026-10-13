@@ -53,8 +53,13 @@ sessions, invalid device/session pairs, and invalid proofs.
 
 Independent credential boundaries retain their own authorization: external callbacks, OAuth server
 tokens, guest copyright filing capabilities, and token-based email unsubscribe do not derive their
-authority from an ambient user session. MCP credential-owner authentication continues to reject
-suspended accounts.
+authority from an ambient user session. A suspended user may file and read their own appeals over
+the user MCP server only while `membership_plan` is `plus` or `pro` on
+`view_current_paid_memberships`. Account suspension pauses collection on a direct Stripe
+subscription and does not set membership `paused`, so a paying member keeps that MCP appeal for the
+whole suspension. Once the membership is no longer `plus` or `pro`, including when it is `paused`,
+they appeal on the web. MCP credential-owner authentication still rejects suspended accounts for
+every other tool. Billing pause does not lift `ACCOUNT_SUSPENDED`.
 
 ### Multi-Factor Authentication
 

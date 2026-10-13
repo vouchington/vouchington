@@ -65,6 +65,9 @@ describe('processMembershipJob', () => {
       reconcileStripeMembershipCatalog: vi.fn<typeof reconcileStripeMembershipCatalog>(),
       dispatchMembershipRefundReconciliation: vi.fn<() => Promise<void>>(),
       reconcileMembershipRefundOperation: vi.fn<typeof reconcileMembershipRefundOperation>(),
+      dispatchMembershipPauseCollection: vi.fn<() => Promise<void>>(),
+      syncMembershipPauseCollection:
+        vi.fn<(data: { userId: string; requestedAt: string }) => Promise<void>>(),
     }
     const stripeData = {
       stripeEventRecordId: 'event-1',
@@ -121,6 +124,9 @@ describe('processMembershipJob', () => {
       }),
       processors,
     )
+    await processMembershipJob(job('dispatchMembershipPauseCollection'), processors)
+    const pauseData = { userId: 'user-1', requestedAt: '2026-10-11T00:00:00.000Z' }
+    await processMembershipJob(job('syncMembershipPauseCollection', pauseData), processors)
 
     expect(processors.processStripeEvent).toHaveBeenCalledWith(stripeData, true)
     expect(processors.deliverMembershipEntitlementEffects).toHaveBeenCalledOnce()
@@ -151,6 +157,8 @@ describe('processMembershipJob', () => {
       id: 'operation-1',
       leaseToken: 'lease-token-1',
     })
+    expect(processors.dispatchMembershipPauseCollection).toHaveBeenCalledOnce()
+    expect(processors.syncMembershipPauseCollection).toHaveBeenCalledWith(pauseData)
   })
 
   it('rejects unknown jobs', async () => {
@@ -180,6 +188,9 @@ describe('processMembershipJob', () => {
         reconcileStripeMembershipCatalog: vi.fn<typeof reconcileStripeMembershipCatalog>(),
         dispatchMembershipRefundReconciliation: vi.fn<() => Promise<void>>(),
         reconcileMembershipRefundOperation: vi.fn<typeof reconcileMembershipRefundOperation>(),
+        dispatchMembershipPauseCollection: vi.fn<() => Promise<void>>(),
+        syncMembershipPauseCollection:
+          vi.fn<(data: { userId: string; requestedAt: string }) => Promise<void>>(),
       }),
     ).rejects.toThrow('Unknown job name: unknown')
   })

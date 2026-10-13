@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
+  deleteTestMembershipPauseCollectionWork,
+  getTestMembershipPauseCollectionRequestedAt,
   suspendTestUserGetId,
   getTestUserSuspension,
   hardDeleteTestUserAndWaitBeforeCommit,
@@ -48,6 +50,10 @@ describe('resolveModerationAppealAccept — suspension', () => {
 
     const suspension = await getTestUserSuspension(suspensionId)
     expect(suspension?.lifted_at).not.toBeNull()
+    await expect(
+      getTestMembershipPauseCollectionRequestedAt(suspensionUser.id),
+    ).resolves.toBeInstanceOf(Date)
+    await deleteTestMembershipPauseCollectionWork(suspensionUser.id)
     expect(refreshTopHashtags).toHaveBeenCalledOnce()
     await expect(getLatestTestAppealTrainingFeedback(appeal.id)).resolves.toEqual({
       label: 'accepted',
