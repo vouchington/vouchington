@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, afterEach, beforeEach, describe, vi, type MockInstance } from 'vitest'
 import {
   checkBloomFilters,
@@ -62,13 +63,19 @@ describe('bloom-filter.generated', () => {
   })
 
   it('unlinkReadyMarkerIfValue preserves refreshed ready markers', async () => {
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', 'old')
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', 'fresh')
+    const key = `bloom-filter:ready-marker-test:${randomUUID()}`
+    try {
+      await bloomValkeyClient.set(key, 'old')
+      await bloomValkeyClient.set(key, 'fresh')
 
-    const removed = await unlinkReadyMarkerIfValue('bloom-filter:url-blocklist:ready', 'old')
+      await expect(unlinkReadyMarkerIfValue(key, 'old')).resolves.toBe(0)
+      await expect(bloomValkeyClient.get(key)).resolves.toBe('fresh')
 
-    expect(removed).toBe(0)
-    expect(await bloomValkeyClient.get('bloom-filter:url-blocklist:ready')).toBe('fresh')
+      await expect(unlinkReadyMarkerIfValue(key, 'fresh')).resolves.toBe(1)
+      await expect(bloomValkeyClient.get(key)).resolves.toBeNull()
+    } finally {
+      await bloomValkeyClient.unlink([key])
+    }
   })
 
   it('enqueueRebuildBloomFilterBestEffortWithEnqueue runs callbacks after non-promise enqueues', async () => {
