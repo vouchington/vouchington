@@ -2,13 +2,47 @@
 # Reviewed existing per-item calls are tracked by #2523; remediation removes allow entries.
 effects:
   postgres:
+    functions: [executeHandlerWithCursorInBatches]
     targets:
       - { module: '@data-stores/psql', export: read }
       - { module: '@data-stores/psql', export: write }
       - { module: '@data-stores/psql', export: query }
-    transactionFunctions: [query, client.query, query.client.query]
-    batchFunctions: [pipelineBatch, executeHandlerWithCursorInBatches]
+    transactionFunctions:
+      [
+        query,
+        transaction,
+        stagedTransaction,
+        recoveryTransaction,
+        abandonmentTransaction,
+        feedsTransaction,
+        itemsTransaction,
+        sourcesTransaction,
+        rssFeedTransaction,
+        topicTransaction,
+        userTransaction,
+        transactionQuery,
+        txQuery,
+        validationQuery,
+        finalize,
+        finalizeQuery,
+        initial,
+        rejected,
+        owned,
+        client.query,
+        query.client.query,
+      ]
+    batchFunctions: [pipelineBatch]
   valkey:
+    targets:
+      - {
+          module: '@services/ai-usage/accounting-uncertainty.mts',
+          export: getAccountingUncertaintySource,
+        }
+      - {
+          module: '@services/ai-usage/accounting-uncertainty.mts',
+          export: latchAccountingUncertainty,
+        }
+      - { module: '@services/valkey-admin/diagnostics.mts', export: collectValkeyDiagnostics }
     functions:
       - cacheValkeyClient.get
       - cacheValkeyClient.set
@@ -555,6 +589,10 @@ rules:
             callee: 'runAndCapture',
           }
         - {
+            file: backend/scripts/explain-analyze/run-scenarios/notification-block-set.mts,
+            callee: 'getUserIdsBlockedOrMutedEitherWay',
+          }
+        - {
             file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
             callee: 'runAndCapture',
           }
@@ -588,6 +626,10 @@ rules:
           }
         - { file: backend/scripts/explain-analyze/run-support.mts, callee: 'explainAnalyze' }
         - {
+            file: backend/scripts/explain-analyze/seed-data/admin-emails.mts,
+            callee: 'transaction',
+          }
+        - {
             file: backend/scripts/explain-analyze/seed-data/comments-and-recently-viewed.mts,
             callee: 'upsertRecentlyViewed',
           }
@@ -601,17 +643,31 @@ rules:
           }
         - { file: backend/scripts/explain-analyze/seed-data/crawls.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/seed-data/entities.mts, callee: 'query' }
+        - { file: backend/scripts/explain-analyze/seed-data/feeds.mts, callee: 'itemsTransaction' }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/follower-distributions.mts,
+            callee: 'transaction',
+          }
         - { file: backend/scripts/explain-analyze/seed-data/individual-cards.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/seed-data/maintenance.mts, callee: 'write' }
         - {
             file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
             callee: 'rearmMediaDeliveryReplayPage',
           }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/media-delivery-replay.mts,
+            callee: 'transaction',
+          }
+        - { file: backend/scripts/explain-analyze/seed-data/memberships.mts, callee: 'transaction' }
         - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/seed-data/point-valuations.mts, callee: 'query' }
         - {
             file: backend/scripts/explain-analyze/seed-data/post-diagnostics.mts,
             callee: 'client.query',
+          }
+        - {
+            file: backend/scripts/explain-analyze/seed-data/post-feed-shares.mts,
+            callee: 'transaction',
           }
         - { file: backend/scripts/explain-analyze/seed-data/relations.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/seed-data/remote-followers.mts, callee: 'query' }
@@ -709,6 +765,10 @@ rules:
             callee: 'recordCommunityAgentPromptChange',
           }
         - {
+            file: backend/services/copyright-notices/automatic-withholding-caps.mts,
+            callee: 'transaction',
+          }
+        - {
             file: backend/services/copyright-notices/copyright-email-decision-actions.mts,
             callee: 'resolveCopyrightImagePlacement',
           }
@@ -733,6 +793,14 @@ rules:
             callee: 'createCopyrightRestoreIntentForReversalInTransaction',
           }
         - {
+            file: backend/services/copyright-notices/form-reviews-reversal.mts,
+            callee: 'createCopyrightReviewOutcomeNoticesInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/form-reviews-reversal.mts,
+            callee: 'transaction',
+          }
+        - {
             file: backend/services/copyright-notices/holds-late-restrictions.mts,
             callee: 'insertCopyrightActionIntent',
           }
@@ -741,8 +809,32 @@ rules:
             callee: 'withholdImagePlacementForCopyright',
           }
         - {
+            file: backend/services/copyright-notices/read-models-staff-territorial-complaints.mts,
+            callee: 'getTerritorialInformedWindow',
+          }
+        - {
+            file: backend/services/copyright-notices/read-models-staff-territorial-complaints.mts,
+            callee: 'toComplaintPage',
+          }
+        - {
             file: backend/services/copyright-notices/repeat-infringer-locks.mts,
             callee: 'lockAuthorPublicationLifecycle',
+          }
+        - {
+            file: backend/services/copyright-notices/restriction-poster-notices.mts,
+            callee: 'createCopyrightStatementDeliveryInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/retention-erasure-case.mts,
+            callee: 'transaction',
+          }
+        - {
+            file: backend/services/copyright-notices/retention-erasure-preservation.mts,
+            callee: 'transaction',
+          }
+        - {
+            file: backend/services/copyright-notices/retention-erasure.mts,
+            callee: 'eraseCopyrightRetentionCase',
           }
         - {
             file: backend/services/copyright-notices/statutory-restoration-schedule.mts,
@@ -753,12 +845,25 @@ rules:
             callee: 'createCopyrightRestoreIntentForReversalInTransaction',
           }
         - {
+            file: backend/services/copyright-notices/submission-reviews.mts,
+            callee: 'createCopyrightReviewOutcomeNoticesInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/submission-reviews.mts,
+            callee: 'recordClaimantMisuseEvent',
+          }
+        - { file: backend/services/copyright-notices/submission-reviews.mts, callee: 'transaction' }
+        - {
             file: backend/services/copyright-notices/territorial-decision.mts,
             callee: 'resolveCopyrightImagePlacement',
           }
         - {
             file: backend/services/copyright-notices/territorial-redress.mts,
             callee: 'createCopyrightRestoreIntentForReversalInTransaction',
+          }
+        - {
+            file: backend/services/copyright-notices/territorial-redress.mts,
+            callee: 'transaction',
           }
         - {
             file: backend/services/crawls/dispatch-crawl-hostnames.mts,
@@ -817,6 +922,10 @@ rules:
         - {
             file: backend/services/images/cleanup-abandoned-uploads.mts,
             callee: 'cleanupStagedUploadSource',
+          }
+        - {
+            file: backend/services/images/cleanup-abandoned-uploads.mts,
+            callee: 'markImageUploadSourceDeleted',
           }
         - { file: backend/services/images/delete-rollback.mts, callee: 'compensatePostRevision' }
         - {
@@ -885,6 +994,10 @@ rules:
         - { file: backend/services/media-delivery-safety/index.mts, callee: 'query' }
         - { file: backend/services/media-delivery-safety/surface-lock.mts, callee: 'query' }
         - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query' }
+        - {
+            file: backend/services/memberships/google/lineage.mts,
+            callee: 'ensureGooglePlayTokenAlias',
+          }
         - {
             file: backend/services/memberships/google/lineage.mts,
             callee: 'getKnownGooglePlayCanonicalRoot',
@@ -1185,6 +1298,11 @@ rules:
           }
         - { file: backend/services/rss-feed-items/story-publication-change.mts, callee: 'query' }
         - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read' }
+        - { file: backend/services/rss-feed-items/upsert-write-locks.mts, callee: 'txQuery' }
+        - {
+            file: backend/services/rss-feed-items/upsert-write-locks.mts,
+            callee: 'upsertRssFeedItemIdentities',
+          }
         - { file: backend/services/rss-feed-items/upsert.mts, callee: 'upsertRssFeedItemContent' }
         - {
             file: backend/services/rss-feeds/categories.mts,
@@ -1199,6 +1317,10 @@ rules:
         - {
             file: backend/services/stripe/event-charge-handlers.mts,
             callee: 'leaseDueRefundReconciliation',
+          }
+        - {
+            file: backend/services/stripe/event-charge-handlers.mts,
+            callee: 'recordMembershipRefundEvent',
           }
         - {
             file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
@@ -1300,10 +1422,6 @@ rules:
         - {
             file: playwright/tests/tags/tag-voting-helpers.mts,
             callee: 'softDeleteScoredPostTopicCategoryRelation',
-          }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/notification-block-set.mts,
-            callee: 'getUserIdsBlockedOrMutedEitherWay',
           }
 
   - name: GitHub Actions uses pins
