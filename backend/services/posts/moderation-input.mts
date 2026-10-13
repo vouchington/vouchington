@@ -1,4 +1,4 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { read, type QueryExecutor, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getPostByAny } from './get.mts'
 import type { Post } from './types.mts'
@@ -11,13 +11,14 @@ export async function getPostModerationInput(
   const query = options.query ?? read
   const post = (await getPostByAny(postId, options)) as Post | null
   if (!post) return null
-  const { rows: images } = await query<{
-    image_id: string
-    placement_id: string
-    placement_revision: number
-    order_index: number
-    caption: string
-  }>(sql`/* getPostModerationInput:images */
+  const loadImages = (execute: QueryExecutor) =>
+    execute<{
+      image_id: string
+      placement_id: string
+      placement_revision: number
+      order_index: number
+      caption: string
+    }>(sql`/* getPostModerationInput:images */
     SELECT attachment.image_id, placement.id AS placement_id,
       placement.revision AS placement_revision, attachment.order_index, attachment.caption
     FROM post_images attachment
@@ -27,5 +28,6 @@ export async function getPostModerationInput(
     WHERE attachment.post_id = ${postId} AND placement.retired_at IS NULL
     ORDER BY attachment.order_index
   `)
+  const { rows: images } = await loadImages(query)
   return { ...post, images }
 }

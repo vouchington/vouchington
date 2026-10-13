@@ -41,11 +41,13 @@ export async function readClassifierRunOutcomes<C, L, E>(
   options: { query?: QueryExecutor } = {},
 ): Promise<ClassifierRunOutcomes<L> | null> {
   const query = options.query ?? write
-  const { rows } = await query<OutcomeRow>(sql`/* readClassifierRunOutcomes */
+  const select = (execute: QueryExecutor) =>
+    execute<OutcomeRow>(sql`/* readClassifierRunOutcomes */
     SELECT input_sha256, configuration_json::text AS configuration_json, configuration_sha256,
       shared_actor_user_id, decision_batch_id, outcomes_persisted_at
     FROM classifier_runs WHERE id = ${lease.runId}
   `)
+  const { rows } = await select(query)
   const row = rows[0]
   if (!row?.outcomes_persisted_at || !matchesLease(row, lease)) return null
   const local = adapter.readLocal ? await adapter.readLocal(query, lease.runId) : null

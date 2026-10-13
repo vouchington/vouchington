@@ -1,4 +1,4 @@
-import { read, type TransactionQuery } from '@data-stores/psql'
+import { read, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateSlug, validateUUID } from '@modules/utils'
@@ -46,9 +46,11 @@ export async function getUsernameForLandingPages(
 ): Promise<string> {
   validateUUID(userId)
   const executor = options?.query ?? read
-  const { rows } = await executor(
-    sql`/* getUsernameForLandingPages */ SELECT username FROM users WHERE id = ${userId} AND deleted_at IS NULL LIMIT 1`,
-  )
+  const select = (query: QueryExecutor) =>
+    query(
+      sql`/* getUsernameForLandingPages */ SELECT username FROM users WHERE id = ${userId} AND deleted_at IS NULL LIMIT 1`,
+    )
+  const { rows } = await select(executor)
   const username = rows[0]?.username
   assert(
     typeof username === 'string' && username.length > 0,

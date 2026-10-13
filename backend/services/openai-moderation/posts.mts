@@ -1,6 +1,6 @@
 import { createPostModerationContent } from '@services/posts/content'
 import type { Post } from '@services/posts/types'
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createOpenAIModeration } from './request.mts'
 import { applyPostOpenAIModerationResults } from './persist-post-results.mts'
@@ -101,7 +101,8 @@ export async function isPostOpenAIModerationUpToDate(
   options: OpenAIModerationReadOptions = {},
 ): Promise<boolean> {
   const query = options.readOnly === false ? write : read
-  const { rows } = await query(sql`/* isPostOpenAIModerationUpToDate */
+  const select = (execute: QueryExecutor) =>
+    execute(sql`/* isPostOpenAIModerationUpToDate */
     SELECT 1
     FROM posts post
     JOIN post_moderation_versions version
@@ -119,6 +120,7 @@ export async function isPostOpenAIModerationUpToDate(
     WHERE post.id = ${postId}
       AND post.llm_moderation_content_sha256 = ${contentSha256}
   `)
+  const { rows } = await select(query)
 
   return rows.length > 0
 }
@@ -128,7 +130,8 @@ export async function findExistingPostOpenAIModeration(
   options: OpenAIModerationReadOptions = {},
 ): Promise<{ results: PersistedOpenAIModerationResults; flagged: boolean } | null> {
   const query = options.readOnly === false ? write : read
-  const { rows } = await query(sql`/* findExistingPostOpenAIModeration */
+  const select = (execute: QueryExecutor) =>
+    execute(sql`/* findExistingPostOpenAIModeration */
     SELECT disposition.disposition, disposition.evidence
     FROM post_moderation_versions version
     JOIN LATERAL (
@@ -145,6 +148,7 @@ export async function findExistingPostOpenAIModeration(
     ORDER BY version.id DESC
     LIMIT 1
   `)
+  const { rows } = await select(query)
 
   if (rows.length === 0) {
     return null

@@ -57,11 +57,12 @@ export async function ensureGooglePlayAcknowledgement(options: {
     UPDATE membership_google_play_acknowledgment_work_items work
     SET completed_at = NULL, available_at = clock_timestamp(), lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
     FROM admitted WHERE work.membership_google_play_acknowledgment_id = admitted.id`)
-  const { rows } = await query<{
-    id: string
-    membership_provider_lineage_id: string
-    subscription_id: string
-  }>(sql`
+  const selectIdentity = (execute: QueryExecutor) =>
+    execute<{
+      id: string
+      membership_provider_lineage_id: string
+      subscription_id: string
+    }>(sql`
     /* ensureGooglePlayAcknowledgement.identity */
     SELECT acknowledgement.id, acknowledgement.membership_provider_lineage_id,
       acknowledgement.subscription_id
@@ -73,6 +74,7 @@ export async function ensureGooglePlayAcknowledgement(options: {
       AND context.application_id = ${options.applicationId}
       AND acknowledgement.purchase_token_lookup_sha256 = ${lookup}
     FOR KEY SHARE OF acknowledgement`)
+  const { rows } = await selectIdentity(query)
   if (
     rows[0]?.membership_provider_lineage_id !== options.lineageId ||
     rows[0].subscription_id !== options.subscriptionId

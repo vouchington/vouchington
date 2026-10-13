@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 
@@ -58,12 +58,14 @@ export async function stageImagePlacementDeliveryRecord(
     RETURNING id, generation
   `)
   if (rows[0]) return { mediaDeliveryRegistryRecordId: rows[0].id, generation: rows[0].generation }
-  const { rows: currentRows } = await query<{ id: string; generation: string }>(sql`
+  const selectCurrent = (execute: QueryExecutor) =>
+    execute<{ id: string; generation: string }>(sql`
     /* stageImagePlacementDeliveryRecord:current */
     SELECT id, generation FROM media_delivery_registry_records
     WHERE placement_id = ${input.placementId}::uuid AND placement_revision = ${input.revision}
       AND image_id = ${input.imageId}::uuid
   `)
+  const { rows: currentRows } = await selectCurrent(query)
   return {
     mediaDeliveryRegistryRecordId: currentRows[0]!.id,
     generation: currentRows[0]!.generation,
