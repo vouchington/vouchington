@@ -1,5 +1,8 @@
 import { terminalFailedGithubActionsStepLog } from './github-actions-log.mts'
-import { isGithubReleasesDownloadFlake } from './github-releases-download-fingerprint.mts'
+import {
+  hasCurlGithubReleaseTransportFailure,
+  isGithubReleasesDownloadFlake,
+} from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
 
 const gitleaksJobName = 'gitleaks'
@@ -14,15 +17,11 @@ function hasGitleaksInstallReleasesDownloadFlake(log: string): boolean {
   const downloadFailedIndex = installLog.lastIndexOf('DOWNLOAD FAILED: ')
   const downloadFailedSlice =
     downloadFailedIndex === -1 ? '' : installLog.slice(downloadFailedIndex)
-  const curlFlake =
-    installLog.includes('curl: (28)') ||
-    installLog.includes('curl: (56)') ||
-    /curl: \(22\).* (?:000|5\d\d)/.test(installLog)
 
   return (
     (usesGitleaksInstaller && installStepTimedOut) ||
     (usesGitleaksInstaller &&
-      curlFlake &&
+      hasCurlGithubReleaseTransportFailure(installLog) &&
       installLog.includes('Process completed with exit code 1.')) ||
     (downloadFailedSlice !== '' &&
       isGithubReleasesDownloadFlake(
