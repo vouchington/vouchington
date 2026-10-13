@@ -57,6 +57,7 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
     // oxlint-disable-next-line no-await-in-loop -- one committed transaction per physical batch
     await using query = await beginTransaction()
     let remaining = batchSize
+    // no-mistakes-disable-next-line query-reached-per-item: each ordered phase uses this transaction's bounded physical row budget
     while (remaining > 0 && deleted < budget) {
       if (phase === OAUTH_RETENTION_DELETE_ORDER.length) {
         if (redistributing) break
