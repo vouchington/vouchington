@@ -17,10 +17,8 @@ export * from './query-contract.mts'
 export * from './cursors.mts'
 export {
   decodeScopedPreciseTimestampCursor,
-  decodeScopedTierPreciseNameCursor,
   decodeScopedTierPreciseUuidCursor,
   encodeScopedPreciseTimestampCursor,
-  encodeScopedTierPreciseNameCursor,
   encodeScopedTierPreciseUuidCursor,
 } from '@vouchington/pagination'
 export type { PaginationRuntimeLimitBounds } from './parser.mts'
