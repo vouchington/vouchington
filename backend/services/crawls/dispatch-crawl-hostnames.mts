@@ -56,6 +56,7 @@ async function dispatchHostnamePage(
     { ...cursor, bucketDays: cursor.bucketDays! },
     pageRemaining,
   )
+  let enqueued = 0
   if (!rows.length) {
     cursor = {
       sweepStartedAt: cursor.sweepStartedAt,
@@ -63,8 +64,8 @@ async function dispatchHostnamePage(
       afterBucketDays: cursor.bucketDays!,
     }
   } else {
-    const hostnameIds: string[] = []
-    for (const row of rows) hostnameIds.push(row.id)
+    const hostnameIds = rows.flatMap(row => (row.has_url ? [row.id] : []))
+    enqueued = hostnameIds.length
     if (hostnameIds.length) await enqueueBulkCrawlHostname(hostnameIds)
     const next = { ...cursor }
     for (const row of rows) {
@@ -75,5 +76,5 @@ async function dispatchHostnamePage(
     cursor = next
   }
   await saveProgress?.(cursor)
-  return { cursor, count: rows.length, probes, complete: false }
+  return { cursor, count: enqueued, probes: probes + rows.length - enqueued, complete: false }
 }

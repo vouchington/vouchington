@@ -182,4 +182,52 @@ describe('hostname sweep selection and completion', () => {
     ).toEqual({ count: 1, hasMore: false })
     expect(await getTestHostnameCrawlSweep(url.hostname.id)).toBeNull()
   })
+
+  it('advances past a due hostname that has no URL without enqueueing it', async () => {
+    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    const bare = await insertTestUrlHostname({
+      hostname: `bare-${randomUUID()}.example.com`,
+      is_crawlable: true,
+    })
+    await setTestHostnameCrawlSweep(bare, bucketDays, null)
+    const owner = await createTestUser()
+    const linkedName = `linked-${randomUUID()}.example.com`
+    const linked = await insertTestUrlHostname({ hostname: linkedName, is_crawlable: true })
+    await insertTestUrlDirect(owner.id, `https://${linkedName}/crawlable`)
+    await setTestHostnameCrawlSweep(linked, bucketDays, null)
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      hostname_batch_size: 1,
+      hostname_max_rows_per_run: 1,
+    })
+    const start: CrawlHostnameDispatchCursor = {
+      sweepStartedAt,
+      rangeLimit: 1,
+      afterBucketDays: bucketDays - 1,
+      bucketDays,
+    }
+    const saved: CrawlHostnameDispatchCursor[] = []
+    expect(
+      await dispatchCrawlHostnames(start, async cursor => {
+        saved.push(cursor)
+      }),
+    ).toEqual({ count: 0, hasMore: true })
+    expect(saved.at(-1)?.afterId).toBe(bare)
+    expect(
+      await crawlDispatchQueue.searchJobs({
+        name: 'crawl_urls_per_hostname_dispatcher',
+        data: { hostname_id: bare },
+      }),
+    ).toHaveLength(0)
+    expect(
+      await dispatchCrawlHostnames(saved.at(-1), async cursor => {
+        saved.push(cursor)
+      }),
+    ).toEqual({ count: 1, hasMore: true })
+    expect(
+      await crawlDispatchQueue.searchJobs({
+        name: 'crawl_urls_per_hostname_dispatcher',
+        data: { hostname_id: linked },
+      }),
+    ).toHaveLength(1)
+  })
 })
