@@ -11,7 +11,10 @@ import { getPrivateUserByAny } from '../get.mts'
 import { v7 } from 'uuid'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
-import { write } from '@data-stores/psql'
+import {
+  setTestEmailAddressLoginTokenId,
+  setTestPhoneNumberLoginTokenId,
+} from '@voucha/test-helpers/entities/login-tokens'
 import {
   createEmailAddressLoginToken,
   createPhoneNumberLoginToken,
@@ -97,9 +100,9 @@ describe('create.generated', () => {
   it('rejects an email login token whose UUIDv7 is past its lifetime', async () => {
     const emailAddress = createRandomEmailAddress()
     const { token } = await createEmailAddressLoginToken(emailAddress)
-    const { rowCount } = await write(
-      '/* expireEmailLoginTokenForTest */ UPDATE email_address_login_tokens SET id = $1 WHERE email_address = $2',
-      [v7({ msecs: Date.now() - 16 * 60_000 }), emailAddress],
+    const rowCount = await setTestEmailAddressLoginTokenId(
+      emailAddress,
+      v7({ msecs: Date.now() - 16 * 60_000 }),
     )
     expect(rowCount).toBe(1)
     await expect(verifyEmailAddressLoginToken(emailAddress, token)).resolves.toMatchObject({
@@ -141,9 +144,9 @@ describe('create.generated', () => {
     const phoneNumber = createRandomPhoneNumber()
     const { token, phoneNumber: normalizedPhoneNumber } =
       await createPhoneNumberLoginToken(phoneNumber)
-    const { rowCount } = await write(
-      '/* expirePhoneLoginTokenForTest */ UPDATE phone_number_login_tokens SET id = $1 WHERE phone_number = $2',
-      [v7({ msecs: Date.now() - 16 * 60_000 }), normalizedPhoneNumber],
+    const rowCount = await setTestPhoneNumberLoginTokenId(
+      normalizedPhoneNumber,
+      v7({ msecs: Date.now() - 16 * 60_000 }),
     )
     expect(rowCount).toBe(1)
     await expect(verifyPhoneNumberLoginToken(phoneNumber, token)).resolves.toMatchObject({
