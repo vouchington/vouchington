@@ -84,6 +84,10 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     try {
       mkdirSync(join(directory, 'ci'))
       writeFileSync(join(directory, 'ci/run-bounded.py'), readFileSync('ci/run-bounded.py'))
+      writeFileSync(
+        join(directory, 'ci/run_bounded_process.py'),
+        readFileSync('ci/run_bounded_process.py'),
+      )
       const python = spawnSync('python3', ['-c', 'import sys; print(sys.executable)'], {
         encoding: 'utf8',
         timeout: 5000,
