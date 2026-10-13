@@ -82,7 +82,7 @@ export function PostForm({
   const [broadcast, setBroadcast] = useState(audience.initialBroadcast)
   const [privacy, setPrivacy] = useState(audience.initialPrivacy)
   const [isAnonymous, setIsAnonymous] = useState(post?.is_anonymous ?? false)
-  const [language, setLanguage] = useState<string | null>(null)
+  const [language, setLanguage] = useState<string | null>(post?.declared_language ?? null)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const [saveToProfile, setSaveToProfile] = useState(false)
   const slugRef = useRef(post?.slug ?? '')
@@ -219,6 +219,7 @@ export function PostForm({
           contentLocked={contentLocked}
           markdown={markdown}
           postType={postType}
+          language={language}
           previewHtml={preview.previewHtml}
           previewLoading={preview.previewLoading}
           reviewCharCount={reviewMetrics.charCount}

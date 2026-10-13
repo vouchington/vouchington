@@ -1,6 +1,22 @@
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
+export async function setUserLanguageDetectionFieldsForTest(
+  userId: string,
+  detectedLanguage: string,
+): Promise<void> {
+  await write(sql`/* setUserLanguageDetectionFieldsForTest */
+    UPDATE users
+    SET
+      lingua_rs_detected_language = ${detectedLanguage},
+      lingua_rs_content_sha256 = ${Buffer.alloc(32, 1)},
+      lingua_rs_input_sha256 = ${Buffer.alloc(32, 2)},
+      lingua_rs_results = ${JSON.stringify({ detector: 'test' })},
+      lingua_rs_detected_at = NOW()
+    WHERE id = ${userId}
+  `)
+}
+
 export async function setCommunityLanguageDetectionFieldsForTest(
   communityId: string,
 ): Promise<void> {

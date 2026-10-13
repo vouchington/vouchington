@@ -160,6 +160,23 @@ describe('PostForm submission', () => {
     )
   })
 
+  it('keeps the declared language on an existing post preview', async () => {
+    mockPreviewMarkdown.mockResolvedValue({ html: '<p>مرحبا</p>' })
+    const { container } = render(
+      <PostForm
+        postType='discussion'
+        post={{ ...mockDiscussion, declared_language: 'ar' }}
+      />,
+    )
+
+    fireEvent.focus(screen.getByRole('tab', { name: 'Preview' }))
+
+    await waitFor(() => {
+      expect(container.querySelector('.prose')).toHaveAttribute('lang', 'ar')
+      expect(container.querySelector('.prose')).toHaveAttribute('dir', 'rtl')
+    })
+  })
+
   it('shows muted placeholder when switching to Preview tab with empty content', async () => {
     render(<PostForm postType='discussion' />)
     // Radix Tabs triggers onValueChange via onFocus (automatic activation mode).

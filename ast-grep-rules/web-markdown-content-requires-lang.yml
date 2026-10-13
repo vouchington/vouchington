@@ -1,0 +1,68 @@
+id: web-markdown-content-requires-lang
+language: Tsx
+severity: error
+message: >-
+  MarkdownContent renders original text beside translated UI chrome. Pass lang
+  from the content's declared or detected language. Pass null when that
+  language is not known yet; the component then sets dir="auto" and omits lang.
+files:
+  - web/**/*.tsx
+rule:
+  any:
+    - all:
+        - kind: jsx_self_closing_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^MarkdownContent$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^lang$
+    - all:
+        - kind: jsx_opening_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^MarkdownContent$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^lang$
+examples:
+  - code: |
+      <MarkdownContent html="<p>Bonjour</p>" />
+    isValid: false
+    file: web/components/posts/post-author-aside.tsx
+  - code: |
+      <MarkdownContent html={previewHtml} className="prose" />
+    isValid: false
+    file: web/components/comments/comment-reply-preview.tsx
+  - code: |
+      <MarkdownContent html="<p>Bonjour</p>" lang="fr" />
+    isValid: true
+    file: web/components/posts/post-detail-view.tsx
+  - code: |
+      <MarkdownContent html={previewHtml} lang={null} />
+    isValid: true
+    file: web/components/comments/comment-reply-preview.tsx
+  - code: |
+      <Panel body={<MarkdownContent lang="fr" html={html} />} />
+    isValid: true
+    file: web/components/posts/post-detail-view.tsx
+  - code: |
+      <Panel body={<MarkdownContent html={html} />} />
+    isValid: false
+    file: web/components/posts/post-detail-view.tsx
+  - code: |
+      <MarkdownContent html="<p>Bonjour</p>" />
+    isValid: true
+    file: backend/services/markdown/preview.tsx

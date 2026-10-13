@@ -5,6 +5,7 @@
   "license": "UNLICENSED",
   "workspaces": [
     "../backend/types",
+    "../ts-shared/cache",
     "../ts-shared/data-points",
     "../ts-shared/feed-capabilities",
     "../ts-shared/feature-flags",
@@ -50,6 +51,7 @@
     "@radix-ui/react-tooltip": "^1.3.0",
     "@sentry/nextjs": "^11.6.0",
     "@simplewebauthn/browser": "^14.0.0",
+    "@ts-shared/cache": "workspace:^",
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feature-flags": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
@@ -63,6 +65,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.0",
+    "@vouchington/utils": "^0.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

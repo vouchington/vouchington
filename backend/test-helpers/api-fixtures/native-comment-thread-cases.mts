@@ -41,6 +41,7 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
       html: '<p>Root post markdown</p>',
       author_aside: {
         about_html: '',
+        lingua_rs_detected_language: null,
         profile_links: [],
         is_following: false,
       },

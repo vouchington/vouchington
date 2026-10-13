@@ -9,8 +9,12 @@ interface MarkdownContentProps {
   markdown?: string | null
   className?: string
   preview?: boolean
-  /** ISO 639-1 language code for the content (e.g. 'en', 'fr'). Sets the HTML lang attribute. */
-  lang?: string
+  /**
+   * ISO 639-1 language of this content. Required so a call site chooses a
+   * language explicitly. Null or undefined means the language is not known yet:
+   * the element omits `lang` and sets `dir="auto"`.
+   */
+  lang: string | null | undefined
   /**
    * Post-hydration client-side enhancements. Only rendered when at least one
    * feature is explicitly enabled. HTML surfaces with links should opt into
@@ -27,6 +31,7 @@ export function MarkdownContent({
   lang,
   preview = false,
 }: MarkdownContentProps) {
+  const htmlLang = lang ?? undefined
   const contentHtml = preview
     ? demotePreviewHeadings(html)
     : html
@@ -40,7 +45,7 @@ export function MarkdownContent({
           html={contentHtml}
           className={className}
           features={features}
-          lang={lang}
+          lang={htmlLang}
         />
       )
     }
@@ -49,7 +54,7 @@ export function MarkdownContent({
     return (
       <div
         className={className}
-        lang={lang}
+        lang={htmlLang}
         dir={getContentLanguageDir(lang)}
       >
         {htmlContent}
@@ -61,7 +66,7 @@ export function MarkdownContent({
     return (
       <pre
         className={`whitespace-pre-wrap${className ? ` ${className}` : ''}`}
-        lang={lang}
+        lang={htmlLang}
         dir={getContentLanguageDir(lang)}
       >
         {markdown}

@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { UserLink } from '@/components/users/user-link'
 import { MARKDOWN_CONTENT_FEATURES_UTM } from '@/components/shared/markdown-content-features'
-import { MarkdownContent } from '@/components/shared/markdown-content'
+import { UserBioCopy } from '@/components/users/user-bio-copy'
 import { UserProfileLinks } from '@/components/users/profile-links'
 
 import type { AuthorAside, PostCreatedBy, PostType } from '@/types/posts'
@@ -51,8 +51,9 @@ export function PostAuthorAside({ t, author, aside, postType }: PostAuthorAsideP
 
         {aside?.about_html && (
           <div data-pw='post-author-aside-bio'>
-            <MarkdownContent
+            <UserBioCopy
               html={aside.about_html}
+              detectedLanguage={aside.lingua_rs_detected_language}
               className='prose prose-sm max-w-none dark:prose-invert line-clamp-4 text-muted-foreground'
               features={MARKDOWN_CONTENT_FEATURES_UTM}
             />

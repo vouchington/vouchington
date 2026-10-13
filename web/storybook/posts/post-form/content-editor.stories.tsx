@@ -42,6 +42,7 @@ function ContentEditorStory({
         contentLocked={false}
         markdown={markdown}
         postType='review'
+        language={null}
         previewHtml={previewHtml}
         previewLoading={false}
         reviewCharCount={markdown.length}

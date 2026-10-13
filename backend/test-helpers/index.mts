@@ -94,6 +94,7 @@ export {
 } from './sql-follower-distribution.mts'
 export {
   setCommunityLanguageDetectionFieldsForTest,
+  setUserLanguageDetectionFieldsForTest,
   type LanguageDetectionStateForTest,
   getLanguageDetectionStateForTest,
   setRssFeedItemLanguageInputShaForTest,

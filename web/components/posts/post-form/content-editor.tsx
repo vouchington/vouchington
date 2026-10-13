@@ -14,6 +14,7 @@ export function ContentEditor({
   contentLocked,
   markdown,
   postType,
+  language,
   previewHtml,
   previewLoading,
   reviewCharCount,
@@ -27,6 +28,7 @@ export function ContentEditor({
   contentLocked: boolean
   markdown: string
   postType: PostType
+  language: string | null
   previewHtml: string
   previewLoading: boolean
   reviewCharCount: number
@@ -82,6 +84,7 @@ export function ContentEditor({
             ) : previewHtml ? (
               <MarkdownContent
                 html={previewHtml}
+                lang={language}
                 className='prose prose-sm max-w-none dark:prose-invert'
                 features={MARKDOWN_CONTENT_FEATURES_RICH}
               />

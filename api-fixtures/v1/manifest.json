@@ -93950,7 +93950,7 @@
       "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-root",
       "responseSchema": {
-        "hash": "69f0aa9f8b1a5361f67f1bc44d6084790e80b6800c33a71b5326a2c91423866e",
+        "hash": "7b363d927ab6ea892b5cdf334a7d2d4d4420477978cc4a3b55f1e4e512c9da0d",
         "key": "native.comments.post-detail.default"
       },
       "route": {

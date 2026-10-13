@@ -120,6 +120,7 @@ function PostAsides() {
         aside={{
           about_html:
             '<p>Alex writes card reviews, approval data points, and travel redemption notes.</p>',
+          lingua_rs_detected_language: 'en',
           profile_links: [],
           is_following: true,
         }}

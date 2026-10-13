@@ -333,9 +333,15 @@ key) across every consumer at once, not just the catalogs.
 - Topic about text uses `TopicAboutCopy` on the topic card. Topics have no declared language, so
   the excerpt sets `lang`/`dir` from `lingua_rs_detected_language`. The topic description aside
   passes that same detected language to `MarkdownContent`. Blank about text is omitted.
-- User profile bios and public landing-page bios use `UserBioCopy`. Users have no declared bio
-  language, so those surfaces set `lang`/`dir` from `lingua_rs_detected_language`. The owner's
-  empty-bio prompt is UI copy and stays unmarked.
+- User profile bios, public landing-page bios, and the post author aside use `UserBioCopy`.
+  Users have no declared bio language, so those surfaces set `lang`/`dir` from
+  `lingua_rs_detected_language`. The post detail `author_aside` carries that detected language
+  beside `about_html`. The owner's empty-bio prompt is UI copy and stays unmarked. The post
+  compose preview passes the draft's declared language, including an existing post's value on edit.
+  Swift and .NET still need to apply the new author-aside field at the bio leaf
+  ([#2819](https://github.com/vouchington/vouchington/issues/2819)).
+  The comment reply preview has no language
+  yet, so it passes `lang={null}`. Null sets `dir="auto"` and omits `lang`.
 - APIs that project post titles or markdown retain nullable `declared_language` and
   `lingua_rs_detected_language`; shared API fixtures stage that contract before the linked native
   client change. Swift and .NET apply language and direction at the content leaf.

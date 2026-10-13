@@ -231,6 +231,7 @@
     "@services/vote-integrity": "workspace:^",
     "@services/vote-weight": "workspace:^",
     "@services/web-search": "workspace:^",
+    "@ts-shared/cache": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",

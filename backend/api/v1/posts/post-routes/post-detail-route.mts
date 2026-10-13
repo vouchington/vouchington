@@ -26,6 +26,7 @@ import { labelAndMaskPosts } from '@services/content-provenance'
 import { getUrlEmbedByUrlId } from '@services/rss-feed-items'
 import { DELETED_USER_ID, getUserMarkdown, isAdminUser, isFollowingUser } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
+import { userTag } from '@ts-shared/cache/cache-tags'
 import app from '../../../app.mts'
 import {
   getOptionalAuthAndRateLimit,
@@ -47,24 +48,30 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
-  const adminIds = await getAdminUserIdsFromPosts([post])
-  const isAdmin = post.created_by_id ? adminIds.has(post.created_by_id) : false
   const authorId =
     !post.is_anonymous && post.created_by_id && post.created_by_id !== DELETED_USER_ID
       ? post.created_by_id
       : null
+  if (authorId) ctx.set('Cache-Tag', userTag(authorId))
+  if (ctx.req.method === 'HEAD') {
+    ctx.response.empty()
+    return
+  }
+
+  const adminIds = await getAdminUserIdsFromPosts([post])
+  const isAdmin = post.created_by_id ? adminIds.has(post.created_by_id) : false
   const isAuthorAdmin = authorId ? adminIds.has(authorId) : false
 
-  const authorMarkdownPromise = authorId ? getUserMarkdown(authorId) : Promise.resolve(null)
+  const authorBioPromise = authorId ? getUserMarkdown(authorId) : Promise.resolve(null)
   const profileLinksPromise = authorId ? listProfileLinks(authorId) : Promise.resolve([])
   const isFollowingPromise =
     currentUser && authorId && currentUser.id !== authorId
       ? isFollowingUser(currentUser.id, authorId)
       : Promise.resolve(false)
 
-  const bioHtmlPromise = authorMarkdownPromise.then(markdown =>
-    markdown
-      ? renderMarkdown(markdown, {
+  const bioHtmlPromise = authorBioPromise.then(bio =>
+    bio?.markdown
+      ? renderMarkdown(bio.markdown, {
           allowHtml: isAuthorAdmin,
           nofollowLinks: !isAuthorAdmin,
           proxyImages: true,
@@ -77,8 +84,8 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
       ? getCommunityMember(post.community_id, currentUser.id)
       : Promise.resolve(null)
 
-  const [html, authorAboutHtml, profileLinks, isFollowing, communityMembership] = await Promise.all(
-    [
+  const [html, authorAboutHtml, profileLinks, isFollowing, communityMembership, authorBio] =
+    await Promise.all([
       post.markdown
         ? renderMarkdown(post.markdown, {
             allowHtml: isAdmin,
@@ -90,8 +97,8 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
       profileLinksPromise,
       isFollowingPromise,
       communityMemberPromise,
-    ],
-  )
+      authorBioPromise,
+    ])
 
   const communityMemberRole: CommunityMemberRole | null = communityMembership?.role ?? null
 
@@ -118,7 +125,12 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
     post: postResponse,
     html,
     author_aside: authorId
-      ? { about_html: authorAboutHtml, profile_links: profileLinks, is_following: isFollowing }
+      ? {
+          about_html: authorAboutHtml,
+          lingua_rs_detected_language: authorBio?.lingua_rs_detected_language ?? null,
+          profile_links: profileLinks,
+          is_following: isFollowing,
+        }
       : null,
     post_metrics: getPostMetricsByAnyCached(ctx.params.idOrSlug!),
     post_election: getPostElectionByIdCachedBatch([post.id])
