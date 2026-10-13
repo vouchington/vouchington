@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write, read } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import {
@@ -26,7 +27,10 @@ export async function insertTestOAuthAccount(
       ${config.emailColumn} AS provider_user_email_address,
       ${config.dataColumn} AS provider_user_data
   `
-  const { rows } = await write<OAuthAccount>(query, [providerUserId, providerUserEmailAddress])
+  const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), [
+    providerUserId,
+    providerUserEmailAddress,
+  ])
   return rows[0]
 }
 
@@ -37,7 +41,9 @@ export async function connectTestOAuthAccount(
 ): Promise<void> {
   const config = providerTableConfigs[provider]
   const { rowCount } = await write(
-    `UPDATE ${config.table} SET user_id = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET user_id = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    ),
     [userId, providerUserId],
   )
   if (!rowCount) {
@@ -52,7 +58,9 @@ export async function setTestOAuthAccountData(
 ): Promise<void> {
   const config = providerTableConfigs[provider]
   const { rowCount } = await write(
-    `UPDATE ${config.table} SET ${config.dataColumn} = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET ${config.dataColumn} = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    ),
     [JSON.stringify(data), providerUserId],
   )
   if (!rowCount) {
@@ -94,7 +102,9 @@ export async function setTestOAuthAccountTokens(
   if (sets.length === 0) return
   values.push(providerUserId)
   await write(
-    `UPDATE ${config.table} SET ${sets.join(', ')} WHERE ${config.providerUserIdColumn} = $${paramIndex}`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET ${sets.join(', ')} WHERE ${config.providerUserIdColumn} = $${paramIndex}`,
+    ),
     values,
   )
 }
@@ -108,7 +118,9 @@ export async function setTestOAuthAccountFriendsSyncedAt(
   const value =
     syncedAt === 'now' ? 'NOW()' : syncedAt === 'expired' ? "NOW() - INTERVAL '1 hour'" : 'NULL'
   await write(
-    `UPDATE ${config.table} SET friends_synced_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET friends_synced_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
+    ),
     [providerUserId],
   )
 }
@@ -121,7 +133,9 @@ export async function setTestOAuthAccountTokenExpiry(
   const config = providerTableConfigs[provider]
   const value = expired ? "NOW() - INTERVAL '1 hour'" : "NOW() + INTERVAL '1 hour'"
   await write(
-    `UPDATE ${config.table} SET access_token_expires_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET access_token_expires_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
+    ),
     [providerUserId],
   )
 }
@@ -131,9 +145,10 @@ export async function deleteTestOAuthAccount(
   providerUserId: string,
 ): Promise<void> {
   const config = providerTableConfigs[provider]
-  await write(`DELETE FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`, [
-    providerUserId,
-  ])
+  await write(
+    allowUnannotatedQuery(`DELETE FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`),
+    [providerUserId],
+  )
 }
 
 type RawOAuthAccountRow = {
@@ -159,9 +174,9 @@ export async function getTestOAuthAccountRaw(
     tokenColumns = `, access_token_ciphertext AS access_token, NULL AS refresh_token, access_token_expires_at`
   }
   const { rows } = await read<RawOAuthAccountRow>(
-    `SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
+    allowUnannotatedQuery(`SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
      FROM ${config.table}
-     WHERE ${config.providerUserIdColumn} = $1`,
+     WHERE ${config.providerUserIdColumn} = $1`),
     [providerUserId],
   )
   const row = rows[0]

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 import { write } from '../../backend/data-stores/psql/clients.mts'
 
 interface TestFediverseInstanceMetadata {
@@ -15,7 +16,7 @@ export async function insertTestFediverseInstanceMetadata(
   metadata: TestFediverseInstanceMetadata,
 ): Promise<void> {
   await write(
-    `INSERT INTO fediverse_instance_topics (
+    allowUnannotatedQuery(`INSERT INTO fediverse_instance_topics (
        topic_id,
        software,
        protocol,
@@ -23,7 +24,7 @@ export async function insertTestFediverseInstanceMetadata(
        total_users,
        monthly_active_users,
        is_open_for_registrations
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7)`),
     [
       topicId,
       metadata.software,
@@ -35,12 +36,12 @@ export async function insertTestFediverseInstanceMetadata(
     ],
   )
   await write(
-    `UPDATE url_hostnames
+    allowUnannotatedQuery(`UPDATE url_hostnames
      SET votes_score_up = 12,
          votes_score_down = 2,
          votes_count_up = 12,
          votes_count_down = 2
-     WHERE id = $1`,
+     WHERE id = $1`),
     [hostnameId],
   )
 }

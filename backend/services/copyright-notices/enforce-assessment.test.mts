@@ -160,7 +160,7 @@ describe('copyright assessment enforcement', () => {
 
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
     expect(queries.length).toBeGreaterThan(0)
-    for (const { text } of queries) assertLeadingQueryAnnotation(text, {})
+    for (const { text } of queries) assertLeadingQueryAnnotation(text)
     expect(
       queries.some(({ text }) => text.startsWith('/* readFirstOwedCopyrightEnforcementTarget */')),
     ).toBe(true)
@@ -176,7 +176,7 @@ describe('copyright assessment enforcement', () => {
 
     expect(result).toEqual([assessment.id])
     expect(queries.length).toBeGreaterThan(0)
-    for (const { text } of queries) assertLeadingQueryAnnotation(text, {})
+    for (const { text } of queries) assertLeadingQueryAnnotation(text)
     expect(
       queries.some(({ text }) =>
         text.startsWith('/* searchPendingCopyrightEnforcementAssessmentIds */'),

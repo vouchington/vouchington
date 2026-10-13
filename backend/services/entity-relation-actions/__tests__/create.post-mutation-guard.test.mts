@@ -52,9 +52,10 @@ describe('createEntityRelationAction post mutation guard', () => {
       const locked = Promise.withResolvers<number>()
       const release = Promise.withResolvers<void>()
       const holder = holdPublicationLockThenMutate(post.id, locked, release, query =>
-        query(`UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`, [
-          post.id,
-        ]),
+        query(
+          `/* testCreate */ UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`,
+          [post.id],
+        ),
       )
       const holderPid = await locked.promise
 
@@ -87,9 +88,10 @@ describe('createEntityRelationAction post mutation guard', () => {
     const locked = Promise.withResolvers<number>()
     const release = Promise.withResolvers<void>()
     const holder = holdPublicationLockThenMutate(subject.id, locked, release, query =>
-      query(`UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`, [
-        subject.id,
-      ]),
+      query(
+        `/* testCreate */ UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`,
+        [subject.id],
+      ),
     )
     const holderPid = await locked.promise
 
@@ -148,10 +150,10 @@ describe('createEntityRelationAction post mutation guard', () => {
     const locked = Promise.withResolvers<number>()
     const release = Promise.withResolvers<void>()
     const holder = holdPublicationLockThenMutate(reply.id, locked, release, query =>
-      query(`UPDATE posts SET root_post_id = $1, parent_post_id = $1 WHERE id = $2`, [
-        secondRoot.id,
-        reply.id,
-      ]),
+      query(
+        `/* testCreate */ UPDATE posts SET root_post_id = $1, parent_post_id = $1 WHERE id = $2`,
+        [secondRoot.id, reply.id],
+      ),
     )
     const holderPid = await locked.promise
 

@@ -61,9 +61,10 @@ export async function runTestOAuthExchangeContinuation(
               owner.assertOpen()
               const lock = async () => {
                 await owner.run(() =>
-                  holder('SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT', [
-                    authorizationId,
-                  ]),
+                  holder(
+                    '/* runTestOAuthExchangeContinuation */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
+                    [authorizationId],
+                  ),
                 )
               }
               attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })

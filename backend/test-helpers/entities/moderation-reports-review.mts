@@ -1,12 +1,15 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function reviewTestModerationReports(reportIds: string[]): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE moderation_reports
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     WHERE id = ANY(${reportIds})
-  `)
+  `),
+  )
 }
 
 export async function reviewPendingTestModerationReportsByReporterUsernamePrefixes(
@@ -14,14 +17,16 @@ export async function reviewPendingTestModerationReportsByReporterUsernamePrefix
 ): Promise<void> {
   if (prefixes.length === 0) return
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE moderation_reports r
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     FROM users u
     WHERE r.reporter_user_id = u.id
       AND r.reviewed_at IS NULL
       AND u.username LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `)
+  `),
+  )
 }
 
 export async function reviewPendingTestModerationReportsByNotePrefixes(
@@ -29,12 +34,14 @@ export async function reviewPendingTestModerationReportsByNotePrefixes(
 ): Promise<void> {
   if (prefixes.length === 0) return
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE moderation_reports
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     WHERE reviewed_at IS NULL
       AND note LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `)
+  `),
+  )
 }
 
 export async function reviewPendingTestModerationReportsByPostSlugPrefixes(
@@ -42,7 +49,8 @@ export async function reviewPendingTestModerationReportsByPostSlugPrefixes(
 ): Promise<void> {
   if (prefixes.length === 0) return
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE moderation_reports r
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     FROM post_slugs ps
@@ -50,5 +58,6 @@ export async function reviewPendingTestModerationReportsByPostSlugPrefixes(
       AND r.post_id = ps.post_id
       AND r.reviewed_at IS NULL
       AND ps.slug LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `)
+  `),
+  )
 }

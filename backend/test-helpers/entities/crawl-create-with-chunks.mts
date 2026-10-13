@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUser } from './users.mts'
@@ -40,12 +41,14 @@ export async function createTestCrawlWithChunks(options: { markdown: string }): 
   }
 
   if (chunks.length > 0) {
-    await write(sql`
+    await write(
+      allowUnannotatedQuery(sql`
       UPDATE crawls
       SET has_pending_embeddings = TRUE
       WHERE url_id = ${url!.id}
         AND id = ${crawl.id}
-    `)
+    `),
+    )
   }
 
   return { user, url, crawler, crawl }

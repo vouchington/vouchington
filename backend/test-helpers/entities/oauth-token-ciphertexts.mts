@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read } from '@data-stores/psql'
 import { providerTableConfigs, type OAuthProvider } from './_oauth-config-support.mts'
 
@@ -18,9 +19,9 @@ export async function getTestOAuthAccountCiphertexts(
     tokenColumns = 'access_token_ciphertext, NULL AS refresh_token_ciphertext'
   }
   const { rows } = await read(
-    `SELECT ${tokenColumns}
+    allowUnannotatedQuery(`SELECT ${tokenColumns}
      FROM ${config.table}
-     WHERE ${config.providerUserIdColumn} = $1`,
+     WHERE ${config.providerUserIdColumn} = $1`),
     [providerUserId],
   )
   return (

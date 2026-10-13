@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -41,7 +42,11 @@ export async function updateUrlHostnameCrawlable(
   hostnameId: string,
   is_crawlable: boolean,
 ): Promise<void> {
-  await write(sql`UPDATE url_hostnames SET is_crawlable = ${is_crawlable} WHERE id = ${hostnameId}`)
+  await write(
+    allowUnannotatedQuery(
+      sql`UPDATE url_hostnames SET is_crawlable = ${is_crawlable} WHERE id = ${hostnameId}`,
+    ),
+  )
 }
 
 export async function updateUrlHostnameUnreliableStatusCodes(
@@ -94,7 +99,7 @@ function buildInsertUrlHostnameQuery(
   returningId: boolean,
 ) {
   const { is_emailable, is_crawlable } = options
-  let query = sql`INSERT INTO url_hostnames (hostname`
+  let query = sql`/* buildInsertUrlHostnameQuery */ INSERT INTO url_hostnames (hostname`
   let values = sql`${hostname}`
   if (is_emailable !== undefined) {
     query = query.append(sql`, is_emailable`)

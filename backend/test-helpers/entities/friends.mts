@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, type OwnedTransaction, write } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import {
@@ -43,7 +44,9 @@ export async function setTestOAuthAccountAccessToken(
 ): Promise<void> {
   const config = providerTableConfigs[provider]
   await write(
-    `UPDATE ${config.table} SET access_token_ciphertext = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    allowUnannotatedQuery(
+      `UPDATE ${config.table} SET access_token_ciphertext = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    ),
     [
       encryptSecret(accessToken, getOAuthTokenPurpose(provider, providerUserId, 'access_token')),
       providerUserId,
@@ -57,9 +60,9 @@ export async function setTestXAccountExpiredToken(
   refreshToken: string,
 ): Promise<void> {
   await write(
-    `UPDATE x_accounts
+    allowUnannotatedQuery(`UPDATE x_accounts
      SET access_token_ciphertext = $1, refresh_token_ciphertext = $2, access_token_expires_at = NOW() - INTERVAL '1 minute'
-     WHERE x_user_id = $3`,
+     WHERE x_user_id = $3`),
     [
       encryptSecret(accessToken, getOAuthTokenPurpose('x', xUserId, 'access_token')),
       encryptSecret(refreshToken, getOAuthTokenPurpose('x', xUserId, 'refresh_token')),
@@ -74,7 +77,9 @@ export async function getTestOAuthAccountFriendsSyncedAt(
 ): Promise<Date | null> {
   const config = providerTableConfigs[provider]
   const { rows } = await read(
-    `SELECT friends_synced_at FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `SELECT friends_synced_at FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    ),
     [providerUserId],
   )
   return (rows[0]?.friends_synced_at as Date | undefined) ?? null
@@ -86,7 +91,9 @@ export async function getTestOAuthAccountAccessToken(
 ): Promise<string | null> {
   const config = providerTableConfigs[provider]
   const { rows } = await read(
-    `SELECT access_token_ciphertext FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `SELECT access_token_ciphertext FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+    ),
     [providerUserId],
   )
   const ciphertext = rows[0]?.access_token_ciphertext as string | undefined
@@ -102,9 +109,9 @@ export async function insertTestFriend(
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
   await write(
-    `INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
      VALUES ($1, $2)
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserId],
   )
 }
@@ -116,9 +123,9 @@ export async function insertTestFriends(
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
   await write(
-    `INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
      SELECT $1, friend_id FROM UNNEST($2::text[]) AS friend_id
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserIds],
   )
 }
@@ -136,7 +143,7 @@ export async function acquireTestFriendRowLock(
   const transaction = await beginTransaction()
   try {
     const result = await transaction(
-      `SELECT 1 FROM ${config.table}
+      `/* testFriends */ SELECT 1 FROM ${config.table}
        WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2
        FOR UPDATE`,
       [providerUserId, friendProviderUserId],
@@ -167,7 +174,9 @@ export async function getTestFriend(
 ): Promise<unknown[]> {
   const config = getFriendsTableConfig(provider)
   const { rows } = await read(
-    `SELECT * FROM ${config.table} WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2`,
+    allowUnannotatedQuery(
+      `SELECT * FROM ${config.table} WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2`,
+    ),
     [providerUserId, friendProviderUserId],
   )
   return rows
@@ -179,7 +188,9 @@ export async function countTestFriends(
 ): Promise<number> {
   const config = getFriendsTableConfig(provider)
   const { rows } = await read(
-    `SELECT COUNT(*) AS count FROM ${config.table} WHERE ${config.userIdColumn} = $1`,
+    allowUnannotatedQuery(
+      `SELECT COUNT(*) AS count FROM ${config.table} WHERE ${config.userIdColumn} = $1`,
+    ),
     [providerUserId],
   )
   return Number(rows[0]?.count ?? 0)

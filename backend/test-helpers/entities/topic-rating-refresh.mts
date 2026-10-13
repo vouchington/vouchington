@@ -9,7 +9,7 @@ export async function holdTopicRatingRefreshLock(
     await using transaction = await beginTransaction()
     const query = transaction
     await query(
-      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`topic-rating:${topicId}`}, 0))`,
+      sql`/* holdTopicRatingRefreshLock */ SELECT pg_advisory_xact_lock(hashtextextended(${`topic-rating:${topicId}`}, 0))`,
     )
     await onAcquired()
     await transaction.commit()
@@ -17,7 +17,7 @@ export async function holdTopicRatingRefreshLock(
 }
 
 export async function isTopicRatingRefreshWaiting(): Promise<boolean> {
-  const result = await write<{ waiting: boolean }>(sql`
+  const result = await write<{ waiting: boolean }>(sql`/* isTopicRatingRefreshWaiting */
     SELECT EXISTS (
       SELECT 1
       FROM pg_stat_activity

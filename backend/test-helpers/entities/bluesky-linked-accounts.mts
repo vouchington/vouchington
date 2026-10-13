@@ -1,9 +1,9 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
 import { createHash, randomBytes } from 'node:crypto'
-
 export interface TestBlueskyLinkedAccountRow {
   bluesky_did: string
   user_id: string | null
@@ -13,7 +13,6 @@ export interface TestBlueskyLinkedAccountRow {
   created_at: Date
   updated_at: Date
 }
-
 export * from './bluesky-follow-records.mts'
 export * from './bluesky-link-authorizations.mts'
 export * from './bluesky-disconnect.mts'
@@ -190,10 +189,10 @@ export async function getTestBlueskyLinkedAccountRow(
   did: string,
 ): Promise<TestBlueskyLinkedAccountRow | null> {
   const { rows } = await read(
-    `SELECT bluesky_did, user_id, handle, link_authorization_id,
+    allowUnannotatedQuery(`SELECT bluesky_did, user_id, handle, link_authorization_id,
             session_ciphertext, created_at, updated_at
      FROM bluesky_linked_accounts
-     WHERE bluesky_did = $1`,
+     WHERE bluesky_did = $1`),
     [did],
   )
   return (rows[0] as TestBlueskyLinkedAccountRow | undefined) ?? null

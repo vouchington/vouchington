@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_KEY_PREFIX } from '../services/copyright-notices/retention-erasure-spec.mts'
@@ -9,14 +10,18 @@ export async function eraseTestCopyrightEmailIntakeSender(
   eraseOriginal: boolean,
 ) {
   await using transaction = await beginTransaction()
-  await transaction(sql`SET LOCAL app.copyright_retention_erasure = 'on'`)
-  await transaction(sql`
+  await transaction(allowUnannotatedQuery(sql`SET LOCAL app.copyright_retention_erasure = 'on'`))
+  await transaction(
+    allowUnannotatedQuery(sql`
     UPDATE copyright_notice_email_intake_parses SET sender_email_ciphertext = ${COPYRIGHT_ERASED_CIPHERTEXT}
-    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+    WHERE copyright_notice_email_intake_id = ${intakeId}`),
+  )
   if (eraseOriginal) {
-    await transaction(sql`
+    await transaction(
+      allowUnannotatedQuery(sql`
       UPDATE copyright_notice_email_intakes SET raw_storage_key = ${COPYRIGHT_ERASED_KEY_PREFIX} || id::text
-      WHERE id = ${intakeId}`)
+      WHERE id = ${intakeId}`),
+    )
   }
   await transaction.commit()
 }

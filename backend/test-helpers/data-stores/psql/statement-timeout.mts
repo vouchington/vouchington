@@ -20,7 +20,9 @@ export async function getSessionStatementTimeout(query: PoolQuery = read): Promi
   // SHOW apply "friendliest unit" formatting instead (verified empirically: 20000ms round-trips
   // as "20s", 750ms as "750ms", 20003ms as "20003ms") — parseInt on that output silently
   // truncates round values ("20s" -> 20, not 20000), so it cannot be used here.
-  const { rows } = await query(`SELECT setting FROM pg_settings WHERE name = 'statement_timeout'`)
+  const { rows } = await query(
+    `/* testStatementTimeout */ SELECT setting FROM pg_settings WHERE name = 'statement_timeout'`,
+  )
   return Number.parseInt(rows[0].setting, 10)
 }
 

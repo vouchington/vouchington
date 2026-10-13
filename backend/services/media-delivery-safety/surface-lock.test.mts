@@ -101,7 +101,7 @@ describe('multi-slot owner delivery fences', () => {
 
 async function probePlacementAdvisoryLock(placementId: string): Promise<void> {
   await using probe = await beginTransaction()
-  await probe(`SET LOCAL lock_timeout = '50ms'`)
+  await probe(`/* testSurfaceLock */ SET LOCAL lock_timeout = '50ms'`)
   await probe(`/* surface lock probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
     `image-placement:${placementId}`,
   ])

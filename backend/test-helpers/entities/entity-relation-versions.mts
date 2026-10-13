@@ -15,7 +15,7 @@ export async function getEntityRelationVersion(
     throw new Error(`Invalid relation table name: ${tableName}`)
   }
   const { rows } = await read(
-    sql`SELECT xmin::text AS row_version FROM `
+    sql`/* getEntityRelationVersion */ SELECT xmin::text AS row_version FROM `
       .append(tableName)
       .append(sql` WHERE subject_id = ${subjectId} AND object_id = ${objectId}`),
   )

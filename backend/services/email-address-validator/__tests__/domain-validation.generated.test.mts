@@ -96,6 +96,7 @@ describe('blacklist validation', () => {
 
     const testDomain = `blacklisted-email-${Date.now()}.com`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
+    await addDomainsToEmailBloomFilter([testDomain])
 
     await expect(validateEmailDomain(testDomain)).rejects.toThrow(EmailDomainInvalidError)
   })
@@ -123,6 +124,7 @@ describe('blacklist validation', () => {
 
     const testDomain = `new-blacklisted-${Date.now()}.com`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
+    await addDomainsToEmailBloomFilter([testDomain])
 
     await expect(validateEmailDomain(testDomain)).rejects.toThrow(EmailDomainInvalidError)
   })
@@ -136,6 +138,7 @@ describe('blacklist validation', () => {
 
     const testDomain = `uppercase-test-${Date.now()}.com`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
+    await addDomainsToEmailBloomFilter([testDomain])
 
     await expect(validateEmailDomain(testDomain.toUpperCase())).rejects.toThrow(
       EmailDomainInvalidError,
@@ -151,6 +154,7 @@ describe('blacklist validation', () => {
 
     const testDomain = `cached-blacklist-${Date.now()}.com`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
+    await addDomainsToEmailBloomFilter([testDomain])
 
     // First call - checks and caches
     await expect(validateEmailDomain(testDomain)).rejects.toThrow(EmailDomainInvalidError)

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 
 /** Seeds an unreferenced pair to exercise bounded orphan cleanup without a live owner. */
@@ -15,7 +16,9 @@ export async function seedTestRetainedMediaOrphan(input: {
     [input.imageId, uploaders[0]!.id],
   )
   await query(
-    'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
+    allowUnannotatedQuery(
+      'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
+    ),
     [input.placementId, input.imageId, input.bindingFamily],
   )
   await query.commit()

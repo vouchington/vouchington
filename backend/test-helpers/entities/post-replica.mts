@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -18,7 +19,8 @@ export async function isTestPostVoteFixtureVisibleFromReplica({
   votesScoreUp: number
   votesCountUp: number
 }): Promise<boolean> {
-  const { rows } = await read(sql`
+  const { rows } = await read(
+    allowUnannotatedQuery(sql`
     SELECT 1
     FROM posts
     JOIN LATERAL (
@@ -35,6 +37,7 @@ export async function isTestPostVoteFixtureVisibleFromReplica({
       AND NOT latest_vote.score_is_neutral
       AND NOT latest_vote.score_is_semantic
     LIMIT 1
-  `)
+  `),
+  )
   return rows.length > 0
 }

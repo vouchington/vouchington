@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -9,14 +10,16 @@ export async function setUrlHostnameVotes(
   countDown: number,
   scores: { up: number; down: number } = { up: countUp, down: countDown },
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE url_hostnames
     SET votes_score_up = ${scores.up},
         votes_score_down = ${scores.down},
         votes_count_up = ${countUp},
         votes_count_down = ${countDown}
     WHERE id = ${hostnameId}
-  `)
+  `),
+  )
 }
 
 export async function upsertHostnameVote(

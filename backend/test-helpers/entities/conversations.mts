@@ -36,25 +36,10 @@ export async function createTestDirectConversation(options: CreateTestDirectConv
   return { id: conversationId }
 }
 
-type CreateTestDirectMessageOptions = {
-  conversationId: string
-  createdById: string
-  bodyText: string
-}
-
-export async function createTestDirectMessage(options: CreateTestDirectMessageOptions) {
-  const { rows } = await write(sql`/* createTestDirectMessage */
-    INSERT INTO conversation_messages (conversation_id, kind, body_text, created_by_id, created_via)
-    VALUES (${options.conversationId}, 'message', ${options.bodyText}, ${options.createdById}, 'system')
-    RETURNING id
-  `)
-  return { id: rows[0].id as string }
-}
-
 export async function createTestConversation(options: CreateTestConversationOptions) {
   const title = options.title ?? 'Test Conversation'
 
-  const query = sql`
+  const query = sql`/* createTestConversation */
     INSERT INTO conversations (created_by_id, title`
   if (options.postId) {
     query.append(sql`, post_id`)
@@ -71,61 +56,6 @@ export async function createTestConversation(options: CreateTestConversationOpti
   const conversation = rows[0]
 
   return { id: conversation.id as string }
-}
-
-type CreateTestConversationMessageOptions = {
-  conversationId: string
-  createdById: string
-  content: unknown
-}
-
-type CreateTestModmailThreadOptions = {
-  communityId: string
-  subjectUserId: string
-  modUserId: string
-  lastActivityAt?: string
-}
-
-export async function createTestModmailThread(options: CreateTestModmailThreadOptions) {
-  const insert = options.lastActivityAt
-    ? sql`/* createTestModmailThread */
-        INSERT INTO conversations (
-          channel_type, title, community_id, subject_user_id, created_by_id, last_activity_at
-        )
-        VALUES (
-          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.lastActivityAt}
-        )
-        RETURNING id`
-    : sql`/* createTestModmailThread */
-        INSERT INTO conversations (
-          channel_type, title, community_id, subject_user_id, created_by_id
-        )
-        VALUES (
-          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}
-        )
-        RETURNING id`
-  const { rows: convRows } = await write(insert)
-  const conversationId = convRows[0].id as string
-
-  await write(sql`/* createTestModmailThread:participants */
-    INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES
-      (${conversationId}, ${options.subjectUserId}, 'member'),
-      (${conversationId}, ${options.modUserId}, 'admin')
-  `)
-
-  return { id: conversationId }
-}
-
-export async function createTestConversationMessage(options: CreateTestConversationMessageOptions) {
-  const { rows } = await write(sql`
-    INSERT INTO conversation_messages (conversation_id, created_by_id, created_via, content)
-    VALUES (
-      ${options.conversationId}, ${options.createdById}, 'system', ${JSON.stringify(options.content)}
-    )
-    RETURNING id
-  `)
-  return { id: rows[0].id as string }
 }
 
 type TestConversationParticipant = {
@@ -196,3 +126,42 @@ export async function getTestConversationThreadFields(
   `)
   return rows[0] as GetTestConversationThreadFields
 }
+
+type CreateTestModmailThreadOptions = {
+  communityId: string
+  subjectUserId: string
+  modUserId: string
+  lastActivityAt?: string
+}
+
+export async function createTestModmailThread(options: CreateTestModmailThreadOptions) {
+  const insert = options.lastActivityAt
+    ? sql`/* createTestModmailThread */
+        INSERT INTO conversations (
+          channel_type, title, community_id, subject_user_id, created_by_id, last_activity_at
+        )
+        VALUES (
+          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.lastActivityAt}
+        )
+        RETURNING id`
+    : sql`/* createTestModmailThread */
+        INSERT INTO conversations (
+          channel_type, title, community_id, subject_user_id, created_by_id
+        )
+        VALUES (
+          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}
+        )
+        RETURNING id`
+  const { rows: convRows } = await write(insert)
+  const conversationId = convRows[0].id as string
+
+  await write(sql`/* createTestModmailThread:participants */
+    INSERT INTO conversation_participants (conversation_id, user_id, role)
+    VALUES
+      (${conversationId}, ${options.subjectUserId}, 'member'),
+      (${conversationId}, ${options.modUserId}, 'admin')
+  `)
+
+  return { id: conversationId }
+}
+export { createTestDirectMessage, createTestConversationMessage } from './conversation-messages.mts'

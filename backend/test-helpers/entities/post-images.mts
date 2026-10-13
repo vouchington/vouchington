@@ -1,10 +1,12 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
 import { completeTestMediaDeliveryRecord } from './image-surface-placements.mts'
 import sql from 'sql-template-strings'
 
 export async function removeTestPostImage(postId: string, imageId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     WITH removed AS (
       DELETE FROM post_images
       WHERE post_id = ${postId} AND image_id = ${imageId}
@@ -18,7 +20,8 @@ export async function removeTestPostImage(postId: string, imageId: string): Prom
     JOIN removed ON removed.post_id = image_placement.post_id AND removed.image_id = image_placement.image_id
     WHERE placement.id = image_placement.placement_id
       AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'
-  `)
+  `),
+  )
 }
 
 export async function getTestPostImagePlacement(
@@ -35,13 +38,15 @@ export async function getTestPostImagePlacement(
     placement_revision: number
     retired_at: Date | null
     retirement_reason: 'asset_deleted' | 'owner_removed' | null
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT placement.id AS placement_id, placement.revision AS placement_revision, placement.retired_at,
       placement.retirement_reason
     FROM image_placements image_placement
     JOIN media_placements placement ON placement.id = image_placement.placement_id
     WHERE image_placement.post_id = ${postId} AND image_placement.image_id = ${imageId}
-  `)
+  `),
+  )
   return rows[0] ?? null
 }
 

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -103,7 +104,7 @@ describe('connectOAuthAccountToUser', () => {
       )
       {
         await using contention = await beginTransaction()
-        await contention(`SET LOCAL lock_timeout = '50ms'`)
+        await contention(allowUnannotatedQuery(`SET LOCAL lock_timeout = '50ms'`))
         await expect(
           connectOAuthAccountToUser('github', user.id, providerUserId, { query: contention }),
         ).rejects.toMatchObject({ code: '55P03' })

@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
@@ -33,7 +34,7 @@ export async function insertTestModerationReport(options: {
   const reportId = options.createdAt
     ? uuidv7({ msecs: options.createdAt.getTime(), seq: 0 })
     : undefined
-  const query = sql`INSERT INTO moderation_reports (`
+  const query = sql`/* insertTestModerationReport */ INSERT INTO moderation_reports (`
   if (reportId) query.append(sql`id, `)
   query.append(sql`reporter_user_id, `)
   query.append(fkColumn)
@@ -60,13 +61,15 @@ export async function insertTestModerationReport(options: {
 export async function getTestModerationReportTransparencyCommunityId(
   reportedUserId: string,
 ): Promise<string | null | undefined> {
-  const { rows } = await read<{ moderation_transparency_community_id: string | null }>(sql`
+  const { rows } = await read<{ moderation_transparency_community_id: string | null }>(
+    allowUnannotatedQuery(sql`
     SELECT moderation_transparency_community_id
     FROM moderation_reports
     WHERE reported_user_id = ${reportedUserId}::uuid
     ORDER BY id DESC
     LIMIT 1
-  `)
+  `),
+  )
   return rows[0]?.moderation_transparency_community_id
 }
 
@@ -120,7 +123,7 @@ export async function insertTestModerationReportsForTarget(options: {
   const reportIds: Array<string | null> = createdAt
     ? options.reporterUserIds.map((_, index) => uuidv7({ msecs: createdAt.getTime(), seq: index }))
     : options.reporterUserIds.map(() => null)
-  const query = sql`
+  const query = sql`/* insertTestModerationReportsForTarget */
     WITH input(reporter_user_id, report_id, ord) AS (
       SELECT reporter_user_id, report_id, ord
       FROM unnest(${options.reporterUserIds}::uuid[], ${reportIds}::uuid[]) WITH ORDINALITY AS input(reporter_user_id, report_id, ord)

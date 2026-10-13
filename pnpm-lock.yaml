@@ -1431,8 +1431,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.14
+        version: 0.0.14
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -5157,8 +5157,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.14
+        version: 0.0.14
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -13777,8 +13777,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.14
+        version: 0.0.14
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -19049,8 +19049,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.13':
-    resolution: {integrity: sha512-/bkQ5ury6ISf8v7mwpEIrcQAQvrklpoD6cYVvTNav5k7qJqs9tzu4925tfHofSBdBK1I1Pxd+cuIET6FH74MQg==}
+  '@vouchington/postgres@0.0.14':
+    resolution: {integrity: sha512-IsFVgC9Ya7o81aOfl9BCH21r0UQ465siY86C0lj+fg2RgT0xcHID49sP658V8ASa6M6p1vgt/Ek9ar9cdW8PBg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.2':
@@ -27892,7 +27892,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.13':
+  '@vouchington/postgres@0.0.14':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1

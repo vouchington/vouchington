@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { read } from '../index.mts'
+import { allowUnannotatedQuery } from '../prepared-statement-name.mts'
 
 type TableColumn = {
   column_name: string
@@ -75,7 +76,7 @@ describe('extension table key columns', () => {
 
 async function getTableColumns(tableName: string): Promise<TableColumn[]> {
   const { rows } = await read<TableColumn>(
-    `
+    allowUnannotatedQuery(`
       SELECT
         column_name,
         is_generated,
@@ -84,7 +85,7 @@ async function getTableColumns(tableName: string): Promise<TableColumn[]> {
       WHERE table_schema = 'public'
         AND table_name = $1
         AND column_name = ANY($2::TEXT[])
-    `,
+    `),
     [tableName, ['id', 'post_id', 'topic_id', 'created_at', 'status']],
   )
   return rows

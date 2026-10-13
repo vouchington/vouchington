@@ -7,13 +7,13 @@ async function seedPlaywrightCrawlersAndCrawls(
 ): Promise<void> {
   /* v8 ignore stop */
   await query(
-    `INSERT INTO url_hostnames (id, hostname, is_crawlable) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE) ON CONFLICT (hostname) DO UPDATE SET is_crawlable = EXCLUDED.is_crawlable`,
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO url_hostnames (id, hostname, is_crawlable) VALUES ('019c64e6-1000-7000-b000-000000000001', 'example.com', TRUE), ('019c64e6-1000-7000-b000-000000000002', 'test.org', TRUE), ('019c64e6-1000-7000-b000-000000000003', 'blocked-site.com', FALSE), ('019c64e6-1000-7000-b000-000000000004', 'www.doctorofcredit.com', TRUE), ('019c64e6-1000-7000-b000-000000000005', 'thepointsguy.com', TRUE) ON CONFLICT (hostname) DO UPDATE SET is_crawlable = EXCLUDED.is_crawlable`,
   )
   // Insert the history row so blocked-site.com has a url_hostname_blocks entry that the
   // trigger-maintained url_hostnames.is_blocked column stays consistent with, and so
   // unblockHostname() can lift it.  WHERE NOT EXISTS makes this idempotent across re-seeds.
   await query(
-    `INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO url_hostname_blocks (url_hostname_id, blocked_source)
      SELECT '019c64e6-1000-7000-b000-000000000003', 'admin'
      WHERE NOT EXISTS (
        SELECT 1 FROM url_hostname_blocks
@@ -22,19 +22,19 @@ async function seedPlaywrightCrawlersAndCrawls(
      )`,
   )
   await query(
-    `INSERT INTO urls (id, url, hostname_id, pathname, search_params) VALUES ('019c64e6-2000-7000-8000-000000000001', 'https://example.com/page1', '019c64e6-1000-7000-b000-000000000001', '/page1', '{}'::JSONB), ('019c64e6-2000-7000-8000-000000000002', 'https://example.com/page2', '019c64e6-1000-7000-b000-000000000001', '/page2', '{}'::JSONB), ('019c64e6-2000-7000-8000-000000000003', 'https://test.org/article', '019c64e6-1000-7000-b000-000000000002', '/article', '{}'::JSONB) ON CONFLICT (url) DO NOTHING`,
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO urls (id, url, hostname_id, pathname, search_params) VALUES ('019c64e6-2000-7000-8000-000000000001', 'https://example.com/page1', '019c64e6-1000-7000-b000-000000000001', '/page1', '{}'::JSONB), ('019c64e6-2000-7000-8000-000000000002', 'https://example.com/page2', '019c64e6-1000-7000-b000-000000000001', '/page2', '{}'::JSONB), ('019c64e6-2000-7000-8000-000000000003', 'https://test.org/article', '019c64e6-1000-7000-b000-000000000002', '/article', '{}'::JSONB) ON CONFLICT (url) DO NOTHING`,
   )
   await query(
-    `INSERT INTO hostname_crawler_configurations (id, hostname_id, description, crawler_type, priority, css_selectors_to_remove, link_text_content_to_remove, link_hrefs_to_remove) VALUES ( '019c64e6-3000-7000-8000-000000000001', '019c64e6-1000-7000-b000-000000000001', 'Example.com crawler', 'fetch', 1, ARRAY['.ads', '.sidebar']::TEXT[], ARRAY['Advertisement', 'Sponsored']::TEXT[], ARRAY['https://ads.example.com']::TEXT[] ), ( '019c64e6-3000-7000-8000-000000000002', '019c64e6-1000-7000-b000-000000000002', 'Test.org automation crawler', 'automation', 0, ARRAY['.banner']::TEXT[], ARRAY[]::TEXT[], ARRAY[]::TEXT[] ) ON CONFLICT (id) DO UPDATE SET hostname_id = EXCLUDED.hostname_id, description = EXCLUDED.description, crawler_type = EXCLUDED.crawler_type, priority = EXCLUDED.priority, css_selectors_to_remove = EXCLUDED.css_selectors_to_remove, link_text_content_to_remove = EXCLUDED.link_text_content_to_remove, link_hrefs_to_remove = EXCLUDED.link_hrefs_to_remove, deleted_at = NULL`,
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO hostname_crawler_configurations (id, hostname_id, description, crawler_type, priority, css_selectors_to_remove, link_text_content_to_remove, link_hrefs_to_remove) VALUES ( '019c64e6-3000-7000-8000-000000000001', '019c64e6-1000-7000-b000-000000000001', 'Example.com crawler', 'fetch', 1, ARRAY['.ads', '.sidebar']::TEXT[], ARRAY['Advertisement', 'Sponsored']::TEXT[], ARRAY['https://ads.example.com']::TEXT[] ), ( '019c64e6-3000-7000-8000-000000000002', '019c64e6-1000-7000-b000-000000000002', 'Test.org automation crawler', 'automation', 0, ARRAY['.banner']::TEXT[], ARRAY[]::TEXT[], ARRAY[]::TEXT[] ) ON CONFLICT (id) DO UPDATE SET hostname_id = EXCLUDED.hostname_id, description = EXCLUDED.description, crawler_type = EXCLUDED.crawler_type, priority = EXCLUDED.priority, css_selectors_to_remove = EXCLUDED.css_selectors_to_remove, link_text_content_to_remove = EXCLUDED.link_text_content_to_remove, link_hrefs_to_remove = EXCLUDED.link_hrefs_to_remove, deleted_at = NULL`,
   )
   await query(
-    `DELETE FROM crawls WHERE url_id IN ( '019c64e6-2000-7000-8000-000000000001', '019c64e6-2000-7000-8000-000000000002', '019c64e6-2000-7000-8000-000000000003' )`,
+    `/* seedPlaywrightCrawlersAndCrawls */ DELETE FROM crawls WHERE url_id IN ( '019c64e6-2000-7000-8000-000000000001', '019c64e6-2000-7000-8000-000000000002', '019c64e6-2000-7000-8000-000000000003' )`,
   )
   const crawlId1 = recentSeedCrawlId(1)
   const crawlId2 = recentSeedCrawlId(2)
   const crawlId3 = recentSeedCrawlId(3)
   const crawlId4 = recentSeedCrawlId(4)
-  await query(`
+  await query(`/* seedPlaywrightCrawlersAndCrawls */
   INSERT INTO crawls (id, url_id, hostname_crawler_configuration_id, response_status_code, completed_at, embeddings_generated_at, markdown, title)
   VALUES
     (
@@ -83,7 +83,7 @@ async function seedPlaywrightCrawlersAndCrawls(
     title = EXCLUDED.title
       `)
   await query(
-    `INSERT INTO crawl_chunks (
+    `/* seedPlaywrightCrawlersAndCrawls */ INSERT INTO crawl_chunks (
       crawl_id,
       order_index,
       markdown,

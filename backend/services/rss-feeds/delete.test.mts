@@ -225,7 +225,7 @@ describe('delete', () => {
 
     async function contendForTopicAliasPublicationScope(): Promise<void> {
       await using query = await beginTransaction()
-      await query(`SET LOCAL lock_timeout = '50ms'`)
+      await query(`/* testDelete */ SET LOCAL lock_timeout = '50ms'`)
       await lockAliases(query, [aliasId])
       await query.commit()
     }

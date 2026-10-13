@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -63,7 +64,10 @@ async function attemptInRolledBackTransaction(
   permit: boolean,
 ): Promise<{ affected: number } | { rejectedWith: string }> {
   await using transaction = await beginTransaction()
-  if (permit) await transaction(sql`SET LOCAL app.copyright_retention_erasure = 'on'`)
+  if (permit)
+    await transaction(
+      sql`/* attemptInRolledBackTransaction */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+    )
   try {
     const { rowCount } = await transaction(statement)
     return { affected: rowCount ?? 0 }
@@ -89,7 +93,9 @@ export async function permitsCopyrightRetentionChange(options: {
   const after = { ...before, ...Object.fromEntries(options.changed.map(c => [c, 'new'])) }
   await using transaction = await beginTransaction()
   await transaction(
-    sql`SELECT set_config('app.copyright_retention_erasure', ${options.permit ? 'on' : 'off'}, true)`,
+    allowUnannotatedQuery(
+      sql`SELECT set_config('app.copyright_retention_erasure', ${options.permit ? 'on' : 'off'}, true)`,
+    ),
   )
   const { rows } = await transaction<{ permitted: boolean }>(
     sql`/* permitsCopyrightRetentionChange */

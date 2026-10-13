@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -12,17 +13,19 @@ async function appendStatement(
   kind: 'counter_notice' | 'court_or_ccb_hold',
   statement: Record<string, unknown>,
 ) {
-  const { rows } = await write<{ id: string }>(sql`SELECT uuidv7() AS id`)
+  const { rows } = await write<{ id: string }>(allowUnannotatedQuery(sql`SELECT uuidv7() AS id`))
   const id = rows[0]?.id
   if (!id) throw new Error('Could not allocate copyright submission id')
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO copyright_notice_submissions (
       id, copyright_notice_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (
       ${id}, ${noticeId}, ${kind}, CURRENT_TIMESTAMP, 'staff',
       ${encryptSecret(JSON.stringify(statement), copyrightSubmissionPurpose(id))}
     )
-  `)
+  `),
+  )
 }
 
 /** Real pending form case with private contact text in both statutory statements. */

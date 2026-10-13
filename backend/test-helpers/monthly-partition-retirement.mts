@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '../data-stores/psql/setup.mts'
 import {
@@ -11,7 +12,7 @@ export async function createMonthlyPartitionRetirementFixture() {
   await using setup = await beginTransaction()
   await setup(`/* createMonthlyPartitionRetirementFixture */ CREATE SCHEMA ${schema}`)
   await setup(`/* createMonthlyPartitionRetirementFixture */ SET LOCAL search_path TO ${schema}`)
-  await setup(MONTHLY_RETIREMENT_SCHEMA)
+  await setup(allowUnannotatedQuery(MONTHLY_RETIREMENT_SCHEMA))
   await setup.commit()
 
   async function startTransaction() {

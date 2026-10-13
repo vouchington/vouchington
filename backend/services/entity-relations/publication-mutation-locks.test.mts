@@ -262,7 +262,7 @@ async function lockScopeWithTimeout(
   lock: (query: TransactionQuery) => Promise<unknown>,
 ): Promise<void> {
   await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
+  await query(`/* testPublicationMutationLocks */ SET LOCAL lock_timeout = '50ms'`)
   await lock(query)
   await query.commit()
 }

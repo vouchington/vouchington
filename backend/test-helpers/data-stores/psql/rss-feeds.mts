@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -15,35 +16,45 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   const random = crypto.randomUUID()
   const embeddingSha256 = `\\x${'0'.repeat(64)}`
 
-  const { rows: topicRows } = await write<{ id: string }>(sql`
+  const { rows: topicRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
     VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system')
     RETURNING id
-  `)
+  `),
+  )
   const topicId = topicRows[0]!.id
 
-  const { rows: hostnameRows } = await write<{ id: string }>(sql`
+  const { rows: hostnameRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO url_hostnames (hostname)
     VALUES (${`feed-${random}.example.com`})
     RETURNING id
-  `)
-  const { rows: urlRows } = await write<{ id: string }>(sql`
+  `),
+  )
+  const { rows: urlRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO urls (url, hostname_id, search_params)
     VALUES (${`https://feed-${random}.example.com/feed.xml`}, ${hostnameRows[0]!.id}, '{}'::jsonb)
     RETURNING id
-  `)
+  `),
+  )
 
-  const { rows: feedRows } = await write<{ id: string }>(sql`
+  const { rows: feedRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via)
     VALUES (${urlRows[0]!.id}, ${topicId}, ${`Test Feed ${random}`}, 'system')
     RETURNING id
-  `)
+  `),
+  )
   const feedId = feedRows[0]!.id
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     VALUES ('enablement', ${feedId}, TRUE, 'test helper initial state')
-  `)
+  `),
+  )
 
   return { id: feedId }
 }
@@ -57,11 +68,13 @@ export async function setLocalRssFeedOwningTopicVoteScore(
   scoreUp: number,
   scoreDown: number,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE topics
     SET votes_score_up = ${scoreUp}, votes_score_down = ${scoreDown}
     WHERE id = (SELECT topic_id FROM rss_feeds WHERE id = ${feedId})
-  `)
+  `),
+  )
 }
 
 export async function createLocalTestMembership(
@@ -79,25 +92,30 @@ export async function createLocalTestMembership(
     options.expiresAt && options.expiresAt < lifecycleTimestamp
       ? options.expiresAt
       : lifecycleTimestamp
-  const { rows: productRows } = await write<{ id: string }>(sql`
+  const { rows: productRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO membership_products (plan, billing_interval)
     VALUES (${options.plan}, 'monthly')
     ON CONFLICT (plan, billing_interval) WHERE retired_at IS NULL
     DO UPDATE SET retired_at = NULL
     RETURNING id
-  `)
-  const { rows: sourceRows } = await write<{ id: string }>(sql`
+  `),
+  )
+  const { rows: sourceRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO membership_sources (user_id, source_kind)
     VALUES (${userId}, 'admin_grant')
     RETURNING id
-  `)
+  `),
+  )
   const sourceId = sourceRows[0]!.id
   const productId = productRows[0]!.id
   const expiresAt = options.expiresAt === undefined ? null : options.expiresAt
   const projectionEndedAt =
     options.projectionEndedAt === undefined ? null : options.projectionEndedAt
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO membership_source_states (
       membership_source_id, source_kind, membership_product_id, effective_at, expires_at,
       cancelled_at, expired_at, past_due_at, paused_at
@@ -108,9 +126,11 @@ export async function createLocalTestMembership(
       ${status === 'past_due' ? lifecycleTimestamp : null},
       ${status === 'paused' ? lifecycleTimestamp : null}
     )
-  `)
+  `),
+  )
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     INSERT INTO memberships (
       user_id, membership_source_id, membership_product_id, effective_at, expires_at, projection_ended_at, cancelled_at, expired_at, past_due_at, paused_at
     ) VALUES (
@@ -121,5 +141,6 @@ export async function createLocalTestMembership(
       ${status === 'past_due' ? lifecycleTimestamp : null},
       ${status === 'paused' ? lifecycleTimestamp : null}
     )
-  `)
+  `),
+  )
 }

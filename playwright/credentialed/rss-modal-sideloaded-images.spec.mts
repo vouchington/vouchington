@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../backend/data-stores/psql/prepared-statement-name.mts'
 // Sideload pipeline test. The image lambda serves the reserved Playwright cover locally, so CI
 // does not fetch an external host. Runs only in the credentialed Playwright workflow, which
 // provides AWS credentials and the image buckets. A missing credential fails the test.
@@ -84,21 +85,23 @@ test.describe('sideloaded images in RSS item modal', () => {
     const errors: unknown[] = []
     if (feedId) {
       try {
-        await write(`DELETE FROM rss_feeds WHERE id = $1`, [feedId])
+        await write(allowUnannotatedQuery(`DELETE FROM rss_feeds WHERE id = $1`), [feedId])
       } catch (err) {
         errors.push(err)
       }
     }
     if (rssItemId) {
       try {
-        await write(`DELETE FROM rss_feed_item_guids WHERE id = $1`, [rssItemId])
+        await write(allowUnannotatedQuery(`DELETE FROM rss_feed_item_guids WHERE id = $1`), [
+          rssItemId,
+        ])
       } catch (err) {
         errors.push(err)
       }
     }
     if (topicId) {
       try {
-        await write(`DELETE FROM topics WHERE id = $1`, [topicId])
+        await write(allowUnannotatedQuery(`DELETE FROM topics WHERE id = $1`), [topicId])
       } catch (err) {
         errors.push(err)
       }

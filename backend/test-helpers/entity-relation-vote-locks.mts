@@ -12,7 +12,7 @@ export async function holdTestEntityRelationVoteLock(
   async function holdEntityRelationVoteLock(): Promise<void> {
     await using transaction = await beginTransaction()
     const query = transaction
-    await query(sql`
+    await query(sql`/* holdEntityRelationVoteLock */
         SELECT pg_advisory_xact_lock(
           hashtextextended('relation__rss_feed_item__category__topic__votes:' || ${userId}::text || ':' || ${relationId}::text, 0)
         )
@@ -32,7 +32,7 @@ export async function holdTestEntityRelationVoteLock(
 }
 
 export async function testCategorizerVoteLockHasWaiter(): Promise<boolean> {
-  const { rows } = await read<{ waiting: boolean }>(sql`
+  const { rows } = await read<{ waiting: boolean }>(sql`/* testCategorizerVoteLockHasWaiter */
     SELECT EXISTS (
       SELECT 1
       FROM pg_stat_activity

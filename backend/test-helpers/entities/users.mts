@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'node:assert'
@@ -66,40 +67,48 @@ export async function createTestUser(options: CreateTestUserOptions = {}): Promi
 }
 
 export async function updateUserUsername(userId: string, username: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET username = ${username}
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function clearTestUserModerationEmailTimezone(userId: string): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET moderation_email_timezone = NULL
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function updateTestUserUiLocale(
   userId: string,
   uiLocale: string | null,
 ): Promise<void> {
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     UPDATE users
     SET ui_locale = ${uiLocale}
     WHERE id = ${userId}
-  `)
+  `),
+  )
 }
 
 export async function countUserRoleAssignments(userId: string, roleSlug: string): Promise<number> {
-  const { rows } = await write(sql`
+  const { rows } = await write(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM user_roles ur
     INNER JOIN user_role_types urt ON ur.role_type_id = urt.id
     WHERE ur.user_id = ${userId}
       AND urt.slug = ${roleSlug}
-  `)
+  `),
+  )
 
   return rows[0]?.count ?? 0
 }

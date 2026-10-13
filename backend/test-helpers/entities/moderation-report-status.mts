@@ -31,7 +31,7 @@ export async function insertTestSystemModerationReport(
   const caseId = await openOrGetOpenCase({ entityType, entityId })
   const systemUser = await createSystemUser(BAN_EVASION_SYSTEM_USERNAME)
   const reportId = createdAt ? uuidv7({ msecs: createdAt.getTime(), seq: 0 }) : undefined
-  const insertQuery = sql`INSERT INTO moderation_reports (`
+  const insertQuery = sql`/* insertTestSystemModerationReport */ INSERT INTO moderation_reports (`
   if (reportId) insertQuery.append(sql`id, `)
   insertQuery.append(sql`reporter_user_id, `)
   insertQuery.append(fkColumn)
@@ -50,7 +50,7 @@ export async function insertTestSystemModerationReport(
   `)
   const { rows } = await write<{ id: string }>(insertQuery)
   if (rows[0]) return rows[0].id
-  const selectQuery = sql`SELECT id FROM moderation_reports
+  const selectQuery = sql`/* insertTestSystemModerationReport */ SELECT id FROM moderation_reports
     WHERE reporter_user_id = ${systemUser.id}
       AND `
   selectQuery.append(fkColumn)
@@ -74,7 +74,7 @@ export async function getTestSystemModerationReportStatus(
 ): Promise<string | null> {
   const fkColumn = ENTITY_TYPE_TO_REPORT_FK[entityType]
   if (!fkColumn) return null
-  const query = sql`SELECT
+  const query = sql`/* getTestSystemModerationReportStatus */ SELECT
       CASE
         WHEN mr.reviewed_at IS NULL THEN 'pending'
         ELSE mr.resolution_action::text

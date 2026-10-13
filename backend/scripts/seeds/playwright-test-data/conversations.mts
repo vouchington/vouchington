@@ -34,7 +34,7 @@ const SIDEBAR_PAGINATION_CONVERSATIONS = [
 
 export async function seedPlaywrightConversations(query: TransactionQuery): Promise<void> {
   await query(
-    `INSERT INTO conversations (id, created_by_id, title) VALUES ( '${SEEDED_CONVERSATION_ID}', '019f0000-0000-7000-8000-000000000000', 'Chat Feature Test Conversation' ) ON CONFLICT (id) DO UPDATE SET created_by_id = EXCLUDED.created_by_id, title = EXCLUDED.title`,
+    `/* seedPlaywrightConversations */ INSERT INTO conversations (id, created_by_id, title) VALUES ( '${SEEDED_CONVERSATION_ID}', '019f0000-0000-7000-8000-000000000000', 'Chat Feature Test Conversation' ) ON CONFLICT (id) DO UPDATE SET created_by_id = EXCLUDED.created_by_id, title = EXCLUDED.title`,
   )
   await query(
     `/* seedPlaywrightSidebarPaginationConversations */ INSERT INTO conversations (id, created_by_id, title) SELECT seed.id::uuid, '019f0000-0000-7000-8000-000000000000'::uuid, seed.title FROM UNNEST($1::text[], $2::text[]) AS seed(id, title) ON CONFLICT (id) DO UPDATE SET created_by_id = EXCLUDED.created_by_id, title = EXCLUDED.title`,
@@ -44,7 +44,7 @@ export async function seedPlaywrightConversations(query: TransactionQuery): Prom
     ],
   )
   await query(
-    `INSERT INTO conversation_messages (id, conversation_id, created_by_id, created_via, content) VALUES
+    `/* seedPlaywrightConversations */ INSERT INTO conversation_messages (id, conversation_id, created_by_id, created_via, content) VALUES
       ( '019e0000-0000-7000-8000-000000000002', '${SEEDED_CONVERSATION_ID}', '019f0000-0000-7000-8000-000000000000', 'system', '{"role": "user", "content": "What credit cards have the best travel rewards?"}'::jsonb ),
       ( '019e0000-0000-7000-8000-000000000003', '${SEEDED_CONVERSATION_ID}', '019f0000-0000-7000-8000-000000000000', 'system', '{"role": "assistant", "content": "Great question! The top travel rewards cards generally fall into a few categories. Premium cards like the Chase Sapphire Reserve and Amex Platinum offer strong earning rates on travel and dining, plus valuable perks like lounge access and travel credits. Mid-tier cards like the Chase Sapphire Preferred and Capital One Venture Rewards offer solid value with lower annual fees. The best card for you depends on your spending patterns, preferred airlines and hotels, and how much you value perks versus a lower annual fee. Would you like me to compare specific cards?"}'::jsonb ),
       ( '019e0000-0000-7000-8000-000000000004', '${SEEDED_CONVERSATION_ID}', '019f0000-0000-7000-8000-000000000000', 'system', '{"role": "user", "content": "Tell me more about the Chase Sapphire Reserve."}'::jsonb ),

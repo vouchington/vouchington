@@ -195,7 +195,9 @@ describe('update.generated (state)', () => {
     const release = Promise.withResolvers<void>()
     const holder = (async () => {
       await using query = await beginTransaction()
-      await query(`SELECT 1 FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`, [feedId])
+      await query(`/* testUpdate */ SELECT 1 FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`, [
+        feedId,
+      ])
       locked.resolve()
       await release.promise
       await query.commit()
@@ -244,7 +246,7 @@ describe('update.generated (state)', () => {
         () => updateRssFeedById(feed.id, { title: `Updated ${random}` }),
         async () => {
           await using query = await beginTransaction()
-          await query(`SET LOCAL lock_timeout = '50ms'`)
+          await query(`/* testUpdate */ SET LOCAL lock_timeout = '50ms'`)
           await lockScope(query, { type: 'rss_feed', rssFeedId: feed.id })
           await query.commit()
         },
@@ -284,7 +286,7 @@ describe('update.generated (state)', () => {
         () => updateRssFeedById(feed.id, { topic_id: destination.id }),
         async () => {
           await using query = await beginTransaction()
-          await query(`SET LOCAL lock_timeout = '50ms'`)
+          await query(`/* testUpdate */ SET LOCAL lock_timeout = '50ms'`)
           await lockAttachment(query, destination.id)
           await query.commit()
         },

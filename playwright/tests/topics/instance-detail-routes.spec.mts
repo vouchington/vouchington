@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
@@ -45,10 +46,10 @@ test.describe('Instance Detail Routes', () => {
     referralTopicId = referralTopic.id
     await linkTopicHostname(referralTopicId, referralHostname)
     const { referralProgramTopicId } = await insertTestReferralProgram(referralSuffix)
-    await write('UPDATE topics SET referral_program_topic_id = $1 WHERE id = $2', [
-      referralProgramTopicId,
-      referralTopicId,
-    ])
+    await write(
+      allowUnannotatedQuery('UPDATE topics SET referral_program_topic_id = $1 WHERE id = $2'),
+      [referralProgramTopicId, referralTopicId],
+    )
   })
 
   test.beforeEach(async ({ page }) => {

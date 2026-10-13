@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -51,23 +52,27 @@ export async function getTestMembershipProviderEvidenceTerminalState(evidenceId:
 
 export async function createTestPendingMembershipVerification(userId: string): Promise<string> {
   const applicationId = `verification-test-${randomUUID()}`
-  const { rows: evidenceRows } = await write<{ id: string }>(sql`
+  const { rows: evidenceRows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO membership_provider_evidence_records (
       provider, environment, application_id, evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
       'apple_app_store', 'test', ${applicationId}, ${'a'.repeat(64)}, ${Buffer.from('test')}
-    ) RETURNING id`)
+    ) RETURNING id`),
+  )
   const evidenceId = evidenceRows[0]?.id
   if (!evidenceId) throw new Error('Membership verification test evidence was not returned')
 
-  const { rows } = await write<{ id: string }>(sql`
+  const { rows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO membership_verifications (
       user_id, idempotency_key, request_fingerprint, membership_provider_evidence_record_id,
       provider, environment, application_id
     ) VALUES (
       ${userId}, ${randomUUID()}, ${'b'.repeat(64)}, ${evidenceId},
       'apple_app_store', 'test', ${applicationId}
-    ) RETURNING id`)
+    ) RETURNING id`),
+  )
   const verificationId = rows[0]?.id
   if (!verificationId) throw new Error('Membership verification test row was not returned')
   return verificationId
@@ -80,10 +85,12 @@ export async function getTestMembershipVerificationProcessingState(verificationI
     attempt_count: number
     available_at: Date | null
     last_error: string | null
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT lease_token, leased_at, attempt_count,
       available_at, last_error
-    FROM membership_verification_processing_work_items WHERE membership_verification_id = ${verificationId}`)
+    FROM membership_verification_processing_work_items WHERE membership_verification_id = ${verificationId}`),
+  )
   return rows[0] ?? null
 }
 

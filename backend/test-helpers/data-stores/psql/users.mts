@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomBytes } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -10,10 +11,12 @@ import sql from 'sql-template-strings'
 // assertions). Do not export this outside @data-stores/psql — use test-helpers in every other
 // package.
 export async function createLocalTestUser(): Promise<{ id: string; username: string | null }> {
-  const { rows } = await write<{ id: string; username: string | null }>(sql`
+  const { rows } = await write<{ id: string; username: string | null }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO users DEFAULT VALUES
     RETURNING id, username
-  `)
+  `),
+  )
   return rows[0]!
 }
 
@@ -32,10 +35,12 @@ export function localSafeUsername(label = 'user'): string {
 export async function createLocalTestUserWithUsername(
   username: string,
 ): Promise<{ id: string; username: string | null }> {
-  const { rows } = await write<{ id: string; username: string | null }>(sql`
+  const { rows } = await write<{ id: string; username: string | null }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO users (username) VALUES (${username})
     RETURNING id, username
-  `)
+  `),
+  )
   return rows[0]!
 }
 
@@ -48,9 +53,11 @@ export async function getLocalTestUserRaw(userId: string): Promise<{
     id: string
     username: string | null
     platform_account_kind: 'official' | 'system' | null
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT id, username, platform_account_kind FROM users WHERE id = ${userId}
-  `)
+  `),
+  )
   return rows[0] ?? null
 }
 
@@ -65,9 +72,11 @@ export async function getLocalTestUserRawByUsername(username: string): Promise<{
     id: string
     username: string | null
     platform_account_kind: 'official' | 'system' | null
-  }>(sql`
+  }>(
+    allowUnannotatedQuery(sql`
     SELECT id, username, platform_account_kind FROM users WHERE username = ${username}
-  `)
+  `),
+  )
   return rows[0] ?? null
 }
 
@@ -89,13 +98,15 @@ export async function countLocalUserRoleAssignments(
   userId: string,
   roleSlug: string,
 ): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
+  const { rows } = await read<{ count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM user_roles ur
     INNER JOIN user_role_types urt ON ur.role_type_id = urt.id
     WHERE ur.user_id = ${userId}
       AND urt.slug = ${roleSlug}
-  `)
+  `),
+  )
   return rows[0]?.count ?? 0
 }
 
@@ -103,10 +114,12 @@ export async function countLocalUserRoleAssignments(
 // reclaimed squatter never inherits the role grant meant for the system account it was renamed out
 // of the way of.
 export async function countAllLocalUserRoleAssignments(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(sql`
+  const { rows } = await read<{ count: number }>(
+    allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int AS count
     FROM user_roles
     WHERE user_id = ${userId}
-  `)
+  `),
+  )
   return rows[0]?.count ?? 0
 }

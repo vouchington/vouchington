@@ -23,9 +23,22 @@ describe('unfurl referral links processor', () => {
       url: `https://${fixture.hostname}/ref/${randomSlug('dispatch')}`,
       label: 'stuck parent',
     })
-    await markReferralLinkUnfurlRequested(parent.id)
+    const requested = await markReferralLinkUnfurlRequested(parent.id)
+    const requestedAtMs = requested!.unfurl_requested_at!.getTime()
 
-    await processUnfurlReferralLinksJob(makeJob('unfurl_referral_links_dispatcher', {}))
+    // PostgreSQL retains sub-millisecond precision; bound the sweep around the database
+    // timestamp instead of racing it against Node's millisecond wall clock.
+    await processUnfurlReferralLinksJob(
+      makeJob('unfurl_referral_links_dispatcher', {
+        cursor: {
+          sweepStartedAt: new Date(requestedAtMs + 1).toISOString(),
+          after: {
+            requestedAt: new Date(requestedAtMs - 1).toISOString(),
+            id: '00000000-0000-0000-0000-000000000000',
+          },
+        },
+      }),
+    )
 
     const waiting = await readAllQueueJobs(unfurlReferralLinksQueue)
     expect(
@@ -112,8 +125,8 @@ function randomSlug(label: string): string {
 
 function makeJob(
   name: string,
-  data: Record<string, string>,
-): Pick<Job<Record<string, string>>, 'name' | 'data' | 'updateData' | 'moveToDelayed'> {
+  data: Record<string, unknown>,
+): Pick<Job<Record<string, unknown>>, 'name' | 'data' | 'updateData' | 'moveToDelayed'> {
   return {
     name,
     data,

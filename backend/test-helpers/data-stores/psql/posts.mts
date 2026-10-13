@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -13,7 +14,8 @@ export async function insertLocalTestPost(data: {
   createdById: string
 }): Promise<string> {
   const sha256 = `\\x${'0'.repeat(64)}`
-  const { rows } = await write<{ id: string }>(sql`
+  const { rows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
     INSERT INTO posts (
       post_type, title, markdown, created_by_id,
       bedrock_nova_multimodal_v1_content_sha256,
@@ -25,10 +27,12 @@ export async function insertLocalTestPost(data: {
       'system'
     )
     RETURNING id
-  `)
+  `),
+  )
   const postId = rows[0]!.id
 
-  await write(sql`
+  await write(
+    allowUnannotatedQuery(sql`
     WITH inserted_change AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
       VALUES (${postId}, 'approve', ${data.createdById})
@@ -39,7 +43,8 @@ export async function insertLocalTestPost(data: {
       approved_at = inserted_change.created_at
     FROM inserted_change
     WHERE posts.id = ${postId}
-  `)
+  `),
+  )
 
   return postId
 }

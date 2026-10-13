@@ -20,9 +20,10 @@ describe('alias capture lock order', () => {
     await expectAliasBeforeBlockedCapture(
       alias.id,
       query =>
-        query(`SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`, [item.id]).then(
-          () => undefined,
-        ),
+        query(
+          `/* testCaptureAliasLockOrder */ SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`,
+          [item.id],
+        ).then(() => undefined),
       query => recordRssFeedHardDeletePublicationChange(query, feed.id),
     )
   })
@@ -94,7 +95,7 @@ async function expectAliasBeforeBlockedCapture(
 
   async function contendForAliasPublicationScope(): Promise<void> {
     await using query = await beginTransaction()
-    await query(`SET LOCAL lock_timeout = '50ms'`)
+    await query(`/* testCaptureAliasLockOrder */ SET LOCAL lock_timeout = '50ms'`)
     await lockTopicAliasPublicationScopes(query, [aliasId])
     await query.commit()
   }
