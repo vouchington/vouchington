@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - name: Install CI tools via mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         # Repository cache policy permits only the pnpm store and Playwright browsers.
@@ -34,6 +35,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Run actionlint
+        timeout-minutes: 5
         run: actionlint
 
       - name: Audit GitHub Actions security

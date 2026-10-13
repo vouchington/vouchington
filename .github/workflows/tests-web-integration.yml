@@ -36,16 +36,20 @@ jobs:
       shard-total: ${{ steps.shards.outputs.total }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        timeout-minutes: 2
         with:
           node-version-file: '.nvmrc'
           package-manager-cache: false
       - name: Resolve web-integration shard total
+        timeout-minutes: 2
         id: shard-total
         run: node ci/vitest/shard-total.mts test-web-integration
       - uses: ./.github/actions/make-shard-matrix
+        timeout-minutes: 2
         id: shards
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
@@ -103,11 +107,13 @@ jobs:
 
     steps:
       - name: Set service ports
+        timeout-minutes: 1
         run: |
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 1
       - uses: ./.github/actions/setup-backend
@@ -141,6 +147,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Preserve full web-integration-shard-${{ matrix.shard }} LCOV
+        timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |

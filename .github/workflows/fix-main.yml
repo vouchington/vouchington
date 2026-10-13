@@ -55,12 +55,15 @@ jobs:
       should_dispatch: ${{ steps.triage.outputs.should_dispatch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
           install-scripts: 'false'
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,6 +72,7 @@ jobs:
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
         run: node ci/source-run-state.mts
       - name: Decide transient retry
+        timeout-minutes: 2
         id: decide
         if: steps.source-state.outputs.current == 'true'
         env:
@@ -79,6 +83,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node ci/transient-retry/decide.mts
       - name: Rerun workflow on transient match
+        timeout-minutes: 2
         if: >-
           steps.source-state.outputs.current == 'true' &&
           steps.decide.outputs.decision == 'rerun'
@@ -90,6 +95,7 @@ jobs:
           echo "Matched rule: $MATCHED_RULE"
           gh run rerun --repo "$GITHUB_REPOSITORY" "$WORKFLOW_RUN_ID"
       - name: Set should_dispatch output
+        timeout-minutes: 2
         id: triage
         env:
           # Independent of HARNESS_DISPATCH_ENABLED (the job-level gate above,
@@ -120,10 +126,13 @@ jobs:
       related-candidates: ${{ steps.prompt-context.outputs.related-candidates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
           install-scripts: 'false'
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+        timeout-minutes: 2
         id: prompt-context
         with:
           check-issues: 'true'
@@ -148,12 +157,15 @@ jobs:
       source-current: ${{ steps.source-state.outputs.current }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
           install-scripts: 'false'
 
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -163,6 +175,7 @@ jobs:
         run: node ci/source-run-state.mts
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         if: steps.source-state.outputs.current == 'true'
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
@@ -238,10 +251,13 @@ jobs:
       retry_pending: ${{ steps.retry-pending.outputs.retry_pending }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
           install-scripts: 'false'
       - name: Decide transient retry for this run
+        timeout-minutes: 2
         id: decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -251,6 +267,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: node ci/transient-retry/decide.mts
       - name: Set retry_pending output
+        timeout-minutes: 2
         id: retry-pending
         env:
           DECISION: ${{ steps.decide.outputs.decision }}
@@ -290,6 +307,7 @@ jobs:
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Revalidate source run
+        timeout-minutes: 2
         id: source-state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -354,6 +372,7 @@ jobs:
           echo "current=true" >> "$GITHUB_OUTPUT"
 
       - name: Escalate to human — open or update issue
+        timeout-minutes: 2
         if: steps.source-state.outputs.current == 'true'
         env:
           GH_TOKEN: ${{ github.token }}

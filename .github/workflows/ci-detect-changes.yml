@@ -105,10 +105,13 @@ jobs:
       # Full history keeps both parents of a pull request's merge commit (the docs-only check diffs
       # HEAD^1..HEAD) and the merge-queue range's merge base.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
+        timeout-minutes: 2
       - name: Resolve merge queue diff range
+        timeout-minutes: 2
         id: merge-queue-range
         if: github.event_name == 'merge_group'
         run: |
@@ -120,6 +123,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       # Full runs have no change set, so they are never docs-only.
       - name: Check for docs-only changes
+        timeout-minutes: 2
         id: docs-check
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         run: |
@@ -148,6 +152,7 @@ jobs:
           MERGE_QUEUE_BASE_SHA: ${{ steps.merge-queue-range.outputs.base }}
           MERGE_QUEUE_HEAD_SHA: ${{ steps.merge-queue-range.outputs.head }}
       - name: Check for trusted secret context
+        timeout-minutes: 2
         id: trusted-context
         run: |
           trusted=true
@@ -180,6 +185,7 @@ jobs:
       # payload carries no base for paths-filter to compare against. On pull requests the action
       # ignores base/ref and reads the PR API file list, which is the layer's own files.
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        timeout-minutes: 2
         id: filter
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
@@ -187,6 +193,7 @@ jobs:
           ref: ${{ steps.merge-queue-range.outputs.head }}
           filters: .github/ci-path-filters.yml
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        timeout-minutes: 2
         id: refine-runtime-web
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
@@ -197,6 +204,7 @@ jobs:
       # One boolean per area workflow: the union of its suites' filters. A touched area runs its
       # whole suite; docs-only changes select nothing; workflow/action changes select everything.
       - name: Resolve area selection
+        timeout-minutes: 2
         id: areas
         run: |
           area() {

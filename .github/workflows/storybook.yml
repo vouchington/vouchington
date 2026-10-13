@@ -79,6 +79,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 0
           ref: ${{ inputs.checkout_ref || github.sha }}
@@ -92,6 +93,7 @@ jobs:
         run: VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook --project web-storybook-component-coverage
         timeout-minutes: 3
       - name: Preserve full web-storybook LCOV
+        timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -130,6 +132,7 @@ jobs:
         uses: ./.github/actions/setup-playwright
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
+        timeout-minutes: 1
         run: rm -f coverage/lcov.info
       - name: Run Storybook browser tests
         env:
@@ -159,6 +162,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Preserve full web-storybook-browser LCOV
+        timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |

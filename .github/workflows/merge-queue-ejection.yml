@@ -38,13 +38,16 @@ jobs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
@@ -95,10 +98,12 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/comment-harness-session
+        timeout-minutes: 1
         with:
           target: ${{ github.event.pull_request.number }}
           session-id: ${{ needs.dispatch.outputs.session-id }}
@@ -129,6 +134,7 @@ jobs:
       THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - name: Comment failure on the ejected pull request
+        timeout-minutes: 1
         run: |
           set -euo pipefail
           # Every ejection shares one concurrency id, so harness-dispatch.yml serializes them with

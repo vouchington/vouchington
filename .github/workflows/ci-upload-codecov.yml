@@ -30,6 +30,7 @@ jobs:
     steps:
       # Depth 2 lets the Codecov CLI report a pull request's head commit (HEAD^2 of the merge commit).
       - id: codecov-checkout
+        timeout-minutes: 1
         continue-on-error: true
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

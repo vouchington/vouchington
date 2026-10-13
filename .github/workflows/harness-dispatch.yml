@@ -74,12 +74,14 @@ jobs:
       created: ${{ steps.dispatch.outputs.created }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Dispatch session
+        timeout-minutes: 2
         id: dispatch
         env:
           AGENT_REF: ${{ inputs.agent-ref }}

@@ -23,6 +23,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 1
       - uses: ./.github/actions/setup-backend
@@ -48,6 +49,7 @@ jobs:
           retention-days: 1
           if-no-files-found: warn
       - name: Preserve full ts-shared LCOV
+        timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |

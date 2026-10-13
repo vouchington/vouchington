@@ -39,6 +39,7 @@ jobs:
       resume_session_id: ${{ steps.checkpoint.outputs.resume_session_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -47,6 +48,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Resolve PR and validate command
+        timeout-minutes: 2
         id: gate
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -89,6 +91,7 @@ jobs:
           echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
 
       - name: Prepare durable shepherd checkpoint
+        timeout-minutes: 2
         id: checkpoint
         if: steps.gate.outputs.should_dispatch == 'true'
         env:
@@ -158,6 +161,7 @@ jobs:
           echo "checkpoint_comment_id=$CHECKPOINT_COMMENT_ID" >> "$GITHUB_OUTPUT"
 
       - name: Acknowledge command with eyes reaction
+        timeout-minutes: 2
         if: steps.gate.outputs.should_dispatch == 'true'
         env:
           COMMENT_ID: ${{ github.event.comment.id }}
@@ -180,10 +184,13 @@ jobs:
       pr_shepherd_version: ${{ steps.pr-shepherd-version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
 
       - name: Resolve trusted pr-shepherd version
+        timeout-minutes: 2
         id: pr-shepherd-version
         run: |
           set -euo pipefail
@@ -192,6 +199,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Prepare prompt variables
+        timeout-minutes: 2
         env:
           PR_TITLE: ${{ needs.gate.outputs.pr_title }}
         run: |
@@ -199,6 +207,7 @@ jobs:
           printf '%s' "$PR_TITLE" > pr-title.txt
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
@@ -254,6 +263,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
@@ -261,6 +271,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Revalidate and patch the exact checkpoint comment
+        timeout-minutes: 2
         env:
           CHECKPOINT_ACTOR: github-actions[bot]
           CHECKPOINT_COMMENT_ID: ${{ needs.gate.outputs.checkpoint_comment_id }}
@@ -310,6 +321,7 @@ jobs:
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
     steps:
       - name: Comment failure on PR
+        timeout-minutes: 1
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \

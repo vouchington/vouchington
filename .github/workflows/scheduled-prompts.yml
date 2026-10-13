@@ -38,10 +38,13 @@ jobs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
 
       - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
 
       - name: Select prompt file
+        timeout-minutes: 2
         id: select
         env:
           REQUESTED_PROMPT: ${{ inputs.prompt_file }}
@@ -95,6 +98,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Render prompt
+        timeout-minutes: 2
         id: render
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
