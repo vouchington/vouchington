@@ -57,7 +57,6 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
     // oxlint-disable-next-line no-await-in-loop -- one committed transaction per physical batch
     await using query = await beginTransaction()
     let remaining = batchSize
-    // no-mistakes-disable-next-line query-reached-per-item: each ordered phase uses this transaction's bounded physical row budget
     while (remaining > 0 && deleted < budget) {
       if (phase === OAUTH_RETENTION_DELETE_ORDER.length) {
         if (redistributing) break
@@ -72,7 +71,7 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
       }
       // oxlint-disable-next-line no-await-in-loop -- each phase shares this batch's row cap
       const count = await (table === 'oauth_refresh_token_families'
-        ? deleteExpiredFamilyPhaseRows(query, window, limit)
+        ? deleteExpiredFamilyPhaseRows(query, window, limit) // no-mistakes-disable-line query-reached-per-item: this transaction's physical row budget bounds the family phase
         : deleteExpiredRows(query, table, window, limit))
       deleted += count
       remaining -= count
