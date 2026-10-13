@@ -2,7 +2,7 @@ import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { upsertMediaTypes } from './media-types.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
-import { getUrlsByIds, getUrlById } from './get.mts'
+import { getUrlsByIds } from './get.mts'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import createError from 'http-errors'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
@@ -110,7 +110,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
     }
 
     const insertedIds = extractInsertedUrlIds(rows)
-    await dispatchUrlCreatedEvents(insertedIds, queryOptions, skipCreatedEvents)
+    await dispatchUrlCreatedEvents(insertedIds, viewUrlsById, queryOptions, skipCreatedEvents)
 
     // Skip invalidation inside transactions — the transaction hasn't committed yet, so
     // Valkey invalidation would race with commit. Callers that insert URLs inside a transaction
@@ -148,6 +148,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
 
 async function dispatchUrlCreatedEvents(
   insertedIds: string[],
+  viewUrlsById: Map<string, ViewUrl>,
   queryOptions: QueryOptions,
   skipCreatedEvents: boolean,
 ): Promise<void> {
@@ -155,18 +156,22 @@ async function dispatchUrlCreatedEvents(
   if (skipCreatedEvents) return
 
   if (queryOptions.client || hasTransactionQuery(queryOptions.query)) {
-    await processUrlCreatedInline(insertedIds, queryOptions)
+    await processUrlCreatedInline(insertedIds, viewUrlsById, queryOptions)
     return
   }
 
   void enqueueBulkOnUrlCreated(insertedIds)
 }
 
-async function processUrlCreatedInline(ids: string[], options: QueryOptions): Promise<void> {
+async function processUrlCreatedInline(
+  ids: string[],
+  viewUrlsById: Map<string, ViewUrl>,
+  options: QueryOptions,
+): Promise<void> {
   await ids.reduce(async (previous, id) => {
     await previous
 
-    const url = await getUrlById(id, options)
+    const url = viewUrlsById.get(id)
     if (!url) return
     if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
     await getOrCreateCrawlerForHostname(null, url.hostname.id, options)

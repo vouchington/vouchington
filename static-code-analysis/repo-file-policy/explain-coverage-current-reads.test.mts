@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 
 describe('current EXPLAIN read inventory', () => {
-  it('counts assembled batch and injected readers from production sources', async () => {
+  it('counts proven readers and excludes unresolved WITH fragments from production sources', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-current-reads-'))
     try {
       const resultsPath = join(fixtureDir, 'results.json')
@@ -24,6 +24,10 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/bedrock-embeddings-batch/orchestrator/results.mts',
         'backend/services/users/get.mts',
         'backend/services/rss-feeds/reconcile-item-language.mts',
+        'backend/services/stories/get-post-stories.mts',
+        'backend/services/urls/get.mts',
+        'backend/services/entity-cache/keys.mts',
+        'backend/services/hostname-blocking/soft-delete-relations.mts',
       ]
       const sources = paths.map(fileName => ({
         fileName,
@@ -32,17 +36,26 @@ describe('current EXPLAIN read inventory', () => {
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
       const names = report.uncoveredReads.map(read => read.name)
       for (const name of [
-        'getTopicsByAnyBatch',
-        'getUrlHostnamesByAnyBatch',
-        'getPublicUsersByAnyBatch',
         'getLatestHtmlByUrlIds',
         'downloadBatchResults',
-        'getPublicUserByAny',
-        'getPrivateUserByAny',
         'reenqueueItemLanguageDetectionIfNeeded',
+        'getPostStoryIdsByStoryIds',
+        'getPostStoryByPostId',
+        'getUrlById',
+        'getPostCacheKeys',
       ]) {
         expect(names.filter(candidate => candidate === name)).toHaveLength(1)
       }
+      for (const name of [
+        'getTopicsByAnyBatch',
+        'getUrlHostnamesByAnyBatch',
+        'getPublicUsersByAnyBatch',
+        'getPublicUserByAny',
+        'getPrivateUserByAny',
+        'blockHostname_softDeleteRelations',
+      ])
+        expect(names).not.toContain(name)
+      expect(report.annotatedStatements).toBeGreaterThan(report.reads)
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }

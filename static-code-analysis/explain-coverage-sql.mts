@@ -11,6 +11,7 @@ export function isRead(sqlText: string | null): boolean {
   if (/^(?:SELECT|TABLE)\b/i.test(statement)) return true
   return (
     /^WITH\b/i.test(statement) &&
+    !/\bsql_placeholder_\d+\b/i.test(statement) &&
     !/\b(?:INSERT|UPDATE|DELETE|MERGE)\b/i.test(
       statement.replace(/\bFOR\s+(?:NO\s+KEY\s+)?UPDATE\b/gi, ''),
     )
