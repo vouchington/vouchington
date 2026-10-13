@@ -87,7 +87,7 @@
     "@vouchington/rss-parser": "^0.1.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "husky": "^9.1.7"

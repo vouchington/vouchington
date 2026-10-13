@@ -254,7 +254,7 @@
     "otpauth": "^9.5.2",
     "p-map": "^7.1.0",
     "undici": "^8.11.2",
-    "uuid": "^14.0.2",
+    "uuid": "^14.0.3",
     "valkyries": "^0.8.2"
   },
   "devDependencies": {

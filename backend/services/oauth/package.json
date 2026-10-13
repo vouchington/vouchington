@@ -41,7 +41,7 @@
     "@services/users": "workspace:^",
     "@voucha/config": "workspace:^",
     "http-errors": "^2.0.1",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

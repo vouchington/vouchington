@@ -31,7 +31,7 @@
     "@services/moderator-actions": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "ssrf-guard": "^1.0.0",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

@@ -29,6 +29,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   }
 }

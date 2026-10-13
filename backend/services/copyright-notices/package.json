@@ -51,7 +51,7 @@
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

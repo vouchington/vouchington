@@ -31,7 +31,7 @@
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"
