@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { CommunityApplication } from '../types.mts'
 import { communityApplicationColumns } from './columns.mts'
@@ -9,12 +9,13 @@ export async function getPendingApplicationForUser(
   userId: string,
   options?: QueryOptions,
 ): Promise<CommunityApplication | null> {
-  const { rows } = await (options?.query ?? read)<CommunityApplication>(
-    sql`/* getPendingApplicationForUser */
+  const execute = (query: QueryExecutor) =>
+    query<CommunityApplication>(
+      sql`/* getPendingApplicationForUser */
     SELECT `
-      .append(communityApplicationColumns)
-      .append(
-        sql`
+        .append(communityApplicationColumns)
+        .append(
+          sql`
     FROM community_applications
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
@@ -22,8 +23,9 @@ export async function getPendingApplicationForUser(
       AND rejected_at IS NULL
     LIMIT 1
     `,
-      ),
-  )
+        ),
+    )
+  const { rows } = await execute(options?.query ?? read)
   return rows[0] ?? null
 }
 
@@ -33,14 +35,16 @@ export async function getPendingApplicationCommunityIds(
   options?: QueryOptions,
 ): Promise<Set<string>> {
   if (communityIds.length === 0) return new Set()
-  const { rows } = await (options?.query ?? read)<{ community_id: string }>(
-    sql`/* getPendingApplicationCommunityIds */
+  const execute = (query: QueryExecutor) =>
+    query<{ community_id: string }>(
+      sql`/* getPendingApplicationCommunityIds */
     SELECT DISTINCT community_id FROM community_applications
     WHERE user_id = ${userId}
       AND community_id = ANY(${communityIds}::uuid[])
       AND approved_at IS NULL
       AND rejected_at IS NULL
     `,
-  )
+    )
+  const { rows } = await execute(options?.query ?? read)
   return new Set(rows.map((r: { community_id: string }) => r.community_id))
 }

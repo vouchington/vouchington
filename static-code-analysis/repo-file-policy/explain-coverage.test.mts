@@ -6,6 +6,37 @@ import { formatCoverageReport, isRead, reportCoverage } from '../explain-coverag
 import { trackedRuntimeSources } from '../explain-coverage-files.mts'
 
 describe('EXPLAIN coverage', () => {
+  it('includes optional-executor community reads exactly once', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-community-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const paths = [
+        'backend/services/communities/members/batch.mts',
+        'backend/services/communities/applications/pending.mts',
+      ]
+      const sources = paths.map(fileName => ({
+        fileName,
+        source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
+      }))
+      const report = await reportCoverage(sources, resultsPath, ['fixture'])
+      expect(report).toMatchObject({ annotatedStatements: 3, reads: 3, coveredReads: 0 })
+      expect(report.uncoveredReads.map(read => read.name)).toEqual([
+        'getCommunityMemberBatch',
+        'getPendingApplicationForUser',
+        'getPendingApplicationCommunityIds',
+      ])
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
+
   it('discovers application SQL without replay-only EXPLAIN infrastructure', () => {
     const files = new Set(trackedRuntimeSources().map(source => source.fileName))
     expect(files.has('backend/services/oauth-accounts/connect.mts')).toBe(true)

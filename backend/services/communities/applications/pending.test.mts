@@ -1,4 +1,5 @@
 import { it, expect, beforeAll, describe } from 'vitest'
+import { beginTransaction } from '@data-stores/psql'
 import { createTestUser, insertTestCommunity, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { getPendingApplicationForUser, getPendingApplicationCommunityIds } from './pending.mts'
@@ -12,6 +13,22 @@ describe('pending applications', () => {
   beforeAll(async () => {
     owner = await createTestUser()
     privateCommunity = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
+  })
+
+  it('uses a supplied transaction for both pending application reads', async () => {
+    const owner = await createTestUser()
+    const applicant = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
+    await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
+
+    await using query = await beginTransaction()
+    const application = await getPendingApplicationForUser(community.id, applicant.id, { query })
+    const communityIds = await getPendingApplicationCommunityIds(applicant.id, [community.id], {
+      query,
+    })
+    expect(application?.user_id).toBe(applicant.id)
+    expect(communityIds).toEqual(new Set([community.id]))
+    await query.commit()
   })
 
   describe('getPendingApplicationForUser', () => {

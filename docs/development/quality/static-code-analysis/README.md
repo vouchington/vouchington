@@ -684,8 +684,9 @@ Known gaps:
   relative path is not matched and is not scanned by any rule.
 - A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
   inside the scope are not tracked. The repository has no such site today.
-- An optional executor expression such as `(options?.query ?? read)(sql)` is not tracked; the
-  existing `getCommunityMemberBatch` table-wide select is a repro for `postgres-explicit-columns`.
+- An optional executor expression such as `(options?.query ?? read)(sql)` is not tracked. Production
+  callers such as `getCommunityMemberBatch` pass the selected executor to a typed `QueryExecutor`
+  callback, whose SQL call the released extractor recognizes.
 - Cursor helpers such as `createAsyncGeneratorFromCursor` and
   `executeHandlerWithCursorInBatches` are not executor calls recognized by these rules. For example,
   `postKeysFromDb` and `rssFeedItemsKeysFromDb` scan partitioned tables by cursor without an `id`
