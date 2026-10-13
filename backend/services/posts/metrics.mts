@@ -18,7 +18,7 @@ export const getPostMetricsByAny = async (
   }
 
   const idOrSlugValue = isId ? idOrSlug : idOrSlug.toLowerCase()
-  const query = sql`/* getPostMetricsByAny */ WITH `
+  const query = sql``
 
   if (isSlugValue) {
     query.append(sql`
@@ -118,7 +118,7 @@ export const getPostMetricsByAny = async (
     FROM base_post
   `)
 
-  const { rows } = await read(query, options)
+  const { rows } = await read(`/* getPostMetricsByAny */ WITH ${query.text}`, query.values, options)
 
   if (!rows[0]) return null
 

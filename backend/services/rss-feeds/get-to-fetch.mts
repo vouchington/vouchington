@@ -135,7 +135,8 @@ export async function getRssFeedByIdToFetch(
   if (ttl > 0) params.push(ttl)
 
   const query = `/* getRssFeedByIdToFetch */
-    SELECT${FEED_COLUMNS},
+    SELECT
+${FEED_COLUMNS.slice(1)},
       0::DOUBLE PRECISION AS crawl_score,
       5::INT AS crawl_tier,
       1 AS priority_group
