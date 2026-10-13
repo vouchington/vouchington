@@ -32,6 +32,12 @@ export const externalProxyDynamicConfigRegistryEntries = [
       github_native_enabled: {
         description: 'Allow new GitHub native authorization broker flows.',
       },
+      linkedin_web_enabled: {
+        description: 'Allow new LinkedIn web authorization broker flows.',
+      },
+      linkedin_native_enabled: {
+        description: 'Allow new LinkedIn native authorization broker flows.',
+      },
     },
   }),
   defineDynamicConfigNamespace({
