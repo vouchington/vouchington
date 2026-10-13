@@ -46,4 +46,47 @@ describe('EXPLAIN extractor overlap', () => {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
   })
+
+  it('matches only the bounded cursor wrapper around the exact complete source SQL', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-bounded-cursor-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      const source = `import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+createAsyncGeneratorFromCursor(sql\`/* boundedCursorRead */ SELECT id FROM posts;\`, { maxRows: 10 })
+`
+      const sources = [{ fileName: 'backend/services/posts/bounded.mts', source }]
+      const capture = (inner: string) => {
+        writeFileSync(
+          resultsPath,
+          JSON.stringify({
+            results: [
+              {
+                name: 'boundedCursorRead',
+                query_text: `/* boundedCursorRead */ SELECT * FROM (${inner}) bounded_cursor_rows LIMIT $1`,
+                scenario_id: 'bounded',
+              },
+            ],
+            completedScenarioIds: ['bounded'],
+          }),
+        )
+      }
+      capture('/* boundedCursorRead */ SELECT id FROM posts')
+      expect(await reportCoverage(sources, resultsPath, ['bounded'])).toMatchObject({
+        annotatedStatements: 1,
+        reads: 1,
+        coveredReads: 1,
+        uncoveredReads: [],
+      })
+      capture('/* boundedCursorRead */ SELECT id FROM other_posts')
+      expect(await reportCoverage(sources, resultsPath, ['bounded'])).toMatchObject({
+        annotatedStatements: 1,
+        reads: 1,
+        coveredReads: 0,
+        uncoveredReads: [expect.objectContaining({ name: 'boundedCursorRead' })],
+      })
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
+  })
 })

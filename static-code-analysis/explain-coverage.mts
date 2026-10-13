@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { extractExecutedPostgresSql } from 'no-mistakes'
 import { LEADING_QUERY_ANNOTATION_PATTERN } from '@vouchington/postgres'
 import { EXPLAIN_SCENARIO_MANIFEST } from '../backend/scripts/explain-analyze/scenario-manifest.mts'
+import { matchesCapturedSql } from './explain-coverage-sql.mts'
 import {
   latestResultsPath,
   readCompletedExplainResults,
@@ -84,21 +85,24 @@ export function buildCoverageReport(
   const ambiguousReads: UncoveredRead[] = []
 
   for (const fact of facts) {
-    if (!fact.annotation) continue
+    const annotation = fact.annotation
+    if (!annotation) continue
     annotatedStatements++
     if (!isRead(fact.sqlText)) continue
     reads++
-    const matchingCaptures = captures.get(fact.annotation) ?? []
+    const matchingCaptures = captures.get(annotation) ?? []
     const exactMatch =
       fact.complete &&
-      matchingCaptures.some(result => result.query_text.trim() === fact.sqlText?.trim())
-    const uniqueIncomplete = !fact.complete && (annotationCounts.get(fact.annotation) ?? 0) === 1
+      matchingCaptures.some(result =>
+        matchesCapturedSql(fact.sqlText, annotation, result.query_text),
+      )
+    const uniqueIncomplete = !fact.complete && (annotationCounts.get(annotation) ?? 0) === 1
     if (matchingCaptures.length > 0 && (exactMatch || uniqueIncomplete)) {
       coveredReads++
       continue
     }
     const entry = {
-      name: fact.annotation,
+      name: annotation,
       fileName: fact.fileName,
       line: fact.line,
       group: groupForFile(fact.fileName),
