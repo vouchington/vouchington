@@ -48,6 +48,7 @@ function input(markdown: string, overrides: Partial<RetrospectivePolicyInput> = 
     repositories: ['vouchington/vouchington'],
     markdown,
     sourceEventId: 'retrospective-1',
+    metadata: { date: '2026-10-12', issues: [], prs: [], description: null },
     ...overrides,
   } satisfies RetrospectivePolicyInput
 }
@@ -85,36 +86,6 @@ describe('validateRetrospective', () => {
     const markdown = doc().replace(/Status: not assessed \(tool[^\n]*\n/, '')
     const { errors } = validateRetrospective(input(markdown))
     expect(errors).toContain('## Tool Findings requires exactly one assessment status')
-  })
-
-  it('rejects a session id that differs from the requested session', () => {
-    const { errors } = validateRetrospective(
-      input(doc([`session_id: ${SESSION_ID}`]), { sessionId: 'other-session' }),
-    )
-    expect(errors).toEqual([expect.stringContaining('does not match resolved session')])
-  })
-
-  it('rejects front-matter outcome and coverage that differ from the request', () => {
-    const markdown = doc([
-      'work_outcome: failure',
-      'feedback_coverage: {status: partial, sources: [], droppedCount: 0}',
-    ])
-    const { errors } = validateRetrospective(input(markdown))
-    expect(errors).toEqual(['front matter work_outcome conflicts with the requested work outcome'])
-    const other = validateRetrospective(
-      input(markdown, {
-        workOutcome: 'failure',
-        feedbackCoverage: { ...COVERAGE, droppedCount: 2 },
-      }),
-    )
-    expect(other.errors).toEqual([
-      'front matter feedback_coverage conflicts with the requested coverage',
-    ])
-  })
-
-  it('rejects front-matter repositories that differ from the request', () => {
-    const { errors } = validateRetrospective(input(doc(['repositories: [other/repo]'])))
-    expect(errors).toEqual(['front matter repositories conflict with the requested repositories'])
   })
 
   it('rejects complete coverage when an assessment was not performed', () => {

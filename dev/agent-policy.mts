@@ -1,9 +1,7 @@
-import { isDeepStrictEqual } from 'node:util'
-
 import { parseFrontMatter } from './agent-policy/front-matter.mts'
 import { validateRetroDoc } from './retrospective-validate.mts'
 
-// vouchington-tooling policy module, contract v1 (declared in package.json under
+// vouchington-tooling policy module, contract v1.1 (declared in package.json under
 // "vouchington-tooling.policy"). The tooling server runs this in a fresh child node
 // process per call with no blackboard token, so it must stay pure: no network, no env.
 
@@ -16,32 +14,24 @@ export type RetrospectivePolicyInput = {
   repositories: string[]
   markdown: string
   sourceEventId: string
+  // Parsed by the server; the policy validates the front-matter shape itself.
+  metadata: {
+    date: string
+    issues: unknown[]
+    prs: unknown[]
+    description: string | null
+  }
 }
 
 export type PolicyResult = { errors: string[]; warnings?: string[] }
 
 // Vouchington retrospective rules: required sections, CI failure grammar, tool and
-// architecture assessments (validateRetroDoc), then front-matter shape and its
-// consistency with the request. Envelope building and delivery belong to tooling.
+// architecture assessments (validateRetroDoc), then front-matter shape.
+// Argument-vs-front-matter conflicts are checked by the server. Envelope building and delivery belong to tooling.
 export function validateRetrospective(input: RetrospectivePolicyInput): PolicyResult {
   const errors = [...validateRetroDoc(input.markdown).errors]
   try {
-    const front = parseFrontMatter(input.markdown)
-    if (front.sessionId !== undefined && front.sessionId !== input.sessionId)
-      errors.push(
-        `retrospective doc session_id ${front.sessionId} does not match resolved session ${input.sessionId}`,
-      )
-    if (front.feedbackMetadata) {
-      if (front.feedbackMetadata.workOutcome !== input.workOutcome)
-        errors.push('front matter work_outcome conflicts with the requested work outcome')
-      if (!isDeepStrictEqual(front.feedbackMetadata.feedbackCoverage, input.feedbackCoverage))
-        errors.push('front matter feedback_coverage conflicts with the requested coverage')
-    }
-    if (
-      front.repositories !== undefined &&
-      !isDeepStrictEqual(front.repositories, input.repositories)
-    )
-      errors.push('front matter repositories conflict with the requested repositories')
+    parseFrontMatter(input.markdown)
   } catch (err) {
     errors.push(err instanceof Error ? err.message : String(err))
   }
