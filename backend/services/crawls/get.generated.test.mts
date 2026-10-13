@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { getCrawlById, getLatestHtmlSnapshotCrawl, getLatestSuccessfulCrawl } from './get.mts'
 import {
@@ -41,9 +42,26 @@ describe('get.generated', () => {
   })
 
   it('getLatestSuccessfulCrawl returns null when no successful crawl exists', async () => {
-    const url = await addUrl(null, 'https://example.com/test-latest')
-    const crawl = await getLatestSuccessfulCrawl(url!.id)
-    expect(crawl).toBeNull()
+    const random = randomUUID()
+    const url = await addUrl(user.id, `https://example.com/test-latest-none-${random}`)
+    const unrelated = await addUrl(user.id, `https://example.com/test-latest-other-${random}`)
+    const crawler = await createCrawler(user, {
+      hostname_id: unrelated!.hostname.id,
+      crawler_type: 'fetch',
+    })
+    const unrelatedCrawl = await createCrawl(unrelated!.id, crawler.id)
+    await updateCrawl(unrelatedCrawl.id, unrelated!.id, {
+      embeddings_generated_at: new Date(),
+      markdown: 'Unrelated successful crawl',
+      title: 'Unrelated',
+      links: {},
+      meta_tags: {},
+    })
+
+    await expect(getLatestSuccessfulCrawl(url!.id)).resolves.toBeNull()
+    await expect(getLatestSuccessfulCrawl(unrelated!.id)).resolves.toMatchObject({
+      id: unrelatedCrawl.id,
+    })
   })
 
   it('getLatestSuccessfulCrawl returns crawl with embeddings', async () => {
