@@ -37,3 +37,9 @@ export async function readTestEmailDomainHostname(id: string): Promise<string | 
     SELECT hostname FROM url_hostnames WHERE id = ${id}`)
   return rows[0]?.hostname ?? null
 }
+
+export async function getTestEmailDomainHostnameIdByName(hostname: string): Promise<string | null> {
+  const { rows } = await read<{ id: string }>(sql`/* getTestEmailDomainHostnameIdByName */
+    SELECT id FROM url_hostnames WHERE hostname = ${hostname}`)
+  return rows[0]?.id ?? null
+}

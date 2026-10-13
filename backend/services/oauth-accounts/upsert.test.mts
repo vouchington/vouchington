@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getTestOAuthAccountCiphertexts } from '@voucha/test-helpers'
 import { getTestOAuthAccountEmailDomainHostnameId } from '@voucha/test-helpers/entities/oauth-accounts'
-import { read } from '@data-stores/psql'
+import { getTestEmailDomainHostnameIdByName } from '@voucha/test-helpers/entities/email-domain-hostname'
 import { getOAuthAccountByProviderUserId } from './connect.mts'
 import { upsertOAuthAccount } from './upsert.mts'
 
@@ -109,10 +109,6 @@ describe('upsertOAuthAccount', () => {
     ).rejects.toThrow('authorizationClaimId is required with authorizationId')
 
     await expect(getOAuthAccountByProviderUserId('github', providerUserId)).resolves.toBeNull()
-    const { rows } = await read<{ id: string }>(
-      '/* upsertOAuthAccount:rollbackHostname */ SELECT id FROM url_hostnames WHERE hostname = $1',
-      [domain],
-    )
-    expect(rows).toHaveLength(0)
+    await expect(getTestEmailDomainHostnameIdByName(domain)).resolves.toBeNull()
   })
 })
