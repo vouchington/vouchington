@@ -49,6 +49,15 @@ Do not replace these locks and owned cleanup with a production filter, unreserve
 a single global lock; those alter product semantics, remain probabilistic, or unnecessarily
 serialize parallel tests.
 
+### Canonical URL upserts share one row
+
+`addUrl` stores one `urls` row per normalized URL and returns that same row when a later call
+passes the same string. A successful crawl already stored for that row is visible to every later
+reader. An absence read such as `getLatestSuccessfulCrawl` must use a URL string that the test
+just created. Create a second URL, store a successful crawl on it, and assert that crawl still resolves
+for the second URL. Do not reuse a fixed example URL, and do not delete the shared row to make the
+absence assertion pass.
+
 ### Jurisdiction policy approvals share one lock per jurisdiction
 
 EU and UK intake reads the current unwithdrawn policy approval. A test that conceals those
