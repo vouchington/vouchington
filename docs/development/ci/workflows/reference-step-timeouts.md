@@ -6,6 +6,9 @@ Every authored workflow step has a `timeout-minutes` budget so a hung checkout, 
 composite call, or shell command has an explicit step deadline within the job timeout.
 Reusable-workflow `jobs.<id>.uses` callers have no steps. GitHub does not accept `timeout-minutes`
 inside composite action steps, so their workflow callers own the backstop.
+The `github-actions-step-timeouts` no-mistakes rule enforces a positive numeric
+`timeout-minutes` on every executable step in authored workflows, with a 30-minute maximum.
+The existing job-timeout rule also rejects steps whose budgets exceed their job's deadline.
 
 Timeouts are **fail-fast** — they should catch hung steps quickly, not accommodate every worst-case retry scenario. When in doubt, set a tighter timeout rather than a looser one.
 
