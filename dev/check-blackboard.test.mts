@@ -241,7 +241,7 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     const lines = additionalContext(result.stdout).split('\n')
     expect(lines[0]).toContain('Blackboard sessionId: claude-session-1')
     expect(lines[1]).toContain('availability assessment failed')
-    expect(lines[1]).toContain('CLI fallback')
+    expect(lines[1]).toContain('server is unavailable')
   })
 
   it.each([

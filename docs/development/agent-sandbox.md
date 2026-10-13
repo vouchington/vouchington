@@ -172,10 +172,12 @@ probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
 
 The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` through its own registration (Codex `env_vars`), a separate control from
-this deny list, so the token stays hidden from shell commands while the server can still use it.
-The CLI fallback therefore needs a one-command unsandboxed run
-([CLI fallback](agent-blackboard.md#cli-fallback)). Cursor and OpenCode pass the agent's
-environment to shell commands, so a token exported to them is visible to the commands they run.
+this deny list, so the token stays hidden from sandboxed Claude and Codex shell commands while the server can still use it.
+The token is meant for the server; agents journal through it, and never ask for an unsandboxed run
+just to obtain the token ([Server unavailable](agent-blackboard.md#server-unavailable)). The exposure differs by harness: an
+unsandboxed Claude command still receives the denied variables, Codex hides them from its shell
+commands even unsandboxed, and Cursor and OpenCode pass the agent's environment to shell commands,
+so a token exported to them is visible to the commands they run.
 
 The list itself belongs to vouchington-machines; the
 [Sandbox credential deny list](reference-agent-sandbox-credential-deny-list.md) page says where to

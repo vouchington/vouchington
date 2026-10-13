@@ -49,7 +49,7 @@ names match their canonical skill. Grok, Cursor, and OpenCode load the same sour
 relative to that directory. Every adapter stops if its harness-specific canonical source cannot be
 read; it must never apply its Vouchington overlay alone.
 `blackboard` needs no provider skill: its canonical skill owns the `vouchington-tooling` MCP
-procedure and the CLI fallback. No repository registers an MCP server, plugin, or marketplace;
+procedure. No repository registers an MCP server, plugin, or marketplace;
 [vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)
 registers them per machine.
 The package also exposes upstream-only `dotnet-test-authoring`, `swift-test-authoring`,
