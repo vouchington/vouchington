@@ -73,7 +73,12 @@ export const friendUser = {
   username: 'friend',
   display_account: { name: 'Friendly User' },
   roles: [],
-  profile_image_id: null,
+  profile_image_id: '00000000-0000-7000-8000-000000000201',
+  profile_image_placement: {
+    placement_id: '00000000-0000-7000-8000-000000000301',
+    placement_revision: 2,
+    image_id: '00000000-0000-7000-8000-000000000201',
+  },
   markdown: null,
 }
 
