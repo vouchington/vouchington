@@ -85,11 +85,7 @@ export const invalidate = {
     // posts_lookup, which never keys on UUIDs. Input slugs are preserved in postKeys
     // even when the post no longer exists in the DB, so deleted slugs are still invalidated.
     const postKeys = await getPostCacheKeys(...keys)
-    await deleteFromCachesInChunks([
-      { cache: caches.posts, keys: postKeys },
-      { cache: caches.posts_lookup, keys: [...getCacheKeys(postKeys).slugs] },
-    ])
-    void enqueueBulkPurgeCacheTags(postKeys.map(postTag))
+    await deletePostCachesAndPurgeTags(postKeys)
   }),
   communities: wrap(async (...keys: unknown[]): Promise<void> => {
     const communityKeys = await getCommunityCacheKeys(...keys)
@@ -178,6 +174,16 @@ export async function deleteFromCachesInChunks(groups: CacheDeleteGroups): Promi
     await deleteNextChunk(start + CACHE_DELETE_KEYS_PER_BATCH)
   }
   await deleteNextChunk(0)
+}
+
+async function deletePostCachesAndPurgeTags(
+  postKeys: Awaited<ReturnType<typeof getPostCacheKeys>>,
+): Promise<void> {
+  await deleteFromCachesInChunks([
+    { cache: caches.posts, keys: postKeys },
+    { cache: caches.posts_lookup, keys: [...getCacheKeys(postKeys).slugs] },
+  ])
+  await enqueueBulkPurgeCacheTags(postKeys.map(postTag))
 }
 
 function wrap<Keys extends unknown[]>(fn: InvalidateFunction<Keys>): InvalidateFunction<Keys> {

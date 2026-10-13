@@ -128,3 +128,18 @@ unconfirmed; the exports may be made private or removed after review. Their impl
 current owner behavior remain unchanged.
 
 - `listReviewSuccessionsForPostIds`
+
+## Post-commit completion
+
+Canonical creation and update start their bloom/cache and entity-listener admission operations
+and settle every started promise before returning. Failures after commit are reported without
+turning the durable write into an API failure. Reporting failures and observer exceptions remain
+ordered diagnostics; one observer cannot prevent another from receiving the event.
+
+`onPostCommitCompletion()` is a synchronous notification API. Register before a mutation and
+await the event's real settlement promise before detaching. Its result preserves raw operation,
+observer and reporting failures, including non-Error rejection values. The event is scoped by
+persisted post identity and operation kind. It proves API admission/cache settlement, never job
+execution or queue-worker termination. The bloom helper retains its existing best-effort policy.
+Post cache invalidation includes its real purge-tag admission promise; unrelated cache wrappers
+keep their current policy.

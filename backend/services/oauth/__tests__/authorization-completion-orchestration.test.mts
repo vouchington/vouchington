@@ -1,36 +1,42 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
-import type { OAuthAuthorizationCompletionOptions } from '../authorization-completion-types.mts'
-
-type CompletionDependencies = NonNullable<Parameters<typeof completeOAuthAuthorization>[1]>
+import { createTestUser } from '@voucha/test-helpers/entities/users'
+import { drainOwnedTestAction } from '../../../test-helpers/post-commit-completion.mts'
+import {
+  authenticatedFlowResult,
+  completionDependencies,
+  completionOptions,
+} from '../../../test-helpers/oauth-completion-fixtures.mts'
 
 describe('OAuth authorization completion orchestration', () => {
   it('uses the durable authenticated session for first issuance and replay', async () => {
-    const userId = randomUUID()
+    const user = await createTestUser()
+    const userId = user.id
     const deviceId = randomUUID()
     const sessionId = randomUUID()
     const options = completionOptions()
-    const firstDependencies = completionDependencies({
-      kind: 'authenticated',
-      userId,
-      deviceId,
-      sessionId,
-      newlyCompleted: true,
-    })
-    const replayDependencies = completionDependencies({
-      kind: 'authenticated',
-      userId,
-      deviceId,
-      sessionId,
-      newlyCompleted: false,
-    })
-    const authenticatedResult = {
-      mfaRequired: false,
-      user: { id: userId },
-      deviceToken: {},
-      sessionToken: {},
-    } as never
+    const firstDependencies = completionDependencies(
+      {
+        kind: 'authenticated',
+        userId,
+        deviceId,
+        sessionId,
+        newlyCompleted: true,
+      },
+      user,
+    )
+    const replayDependencies = completionDependencies(
+      {
+        kind: 'authenticated',
+        userId,
+        deviceId,
+        sessionId,
+        newlyCompleted: false,
+      },
+      user,
+    )
+    const authenticatedResult = authenticatedFlowResult(user, deviceId, sessionId)
     vi.mocked(firstDependencies.createFlowResult).mockResolvedValue(authenticatedResult)
     vi.mocked(replayDependencies.createFlowResult).mockResolvedValue(authenticatedResult)
 
@@ -54,7 +60,8 @@ describe('OAuth authorization completion orchestration', () => {
   })
 
   it('issues an authenticated session only after durable completion resolves', async () => {
-    const userId = randomUUID()
+    const user = await createTestUser()
+    const userId = user.id
     const deviceId = randomUUID()
     const sessionId = randomUUID()
     const transaction = Promise.withResolvers<{
@@ -64,33 +71,37 @@ describe('OAuth authorization completion orchestration', () => {
       sessionId: string
       newlyCompleted: boolean
     }>()
-    const dependencies = completionDependencies({
-      kind: 'authenticated',
-      userId,
-      deviceId,
-      sessionId,
-      newlyCompleted: true,
-    })
+    const dependencies = completionDependencies(
+      {
+        kind: 'authenticated',
+        userId,
+        deviceId,
+        sessionId,
+        newlyCompleted: true,
+      },
+      user,
+    )
     vi.mocked(dependencies.completeTransaction).mockReturnValue(transaction.promise)
-    vi.mocked(dependencies.createFlowResult).mockResolvedValue({
-      mfaRequired: false,
-      user: { id: userId },
-      deviceToken: {},
-      sessionToken: {},
-    } as never)
+    vi.mocked(dependencies.createFlowResult).mockResolvedValue(
+      authenticatedFlowResult(user, deviceId, sessionId),
+    )
 
-    const completion = completeOAuthAuthorization(completionOptions(), dependencies)
-    await Promise.resolve()
-    expect(dependencies.createFlowResult).not.toHaveBeenCalled()
-
-    transaction.resolve({
-      kind: 'authenticated',
-      userId,
-      deviceId,
-      sessionId,
-      newlyCompleted: true,
-    })
-    await completion
+    const completion = () => completeOAuthAuthorization(completionOptions(), dependencies)
+    await drainOwnedTestAction(
+      completion,
+      () =>
+        transaction.resolve({
+          kind: 'authenticated',
+          userId,
+          deviceId,
+          sessionId,
+          newlyCompleted: true,
+        }),
+      async () => {
+        expect(dependencies.completeTransaction).toHaveBeenCalledOnce()
+        expect(dependencies.createFlowResult).not.toHaveBeenCalled()
+      },
+    )
 
     expect(dependencies.createFlowResult).toHaveBeenCalledOnce()
   })
@@ -117,17 +128,21 @@ describe('OAuth authorization completion orchestration', () => {
   })
 
   it('fails closed when a durable authentication replay unexpectedly requires MFA', async () => {
-    const dependencies = completionDependencies({
-      kind: 'authenticated',
-      userId: randomUUID(),
-      deviceId: randomUUID(),
-      sessionId: randomUUID(),
-      newlyCompleted: false,
-    })
+    const user = await createTestUser()
+    const dependencies = completionDependencies(
+      {
+        kind: 'authenticated',
+        userId: user.id,
+        deviceId: randomUUID(),
+        sessionId: randomUUID(),
+        newlyCompleted: false,
+      },
+      user,
+    )
     vi.mocked(dependencies.createFlowResult).mockResolvedValue({
       mfaRequired: true,
       loginAttemptId: randomUUID(),
-    } as never)
+    })
 
     await expect(completeOAuthAuthorization(completionOptions(), dependencies)).rejects.toThrow(
       'Stored OAuth authentication result unexpectedly requires MFA',
@@ -218,37 +233,3 @@ describe('OAuth authorization completion orchestration', () => {
     expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith('github', 'github-user')
   })
 })
-
-function completionOptions(
-  overrides: Partial<OAuthAuthorizationCompletionOptions> = {},
-): OAuthAuthorizationCompletionOptions {
-  return {
-    flowId: randomUUID(),
-    completionToken: 'completion-token',
-    completionTokenSource: 'cookie',
-    deviceId: randomUUID(),
-    sessionId: randomUUID(),
-    ...overrides,
-  }
-}
-
-function completionDependencies(
-  durableResult: Awaited<ReturnType<CompletionDependencies['completeTransaction']>>,
-): CompletionDependencies {
-  return {
-    completeTransaction: vi.fn<CompletionDependencies['completeTransaction']>(
-      async () => durableResult,
-    ),
-    createFlowResult: vi.fn<CompletionDependencies['createFlowResult']>(),
-    enqueueFriendSync: vi.fn<CompletionDependencies['enqueueFriendSync']>(async () => undefined),
-    requireUser: vi.fn<CompletionDependencies['requireUser']>(
-      async () =>
-        ({
-          id: durableResult.kind === 'pending' ? '' : durableResult.userId,
-        }) as never,
-    ),
-    runConnectionEffects: vi.fn<CompletionDependencies['runConnectionEffects']>(
-      async () => undefined,
-    ),
-  } as unknown as CompletionDependencies
-}

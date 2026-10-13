@@ -1,56 +1,128 @@
 import { describe, expect, it, vi } from 'vitest'
 import { finalizePostUpdateAndDeliver } from './post-commit-delivery.mts'
-import type { Post } from '../types.mts'
 import type { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type onError from '@modules/on-error'
+import { onPostCommitCompletion, type PostCommitCompletion } from '../post-commit-completion.mts'
+import {
+  createPostCompletionFixture,
+  drainOwnedTestAction,
+} from '../../../test-helpers/post-commit-completion.mts'
+
+async function fixture() {
+  const { post } = await createPostCompletionFixture()
+  return {
+    changes: { title: 'captured' },
+    contentChanged: true,
+    previousPost: post,
+    shouldEnqueuePostUpdated: true,
+    updatedPost: post,
+  }
+}
 
 describe('finalizePostUpdateAndDeliver', () => {
   it('returns the transaction-captured post and sends one update event', async () => {
-    const updatedPost = { id: 'post-id', post_related_topics: [] } as unknown as Post
-    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>()
+    const input = await fixture()
+    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
     const invalidatePosts = vi.fn<typeof invalidate.posts>().mockResolvedValue(undefined)
-
     await expect(
-      finalizePostUpdateAndDeliver(
-        {
-          changes: { title: 'captured' },
-          contentChanged: true,
-          previousPost: updatedPost,
-          shouldEnqueuePostUpdated: true,
-          updatedPost,
-        },
-        { enqueueOnPostUpdated: enqueueUpdate, invalidatePosts },
-      ),
-    ).resolves.toBe(updatedPost)
-
+      finalizePostUpdateAndDeliver(input, { enqueueOnPostUpdated: enqueueUpdate, invalidatePosts }),
+    ).resolves.toBe(input.updatedPost)
     expect(invalidatePosts).toHaveBeenCalledOnce()
     expect(enqueueUpdate).toHaveBeenCalledOnce()
-    expect(enqueueUpdate).toHaveBeenCalledWith('post-id', { contentChanged: true })
+    expect(enqueueUpdate).toHaveBeenCalledWith(input.updatedPost.id, { contentChanged: true })
   })
 
   it('reports cache failure without rejecting a committed post update', async () => {
-    const updatedPost = { id: 'post-id' } as Post
-    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>()
+    const input = await fixture()
+    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
     const reportError = vi.fn<typeof onError>()
     const error = new Error('cache unavailable')
     await expect(
       finalizePostUpdateAndDeliver(
-        {
-          changes: {},
-          contentChanged: false,
-          previousPost: updatedPost,
-          shouldEnqueuePostUpdated: true,
-          updatedPost,
-        },
+        { ...input, changes: {}, contentChanged: false },
         {
           enqueueOnPostUpdated: enqueueUpdate,
           invalidatePosts: vi.fn<typeof invalidate.posts>().mockRejectedValue(error),
           onError: reportError,
         },
       ),
-    ).resolves.toBe(updatedPost)
+    ).resolves.toBe(input.updatedPost)
     expect(enqueueUpdate).toHaveBeenCalledOnce()
+    expect(enqueueUpdate).toHaveBeenCalledWith(input.updatedPost.id, { contentChanged: false })
     expect(reportError).toHaveBeenCalledWith(error)
+  })
+
+  it('drains both cache and listener admissions before returning the captured response', async () => {
+    const input = await fixture()
+    const cache = Promise.withResolvers<void>()
+    const queue = Promise.withResolvers<void>()
+    const starts: string[] = []
+    const operation = () =>
+      finalizePostUpdateAndDeliver(input, {
+        invalidatePosts: () => {
+          starts.push('cache')
+          return cache.promise
+        },
+        enqueueOnPostUpdated: () => {
+          starts.push('queue')
+          return queue.promise
+        },
+      })
+    await expect(
+      drainOwnedTestAction(
+        operation,
+        () => {
+          cache.resolve()
+          queue.resolve()
+        },
+        async () => {
+          expect(starts).toEqual(['cache', 'queue'])
+        },
+      ),
+    ).resolves.toBe(input.updatedPost)
+  })
+
+  it('preserves bloom work and suppresses update admission when the captured decision is false', async () => {
+    const input = await fixture()
+    const bloom = vi.fn<() => Promise<void>>(() => Promise.resolve())
+    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
+    await finalizePostUpdateAndDeliver(
+      { ...input, changes: { slug: input.updatedPost.slug! }, shouldEnqueuePostUpdated: false },
+      { addEntityBloomKeys: bloom, enqueueOnPostUpdated: enqueueUpdate },
+    )
+    expect(bloom).toHaveBeenCalledOnce()
+    expect(enqueueUpdate).not.toHaveBeenCalled()
+  })
+
+  it('retains raw cache and reporting failures while returning the durable update', async () => {
+    const input = await fixture()
+    const reportingError = new Error('reporting unavailable')
+    const events: PostCommitCompletion[] = []
+    const off = onPostCommitCompletion(event => {
+      if (event.postId === input.updatedPost.id) events.push(event)
+      return undefined
+    })
+    try {
+      await expect(
+        finalizePostUpdateAndDeliver(input, {
+          invalidatePosts: () => {
+            const failure = Promise.withResolvers<void>()
+            failure.reject(undefined)
+            return failure.promise
+          },
+          enqueueOnPostUpdated: () => Promise.resolve(),
+          onError: () => {
+            throw reportingError
+          },
+        }),
+      ).resolves.toBe(input.updatedPost)
+      expect(events).toHaveLength(1)
+      const settlement = await events[0]!.completion
+      expect(settlement.operations[0]).toEqual({ status: 'rejected', reason: undefined })
+      expect(settlement.reportingErrors).toEqual([reportingError])
+    } finally {
+      off()
+    }
   })
 })

@@ -7,42 +7,31 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { getPostByAny } from '@services/posts/get'
+import {
+  createArticleSyncFixtures,
+  seedArticleSyncTimestamp,
+  syncOwnedArticles,
+} from '../../test-helpers/article-sync-fixtures.mts'
+import { drainOwnedTestAction } from '../../test-helpers/post-commit-completion.mts'
 
 import { syncArticles, syncLocalArticles } from './sync.mts'
 import type { ArticleMarkdownFile } from './storage.mts'
 
-const articleFixtures = new Map([
-  [
-    'about.md',
-    `---
-title: About Voucha
-slug: about
-post_type: article
----
-# About Voucha
-
-About body.`,
-  ],
-  [
-    'keyboard-shortcuts.md',
-    `---
-title: Keyboard Shortcuts
-slug: keyboard-shortcuts
-post_type: article
----
-# Keyboard Shortcuts
-
-Shortcut body.`,
-  ],
-])
-
 describe('syncArticles', () => {
   let adminUser: PrivateUser
+  let articleFixtures = new Map<string, string>()
+  let aboutSlug = ''
+  let keyboardSlug = ''
+  let ownedSlugs = new Set<string>()
   const listArticleMarkdownFiles = vi.fn<() => Promise<ArticleMarkdownFile[]>>()
   const getArticleMarkdown = vi.fn<(article: ArticleMarkdownFile) => Promise<string>>()
 
-  function syncFixtureArticles() {
-    return syncArticles(adminUser, { listArticleMarkdownFiles, getArticleMarkdown })
+  function syncFixtureArticles(release: () => void = () => {}) {
+    return syncOwnedArticles(
+      ownedSlugs,
+      () => syncArticles(adminUser, { listArticleMarkdownFiles, getArticleMarkdown }),
+      release,
+    )
   }
 
   beforeAll(async () => {
@@ -50,7 +39,13 @@ describe('syncArticles', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    const fixtures = createArticleSyncFixtures()
+    articleFixtures = fixtures.articles
+    aboutSlug = fixtures.aboutSlug
+    keyboardSlug = fixtures.keyboardSlug
+    ownedSlugs = new Set([aboutSlug, keyboardSlug])
+    listArticleMarkdownFiles.mockClear()
+    getArticleMarkdown.mockClear()
     listArticleMarkdownFiles.mockResolvedValue(
       [...articleFixtures.keys()].map(file => ({
         file,
@@ -99,6 +94,7 @@ describe('syncArticles', () => {
     })
 
     function syncOnly(content: string) {
+      ownedSlugs.add(slug)
       listArticleMarkdownFiles.mockResolvedValue([
         { file: 'relative.md', key: 'articles/relative.md', cacheToken: 'relative:v1' },
       ])
@@ -131,8 +127,9 @@ describe('syncArticles', () => {
   it('creates the about article with correct title', async () => {
     await syncFixtureArticles()
 
-    const post = await getPostByAny('about')
+    const post = await getPostByAny(aboutSlug)
     expect(post).not.toBeNull()
+    expect(post!.slug).toBe(aboutSlug)
     expect(post!.title).toBe('About Voucha')
     expect(post!.post_type).toBe('article')
   })
@@ -141,18 +138,26 @@ describe('syncArticles', () => {
     // Ensure the about article exists
     await syncFixtureArticles()
 
-    const postBefore = await getPostByAny('about')
+    const postBefore = await getPostByAny(aboutSlug)
     expect(postBefore).not.toBeNull()
-    const updatedAtBefore = postBefore!.updated_at
+    const updatedAtBefore = new Date('2000-01-01T00:00:00.000Z')
+    await seedArticleSyncTimestamp(postBefore!.id, updatedAtBefore)
+    expect((await getPostByAny(postBefore!.id))!.updated_at).toEqual(updatedAtBefore)
 
     // Second sync: should skip all unchanged articles
     const result = await syncFixtureArticles()
 
     const skipped = result.results.filter(r => r.action === 'skipped')
     expect(skipped.length).toBeGreaterThan(0)
+    expect(result.summary).toMatchObject({
+      skipped: articleFixtures.size,
+      created: 0,
+      updated: 0,
+      errored: 0,
+    })
 
     // updated_at must not change for skipped articles
-    const postAfter = await getPostByAny('about')
+    const postAfter = await getPostByAny(postBefore!.id)
     expect(postAfter!.updated_at).toEqual(updatedAtBefore)
   })
 
@@ -193,15 +198,19 @@ describe('syncArticles', () => {
       return Promise.resolve(articleFixtures.get(article.file)!)
     })
 
-    const syncPromise = syncFixtureArticles()
-    await firstRequested.promise
-    expect(getArticleMarkdown).toHaveBeenCalledOnce()
-    expect(getArticleMarkdown).toHaveBeenLastCalledWith(
-      expect.objectContaining({ file: 'first.md' }),
+    const syncPromise = () =>
+      syncFixtureArticles(() => firstLoad.reject(new Error('first load failed')))
+    const result = await drainOwnedTestAction(
+      syncPromise,
+      () => firstLoad.reject(new Error('first load failed')),
+      async () => {
+        await firstRequested.promise
+        expect(getArticleMarkdown).toHaveBeenCalledOnce()
+        expect(getArticleMarkdown).toHaveBeenLastCalledWith(
+          expect.objectContaining({ file: 'first.md' }),
+        )
+      },
     )
-
-    firstLoad.reject(new Error('first load failed'))
-    const result = await syncPromise
 
     expect(getArticleMarkdown).toHaveBeenCalledTimes(2)
     expect(result.results.map(item => item.file)).toEqual(['first.md', 'about.md'])
@@ -226,7 +235,9 @@ post_type: article
 Local seed body.`,
       )
 
-      const result = await syncLocalArticles(adminUser, articlesDir)
+      const result = await syncOwnedArticles(new Set([slug]), () =>
+        syncLocalArticles(adminUser, articlesDir),
+      )
 
       expect(result.summary).toMatchObject({ created: 1, errored: 0 })
       expect(result.results).toEqual([{ action: 'created', file: 'local-seed.md', slug }])
