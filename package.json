@@ -110,6 +110,7 @@
     "explain:seed": "node backend/scripts/explain-analyze/seed.mts",
     "explain:run": "node backend/scripts/explain-analyze/run.mts",
     "explain:analyze": "node backend/scripts/explain-analyze/analyze.mts",
+    "explain:coverage": "node static-code-analysis/explain-coverage.mts",
     "explain:dump": "node backend/scripts/explain-analyze/dump.mts",
     "login-as": "bash -c 'source .env && node backend/scripts/login-as/run.mts \"$@\"' --",
     "pr:attach-screenshots": "gh-pr-attach-screenshots",

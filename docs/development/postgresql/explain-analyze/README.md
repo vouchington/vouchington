@@ -283,7 +283,25 @@ Reads the latest result file and prints:
 pnpm run explain:analyze
 ```
 
-### 4. Dump results for analysis
+### 4. Find reads without a scenario
+
+`explain:coverage` compares annotated runtime SQL with captured query names. It reports the number
+of annotated statements, reads, covered reads, and uncovered reads, then groups uncovered reads
+by their owning backend directory. It counts `SELECT`, `TABLE`, and read-only `WITH` statements;
+writes stay in the annotated-statement total. Pass a downloaded CI results file when no local
+capture is available.
+
+```bash
+pnpm run explain:coverage
+pnpm run explain:coverage -- /path/to/results.json
+```
+
+The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
+sources. It removes only the custom/generic plan-cache suffix before matching a captured name to
+its annotation. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
+uses the largest user-facing gaps to choose one new scenario per run.
+
+### 5. Dump results for analysis
 
 Prints the full SQL queries and execution plans in a text format suitable for piping to an LLM:
 
