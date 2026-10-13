@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as psql from '@data-stores/psql'
 import * as stripeClientModule from '@modules/stripe/client'
 import {
   createTestMembership,
+  callWithPauseCollectionReplicaMiss,
   createTestPauseCollectionDirectSubscription,
   createTestUser,
   deleteTestMembershipPauseCollectionWork,
@@ -85,15 +85,8 @@ describe('membership pause collection edges', () => {
     await createTestPauseCollectionDirectSubscription(member.id)
     await queueTestPauseCollectionSync(member.id)
     const [job] = await readTestPauseCollectionSyncJobs(member.id)
-    vi.spyOn(psql, 'read').mockResolvedValue({
-      rows: [],
-      command: 'SELECT',
-      rowCount: 0,
-      oid: 0,
-      fields: [],
-    } as never)
 
-    await syncMembershipPauseCollection(job!)
+    await callWithPauseCollectionReplicaMiss(() => syncMembershipPauseCollection(job!))
 
     expect(update).toHaveBeenCalledTimes(1)
   })

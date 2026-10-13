@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import * as stripeClientModule from '@modules/stripe/client'
 import { getUserActivePlan } from '@services/memberships'
 import {
   backdateTestMembershipPauseCollectionAvailableAt,
   claimTestPauseCollectionDispatch,
+  commitTestPauseCollectionGeneration,
   createTestPauseCollectionDirectSubscription,
   createTestUser,
   deleteTestMembershipPauseCollectionWork,
@@ -19,7 +19,6 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { dispatchDuePauseCollectionWork } from './dispatch.mts'
-import { recordMembershipPauseCollectionWork } from './record.mts'
 import { membershipPauseCollectionRetryDelayMs } from './retry-delay.mts'
 import { syncMembershipPauseCollection } from './sync.mts'
 
@@ -266,9 +265,7 @@ describe('membership pause collection', () => {
     await expect(syncMembershipPauseCollection(job!)).rejects.toThrow('stripe timeout')
     const failed = await getTestMembershipPauseCollectionWork(member.id)
 
-    await using transaction = await beginTransaction()
-    await recordMembershipPauseCollectionWork(transaction, member.id)
-    await transaction.commit()
+    await commitTestPauseCollectionGeneration(member.id)
 
     const reset = await getTestMembershipPauseCollectionWork(member.id)
     expect(reset).toMatchObject({

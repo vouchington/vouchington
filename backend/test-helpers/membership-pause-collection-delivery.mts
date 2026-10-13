@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
+import * as psql from '@data-stores/psql'
+import { vi } from 'vitest'
 import { enqueueSyncMembershipPauseCollection } from '../queues/memberships/enqueues/pause-collection.mts'
 import { memberships } from '../queues/memberships/queues.mts'
 import type { SyncMembershipPauseCollectionData } from '../queues/memberships/types.mts'
 import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '../services/memberships/get-catalog.mts'
 import { dispatchDuePauseCollectionWork } from '../services/memberships/pause-collection/dispatch.mts'
+import { recordMembershipPauseCollectionWork } from '../services/memberships/pause-collection/record.mts'
 import { createTestMembership } from './entities/memberships.mts'
 import {
   getTestMembershipPauseCollectionRequestedAt,
@@ -27,6 +30,29 @@ export async function createTestPauseCollectionDirectSubscription(userId: string
     provider_application_id: DEFAULT_STRIPE_CATALOG_CONTEXT.applicationId,
   })
   return { subscriptionId, membershipId: membership.id }
+}
+
+/** Writes a new generation through the production recorder, inside one transaction. */
+export async function commitTestPauseCollectionGeneration(userId: string): Promise<void> {
+  await using transaction = await psql.beginTransaction()
+  await recordMembershipPauseCollectionWork(transaction, userId)
+  await transaction.commit()
+}
+
+/** Runs work while replica reads return no rows. The primary lookup still sees committed rows. */
+export async function callWithPauseCollectionReplicaMiss<T>(run: () => Promise<T>): Promise<T> {
+  const read = vi.spyOn(psql, 'read').mockResolvedValue({
+    rows: [],
+    command: 'SELECT',
+    rowCount: 0,
+    oid: 0,
+    fields: [],
+  } as never)
+  try {
+    return await run()
+  } finally {
+    read.mockRestore()
+  }
 }
 
 /** Records the generation and enqueues its sync, the same way a committed suspension does. */
