@@ -140,11 +140,18 @@ is unavailable.
 
 ### Server unavailable
 
-There is no CLI fallback. The machine configuration denies `AGENT_BLACKBOARD_TOKEN` to every shell
-command (see the [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)), so
-only the MCP server can deliver. When the server is not registered or connected, an interactive agent
-stops journaling and tells the user the server is unavailable and how to fix it: run
-`./dev/initialize`, then reconnect with `/mcp` in Claude Code or restart Codex.
+There is no CLI fallback. This is policy: agents journal only through the MCP server. The token is
+meant for the server and is hidden from sandboxed or excluded shell commands (see the
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)), so an agent never
+runs a CLI to journal and never asks for an unsandboxed run to obtain the token. When the server is
+not available, an interactive agent stops journaling and tells the user:
+
+- **Not registered:** run vouchington-machines' `./configure-agents.sh`, check it with
+  `./diagnose-agents.sh --repo <checkout>` ([setup](#1-configure-the-machine)), then reconnect
+  (`/mcp` in Claude Code, or restart Codex).
+- **Registered but disconnected:** reconnect (`/mcp` in Claude Code, or restart Codex).
+
+The worktree install does not affect the server.
 
 ### Automated sessions
 
@@ -287,8 +294,9 @@ advisory context; emitting context cannot mechanically stop an agent.
   and registers it through `session_ensure`.
 - **Deployment probe.** Unless the run is a compaction restart or `CHECK_BLACKBOARD_SKIP=1`, the
   hook makes a bounded `sessions.list({ limit: 1 })` request and says loudly when the hosted
-  deployment cannot be reached or the credential is missing, asking the user to fix the server
-  registration. A sandboxed probe reports an unavailable assessment instead of a false
+  deployment cannot be reached or the credential is missing, asking the user to fix the hosted
+  connection or credential ([setup](#3-export-the-hosted-connection)); this is separate from the
+  server-not-connected path ([Server unavailable](#server-unavailable)), which the hook cannot see. A sandboxed probe reports an unavailable assessment instead of a false
   deployment outage, because its credential and egress are deliberately withheld by the machine's
   [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list). A worktree
   without the root install gets a workspace-setup message naming the install command; journaling
