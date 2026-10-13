@@ -20,8 +20,8 @@ import { caches } from './caches.mts'
 import onError from '@modules/on-error'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
 import type { EntityRelationElectionCacheKey } from './entity-relation-election-key.mts'
+import { createPostCacheInvalidator } from './post-invalidation.mts'
 import {
-  postTag,
   topicTag,
   userTag,
   communityTag,
@@ -36,6 +36,9 @@ import {
 
 type InvalidateFunction<Keys extends unknown[] = unknown[]> = (...keys: Keys) => Promise<void>
 type CacheDeleteGroups = Parameters<typeof ValkeyCache.deleteFromCaches>[0]
+
+/** Strict post-commit observers retain raw failures; best-effort callers use the same operation. */
+export const startPostCacheInvalidation = createPostCacheInvalidator(deleteFromCachesInChunks)
 
 export const invalidate = {
   users: wrap(async (...keys: unknown[]): Promise<void> => {
@@ -80,13 +83,14 @@ export const invalidate = {
   entity_relation_elections: wrap(async (...keys: EntityRelationElectionCacheKey[]) => {
     await deleteFromCachesInChunks([{ cache: caches.entity_relation_elections, keys }])
   }),
-  posts: wrap(async (...keys: unknown[]): Promise<void> => {
-    // getPostCacheKeys returns both UUIDs and slugs. We pass only the slug portion to
-    // posts_lookup, which never keys on UUIDs. Input slugs are preserved in postKeys
-    // even when the post no longer exists in the DB, so deleted slugs are still invalidated.
-    const postKeys = await getPostCacheKeys(...keys)
-    await deletePostCachesAndPurgeTags(postKeys)
-  }),
+  posts: async (...keys: unknown[]): Promise<void> => {
+    const operation = startPostCacheInvalidation(...keys)
+    try {
+      await operation.completion
+    } catch (err) {
+      if (!operation.rejectionReported) onError(err as Error)
+    }
+  },
   communities: wrap(async (...keys: unknown[]): Promise<void> => {
     const communityKeys = await getCommunityCacheKeys(...keys)
     void enqueueBulkPurgeCacheTags([...communityKeys.map(communityTag), HTML_TAG])
@@ -174,16 +178,6 @@ export async function deleteFromCachesInChunks(groups: CacheDeleteGroups): Promi
     await deleteNextChunk(start + CACHE_DELETE_KEYS_PER_BATCH)
   }
   await deleteNextChunk(0)
-}
-
-async function deletePostCachesAndPurgeTags(
-  postKeys: Awaited<ReturnType<typeof getPostCacheKeys>>,
-): Promise<void> {
-  await deleteFromCachesInChunks([
-    { cache: caches.posts, keys: postKeys },
-    { cache: caches.posts_lookup, keys: [...getCacheKeys(postKeys).slugs] },
-  ])
-  await enqueueBulkPurgeCacheTags(postKeys.map(postTag))
 }
 
 function wrap<Keys extends unknown[]>(fn: InvalidateFunction<Keys>): InvalidateFunction<Keys> {

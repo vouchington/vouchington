@@ -141,5 +141,12 @@ await the event's real settlement promise before detaching. Its result preserves
 observer and reporting failures, including non-Error rejection values. The event is scoped by
 persisted post identity and operation kind. It proves API admission/cache settlement, never job
 execution or queue-worker termination. The bloom helper retains its existing best-effort policy.
+Self-reporting queue admission rejections stay in the receipt without a second error report;
+synchronous failures before an admission promise is returned remain the completion owner's concern.
+Update completion uses the strict post-cache operation, so cache-deletion and purge-admission
+failures remain raw rejected outcomes. Best-effort `invalidate.posts()` callers share that same
+operation but retain their existing resolve-after-report policy. Reporting ownership switches to
+the purge factory only after it returns its self-reporting promise; earlier cache failures are
+reported by the caller.
 Post cache invalidation includes its real purge-tag admission promise; unrelated cache wrappers
 keep their current policy.
