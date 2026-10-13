@@ -80,3 +80,28 @@ export async function rejectTestMicrosoftCredentialOnStripeContext(
       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '1 day'
     )`)
 }
+
+export async function rejectTestStripeDeletionWorkOnGoogleLineage(): Promise<void> {
+  const { rows } = await write<{ request_id: string; lineage_id: string }>(sql`
+    /* createNonStripeDeletionWorkFixture */
+    WITH owner AS (INSERT INTO users DEFAULT VALUES RETURNING id),
+    deletion_request AS (
+      INSERT INTO user_deletion_requests (user_id)
+      SELECT id FROM owner RETURNING id
+    ), lineage AS (
+      INSERT INTO membership_provider_lineages (
+        membership_provider_context_id, provider_lineage_id
+      ) VALUES (
+        fn_upsert_membership_provider_context_id('google_play', 'test', ${`play-${randomUUID()}`}),
+        ${`lineage-${randomUUID()}`}
+      ) RETURNING id
+    )
+    SELECT deletion_request.id AS request_id, lineage.id AS lineage_id
+    FROM deletion_request CROSS JOIN lineage`)
+  const { request_id: requestId, lineage_id: lineageId } = rows[0]!
+
+  await write(sql`/* rejectNonStripeDeletionWork */
+    INSERT INTO user_deletion_external_works (
+      request_id, work_kind, membership_provider_lineage_id
+    ) VALUES (${requestId}, 'stripe-customer', ${lineageId})`)
+}
