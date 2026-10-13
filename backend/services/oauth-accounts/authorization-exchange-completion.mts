@@ -9,13 +9,19 @@ export async function completeOAuthAuthorizationExchange(
   providerUserId: string,
   query: TransactionQuery,
 ): Promise<void> {
-  if (provider !== 'facebook' && provider !== 'x' && provider !== 'github') {
+  if (
+    provider !== 'facebook' &&
+    provider !== 'x' &&
+    provider !== 'github' &&
+    provider !== 'linkedin'
+  ) {
     throw new Error(`OAuth authorization broker does not support ${provider}`)
   }
   const providerIdColumn = {
     facebook: 'facebook_user_id',
     x: 'x_user_id',
     github: 'github_user_id',
+    linkedin: 'linkedin_user_id',
   }[provider]
   const { rowCount } = await query(
     `/* completeOAuthAuthorizationExchange */ UPDATE oauth_authorizations

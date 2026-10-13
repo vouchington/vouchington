@@ -6,7 +6,7 @@ LinkedIn OAuth provider — exchanges authorization codes with PKCE, fetches the
 
 ## Key exports
 
-- `upsertLinkedInAccount(code, codeVerifier, options)` — exchanges the PKCE authorization code for a LinkedIn access token, fetches the LinkedIn userinfo, and upserts the OAuth account record
+- `upsertLinkedInAccount(code, redirectUri, codeVerifier, options)` — exchanges the PKCE authorization code for a LinkedIn access token, fetches LinkedIn userinfo, and upserts the OAuth account. Broker callers pass a bounded abort signal and an exact authorization/claim pair so account persistence and completion readiness commit atomically.
 
 ## Related
 

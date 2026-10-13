@@ -6,7 +6,7 @@ import {
 import { createTestOAuthExchangeDependencies as exchangeDependencies } from '@voucha/test-helpers/oauth-exchange-dependencies'
 
 describe('OAuth authorization provider exchange processing', () => {
-  it.each(['facebook', 'x', 'github'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
     'persists the armed marker before admitting the %s provider and clears it only after success',
     async provider => {
       const dependencies = exchangeDependencies(provider)
@@ -16,7 +16,9 @@ describe('OAuth authorization provider exchange processing', () => {
           ? dependencies.upsertFacebook
           : provider === 'x'
             ? dependencies.upsertX
-            : dependencies.upsertGithub
+            : provider === 'github'
+              ? dependencies.upsertGithub
+              : dependencies.upsertLinkedIn
       vi.mocked(providerCall).mockImplementation(async () => {
         expect(writes.at(-1)).toEqual({ claimId: 'claim-id', armed: true })
         return {
@@ -40,7 +42,7 @@ describe('OAuth authorization provider exchange processing', () => {
     },
   )
 
-  it.each(['facebook', 'x', 'github'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
     'does not admit the %s provider when the armed ownership write fails',
     async provider => {
       const dependencies = exchangeDependencies(provider)
@@ -55,11 +57,12 @@ describe('OAuth authorization provider exchange processing', () => {
       expect(dependencies.upsertFacebook).not.toHaveBeenCalled()
       expect(dependencies.upsertX).not.toHaveBeenCalled()
       expect(dependencies.upsertGithub).not.toHaveBeenCalled()
+      expect(dependencies.upsertLinkedIn).not.toHaveBeenCalled()
       expect(dependencies.releaseClaim).toHaveBeenCalledWith('flow-id', 'claim-id')
     },
   )
 
-  it.each(['facebook', 'x', 'github'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
     'retains armed ownership and the raw %s provider exception for terminal continuation',
     async provider => {
       const failure =
@@ -72,7 +75,9 @@ describe('OAuth authorization provider exchange processing', () => {
           ? dependencies.upsertFacebook
           : provider === 'x'
             ? dependencies.upsertX
-            : dependencies.upsertGithub
+            : provider === 'github'
+              ? dependencies.upsertGithub
+              : dependencies.upsertLinkedIn
       vi.mocked(providerCall).mockRejectedValue(failure)
       const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
       await expect(
@@ -90,6 +95,7 @@ describe('OAuth authorization provider exchange processing', () => {
       expect(dependencies.upsertFacebook).toHaveBeenCalledTimes(provider === 'facebook' ? 1 : 0)
       expect(dependencies.upsertX).toHaveBeenCalledTimes(provider === 'x' ? 1 : 0)
       expect(dependencies.upsertGithub).toHaveBeenCalledTimes(provider === 'github' ? 1 : 0)
+      expect(dependencies.upsertLinkedIn).toHaveBeenCalledTimes(provider === 'linkedin' ? 1 : 0)
       expect(dependencies.rejectExhausted).not.toHaveBeenCalled()
       expect(dependencies.releaseClaim).not.toHaveBeenCalled()
     },
@@ -236,6 +242,23 @@ describe('OAuth authorization provider exchange processing', () => {
       expect.objectContaining({
         codeVerifier: 'provider-verifier',
         authorizationId: 'flow-id',
+      }),
+    )
+  })
+
+  it('routes a claimed LinkedIn code with its PKCE verifier and durable claim', async () => {
+    const dependencies = exchangeDependencies('linkedin')
+    await processOAuthAuthorizationExchange('flow-id', dependencies)
+
+    expect(dependencies.decryptVerifier).toHaveBeenCalledWith('flow-id', 'encrypted-verifier')
+    expect(dependencies.upsertLinkedIn).toHaveBeenCalledWith(
+      'provider-code',
+      'https://example.com/callback',
+      'provider-verifier',
+      expect.objectContaining({
+        authorizationId: 'flow-id',
+        authorizationClaimId: 'claim-id',
+        signal: expect.any(AbortSignal),
       }),
     )
   })

@@ -6,7 +6,7 @@ Multi-provider OAuth authentication for login, signup, and account linking.
 
 ## Shared Authorization Broker
 
-Facebook, X, and GitHub can use one durable server-begun state machine for web and native
+Facebook, X, GitHub, and LinkedIn can use one durable server-begun state machine for web and native
 authentication or account connection:
 
 1. `beginOAuthAuthorization` validates purpose ownership, capability, and native proof challenge,

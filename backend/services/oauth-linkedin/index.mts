@@ -27,6 +27,7 @@ async function exchangeLinkedInAuthorizationCode(
   code: string,
   redirectUri: string,
   codeVerifier: string,
+  signal?: AbortSignal,
 ): Promise<LinkedInTokenResponse> {
   if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
     throw new Error('LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET must be defined')
@@ -43,6 +44,7 @@ async function exchangeLinkedInAuthorizationCode(
       client_secret: LINKEDIN_CLIENT_SECRET,
       code_verifier: codeVerifier,
     }).toString(),
+    signal,
   })
   if (!response.ok) {
     throw createHttpError(502, `LinkedIn token exchange failed: ${response.status}`)
@@ -51,10 +53,14 @@ async function exchangeLinkedInAuthorizationCode(
 }
 
 /* no-mistakes: integration=oauth */
-async function fetchLinkedInUserInfo(accessToken: string): Promise<LinkedInUserInfo> {
+async function fetchLinkedInUserInfo(
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<LinkedInUserInfo> {
   const response = await fetch('https://api.linkedin.com/v2/userinfo', {
     dispatcher: getExternalRequestDispatcher(),
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal,
   })
   if (!response.ok) {
     throw createHttpError(502, `LinkedIn userinfo request failed: ${response.status}`)
@@ -66,15 +72,25 @@ export async function upsertLinkedInAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string,
+  options: {
+    authorizationId?: string
+    authorizationClaimId?: string
+    signal?: AbortSignal
+  } = {},
 ): Promise<OAuthAccount> {
-  const tokenResponse = await exchangeLinkedInAuthorizationCode(code, redirectUri, codeVerifier)
+  const tokenResponse = await exchangeLinkedInAuthorizationCode(
+    code,
+    redirectUri,
+    codeVerifier,
+    options.signal,
+  )
   if (tokenResponse.error) {
     throw createHttpError(502, 'OAuth token exchange failed', {
       cause: new Error(tokenResponse.error_description ?? tokenResponse.error),
     })
   }
 
-  const userInfo = await fetchLinkedInUserInfo(tokenResponse.access_token)
+  const userInfo = await fetchLinkedInUserInfo(tokenResponse.access_token, options.signal)
   const providerUserData: Record<string, unknown> = {}
   if (userInfo.name) providerUserData.name = userInfo.name
   if (userInfo.email) providerUserData.email = userInfo.email
@@ -96,5 +112,6 @@ export async function upsertLinkedInAccount(
       refreshToken: tokenResponse.refresh_token,
       accessTokenExpiresAt: expiresAt,
     },
+    options,
   )
 }

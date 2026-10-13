@@ -11,6 +11,7 @@ import type {
 } from './authorization-broker.mts'
 import type { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import type { upsertGithubAccount } from '@services/oauth-github'
+import type { upsertLinkedInAccount } from '@services/oauth-linkedin'
 import type { upsertXAccount } from '@services/oauth-x'
 
 export type OAuthAuthorizationExchangeDependencies = {
@@ -20,6 +21,7 @@ export type OAuthAuthorizationExchangeDependencies = {
   decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
   upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
   upsertGithub: typeof upsertGithubAccount
+  upsertLinkedIn: typeof upsertLinkedInAccount
   upsertX: typeof upsertXAccount
   rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
   releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
@@ -70,5 +72,15 @@ export async function exchangeClaimedOAuthAuthorization(
         codeVerifier,
         ...completionOptions,
       })
+      break
+    case 'linkedin':
+      if (codeVerifier === undefined)
+        throw new Error('LinkedIn provider admission requires its PKCE verifier')
+      await dependencies.upsertLinkedIn(
+        code,
+        authorization.redirect_uri,
+        codeVerifier,
+        completionOptions,
+      )
   }
 }

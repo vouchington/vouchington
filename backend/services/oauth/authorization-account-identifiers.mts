@@ -21,6 +21,12 @@ const authorizationAccountIdentifiers = {
     emailColumn: 'github_user_email_address',
     dataColumn: 'github_user_data',
   },
+  linkedin: {
+    table: 'linkedin_accounts',
+    providerUserIdColumn: 'linkedin_user_id',
+    emailColumn: 'linkedin_user_email_address',
+    dataColumn: 'linkedin_user_data',
+  },
 } as const satisfies Record<
   BrokerOAuthProvider,
   {

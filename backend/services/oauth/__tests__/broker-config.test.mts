@@ -32,6 +32,11 @@ describe('OAuth authorization broker config', () => {
         modes: { web: false, native: false },
         purposes: ['authenticate', 'connect'],
       },
+      linkedin: {
+        version: 1,
+        modes: { web: false, native: false },
+        purposes: ['authenticate', 'connect'],
+      },
     })
   })
 
@@ -57,6 +62,7 @@ describe('OAuth authorization broker config', () => {
 
   it('accepts only broker-supported providers', () => {
     expect(assertBrokerOAuthProvider('github')).toBe('github')
+    expect(assertBrokerOAuthProvider('linkedin')).toBe('linkedin')
     expect(() => assertBrokerOAuthProvider('google')).toThrow(
       expect.objectContaining({ status: 404 }),
     )

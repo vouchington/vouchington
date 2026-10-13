@@ -90,6 +90,7 @@ export async function getAuthorizationAccount(
     facebook: authorization.facebook_user_id,
     x: authorization.x_user_id,
     github: authorization.github_user_id,
+    linkedin: authorization.linkedin_user_id,
   }[authorization.provider]
   if (!providerUserId) throw new Error('Completed OAuth exchange has no provider account')
   const config = getAuthorizationAccountIdentifiers(authorization.provider)
