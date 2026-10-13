@@ -124982,6 +124982,29 @@
           "unique": true,
           "valid": true
         },
+        "idx_url_hostname_blocks__active_nonfeed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__active_nonfeed ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE ((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostname_blocks__domain_blocklist_source_id": {
           "accessMethod": "btree",
           "constraintBacked": false,

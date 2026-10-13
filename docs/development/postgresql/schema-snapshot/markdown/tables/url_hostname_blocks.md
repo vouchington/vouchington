@@ -38,6 +38,7 @@ _none_
 **Indexes:**
 
 - `idx_url_hostname_blocks__active_domain_source`: `CREATE UNIQUE INDEX idx_url_hostname_blocks__active_domain_source ON public.url_hostname_blocks USING btree (url_hostname_id, domain_blocklist_source_id) WHERE ((domain_blocklist_source_id IS NOT NULL) AND (lifted_at IS NULL))`
+- `idx_url_hostname_blocks__active_nonfeed`: `CREATE INDEX idx_url_hostname_blocks__active_nonfeed ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE ((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))`
 - `idx_url_hostname_blocks__domain_blocklist_source_id`: `CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id ON public.url_hostname_blocks USING btree (domain_blocklist_source_id) WHERE (domain_blocklist_source_id IS NOT NULL)`
 - `idx_url_hostname_blocks__hostname`: `CREATE INDEX idx_url_hostname_blocks__hostname ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (lifted_at IS NULL)`
 - `idx_url_hostname_blocks__url_hostname_id`: `CREATE INDEX idx_url_hostname_blocks__url_hostname_id ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (url_hostname_id IS NOT NULL)`
