@@ -254,6 +254,7 @@ executeHandlerWithCursorInBatches(\`/* cursorSubpath */ SELECT id FROM posts\`, 
     ).toBe(true)
     expect(isRead('/* update */ -- policy\nUPDATE topics SET active = true')).toBe(false)
     expect(isRead('/* unknown */ sql_placeholder_1 FROM topics')).toBe(false)
+    expect(isRead('/* table */ TABLE topics')).toBe(true)
     expect(
       isRead('/* lock */ WITH rows AS (SELECT id FROM jobs FOR UPDATE) SELECT id FROM rows'),
     ).toBe(true)
