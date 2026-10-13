@@ -31,6 +31,7 @@ export function MarkdownContent({
   lang,
   preview = false,
 }: MarkdownContentProps) {
+  const htmlLang = lang ?? undefined
   const contentHtml = preview
     ? demotePreviewHeadings(html)
     : html
@@ -44,7 +45,7 @@ export function MarkdownContent({
           html={contentHtml}
           className={className}
           features={features}
-          lang={lang}
+          lang={htmlLang}
         />
       )
     }
@@ -53,7 +54,7 @@ export function MarkdownContent({
     return (
       <div
         className={className}
-        lang={lang}
+        lang={htmlLang}
         dir={getContentLanguageDir(lang)}
       >
         {htmlContent}
@@ -65,7 +66,7 @@ export function MarkdownContent({
     return (
       <pre
         className={`whitespace-pre-wrap${className ? ` ${className}` : ''}`}
-        lang={lang}
+        lang={htmlLang}
         dir={getContentLanguageDir(lang)}
       >
         {markdown}
