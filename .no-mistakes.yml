@@ -932,8 +932,6 @@ rules:
             file: backend/services/images/delete-rollback.mts,
             callee: 'ensureCurrentPostModerationVersion',
           }
-        - { file: backend/services/images/delete-rollback.mts, callee: 'getPostModerationInput' }
-        - { file: backend/services/images/delete-rollback.mts, callee: 'query' }
         - {
             file: backend/services/images/delete-rollback.mts,
             callee: 'recordRestoredPostContentChange',

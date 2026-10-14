@@ -280,6 +280,15 @@ This handles cases where:
 - Backend OpenAI image moderation builds an absolute URL for that route from `IMAGE_ORIGIN`, so
   moderation does not expose private S3 URLs.
 
+### Deletion rollback
+
+When the post-update enqueue fails after an image deletion, rollback restores the image and its
+placements in one transaction. It takes the existing image and post-publication locks, locks affected
+post rows in ID order with one `FOR UPDATE` read, then loads the restored post and attachment
+snapshots in one read before applying each post's guarded hash, clearance, and revision compensation.
+For N affected posts, the two snapshot reads take two database round trips rather than 3N; the
+branch-specific writes and durable moderation work still follow each post's current-state check.
+
 ### Ownership
 
 - Only a live user who requested the upload URL can complete it. Creation, completion, and

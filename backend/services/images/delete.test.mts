@@ -102,7 +102,11 @@ describe('deleteImageById rollback', () => {
       }),
     ])
     const imageId = await insertTestImage(creator!.id)
-    await Promise.all(postIds.map(postId => insertTestPostImage({ postId, imageId })))
+    const retainedImageId = await insertTestImage(creator!.id)
+    for (const postId of postIds) {
+      await insertTestPostImage({ postId, imageId: retainedImageId, orderIndex: 0 })
+      await insertTestPostImage({ postId, imageId, orderIndex: 1, caption: 'Shared image' })
+    }
     await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
 
     for (const postId of postIds) {
