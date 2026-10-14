@@ -120,6 +120,15 @@ export function approveCopyrightEmailIntake(id: string, input: CopyrightEmailInt
   return clientApi.post(`/api/v1/copyright-email-intakes/${id}/approvals`, input)
 }
 
+export function associateCopyrightEmailIntakeWithNotice(id: string, noticeId: string) {
+  return clientApi.post<{
+    copyright_notice: { id: string }
+    copyright_email_intake: { id: string }
+  }>(`/api/v1/copyright-email-intakes/${id}/notice-associations`, {
+    copyright_notice_id: noticeId,
+  })
+}
+
 export function admitCopyrightEmailCorrespondence(
   id: string,
   input: CopyrightEmailCorrespondenceInput,

@@ -60,6 +60,11 @@
     "issue": 2612
   },
   {
+    "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
+    "reason": "Manual association rechecks link and review state after intake and notice locks to reject a concurrent decision",
+    "issue": 2763
+  },
+  {
     "annotation": "backfillCategoriesForTopicAliases",
     "reason": "Publication identity bookkeeping runs once per affected scope",
     "issue": 2605
@@ -868,6 +873,16 @@
     "annotation": "readBlueskyLinkAuthorization",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
+  },
+  {
+    "annotation": "readCopyrightEmailThreadGraph:incoming",
+    "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
+    "issue": 2763
+  },
+  {
+    "annotation": "readCopyrightEmailThreadGraph:outgoing",
+    "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
+    "issue": 2763
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",

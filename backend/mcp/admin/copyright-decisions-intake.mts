@@ -18,6 +18,7 @@ import {
 } from './copyright-decisions-approval.mts'
 import { adminInput, createAdminTool, UUID_INPUT } from './create-admin-tool.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
+import { copyrightIntakeAssociationTool } from './copyright-intake-association-tool.mts'
 export const RATIONALE_INPUT = {
   type: 'string',
   minLength: 1,
@@ -117,6 +118,7 @@ export const adminCopyrightDecisionIntakeTools = [
     idempotent: false,
     run: approveCopyrightEmailIntakeFromToolArgs,
   }),
+  copyrightIntakeAssociationTool,
   copyrightDecisionTool<{ intake_id: string; rationale: string }>({
     name: 'reject_copyright_email_intake',
     path: rejectionPath,

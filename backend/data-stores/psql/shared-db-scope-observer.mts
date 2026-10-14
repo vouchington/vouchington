@@ -8,6 +8,8 @@ export const sharedDbScopeTables = {
   searchCopyrightStaffEmailIntakes: 'copyright_notice_email_intakes',
   promoteCopyrightEmailIntakeGraph: 'copyright_notice_email_message_ancestors',
   promoteCopyrightEmailIntakeGraphLocked: 'copyright_notice_email_intakes',
+  associateCopyrightEmailIntakePreflight: 'copyright_notice_email_intakes',
+  associateCopyrightEmailIntakeLocked: 'copyright_notice_email_intakes',
   getPendingCopyrightAgentDispatches: 'copyright_notice_dispatch_sources',
   searchDueStatutoryCopyrightRestorationDeadlineIds: 'copyright_notice_deadlines',
   searchRecoverableCopyrightFormReviewIntakeIds: 'copyright_notice_form_intake_reviews',

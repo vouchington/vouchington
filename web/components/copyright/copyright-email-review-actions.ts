@@ -1,8 +1,7 @@
-import { useRef } from 'react'
 import {
   approveCopyrightEmailIntake,
+  associateCopyrightEmailIntakeWithNotice,
   admitCopyrightEmailCorrespondence,
-  getCopyrightEmailIntake,
   listCopyrightEmailIntakes,
   rejectCopyrightEmailIntake,
   rejectCopyrightEmailCorrespondence,
@@ -10,12 +9,10 @@ import {
   type CopyrightEmailIntake,
 } from '@/lib/api/client/copyright-email-intakes'
 import {
-  createCopyrightEmailApprovalDraft,
   toCopyrightEmailApprovalInput,
   type CopyrightEmailApprovalDraft,
 } from './copyright-email-approval-model'
 import {
-  createCopyrightEmailCorrespondenceDraft,
   toCopyrightEmailCorrespondenceInput,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
@@ -26,6 +23,7 @@ import {
   copyrightEmailReplyOutcome,
 } from './copyright-email-review-decision'
 import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
+import { useCopyrightEmailReviewSelection } from './copyright-email-review-selection'
 
 export function useCopyrightEmailReviewActions({
   correspondenceDraft,
@@ -62,33 +60,20 @@ export function useCopyrightEmailReviewActions({
   setReplyEmail: (value: string) => void
   setSuccess: (value: string | null) => void
 }) {
-  const selectedIntakeRequest = useRef(0)
+  const selectIntake = useCopyrightEmailReviewSelection({
+    setCorrespondenceDraft,
+    setDetail,
+    setDraft,
+    setError,
+    setLoading,
+    setManualFallbackReason,
+    setRationale,
+    setReplyEmail,
+    setSuccess,
+  })
 
   async function loadQueue() {
     resetQueue(await listCopyrightEmailIntakes())
-  }
-  async function selectIntake(intakeId: string) {
-    const request = ++selectedIntakeRequest.current
-    clearIntakeReviewState()
-    setError(null)
-    setSuccess(null)
-    setLoading(true)
-    try {
-      const response = await getCopyrightEmailIntake(intakeId)
-      if (request !== selectedIntakeRequest.current) return
-      setDetail(response.copyright_email_intake)
-      setDraft(
-        createCopyrightEmailApprovalDraft(
-          response.copyright_email_intake.recommendation?.structured_output,
-        ),
-      )
-    } catch (err) {
-      if (request === selectedIntakeRequest.current) {
-        setError(copyrightEmailActionError(err, 'We could not load that copyright email intake.'))
-      }
-    } finally {
-      if (request === selectedIntakeRequest.current) setLoading(false)
-    }
   }
   async function approve() {
     if (!detail || !draft) return
@@ -100,6 +85,14 @@ export function useCopyrightEmailReviewActions({
         }),
       'The structured intake was approved.',
       'We could not approve that copyright email intake.',
+    )
+  }
+  async function associateWithNotice(noticeId: string) {
+    if (!detail) return
+    await complete(
+      () => associateCopyrightEmailIntakeWithNotice(detail.id, noticeId),
+      'The email intake was associated with the existing notice.',
+      'We could not associate that email intake with the notice.',
     )
   }
   async function reject() {
@@ -181,15 +174,8 @@ export function useCopyrightEmailReviewActions({
       setSuccess(typeof success === 'string' ? success : success(result))
     }, fallback)
   }
-  function clearIntakeReviewState() {
-    setDetail(null)
-    setDraft(null)
-    setCorrespondenceDraft(createCopyrightEmailCorrespondenceDraft())
-    setManualFallbackReason('')
-    setRationale('')
-    setReplyEmail('')
-  }
   return {
+    associateWithNotice,
     admitCorrespondence,
     approve,
     reject,

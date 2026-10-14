@@ -1,0 +1,107 @@
+import { beginTransaction, read } from '@data-stores/psql'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import type { PrivateUser } from '@services/users/types'
+import assert from 'http-assert'
+import sql from 'sql-template-strings'
+import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
+
+type IntakeDecision = { id: string; linked: boolean; reviewed: boolean }
+
+export type CopyrightNoticeAssociationTarget = {
+  id: string
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
+  received_at: string
+}
+
+/** Resolve a staff-selected case by id without imposing the public accepted-case filter. */
+export async function getCopyrightNoticeAssociationTarget(
+  currentUser: PrivateUser,
+  noticeId: string,
+): Promise<CopyrightNoticeAssociationTarget | undefined> {
+  assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
+  const { rows } = await read<CopyrightNoticeAssociationTarget>(sql`
+    /* getCopyrightNoticeAssociationTarget */
+    SELECT id, jurisdiction, received_at FROM copyright_notices WHERE id = ${noticeId}
+  `)
+  return rows[0]
+}
+
+/** Associate exactly one unresolved intake; later replies use the normal threading path. */
+export async function associateCopyrightEmailIntakeWithNotice(
+  currentUser: PrivateUser,
+  intakeId: string,
+  noticeId: string,
+): Promise<{ copyright_notice: { id: string }; copyright_email_intake: { id: string } }> {
+  assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
+  await using transaction = await beginTransaction()
+  const before = await readIntakeDecision(transaction, intakeId)
+  assert(before, 404, 'Copyright email intake not found')
+  if (before.linked || before.reviewed) throw copyrightEmailThreadChangedError()
+  observeSharedDbScope(
+    'associateCopyrightEmailIntakePreflight',
+    { kind: 'ids', ids: [intakeId] },
+    undefined,
+    transaction,
+  )
+
+  const { rows: lockedIntakes } = await transaction<{ id: string }>(sql`
+    /* associateCopyrightEmailIntakeWithNotice:lockIntake */
+    SELECT id FROM copyright_notice_email_intakes WHERE id = ${intakeId} FOR UPDATE
+  `)
+  assert(lockedIntakes[0], 404, 'Copyright email intake not found')
+  const { rows: lockedNotices } = await transaction<{ id: string }>(sql`
+    /* associateCopyrightEmailIntakeWithNotice:lockNotice */
+    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+  `)
+  assert(lockedNotices[0], 404, 'Copyright notice not found')
+  observeSharedDbScope(
+    'associateCopyrightEmailIntakeLocked',
+    { kind: 'ids', ids: [intakeId] },
+    undefined,
+    transaction,
+  )
+
+  const after = await readIntakeDecision(transaction, intakeId)
+  if (!after || after.linked || after.reviewed) throw copyrightEmailThreadChangedError()
+  const { rows: links } = await transaction<{ id: string }>(sql`
+    /* associateCopyrightEmailIntakeWithNotice:link */
+    INSERT INTO copyright_notice_email_intake_notice_links (
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind
+    ) VALUES (${intakeId}, ${noticeId}, 'thread')
+    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    RETURNING id
+  `)
+  if (!links[0]) throw copyrightEmailThreadChangedError()
+  await transaction(sql`
+    /* associateCopyrightEmailIntakeWithNotice:pendingReview */
+    INSERT INTO copyright_notice_email_correspondence_reviews (
+      copyright_notice_email_intake_id, copyright_notice_id, action
+    ) VALUES (${intakeId}, ${noticeId}, 'pending')
+  `)
+  await transaction(sql`
+    /* associateCopyrightEmailIntakeWithNotice:audit */
+    INSERT INTO copyright_notice_lifecycle_changes (
+      copyright_notice_id, change_type, changed_by_id, copyright_notice_email_intake_id
+    ) VALUES (${noticeId}, 'email_intake_manually_associated', ${currentUser.id}, ${intakeId})
+  `)
+  await transaction.commit()
+  return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
+}
+
+async function readIntakeDecision(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<IntakeDecision | undefined> {
+  const { rows } = await transaction<IntakeDecision>(sql`
+    /* associateCopyrightEmailIntakeWithNotice:decision */
+    SELECT intake.id,
+      EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = intake.id) AS linked,
+      EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
+        WHERE review.copyright_notice_email_intake_id = intake.id) AS reviewed
+    FROM copyright_notice_email_intakes intake WHERE intake.id = ${intakeId}
+  `)
+  return rows[0]
+}

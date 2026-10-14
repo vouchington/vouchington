@@ -14,7 +14,14 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import {
+  createParsedCopyrightEmailIntake,
+  createUnparsedCopyrightEmailIntake,
+} from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import {
+  createCopyrightNoticeForManualAssociation,
+  readCopyrightEmailManualAssociationEvent,
+} from '@voucha/test-helpers/copyright-email-manual-association'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
@@ -66,6 +73,35 @@ const SURFACES = [
   ['MCP', mcpSurface],
 ] as const
 
+async function associateSurface(
+  surface: 'REST' | 'MCP',
+  intakeId: string,
+  noticeId: string,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  if (surface === 'REST') {
+    const staff = createRequest()
+    await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const response = await staff
+      .post(`/api/v1/copyright-email-intakes/${intakeId}/notice-associations`)
+      .send({ copyright_notice_id: noticeId })
+    return { status: response.status, body: response.body }
+  }
+  const admin = await createTestUser({ administrator: true })
+  const response = await callMcpTool(
+    'associate_copyright_email_intake_with_notice',
+    { intake_id: intakeId, copyright_notice_id: noticeId },
+    { ...admin, membership_plan: null },
+    ['copyright-notices:read', 'copyright-notices:write'],
+    ADMIN_MCP_SERVER_CONFIG,
+    true,
+  )
+  if (!response.isError) return { status: 201, body: response.structuredContent ?? {} }
+  const block = response.content[0]
+  if (block?.type !== 'text') throw new Error('Expected a typed MCP error')
+  const { error } = JSON.parse(block.text)
+  return { status: error.status, body: error }
+}
+
 async function approvalFixture(overrides: Record<string, unknown> = {}) {
   const { form } = await createCopyrightFormFixture()
   const [target] = form.targets
@@ -90,6 +126,49 @@ describe('copyright email approval parity between REST and MCP', () => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
+
+  it.each(['REST', 'MCP'] as const)(
+    '%s associates one unresolved intake and returns the same case/intake pair',
+    async surface => {
+      const intake = await createUnparsedCopyrightEmailIntake()
+      const noticeId = await createCopyrightNoticeForManualAssociation()
+      const outcome = await associateSurface(surface, intake.id, noticeId)
+      expect(outcome.status).toBe(201)
+      expect(outcome.body).toMatchObject({
+        copyright_notice: { id: noticeId },
+        copyright_email_intake: { id: intake.id },
+      })
+      expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toHaveLength(1)
+    },
+  )
+
+  it('lets staff resolve an existing case for the picker before acceptance', async () => {
+    const noticeId = await createCopyrightNoticeForManualAssociation(false)
+    const staff = createRequest()
+    await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const response = await staff
+      .get(`/api/v1/copyright-notices/${noticeId}/association-target`)
+      .expect(200)
+    expect(response.body).toMatchObject({
+      copyright_notice: { id: noticeId, jurisdiction: 'us_dmca' },
+    })
+  })
+
+  it.each(['REST', 'MCP'] as const)(
+    '%s returns 404 for a missing case and 409 for an intake already linked by staff',
+    async surface => {
+      const intake = await createUnparsedCopyrightEmailIntake()
+      const noticeId = await createCopyrightNoticeForManualAssociation()
+      const missing = await associateSurface(surface, intake.id, crypto.randomUUID())
+      expect(missing.status).toBe(404)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+      expect((await associateSurface(surface, intake.id, noticeId)).status).toBe(201)
+      const conflict = await associateSurface(surface, intake.id, noticeId)
+      expect(conflict.status).toBe(409)
+      expect(conflict.body.code).toBe('copyright_email_thread_changed')
+      expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toHaveLength(1)
+    },
+  )
 
   it.each(SURFACES)(
     '%s: the same valid body creates a notice that links the raw email',

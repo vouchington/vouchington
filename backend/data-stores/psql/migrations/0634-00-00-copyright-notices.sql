@@ -3,6 +3,7 @@ CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 
     'appeal_reviewed', 'counter_notice_reviewed', 'evidence_artifact_recorded',
     'outbound_correspondence_created', 'agent_correspondence_approved',
     'email_correspondence_admitted', 'email_correspondence_rejected',
+    'email_intake_manually_associated',
     'provisional_restriction_imposed', 'mandatory_human_review_completed', 'restriction_lifted_by_administrator',
     'legal_hold_assessed', 'legal_hold_resolved', 'counter_notice_deadline_started',
     'restoration_intent_created', 'reversal_restoration_intent_created',
@@ -369,6 +370,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   CHECK ((change_type = 'counter_notice_reviewed') = (is_counter_notice_accepted IS NOT NULL)),
   CHECK ((change_type = 'mandatory_human_review_completed') = (review_action IS NOT NULL)),
   CHECK (change_type <> 'media_delivery_registry_replayed' OR replay_reason IS NOT NULL),
+  CHECK (change_type <> 'email_intake_manually_associated' OR changed_by_id IS NOT NULL),
   -- A replayed reply to a declined email intake belongs to no case; every other event names one.
   CONSTRAINT copyright_lifecycle_event_notice_scope CHECK (
     copyright_notice_id IS NOT NULL OR change_type = 'delivery_intent_replayed'
@@ -401,7 +403,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
         'copyright_action_replayed', 'restoration_unavailable',
         'restriction_lifted_placement_retained', 'restoration_authorized_pending_delivery',
         'placement_withheld', 'placement_restored') THEN copyright_notice_action_intent_id IS NOT NULL
-      WHEN change_type = 'email_correspondence_rejected' THEN copyright_notice_email_intake_id IS NOT NULL
+      WHEN change_type IN ('email_correspondence_rejected', 'email_intake_manually_associated') THEN copyright_notice_email_intake_id IS NOT NULL
       WHEN change_type = 'delivery_intent_replayed' THEN copyright_notice_delivery_work_item_id IS NOT NULL
       WHEN change_type = 'media_delivery_registry_replayed' THEN media_delivery_registry_record_id IS NOT NULL
       WHEN change_type IN ('guest_capability_issued', 'guest_capability_revoked',
@@ -1195,7 +1197,7 @@ COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved ar
 COMMENT ON TABLE copyright_notice_lifecycle_changes IS 'Append-only legal workflow audit trail.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_id IS 'Legal case whose transition or correspondence event was recorded; NULL only for a replayed email-intake reply, which belongs to no case.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.change_type IS 'Versioned legal workflow event name.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'User or staff actor for the event; NULL for system activity or after account deletion.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'Retained user or staff actor identity for the event; NULL only for events that do not require an actor.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_action_intent_id IS 'Concrete action intent source; its restriction is derived through the required restriction FK.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_id IS 'Submission whose receipt or review this event records.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_assessment_id IS 'Assessment that this event records.';

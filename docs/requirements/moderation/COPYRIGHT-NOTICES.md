@@ -387,6 +387,15 @@ the existing staff email queue; it records the notice ID and observed row count 
 log, without storing a new thread status. No subset of replies is linked automatically.
 Receipt-time ancestor matching uses the same budget and leaves an over-budget reply unlinked in
 the staff queue instead of traversing the full historical thread.
+For an unlinked intake left for manual review by that cap, a duplicated Message-ID, or ancestors
+that reach different notices, a copyright reviewer can enter an existing notice ID and associate
+that intake alone. The staff picker resolves the reference and displays the case before selection,
+including an existing case that has not yet been accepted. This records an immutable staff-actor
+lifecycle event and opens the existing
+pending correspondence review; it does not create ancestor edges or link other replies. A case
+link or review committed while staff makes the choice returns `copyright_email_thread_changed`
+before the association or event is written. The reviewer then uses the normal correspondence
+classification. The event is staff-only in the case timeline.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.

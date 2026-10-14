@@ -57,6 +57,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
   const [loading, setLoading] = useState(false)
   const {
     admitCorrespondence,
+    associateWithNotice,
     approve,
     reject,
     rejectCorrespondence,
@@ -149,6 +150,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
               onRequestInformation={message => requestInformation(message)}
               onAdmitCorrespondence={() => admitCorrespondence()}
               onRejectCorrespondence={() => rejectCorrespondence()}
+              onAssociateWithNotice={noticeId => associateWithNotice(noticeId)}
             />
             <CopyrightEmailLegalProcessAction
               key={`legal-process-${detail.id}`}

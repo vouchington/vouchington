@@ -14133,6 +14133,66 @@
       "source": "backend/api/v1/copyright-notices/index.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/association-target": {
+      "bodyKind": "content",
+      "hash": "ee1a3707259f67125e49d2de7db8ca939eff1f91371871273cf1af8ba0bf438e",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/association-target",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_notice": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "jurisdiction": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "us_dmca"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "eu_dsa"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "uk"
+                        }
+                      ]
+                    }
+                  },
+                  "received_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "bodyKind": "content",
       "hash": "5c7e8ff40e229ad90a4f47ffaa0db6559c18e62bbe661e0d2f24dc13f43014b4",
@@ -79027,6 +79087,56 @@
       "source": "backend/api/v1/copyright-notices/dsa-statement-replay-route.mts",
       "statusKnowledge": "default"
     },
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
+      "bodyKind": "content",
+      "hash": "e569faec88e3bcd1534e07bdbfe7b66cb0c2a82c1772209dbd74d7d47a00ab4d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-email-intakes/:id/notice-associations",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_email_intake": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "copyright_notice": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "bodyKind": "content",
       "hash": "d81af763a6b5292cd93713b5a050477f1ed3768407c1ce23a21126f1dcd4b59c",
@@ -98499,6 +98609,63 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/association-target",
+      "bodyFile": "responses/web.copyright.email-notice-association-target.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-notice-association-target",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-notice-association-target.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000841/association-target",
+      "responseSchema": {
+        "hash": "00c6c18a071795d87305d6ba91934aa25fbab7569befb8eed235e02e009d8a1a",
+        "key": "web.copyright.email-notice-association-target"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000841"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/association-target"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-email-intakes/:id/notice-associations",
+      "bodyFile": "responses/web.copyright.email-intake-notice-association.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-notice-association",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-email-intakes.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/notice-associations",
+      "requestBody": {
+        "copyright_notice_id": "00000000-0000-7000-8000-000000000841"
+      },
+      "responseSchema": {
+        "hash": "4823a4a0458fced666cdb69e07b79627fd973a3557e6010523502af39ff72084",
+        "key": "web.copyright.email-intake-notice-association"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000840"
+        },
+        "routeTemplate": "/api/v1/copyright-email-intakes/:id/notice-associations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
       },
       "status": 201
     },

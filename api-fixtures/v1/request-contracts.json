@@ -2998,6 +2998,23 @@
       "required": ["copyright_notice"],
       "type": "object"
     },
+    "GET:/api/v1/copyright-notices/:id/association-target": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_notice": {
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "jurisdiction": { "type": "string", "enum": ["us_dmca", "eu_dsa", "uk"] },
+            "received_at": { "type": "string" }
+          },
+          "required": ["id", "jurisdiction", "received_at"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_notice"],
+      "type": "object"
+    },
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
       "additionalProperties": false,
       "properties": {
@@ -9221,6 +9238,25 @@
         }
       },
       "required": ["copyright_notice", "is_duplicate"],
+      "type": "object"
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_email_intake": {
+          "additionalProperties": false,
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "type": "object"
+        },
+        "copyright_notice": {
+          "additionalProperties": false,
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_email_intake", "copyright_notice"],
       "type": "object"
     },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
@@ -40708,6 +40744,13 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/association-target": {
+      "path": {
+        "properties": { "id": { "type": "string", "format": "uuid" } },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "path": {
         "properties": {
@@ -46170,6 +46213,21 @@
             "type": "string"
           }
         },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "copyright_notice_id": { "type": "string", "format": "uuid" }
+        },
+        "required": ["copyright_notice_id"],
+        "type": "object"
+      },
+      "path": {
+        "properties": { "id": { "type": "string" } },
         "required": ["id"],
         "type": "object"
       }

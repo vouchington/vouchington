@@ -26073,6 +26073,69 @@
         },
         {
           "tool": {
+            "name": "associate_copyright_email_intake_with_notice",
+            "title": "Associate copyright email intake with notice",
+            "description": "Associate one unresolved copyright email intake with an existing notice.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "copyright_notice_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["intake_id", "copyright_notice_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_email_intake": {
+                  "$ref": "#/$defs/S1"
+                },
+                "copyright_notice": {
+                  "$ref": "#/$defs/S1"
+                }
+              },
+              "required": ["copyright_email_intake", "copyright_notice"],
+              "type": "object",
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/notice-associations"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "replay_copyright_email_intake_reply",
             "title": "Replay copyright email intake reply",
             "description": "Record the staff copyright decision replay copyright email intake reply.",

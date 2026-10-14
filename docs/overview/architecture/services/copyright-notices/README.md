@@ -59,9 +59,13 @@ including an ancestor that arrives later. A later duplicate never redirects an e
 new edges from a token with multiple Message-ID claimants wait for manual review. Thread reads
 join only UUIDs. Staff review paths are computed at read time, with an existing thread match taking
 precedence over a duplicate or conflicting-ancestor reason. A matched inbound reply receives an
-immutable pending-review record and remains attached
-to the original MIME evidence and still receives the advisory extraction/recommendation. Staff must
-classify and admit it through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
+immutable pending-review record and remains attached to the original case and MIME evidence. It
+still receives the advisory extraction and recommendation. An unlinked intake can instead be
+associated to one existing notice by
+staff; the intake row is locked before the notice, the decision is reread under those locks, and
+the single link and staff-actor lifecycle event commit together. This opens the same pending
+correspondence review without adding ancestry edges or cascading to other replies. Staff must
+classify and admit a reply through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
 restriction, deadline, or outbound delivery. An accepted statutory counter-notice produces a
 case-scoped private forwarding correspondence containing the canonical declarations, consents,
 contact details, signature, and exact target IDs and URLs; those private details never enter the
