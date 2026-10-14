@@ -4900,6 +4900,8 @@ rules:
           reason: 'replaced by #2512'
         - object: 'constraint:oauth_authorizations.oauth_authorizations_github_user_id_fkey'
           reason: 'replaced by #2512'
+        - object: 'constraint:oauth_authorizations.oauth_authorizations_microsoft_user_id_fkey'
+          reason: 'replaced by #2512'
         - object: 'constraint:oauth_authorizations.oauth_authorizations_x_user_id_fkey'
           reason: 'replaced by #2512'
         - object: 'constraint:openai_background_responses.openai_background_responses_pkey'
