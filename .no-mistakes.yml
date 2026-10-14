@@ -4204,13 +4204,13 @@ rules:
         - job: '.github/workflows/checks-static.yml#static-cloudflare'
           maxMinutes: 11
         # A standalone Playwright run plans shards and produces one shared web build before shards
-        # start: setup (5m), shard plan (1m), and the bounded 6m web build sum 12m plus 1m headroom.
+        # start: setup (5m), shard plan (1m), and the bounded 9m web build sum 15m plus 1m headroom.
         - job: '.github/workflows/tests-playwright.yml#shards'
-          maxMinutes: 13
+          maxMinutes: 16
         # A standalone web-integration run prepares its matrix and shared web build before shards
-        # start: setup (5m) and the bounded 6m web build sum 11m plus 2m for the unbounded steps.
+        # start: setup (5m) and the bounded 9m web build sum 14m plus 2m for the unbounded steps.
         - job: '.github/workflows/tests-web-integration.yml#prep'
-          maxMinutes: 13
+          maxMinutes: 16
         # setup-node-pnpm (5m) plus the strictly serial sweep engine (20m) sum 25m; cap adds
         # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
@@ -4262,10 +4262,10 @@ rules:
         # provisioning headroom after the new coverage-copy deadline.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
           maxMinutes: 14
-        # Fail-safe for backend/browser setup plus the bounded 6m web build before the sharded browser runtime begins.
+        # Fail-safe for backend/browser setup plus the bounded 9m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
           maxMinutes: 23
-        # Fail-safe for backend/browser setup plus the bounded 6m web build before credentialed browser setup and execution begin.
+        # Fail-safe for backend/browser setup plus the bounded 9m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
           maxMinutes: 13
         # Healthy maximum was 78 seconds across 81 GitHub-hosted successes in #2260.
