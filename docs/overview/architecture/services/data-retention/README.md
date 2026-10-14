@@ -84,27 +84,54 @@ be a positive integer; an uncapped run is a type error and `Infinity` is rejecte
 `runDataRetentionCleanup()` a per-cleanup option may override the run's `batchSize` or
 `maxBatches`. Bounds are inclusive at the
 lower edge. OAuth authorization expiry is inclusive at `now`; Bluesky expiry is
-strictly before `now`. Without an injected `now`, OAuth uses PostgreSQL `CURRENT_TIMESTAMP` for
-each batch, topic-import attempt cleanup uses the PostgreSQL clock for each batch, Bluesky
+strictly before `now`. Without an injected `now`, other OAuth cleanups use PostgreSQL
+`CURRENT_TIMESTAMP` for each batch, while authorization-server artifact cleanup captures one
+JavaScript cutoff per run. Topic-import attempt cleanup uses the PostgreSQL clock for each batch, Bluesky
 completion cleanup creates a JavaScript time for each batch, and abandoned Bluesky sessions
 capture one JavaScript time per cleanup run.
 
 The `data-retention-config` DynamicConfig namespace sets the scheduled run's limits.
-`batch_size` (default 500, hard maximum 5,000) is the rows one cleanup deletes per batch, and
-`max_batches_per_run` (default 200, hard maximum 2,000) is the batches each cleanup may run per
-daily job. A missing, non-integer, non-positive, or above-maximum stored value falls back to the
-default, so a bad edit cannot raise a bound past its maximum. At the defaults one cleanup deletes at
-most 100,000 rows per run and the run issues at most 11 x 200 batches. A cleanup that hits its cap
-reports `hasMore: true`; its eligible rows stay in place, so the next daily run resumes without a
-cursor. Topic-import attempts keep their own 25-row batch because each retained response may be
-4 MiB, and the shared `batch_size` can only lower it.
+`batch_size` bounds rows deleted per batch, and `max_batches_per_run` bounds the batches each
+cleanup may run per daily job. Missing, non-integer, non-positive, or above-maximum stored values
+fall back to defaults, so a bad edit cannot raise a bound past its hard maximum. A cleanup that hits
+its cap reports `hasMore: true`; eligible rows stay in place for a later run. Topic-import attempts
+keep a separately configured smaller batch because retained responses can be large, and the shared
+`batch_size` can only lower it.
+
+Retained relation, media-binding, and root-identity phases use the configured batch size clamped
+to their existing per-statement page ceiling. Lowering the run limit lowers these pages; raising it
+beyond that ceiling does not widen a retained-identity statement.
 
 Cleanups whose batch delete returns a row count share `runBoundedBatches()`: it validates
 `batchSize` and the required `maxBatches`, keeps deleting while each batch is full, and reports
 `hasMore` when the last batch was full, including when `maxBatches` stopped the run. Orphaned OAuth
 account cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's
 batch returns its own `hasMore`, so neither uses it; both validate `maxBatches` with
-`assertPositiveInteger()`.
+`assertPositiveInteger()`. The orphaned-account sweep rotates its first provider by UTC day, so a
+capped daily run can reach later providers despite an earlier provider's backlog. OAuth
+authorization-server cleanup freezes its default expiry cutoff once per run and shares one
+`batchSize * maxBatches` row budget across its artifact phases, first reserving an initial share
+for each phase, then redistributing unused shares in the same child-first order. At most
+`maxBatches` physical transactions run; each spends no more than `batchSize` rows across phases,
+and every delete statement remains bounded by that page size. Token children are eligible
+when their own expiry or their family's expiry falls in the cleanup window. Every deleted child
+counts against the run budget. The family phase drains eligible access children, then refresh
+children, then empty families; own-expired refresh tokens use any allowance left after
+those steps, even when an expired family was locked or still has children. Families are removed only after their access and refresh tokens are gone, so a large
+family drains across runs without uncounted cascading deletes. Each bounded physical-row batch
+commits independently, releasing its locks before the next batch while preserving the shared run
+allowance. Family-expiry and child-family indexes select eligible-family children
+separately from independently expired tokens. A global family-child page and an own-expiry page
+bound predecessor checks and token locks; the final remaining-work probe reads the writer after the
+cleanup transactions commit. The full refresh-token expiry index also covers
+consumed and revoked tokens, which remain eligible for independent expiry cleanup. A refresh
+replacement with a surviving predecessor is retained until the predecessor can be removed,
+avoiding foreign-key SET NULL waits on skipped locks.
+Refresh-token pages order by family generation within the bounded candidate page, so a
+replacement whose UUID sorts before its predecessor cannot repeatedly hide that chain root.
+Cleanup locks at most that page's refresh rows, then uses a fresh statement to delete only
+predecessor-free roots and their locked successors. One page drains a chain prefix without
+re-reading the shrinking page after each token; a skipped predecessor retains its descendants.
 
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes

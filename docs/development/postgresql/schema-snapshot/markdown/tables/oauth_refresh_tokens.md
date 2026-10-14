@@ -41,7 +41,7 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
-- `idx_oauth_refresh_tokens__expiry`: `CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id) WHERE ((consumed_at IS NULL) AND (revoked_at IS NULL))`
+- `idx_oauth_refresh_tokens__expiry`: `CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, family_id, generation, id)`
 - `idx_oauth_refresh_tokens__family`: `CREATE INDEX idx_oauth_refresh_tokens__family ON public.oauth_refresh_tokens USING btree (family_id, id)`
 - `idx_oauth_refresh_tokens__replacement`: `CREATE INDEX idx_oauth_refresh_tokens__replacement ON public.oauth_refresh_tokens USING btree (replaced_by_token_id) WHERE (replaced_by_token_id IS NOT NULL)`
 - `oauth_refresh_tokens_family_id_generation_key`: `CREATE UNIQUE INDEX oauth_refresh_tokens_family_id_generation_key ON public.oauth_refresh_tokens USING btree (family_id, generation)`
