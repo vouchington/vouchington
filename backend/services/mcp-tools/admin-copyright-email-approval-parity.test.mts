@@ -14,10 +14,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import {
-  createParsedCopyrightEmailIntake,
-  createUnparsedCopyrightEmailIntake,
-} from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import {
   createCopyrightNoticeForManualAssociation,
   readCopyrightEmailManualAssociationEvent,

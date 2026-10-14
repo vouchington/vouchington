@@ -78,17 +78,25 @@ async function applyDesiredDomains(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
 ): Promise<SyncBlacklistSourceResult> {
-  await prepareDomainDiff(query, sourceId)
+  await prepareDomainDiff(query, sourceId, sourceType)
   return applyPreparedDomainDiff(query, sourceId, sourceType)
 }
 async function prepareDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
 ): Promise<void> {
   await query(
     `/* syncDomainsWithDatabase */ SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
     [sourceId],
   )
+  // A source reclassified during download must not publicly introduce its email-only domains.
+  const { rows } = await query<{ type: 'url' | 'email' }>(
+    `/* syncDomainsWithDatabase:sourceType */ SELECT type FROM domain_blocklist_sources WHERE id = $1 FOR UPDATE`,
+    [sourceId],
+  )
+  if (rows[0]?.type !== sourceType)
+    throw new Error('Domain blacklist source type changed during sync')
   await materializeDomainDiff(query, sourceId)
 }
 async function materializeDomainDiff(
@@ -186,11 +194,7 @@ async function persistDomainDiff(
   )
 }
 async function dropSyncTempTables(client: PoolClient): Promise<void> {
-  await client.query(`/* syncDomainsWithDatabase */
-    DROP TABLE IF EXISTS
-      ${RAW_DOMAINS_TABLE},
-      ${NEW_DOMAINS_TABLE},
-      ${ADDED_DOMAINS_TABLE},
-      ${REMOVED_DOMAINS_TABLE}
-  `)
+  await client.query(`/* syncDomainsWithDatabase */ DROP TABLE IF EXISTS
+    ${RAW_DOMAINS_TABLE}, ${NEW_DOMAINS_TABLE},
+    ${ADDED_DOMAINS_TABLE}, ${REMOVED_DOMAINS_TABLE}`)
 }

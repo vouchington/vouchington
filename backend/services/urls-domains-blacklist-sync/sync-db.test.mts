@@ -88,6 +88,54 @@ describe('sync-db', () => {
     expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
   })
 
+  it('rejects a downloaded URL feed if its source becomes email-only before the diff', async () => {
+    const suffix = randomSourceSuffix()
+    const name = `sync-db-reclassified-${suffix}`
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name,
+      url: 'https://example.com/reclassified-blacklist.txt',
+    })
+    const domain = `private-${suffix}.example.com`
+    let releaseBody!: () => void
+    const bodyReleased = new Promise<void>(resolve => {
+      releaseBody = resolve
+    })
+    let bodyRequested!: () => void
+    const requested = new Promise<void>(resolve => {
+      bodyRequested = resolve
+    })
+    const body = new ReadableStream<Uint8Array>(
+      {
+        async pull(controller) {
+          bodyRequested()
+          await bodyReleased
+          controller.enqueue(new TextEncoder().encode(`${domain}\n`))
+          controller.close()
+        },
+      },
+      { highWaterMark: 0 },
+    )
+
+    const completion = syncDomainsWithDatabase(sourceId, new Response(body), 'url').then(
+      () => ({ status: 'completed' as const }),
+      err => ({ status: 'rejected' as const, error: err }),
+    )
+    await requested
+    await createTestBlacklistSource({
+      type: 'email',
+      name,
+      url: 'https://example.com/reclassified-blacklist.txt',
+    })
+    releaseBody()
+
+    await expect(completion).resolves.toMatchObject({
+      status: 'rejected',
+      error: { message: 'Domain blacklist source type changed during sync' },
+    })
+    expect(await listBlacklistDomainsBySource(sourceId)).toEqual([])
+  })
+
   it('evicts cached hostname policy after feed adds and removes a block', async () => {
     const suffix = crypto.randomUUID()
     const domain = `sync-cache-${suffix}.example.com`

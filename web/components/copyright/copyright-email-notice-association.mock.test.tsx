@@ -68,4 +68,16 @@ describe('manual copyright email notice association', () => {
       )
     })
   })
+
+  it('keeps initial-case approval separate from manual notice association', async () => {
+    intakesClient.getCopyrightEmailIntake.mockResolvedValue({
+      copyright_email_intake: { ...makeCopyrightEmailIntake(), review_path: 'initial' },
+    })
+    render(<CopyrightEmailReview data={makeCopyrightEmailQueuePage()} />)
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    await screen.findByRole('heading', { name: 'Staff-private evidence' })
+
+    expect(screen.queryByLabelText('Find existing copyright notice')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve structured intake' })).toBeInTheDocument()
+  })
 })

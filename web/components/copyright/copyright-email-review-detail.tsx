@@ -174,12 +174,15 @@ export function CopyrightEmailReviewDetail({
           </p>
         )}
       </div>
-      {detail.linked_notice === null && (
-        <CopyrightEmailNoticeAssociation
-          loading={loading}
-          onAssociateWithNotice={onAssociateWithNotice}
-        />
-      )}
+      {detail.linked_notice === null &&
+        (detail.review_path === 'unresolved_thread' ||
+          detail.review_path === 'duplicate_message_id' ||
+          detail.review_path === 'ancestor_notice_conflict') && (
+          <CopyrightEmailNoticeAssociation
+            loading={loading}
+            onAssociateWithNotice={onAssociateWithNotice}
+          />
+        )}
     </section>
   )
 }
