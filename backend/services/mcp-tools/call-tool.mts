@@ -7,6 +7,7 @@ import {
   INVALID_INPUT,
   NOT_FOUND,
   CONTRIBUTION_ADMISSION_IN_PROGRESS,
+  COPYRIGHT_EMAIL_THREAD_CHANGED,
   CONTRIBUTION_QUOTA_EXCEEDED,
   IDEMPOTENCY_KEY_REUSED,
 } from '@modules/on-error/error-codes'
@@ -88,6 +89,7 @@ export async function callMcpTool(
         CONTRIBUTION_ADMISSION_IN_PROGRESS,
         CONTRIBUTION_QUOTA_EXCEEDED,
         IDEMPOTENCY_KEY_REUSED,
+        COPYRIGHT_EMAIL_THREAD_CHANGED,
       ]
       const admissionCode =
         typeof err['code'] === 'string' && admissionCodes.includes(err['code']) ? err['code'] : null

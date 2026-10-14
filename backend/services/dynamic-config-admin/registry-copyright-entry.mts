@@ -32,6 +32,13 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       max_value: 3650,
       integer: true,
     },
+    emailThreadGraphMaxRows: {
+      description:
+        'Maximum total email intakes and ancestor edges inspected when a staff approval links waiting replies. A larger graph still opens the notice and leaves replies for staff review.',
+      min_value: 1,
+      max_value: 1000,
+      integer: true,
+    },
     staydownMatching: {
       description:
         'Hash media a moderator confirmed as infringing and send later uploads of the same or a near-identical image to staff review. Never blocks, hides or delays an upload. Off until the owner decides Voucha is an online content-sharing service provider; read the copyright runbook before enabling.',

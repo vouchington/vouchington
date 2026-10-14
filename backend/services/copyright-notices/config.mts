@@ -12,6 +12,7 @@ export const copyrightConfig = new DynamicConfig({
     reviewTargetMinutes: 'number',
     evidenceRetentionDeletion: 'boolean',
     evidenceRetentionDays: 'number',
+    emailThreadGraphMaxRows: 'number',
     staydownMatching: 'boolean',
     trustedFlaggerPriority: 'boolean',
     dsaTransparencyReports: 'boolean',
@@ -31,6 +32,7 @@ export const copyrightConfig = new DynamicConfig({
     // 0 means unset: nothing is deleted until the owner approves a retention period, even when the
     // switch is on.
     evidenceRetentionDays: 0,
+    emailThreadGraphMaxRows: 1000,
     staydownMatching: false,
     trustedFlaggerPriority: false,
     dsaTransparencyReports: false,
@@ -50,6 +52,13 @@ export type AutomaticWithholdingThresholds = {
   minAccountAgeDays: number
   claimantDailyCap: number
   posterDailyCap: number
+}
+
+/** Total intake and ancestor-edge rows a staff promotion may inspect for automatic threading. */
+export async function getCopyrightEmailThreadGraphMaxRows(): Promise<number> {
+  await copyrightConfig.waitForInitialization()
+  const value = copyrightConfig.getFields().emailThreadGraphMaxRows
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1000
 }
 
 /**

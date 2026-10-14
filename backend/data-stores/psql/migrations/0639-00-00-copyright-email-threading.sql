@@ -48,8 +48,8 @@ ALTER TABLE copyright_notice_email_message_ancestors
   ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_email_message_ancestors
   VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor;
-CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor
-  ON copyright_notice_email_message_ancestors (ancestor_message_intake_id);
+CREATE INDEX idx_copyright_email_message_ancestors__ancestor_reply
+  ON copyright_notice_email_message_ancestors (ancestor_message_intake_id, reply_message_intake_id);
 CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_message_ancestors
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();

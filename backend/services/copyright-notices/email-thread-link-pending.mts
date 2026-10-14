@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import { copyrightEmailReferencedTokenIsAmbiguousSql } from './email-thread-review-path.mts'
 
 /**
@@ -8,42 +7,13 @@ import { copyrightEmailReferencedTokenIsAmbiguousSql } from './email-thread-revi
  * on this notice is left unlinked, so the first case to arrive cannot claim it.
  */
 export async function linkPendingCopyrightEmailRepliesInTransaction(
-  input: { initialIntakeId: string; noticeId: string },
+  input: { initialIntakeId: string; noticeId: string; descendantIntakeIds: readonly string[] },
   transaction: TransactionQuery,
 ): Promise<void> {
-  const { rows: graphTokens } = await transaction<{ lookup_digest: string }>(sql`
-    /* lockPendingCopyrightEmailReplies:tokens */
-    WITH RECURSIVE descendants(intake_id) AS (
-      SELECT edge.reply_message_intake_id
-      FROM copyright_notice_email_message_ancestors edge
-      WHERE edge.ancestor_message_intake_id = ${input.initialIntakeId}
-      UNION
-      SELECT edge.reply_message_intake_id
-      FROM descendants parent
-      JOIN copyright_notice_email_message_ancestors edge
-        ON edge.ancestor_message_intake_id = parent.intake_id
-    )
-    SELECT DISTINCT token.lookup_digest
-    FROM copyright_notice_email_thread_references reference
-    JOIN copyright_notice_email_thread_tokens token ON token.id = reference.token_id
-    WHERE reference.copyright_notice_email_intake_id = ${input.initialIntakeId}
-       OR reference.copyright_notice_email_intake_id IN (SELECT intake_id FROM descendants)
-    ORDER BY token.lookup_digest
-  `)
-  await lockCopyrightEmailThreadTokens(
-    transaction,
-    graphTokens.map(row => row.lookup_digest),
-  )
+  if (input.descendantIntakeIds.length === 0) return
   const linkQuery = sql`/* linkPendingCopyrightEmailRepliesInTransaction:links */
     WITH RECURSIVE descendants(intake_id) AS (
-      SELECT edge.reply_message_intake_id
-      FROM copyright_notice_email_message_ancestors edge
-      WHERE edge.ancestor_message_intake_id = ${input.initialIntakeId}
-      UNION
-      SELECT edge.reply_message_intake_id
-      FROM descendants parent
-      JOIN copyright_notice_email_message_ancestors edge
-        ON edge.ancestor_message_intake_id = parent.intake_id
+      SELECT unnest(${[...input.descendantIntakeIds]}::uuid[])
     ),
     blocked(intake_id) AS (
       SELECT descendant.intake_id
@@ -92,6 +62,7 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
     SELECT link.copyright_notice_email_intake_id, link.copyright_notice_id, 'pending'
     FROM copyright_notice_email_intake_notice_links link
     WHERE link.copyright_notice_id = ${input.noticeId} AND link.link_kind = 'thread'
+      AND link.copyright_notice_email_intake_id = ANY(${[...input.descendantIntakeIds]}::uuid[])
     ORDER BY link.copyright_notice_email_intake_id
     ON CONFLICT (copyright_notice_email_intake_id, action) DO NOTHING
   `)

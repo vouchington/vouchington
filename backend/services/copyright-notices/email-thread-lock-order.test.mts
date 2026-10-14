@@ -1,18 +1,21 @@
-import { beginTransaction } from '@voucha/test-helpers'
-import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
-import { lockTestCopyrightEmailIntakeForPromotion } from '@voucha/test-helpers/copyright-thread-lock-order'
-import { describe, expect, it } from 'vitest'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
-  insertCopyrightEmailThreadReferences,
-  lockCopyrightEmailThreadTokens,
-} from './email-thread-ancestors.mts'
+  copyrightEmailMessageId,
+  copyrightEmailPromotionInput,
+  recordThreadedCopyrightEmail,
+} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { describe, expect, it } from 'vitest'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
+import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 
 describe('copyright email thread lock order', () => {
-  it('allows token-first ingestion to insert its FK while promotion waits on the same token', async () => {
-    const intake = await createUnparsedCopyrightEmailIntake()
+  it('promotes while a separate ingestion owns the token lock', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const messageId = copyrightEmailMessageId()
+    const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
     const rows = buildCopyrightEmailThreadReferenceRows({
-      messageId: `<${crypto.randomUUID()}@example.test>`,
+      messageId,
       inReplyTo: [],
       references: [],
     })
@@ -20,14 +23,10 @@ describe('copyright email thread lock order', () => {
 
     await using ingestion = await beginTransaction()
     await lockCopyrightEmailThreadTokens(ingestion, [digest])
-    await using promotion = await beginTransaction()
-    await lockTestCopyrightEmailIntakeForPromotion(intake.id, promotion)
-    const promotionWaiting = lockCopyrightEmailThreadTokens(promotion, [digest])
-
-    const tokenIds = await insertCopyrightEmailThreadReferences(ingestion, intake.id, rows)
-    expect(tokenIds.has(digest)).toBe(true)
+    const promoted = await promoteCopyrightEmailIntake(
+      await copyrightEmailPromotionInput(moderator, root.intakeId),
+    )
+    expect(promoted.noticeId).toEqual(expect.any(String))
     await ingestion.commit()
-    await promotionWaiting
-    await promotion.rollback()
   })
 })

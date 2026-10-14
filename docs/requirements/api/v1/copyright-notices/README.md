@@ -104,6 +104,10 @@ immutable `(received_at, id)`, oldest first, so every email awaiting staff revie
 reachable after the first page. That includes an email whose parse was never recorded: its
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
+An email approval whose ancestor intake or edge set changes while the moderator acts returns `409`
+with code `copyright_email_thread_changed` through REST and MCP. It writes no notice or decision;
+staff can refresh the intake and retry. A graph over the configured total-row budget still admits
+the initial notice but leaves its replies on this staff queue for manual review.
 
 Each queue item carries `waiting_reason` and `waiting_since`. An unreviewed intake is
 `awaiting_review` and waits since `received_at`. A declined intake whose reply failed or bounced

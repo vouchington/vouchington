@@ -378,6 +378,13 @@ its original MIME evidence, still receives the same advisory structured extracti
 for moderator classification; it cannot trigger a restriction or outbound message automatically. An approval normally names
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
 explicit manual-fallback reason while reviewing the preserved original.
+Staff promotion reads the descendant intake and immutable ancestor-edge graph within the configured
+total-row budget, locks those intakes in ID order, then reads the graph again. A changed intake or
+edge set returns a retryable-by-staff `copyright_email_thread_changed` conflict before recording a
+notice, review, link, or delivery intent. The service does not retry automatically. If the graph
+exceeds the budget, approval still creates the initial notice and leaves every reply unlinked for
+the existing staff email queue; it records the notice ID and observed row count in the operational
+log, without storing a new thread status. No subset of replies is linked automatically.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.
