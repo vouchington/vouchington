@@ -140,18 +140,61 @@ describe('owned embedding cleanup failures', () => {
     await owner.owned.ready()
     const id = randomUUID()
     const admitted = owner.owned.waitFor(id, 'added')
-    const completion = owner.owned.addAndWait('pending', {}, { jobId: id, waitTimeout: 1000 })
-    void completion.catch(() => {})
+    const completion = owner.owned.addAndWait('pending', {}, { jobId: id, waitTimeout: 30_000 })
+    let settledBeforeClose = false
+    const markSettled = () => {
+      settledBeforeClose = true
+    }
+    void completion.then(markSettled, markSettled)
     // The real stream witnesses admission; no worker exists to complete this native wait.
     await admitted
+    expect(settledBeforeClose).toBe(false)
     const result = await owner.close()
-    expect(result.status).toBe('rejected')
-    await expect(completion).rejects.toThrow('Queue is closing')
+    if (result.status !== 'rejected') throw new Error('Expected native completion cleanup failure')
+    const [settledCompletion] = await Promise.allSettled([completion])
+    if (settledCompletion?.status !== 'rejected')
+      throw new Error('Expected pending SDK completion to reject during cleanup')
+    expect(result.reason).toBeInstanceOf(AggregateError)
+    expect(result.reason.errors).toContain(settledCompletion.reason)
     expect(owner.safelyDrained()).toBe(true)
     let verification: Queue | undefined
     onTestFinished(() => verification?.close())
     verification = new Queue(owner.owned.queue.name, owner.owned.options)
     expect(await verification.getJob(id)).toBeNull()
     await verification.close()
+  }, 5000)
+
+  it('begins physical queue closure before draining an admitted SDK add', async () => {
+    const owner = await ownQueue('held_add')
+    await owner.owned.ready()
+    const added = Promise.withResolvers<void>()
+    const releaseAdd = Promise.withResolvers<void>()
+    const physicalClose = Promise.withResolvers<void>()
+    onTestFinished(() => releaseAdd.resolve())
+    const actualAdd = owner.owned.queue.add
+    vi.spyOn(owner.owned.queue, 'add').mockImplementation(async (...args) => {
+      const job = await actualAdd.call(owner.owned.queue, ...args)
+      added.resolve()
+      await releaseAdd.promise
+      return job
+    })
+    const actualClose = owner.owned.queue.close
+    vi.spyOn(owner.owned.queue, 'close').mockImplementation(async () => {
+      const closing = actualClose.call(owner.owned.queue)
+      physicalClose.resolve()
+      await closing
+    })
+    const completion = owner.owned.addAndWait('held', {}, { waitTimeout: 30_000 })
+    void completion.catch(() => {})
+    try {
+      await added.promise
+      const shutdown = owner.close()
+      await physicalClose.promise
+      releaseAdd.resolve()
+      expect((await shutdown).status).toBe('rejected')
+      await expect(completion).rejects.toThrow('Queue is closing')
+    } finally {
+      releaseAdd.resolve()
+    }
   }, 5000)
 })
