@@ -26,6 +26,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   rss_feed_item_guids: 25_000,
   rss_feed_item_sources: 65_000,
   rss_feed_item_categories: 5_000,
+  rss_category_identities: 201, // 200 category values plus seedTopHashtags' seedhashtag.
   relation__user__follow__user: 11_000,
   relation__user__mute__user: 2_500,
   relation__user__block__user: 2_500,

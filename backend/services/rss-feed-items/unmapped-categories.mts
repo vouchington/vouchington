@@ -111,6 +111,7 @@ export async function rejectRssFeedItemCategory(
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
+    // ast-grep-ignore: no-three-sequential-awaits -- FK target precedes rejection; audit needs its rowCount
     await registerRssCategoryIdentities([normalized], query)
     const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
     INSERT INTO rss_feed_item_category_rejections (category_identity_id, created_by_id)

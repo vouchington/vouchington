@@ -391,6 +391,7 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__lingua_rs_pending
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_category_identities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   category_text TEXT NOT NULL UNIQUE,
   CONSTRAINT chk_rss_category_identities__normalized_text
     CHECK (category_text <> '' AND category_text = LOWER(TRIM(category_text)))
@@ -398,6 +399,7 @@ CREATE TABLE IF NOT EXISTS rss_category_identities (
 
 COMMENT ON TABLE rss_category_identities IS 'Canonical normalized RSS category identities shared across feeds and items.';
 COMMENT ON COLUMN rss_category_identities.id IS 'UUIDv7 relational identity of the normalized external category value.';
+COMMENT ON COLUMN rss_category_identities.created_at IS 'Creation time derived from the UUIDv7 identity.';
 COMMENT ON COLUMN rss_category_identities.category_text IS 'Trimmed, lowercased category value used only to resolve external RSS and staff input.';
 
 -------------------------------------------------------------------------------
