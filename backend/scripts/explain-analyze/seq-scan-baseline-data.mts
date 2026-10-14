@@ -1,4 +1,4 @@
-// Starting baseline from CI run 38557423714 (2026-10-14T11-42-47-022Z).
+// Baseline from paired CI run 38564850912 (2026-10-14T12-44-17-241Z) with five-relation seed VACUUM.
 // These fingerprints appeared in both captures; remove each entry when its scan is fixed.
 export const BASELINE_FINGERPRINTS = [
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
@@ -25,15 +25,12 @@ export const BASELINE_FINGERPRINTS = [
   'post-search-hybrid-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-new|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
   'post-search-semantic-relevance|0|buildPostSearchQuery:force_generic_plan|force_generic_plan:posts',
-  'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:relation__post__category__topic',
   'recommended-topics|0|buildRecommendationQuery:force_custom_plan|force_custom_plan:topics',
   'rss-feed-item-feed-heavy-all|0|getRssFeedItemFeedIds:heavy-all:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-follow-topics|0|getRssFeedItemFeedIds:heavy-follow-topics:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-follows-after|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-follows|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-story-skew|0|getRssFeedItemFeedIds:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'rss-feed-item-feed-related-posts|0|getRssFeedItemFeedIds:force_custom_plan|force_custom_plan:rss_feeds',
-  'rss-feed-item-feed-related-posts|0|getRssFeedItemFeedIds:force_generic_plan|force_generic_plan:rss_feeds',
   'rss-feed-search-all-enable-states|0|searchRssFeeds:force_custom_plan|force_custom_plan:rss_feeds',
   'rss-feed-search-all-enable-states|0|searchRssFeeds:force_custom_plan|force_custom_plan:topics',
   'rss-feed-search-all-enable-states|0|searchRssFeeds:force_generic_plan|force_generic_plan:rss_feeds',
@@ -133,13 +130,11 @@ export const BASELINE_FINGERPRINTS = [
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feeds',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:topics',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_generic_plan|force_generic_plan:rss_feed_item_categories',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_generic_plan|force_generic_plan:topic_aliases',
   'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_generic_plan|force_generic_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  'topic-search-text|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'trending-rss-feeds|0|getTrendingRssFeeds:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
   'trending-topics|0|getTrendingTopics:force_custom_plan|force_custom_plan:topics',
   'trending-topics|0|getTrendingTopics:force_generic_plan|force_generic_plan:topics',
