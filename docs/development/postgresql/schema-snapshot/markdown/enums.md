@@ -541,6 +541,7 @@
 - `agent_correspondence_approved`
 - `email_correspondence_admitted`
 - `email_correspondence_rejected`
+- `email_intake_manually_associated`
 - `provisional_restriction_imposed`
 - `mandatory_human_review_completed`
 - `restriction_lifted_by_administrator`
