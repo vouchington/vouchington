@@ -32,6 +32,7 @@ export async function processPreparedArticles(
         const existingHash = contentHash(existing.title, existing.markdown)
 
         if (fileHash === existingHash) {
+          // Skip against the batch-start snapshot (or an earlier write in this batch); the next sync restores concurrent edits from the repository.
           item.action = 'skipped'
           if (topics?.length) {
             // oxlint-disable-next-line no-await-in-loop -- topic tagging must finish before this file's result is recorded
