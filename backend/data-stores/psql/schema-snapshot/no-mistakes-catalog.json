@@ -934,7 +934,7 @@
       "values": ["notifications_inbox"]
     },
     "oauth_authorization_providers": {
-      "values": ["facebook", "x", "github", "linkedin"]
+      "values": ["facebook", "x", "github", "linkedin", "microsoft"]
     },
     "oauth_authorization_purposes": {
       "values": ["authenticate", "connect"]
@@ -62415,7 +62415,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "access_token_expires_at": {
           "comment": "When the access token expires.",
@@ -62425,17 +62425,27 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "id": {
+          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
+          "nullable": false,
+          "ordinalPosition": 1
         },
         "microsoft_user_data": {
           "comment": "Raw JSONB profile data from Microsoft OAuth.",
@@ -62445,7 +62455,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "microsoft_user_email_address": {
           "comment": "Email address from the Microsoft profile.",
@@ -62455,17 +62465,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "microsoft_user_id": {
-          "comment": "Microsoft's unique user identifier (primary key).",
+          "comment": "Microsoft's unique external user identifier.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "refresh_token_ciphertext": {
           "comment": "Encrypted OAuth 2.0 refresh token ciphertext for renewing access.",
@@ -62475,7 +62485,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "updated_at": {
           "comment": null,
@@ -62485,7 +62495,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -62495,7 +62505,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         }
       },
       "comment": "Microsoft OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.",
@@ -62611,10 +62621,10 @@
           "unique": true,
           "valid": true
         },
-        "microsoft_accounts_pkey": {
+        "microsoft_accounts_microsoft_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX microsoft_accounts_pkey ON public.microsoft_accounts USING btree (microsoft_user_id)",
+          "definition": "CREATE UNIQUE INDEX microsoft_accounts_microsoft_user_id_key ON public.microsoft_accounts USING btree (microsoft_user_id)",
           "immediate": true,
           "keys": [
             {
@@ -62629,6 +62639,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "microsoft_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX microsoft_accounts_pkey ON public.microsoft_accounts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": true,
           "ready": true,
           "unique": true,
@@ -62637,7 +62670,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["microsoft_user_id"]
+        "columns": ["id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -62645,7 +62678,11 @@
           "definition": "CREATE TRIGGER trigger_microsoft_accounts_updated_at BEFORE UPDATE ON public.microsoft_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "microsoft_accounts_microsoft_user_id_key": {
+          "columns": ["microsoft_user_id"]
+        }
+      }
     },
     "migrations": {
       "checkConstraints": {
@@ -71942,11 +71979,11 @@
           "validated": true
         },
         "oauth_authorizations_check3": {
-          "definition": "CHECK ((num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) <= 1))",
+          "definition": "CHECK ((num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1))",
           "validated": true
         },
         "oauth_authorizations_check4": {
-          "definition": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL))))",
+          "definition": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL))))",
           "validated": true
         },
         "oauth_authorizations_check5": {
@@ -71954,7 +71991,7 @@
           "validated": true
         },
         "oauth_authorizations_check6": {
-          "definition": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) = 1))))",
+          "definition": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1))))",
           "validated": true
         },
         "oauth_authorizations_check7": {
@@ -71962,7 +71999,7 @@
           "validated": true
         },
         "oauth_authorizations_provider_check": {
-          "definition": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers])))",
+          "definition": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers, 'microsoft'::oauth_authorization_providers])))",
           "validated": true
         },
         "oauth_authorizations_purpose_check": {
@@ -72021,7 +72058,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "completed_at": {
           "comment": "When a caller first consumed and finalized the durable completion result.",
@@ -72031,7 +72068,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "completion_proof_challenge": {
           "comment": "Native-only base64url SHA-256 challenge for the app-held completion verifier.",
@@ -72051,7 +72088,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "completion_token_ciphertext": {
           "comment": "Authenticated ciphertext of the completion token retained only so a repeated provider callback converges on the same handoff.",
@@ -72081,7 +72118,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "exchange_claim_id": {
           "comment": "Fencing token for one worker exchange attempt; atomic provider-account completion must present the current claim.",
@@ -72091,7 +72128,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "exchange_started_at": {
           "comment": "When the first provider exchange began; current attempt age belongs to the exchange attempt ledger.",
@@ -72101,7 +72138,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "expired_at": {
           "comment": "When the unconsumed authorization deadline was enforced.",
@@ -72111,7 +72148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "expires_at": {
           "comment": "Authorization deadline; cleanup and recovery use this timestamp rather than UUID ordering.",
@@ -72121,7 +72158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "facebook_user_id": {
           "comment": "Facebook account produced by a successful exchange; parent deletion cascades the authorization.",
@@ -72201,7 +72238,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
+        },
+        "microsoft_account_id": {
+          "comment": "Internal Microsoft account row produced by a successful exchange; parent deletion cascades the authorization.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21
         },
         "pkce_verifier_ciphertext": {
           "comment": "Authenticated ciphertext of the server-generated provider PKCE verifier.",
@@ -72251,7 +72298,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "result_device_id": {
           "comment": "Authenticated result device UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.",
@@ -72261,7 +72308,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "result_kind": {
           "comment": "Durable completion outcome: authenticated, MFA required, or connected.",
@@ -72271,7 +72318,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "result_session_id": {
           "comment": "Authenticated result session UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.",
@@ -72281,7 +72328,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "result_user_id": {
           "comment": "Voucha user receiving the completion result; parent deletion cascades the authorization.",
@@ -72291,7 +72338,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "state_hash": {
           "comment": "Purpose-bound HMAC-SHA256 of the provider state; plaintext state is returned once and never persisted.",
@@ -72321,7 +72368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "x_user_id": {
           "comment": "X account produced by a successful exchange; parent deletion cascades the authorization.",
@@ -72334,7 +72381,7 @@
           "ordinalPosition": 18
         }
       },
-      "comment": "Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, and LinkedIn authentication and account connection.",
+      "comment": "Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, LinkedIn, and Microsoft authentication and account connection.",
       "foreignKeys": {
         "oauth_authorizations_facebook_user_id_fkey": {
           "columns": ["facebook_user_id"],
@@ -72366,6 +72413,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "linkedin_accounts",
+          "validated": true
+        },
+        "oauth_authorizations_microsoft_account_id_fkey": {
+          "columns": ["microsoft_account_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "microsoft_accounts",
           "validated": true
         },
         "oauth_authorizations_result_user_id_fkey": {
@@ -72546,6 +72601,29 @@
           ],
           "live": true,
           "predicate": "(linkedin_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorizations__microsoft_account": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorizations__microsoft_account ON public.oauth_authorizations USING btree (microsoft_account_id) WHERE (microsoft_account_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "microsoft_account_id",
+              "descending": false,
+              "expression": "microsoft_account_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(microsoft_account_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -140578,7 +140656,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts,\n    linkedin_account_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {

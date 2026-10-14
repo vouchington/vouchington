@@ -1242,6 +1242,7 @@
 - `x`
 - `github`
 - `linkedin`
+- `microsoft`
 
 ## `oauth_authorization_purposes`
 

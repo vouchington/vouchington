@@ -6,22 +6,24 @@ Microsoft OAuth accounts linked to users. Stores profile data and encrypted OAut
 
 Not partitioned — growth: unbounded.
 
-| Column                         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                              |
-| ------------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
-| `user_id`                      | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.  |
-| `microsoft_user_id`            | `text`                     | no       |                     |          |           |           | Microsoft's unique user identifier (primary key).                    |
-| `microsoft_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Microsoft profile.                            |
-| `microsoft_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Microsoft OAuth.                         |
-| `access_token_ciphertext`      | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 access token ciphertext for Microsoft API calls. |
-| `refresh_token_ciphertext`     | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.    |
-| `access_token_expires_at`      | `timestamp with time zone` | yes      |                     |          |           |           | When the access token expires.                                       |
-| `created_at`                   | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
-| `updated_at`                   | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
+| Column                         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
+| ------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `id`                           | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity used by durable OAuth authorization references. |
+| `user_id`                      | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.      |
+| `microsoft_user_id`            | `text`                     | no       |                              |          |           |           | Microsoft's unique external user identifier.                             |
+| `microsoft_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Microsoft profile.                                |
+| `microsoft_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Microsoft OAuth.                             |
+| `access_token_ciphertext`      | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for Microsoft API calls.     |
+| `refresh_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.        |
+| `access_token_expires_at`      | `timestamp with time zone` | yes      |                              |          |           |           | When the access token expires.                                           |
+| `created_at`                   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                          |
+| `updated_at`                   | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
 
-**Primary key:** `PRIMARY KEY (microsoft_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `microsoft_accounts_microsoft_user_id_key`: `UNIQUE (microsoft_user_id)`
 
 **Check constraints:**
 _none_
@@ -36,7 +38,8 @@ _none_
 - `idx_microsoft_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_microsoft_accounts__orphan_retention_cleanup ON public.microsoft_accounts USING btree (created_at, microsoft_user_id) WHERE (user_id IS NULL)`
 - `idx_microsoft_accounts__token_expires_at`: `CREATE INDEX idx_microsoft_accounts__token_expires_at ON public.microsoft_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_microsoft_accounts__user_id`: `CREATE UNIQUE INDEX idx_microsoft_accounts__user_id ON public.microsoft_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
-- `microsoft_accounts_pkey`: `CREATE UNIQUE INDEX microsoft_accounts_pkey ON public.microsoft_accounts USING btree (microsoft_user_id)`
+- `microsoft_accounts_microsoft_user_id_key`: `CREATE UNIQUE INDEX microsoft_accounts_microsoft_user_id_key ON public.microsoft_accounts USING btree (microsoft_user_id)`
+- `microsoft_accounts_pkey`: `CREATE UNIQUE INDEX microsoft_accounts_pkey ON public.microsoft_accounts USING btree (id)`
 
 **Triggers:**
 
