@@ -8,12 +8,14 @@ import {
 } from '../test-helpers/workflow-fixtures.mts'
 
 // Each caller bounds the whole build-web-targets composite step, so its ceiling must cover every
-// deadline the composite declares on its critical path: the cache restore, the manifest verify, the
-// bounded build, run-bounded's kill grace after a deadline, and a margin for the always() timing
-// summary and upload. The ceiling is that sum rounded up to a whole minute, so raising any one
+// deadline the composite declares on its critical path: the cache restore (its per-segment download
+// deadline plus a fixed allowance for lookup and extraction), the manifest verify, the bounded
+// build, run-bounded's kill grace after each of those two deadlines, and a margin for the
+// always() timing summary and upload, which run before the producer's cache save. The ceiling is that sum rounded up to a whole minute, so raising any one
 // deadline without the callers fails here.
 const BUILD_WEB_TARGETS = './.github/actions/build-web-targets'
 const POST_DEADLINE_MARGIN_SECONDS = 60
+const RESTORE_LOOKUP_EXTRACT_ALLOWANCE_SECONDS = 60
 
 type Deadlines = { restore: number; verify: number; build: number; killGrace: number }
 
@@ -42,7 +44,7 @@ function boundedSeconds(action: string, command: string): number {
 function restoreSeconds(action: string): number {
   const match = /SEGMENT_DOWNLOAD_TIMEOUT_MINS: '([1-9]\d*)'/.exec(action)
   if (!match) throw new TypeError('build-web-targets must bound its cache restore download')
-  return Number(match[1]) * 60
+  return Number(match[1]) * 60 + RESTORE_LOOKUP_EXTRACT_ALLOWANCE_SECONDS
 }
 
 // run-bounded waits for SIGTERM, then for the relayed output pipes, before it returns.
@@ -70,7 +72,7 @@ function expectedMinutes(deadlines: Deadlines): number {
     deadlines.restore +
     deadlines.verify +
     deadlines.build +
-    deadlines.killGrace +
+    2 * deadlines.killGrace +
     POST_DEADLINE_MARGIN_SECONDS
   return Math.ceil(total / 60)
 }
@@ -94,7 +96,7 @@ function readWorkflows(): Record<string, Workflow> {
 }
 
 describe('build-web-targets timeouts', () => {
-  const deadlines: Deadlines = { restore: 60, verify: 30, build: 300, killGrace: 13 }
+  const deadlines: Deadlines = { restore: 120, verify: 30, build: 300, killGrace: 13 }
 
   it('sizes every caller step ceiling from the composite deadlines', () => {
     const callers = callerTimeouts(readWorkflows())
@@ -108,14 +110,16 @@ describe('build-web-targets timeouts', () => {
   })
 
   it('counts pre-build and kill-grace time, not only the build deadline', () => {
-    expect(expectedMinutes(deadlines)).toBe(8)
+    expect(expectedMinutes(deadlines)).toBe(9)
     expect(expectedMinutes({ ...deadlines, restore: 0, verify: 0, killGrace: 0 })).toBe(6)
+    // Both bounded commands can time out serially, so each spends its own kill grace.
+    expect(expectedMinutes({ ...deadlines, verify: 45 })).toBe(10)
   })
 
   it('reports callers whose step ceiling is missing or does not match the deadlines', () => {
     const violations = timeoutViolations(
       [
-        { job: 'a.yml#build', timeoutMinutes: 8 },
+        { job: 'a.yml#build', timeoutMinutes: 9 },
         { job: 'b.yml#test', timeoutMinutes: 6 },
         { job: 'd.yml#test', timeoutMinutes: undefined },
       ],
@@ -124,8 +128,8 @@ describe('build-web-targets timeouts', () => {
 
     const suffix = '(restore, verify, build and kill grace deadlines plus 60s)'
     expect(violations).toEqual([
-      `b.yml#test: timeout-minutes is 6, expected 8 ${suffix}`,
-      `d.yml#test: timeout-minutes is undefined, expected 8 ${suffix}`,
+      `b.yml#test: timeout-minutes is 6, expected 9 ${suffix}`,
+      `d.yml#test: timeout-minutes is undefined, expected 9 ${suffix}`,
     ])
   })
 

@@ -48,8 +48,8 @@ runs:
       id: restore-web-targets
       if: ${{ inputs.shared-build-cache-mode == 'consumer' }}
       continue-on-error: true
-      # The cache action's only download deadline: one minute per segment, so a stalled restore
-      # falls through to the bounded rebuild instead of consuming the caller's step ceiling.
+      # The cache action's only download deadline: one minute per segment. Lookup and extraction sit
+      # outside it, so callers budget a fixed allowance on top (see build-web-targets-timeouts.test.mts).
       env:
         SEGMENT_DOWNLOAD_TIMEOUT_MINS: '1'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -88,20 +88,6 @@ runs:
         # run-bounded kills the build process group; timeout-minutes on this composite step did
         # not (merge-group run 37572766026).
         python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 300 node ci/setup-web-integration.mts
-    - name: Stamp shared web build manifest
-      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
-      shell: bash
-      run: node ci/web-build-cache-manifest.mts write
-    - name: Save shared web build runtime paths
-      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
-      continue-on-error: true
-      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: |
-          web/.next/standalone
-          web/.next/static
-          cloudflare-worker/dist
-        key: ${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     - name: Summarize web build timings
       # Renders via ci/write-web-build-timings-summary.mts rather than a raw `cat` into a JSON
       # fence, for readability (issue #10937). Tolerates a missing timings file silently.
@@ -121,3 +107,17 @@ runs:
         if-no-files-found: warn
         overwrite: true
         retention-days: 1
+    - name: Stamp shared web build manifest
+      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
+      shell: bash
+      run: node ci/web-build-cache-manifest.mts write
+    - name: Save shared web build runtime paths
+      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
+      continue-on-error: true
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          web/.next/standalone
+          web/.next/static
+          cloudflare-worker/dist
+        key: ${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}

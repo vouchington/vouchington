@@ -125,7 +125,7 @@ jobs:
         run: pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web
         timeout-minutes: 2
       - uses: ./.github/actions/build-web-targets
-        timeout-minutes: 8
+        timeout-minutes: 9
         with:
           artifact-suffix: static-web
           shared-build-cache-mode: producer

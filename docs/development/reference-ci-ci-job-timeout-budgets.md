@@ -110,14 +110,18 @@ GitHub-hosted ARM runners; the Next build cache is disabled, so each build is co
 fallback rebuilds match that profile. Observed build timings live in the private docs repository.
 
 The composite bounds each step on its critical path: the cache restore download (the cache action's
-`SEGMENT_DOWNLOAD_TIMEOUT_MINS`), the manifest `verify` (under `run-bounded.py`), and the build. A
-stalled restore or verify therefore falls through to the bounded rebuild instead of consuming the
-caller's step ceiling. Every caller's composite step ceiling is the sum of those three deadlines,
-`run-bounded.py`'s kill grace after a deadline (SIGTERM wait plus output relay join), and one minute
-for the always-run timing summary and upload, rounded up to a whole minute.
-`build-web-targets-timeouts.test.mts` derives that sum from the declared deadlines and holds every
-caller to it, so changing one deadline without the callers fails. The fallback producer jobs keep
-additive budgets around the shorter build.
+per-segment `SEGMENT_DOWNLOAD_TIMEOUT_MINS`, which does not cover lookup or extraction), the
+manifest `verify` (under `run-bounded.py`), and the build (under `run-bounded.py`). A stalled
+restore or verify therefore falls through to the bounded rebuild instead of consuming the caller's
+step ceiling. Every caller's composite step ceiling is the sum of the restore deadline plus a fixed
+lookup and extraction allowance, the verify and build deadlines, `run-bounded.py`'s kill grace
+(SIGTERM wait plus output relay join) once for each of those two commands because both can time out
+in series, and one minute for the always-run timing summary and upload, rounded up to a whole
+minute. The summary and upload run before the producer's cache save, whose pinned action has no
+deadline, so a slow save cannot starve the evidence. `build-web-targets-timeouts.test.mts` derives
+the sum from the declared deadlines and holds every caller to it, so changing one deadline without
+the callers fails. The fallback producer jobs (`shards`, `prep`) keep additive budgets around that
+ceiling.
 
 The backend image build smoke tests validate worker startup, Valkey connectivity, and universal
 heartbeat job processing. The `worker-cpu` smoke test also imports `vurst-ai` from the deployed
