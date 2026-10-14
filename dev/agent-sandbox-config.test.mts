@@ -269,3 +269,15 @@ describe('Codex project rules', () => {
     }
   })
 })
+
+describe('Claude review-skip for pinned search and line-count tools', () => {
+  it('keeps rg and scc and does not review-skip unused rga or tokei', () => {
+    // .mise.toml pins ripgrep and scc. rga and tokei have no repository command,
+    // script, or pin, so a permissions.allow entry cannot name them.
+    const allow = claudeSettings.permissions.allow
+    expect(allow).toContain('Bash(rg *)')
+    expect(allow).toContain('Bash(scc *)')
+    expect(allow).not.toContain('Bash(rga *)')
+    expect(allow).not.toContain('Bash(tokei *)')
+  })
+})

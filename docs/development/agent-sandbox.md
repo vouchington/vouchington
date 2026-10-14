@@ -298,6 +298,9 @@ user's agent config, never through a project exclusion. Review-skip breadth is a
 `git rebase` / `stash` / `cherry-pick` or `gh run` / `api` / `workflow` to "restore" parity; those
 families stay out of both review-skip lists. The only exceptions are the Claude
 [rebase lifecycle](#claude-review-skip-for-the-rebase-lifecycle) rules, which cannot start a rebase.
+Search and line-count review-skip follows the same rule: `.mise.toml` pins `rg` and `scc`, and those
+are the Claude allows. `rga` and `tokei` are not pinned and no repository command invokes them, so
+they are not review-skipped.
 
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) is the ownership and
 narrowness guard. It fails when `.claude/settings.json`, `.codex/config.toml`, or the Cursor and
@@ -305,7 +308,8 @@ Grok config carries a host runtime key (approvals, models, status line, plugins,
 servers, or any Claude `sandbox` key other than `excludedCommands`), when a Claude exclusion names
 anything but a `dev/` script, when a Cursor or Grok sandbox profile or native hook file comes back,
 and on a bare `git`/`gh`/`rtk`/`npx` prefix. It also requires the remaining git/gh prefixes, forbids
-the review-bypass families in `.codex/rules/default.rules`, and parses every Codex allow prefix. See
+the review-bypass families in `.codex/rules/default.rules`, parses every Codex allow prefix, and
+rejects Claude review-skip for `rga` and `tokei` while keeping `rg` and `scc`. See
 [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for the
 full decision criteria on when an escalation is a genuine bypass candidate worth adding.
 

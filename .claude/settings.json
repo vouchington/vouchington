@@ -86,8 +86,6 @@
       "Bash(rg *)",
       "Bash(fd *)",
       "Bash(pnpm exec ast-grep *)",
-      "Bash(rga *)",
-      "Bash(tokei *)",
       "Bash(scc *)",
       "Bash(ls *)",
       "Bash(wc *)",
