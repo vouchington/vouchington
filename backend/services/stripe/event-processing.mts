@@ -10,6 +10,7 @@ export async function getStripeEventById(id: string): Promise<StripeEventRecord 
     sql`/* getStripeEventById */ SELECT `.append(stripeEventColumns()).append(sql`
     FROM stripe_events event
     JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
+    JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
     WHERE event.id = ${id}
   `),
   )
@@ -46,7 +47,9 @@ export async function markStripeEventProcessing(
       RETURNING stripe_event_id, lease_token, dispatched_at, leased_at, lease_expires_at,
         attempt_count, available_at, processed_at, ignored_at, failed_at, last_error_at, last_error_message
     ) SELECT `.append(stripeEventColumns()).append(sql`
-      FROM stripe_events event JOIN acquired work ON work.stripe_event_id = event.id
+      FROM stripe_events event
+      JOIN acquired work ON work.stripe_event_id = event.id
+      JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
     `),
   )
   return rows[0] ? hydrateStripeEventRecord(rows[0] as StripeEventRow) : null

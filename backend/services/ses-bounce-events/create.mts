@@ -51,12 +51,13 @@ export async function createSesBounceEvent(
 
   const { rows } = await write(sql`/* createSesBounceEvent */
     WITH registered_subtype AS (
-      INSERT INTO amazon_ses_bounce_subtypes (id)
-      SELECT ${input.amazon_ses_bounce_subtype_id ?? null}::text AS id
+      INSERT INTO amazon_ses_bounce_subtypes (amazon_ses_bounce_subtype)
+      SELECT ${input.amazon_ses_bounce_subtype_id ?? null}::text AS amazon_ses_bounce_subtype
       WHERE ${input.amazon_ses_bounce_subtype_id ?? null}::text IS NOT NULL
-      ORDER BY id ASC NULLS LAST
-      ON CONFLICT (id) DO NOTHING
-    )
+      ON CONFLICT (amazon_ses_bounce_subtype) DO UPDATE
+        SET amazon_ses_bounce_subtype = EXCLUDED.amazon_ses_bounce_subtype
+      RETURNING id, amazon_ses_bounce_subtype
+    ), inserted_event AS (
     INSERT INTO amazon_ses_bounce_events (
       notification_type,
       bounce_type,
@@ -73,7 +74,7 @@ export async function createSesBounceEvent(
     VALUES (
       ${input.notification_type}::amazon_ses_notification_types,
       ${input.bounce_type ?? null}::amazon_ses_bounce_types,
-      ${input.amazon_ses_bounce_subtype_id ?? null},
+      (SELECT id FROM registered_subtype),
       ${JSON.stringify(normalizedRecipients)}::jsonb,
       ${input.amazon_ses_message_id ?? null},
       ${input.amazon_ses_feedback_id ?? null},
@@ -98,6 +99,23 @@ export async function createSesBounceEvent(
       reporting_mta,
       dedup_key,
       uuid_extract_timestamp(id) AS created_at
+    )
+    SELECT
+      event.id,
+      event.notification_type,
+      event.bounce_type,
+      subtype.amazon_ses_bounce_subtype AS amazon_ses_bounce_subtype_id,
+      event.recipients,
+      event.amazon_ses_message_id,
+      event.amazon_ses_feedback_id,
+      event.occurred_at,
+      event.raw_message,
+      event.diagnostic_code,
+      event.reporting_mta,
+      event.dedup_key,
+      event.created_at
+    FROM inserted_event event
+    LEFT JOIN registered_subtype subtype ON subtype.id = event.amazon_ses_bounce_subtype_id
   `)
 
   if (rows.length === 0) {

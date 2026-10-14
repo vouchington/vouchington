@@ -4,10 +4,7 @@ import {
   UNBOUNDED_UNPARTITIONED_TABLES,
   type PartitionPolicy,
 } from '../data-stores/psql/schema-growth-registry.mts'
-import {
-  EXPLICIT_BOUNDED_TABLES,
-  PROVIDER_LOOKUP_ID_POLICIES,
-} from './schema-growth-bounded-policies.mts'
+import { EXPLICIT_BOUNDED_TABLES } from './schema-growth-bounded-policies.mts'
 
 export type SchemaGrowthClass = 'bounded' | 'unbounded'
 export type SchemaIdPolicy = 'uuidv7' | 'natural-or-provider' | 'static-identity' | 'no-id'
@@ -58,7 +55,6 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
-  ...PROVIDER_LOOKUP_ID_POLICIES,
   ...SHARED_PARENT_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
@@ -69,7 +65,6 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['post_publication_story_identities', sharedParentUuidv7('stories')],
   ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
-  ['bedrock_embedding_batches', naturalOrProviderId('Bedrock owns the batch job identifier.')],
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],

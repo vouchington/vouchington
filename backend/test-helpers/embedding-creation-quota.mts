@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
@@ -75,7 +75,7 @@ export async function acquireEmbeddingQuotaFixture() {
     },
     insertCompletedControl: () => {
       assertOpen()
-      const id = `embedding-completed-control-${randomUUID()}`
+      const id = mintUUIDv7()
       ids.push(id)
       const write = Promise.resolve().then(async () => {
         assertOpen()

@@ -1,5 +1,6 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
+import { mintUUIDv7 } from '@modules/utils/ids'
 
 /**
  * Creates a test batch record with batch entities
@@ -12,7 +13,7 @@ export const createTestBatch = async (
     records?: number
   } = {},
 ) => {
-  const batchId = `test-batch-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  const batchId = mintUUIDv7()
   const jobType = options.jobType || 'topics'
   const records = options.records || options.entityIds?.length || 0
   const entityIds = options.entityIds || []
@@ -55,7 +56,7 @@ export const createTestBatch = async (
         image_id
       )
       SELECT
-        batch_id,
+        batch_id::uuid,
         entity_type::bedrock_embedding_batch_job_types,
         CASE WHEN entity_type = 'topics' THEN entity_id::uuid ELSE NULL END,
         CASE WHEN entity_type = 'posts' THEN entity_id::uuid ELSE NULL END,

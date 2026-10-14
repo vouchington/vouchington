@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@backend/worker-runtime'
 import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
@@ -60,7 +61,7 @@ describe('processBedrockBatchSqsMessage', () => {
   })
 
   it('enqueues a poll_batch job for the batch matching detail.jobArn', async () => {
-    const batchId = randomUUID()
+    const batchId = mintUUIDv7()
     createdBatchIds.push(batchId)
     const jobArn = `arn:aws:bedrock:us-west-2:123:model-invocation-job/${batchId}`
     await insertTestEmbeddingsBatch({ id: batchId, bedrockStatus: 'Submitted', jobArn })
@@ -73,7 +74,7 @@ describe('processBedrockBatchSqsMessage', () => {
   })
 
   it('accepts detail.batchJobArn as a fallback for jobArn', async () => {
-    const batchId = randomUUID()
+    const batchId = mintUUIDv7()
     createdBatchIds.push(batchId)
     const jobArn = `arn:aws:bedrock:us-west-2:123:model-invocation-job/${batchId}`
     await insertTestEmbeddingsBatch({ id: batchId, bedrockStatus: 'Submitted', jobArn })
@@ -85,7 +86,7 @@ describe('processBedrockBatchSqsMessage', () => {
   })
 
   it('deduplicates redelivery of the same message so only one poll_batch job lands', async () => {
-    const batchId = randomUUID()
+    const batchId = mintUUIDv7()
     createdBatchIds.push(batchId)
     const jobArn = `arn:aws:bedrock:us-west-2:123:model-invocation-job/${batchId}`
     await insertTestEmbeddingsBatch({ id: batchId, bedrockStatus: 'Submitted', jobArn })

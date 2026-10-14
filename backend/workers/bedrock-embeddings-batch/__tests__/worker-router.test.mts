@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import { UnrecoverableError } from '@modules/queue-errors'
@@ -196,7 +197,7 @@ function makeJob(
 
 async function blockBatchCreation(): Promise<void> {
   overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { max_inflight_jobs: 1 })
-  const id = crypto.randomUUID()
+  const id = mintUUIDv7()
   createdBatchIds.push(id)
   await insertTestEmbeddingsBatch({
     id,

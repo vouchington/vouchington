@@ -92,15 +92,6 @@ export async function insertTestEmbeddingsBatch(
   )
 }
 
-export async function cleanupTestEmbeddingsBatchesByPrefix(prefix: string): Promise<void> {
-  await write(
-    allowUnannotatedQuery(sql`
-    DELETE FROM bedrock_embedding_batches
-    WHERE id LIKE ${`${prefix}%`}
-  `),
-  )
-}
-
 export async function cleanupTestEmbeddingsBatches(ids: string[]): Promise<void> {
   if (ids.length === 0) return
   await write(

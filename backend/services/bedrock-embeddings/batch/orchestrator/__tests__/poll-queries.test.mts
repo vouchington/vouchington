@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { mintUUIDv7 } from '@modules/utils/ids'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   cleanupTestEmbeddingsBatches,
-  cleanupTestEmbeddingsBatchesByPrefix,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import {
@@ -12,20 +11,15 @@ import {
   getPendingBatches,
 } from '../poll-queries.mts'
 
-const batchIdPrefix = 'poll-test-'
 const createdBatchIds: string[] = []
 
 describe('getPendingBatches', () => {
-  beforeEach(async () => {
-    await cleanupTestEmbeddingsBatchesByPrefix(batchIdPrefix)
-  })
-
   afterEach(async () => {
     await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
   })
 
   function batchId() {
-    const id = `${batchIdPrefix}${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }
@@ -60,16 +54,12 @@ describe('getPendingBatches', () => {
 })
 
 describe('getActiveBatchStats', () => {
-  beforeEach(async () => {
-    await cleanupTestEmbeddingsBatchesByPrefix(batchIdPrefix)
-  })
-
   afterEach(async () => {
     await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
   })
 
   function batchId() {
-    const id = `${batchIdPrefix}${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }
@@ -123,7 +113,7 @@ describe('getBatchIdByJobArn', () => {
   })
 
   function batchId() {
-    const id = `${batchIdPrefix}${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }
@@ -153,7 +143,7 @@ describe('getBatchInfo', () => {
   })
 
   function batchId() {
-    const id = `${batchIdPrefix}${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }
@@ -177,6 +167,6 @@ describe('getBatchInfo', () => {
   })
 
   it('returns null when the batch does not exist', async () => {
-    await expect(getBatchInfo(`${batchIdPrefix}${randomUUID()}`)).resolves.toBeNull()
+    await expect(getBatchInfo(mintUUIDv7())).resolves.toBeNull()
   })
 })

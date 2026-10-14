@@ -21,7 +21,7 @@ END $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
-  id TEXT PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   job_arn TEXT,
   model_id TEXT NOT NULL,
   job_type bedrock_embedding_batch_job_types NOT NULL,
@@ -82,6 +82,7 @@ ON bedrock_embedding_batches (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
 COMMENT ON TABLE bedrock_embedding_batches IS 'Tracks Amazon Bedrock batch embedding jobs and their lifecycle.';
+COMMENT ON COLUMN bedrock_embedding_batches.id IS 'UUIDv7 identifier of this Bedrock embedding batch.';
 COMMENT ON COLUMN bedrock_embedding_batches.job_arn IS 'The Bedrock model invocation job ARN.';
 COMMENT ON COLUMN bedrock_embedding_batches.model_id IS 'The Amazon Bedrock model id used for embeddings.';
 COMMENT ON COLUMN bedrock_embedding_batches.job_type IS 'Which entity type this batch processes.';
@@ -97,7 +98,7 @@ COMMENT ON COLUMN bedrock_embedding_batches.cancelled_at IS 'When the Bedrock jo
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batch_entities (
-  batch_id TEXT NOT NULL REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
+  batch_id UUID NOT NULL REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
   entity_type bedrock_embedding_batch_job_types NOT NULL,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,

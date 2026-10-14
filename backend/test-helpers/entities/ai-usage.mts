@@ -57,8 +57,9 @@ export async function insertTestAiUsageRecord(
   const resolvedCurrencyCode = pricingStatus === 'unpriced' ? null : 'usd'
   const { rows } = await write<{ id: string }>(sql`/* insertTestAiUsageRecord */
     WITH registered_tier AS (
-      INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
-      ON CONFLICT (id) DO NOTHING
+      INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
+      ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
+      RETURNING id
     )
     INSERT INTO ai_usage_records (
       id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug,
@@ -66,12 +67,12 @@ export async function insertTestAiUsageRecord(
       cached_input_tokens, cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
       pricing_status, cost_microunits, currency_code
     )
-    VALUES (
+    SELECT
       COALESCE(${id ?? null}, uuidv7()), ${communityId}, ${postId}, ${classifierRunId},
-      ${latencyMs}, ${agentSlug}, ${provider}, ${transport}, ${model}, ${serviceTier},
+      ${latencyMs}, ${agentSlug}, ${provider}, ${transport}, ${model}, registered_tier.id,
       ${inputTokens}, ${cachedInputTokens}, ${cacheWrite5mInputTokens}, ${cacheWrite1hInputTokens},
       ${outputTokens}, ${pricingStatus}, ${resolvedCostMicrounits}, ${resolvedCurrencyCode}
-    )
+    FROM registered_tier
     RETURNING id
   `)
   return rows[0]!.id
@@ -105,10 +106,12 @@ export async function findAiUsageRecordForPost(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForPost */
     SELECT
-      model_provider, provider_transport, model, service_tier_id, input_tokens, cached_input_tokens,
+      model_provider, provider_transport, model, tier.service_tier AS service_tier_id,
+      input_tokens, cached_input_tokens,
       cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
       reasoning_output_tokens, pricing_status, cost_microunits, community_id
-    FROM ai_usage_records
+    FROM ai_usage_records record
+    JOIN ai_service_tiers tier ON tier.id = record.service_tier_id
     WHERE post_id = ${postId} AND agent_slug = ${agentSlug}
     ORDER BY id DESC
     LIMIT 1
@@ -128,10 +131,12 @@ export async function findAiUsageRecordForAgent(
 ): Promise<TestAiUsageRecordRow | null> {
   const { rows } = await read<TestAiUsageRecordRow>(sql`/* findAiUsageRecordForAgent */
     SELECT
-      model_provider, provider_transport, model, service_tier_id, input_tokens, cached_input_tokens,
+      model_provider, provider_transport, model, tier.service_tier AS service_tier_id,
+      input_tokens, cached_input_tokens,
       cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
       reasoning_output_tokens, pricing_status, cost_microunits, community_id
-    FROM ai_usage_records
+    FROM ai_usage_records record
+    JOIN ai_service_tiers tier ON tier.id = record.service_tier_id
     WHERE agent_slug = ${agentSlug}
       AND input_tokens = ${usage.inputTokens}
       AND output_tokens = ${usage.outputTokens}

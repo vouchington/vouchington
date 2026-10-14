@@ -70,8 +70,9 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
       WITH registered_tier AS (
-        INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
-        ON CONFLICT (id) DO NOTHING
+        INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
+        ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
+        RETURNING id
       ), claimed_response AS (
         INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
         VALUES (
@@ -112,7 +113,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           ${provider},
           ${transport},
           ${model},
-          ${serviceTier},
+          registered_tier.id,
           ${usage.inputTokens},
           ${usage.cacheReadTokens},
           ${usage.cacheWrite5mTokens},
@@ -123,7 +124,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
           ${costMicrounits === null ? 'unpriced' : 'priced'},
           ${costMicrounits},
           ${costMicrounits === null ? null : 'usd'}
-        FROM claimed_response
+        FROM claimed_response CROSS JOIN registered_tier
         RETURNING id
       )
       SELECT EXISTS (SELECT 1 FROM recorded_usage) AS recorded
@@ -135,8 +136,9 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
 
   await run(sql`/* recordAiUsage */
     WITH registered_tier AS (
-      INSERT INTO ai_service_tiers (id) VALUES (${serviceTier})
-      ON CONFLICT (id) DO NOTHING
+      INSERT INTO ai_service_tiers (service_tier) VALUES (${serviceTier})
+      ON CONFLICT (service_tier) DO UPDATE SET service_tier = EXCLUDED.service_tier
+      RETURNING id
     )
     INSERT INTO ai_usage_records (
       id,
@@ -159,8 +161,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       cost_microunits,
       currency_code
     )
-    VALUES (
-      uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0')),
+    SELECT uuidv7(COALESCE(${createdAt ?? null}::timestamptz - clock_timestamp(), INTERVAL '0')),
       ${communityId ?? null},
       ${postId ?? null},
       ${classifierRunId ?? null},
@@ -168,7 +169,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       ${provider},
       ${transport},
       ${model},
-      ${serviceTier},
+      registered_tier.id,
       ${usage.inputTokens},
       ${usage.cacheReadTokens},
       ${usage.cacheWrite5mTokens},
@@ -179,7 +180,7 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
       ${costMicrounits === null ? 'unpriced' : 'priced'},
       ${costMicrounits},
       ${costMicrounits === null ? null : 'usd'}
-    )
+    FROM registered_tier
   `)
   return 'recorded'
 }

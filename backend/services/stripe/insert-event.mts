@@ -17,9 +17,9 @@ export async function insertStripeEvent(
   const inserted = await write(
     sql`/* insertStripeEvent */
       WITH registered_type AS (
-        INSERT INTO stripe_event_types (id) VALUES (${event.type})
-        ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id
-        RETURNING id
+        INSERT INTO stripe_event_types (stripe_event_type) VALUES (${event.type})
+        ON CONFLICT (stripe_event_type) DO UPDATE SET stripe_event_type = EXCLUDED.stripe_event_type
+        RETURNING id, stripe_event_type
       )
        , inserted_event AS (INSERT INTO stripe_events (
         stripe_event_id,
@@ -46,6 +46,7 @@ export async function insertStripeEvent(
         ${receivedAt},
         ${payload}::jsonb
       FROM registered_type
+      WHERE TRUE
       ON CONFLICT (stripe_event_id) DO NOTHING
       RETURNING id, stripe_event_id, stripe_event_type_id, is_live_mode, api_version, occurred_at,
         customer_id, subscription_id, invoice_id, checkout_session_id, received_at, payload, created_at
@@ -56,7 +57,9 @@ export async function insertStripeEvent(
           attempt_count, available_at, processed_at, ignored_at, failed_at, last_error_at, last_error_message
       ) SELECT
     `.append(stripeEventColumns()).append(sql`
-      FROM inserted_event event JOIN inserted_work work ON work.stripe_event_id = event.id
+      FROM inserted_event event
+      JOIN inserted_work work ON work.stripe_event_id = event.id
+      JOIN registered_type event_type ON event_type.id = event.stripe_event_type_id
     `),
   )
 
@@ -78,6 +81,7 @@ export async function insertStripeEvent(
     `.append(stripeEventColumns()).append(sql`
       FROM stripe_events event
       JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
+      JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
       WHERE event.stripe_event_id = ${event.id}
     `),
   )
