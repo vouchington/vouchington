@@ -13,6 +13,14 @@ priority 1 for work a user is waiting on; use 100 for background cleanup, recove
 backfills. In [glide-mq's priority order](https://github.com/avifenesh/glide-mq/blob/main/docs/USAGE.md),
 ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 jobs.
 
+## Queue boundaries
+
+Each queue costs a blocking connection, timers, and metrics, so merge queues whose worker class,
+limiter, concurrency, lock duration, and priority kind match and whose job names do not collide.
+Keep transactional work, meaning jobs a user is actively waiting on such as login tokens and
+verification emails, in its own queue. Ranked priority orders only the jobs promoted together, so
+a ranked job enqueued later still waits behind every job already in the ready list.
+
 ```mermaid
 flowchart LR
   P[Producer or flow] -->|durable IDs| Q[Queue]
