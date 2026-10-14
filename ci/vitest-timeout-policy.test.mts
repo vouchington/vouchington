@@ -7,6 +7,28 @@ import { describe, expect, it } from 'vitest'
 const binary = resolve('node_modules/.bin/oxlint')
 const fixtures = [
   {
+    path: '.husky/alias.test.mts',
+    source: "import { it as check } from 'vitest'; check('slow', () => {}, 30 * 1000 + 1)",
+    rejected: true,
+  },
+  {
+    path: '.husky/unknown.test.mts',
+    source:
+      "import { beforeEach } from 'vitest'; beforeEach(() => {}, Number(process.env.DEADLINE))",
+    rejected: true,
+  },
+  {
+    path: '.husky/runtime.test.mts',
+    source: "import { vi } from 'vitest'; vi.setConfig({ testTimeout: 30001 })",
+    rejected: true,
+  },
+  {
+    path: '.husky/bounded.test.mts',
+    source:
+      "import { it, afterEach, vi } from 'vitest'; vi.setConfig({ testTimeout: 30000 }); afterEach(() => {}, 30000); it('bounded', { timeout: 30000 }, () => {})",
+    rejected: false,
+  },
+  {
     path: 'ci/alias.test.mts',
     source:
       "import { it as check } from 'vitest'; const seconds = 60; check('slow', () => {}, seconds * 1000)",

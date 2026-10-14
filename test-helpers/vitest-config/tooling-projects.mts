@@ -96,6 +96,9 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'git-hooks',
+      // Hook contracts use tiny local Git fixtures; longer cases need an explicit bounded override.
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['.husky/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
