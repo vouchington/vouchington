@@ -69,8 +69,15 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     WITH inserted AS (
       INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, changed_by_id, failure_message)
       SELECT media_delivery_registry_record_id, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
-      FROM view_media_delivery_registry_current_records
-      WHERE media_delivery_registry_record_id = ANY(${ids}::uuid[]) AND state = 'failed'
+      FROM unnest(${ids}::uuid[]) selected(record_id)
+      CROSS JOIN LATERAL (
+        -- The record id is unique; LIMIT 1 keeps each view probe keyed to one locked id.
+        SELECT media_delivery_registry_record_id, generation, state
+        FROM view_media_delivery_registry_current_records
+        WHERE media_delivery_registry_record_id = selected.record_id
+        LIMIT 1
+      ) current_record
+      WHERE state = 'failed'
       ORDER BY media_delivery_registry_record_id
       RETURNING media_delivery_registry_record_id
     ) SELECT media_delivery_registry_record_id FROM inserted
