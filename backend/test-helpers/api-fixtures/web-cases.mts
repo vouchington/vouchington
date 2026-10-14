@@ -108,7 +108,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
       topics: { [topic.id]: publicTopicWithLogoPlacement },
       topic_elections: { [topic.id]: topicElection },
       election_votes: { [topic.id]: electionVotes[topic.id] },
-      topics_metrics: {},
+      topics_metrics: { [topic.id]: topicMetricsWithViewerCount },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/test-helpers/api-responses/topics.ts'],
