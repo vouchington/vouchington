@@ -12,6 +12,7 @@ type UpdateUrlHostnameOptions = {
 export const updateUrlHostname = async (
   id: string,
   changes: UpdateUrlHostnameOptions,
+  options: { introducePublicly?: boolean } = {},
 ): Promise<string | null> => {
   const sets: string[] = []
   const values: unknown[] = [id]
@@ -30,6 +31,10 @@ export const updateUrlHostname = async (
       default:
         break
     }
+  }
+
+  if (options.introducePublicly) {
+    sets.push('publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)')
   }
 
   if (sets.length === 0) return null

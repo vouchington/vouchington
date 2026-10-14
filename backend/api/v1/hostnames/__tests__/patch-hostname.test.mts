@@ -6,6 +6,8 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
+import { getUrlHostnameById } from '@services/urls-hostnames/get'
 
 describe('PATCH /api/v1/hostnames/:id', () => {
   let regularUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
@@ -73,6 +75,26 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
+  })
+
+  it('introduces a private email hostname on an administrator metadata update', async () => {
+    const administrator = await createTestUserDirect()
+    await addUserRole(administrator.id, 'administrator')
+    const domain = `staff-update-${crypto.randomUUID()}.example.com`
+    const id = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!id) throw new Error('Expected private hostname')
+    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeNull()
+    await createRequest().get(`/api/v1/hostnames/${id}`).expect(404)
+
+    const request = createRequest()
+    await request.authenticateAs(administrator)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: false }).expect(204)
+    const introducedAt = (await getUrlHostnameById(id))?.publicly_introduced_at
+    expect(introducedAt).toBeInstanceOf(Date)
+    await createRequest().get(`/api/v1/hostnames/${id}`).expect(200)
+
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_crawlable: true }).expect(204)
+    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toEqual(introducedAt)
   })
 
   it('invalidates cached hostname detail after a flag update', async () => {
