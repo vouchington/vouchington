@@ -56,6 +56,7 @@ export function CommunityAgentPromptForm({ communitySlug, onPromptCreated }: Pro
   }
 
   const disabled = isPending || isRefreshing
+  const validationErrorId = 'community-agent-prompt-validation-error'
 
   return (
     <form
@@ -75,8 +76,18 @@ export function CommunityAgentPromptForm({ communitySlug, onPromptCreated }: Pro
         rows={4}
         disabled={disabled}
         aria-label={t('extracted.communities.communityAgentPromptForm.newAgentPrompt_88efd7a8')}
+        aria-invalid={validationError ? 'true' : undefined}
+        aria-describedby={validationError ? validationErrorId : undefined}
       />
-      {validationError ? <p className='text-sm text-destructive'>{validationError}</p> : null}
+      {validationError ? (
+        <p
+          id={validationErrorId}
+          role='alert'
+          className='text-sm text-destructive'
+        >
+          {validationError}
+        </p>
+      ) : null}
       <Button
         type='submit'
         size='touch'

@@ -146,7 +146,14 @@ describe('CommunityAgentPromptItem simulation', () => {
     )!
     fireEvent.click(runBtn)
 
-    expect(document.body.textContent).toContain('Prompt is required')
+    const alert = document.querySelector('[role="alert"]')
+    expect(alert).not.toBeNull()
+    expect(alert!.id).toBe('community-agent-prompt-test-validation-error-prompt-1')
+    expect(alert!.textContent).toBe('Prompt is required')
+    const textarea = document.querySelector('textarea')
+    expect(textarea).not.toBeNull()
+    expect(textarea!.getAttribute('aria-invalid')).toBe('true')
+    expect(textarea!.getAttribute('aria-describedby')).toBe(alert!.id)
     expect(mocks.simulateCommunityAutomod).not.toHaveBeenCalled()
   })
 
