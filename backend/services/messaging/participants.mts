@@ -55,9 +55,9 @@ export async function addConversationParticipant(
         VALUES (${conversationId}, ${newUserId}, 'member')
         RETURNING id, conversation_id, user_id, role, created_at, removed_at
       )
-      SELECT i.*, u.username, u.profile_image_id
+      SELECT i.*, u.username, u.profile_image_id, u.profile_image_placement
       FROM inserted i
-      LEFT JOIN users u ON u.id = i.user_id
+      LEFT JOIN view_embedded_users u ON u.id = i.user_id
     `)
   await query(sql`/* addConversationParticipant:record_activity */
       UPDATE conversations SET last_activity_at = CURRENT_TIMESTAMP WHERE id = ${conversationId}

@@ -93,15 +93,19 @@ export async function getConversationParticipants(
   const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
   const query = sql`/* getConversationParticipants */
     SELECT cp.id, cp.conversation_id, cp.user_id, cp.role, cp.created_at, cp.removed_at,
-           CASE WHEN u.deleted_at IS NULL THEN u.username END AS username,
-           CASE WHEN u.deleted_at IS NULL THEN u.profile_image_id END AS profile_image_id
-    FROM conversation_participants cp
-    LEFT JOIN users u ON u.id = cp.user_id
-    WHERE cp.conversation_id = ${conversationId}
-      AND cp.removed_at IS NULL
+           u.username, u.profile_image_id, u.profile_image_placement
+    FROM (
+      SELECT id, conversation_id, user_id, role, created_at, removed_at
+      FROM conversation_participants
+      WHERE conversation_id = ${conversationId}
+        AND removed_at IS NULL
   `
-  if (options?.after) query.append(sql` AND cp.id > ${options.after.id}`)
-  query.append(sql` ORDER BY cp.id ASC LIMIT ${limit + 1}`)
+  if (options?.after) query.append(sql` AND id > ${options.after.id}`)
+  query.append(sql` ORDER BY id ASC LIMIT ${limit + 1}
+    ) cp
+    LEFT JOIN view_embedded_users u ON u.id = cp.user_id
+    ORDER BY cp.id ASC
+  `)
   const { rows } = await read(query)
   return rows as ConversationParticipant[]
 }

@@ -636,17 +636,23 @@
         "removed_at": null,
         "role": "owner",
         "user_id": "00000000-0000-7000-8000-000000000001",
-        "username": "fixtureuser"
+        "username": "fixtureuser",
+        "profile_image_placement": null
       },
       {
         "conversation_id": "00000000-0000-7000-8000-000000000101",
         "created_at": "2026-07-01T10:00:00Z",
         "id": "00000000-0000-7000-8000-000000000302",
-        "profile_image_id": "image-alice",
+        "profile_image_id": "00000000-0000-7000-8000-000000000211",
         "removed_at": null,
         "role": "member",
         "user_id": "00000000-0000-7000-8000-000000000002",
-        "username": "alice"
+        "username": "alice",
+        "profile_image_placement": {
+          "image_id": "00000000-0000-7000-8000-000000000211",
+          "placement_id": "00000000-0000-7000-8000-000000000311",
+          "placement_revision": 3
+        }
       }
     ]
   },
@@ -655,11 +661,16 @@
       "conversation_id": "00000000-0000-7000-8000-000000000101",
       "created_at": "2026-07-01T10:04:00Z",
       "id": "00000000-0000-7000-8000-000000000303",
-      "profile_image_id": null,
+      "profile_image_id": "00000000-0000-7000-8000-000000000212",
       "removed_at": null,
       "role": "member",
       "user_id": "00000000-0000-7000-8000-000000000003",
-      "username": "bob"
+      "username": "bob",
+      "profile_image_placement": {
+        "image_id": "00000000-0000-7000-8000-000000000212",
+        "placement_id": "00000000-0000-7000-8000-000000000312",
+        "placement_revision": 4
+      }
     }
   },
   "native.messages.participant-remove.default": null,

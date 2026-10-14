@@ -32,6 +32,7 @@ each phase.
 | 16  | RSS feed provenance label                                    | rss-feed-provenance-label          | Swift + .NET | None: web renders the public "via API", "via MCP" or "via {app}" badge on source list items, plus the staff channel and OAuth client; native clients decode neither `provenance` nor `staff_provenance` on RSS feeds.                                                                                                                                                                                                                 | 2     | [clients#206]                |
 | 17  | Authored-post moderation presentation                        | authored-post-moderation-status    | Swift + .NET | None on main: web gives rejected-post authors a removal notice, author-safe reason or fallback, and appeals action; staff can inspect the post while other viewers see unavailable content. Producer localization exposes four existing web messages for native use. Dependent native [clients#280] remains draft with the rejected-post slice; pending/review, late demotion, recovery, and archived visibility remain open.         | 2     | [clients#95]                 |
 | 18  | Post author bio language and direction                       | post-author-bio-language           | Swift + .NET | None: native post-detail author bios do not use `author_aside.lingua_rs_detected_language` to set `lang` and `dir` on the bio HTML leaf. The nullable API field is staged in PR #2806.                                                                                                                                                                                                                                                | 2     | [vouchington#2819]           |
+| 19  | Direct-message participant avatars                           | direct-messages                    | Swift + .NET | Partial: native inbox, thread, participant, and send flows work, but native main does not yet render the canonical `profile_image_placement` staged for deliverable participants by producer PR #2822. Paired client PR #297 supplies the roster rendering and tests.                                                                                                                                                                 | 1     | [clients#192]                |
 
 ## Synchronization rule
 
@@ -48,6 +49,7 @@ any mapped capability differs from web.
 [clients#177]: https://github.com/vouchington/vouchington-clients/issues/177
 [clients#206]: https://github.com/vouchington/vouchington-clients/issues/206
 [clients#95]: https://github.com/vouchington/vouchington-clients/issues/95
+[clients#192]: https://github.com/vouchington/vouchington-clients/issues/192
 [clients#280]: https://github.com/vouchington/vouchington-clients/pull/280
 [vouchington#1229]: https://github.com/vouchington/vouchington/issues/1229
 [clients#197]: https://github.com/vouchington/vouchington-clients/issues/197
