@@ -55,6 +55,9 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'static-analysis-ast-grep',
+      // Finite analyzer fixtures use the suite defaults, not the broad tooling headroom.
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: [
         'static-code-analysis/__tests__/backend-contract-program-construction-location-parity.test.mts',
         'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts',
