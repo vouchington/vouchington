@@ -178,7 +178,7 @@ describe('get', () => {
   })
 
   it('caches.topics has correct prefix and TTL', () => {
-    expect(caches.topics.prefix).toBe('topics:v2')
+    expect(caches.topics.prefix).toBe('topics:v3')
     expect(caches.topics.ttl).toBeGreaterThan(0)
   })
 
