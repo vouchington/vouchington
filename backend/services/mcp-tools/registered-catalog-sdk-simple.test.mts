@@ -5,6 +5,9 @@ import {
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { afterAll, describe, expect, it } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
+import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
+import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import {
   sdkCatalogCases as cases,
   connectSdkCatalog,
@@ -41,7 +44,6 @@ describe('registered catalog SDK', () => {
     { testCase: cases[0]!, name: 'read_feed', option: 'posts', args: { feed_type: 'any' } },
     { testCase: cases[0]!, name: 'read_posts', option: 'trending', args: {} },
     { testCase: cases[0]!, name: 'read_hostnames', option: 'top', args: {} },
-    { testCase: cases[0]!, name: 'read_data_points', option: 'search', args: {} },
     { testCase: cases[0]!, name: 'read_my_review_disputes', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_my_moderation_appeals', option: 'list', args: {} },
     { testCase: cases[0]!, name: 'read_my_lists', option: 'list', args: {} },
@@ -75,10 +77,39 @@ describe('registered catalog SDK', () => {
     { testCase: cases[3]!, name: 'list_moderation_reports', option: null, args: {} },
     { testCase: cases[3]!, name: 'list_post_review_queue', option: null, args: {} },
     { testCase: cases[3]!, name: 'list_pending_topic_claims', option: null, args: {} },
-  ])('calls $name.$option and validates its advertised structured result', async row => {
+  ])('calls $name ($option) and validates its advertised structured result', async row => {
     const client = await connect(row.testCase)
     try {
       expect(await callAndValidate(client, row.name, row.option, row.args)).toBeDefined()
+    } finally {
+      await client.close()
+    }
+  })
+
+  it('searches only owned data points through the SDK', async () => {
+    const owner = await createTestUser()
+    const suffix = crypto.randomUUID()
+    const topicId = await insertTestTopic({
+      name: `SDK data points ${suffix}`,
+      slug: `sdk-data-points-${suffix}`,
+      createdById: owner.id,
+    })
+    const postId = await insertTestDataPoint({
+      title: `SDK data point ${suffix}`,
+      slug: `sdk-data-point-${suffix}`,
+      createdById: owner.id,
+      topicId,
+      result: 'approved',
+    })
+    const client = await connect(cases[0]!, owner)
+    try {
+      const result = await callAndValidate(client, 'read_data_points', 'search', {
+        topic_id: topicId,
+      })
+      expect(result).toMatchObject({
+        success: true,
+        results: [expect.objectContaining({ id: postId })],
+      })
     } finally {
       await client.close()
     }
