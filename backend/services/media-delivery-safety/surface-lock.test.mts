@@ -8,6 +8,10 @@ import {
 } from '@voucha/test-helpers'
 import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { lockImageDeliveryMutation, prepublishImageSurfaceDenials } from './index.mts'
 import * as deliveryLock from './delivery-lock.mts'
@@ -16,6 +20,34 @@ describe('multi-slot owner delivery fences', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('discovers both historical and current placements in one query per phase', async () => {
+    const user = await createTestUserDirect()
+    const imageId = await insertTestImage(user.id)
+    const topicId = await insertTestTopic({
+      name: `batch discovery ${crypto.randomUUID()}`,
+      slug: `batch-discovery-${crypto.randomUUID()}`,
+      createdById: user.id,
+    })
+    await setTestTopicSurfaceImages(topicId, { logoImageId: imageId, heroImageId: imageId })
+    const edge = installTestMediaDeliveryEdge()
+    await using transaction = await beginTransaction()
+    const { queries } = await withCapturedTestQueries(() =>
+      prepublishImageSurfaceDenials(
+        [
+          { surfaceKind: 'topic-hero-image', topicId },
+          { surfaceKind: 'topic-logo-image', topicId },
+        ],
+        transaction,
+      ),
+    )
+    expect(countCapturedQueriesByAnnotation(queries, 'lockImageSurfacePlacements')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(queries, 'prepublishImageSurfaceDenial:current')).toBe(
+      1,
+    )
+    expect(edge.put).toHaveBeenCalledTimes(2)
+    await transaction.rollback()
   })
 
   it('takes the entire canonical placement footprint before any slot denial', async () => {
