@@ -32,6 +32,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'static-analysis-tools',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: [
         'static-code-analysis/repo-file-policy-worker-client.test.mts',
         'static-code-analysis/helper-file-names.test.mts',
@@ -125,6 +127,8 @@ export const toolingProjects = [
       // tooling threads pool (#11686); keep isolate: true from toolingTestBudget.
       pool: 'forks',
       name: 'i18n-extract-codemod',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['static-code-analysis/i18n-extract/**/*.test.mts'],
       exclude: [
         '**/node_modules/**',
@@ -139,6 +143,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'i18n-route-bounds',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['static-code-analysis/i18n-extract/route-bounds.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],

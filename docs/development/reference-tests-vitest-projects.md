@@ -52,6 +52,13 @@ each test a symlink to the warmed files instead of writing new ones, and symlink
 tool straight to its real system binary rather than copying it. See
 [`dev/test-helpers/tmux-fake-bin.mts`](../../dev/test-helpers/tmux-fake-bin.mts) for the pattern.
 
+The `static-analysis-tools`, `i18n-extract-codemod`, and `i18n-route-bounds` projects use
+five-second test and hook defaults with isolated tooling setup. Their shared declared-project
+contract is in `ci/vitest-analysis-project-defaults.test.mts`; the existing native timeout
+guard still bounds admitted explicit overrides at thirty seconds and reports unresolved values.
+This cohort does not change other project defaults or establish OS-level cancellation of
+synchronous child tools.
+
 Run any single project directly: `pnpm exec vitest run --project <name>`.
 
 Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vitest-project-group.mts), whose typed catalog is also used by local coverage. The runner starts one Vitest process for the selected projects and removes exactly one leading separator inserted by `pnpm run`, so both `pnpm run test:backend:default -- <files>` and forwarded Vitest flags work. Keep durable scripts project-based; filename lists are appropriate only for one-off local commands.
