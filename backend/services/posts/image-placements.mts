@@ -1,7 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { runSequentially } from '@modules/utils/run-sequentially'
-import { ensureImagePlacementBinding } from '@services/media-delivery-safety'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -79,28 +78,58 @@ export async function syncPostImagePlacements(
         )
         ORDER BY requested.image_id
       `)
-      for (const binding of missing) {
-        // oxlint-disable-next-line no-await-in-loop -- each retained tuple commits before its live owner row.
-        const { rows: allocated } = await query<{ placement_id: string }>(sql`
-          /* syncPostImagePlacements:allocate */ SELECT uuidv7() AS placement_id
-        `)
-        const placementId = allocated[0]!.placement_id
-        // oxlint-disable-next-line no-await-in-loop -- image then binding pins remain held by this transaction.
-        await ensureImagePlacementBinding(query, {
-          placementId,
-          imageId: binding.image_id,
-          bindingFamily: 'post',
-        })
-        // oxlint-disable-next-line no-await-in-loop -- placements are immutable exact-pair owners.
-        await query(sql`/* syncPostImagePlacements:createParent */
-          INSERT INTO media_placements (id) VALUES (${placementId})
-        `)
-        // oxlint-disable-next-line no-await-in-loop -- parent FK must exist before its child.
-        await query(sql`/* syncPostImagePlacements:createChild */
-          INSERT INTO image_placements (placement_id, post_id, image_id)
-          VALUES (${placementId}, ${postId}, ${binding.image_id})
-        `)
+      if (missing.length === 0) return
+      const missingImageIds = missing.map(binding => binding.image_id)
+      const { rows: allocated } = await query<{ image_id: string; placement_id: string }>(sql`
+        /* syncPostImagePlacements:allocate */
+        SELECT requested.image_id, uuidv7() AS placement_id
+        FROM UNNEST(${missingImageIds}::uuid[]) AS requested(image_id)
+        ORDER BY requested.image_id
+      `)
+      const placementIds = allocated.map(binding => binding.placement_id)
+      const { rowCount: imageCount } = await query(sql`/* syncPostImagePlacements:pinImages */
+        SELECT id FROM retained_image_identities
+        WHERE id = ANY(${missingImageIds}::uuid[])
+        ORDER BY id FOR KEY SHARE
+      `)
+      if (imageCount !== missing.length) {
+        throw new Error('Missing retained image identity for placement')
       }
+      await query(sql`/* syncPostImagePlacements:retainBindings */
+        INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+        SELECT requested.placement_id, requested.image_id, 'post'
+        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
+          WITH ORDINALITY AS requested(placement_id, image_id, position)
+        ORDER BY requested.placement_id
+        ON CONFLICT (placement_id) DO NOTHING
+      `)
+      const { rowCount: bindingCount } = await query(sql`/* syncPostImagePlacements:pinBindings */
+        SELECT binding.placement_id
+        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
+          WITH ORDINALITY AS requested(placement_id, image_id, position)
+        JOIN retained_image_placement_bindings binding
+          ON binding.placement_id = requested.placement_id
+          AND binding.image_id = requested.image_id
+          AND binding.binding_family = 'post'
+        ORDER BY requested.position FOR KEY SHARE OF binding
+      `)
+      /* v8 ignore next -- defensive: fresh database UUIDv7 placement IDs cannot be controlled by post input. */
+      if (bindingCount !== missing.length) {
+        throw new Error('Image placement identity is already bound to another image or family')
+      }
+      await query(sql`/* syncPostImagePlacements:createParent */
+        INSERT INTO media_placements (id)
+        SELECT requested.placement_id
+        FROM UNNEST(${placementIds}::uuid[]) WITH ORDINALITY AS requested(placement_id, position)
+        ORDER BY requested.position
+      `)
+      await query(sql`/* syncPostImagePlacements:createChild */
+        INSERT INTO image_placements (placement_id, post_id, image_id)
+        SELECT requested.placement_id, ${postId}, requested.image_id
+        FROM UNNEST(${placementIds}::uuid[], ${missingImageIds}::uuid[])
+          WITH ORDINALITY AS requested(placement_id, image_id, position)
+        ORDER BY requested.position
+      `)
     },
     () =>
       query(sql`/* syncPostImagePlacements:stageDelivery */
