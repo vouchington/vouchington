@@ -24,6 +24,14 @@
       "purposes": ["authenticate", "connect"],
       "version": 1
     },
+    "microsoft": {
+      "modes": {
+        "native": true,
+        "web": true
+      },
+      "purposes": ["authenticate", "connect"],
+      "version": 1
+    },
     "x": {
       "modes": {
         "native": true,
@@ -33,5 +41,5 @@
       "version": 1
     }
   },
-  "providers": ["facebook", "x", "github", "linkedin"]
+  "providers": ["facebook", "x", "github", "linkedin", "microsoft"]
 }

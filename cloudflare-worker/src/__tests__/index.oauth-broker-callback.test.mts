@@ -33,7 +33,7 @@ describe('OAuth broker callback routing', () => {
       return Promise.resolve(new Response('ok'))
     }) as unknown as typeof fetch
 
-    for (const provider of ['facebook', 'x', 'github', 'linkedin']) {
+    for (const provider of ['facebook', 'x', 'github', 'linkedin', 'microsoft']) {
       const response = await worker.fetch(
         new Request(
           `https://staging.voucha.ai/auth/callback/${provider}/broker?code=abc%2B123&state=oauth-state&error_description=needs+consent`,
@@ -48,7 +48,7 @@ describe('OAuth broker callback routing', () => {
     }
 
     expect(forwardedUrls).toEqual(
-      ['facebook', 'x', 'github', 'linkedin'].map(
+      ['facebook', 'x', 'github', 'linkedin', 'microsoft'].map(
         provider =>
           `https://backend.example.com/api/v1/auth/oauth/${provider}/broker-callback?code=abc%2B123&state=oauth-state&error_description=needs+consent`,
       ),
@@ -86,11 +86,15 @@ describe('OAuth broker callback routing', () => {
     ['HEAD', '/auth/callback/x/broker'],
     ['POST', '/auth/callback/linkedin/broker'],
     ['HEAD', '/auth/callback/linkedin/broker'],
+    ['POST', '/auth/callback/microsoft/broker'],
+    ['HEAD', '/auth/callback/microsoft/broker'],
     ['GET', '/auth/callback/google/broker'],
     ['GET', '/auth/callback/github/brokered'],
     ['GET', '/auth/callback/github/broker/extra'],
     ['GET', '/auth/callback/linkedin/brokered'],
     ['GET', '/auth/callback/linkedin/broker/extra'],
+    ['GET', '/auth/callback/microsoft/brokered'],
+    ['GET', '/auth/callback/microsoft/broker/extra'],
   ])('protects callback near miss %s %s', async (method, pathname) => {
     const response = await worker.fetch(
       new Request(`https://staging.voucha.ai${pathname}`, {

@@ -12,6 +12,7 @@ import type {
 import type { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import type { upsertGithubAccount } from '@services/oauth-github'
 import type { upsertLinkedInAccount } from '@services/oauth-linkedin'
+import type { upsertMicrosoftAccount } from '@services/oauth-microsoft'
 import type { upsertXAccount } from '@services/oauth-x'
 
 export type OAuthAuthorizationExchangeDependencies = {
@@ -22,6 +23,7 @@ export type OAuthAuthorizationExchangeDependencies = {
   upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
   upsertGithub: typeof upsertGithubAccount
   upsertLinkedIn: typeof upsertLinkedInAccount
+  upsertMicrosoft: typeof upsertMicrosoftAccount
   upsertX: typeof upsertXAccount
   rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
   releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
@@ -80,5 +82,16 @@ export async function exchangeClaimedOAuthAuthorization(
         undefined,
         completionOptions,
       )
+      break
+    case 'microsoft':
+      if (codeVerifier === undefined)
+        throw new Error('Microsoft provider admission requires its PKCE verifier')
+      await dependencies.upsertMicrosoft(
+        code,
+        authorization.redirect_uri,
+        codeVerifier,
+        completionOptions,
+      )
+      break
   }
 }

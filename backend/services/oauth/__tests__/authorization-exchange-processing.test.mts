@@ -6,19 +6,18 @@ import {
 import { createTestOAuthExchangeDependencies as exchangeDependencies } from '@voucha/test-helpers/oauth-exchange-dependencies'
 
 describe('OAuth authorization provider exchange processing', () => {
-  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'] as const)(
     'persists the armed marker before admitting the %s provider and clears it only after success',
     async provider => {
       const dependencies = exchangeDependencies(provider)
       const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
-      const providerCall =
-        provider === 'facebook'
-          ? dependencies.upsertFacebook
-          : provider === 'x'
-            ? dependencies.upsertX
-            : provider === 'github'
-              ? dependencies.upsertGithub
-              : dependencies.upsertLinkedIn
+      const providerCall = {
+        facebook: dependencies.upsertFacebook,
+        x: dependencies.upsertX,
+        github: dependencies.upsertGithub,
+        linkedin: dependencies.upsertLinkedIn,
+        microsoft: dependencies.upsertMicrosoft,
+      }[provider]
       vi.mocked(providerCall).mockImplementation(async () => {
         expect(writes.at(-1)).toEqual({ claimId: 'claim-id', armed: true })
         return {
@@ -42,7 +41,7 @@ describe('OAuth authorization provider exchange processing', () => {
     },
   )
 
-  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'] as const)(
     'does not admit the %s provider when the armed ownership write fails',
     async provider => {
       const dependencies = exchangeDependencies(provider)
@@ -58,11 +57,12 @@ describe('OAuth authorization provider exchange processing', () => {
       expect(dependencies.upsertX).not.toHaveBeenCalled()
       expect(dependencies.upsertGithub).not.toHaveBeenCalled()
       expect(dependencies.upsertLinkedIn).not.toHaveBeenCalled()
+      expect(dependencies.upsertMicrosoft).not.toHaveBeenCalled()
       expect(dependencies.releaseClaim).toHaveBeenCalledWith('flow-id', 'claim-id')
     },
   )
 
-  it.each(['facebook', 'x', 'github', 'linkedin'] as const)(
+  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'] as const)(
     'retains armed ownership and the raw %s provider exception for terminal continuation',
     async provider => {
       const failure =
@@ -70,14 +70,13 @@ describe('OAuth authorization provider exchange processing', () => {
           ? Symbol('raw provider outcome failure')
           : new Error('provider outcome is unknown')
       const dependencies = exchangeDependencies(provider)
-      const providerCall =
-        provider === 'facebook'
-          ? dependencies.upsertFacebook
-          : provider === 'x'
-            ? dependencies.upsertX
-            : provider === 'github'
-              ? dependencies.upsertGithub
-              : dependencies.upsertLinkedIn
+      const providerCall = {
+        facebook: dependencies.upsertFacebook,
+        x: dependencies.upsertX,
+        github: dependencies.upsertGithub,
+        linkedin: dependencies.upsertLinkedIn,
+        microsoft: dependencies.upsertMicrosoft,
+      }[provider]
       vi.mocked(providerCall).mockRejectedValue(failure)
       const writes: Array<{ claimId: string | null; armed: boolean | undefined }> = []
       await expect(
@@ -96,6 +95,7 @@ describe('OAuth authorization provider exchange processing', () => {
       expect(dependencies.upsertX).toHaveBeenCalledTimes(provider === 'x' ? 1 : 0)
       expect(dependencies.upsertGithub).toHaveBeenCalledTimes(provider === 'github' ? 1 : 0)
       expect(dependencies.upsertLinkedIn).toHaveBeenCalledTimes(provider === 'linkedin' ? 1 : 0)
+      expect(dependencies.upsertMicrosoft).toHaveBeenCalledTimes(provider === 'microsoft' ? 1 : 0)
       expect(dependencies.rejectExhausted).not.toHaveBeenCalled()
       expect(dependencies.releaseClaim).not.toHaveBeenCalled()
     },

@@ -32,6 +32,12 @@ const authorizationAccountIdentifiers = {
     emailColumn: 'linkedin_user_email_address',
     dataColumn: 'linkedin_user_data',
   },
+  microsoft: {
+    table: 'microsoft_accounts',
+    providerUserIdColumn: 'microsoft_user_id',
+    emailColumn: 'microsoft_user_email_address',
+    dataColumn: 'microsoft_user_data',
+  },
 } as const satisfies Record<
   BrokerOAuthProvider,
   {

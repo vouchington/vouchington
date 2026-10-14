@@ -183,7 +183,7 @@ describe('addSecurityHeaders', () => {
 })
 
 describe('shouldPreserveOriginNoReferrer', () => {
-  it.each(['facebook', 'x', 'github', 'linkedin'])(
+  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'])(
     'returns true for the %s OAuth broker callback',
     provider => {
       expect(
