@@ -694,7 +694,6 @@ rules:
           }
         - { file: backend/services/admin-imports/seed-csvs.mts, callee: 'processTopicRow' }
         - { file: backend/services/articles/sync.mts, callee: 'createPost' }
-        - { file: backend/services/articles/sync.mts, callee: 'getPostByAny' }
         - { file: backend/services/articles/sync.mts, callee: 'tagPostWithTopics' }
         - { file: backend/services/articles/sync.mts, callee: 'updatePost' }
         - { file: backend/services/attribution/create.mts, callee: 'query' }

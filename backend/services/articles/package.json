@@ -24,12 +24,15 @@
   "scripts": {},
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1149.0",
+    "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
     "@services/markdown": "workspace:^",

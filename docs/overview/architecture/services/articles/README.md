@@ -14,6 +14,8 @@ Parses article Markdown with `gray-matter` frontmatter extraction from the asset
 - `syncArticles(currentUser): Promise<ArticleSyncResult>` — syncs all Markdown objects from S3 as posts, creating or updating as needed
 - `syncLocalArticles(currentUser, articlesDir?): Promise<ArticleSyncResult>` — syncs the committed local `articles/` directory for local/test database seeding only
 
+Both sync entrypoints load and parse files in input order, prefetch existing posts for their distinct valid slugs in one database read, then create, update, or skip posts in that same order. A successful write updates the in-memory lookup before the next file, so repeated slugs observe the preceding file's result.
+
 ## Related
 
 - Article source: [../../../docs/requirements/content/articles/README.md](../../../../requirements/content/articles/README.md)
