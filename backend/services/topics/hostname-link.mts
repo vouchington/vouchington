@@ -1,10 +1,17 @@
-import { beginTransaction, read, withTransactionOptions, write } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  registerPostCommitAction,
+  withTransactionOptions,
+  write,
+} from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
+import { invalidate } from '@services/entity-cache/invalidate'
 type TopicHostnameLinkValidation = {
   topic_exists: boolean
   hostname_exists: boolean
@@ -70,13 +77,24 @@ async function updateTopicHostnameId(
     options,
   )
   if (hostnameId) {
-    await write(
+    const { rows } = await write<{ id: string; hostname: string }>(
       sql`/* updateTopicHostnameId:promotePublic */
         UPDATE url_hostnames
         SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
-        WHERE id = ${hostnameId}::uuid AND publicly_introduced_at IS NULL`,
+        WHERE id = ${hostnameId}::uuid AND publicly_introduced_at IS NULL
+        RETURNING id, hostname`,
       options,
     )
+    if (rows.length > 0) {
+      const action = () => invalidate.url_hostnames(...rows)
+      if (options.query || options.client) {
+        await withTransactionOptions(options, async query =>
+          registerPostCommitAction(query, action),
+        )
+      } else {
+        await action()
+      }
+    }
   }
 }
 async function assignHostnameToTopic(
@@ -109,12 +127,7 @@ async function assertTopicHostnameLinkIsValid(
     'Hostname is already linked to another topic',
   )
 }
-/**
- * Resolves a hostname string or UUID to a hostname UUID.
- * If the value is a UUID, it is returned as-is (internal callers may pass UUIDs directly).
- * If the value is a hostname string, it is get-or-created via upsertUrlHostnames.
- * Returns null if hostname is null.
- */
+/** Returns a UUID unchanged, upserts a hostname string, or preserves null. */
 export async function resolveHostname(
   userId: string,
   hostname: string | null,
@@ -133,12 +146,8 @@ export async function resolveHostname(
   return hostnameMap.values().next().value ?? null
 }
 /**
- * Links a hostname to an rss_feed topic for display purposes only.
- * Sets topics.hostname_id so the source topic knows which domain hosts it.
- * Does NOT set url_hostnames.topic_id — that column means "this entire domain IS this topic"
- * and must never be set for rss_feed topics, which are URL-path-scoped, not domain-scoped.
- * Clears a legacy claim on the topic's previous primary hostname so older seed imports
- * that used setTopicHostnameLink() do not keep owning the old domain after a feed URL moves.
+ * RSS feed links set topics.hostname_id, not domain ownership in url_hostnames.topic_id.
+ * Clear only a legacy claim on the previous primary hostname when a feed URL moves.
  */
 export async function linkHostnameToSourceTopic(
   topicId: string,

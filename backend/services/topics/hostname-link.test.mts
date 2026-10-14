@@ -10,6 +10,9 @@ import { linkHostnameToSourceTopic, setTopicHostnameLink } from './hostname-link
 import { getTopicByAny } from './get.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 
 describe('hostname-link', () => {
   it('promotes an existing email-only hostname when a topic links it by ID', async () => {
@@ -26,6 +29,32 @@ describe('hostname-link', () => {
 
     await setTopicHostnameLink(topicId, hostnameId)
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+  })
+
+  it('evicts a cached email-only hostname after its topic link commits', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const topicId = await insertTestTopic({
+      name: `Cached Hostname Topic ${suffix}`,
+      slug: `cached-hostname-topic-${suffix}`,
+      createdById: user.id,
+    })
+    const domain = `cached-topic-${suffix}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+    await caches.url_hostnames.set(domain, privateHostname)
+
+    await withCommittedPostgresTransactionForTest(async query => {
+      await setTopicHostnameLink(topicId, hostnameId, { query })
+      expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
+    })
+
+    for (const key of [hostnameId, domain]) {
+      expect((await getUrlHostnameByAnyCached(key))?.publicly_introduced_at).toBeInstanceOf(Date)
+    }
   })
 
   it('setTopicHostnameLink links topic and hostname in both directions', async () => {
