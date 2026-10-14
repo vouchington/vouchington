@@ -10,6 +10,39 @@ const lockSql = `/* ${prefix}:lock */ WITH candidates AS MATERIALIZED (
   SELECT id FROM media_delivery_registry_records
   WHERE id = candidates.media_delivery_registry_record_id LIMIT 1
 ) record ORDER BY record.id FOR UPDATE OF record`
+const continuationLockSql = lockSql
+  .replace(
+    'WITH candidates AS MATERIALIZED (',
+    `WITH replay_cursor AS MATERIALIZED (
+    SELECT $1::uuid AS record_id, $2::integer AS page_size
+  ), candidates AS MATERIALIZED (`,
+  )
+  .replace(
+    'ORDER BY media_delivery_registry_record_id LIMIT $1',
+    'AND media_delivery_registry_record_id > (SELECT record_id FROM replay_cursor) ORDER BY media_delivery_registry_record_id LIMIT (SELECT page_size FROM replay_cursor)',
+  )
+const scopedLockSql = lockSql
+  .replace(
+    'WITH candidates AS MATERIALIZED (',
+    `WITH requested_record_ids AS MATERIALIZED (
+    SELECT $1::uuid[] AS record_ids
+  ), candidates AS MATERIALIZED (`,
+  )
+  .replace(
+    'ORDER BY media_delivery_registry_record_id LIMIT $1',
+    'AND media_delivery_registry_record_id = ANY((SELECT record_ids FROM requested_record_ids)::uuid[]) ORDER BY media_delivery_registry_record_id LIMIT $2',
+  )
+const scopedContinuationLockSql = scopedLockSql
+  .replace(
+    '), candidates AS MATERIALIZED (',
+    `), replay_cursor AS MATERIALIZED (
+    SELECT $2::uuid AS record_id, $3::integer AS page_size
+  ), candidates AS MATERIALIZED (`,
+  )
+  .replace(
+    'ORDER BY media_delivery_registry_record_id LIMIT $2',
+    'AND media_delivery_registry_record_id > (SELECT record_id FROM replay_cursor) ORDER BY media_delivery_registry_record_id LIMIT (SELECT page_size FROM replay_cursor)',
+  )
 const writeSql = `/* ${prefix} */ WITH inserted AS (
   INSERT INTO media_delivery_registry_changes SELECT media_delivery_registry_record_id
   FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (
@@ -102,6 +135,30 @@ describe('media replay captured statement budgets', () => {
         expect(() => assertMediaDeliveryReplayPlan(captured(statement, mode))).not.toThrow()
     },
   )
+
+  it.each<PlanMode>(['force_custom_plan', 'force_generic_plan'])(
+    'accepts first-page, continuation, scoped, and scoped-continuation candidate CTEs in %s',
+    mode => {
+      for (const queryText of [
+        lockSql,
+        continuationLockSql,
+        scopedLockSql,
+        scopedContinuationLockSql,
+      ]) {
+        const lock = captured('lock', mode)
+        lock.query_text = queryText
+        expect(() => assertMediaDeliveryReplayPlan(lock)).not.toThrow()
+      }
+    },
+  )
+
+  it('requires a materialized candidate CTE even when another CTE precedes it', () => {
+    for (const queryText of [continuationLockSql, scopedLockSql, scopedContinuationLockSql]) {
+      const lock = captured('lock', 'force_generic_plan')
+      lock.query_text = queryText.replace('candidates AS MATERIALIZED (', 'candidates AS (')
+      expect(() => assertMediaDeliveryReplayPlan(lock)).toThrow('bounded candidate page')
+    }
+  })
 
   it('does not let the event bitmap budget classify a mislabeled main write', () => {
     const write = captured('write', 'force_custom_plan')

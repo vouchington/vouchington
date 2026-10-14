@@ -11,7 +11,7 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
   const statement = result.query_text.trimStart()
   if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:lock */')) {
     if (
-      !statement.includes('WITH candidates AS MATERIALIZED') ||
+      !statement.includes('candidates AS MATERIALIZED (') ||
       !statement.includes('CROSS JOIN LATERAL (') ||
       !statement.includes('WHERE id = candidates.media_delivery_registry_record_id') ||
       !statement.includes('LIMIT 1') ||
