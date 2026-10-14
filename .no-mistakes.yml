@@ -781,14 +781,6 @@ rules:
             callee: 'materializeDsaStatementSubmission',
           }
         - {
-            file: backend/services/copyright-notices/form-intakes.mts,
-            callee: 'claimantCanViewCopyrightImagePlacement',
-          }
-        - {
-            file: backend/services/copyright-notices/form-intakes.mts,
-            callee: 'resolveCopyrightImagePlacement',
-          }
-        - {
             file: backend/services/copyright-notices/form-reviews-reversal.mts,
             callee: 'createCopyrightRestoreIntentForReversalInTransaction',
           }
@@ -853,10 +845,6 @@ rules:
             callee: 'recordClaimantMisuseEvent',
           }
         - { file: backend/services/copyright-notices/submission-reviews.mts, callee: 'transaction' }
-        - {
-            file: backend/services/copyright-notices/territorial-decision.mts,
-            callee: 'resolveCopyrightImagePlacement',
-          }
         - {
             file: backend/services/copyright-notices/territorial-redress.mts,
             callee: 'createCopyrightRestoreIntentForReversalInTransaction',

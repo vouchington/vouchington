@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import {
+  resolveTestCopyrightImagePlacements,
+  resolveTestCopyrightPostImagePlacements,
+} from '@voucha/test-helpers/copyright-placement-batches'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
@@ -10,6 +14,40 @@ import { testClaimantCanViewCopyrightImage } from '@voucha/test-helpers/copyrigh
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 
 describe('copyright image placement resolution', () => {
+  it('keeps mixed selector order and each current placement snapshot', async () => {
+    const post = await createTestCopyrightImageFixture('post-image')
+    const profile = await createTestCopyrightImageFixture('user-profile-image')
+    const topic = await createTestCopyrightImageFixture('topic-hero-image')
+    const targets = await resolveTestCopyrightImagePlacements([
+      topic.selector,
+      post.selector,
+      profile.selector,
+    ])
+    expect(targets.map(target => [target.placementId, target.placementRevision])).toEqual([
+      [topic.placementId, topic.placementRevision],
+      [post.placementId, post.placementRevision],
+      [profile.placementId, profile.placementRevision],
+    ])
+    expect(targets.map(target => new URL(target.hostedUseUrl).pathname)).toEqual([
+      expect.stringMatching(/^\/topic\//),
+      expect.stringMatching(/^\/discussion\//),
+      expect.stringMatching(/^\/user\//),
+    ])
+  })
+
+  it('rejects the first missing sorted territorial pair without accepting another image', async () => {
+    const first = await createTestCopyrightImageFixture('post-image')
+    const second = await createTestCopyrightImageFixture('post-image')
+    if (first.selector.surfaceKind !== 'post-image' || second.selector.surfaceKind !== 'post-image')
+      throw new Error('Expected post-image fixtures')
+    await expect(
+      resolveTestCopyrightPostImagePlacements([
+        { ...first.selector, imageId: second.imageId },
+        second.selector,
+      ]),
+    ).rejects.toMatchObject({ status: 422, message: 'Hosted image placement was not found' })
+  })
+
   it('resolves a story image to its canonical story URL', async () => {
     const fixture = await createTestCopyrightImageFixture('post-image', { postType: 'story' })
     const resolved = await resolveCopyrightImagePlacement(fixture.selector)

@@ -11,6 +11,7 @@ import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from '../types.mts'
 
 type SurfacePlacement = {
+  input_index?: number
   placement_id: string
   placement_revision: number
   image_id: string
@@ -22,6 +23,64 @@ type SurfacePlacement = {
   topic_slug: string | null
   community_id: string | null
   community_slug: string | null
+}
+
+/** Resolves the bounded selector set with one snapshot query, keyed by caller order. */
+export async function resolveCopyrightSurfacePlacements(
+  references: Array<ImageSurfaceReference & { imageId: string }>,
+  query: QueryExecutor,
+): Promise<Map<number, CopyrightNoticeTargetInput>> {
+  if (references.length === 0) return new Map()
+  const input = references.map((reference, input_index) => ({
+    input_index,
+    surface_kind: reference.surfaceKind,
+    owner_id:
+      'userId' in reference
+        ? reference.userId
+        : 'topicId' in reference
+          ? reference.topicId
+          : 'communityId' in reference
+            ? reference.communityId
+            : reference.userProfileLinkId,
+    image_id: reference.imageId,
+  }))
+  const { rows } = await query<SurfacePlacement>(
+    sql`/* resolveCopyrightSurfacePlacements */
+    SELECT input.input_index, selected.* FROM
+      jsonb_to_recordset(${JSON.stringify(input)}::jsonb) AS input(
+        input_index integer, surface_kind text, owner_id uuid, image_id uuid
+      )
+    LEFT JOIN LATERAL (
+      SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id,
+        surface.surface_kind, COALESCE(profile.id, link_owner.id) AS user_id,
+        COALESCE(profile.username, link_owner.username) AS username,
+        topic.id AS topic_id, topic.topic_type, topic.slug AS topic_slug,
+        community.id AS community_id, community.slug AS community_slug
+      FROM image_surface_placements surface
+      JOIN media_placements placement ON placement.id = surface.placement_id
+        AND placement.retired_at IS NULL
+      JOIN images image ON image.id = surface.image_id
+        AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
+        AND image.quarantine_pending_at IS NULL
+      LEFT JOIN users profile ON profile.id = surface.user_id
+      LEFT JOIN user_profile_links link ON link.id = surface.user_profile_link_id
+      LEFT JOIN users link_owner ON link_owner.id = link.user_id
+      LEFT JOIN topics topic ON topic.id = surface.topic_id
+      LEFT JOIN communities community ON community.id = surface.community_id
+      WHERE surface.image_id = input.image_id
+        AND surface.surface_kind::text = input.surface_kind
+        AND COALESCE(surface.user_id, surface.user_profile_link_id,
+          surface.topic_id, surface.community_id) = input.owner_id
+        AND `.append(imageSurfaceOwnerIsLiveSql()).append(sql`
+      ORDER BY placement.id DESC LIMIT 1
+    ) selected ON true
+  `),
+  )
+  const placements = new Map<number, CopyrightNoticeTargetInput>()
+  for (const row of rows) {
+    if (row.placement_id) placements.set(row.input_index!, mapSurfacePlacement(row))
+  }
+  return placements
 }
 
 /** Resolves one current surface binding, deriving the public URL from its live owner. */
@@ -54,6 +113,10 @@ export async function resolveCopyrightSurfacePlacement(
   const { rows } = await query<SurfacePlacement>(statement)
   const placement = rows[0]
   assert(placement, 422, 'Hosted image placement was not found')
+  return mapSurfacePlacement(placement)
+}
+
+function mapSurfacePlacement(placement: SurfacePlacement): CopyrightNoticeTargetInput {
   let path: string
   if (
     placement.surface_kind === 'user-profile-image' ||

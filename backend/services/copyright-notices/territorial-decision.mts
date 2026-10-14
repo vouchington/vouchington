@@ -10,7 +10,7 @@ import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-d
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 import { insertCopyrightNoticeTargetsInTransaction } from './notice-targets.mts'
 import {
-  resolveCopyrightImagePlacement,
+  resolveCopyrightPostImagePlacements,
   type CopyrightImageSelector,
 } from './placement-resolution.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
@@ -102,13 +102,12 @@ export async function recordTerritorialCopyrightDecision(
   )
   let assessmentId: string | null = null
   if (input.outcome === 'restrict') {
-    const targets = []
-    for (const selector of input.targets.toSorted(
-      (a, b) => a.postId.localeCompare(b.postId) || a.imageId.localeCompare(b.imageId),
-    )) {
-      // oxlint-disable-next-line no-await-in-loop -- placement locks and snapshots need canonical order.
-      targets.push(await resolveCopyrightImagePlacement(selector, transaction))
-    }
+    const targets = await resolveCopyrightPostImagePlacements(
+      input.targets.toSorted(
+        (a, b) => a.postId.localeCompare(b.postId) || a.imageId.localeCompare(b.imageId),
+      ),
+      transaction,
+    )
     await insertCopyrightNoticeTargetsInTransaction(noticeId, targets, transaction)
     const submissionId = uuidv7()
     const { rows: submissions } = await transaction<{ id: string }>(sql`
