@@ -379,14 +379,19 @@ for moderator classification; it cannot trigger a restriction or outbound messag
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
 explicit manual-fallback reason while reviewing the preserved original.
 Staff promotion reads the descendant intake and immutable ancestor-edge graph within the configured
-total-row budget, locks those intakes in ID order, then reads the graph again. A changed intake or
-edge set returns a retryable-by-staff `copyright_email_thread_changed` conflict before recording a
-notice, review, link, or delivery intent. The service does not retry automatically. If the graph
-exceeds the budget, approval still creates the initial notice and leaves every reply unlinked for
-the existing staff email queue; it records the notice ID and observed row count in the operational
-log, without storing a new thread status. No subset of replies is linked automatically.
+total-row budget, locks its reference tokens in digest order before locking the intakes in ID order,
+then reads the graph and token set again. Receipt-time threading takes the same token locks before
+writing an edge. A changed intake, edge, or token set returns a retryable-by-staff
+`copyright_email_thread_changed` conflict before recording a notice, review, link, or delivery
+intent. The service does not retry automatically. If the graph or its reference-token set exceeds
+the bounded lock budget, approval still creates the initial
+notice and leaves every reply unlinked for the existing staff email queue; it records the notice ID
+and observed row count in the operational log, without storing a new thread status. No subset of
+replies is linked automatically.
 Receipt-time ancestor matching uses the same budget and leaves an over-budget reply unlinked in
 the staff queue instead of traversing the full historical thread.
+Staff review also caps the per-intake ancestor walk; an over-budget conflict is shown as an
+unresolved thread for manual association rather than scanning the full graph.
 For an unlinked intake left for manual review by that cap, a duplicated Message-ID, or ancestors
 that reach different notices, a copyright reviewer can enter an existing notice ID and associate
 that intake alone. The staff picker resolves the reference and displays the case before selection,

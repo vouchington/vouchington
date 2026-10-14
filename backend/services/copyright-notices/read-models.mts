@@ -6,6 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 import { selectCopyrightParticipantStatements } from './participant-statements.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
@@ -56,6 +57,7 @@ export async function getCopyrightStaffEmailIntake(
 ): Promise<CopyrightStaffEmailIntake | null> {
   assertNotSuspended(currentUser)
   if (!currentUserCanReviewCopyrightNotices(currentUser)) return null
+  const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const intakeQuery = sql`/* getCopyrightStaffEmailIntake */
     SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
@@ -65,7 +67,7 @@ export async function getCopyrightStaffEmailIntake(
       link.link_kind, link.copyright_notice_id AS linked_notice_id, `
   intakeQuery.append(copyrightEmailDuplicateMessageIdSql())
   intakeQuery.append(sql` AS has_duplicate_message_id, `)
-  intakeQuery.append(copyrightEmailAncestorNoticeConflictSql())
+  intakeQuery.append(copyrightEmailAncestorNoticeConflictSql(maxGraphRows))
   intakeQuery.append(sql` AS has_ancestor_notice_conflict, `)
   intakeQuery.append(copyrightEmailReplyReferenceSql())
   intakeQuery.append(sql` AS has_reply_reference

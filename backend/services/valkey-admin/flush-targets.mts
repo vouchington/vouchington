@@ -27,7 +27,7 @@ export const CACHE_GROUPS = [
       'urls_lookup',
       'url_hostnames',
       'hostname_elections',
-      'email_domain_validation',
+      'email-domain-validation',
     ],
   },
   {

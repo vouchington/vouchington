@@ -5,12 +5,13 @@ import {
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
+import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
 import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 
 describe('copyright email thread lock order', () => {
-  it('promotes while a separate ingestion owns the token lock', async () => {
+  it('waits for the ingestion token lock before locking graph intakes', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()
     const root = await recordThreadedCopyrightEmail({ messageId, replyReferences: [] })
@@ -23,10 +24,27 @@ describe('copyright email thread lock order', () => {
 
     await using ingestion = await beginTransaction()
     await lockCopyrightEmailThreadTokens(ingestion, [digest])
-    const promoted = await promoteCopyrightEmailIntake(
-      await copyrightEmailPromotionInput(moderator, root.intakeId),
-    )
-    expect(promoted.noticeId).toEqual(expect.any(String))
-    await ingestion.commit()
+    let resolveGraphRead!: () => void
+    const graphRead = new Promise<void>(resolve => {
+      resolveGraphRead = resolve
+    })
+    const dispose = installSharedDbScopeObserver(event => {
+      if (
+        event.operation === 'promoteCopyrightEmailIntakeGraph' &&
+        event.scope.kind === 'ids' &&
+        event.scope.ids[0] === root.intakeId
+      )
+        resolveGraphRead()
+    })
+    try {
+      const promotion = promoteCopyrightEmailIntake(
+        await copyrightEmailPromotionInput(moderator, root.intakeId),
+      )
+      await graphRead
+      await ingestion.commit()
+      await expect(promotion).resolves.toMatchObject({ noticeId: expect.any(String) })
+    } finally {
+      dispose()
+    }
   })
 })

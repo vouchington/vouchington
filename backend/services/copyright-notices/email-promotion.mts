@@ -14,11 +14,14 @@ import { copyrightEmailIntakePurpose, type CopyrightEmailIntake } from './email-
 import { linkPendingCopyrightEmailRepliesInTransaction } from './email-thread-link-pending.mts'
 import {
   assertCopyrightEmailGraphUnchanged,
+  copyrightEmailThreadChangedError,
   lockCopyrightEmailGraphIntakes,
+  readCopyrightEmailGraphTokens,
   readCopyrightEmailThreadGraph,
   type CopyrightEmailThreadGraph,
 } from './email-thread-graph.mts'
 import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
 import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.mts'
 import {
   assertStatutoryEmailFields,
@@ -66,9 +69,16 @@ async function admitCopyrightEmailIntake(
     undefined,
     transaction,
   )
+  const tokens = graph.overflow
+    ? { digests: [], overflow: false }
+    : await readCopyrightEmailGraphTokens(transaction, graph.intakeIds, maxGraphRows)
+  // Ingestion takes these same sorted token locks before it inserts a reference or an edge.
+  // Taking them before intake FOR UPDATE prevents an intake/token lock inversion.
+  if (!graph.overflow && !tokens.overflow)
+    await lockCopyrightEmailThreadTokens(transaction, tokens.digests)
   await lockCopyrightEmailGraphIntakes(
     transaction,
-    graph.overflow ? [input.intakeId] : graph.intakeIds,
+    graph.overflow || tokens.overflow ? [input.intakeId] : graph.intakeIds,
   )
   observeSharedDbScope(
     'promoteCopyrightEmailIntakeGraphLocked',
@@ -76,10 +86,22 @@ async function admitCopyrightEmailIntake(
     undefined,
     transaction,
   )
-  if (!graph.overflow) {
+  if (!graph.overflow && !tokens.overflow) {
     const afterLock = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
     assertCopyrightEmailGraphUnchanged(graph, afterLock)
+    const afterTokens = await readCopyrightEmailGraphTokens(
+      transaction,
+      afterLock.intakeIds,
+      maxGraphRows,
+    )
+    if (
+      afterTokens.overflow ||
+      tokens.digests.length !== afterTokens.digests.length ||
+      tokens.digests.some((digest, index) => digest !== afterTokens.digests[index])
+    )
+      throw copyrightEmailThreadChangedError()
   }
+  const shouldLinkReplies = !graph.overflow && !tokens.overflow
   const { rows: intakeRows } =
     await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:read */
     SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
@@ -142,7 +164,7 @@ async function admitCopyrightEmailIntake(
       409,
       'Copyright email intake was linked concurrently',
     )
-    if (!graph.overflow)
+    if (shouldLinkReplies)
       await linkPendingCopyrightEmailRepliesInTransaction(
         {
           initialIntakeId: intake.id,
@@ -153,6 +175,8 @@ async function admitCopyrightEmailIntake(
       )
     await transaction.commit()
     if (graph.overflow) logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_id, graph)
+    if (tokens.overflow)
+      logCopyrightEmailTokenLockOverflow(prior.promoted_copyright_notice_id, maxGraphRows)
     return {
       noticeId: prior.promoted_copyright_notice_id,
       submissionId: prior.submission_id,
@@ -171,9 +195,11 @@ async function admitCopyrightEmailIntake(
     input,
     purpose,
     graph,
+    shouldLinkReplies,
   )
   await transaction.commit()
   if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
+  if (tokens.overflow) logCopyrightEmailTokenLockOverflow(notice.id, maxGraphRows)
   return { noticeId: notice.id, submissionId }
 }
 
@@ -181,6 +207,13 @@ function logCopyrightEmailGraphOverflow(noticeId: string, graph: CopyrightEmailT
   console.info('copyright_email_thread_graph_overflow', {
     noticeId,
     observedRows: graph.observedRows,
+  })
+}
+
+function logCopyrightEmailTokenLockOverflow(noticeId: string, maxRows: number): void {
+  console.info('copyright_email_thread_token_lock_overflow', {
+    noticeId,
+    observedRows: maxRows + 1,
   })
 }
 
@@ -255,6 +288,7 @@ async function recordEmailPromotion(
   input: PromoteCopyrightEmailIntakeInput,
   purpose: string,
   graph: CopyrightEmailThreadGraph,
+  shouldLinkReplies: boolean,
 ): Promise<string> {
   const { rows } = await transaction<{
     id: string
@@ -291,7 +325,7 @@ async function recordEmailPromotion(
   `,
   )
   assert(initialLinks[0], 409, 'Copyright email intake was linked concurrently')
-  if (!graph.overflow)
+  if (shouldLinkReplies)
     await linkPendingCopyrightEmailRepliesInTransaction(
       {
         initialIntakeId: intake.id,

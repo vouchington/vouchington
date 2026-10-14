@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 import {
   copyrightEmailAncestorNoticeConflictSql,
   copyrightEmailDuplicateMessageIdSql,
@@ -48,6 +49,7 @@ export async function searchCopyrightStaffEmailIntakes(
     return { intakes: [], hasNextPage: false }
   }
   if (options.intakeIds?.length === 0) return { intakes: [], hasNextPage: false }
+  const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const intakeIds = options.intakeIds ? [...options.intakeIds] : null
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, COALESCE(parse.status::text, 'unparsed') AS parse_status,
@@ -59,7 +61,7 @@ export async function searchCopyrightStaffEmailIntakes(
       ) AS cursor_received_at, `
   query.append(copyrightEmailDuplicateMessageIdSql())
   query.append(sql` AS has_duplicate_message_id, `)
-  query.append(copyrightEmailAncestorNoticeConflictSql())
+  query.append(copyrightEmailAncestorNoticeConflictSql(maxGraphRows))
   query.append(sql` AS has_ancestor_notice_conflict, `)
   query.append(copyrightEmailReplyReferenceSql())
   query.append(sql` AS has_reply_reference

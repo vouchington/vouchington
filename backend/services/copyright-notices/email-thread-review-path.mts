@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
 
 export type CopyrightEmailReviewPath =
   | 'matched_thread'
@@ -21,6 +22,7 @@ export function copyrightEmailReviewPath(row: {
   has_reply_reference: boolean
 }): CopyrightEmailReviewPath {
   if (row.link_kind === 'thread') return 'matched_thread'
+  if (row.link_kind === 'initial') return 'initial'
   if (row.link_kind === null && row.has_duplicate_message_id) return 'duplicate_message_id'
   if (row.link_kind === null && row.has_ancestor_notice_conflict) return 'ancestor_notice_conflict'
   if (row.has_reply_reference) return 'unresolved_thread'
@@ -46,23 +48,32 @@ export function copyrightEmailDuplicateMessageIdSql(): SQLStatement {
   )`
 }
 
-/** Correlated ancestor walk for the outer `intake` row. Unlinked ancestors add no notice. */
-export function copyrightEmailAncestorNoticeConflictSql(): SQLStatement {
+/** Correlated, capped ancestor walk for the outer `intake` row. Overflow stays unresolved. */
+export function copyrightEmailAncestorNoticeConflictSql(maxRows: number): SQLStatement {
   return sql`(
-    WITH RECURSIVE reached(intake_id) AS (
-      SELECT ancestor.ancestor_message_intake_id
-      FROM copyright_notice_email_message_ancestors ancestor
-      WHERE ancestor.reply_message_intake_id = intake.id
+    WITH RECURSIVE reached(reply_id, ancestor_id) AS (
+      SELECT intake.id, intake.id
       UNION
-      SELECT next_edge.ancestor_message_intake_id
-      FROM reached reached_intake
-      JOIN copyright_notice_email_message_ancestors next_edge
-        ON next_edge.reply_message_intake_id = reached_intake.intake_id
+      SELECT edge.reply_message_intake_id, edge.ancestor_message_intake_id
+      FROM reached child
+      JOIN LATERAL (
+        SELECT reply_message_intake_id, ancestor_message_intake_id
+        FROM copyright_notice_email_message_ancestors
+        WHERE reply_message_intake_id = child.ancestor_id
+        ORDER BY ancestor_message_intake_id
+        LIMIT ${maxRows + 1}
+      ) edge ON true
+    ), bounded AS MATERIALIZED (
+      SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 2}
     )
-    SELECT count(DISTINCT link.copyright_notice_id) > 1
-    FROM reached
-    JOIN copyright_notice_email_intake_notice_links link
-      ON link.copyright_notice_email_intake_id = reached.intake_id
+    SELECT CASE WHEN (
+      SELECT count(DISTINCT ancestor_id) + count(*) - 1 FROM bounded
+    ) > ${maxRows} THEN false ELSE (
+      SELECT count(DISTINCT link.copyright_notice_id) > 1
+      FROM bounded
+      JOIN copyright_notice_email_intake_notice_links link
+        ON link.copyright_notice_email_intake_id = bounded.ancestor_id
+    ) END
   )`
 }
 
@@ -108,6 +119,7 @@ export async function assertCopyrightEmailUnresolvedReply(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
+  const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   const query = sql`/* assertCopyrightEmailUnresolvedReply */
     SELECT 1 FROM copyright_notice_email_intakes intake
     WHERE intake.id = ${intakeId}
@@ -120,7 +132,7 @@ export async function assertCopyrightEmailUnresolvedReply(
   query.append(sql` AND NOT `)
   query.append(copyrightEmailDuplicateMessageIdSql())
   query.append(sql` AND NOT `)
-  query.append(copyrightEmailAncestorNoticeConflictSql())
+  query.append(copyrightEmailAncestorNoticeConflictSql(maxGraphRows))
   query.append(sql` LIMIT 1`)
   const { rows } = await transaction(query)
   assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')

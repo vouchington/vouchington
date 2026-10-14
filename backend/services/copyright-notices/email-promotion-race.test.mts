@@ -11,15 +11,90 @@ import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
   promoteInitialCopyrightEmail,
+  recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
-import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
+import {
+  insertCopyrightEmailThreadReferences,
+  lockCopyrightEmailThreadTokens,
+  recordCopyrightEmailAncestorEdges,
+} from './email-thread-ancestors.mts'
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
 describe('copyright email promotion and threading serialization', () => {
+  it('waits for a pending ancestor token claim before locking or linking its descendant', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const rootMessageId = copyrightEmailMessageId()
+    const pendingMessageId = copyrightEmailMessageId()
+    const root = await recordThreadedCopyrightEmail({
+      messageId: rootMessageId,
+      replyReferences: [],
+    })
+    const reply = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      replyReferences: [rootMessageId, pendingMessageId],
+    })
+    const claimant = await createUnparsedCopyrightEmailIntake()
+    const referenceRows = buildCopyrightEmailThreadReferenceRows({
+      messageId: pendingMessageId,
+      inReplyTo: [],
+      references: [],
+    })
+    await using ingestion = await beginTransaction()
+    await lockCopyrightEmailThreadTokens(ingestion, [referenceRows[0]!.lookup_digest])
+    await insertCopyrightEmailThreadReferences(ingestion, claimant.id, referenceRows)
+
+    let graphRead!: () => void
+    let graphLocked!: () => void
+    const reachedGraphRead = new Promise<void>(resolve => {
+      graphRead = resolve
+    })
+    const reachedGraphLock = new Promise<void>(resolve => {
+      graphLocked = resolve
+    })
+    const dispose = installSharedDbScopeObserver(event => {
+      if (event.scope.kind !== 'ids' || event.scope.ids[0] !== root.intakeId) return
+      if (event.operation === 'promoteCopyrightEmailIntakeGraph') graphRead()
+      if (event.operation === 'promoteCopyrightEmailIntakeGraphLocked') graphLocked()
+    })
+    const input = await copyrightEmailPromotionInput(moderator, root.intakeId)
+    try {
+      const promotion = promoteCopyrightEmailIntake(input).then(
+        () => null,
+        err => err,
+      )
+      await reachedGraphRead
+      const edge = recordCopyrightEmailAncestorEdges(ingestion, claimant.id)
+      const first = await Promise.race([
+        edge.then(() => 'edge' as const),
+        reachedGraphLock.then(() => 'graph-locked' as const),
+      ])
+      if (first === 'graph-locked') {
+        await promotion
+        await edge
+        await ingestion.commit()
+      } else {
+        await ingestion.commit()
+      }
+      expect(first).toBe('edge')
+      expect(await promotion).toMatchObject({
+        status: 409,
+        code: 'copyright_email_thread_changed',
+      })
+    } finally {
+      dispose()
+    }
+    expect(await readCopyrightEmailIntakeNoticeLinks(root.intakeId)).toEqual([])
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
+    expect(await readCopyrightEmailIntakeReview(root.intakeId)).toEqual([])
+    expect(
+      await readCopyrightEmailPromotionEffects(root.intakeId, input.targets[0]!.placementId),
+    ).toMatchObject({ reviews: 0, evidence: 0, deliveries: 0, notice_targets: 0 })
+  })
+
   it('rejects promotion after a token-first thread link commits, without creating a second case', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const messageId = copyrightEmailMessageId()

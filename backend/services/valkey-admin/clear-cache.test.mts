@@ -46,7 +46,11 @@ describe('getCacheGroups', () => {
 
   it('covers every production entity cache exactly once', () => {
     expect(new Set(CACHE_FLUSH_PREFIXES).size).toBe(CACHE_FLUSH_PREFIXES.length)
-    expect([...CACHE_FLUSH_PREFIXES].toSorted()).toEqual(Object.keys(caches).toSorted())
+    expect([...CACHE_FLUSH_PREFIXES].toSorted()).toEqual(
+      Object.keys(caches)
+        .map(key => (key === 'email_domain_validation' ? 'email-domain-validation' : key))
+        .toSorted(),
+    )
   })
 })
 
@@ -75,6 +79,17 @@ describe('cache clearing', () => {
 
     expect(invalidateManyMock).toHaveBeenCalledTimes(1)
     expect(invalidateManyMock).toHaveBeenCalledWith(prefixes, cacheValkeyClient)
+  })
+
+  it('uses the versioned email-validation cache prefix for URL-group flushes', async () => {
+    invalidateManyMock.mockResolvedValue(undefined)
+
+    await clearCacheGroup('urls')
+
+    expect(invalidateManyMock).toHaveBeenCalledWith(
+      expect.arrayContaining(['email-domain-validation']),
+      cacheValkeyClient,
+    )
   })
 
   it('rejects an invalid cache group with status 400', async () => {

@@ -11,6 +11,45 @@ export type CopyrightEmailThreadGraph = {
   overflow: boolean
 }
 
+type CopyrightEmailGraphTokens = { digests: string[]; overflow: boolean }
+
+/** Read the graph's reference and matched-link tokens before taking intake locks. */
+export async function readCopyrightEmailGraphTokens(
+  transaction: TransactionQuery,
+  intakeIds: readonly string[],
+  maxRows: number,
+): Promise<CopyrightEmailGraphTokens> {
+  const { rows: references } = await transaction<{ lookup_digest: string }>(sql`
+    /* readCopyrightEmailGraphTokens:references */
+    SELECT token.lookup_digest
+    FROM unnest(${[...intakeIds].toSorted()}::uuid[]) graph_intake(id)
+    JOIN LATERAL (
+      SELECT reference.token_id
+      FROM copyright_notice_email_thread_references reference
+      WHERE reference.copyright_notice_email_intake_id = graph_intake.id
+        AND reference.token_id IS NOT NULL
+      ORDER BY reference.token_id, reference.reference_kind
+      LIMIT ${maxRows + 1}
+    ) reference ON true
+    JOIN copyright_notice_email_thread_tokens token ON token.id = reference.token_id
+    LIMIT ${maxRows + 1}
+  `)
+  if (references.length > maxRows) return { digests: [], overflow: true }
+  const { rows: matches } = await transaction<{ lookup_digest: string }>(sql`
+    /* readCopyrightEmailGraphTokens:matchedLinks */
+    SELECT token.lookup_digest
+    FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notice_email_thread_tokens token ON token.id = link.matched_token_id
+    WHERE link.copyright_notice_email_intake_id = ANY(${[...intakeIds]}::uuid[])
+    ORDER BY link.copyright_notice_email_intake_id
+    LIMIT ${maxRows + 1}
+  `)
+  return {
+    digests: [...new Set([...references, ...matches].map(row => row.lookup_digest))].toSorted(),
+    overflow: matches.length > maxRows,
+  }
+}
+
 /** Read at most maxRows + 1 edge identities, then count distinct intakes and edges. */
 export async function readCopyrightEmailThreadGraph(
   transaction: TransactionQuery,
