@@ -23,9 +23,10 @@ export function hasWebVitestSegfault(log: string): boolean {
   const markerIndex = terminalFailure.lastIndexOf(webVitestSigsegvMarker)
   if (markerIndex === -1) return false
   // Only the killed-command line is evidence; later lines may repeat the web command for another process.
-  const afterMarker = terminalFailure.slice(markerIndex + webVitestSigsegvMarker.length)
-  const lineEnd = afterMarker.indexOf('\n')
-  const command = (lineEnd === -1 ? afterMarker : afterMarker.slice(0, lineEnd)).replace(/\r$/, '')
+  const command = terminalFailure
+    .slice(markerIndex + webVitestSigsegvMarker.length)
+    .split('\n', 1)[0]
+    .replace(/\r$/, '')
 
   return (
     hasCurrentWebVitestShardCommand(command) &&
