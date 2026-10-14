@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
+import { insertTestLinkedInOAuthAccount } from '@voucha/test-helpers/entities/linkedin-oauth-accounts'
 import {
   createRandomString,
   createTestRetentionWindow,
@@ -115,10 +116,14 @@ describe('orphaned OAuth account cleanup', () => {
       })
     })
 
-    await insertTestOAuthAccount('linkedin', activeAccountId)
-    await insertTestOAuthAccount('linkedin', unrelatedAccountId)
-    await setOAuthAccountCreatedAt('linkedin', activeAccountId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt('linkedin', unrelatedAccountId, window.secondEligibleDate)
+    const activeAccount = await insertTestLinkedInOAuthAccount(
+      activeAccountId,
+      v7({ msecs: window.firstEligibleDate.getTime() }),
+    )
+    await insertTestLinkedInOAuthAccount(
+      unrelatedAccountId,
+      v7({ msecs: window.secondEligibleDate.getTime() }),
+    )
     const now = new Date()
     await insertTestOAuthAuthorization({
       id: authorizationId,
@@ -145,7 +150,9 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(oauthAccountExistsByProviderUserId('linkedin', unrelatedAccountId)).resolves.toBe(
       false,
     )
-    await expect(getTestOAuthAuthorization(authorizationId)).resolves.not.toBeNull()
+    await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
+      linkedin_account_id: activeAccount.account_id,
+    })
   }, 30_000)
 
   it('rejects table and column identifiers outside the configured provider allowlist', async () => {

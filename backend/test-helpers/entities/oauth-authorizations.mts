@@ -29,7 +29,7 @@ export type TestOAuthAuthorizationRow = {
   facebook_user_id: string | null
   github_user_id: string | null
   x_user_id: string | null
-  linkedin_user_id: string | null
+  linkedin_account_id: string | null
   result_kind: string | null
   result_user_id: string | null
   result_device_id: string | null
@@ -69,6 +69,10 @@ export async function insertTestOAuthAuthorization(
 ): Promise<string> {
   const id = options.id ?? uuidv7()
   const provider = options.provider ?? 'github'
+  const linkedinAccountId =
+    provider === 'linkedin' && options.providerUserId
+      ? await getLinkedInAccountId(options.providerUserId)
+      : null
   const completionTokenHash = options.completionToken
     ? hashToken(`oauth-authorization-broker:completion:${id}`, options.completionToken)
     : null
@@ -81,7 +85,7 @@ export async function insertTestOAuthAuthorization(
        completion_token_hash, completion_token_ciphertext, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
-       linkedin_user_id
+       linkedin_account_id
      )
      VALUES (
        $1, $2, $3, $4,
@@ -122,7 +126,7 @@ export async function insertTestOAuthAuthorization(
       options.completedAt ?? null,
       options.expiresAt ?? new Date(Date.now() + 10 * 60_000),
       options.updatedAt ?? new Date(),
-      provider === 'linkedin' ? (options.providerUserId ?? null) : null,
+      linkedinAccountId,
     ],
   )
   await seedTestOAuthExchangeAttempts(id, options)
@@ -136,12 +140,21 @@ export async function getTestOAuthAuthorization(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_user_id,
-       github_user_id, x_user_id, linkedin_user_id, result_kind, result_user_id, result_device_id, result_session_id
+       github_user_id, x_user_id, linkedin_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],
   )
   return rows[0] ?? null
+}
+
+async function getLinkedInAccountId(providerUserId: string): Promise<string> {
+  const { rows } = await read<{ id: string }>(
+    `/* getTestLinkedInAccountId */ SELECT id FROM linkedin_accounts WHERE linkedin_user_id = $1`,
+    [providerUserId],
+  )
+  if (!rows[0]) throw new Error('LinkedIn test account must exist before authorization fixture')
+  return rows[0].id
 }
 
 export async function markTestOAuthAuthorizationExchanging(

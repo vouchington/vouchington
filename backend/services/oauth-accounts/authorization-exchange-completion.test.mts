@@ -58,13 +58,13 @@ describe('completeOAuthAuthorizationExchange', () => {
       'linkedin',
       authorizationId,
       claimId,
-      'linkedin-user',
+      '00000000-0000-7000-8000-000000000123',
       query,
     )
 
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('linkedin_user_id = $2'), [
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('linkedin_account_id = $2'), [
       authorizationId,
-      'linkedin-user',
+      '00000000-0000-7000-8000-000000000123',
       'linkedin',
       claimId,
     ])

@@ -86,14 +86,11 @@ export async function getAuthorizationAccount(
   authorization: CompletionRow,
   query: TransactionQuery,
 ): Promise<OAuthAccount> {
-  const providerUserId = {
-    facebook: authorization.facebook_user_id,
-    x: authorization.x_user_id,
-    github: authorization.github_user_id,
-    linkedin: authorization.linkedin_user_id,
-  }[authorization.provider]
-  if (!providerUserId) throw new Error('Completed OAuth exchange has no provider account')
   const config = getAuthorizationAccountIdentifiers(authorization.provider)
+  const accountId = authorization[config.authorizationAccountColumn as keyof CompletionRow]
+  if (typeof accountId !== 'string') {
+    throw new Error('Completed OAuth exchange has no provider account')
+  }
   const { rows } = await query(
     `/* getAuthorizationAccount */ SELECT
        user_id,
@@ -101,8 +98,8 @@ export async function getAuthorizationAccount(
        ${config.emailColumn} AS provider_user_email_address,
        ${config.dataColumn} AS provider_user_data
      FROM ${config.table}
-     WHERE ${config.providerUserIdColumn} = $1`,
-    [providerUserId],
+     WHERE ${config.accountIdColumn} = $1`,
+    [accountId],
   )
   const account = rows[0] as OAuthAccount | undefined
   if (!account) throw new Error('Completed OAuth provider account is missing')

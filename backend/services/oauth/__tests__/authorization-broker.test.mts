@@ -171,7 +171,7 @@ describe('OAuth authorization broker callback', () => {
     const providerUserId = `broker-linkedin-${randomUUID()}`
     cleanup.linkedinUserIds.push(providerUserId)
 
-    await upsertOAuthAccount(
+    const account = await upsertOAuthAccount(
       'linkedin',
       providerUserId,
       null,
@@ -179,10 +179,11 @@ describe('OAuth authorization broker callback', () => {
       { accessToken: 'synthetic-access-token' },
       { authorizationId: flowId, authorizationClaimId: claimId },
     )
+    expect(account.account_id).toMatch(/^[0-9a-f-]{36}$/)
 
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
       status: 'completion_ready',
-      linkedin_user_id: providerUserId,
+      linkedin_account_id: account.account_id,
       callback_code_ciphertext: null,
       exchange_claim_id: null,
     })

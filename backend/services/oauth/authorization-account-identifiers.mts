@@ -6,24 +6,29 @@ const authorizationAccountIdentifiers = {
   facebook: {
     table: 'facebook_accounts',
     providerUserIdColumn: 'facebook_user_id',
+    authorizationAccountColumn: 'facebook_user_id',
     emailColumn: 'facebook_user_email_address',
     dataColumn: 'facebook_user_data',
   },
   x: {
     table: 'x_accounts',
     providerUserIdColumn: 'x_user_id',
+    authorizationAccountColumn: 'x_user_id',
     emailColumn: 'x_user_email_address',
     dataColumn: 'x_user_data',
   },
   github: {
     table: 'github_accounts',
     providerUserIdColumn: 'github_user_id',
+    authorizationAccountColumn: 'github_user_id',
     emailColumn: 'github_user_email_address',
     dataColumn: 'github_user_data',
   },
   linkedin: {
     table: 'linkedin_accounts',
     providerUserIdColumn: 'linkedin_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'linkedin_account_id',
     emailColumn: 'linkedin_user_email_address',
     dataColumn: 'linkedin_user_data',
   },
@@ -32,6 +37,8 @@ const authorizationAccountIdentifiers = {
   {
     table: string
     providerUserIdColumn: string
+    accountIdColumn?: string
+    authorizationAccountColumn: string
     emailColumn: string
     dataColumn: string
   }
@@ -40,6 +47,7 @@ const authorizationAccountIdentifiers = {
 export function getAuthorizationAccountIdentifiers(provider: BrokerOAuthProvider) {
   const config = providerTableConfigs[provider]
   const allowed = authorizationAccountIdentifiers[provider]
+  const accountIdColumn = 'accountIdColumn' in allowed ? allowed.accountIdColumn : undefined
   return {
     table: assertWhitelistedSqlIdentifier(
       config.table,
@@ -50,6 +58,16 @@ export function getAuthorizationAccountIdentifiers(provider: BrokerOAuthProvider
       config.providerUserIdColumn,
       [allowed.providerUserIdColumn],
       'OAuth authorization account user ID column',
+    ),
+    accountIdColumn: assertWhitelistedSqlIdentifier(
+      accountIdColumn ?? config.providerUserIdColumn,
+      [accountIdColumn ?? config.providerUserIdColumn],
+      'OAuth authorization account lookup column',
+    ),
+    authorizationAccountColumn: assertWhitelistedSqlIdentifier(
+      allowed.authorizationAccountColumn,
+      [allowed.authorizationAccountColumn],
+      'OAuth authorization account reference column',
     ),
     emailColumn: assertWhitelistedSqlIdentifier(
       config.emailColumn,
