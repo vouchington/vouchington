@@ -141,7 +141,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-lambdas.yml`                    | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 14            |
 | `tests-playwright-credentialed.yml`    | `playwright-credentialed-tests` | job    | `ubuntu-24.04-arm`                    | 13            |
 | `tests-playwright.yml`                 | `playwright-tests`              | matrix | `ubuntu-24.04-arm`                    | 23            |
-| `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 13            |
+| `tests-playwright.yml`                 | `shards`                        | job    | `ubuntu-24.04-arm`                    | 16            |
 | `tests-portability.yml`                | `portability-linux`             | job    | `ubuntu-latest`                       | 20            |
 | `tests-postgres-schema.yml`            | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
@@ -149,7 +149,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 20            |
 | `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
-| `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 13            |
+| `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 16            |
 | `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 19            |
 | `tests-web.yml`                        | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 30            |

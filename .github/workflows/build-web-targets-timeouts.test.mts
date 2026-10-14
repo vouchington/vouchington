@@ -48,9 +48,9 @@ function restoreSeconds(action: string): number {
 }
 
 // run-bounded waits for SIGTERM, then for the relayed output pipes, before it returns.
-function killGraceSeconds(source: string): number {
-  const term = /proc\.wait\(timeout=(\d+)\)/.exec(source)
-  const relay = /RELAY_JOIN_SECONDS = (\d+)/.exec(source)
+function killGraceSeconds(runBounded: string, processSource: string): number {
+  const term = /proc\.wait\(timeout=(\d+)\)/.exec(processSource)
+  const relay = /RELAY_JOIN_SECONDS = (\d+)/.exec(runBounded)
   if (!term || !relay) throw new TypeError('run-bounded kill grace is no longer declared')
   return Number(term[1]) + Number(relay[1])
 }
@@ -63,7 +63,7 @@ function readDeadlines(): Deadlines {
     restore: restoreSeconds(action),
     verify: boundedSeconds(action, 'node ci/web-build-cache-manifest\\.mts verify'),
     build: boundedSeconds(action, 'node ci/setup-web-integration\\.mts'),
-    killGrace: killGraceSeconds(runBounded + process),
+    killGrace: killGraceSeconds(runBounded, process),
   }
 }
 
@@ -138,6 +138,6 @@ describe('build-web-targets timeouts', () => {
       boundedSeconds('node ci/setup-web-integration.mts', 'node ci/setup-web-integration\\.mts'),
     ).toThrow('under run-bounded.py')
     expect(() => restoreSeconds('uses: actions/cache/restore')).toThrow('bound its cache restore')
-    expect(() => killGraceSeconds('')).toThrow('kill grace')
+    expect(() => killGraceSeconds('', '')).toThrow('kill grace')
   })
 })
