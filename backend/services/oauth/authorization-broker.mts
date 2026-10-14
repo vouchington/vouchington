@@ -108,6 +108,7 @@ export async function beginOAuthAuthorization(
     flow_id: id,
     redirect_url: buildProviderAuthorizationUrl({
       provider: options.provider,
+      callbackMode: options.callbackMode,
       clientId,
       redirectUri,
       state,

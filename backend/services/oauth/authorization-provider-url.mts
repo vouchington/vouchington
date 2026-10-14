@@ -1,8 +1,9 @@
 import { FACEBOOK_GRAPHQL_VERSION } from '@voucha/config'
-import type { BrokerOAuthProvider } from './broker-config.mts'
+import type { BrokerCallbackMode, BrokerOAuthProvider } from './broker-config.mts'
 
 export function buildProviderAuthorizationUrl(options: {
   provider: BrokerOAuthProvider
+  callbackMode: BrokerCallbackMode
   clientId: string
   redirectUri: string
   state: string
@@ -43,6 +44,7 @@ export function buildProviderAuthorizationUrl(options: {
         ...shared,
         client_id: options.clientId,
         scope: 'openid profile email',
+        ...(options.callbackMode === 'native' ? { enable_extended_login: 'true' } : {}),
       })
   }
 }

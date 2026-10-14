@@ -62,6 +62,7 @@ describe('OAuth authorization broker callback', () => {
         buildProviderAuthorizationUrl({
           clientId: `${provider}-client-id`,
           provider: provider as keyof typeof expectations,
+          callbackMode: 'web',
           redirectUri,
           state: 'opaque-state',
           codeChallenge: 'Z'.repeat(43),
@@ -71,6 +72,7 @@ describe('OAuth authorization broker callback', () => {
       expect(url.searchParams.get('redirect_uri')).toBe(redirectUri)
       expect(Boolean(url.searchParams.get('code_challenge'))).toBe(expected.pkce)
       expect(url.searchParams.get('code_challenge_method')).toBe(expected.pkce ? 'S256' : null)
+      expect(url.searchParams.has('enable_extended_login')).toBe(false)
     }
   })
 
