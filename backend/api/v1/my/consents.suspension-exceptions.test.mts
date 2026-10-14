@@ -4,6 +4,7 @@ import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test
 import { grantConsent } from '@services/user-consents/create'
 import { getActiveConsents } from '@services/user-consents/get'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
+import { TERMS_OF_SERVICE_VERSION } from '@services/users/create-helpers'
 
 describe('suspended consent exceptions', () => {
   const suspendedUserIds: string[] = []
@@ -25,7 +26,7 @@ describe('suspended consent exceptions', () => {
 
     const grant = await request
       .post('/api/v1/my/consents')
-      .send({ consent_type: 'terms_of_service', version: '2.0' })
+      .send({ consent_type: 'terms_of_service', version: TERMS_OF_SERVICE_VERSION })
     expect(grant.status).toBe(403)
     expect(grant.body.code).toBe(ACCOUNT_SUSPENDED)
     expect(await getActiveConsents(user.id)).toEqual([])
