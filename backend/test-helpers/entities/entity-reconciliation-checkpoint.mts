@@ -5,6 +5,7 @@ import {
   type QueryOptions,
   type OwnedTransaction,
 } from '@data-stores/psql'
+import { finishEntityReconciliationCheckpoint } from '../entity-reconciliation-checkpoint-outcome.mts'
 import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
 
 type Checkpoint = { reconciled_through_at: string; updated_at: string }
@@ -68,17 +69,5 @@ export async function withTestEntityReconciliationCheckpoint<Result>(
       cleanupErrors.push(err)
     }
   }
-  const errors = cleanupErrors.filter(
-    (error, index, all) =>
-      all.findIndex(other => Object.is(other, error)) === index &&
-      (outcome.ok || !Object.is(error, outcome.error)),
-  )
-  if (errors.length > 0) {
-    throw new AggregateError(
-      outcome.ok ? errors : [outcome.error, ...errors],
-      'Entity reconciliation checkpoint reservation failed',
-    )
-  }
-  if (!outcome.ok) throw outcome.error
-  return outcome.value
+  return finishEntityReconciliationCheckpoint(outcome, cleanupErrors)
 }
