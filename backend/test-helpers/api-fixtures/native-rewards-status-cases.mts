@@ -1,21 +1,11 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo } from './data.mts'
+import { one, rewardsProgramStatusTopic } from './native-rewards-status-data.mts'
 import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const path = '/api/v1/my/rewards-program-statuses'
 const scope = 'my-rewards-program-statuses:00000000-0000-7000-8000-000000000740:id-asc'
-const one = {
-  id: '00000000-0000-7000-8000-000000000741',
-  rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000751',
-  started_on: '2025-01-01',
-  expires_on: null,
-  rewards_program_status: {
-    id: '00000000-0000-7000-8000-000000000751',
-    name: 'Gold',
-    slug: 'gold',
-  },
-}
 const two = {
   id: '00000000-0000-7000-8000-000000000742',
   rewards_program_status_topic_id: '00000000-0000-7000-8000-000000000752',
@@ -40,43 +30,6 @@ const three = {
 }
 const topicOnlyStatus = { ...one, started_on: null, expires_on: null }
 const fullyUpdatedStatus = { ...one, started_on: '2025-02-01', expires_on: '2026-12-31' }
-const rewardsProgramStatusTopic = {
-  __entity_type: 'topic',
-  aliases: [],
-  should_allow_reviews: true,
-  created_at: '2026-01-01T00:00:00Z',
-  created_by: {
-    __entity_type: 'user',
-    account_type: null,
-    id: 'user-1',
-    roles: [],
-    username: 'testuser',
-  },
-  hero_image_id: null,
-  hero_image_placement: null,
-  homepage_url_id: null,
-  hostname: null,
-  hostname_id: null,
-  id: one.rewards_program_status.id,
-  lingua_rs_detected_language: null,
-  logo_image_id: null,
-  logo_image_placement: null,
-  markdown: '',
-  name: one.rewards_program_status.name,
-  is_noindexed: false,
-  referral_program_id: null,
-  referral_program_slug: null,
-  rewards_program_id: null,
-  slug: one.rewards_program_status.slug,
-  topic_type: 'rewards_program_status',
-  updated_by: {
-    __entity_type: 'user',
-    account_type: null,
-    id: 'user-1',
-    roles: [],
-    username: 'testuser',
-  },
-}
 const consumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as const
 const shared = {
   auth: 'fixture-user' as const,
