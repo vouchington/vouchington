@@ -61,7 +61,7 @@ permissions:
 jobs:
   detect-image-publication:
     runs-on: ubuntu-slim
-    timeout-minutes: 5
+    timeout-minutes: 3
     permissions:
       contents: read
     outputs:

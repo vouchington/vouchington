@@ -21,7 +21,7 @@ jobs:
   prepare:
     if: github.event_name == 'workflow_dispatch' || github.event.issue.pull_request != null
     runs-on: ubuntu-slim
-    timeout-minutes: 5
+    timeout-minutes: 2
     outputs:
       accepted: ${{ steps.request.outputs.accepted }}
       pr_number: ${{ steps.request.outputs.pr_number }}
@@ -161,7 +161,7 @@ jobs:
     needs: [prepare, generate]
     if: needs.generate.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 6
     permissions:
       contents: read
       actions: read

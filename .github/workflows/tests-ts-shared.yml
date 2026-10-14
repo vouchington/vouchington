@@ -16,7 +16,7 @@ permissions:
 jobs:
   ts-shared:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 19
     permissions:
       actions: read
       contents: read

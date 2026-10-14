@@ -242,7 +242,7 @@ jobs:
         needs.dispatch.result == 'cancelled'
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 9
     permissions:
       actions: read
       checks: read
@@ -294,7 +294,7 @@ jobs:
       ) &&
       needs.classify-self-failure.outputs.retry_pending != 'true'
     runs-on: ubuntu-slim
-    timeout-minutes: 10
+    timeout-minutes: 3
     permissions:
       actions: read
       issues: write

@@ -242,7 +242,7 @@ jobs:
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.check-duplicates.outputs.skip != 'true'
     runs-on: ubuntu-slim
-    timeout-minutes: 2
+    timeout-minutes: 1
     permissions:
       actions: read
       pull-requests: read
@@ -366,7 +366,7 @@ jobs:
     needs: [triage-and-rerun, dispatch]
     if: needs.dispatch.result == 'success' && needs.dispatch.outputs.session-url != ''
     runs-on: ubuntu-slim
-    timeout-minutes: 2
+    timeout-minutes: 1
     permissions:
       contents: read
       issues: write
@@ -404,7 +404,7 @@ jobs:
         )
       )
     runs-on: ubuntu-slim
-    timeout-minutes: 2
+    timeout-minutes: 1
     permissions:
       actions: read
       pull-requests: write

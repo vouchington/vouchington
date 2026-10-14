@@ -67,7 +67,7 @@ jobs:
     # start this credential-bearing job. See the auto-harness Environment branch policy.
     environment: auto-harness
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 7
     outputs:
       session-id: ${{ steps.dispatch.outputs.session-id }}
       session-url: ${{ steps.dispatch.outputs.session-url }}

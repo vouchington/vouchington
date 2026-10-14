@@ -4128,36 +4128,23 @@ rules:
       maxMinutes: 10
       rejectStepExceedingJob: true
       allow:
-        # Step limits sum to 16m; the 14m job cap is below the sum (fail-fast); healthy runtime
-        # ~1.4m (max 75s across 67 GitHub-hosted successes in #2260).
-        - job: '.github/workflows/checks-static.yml#static-backend'
-          maxMinutes: 14
-        # Serial setup, dependency, image smoke, package build, and package smoke steps total 15m
-        # with the checkout deadline; retain one minute of provisioning headroom.
+        # Steps sum to 15m; cap 14m is below it; healthy runtime ~1m (max 0.8m, n=5).
         - job: '.github/workflows/checks-static.yml#static-lambdas'
-          maxMinutes: 16
-        # Setup and Cloudflare checks total 10m with the checkout deadline; retain one minute
-        # of provisioning headroom.
-        - job: '.github/workflows/checks-static.yml#static-cloudflare'
-          maxMinutes: 11
-        # A standalone Playwright run plans shards and produces one shared web build before shards
-        # start: setup (5m), shard plan (1m), and the bounded 9m web build sum 15m plus 1m headroom.
+          maxMinutes: 14
+        # Steps sum to 16m; cap 15m is below it; healthy runtime ~4m (web build cap 9m).
         - job: '.github/workflows/tests-playwright.yml#shards'
-          maxMinutes: 16
-        # A standalone web-integration run prepares its matrix and shared web build before shards
-        # start: setup (5m) and the bounded 9m web build sum 14m plus 2m for the unbounded steps.
+          maxMinutes: 15
+        # Steps sum to 21m; cap 16m is below it; healthy runtime ~4m (web build cap 9m).
         - job: '.github/workflows/tests-web-integration.yml#prep'
           maxMinutes: 16
-        # setup-node-pnpm (5m) plus the strictly serial sweep engine (20m) sum 25m; cap adds
-        # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
+        # Steps sum to 26m; cap 25m is below it; the strictly serial sweep engine (20m) is the
+        # largest step. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
-          maxMinutes: 26
-        # 14, not 15: ubuntu-slim enforces a hard 15-minute platform cap, and a job that reaches
-        # it is killed by the platform rather than cancelled by GitHub, so nothing that runs on
-        # cancellation gets a chance to. The work itself is a handful of GitHub API calls either
-        # way (checkout 2m + prune 10m budget).
+          maxMinutes: 25
+        # Steps sum to 12m; cap 11m is below it (and under the 15m ubuntu-slim platform cap);
+        # healthy runtime ~0.6m (a handful of GitHub API calls).
         - job: '.github/workflows/ghcr-cleanup.yml#cleanup'
-          maxMinutes: 14
+          maxMinutes: 11
         # Backend validation and publication share one build path; the 30m cap preserves the
         # measured build/smoke/scan margin plus the 8m-capped GHCR publication step. See #31.
         - job: '.github/workflows/publish-backend-images.yml#build'
@@ -4170,8 +4157,8 @@ rules:
         # step deadlines remain diagnostic guards, while this is the fail-fast end-to-end cap.
         - job: '.github/workflows/tests-web-api.yml#web-api-tests'
           maxMinutes: 27
-        # Three serial initialize modes and disposable services retain their additive budget;
-        # healthy max was 97 seconds across 78 GitHub-hosted successes in #2260.
+        # Steps sum to 25m; cap 23m is below it; healthy max was 97 seconds across 78
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
           maxMinutes: 23
         # Healthy maximum was 442 seconds across 75 GitHub-hosted successes in #2260.
@@ -4186,37 +4173,41 @@ rules:
         # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
-        # Healthy maximum was 134 seconds across 65 GitHub-hosted successes in #2260.
+        # Steps sum to 26m; cap 25m is below it; healthy maximum was 134 seconds across 65
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
-          maxMinutes: 26
+          maxMinutes: 25
         # Existing backend-unit budget; no #2260 change.
         - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
           maxMinutes: 29
-        # Healthy maximum was 87 seconds across 37 GitHub-hosted successes in #2260.
+        # Steps sum to 19m; cap 18m is below it; healthy maximum was 87 seconds across 37
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
-          maxMinutes: 20
-        # Additive retry/upload and coverage-copy step budgets sum 12m; retain two minutes of
-        # provisioning headroom after the new coverage-copy deadline.
+          maxMinutes: 18
+        # Steps sum to 12m; cap 11m is below it; healthy runtime ~1.6m (max, n=5).
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
-          maxMinutes: 14
+          maxMinutes: 11
         # Fail-safe for backend/browser setup plus the bounded 9m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
           maxMinutes: 23
         # Fail-safe for backend/browser setup plus the bounded 9m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
           maxMinutes: 13
-        # Healthy maximum was 78 seconds across 81 GitHub-hosted successes in #2260.
+        # Steps sum to 19m; cap 18m is below it; healthy maximum was 78 seconds across 81
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-portability.yml#portability-linux'
-          maxMinutes: 20
+          maxMinutes: 18
         # Step budgets sum ~23m; real max ~1.3m (n=24) via proxy data. See #8078.
         - job: '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
           maxMinutes: 20
-        # Healthy maximum was 345 seconds across 75 GitHub-hosted successes in #2260.
+        # Steps sum to 27m; cap 26m is below it; healthy maximum was 345 seconds across 75
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-tooling.yml#tooling'
-          maxMinutes: 27
-        # Healthy maximum was 100 seconds across 81 GitHub-hosted successes in #2260.
+          maxMinutes: 26
+        # Steps sum to 20m; cap 19m is below it; healthy maximum was 100 seconds across 81
+        # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-ts-shared.yml#ts-shared'
-          maxMinutes: 20
+          maxMinutes: 19
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
         # pre-revert coverage-transport budget less the 7m cut from the bounded web build step.
         - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
@@ -4270,7 +4261,7 @@ rules:
     options:
       allow:
         - file: .github/workflows/docs-publish.test.mts
-          text: "'timeout-minutes': 10,"
+          text: "'timeout-minutes': 9,"
           reason: The exact job timeout is part of the immutable documentation-artifact contract.
 
   - name: setup-aws steps pair caller and nested timeouts

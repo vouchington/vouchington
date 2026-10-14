@@ -30,7 +30,7 @@ function workflowFiles(): Array<{ contents: string; path: string }> {
 }
 
 describe('Lambda Tests workflow', () => {
-  it('bounds remote work and reserves provisioning headroom after all step budgets', () => {
+  it('bounds remote work and keeps the job cap below the step sum and above the largest step', () => {
     const parsed = load(workflow) as MainWorkflow
     const job = parsed.jobs?.['lambdas-tests']
     const steps = job?.steps ?? []
@@ -40,7 +40,9 @@ describe('Lambda Tests workflow', () => {
 
     const stepBudget = steps.reduce((sum, step) => sum + (step['timeout-minutes'] ?? 0), 0)
     expect(stepBudget).toBeGreaterThan(0)
-    expect((job?.['timeout-minutes'] ?? 0) - stepBudget).toBeGreaterThanOrEqual(2)
+    const largestStep = Math.max(...steps.map(step => step['timeout-minutes'] ?? 0))
+    expect(job?.['timeout-minutes']).toBeLessThan(stepBudget)
+    expect(job?.['timeout-minutes']).toBeGreaterThan(largestStep)
   })
 
   it('leaves dependency and TypeScript checks with checks-static.yml', () => {
