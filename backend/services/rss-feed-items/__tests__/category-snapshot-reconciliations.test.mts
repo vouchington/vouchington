@@ -187,6 +187,28 @@ describe('RSS feed item category snapshot reconciliation', () => {
     ])
   })
 
+  it('keeps category unions scoped to each selected item in one batch', async () => {
+    const suffix = Math.random().toString(36).slice(2, 12)
+    const feed = await insertTestRssFeedDirect({})
+    const firstCategory = `first-batch-${suffix}`
+    const secondCategory = `second-batch-${suffix}`
+    const [first, second] = await upsertRssFeedItems(feed.id, [
+      itemInput(`${suffix}-first`, [firstCategory]),
+      itemInput(`${suffix}-second`, [secondCategory]),
+    ])
+
+    await expect(reconcileOwned([first!.id, second!.id])).resolves.toEqual({ reconciled: 2 })
+    await expect(getRssFeedItemCategories(first!.id)).resolves.toEqual([
+      expect.objectContaining({ category_text: firstCategory }),
+    ])
+    await expect(getRssFeedItemCategories(second!.id)).resolves.toEqual([
+      expect.objectContaining({ category_text: secondCategory }),
+    ])
+    await expect(
+      listTestRssFeedItemCategorySnapshotReconciliations([first!.id, second!.id]),
+    ).resolves.toEqual([])
+  })
+
   it('does not let a stale acknowledgement delete a newer generation', async () => {
     const suffix = Math.random().toString(36).slice(2, 12)
     const feed = await insertTestRssFeedDirect({})

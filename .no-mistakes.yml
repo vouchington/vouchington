@@ -1238,10 +1238,6 @@ rules:
           }
         - {
             file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
-            callee: 'getRssFeedItemCategorySnapshot',
-          }
-        - {
-            file: backend/services/rss-feed-items/category-snapshot-reconciliations.mts,
             callee: 'upsertRssFeedItemCategories',
           }
         - {

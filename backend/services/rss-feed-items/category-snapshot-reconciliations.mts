@@ -118,13 +118,19 @@ export async function reconcileRssFeedItemCategorySnapshotRows(
 ): Promise<{ reconciled: number }> {
   let reconciled = 0
   const errors: unknown[] = []
+  const categorySnapshots = await getRssFeedItemCategorySnapshots(
+    rows.map(row => row.rss_feed_item_id),
+  )
   for (const row of rows) {
     try {
       assertCategorySnapshot(row)
-      // eslint-disable-next-line no-await-in-loop -- complete one source-union read before this snapshot's acknowledgement.
-      const categorySnapshot = await getRssFeedItemCategorySnapshot(row.rss_feed_item_id)
       // eslint-disable-next-line no-await-in-loop -- complete one snapshot before its exact-generation acknowledgement.
-      await upsertRssFeedItemCategories([categorySnapshot])
+      await upsertRssFeedItemCategories([
+        {
+          rss_feed_item_id: row.rss_feed_item_id,
+          categories: categorySnapshots.get(row.rss_feed_item_id) ?? [],
+        },
+      ])
       // Keep notification eligibility in step with the durable category projection. The snapshot
       // remains pending if this enqueue fails, so the next reconciliation retries both the
       // notification prompt and its exact-generation acknowledgement.
@@ -151,30 +157,28 @@ function assertCategorySnapshot(snapshot: RssFeedItemCategorySnapshotReconciliat
   }
 }
 
-async function getRssFeedItemCategorySnapshot(
-  rssFeedItemId: string,
-): Promise<RssFeedItemCategoryInput> {
-  const { rows } = await write<{ categories: string[] }>(
-    `/* getRssFeedItemCategorySnapshot */
-      SELECT COALESCE(
-        ARRAY(
-          SELECT DISTINCT source_category.category_text
-          FROM rss_feed_item_source_category_snapshots source_snapshot
-          JOIN rss_feed_item_sources source
-            ON source.rss_feed_id = source_snapshot.rss_feed_id
-           AND source.rss_feed_item_id = source_snapshot.rss_feed_item_id
-          JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-          CROSS JOIN LATERAL jsonb_array_elements_text(source_snapshot.categories)
-            AS source_category(category_text)
-          WHERE source_snapshot.rss_feed_item_id = $1
-            AND feed.deleted_at IS NULL
-          ORDER BY source_category.category_text
-        ),
-        ARRAY[]::text[]
-      ) AS categories`,
-    [rssFeedItemId],
+async function getRssFeedItemCategorySnapshots(
+  rssFeedItemIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  if (rssFeedItemIds.length === 0) return new Map()
+  const { rows } = await write<{ rss_feed_item_id: string; categories: string[] }>(
+    `/* getRssFeedItemCategorySnapshots */
+      SELECT source_snapshot.rss_feed_item_id,
+             ARRAY_AGG(DISTINCT source_category.category_text ORDER BY source_category.category_text)
+               AS categories
+      FROM rss_feed_item_source_category_snapshots source_snapshot
+      JOIN rss_feed_item_sources source
+        ON source.rss_feed_id = source_snapshot.rss_feed_id
+       AND source.rss_feed_item_id = source_snapshot.rss_feed_item_id
+      JOIN rss_feeds feed ON feed.id = source.rss_feed_id
+      CROSS JOIN LATERAL jsonb_array_elements_text(source_snapshot.categories)
+        AS source_category(category_text)
+      WHERE source_snapshot.rss_feed_item_id = ANY($1::uuid[])
+        AND feed.deleted_at IS NULL
+      GROUP BY source_snapshot.rss_feed_item_id`,
+    [rssFeedItemIds],
   )
-  return { rss_feed_item_id: rssFeedItemId, categories: rows[0]!.categories }
+  return new Map(rows.map(row => [row.rss_feed_item_id, row.categories]))
 }
 
 export async function acknowledgeRssFeedItemCategorySnapshot(
