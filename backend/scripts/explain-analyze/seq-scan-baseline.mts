@@ -1,10 +1,21 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
+import { BASELINE_FINGERPRINTS } from './seq-scan-baseline-data.mts'
 
 export type SeqScanBaseline = Readonly<Record<string, readonly string[]>>
 
-// Starting baseline from the CI compare-mode EXPLAIN capture. Remove an entry when its scan is fixed.
-export const SEQ_SCAN_BASELINE: SeqScanBaseline = {}
+// Starting baseline from CI run 38557423714 (2026-10-14T11-42-47-022Z), first/repeat captures.
+// Remove an entry when its scan is fixed.
+const baselineByIdentity = new Map<string, string[]>()
+for (const fingerprint of BASELINE_FINGERPRINTS) {
+  const separator = fingerprint.lastIndexOf(':')
+  const identity = fingerprint.slice(0, separator)
+  const relation = fingerprint.slice(separator + 1)
+  const relations = baselineByIdentity.get(identity) ?? []
+  relations.push(relation)
+  baselineByIdentity.set(identity, relations)
+}
+export const SEQ_SCAN_BASELINE: SeqScanBaseline = Object.fromEntries(baselineByIdentity)
 
 export function getExplainResultIdentity(result: ExplainResult): string {
   return [
