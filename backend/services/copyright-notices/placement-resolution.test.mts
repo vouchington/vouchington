@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
+import {
+  resolveTestCopyrightImagePlacements,
+  resolveTestCopyrightPostImagePlacements,
+} from '@voucha/test-helpers/copyright-placement-batches'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
@@ -8,22 +11,18 @@ import {
   TEST_COPYRIGHT_IMAGE_KINDS,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { testClaimantCanViewCopyrightImage } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
-import {
-  resolveCopyrightImagePlacement,
-  resolveCopyrightImagePlacements,
-  resolveCopyrightPostImagePlacements,
-} from './placement-resolution.mts'
+import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 
 describe('copyright image placement resolution', () => {
   it('keeps mixed selector order and each current placement snapshot', async () => {
     const post = await createTestCopyrightImageFixture('post-image')
     const profile = await createTestCopyrightImageFixture('user-profile-image')
     const topic = await createTestCopyrightImageFixture('topic-hero-image')
-    await using transaction = await beginTransaction()
-    const targets = await resolveCopyrightImagePlacements(
-      [topic.selector, post.selector, profile.selector],
-      transaction,
-    )
+    const targets = await resolveTestCopyrightImagePlacements([
+      topic.selector,
+      post.selector,
+      profile.selector,
+    ])
     expect(targets.map(target => [target.placementId, target.placementRevision])).toEqual([
       [topic.placementId, topic.placementRevision],
       [post.placementId, post.placementRevision],
@@ -41,12 +40,11 @@ describe('copyright image placement resolution', () => {
     const second = await createTestCopyrightImageFixture('post-image')
     if (first.selector.surfaceKind !== 'post-image' || second.selector.surfaceKind !== 'post-image')
       throw new Error('Expected post-image fixtures')
-    await using transaction = await beginTransaction()
     await expect(
-      resolveCopyrightPostImagePlacements(
-        [{ ...first.selector, imageId: second.imageId }, second.selector],
-        transaction,
-      ),
+      resolveTestCopyrightPostImagePlacements([
+        { ...first.selector, imageId: second.imageId },
+        second.selector,
+      ]),
     ).rejects.toMatchObject({ status: 422, message: 'Hosted image placement was not found' })
   })
 
