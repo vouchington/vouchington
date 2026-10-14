@@ -14,8 +14,22 @@ export const TOPIC_DECLARATIONS = [
     'web.topics.show.default',
     topicsShowDefault,
     async context => {
-      await context.server.topics.getTopic('test-topic')
-      return null
+      const response = await context.server.topics.getTopic('test-topic')
+      const topic = response?.topic
+      if (!topic) return null
+      if (
+        !Object.hasOwn(topic, 'hero_image_placement') ||
+        topic.hero_image_placement === undefined
+      ) {
+        throw new Error('Topic detail response is missing hero_image_placement')
+      }
+      return {
+        ...response,
+        topic: {
+          ...topic,
+          hero_image_placement: topic.hero_image_placement,
+        },
+      }
     },
     [
       async context => {

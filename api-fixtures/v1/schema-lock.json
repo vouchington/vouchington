@@ -809,7 +809,7 @@
     },
     "GET:/api/v1/topics/:idOrSlug": {
       "fixtureIds": ["web.topics.show.default"],
-      "hash": "a3a3ec6e1d48df4ad77a48d4af78c57fa96597c8a3506e4c4c649463cb33538a"
+      "hash": "ded5b0aa7009e21f2a95014ffd6d1169b75ea30e2a0552d31082d36f838bf830"
     },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
       "fixtureIds": ["web.referral-links.prioritized.default"],

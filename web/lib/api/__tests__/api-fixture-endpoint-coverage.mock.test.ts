@@ -59,6 +59,7 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
 
 import { WEB_API_FIXTURE_DECLARATIONS } from '@/test-helpers/api-responses/declarations'
 import type { WebApiFixtureDeclaration } from '@/test-helpers/api-responses/declarations/declaration'
+import { makeTopic, makeTopicMutationResponse } from '@/test-helpers/api-responses'
 import { WEB_FIXTURE_ENDPOINT_CONTEXT } from '../../../test-helpers/lib/api/api-fixture-endpoint-context'
 
 interface CapturedRequest {
@@ -208,6 +209,19 @@ describe('web API fixture endpoint coverage', () => {
 
     expect(captureSingleRequest().body).toEqual(
       'requestBody' in fixture ? fixture.requestBody : undefined,
+    )
+  })
+
+  it('rejects topic detail responses that omit the nullable hero placement', async () => {
+    const declaration = WEB_API_FIXTURE_DECLARATIONS.find(
+      entry => entry.id === 'web.topics.show.default',
+    )!
+    const topic = makeTopic()
+    delete topic.hero_image_placement
+    mockServerGet.mockResolvedValueOnce(makeTopicMutationResponse({ topic }))
+
+    await expect(declaration.invoke(WEB_FIXTURE_ENDPOINT_CONTEXT)).rejects.toThrow(
+      'Topic detail response is missing hero_image_placement',
     )
   })
 

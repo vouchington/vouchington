@@ -51797,7 +51797,7 @@
     },
     "GET:/api/v1/topics/:idOrSlug": {
       "bodyKind": "content",
-      "hash": "a3a3ec6e1d48df4ad77a48d4af78c57fa96597c8a3506e4c4c649463cb33538a",
+      "hash": "ded5b0aa7009e21f2a95014ffd6d1169b75ea30e2a0552d31082d36f838bf830",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -51816,6 +51816,41 @@
                   "type": "unknown"
                 },
                 "properties": {
+                  "hero_image_placement": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "image_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "placement_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "placement_revision": {
+                              "required": true,
+                              "schema": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
                   "logo_image_placement": {
                     "required": true,
                     "schema": {
