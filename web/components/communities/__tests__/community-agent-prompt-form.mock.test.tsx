@@ -24,7 +24,19 @@ vi.mock(import('@/lib/on-error'), () => ({
 }))
 
 const COMMUNITY_SLUG = 'credit-cards'
+const VALIDATION_ERROR_ID = 'community-agent-prompt-validation-error'
 const mockNav = createNavMock()
+
+function expectValidationAlert(message: string) {
+  const alert = document.querySelector('[role="alert"]')
+  expect(alert).not.toBeNull()
+  expect(alert!.id).toBe(VALIDATION_ERROR_ID)
+  expect(alert!.textContent).toBe(message)
+  const textarea = document.querySelector('textarea')
+  expect(textarea).not.toBeNull()
+  expect(textarea!.getAttribute('aria-invalid')).toBe('true')
+  expect(textarea!.getAttribute('aria-describedby')).toBe(VALIDATION_ERROR_ID)
+}
 
 describe('CommunityAgentPromptForm', () => {
   afterEach(() => {
@@ -36,6 +48,9 @@ describe('CommunityAgentPromptForm', () => {
     render(<CommunityAgentPromptForm communitySlug={COMMUNITY_SLUG} />)
     expect(document.querySelector('[data-pw="community-agent-prompt-form"]')).not.toBeNull()
     expect(document.querySelector('textarea[aria-label="New agent prompt"]')).not.toBeNull()
+    expect(document.querySelector('textarea')!.hasAttribute('aria-invalid')).toBe(false)
+    expect(document.querySelector('textarea')!.hasAttribute('aria-describedby')).toBe(false)
+    expect(document.querySelector('[role="alert"]')).toBeNull()
     expect(document.querySelector('button[type="submit"]')).not.toBeNull()
   })
 
@@ -45,9 +60,8 @@ describe('CommunityAgentPromptForm', () => {
     fireEvent.submit(document.querySelector('[data-pw="community-agent-prompt-form"]')!)
 
     await waitFor(() => {
-      expect(document.querySelector('.text-destructive')).not.toBeNull()
+      expectValidationAlert('Prompt is required')
     })
-    expect(document.querySelector('.text-destructive')!.textContent).toBe('Prompt is required')
     expect(mocks.createCommunityAgentPrompt).not.toHaveBeenCalled()
   })
 
@@ -59,11 +73,8 @@ describe('CommunityAgentPromptForm', () => {
     fireEvent.submit(document.querySelector('[data-pw="community-agent-prompt-form"]')!)
 
     await waitFor(() => {
-      expect(document.querySelector('.text-destructive')).not.toBeNull()
+      expectValidationAlert('Prompt must be 10,000 characters or fewer')
     })
-    expect(document.querySelector('.text-destructive')!.textContent).toBe(
-      'Prompt must be 10,000 characters or fewer',
-    )
     expect(mocks.createCommunityAgentPrompt).not.toHaveBeenCalled()
   })
 
@@ -114,5 +125,7 @@ describe('CommunityAgentPromptForm', () => {
     })
     expect(mocks.onSuccess).toHaveBeenCalledWith('Prompt created')
     expect(mockNav.refresh).toHaveBeenCalled()
+    expect(document.querySelector('[role="alert"]')).toBeNull()
+    expect(document.querySelector('textarea')!.hasAttribute('aria-invalid')).toBe(false)
   })
 })

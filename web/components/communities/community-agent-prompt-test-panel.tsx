@@ -48,6 +48,7 @@ export function CommunityAgentPromptTestPanel({ prompt, communitySlug }: Props) 
   const [isPending, startPending] = useTransition()
   const promptText = promptTextDraft ?? prompt.prompt
   const flaggedResults = simulation?.results.filter(result => result.flagged) ?? []
+  const validationErrorId = `community-agent-prompt-test-validation-error-${prompt.id}`
 
   function handlePromptTextChange(value: string) {
     setPromptTextDraft(value)
@@ -115,6 +116,8 @@ export function CommunityAgentPromptTestPanel({ prompt, communitySlug }: Props) 
           aria-label={t(
             'extracted.communities.communityAgentPromptTestPanel.simulationPrompt_386f0a6a',
           )}
+          aria-invalid={validationError ? 'true' : undefined}
+          aria-describedby={validationError ? validationErrorId : undefined}
         />
         <div className='flex flex-wrap items-end gap-2'>
           <div className='w-40 space-y-1'>
@@ -155,7 +158,15 @@ export function CommunityAgentPromptTestPanel({ prompt, communitySlug }: Props) 
               : t('extracted.communities.communityAgentPromptTestPanel.runTest_f3c5e08f')}
           </Button>
         </div>
-        {validationError ? <p className='text-sm text-destructive'>{validationError}</p> : null}
+        {validationError ? (
+          <p
+            id={validationErrorId}
+            role='alert'
+            className='text-sm text-destructive'
+          >
+            {validationError}
+          </p>
+        ) : null}
       </form>
 
       {simulation ? (
