@@ -6,10 +6,11 @@ Canonical normalized RSS category identities shared across feeds and items.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type   | Nullable | Default    | Identity | Generated | Collation | Comment                                                                               |
-| --------------- | ------ | -------- | ---------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
-| `id`            | `uuid` | no       | `uuidv7()` |          |           |           | UUIDv7 relational identity of the normalized external category value.                 |
-| `category_text` | `text` | no       |            |          |           |           | Trimmed, lowercased category value used only to resolve external RSS and staff input. |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                               |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 relational identity of the normalized external category value.                 |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 identity.                                       |
+| `category_text` | `text`                     | no       |                              |          |           |           | Trimmed, lowercased category value used only to resolve external RSS and staff input. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

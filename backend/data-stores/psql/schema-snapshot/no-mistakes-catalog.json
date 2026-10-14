@@ -114441,6 +114441,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": "Creation time derived from the UUIDv7 identity.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 2
         },
         "id": {
