@@ -11,9 +11,9 @@ import {
 export const MAX_QUIET_TAIL_BYTES = 128 * 1024
 const viteDepsDebugPattern = /\bvite:deps\b/
 
-export function isQuietStorybookLine(line: string): boolean {
-  const plain = stripAnsi(line)
-  if (plain.includes(STORYBOOK_PROGRESS_MARKER_PREFIX)) return true
+const indentedContinuationPattern = /^ {2,}\S/
+
+function isViteDepsDebugLine(plain: string): boolean {
   // Keep the optimizer lifecycle lines that classify retry and optimizeDeps guidance visible.
   return (
     viteDepsDebugPattern.test(plain) &&
@@ -25,15 +25,29 @@ export function isQuietStorybookLine(line: string): boolean {
 
 export class StorybookQuietOutput {
   private tail = Buffer.alloc(0)
+  // A vite:deps message lists its dependency paths on indented lines that carry no namespace.
+  private inViteDepsBlock = false
 
   /** Returns the lines that belong in the job log and retains the quiet ones. */
   split(output: string): string {
     let visible = ''
     for (const line of output.split(/(?<=\n)/)) {
-      if (isQuietStorybookLine(line)) this.retain(line)
+      if (this.isQuiet(line)) this.retain(line)
       else visible += line
     }
     return visible
+  }
+
+  private isQuiet(line: string): boolean {
+    const plain = stripAnsi(line)
+    if (plain.includes(STORYBOOK_PROGRESS_MARKER_PREFIX)) return true
+    if (isViteDepsDebugLine(plain)) {
+      this.inViteDepsBlock = true
+      return true
+    }
+    const continuation = this.inViteDepsBlock && indentedContinuationPattern.test(plain)
+    this.inViteDepsBlock = continuation
+    return continuation
   }
 
   /** Returns the retained quiet output once, or an empty string when there is none. */

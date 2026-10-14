@@ -65,6 +65,18 @@ describe('Storybook browser runner quiet output', () => {
     expect(quiet.drain()).toBe('')
   })
 
+  it('hides the indented dependency paths that follow a vite:deps message', () => {
+    const quiet = new StorybookQuietOutput()
+    const visible = quiet.split(
+      'vite:deps Crawling dependencies using entries:\n  /repo/node_modules/a/index.js\n',
+    )
+    const after = quiet.split('  storybook/test -> /repo/node_modules/b.js\nTest Files  1 passed\n')
+    const later = quiet.split('  an indented line outside a block\n')
+    expect(visible).toBe('')
+    expect(after).toBe('Test Files  1 passed\n')
+    expect(later).toBe('  an indented line outside a block\n')
+  })
+
   it('bounds the retained quiet tail and drains it once', () => {
     const quiet = new StorybookQuietOutput()
     const line = marker(1)
