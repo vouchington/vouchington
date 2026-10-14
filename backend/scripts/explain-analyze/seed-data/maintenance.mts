@@ -121,4 +121,8 @@ export async function runAnalyze(): Promise<void> {
       console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
     )
   }
+  // CI runs 38557423714 and 38559343345 had the same 50k relation rows and recommendation
+  // SQL, but their index-only plans needed 998 versus 0 heap fetches. Vacuum the seeded parent
+  // and its default partition before capture so autovacuum timing cannot decide this plan.
+  await write('/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic"')
 }

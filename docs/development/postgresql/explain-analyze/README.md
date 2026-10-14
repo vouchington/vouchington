@@ -305,6 +305,11 @@ baseline fails, as does a baseline entry absent from the stable intersection. A 
 one pass is reported as unstable and stays advisory. Estimate mismatch, append, planning-ratio,
 and buffer warnings remain advisory.
 
+After bulk seeding, fixture maintenance vacuums and analyzes the post-category relation and its
+partition before the first capture. This makes index-only plans start with a settled visibility
+map instead of depending on when autovacuum runs. The `ANALYZE` between paired captures still
+tests plan stability on the same seeded rows; production planner settings are unchanged.
+
 ```bash
 pnpm run explain:analyze
 ```
