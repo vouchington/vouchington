@@ -5,8 +5,8 @@ import {
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
 import {
+  enqueueBulkSesInboundProcess,
   enqueueOrRetryBulkSesInboundProcess,
-  enqueueSesInboundProcess,
   enqueueSesInboundReconcile,
   enqueueSesInboundReconcileContinuation,
 } from './enqueues.mts'
@@ -20,7 +20,7 @@ describe('SES inbound enqueues', () => {
       objectKey: `copyright-incoming/${sesMessageId}`,
     }
 
-    const job = await enqueueSesInboundProcess(data)
+    const [job] = await enqueueBulkSesInboundProcess([data])
 
     expect(job).toMatchObject({
       data,
