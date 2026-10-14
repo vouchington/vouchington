@@ -11,6 +11,8 @@ vi.mock<typeof import('vouchington-tooling/gh-cli')>(
   async importOriginal => ({ ...(await importOriginal()), ...gh }),
 )
 
+import { DiffCommandError } from 'vouchington-tooling/gh-cli'
+
 import { VALID_PR_BODY } from './test-helpers/pr-description/valid-pr-body.mts'
 import { pullRequestDefaults, validatePullRequest } from './agent-policy.mts'
 
@@ -153,6 +155,20 @@ describe('validatePullRequest', () => {
   })
 })
 
+describe('validatePullRequest on an oversized diff', () => {
+  it('falls back to the files API and warns', async () => {
+    install()
+    const inner = gh.runGh.getMockImplementation()!
+    gh.runGh.mockImplementation(async args => (args[1]?.endsWith('/files') ? '[]' : inner(args)))
+    gh.processDiffCommand.mockRejectedValue(
+      new DiffCommandError({ executable: 'gh', args: [] }, { code: 1, stderr: 'HTTP 406' }),
+    )
+    const result = await validatePullRequest({ ...base, pr: 7 })
+    expect(result.errors).toEqual([])
+    expect(result.warnings?.join('\n')).toContain('GitHub refused the oversized unified PR diff')
+  })
+})
+
 describe('pullRequestDefaults', () => {
   beforeEach(() => {
     gh.runGh.mockReset()
@@ -184,6 +200,18 @@ describe('pullRequestDefaults', () => {
       project: 'Roadmap',
       repositories: [REPO],
     })
+  })
+
+  it('omits the project when its memberships cannot be read', async () => {
+    install({ milestone: 'M' })
+    const inner = gh.runGh.getMockImplementation()!
+    gh.runGh.mockImplementation(async args => {
+      if (args[1] === 'graphql') throw new Error('no project scope')
+      return inner(args)
+    })
+    expect(
+      await pullRequestDefaults({ title: 't', base: 'main', relatedIssues: issues(5) }),
+    ).toEqual({ milestone: 'M', repositories: [REPO] })
   })
 
   it('looks at closing issues before refs and omits ambiguous projects', async () => {
