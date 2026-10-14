@@ -8,7 +8,7 @@ collapse to the same logical job.
 
 The S3 bucket notification targets an SQS queue in code, consumed by
 [`backend/workers/ses-inbound-sqs`](../workers/ses-inbound-sqs/README.md), which calls this
-package's `enqueueSesInboundProcess()`.
+package's `enqueueBulkSesInboundProcess()` once per SQS message for its distinct copyright objects.
 
 `processInboundEmail` reads copyright mail from `copyright-incoming/` in the private inbound-email
 bucket. `reconcileInboundEmail` scans that prefix every five minutes, bulk-enqueues missing jobs, and retries retained failed jobs for objects still present. Each job reads at most the

@@ -6,8 +6,10 @@ Consumer package for the `ses-inbound-sqs` SQS queue, the sole producer path for
 ingestion. Infrastructure owned by
 `vouchington/vouchington-infra` delivers S3
 `ObjectCreated` notifications directly to this queue; this package translates that event into the
-`SesInboundProcessJobData` shape and enqueues copyright objects via
-`enqueueSesInboundProcess()` from `@queues/ses-inbound/enqueues`. It acknowledges legacy
+`SesInboundProcessJobData` shape and bulk-enqueues the distinct copyright objects in each SQS
+message via `enqueueBulkSesInboundProcess()` from `@queues/ses-inbound/enqueues`. Each object's
+stable job ID still deduplicates redelivery, and the SQS message is acknowledged only after the
+bulk enqueue succeeds. It acknowledges legacy
 `incoming/` events without enqueuing a job, logging only the bucket and object key. Inbound-email
 business logic stays in `backend/workers/ses-inbound` (the `ses_inbound` glide-mq
 worker/reconciler).

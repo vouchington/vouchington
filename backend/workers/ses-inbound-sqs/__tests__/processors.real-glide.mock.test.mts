@@ -71,15 +71,20 @@ describe('processSesInboundSqsMessage', () => {
     )
   })
 
-  it('enqueues the correctly-derived job and acks (deletes) the SQS message', async () => {
-    const sesMessageId = `ses-${randomUUID()}`
-    const objectKey = `copyright-incoming/${sesMessageId}`
-    const jobId = getSesInboundProcessJobOptions({
-      sesMessageId,
-      objectKey,
-    }).jobId
-    createdJobIds.push(jobId)
-    const message = s3EventMessage([objectCreatedRecord(objectKey)])
+  it('enqueues distinct records in one batch with stable IDs and acks the SQS message', async () => {
+    const records = Array.from({ length: 3 }, () => {
+      const sesMessageId = `ses-${randomUUID()}`
+      const objectKey = `copyright-incoming/${sesMessageId}`
+      const jobId = getSesInboundProcessJobOptions({ sesMessageId, objectKey }).jobId
+      createdJobIds.push(jobId)
+      return { sesMessageId, objectKey, jobId }
+    })
+    const message = s3EventMessage([
+      objectCreatedRecord(records[0]!.objectKey),
+      objectCreatedRecord(records[1]!.objectKey),
+      objectCreatedRecord(records[0]!.objectKey),
+      objectCreatedRecord(records[2]!.objectKey),
+    ])
     const deleteCalls: string[] = []
     const port = createOneShotPort([message], deleteCalls)
 
@@ -95,11 +100,13 @@ describe('processSesInboundSqsMessage', () => {
 
     expect(deletedMessage).toEqual(message)
     expect(deleteCalls).toEqual([message.receiptHandle])
-    const job = await sesInboundQueue.getJob(jobId)
-    expect(job).toMatchObject({
-      name: 'processInboundEmail',
-      data: { sesMessageId, objectKey },
-    })
+    for (const { sesMessageId, objectKey, jobId } of records) {
+      const job = await sesInboundQueue.getJob(jobId)
+      expect(job).toMatchObject({
+        name: 'processInboundEmail',
+        data: { sesMessageId, objectKey },
+      })
+    }
   })
 
   it('deduplicates redelivery of the same message so only one job lands', async () => {

@@ -18,15 +18,6 @@ import {
 } from './config.mts'
 import { sesInboundQueue } from './queues.mts'
 
-const enqueueProcessJob = createEnqueueFunction<
-  SesInboundProcessJobData,
-  typeof SES_INBOUND_PROCESS_JOB_NAME
->({
-  queue: sesInboundQueue,
-  queueName: SES_INBOUND_QUEUE_NAME,
-  jobName: SES_INBOUND_PROCESS_JOB_NAME,
-})
-
 export const enqueueBulkSesInboundProcess = createBulkEnqueueFunction<
   SesInboundProcessJobData,
   SesInboundProcessJobData,
@@ -90,10 +81,6 @@ const enqueueReconcileJob = createEnqueueFunction<
   queueName: SES_INBOUND_QUEUE_NAME,
   jobName: SES_INBOUND_RECONCILE_JOB_NAME,
 })
-
-export function enqueueSesInboundProcess(data: SesInboundProcessJobData): EnqueueReturnType {
-  return enqueueProcessJob(data, getSesInboundProcessJobOptions(data))
-}
 
 export function enqueueSesInboundReconcileContinuation(
   continuationToken: string,
