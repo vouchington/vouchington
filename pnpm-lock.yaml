@@ -3969,6 +3969,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -5563,6 +5566,9 @@ importers:
       '@services/app-attestation':
         specifier: workspace:^
         version: link:../app-attestation
+      '@services/articles':
+        specifier: workspace:^
+        version: link:../articles
       '@services/autotagger':
         specifier: workspace:^
         version: link:../autotagger

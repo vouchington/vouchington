@@ -2,8 +2,10 @@ import { randomUUID } from 'node:crypto'
 
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 import { syncArticles } from './sync.mts'
+import { articlesWorkConfig } from './work-limits.mts'
 
 describe('syncArticles errors', () => {
   it('reports invalid slugs and a failed prefetch in file order', async () => {
@@ -61,5 +63,32 @@ describe('syncArticles errors', () => {
     expect(lookupBatches.map(batch => batch.length)).toEqual([50, 1])
     expect(result.results.map(item => item.file)).toEqual(files.map(file => file.file))
     expect(result.summary).toMatchObject({ created: 0, updated: 0, errored: 51 })
+  })
+
+  it('uses the runtime article batch bound for the whole sync', async () => {
+    const currentUser = await createTestUser({ administrator: true })
+    const files = ['one.md', 'two.md', 'three.md'].map(file => ({
+      file,
+      key: `articles/${file}`,
+      cacheToken: `${file}:v1`,
+    }))
+    const lookupBatches: string[][] = []
+    const restore = overrideDynamicConfigFieldsForTest(articlesWorkConfig, { sync_batch_size: 2 })
+    try {
+      const result = await syncArticles(currentUser, {
+        listArticleMarkdownFiles: async () => files,
+        getArticleMarkdown: async article =>
+          `---\ntitle: Article\nslug: ${article.file.slice(0, -3)}\n---\nBody.`,
+        prefetchPosts: async slugs => {
+          lookupBatches.push(slugs)
+          throw new Error('Post lookup failed')
+        },
+      })
+
+      expect(lookupBatches).toEqual([['one', 'two'], ['three']])
+      expect(result.results.map(item => item.file)).toEqual(files.map(file => file.file))
+    } finally {
+      restore()
+    }
   })
 })

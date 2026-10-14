@@ -20,6 +20,7 @@ import * as owner15 from '@services/recommended-topics/work-limits'
 import * as owner16 from '@services/stripe/work-limits'
 import * as owner17 from '@queues/find-your-friends/config'
 import * as owner18 from '@queues/crawl-dispatch/config'
+import * as owner19 from '@services/articles/work-limits'
 
 const owners = [
   {
@@ -149,6 +150,11 @@ const owners = [
       owner18.getCrawlBoilerplateRemovalWorkLimit(
         field as keyof typeof owner18.crawlBoilerplateRemovalWorkMaxValues,
       ),
+  },
+  {
+    config: owner19.articlesWorkConfig,
+    maxima: owner19.articlesWorkMaxValues,
+    read: () => owner19.getArticleSyncBatchSize(),
   },
 ]
 

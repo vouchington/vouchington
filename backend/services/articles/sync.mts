@@ -18,9 +18,9 @@ import {
   type PreparedArticle,
   type SyncArticlesDeps,
 } from './sync-helpers.mts'
+import { getArticleSyncBatchSize } from './work-limits.mts'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
-const ARTICLE_SYNC_BATCH_SIZE = 50
 
 type ArticleSyncFile = { file: string }
 
@@ -65,10 +65,11 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
   lookupPosts = prefetchPosts,
 ): Promise<ArticleSyncResult> {
   const results: ArticleSyncItem[] = []
+  const batchSize = getArticleSyncBatchSize()
 
-  for (let offset = 0; offset < mdFiles.length; offset += ARTICLE_SYNC_BATCH_SIZE) {
+  for (let offset = 0; offset < mdFiles.length; offset += batchSize) {
     const prepared: PreparedArticle[] = []
-    const batch = mdFiles.slice(offset, offset + ARTICLE_SYNC_BATCH_SIZE)
+    const batch = mdFiles.slice(offset, offset + batchSize)
     for (const articleFile of batch) {
       const item: ArticleSyncItem = { file: articleFile.file, slug: '', action: 'skipped' }
 

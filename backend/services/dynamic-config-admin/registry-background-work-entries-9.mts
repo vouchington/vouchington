@@ -17,8 +17,16 @@ import {
   findYourFriendsWorkConfig,
   findYourFriendsWorkMaxValues,
 } from '@queues/find-your-friends/config'
+import { articlesWorkConfig, articlesWorkMaxValues } from '@services/articles/work-limits'
 
 export const backgroundWorkRegistryEntries9 = {
+  'articles-work-config': defineBoundedWorkNamespace({
+    namespace: 'articles-work-config',
+    config: articlesWorkConfig,
+    label: 'Articles',
+    maxValues: articlesWorkMaxValues,
+    descriptions: { sync_batch_size: 'Markdown files loaded and processed per sync batch.' },
+  }),
   'moderation-analytics-work-config': defineBoundedWorkNamespace({
     namespace: 'moderation-analytics-work-config',
     config: moderationAnalyticsWorkConfig,
