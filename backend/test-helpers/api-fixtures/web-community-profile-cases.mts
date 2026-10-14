@@ -51,7 +51,7 @@ export const webCommunityProfileApiFixtureCases: ApiFixtureCase[] = [
       membership: null,
       community_metrics: communityMetrics,
     },
-    consumers: ['web', 'dotnet-core'],
+    consumers: ['web', 'dotnet-core', 'swift-core', 'swift-ui'],
     migratedFrom: ['web/test-helpers/api-responses/communities.ts'],
   },
   {
