@@ -102,7 +102,8 @@ Call the `retrospective_save` tool of the `vouchington-tooling` MCP server with 
 (`status`, `sources`, `droppedCount`), and exactly one of `markdown` (a finished document) or
 `compose` (the composer input). Optional arguments: `repositories`, `sourceEventId`, `parentSessionId`,
 `agent`, `version`, `category`, and `dryRun`. Add `dryRun: true` to compose and validate without
-writing, then repeat the call without it. When the front matter repeats `session_id`,
+writing, then save the exact `markdown` the dry run returned (not a second `compose`, which can
+recompose a different document and conflict on `sourceEventId`). When the front matter repeats `session_id`,
 `work_outcome`, `feedback_coverage`, or `repositories`, each must equal the argument. Delivery mode is
 never read from the document. Omitted coverage is `not-assessed`.
 
@@ -131,8 +132,10 @@ preserves sanitized feedback. Inspect and flush through the `outbox_status` and 
 tools of the same server. `autonomous` mode requires verified read-back and does not fall back to
 that outbox. A successful work outcome with blocked delivery is not fully reported. Invalid content,
 identity conflicts, saturation, and persistence failure come back as tool errors. Do not discard
-pending records or claim acknowledged delivery. If the server is unavailable, follow the
-[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable).
+pending records or claim acknowledged delivery. If the server is unavailable, restore it per the
+[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the retrospective
+as blocked; the CLI fallback only reads and appends journal entries and cannot save a retrospective,
+so never store one through `journal_append`.
 
 `compose` accepts: `narrative` (concise, non-empty), `date`, `issues`, `prs`, `description`,
 `facts`, `transcript`, `tools`, `architecture`, and optional `knownSensitiveValues`. Unknown keys are

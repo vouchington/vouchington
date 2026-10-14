@@ -153,15 +153,18 @@ describe('validateRetrospective', () => {
     )
   })
 
-  it('rejects complete coverage when an assessment section is missing', () => {
-    const markdown = doc().replace('## Architecture Findings', '## Other Findings')
-    const { errors } = validateRetrospective(
-      input(markdown, { feedbackCoverage: { ...COVERAGE, status: 'complete' } }),
-    )
-    expect(errors).toContain(
-      'complete feedback coverage requires available assessed factual, tool, and architecture sources',
-    )
-  })
+  it.each(['Tool Findings', 'Architecture Findings'])(
+    'rejects complete coverage when %s is missing',
+    heading => {
+      const markdown = doc().replace(`## ${heading}`, '## Other Findings')
+      const { errors } = validateRetrospective(
+        input(markdown, { feedbackCoverage: { ...COVERAGE, status: 'complete' } }),
+      )
+      expect(errors).toContain(
+        'complete feedback coverage requires available assessed factual, tool, and architecture sources',
+      )
+    },
+  )
 
   it('rejects complete coverage when an assessment was not performed', () => {
     const { errors } = validateRetrospective(

@@ -15,9 +15,9 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are the `facts` and
 `transcript` inputs of `retrospective_save`'s `compose` argument and the `journal_entries` tool,
-all on the `vouchington-tooling` MCP server (if it is unavailable, follow the
-[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable)), called with the `sessionId` the
-SessionStart hook printed. Unanswerable evidence is `unknown — no journal`, never a guess.
+all on the `vouchington-tooling` MCP server (if it is unavailable, restore it per the
+[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the retrospective
+as blocked), called with the `sessionId` the SessionStart hook printed. Unanswerable evidence is `unknown — no journal`, never a guess.
 
 **When to write.** Write one retrospective per PR when you hand it to the human as ready, or one
 for a native stack when the stack is handed off, per the Close-out rule in
@@ -31,18 +31,19 @@ retrospective.
 
 Start with the `retrospective_check` tool, passing the SessionStart `sessionId` (and `sourceEventId`
 when reporting another task in the same session). The tools take the id explicitly, so no root or
-child identity flags exist. An existing retrospective covers only its source event; preserve later
+child identity flags exist; a spawned child also passes the `parentSessionId` it received. An existing retrospective covers only its source event; preserve later
 task deltas with a new explicit `sourceEventId`. For the same already-reported event, collect only
 the delta since its timestamp or report `no delta since <timestamp>`. Otherwise call
-`retrospective_save` with `compose` (and `dryRun: true` first to preview the document) to generate
+`retrospective_save` with `compose` (and `dryRun: true` first to preview the document; then save
+the exact `markdown` the preview returned, not a second `compose`) to generate
 routine facts, markers, coverage, tool assessments, and architectural assessments through the shared
 composer. Its `compose` argument supplies the concise `narrative`, `date`, `issues`, `prs`,
 `description`, `facts`, `transcript`, `tools`, and `architecture`; the server adds the session,
 repositories, outcome, and coverage from the call's own `workOutcome`, `feedbackCoverage`, and
 `repositories` arguments. Unavailable evidence stays explicit. Use an explicit `mode` as described
 in [saving.md](saving.md). Pass the SessionStart `sessionId` as the call's `sessionId`; pass
-`compose.transcript.harnessSessionId` (the harness session UUID) only when that `sessionId` is not
-a UUID. The composer collects routine repository facts and transcript facts, and
+`compose.transcript.harnessSessionId` (the harness session UUID) whenever it differs from that
+`sessionId`, even when the `sessionId` is UUID-shaped. The composer collects routine repository facts and transcript facts, and
 builds `## CI Failures` and `## Sandbox & Permission Audit` from the session's hosted journal
 entries alone; do not rerun separate collectors solely to fill sections that composition
 already generated. A PR in a repository other than the worktree's is recorded as the facts
