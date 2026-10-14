@@ -5,6 +5,7 @@ import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 // Imported after the mock helpers above so the mock factories can reference them.
 import { Button } from '@/components/ui/button'
@@ -26,31 +27,7 @@ vi.mock(
 
 createNavMock().setPathname('/news')
 
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 vi.mock(
   import('@/components/votes/score-vote'),

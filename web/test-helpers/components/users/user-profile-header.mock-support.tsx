@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import React, { type ReactNode } from 'react'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { trackDynamicImport } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import type { User } from '@/types/user'
 import { vi } from 'vitest'
 
@@ -17,11 +18,8 @@ vi.mock(
   () =>
     ({
       default: (loader: () => Promise<unknown>) => {
-        const LazyComp = React.lazy(
-          async (): Promise<{
-            default: React.ComponentType<Record<string, unknown>>
-          }> => {
-            const mod = await loader()
+        const LazyComp = React.lazy(() => {
+          const pending = loader().then((mod: unknown) => {
             if (typeof mod === 'function') {
               return { default: mod as React.ComponentType<Record<string, unknown>> }
             }
@@ -33,8 +31,10 @@ vi.mock(
                 | undefined) ??
               (() => null)
             return { default: comp }
-          },
-        )
+          })
+          trackDynamicImport(pending)
+          return pending
+        })
         // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
         function DynWrapper(props: Record<string, unknown>) {
           return (

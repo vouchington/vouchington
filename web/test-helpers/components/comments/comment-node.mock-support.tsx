@@ -2,21 +2,9 @@
 import type { MouseEventHandler, ReactNode } from 'react'
 import { vi } from 'vitest'
 import { createUserPathname } from '@/lib/links/entity-href'
+import { trackDynamicLoader } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 
 const scoreVoteProps = vi.hoisted(() => [] as Array<{ existingVoteChoice?: string }>)
-
-const nextDynamicMock = vi.hoisted(() => {
-  require('react')
-  return {
-    default: (fn: () => Promise<{ default: () => null }>) => {
-      void fn()
-      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
-      return function MockDynamic() {
-        return null
-      }
-    },
-  }
-})
 
 vi.mock(
   import('next/link'),
@@ -44,7 +32,19 @@ vi.mock(
     }) as unknown as typeof import('next/link'),
 )
 
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(
+  import('next/dynamic'),
+  () =>
+    ({
+      default: (fn: () => Promise<{ default: () => null }>) => {
+        trackDynamicLoader(fn)
+        // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
+        return function MockDynamic() {
+          return null
+        }
+      },
+    }) as unknown as typeof import('next/dynamic'),
+)
 
 vi.mock(
   import('@/components/admin/admin-moderation-button'),

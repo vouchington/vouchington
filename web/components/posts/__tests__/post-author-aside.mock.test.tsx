@@ -3,34 +3,13 @@ import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { PostAuthorAside } from '../post-author-aside'
 import type { AuthorAside } from '@/types/posts'
 import type { ProfileLink } from '@/types/user'
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 vi.mock(
   import('next/link'),
