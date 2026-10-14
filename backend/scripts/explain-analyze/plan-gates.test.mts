@@ -294,5 +294,22 @@ describe('media replay read budgets', () => {
     authority['Actual Rows'] = 17000
     authority['Actual Loops'] = 1
     expect(() => assertRequiredPlanShape(captured)).toThrow('probe only locked authority ids')
+
+    const audit = result(
+      'media-delivery-replay-first',
+      {
+        'Node Type': 'Bitmap Heap Scan',
+        'Relation Name': 'media_delivery_registry_records',
+        'Actual Rows': 1000,
+        'Actual Loops': 1,
+      },
+      '/* replayFailedMediaDeliveryRegistryRecords:event */ INSERT INTO copyright_notice_lifecycle_changes SELECT record.id FROM media_delivery_registry_records record WHERE record.id = ANY($2::uuid[])',
+    )
+    expect(() => assertRequiredPlanShape(audit)).not.toThrow()
+    audit.query_text = audit.query_text.replace(
+      'record.id = ANY($2::uuid[])',
+      'record.id IS NOT NULL',
+    )
+    expect(() => assertRequiredPlanShape(audit)).toThrow('actor audit to replayed UUIDs')
   })
 })

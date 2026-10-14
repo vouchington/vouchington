@@ -28,31 +28,36 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       throw new Error(`${result.name} must drive at most one page through ${FAILED_INDEX}`)
     return
   }
-  if (
-    !result.query_text.includes('FROM unnest($2::uuid[]) selected(record_id)') ||
-    !result.query_text.includes('CROSS JOIN LATERAL (') ||
-    !result.query_text.includes('media_delivery_registry_record_id = selected.record_id') ||
-    !result.query_text.includes('LIMIT 1')
-  )
-    throw new Error(`${result.name} must constrain replay writes to each locked UUID`)
-  const authorityScans = nodes.filter(
-    node => baseRelationName(node) === 'media_delivery_registry_records',
-  )
-  if (
-    authorityScans.length === 0 ||
-    authorityScans.some(
-      node =>
-        node['Node Type'] !== 'Index Scan' ||
-        node['Index Name'] !== RECORD_PRIMARY_KEY ||
-        !Number.isFinite(Number(node['Actual Loops'])) ||
-        Number(node['Actual Loops']) > MEDIA_REPLAY_PAGE_SIZE ||
-        !Number.isFinite(Number(node['Actual Rows'])) ||
-        Number(node['Actual Rows']) > 1,
+  if (result.query_text.includes('/* replayFailedMediaDeliveryRegistryRecords:event */')) {
+    if (!result.query_text.includes('record.id = ANY($2::uuid[])'))
+      throw new Error(`${result.name} must constrain actor audit to replayed UUIDs`)
+  } else {
+    if (
+      !result.query_text.includes('FROM unnest($2::uuid[]) selected(record_id)') ||
+      !result.query_text.includes('CROSS JOIN LATERAL (') ||
+      !result.query_text.includes('media_delivery_registry_record_id = selected.record_id') ||
+      !result.query_text.includes('LIMIT 1')
     )
-  )
-    throw new Error(
-      `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
+      throw new Error(`${result.name} must constrain replay writes to each locked UUID`)
+    const authorityScans = nodes.filter(
+      node => baseRelationName(node) === 'media_delivery_registry_records',
     )
+    if (
+      authorityScans.length === 0 ||
+      authorityScans.some(
+        node =>
+          node['Node Type'] !== 'Index Scan' ||
+          node['Index Name'] !== RECORD_PRIMARY_KEY ||
+          !Number.isFinite(Number(node['Actual Loops'])) ||
+          Number(node['Actual Loops']) > MEDIA_REPLAY_PAGE_SIZE ||
+          !Number.isFinite(Number(node['Actual Rows'])) ||
+          Number(node['Actual Rows']) > 1,
+      )
+    )
+      throw new Error(
+        `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
+      )
+  }
   for (const relation of [
     'media_delivery_registry_records',
     'media_delivery_registry_changes',
