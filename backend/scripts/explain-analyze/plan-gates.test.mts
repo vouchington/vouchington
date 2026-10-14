@@ -254,13 +254,14 @@ describe('media replay read budgets', () => {
       'Actual Loops': 1000,
     }
     const boundQuery = `/* replayFailedMediaDeliveryRegistryRecords */
+      WITH inserted AS (
       INSERT INTO media_delivery_registry_changes
       SELECT id FROM unnest($2::uuid[]) selected(record_id)
       CROSS JOIN LATERAL (
         SELECT media_delivery_registry_record_id
         FROM view_media_delivery_registry_current_records
         WHERE media_delivery_registry_record_id = selected.record_id LIMIT 1
-      ) current_record`
+      ) current_record) SELECT id FROM inserted`
     const captured = result(
       'media-delivery-replay-first',
       {
@@ -280,7 +281,7 @@ describe('media replay read budgets', () => {
     expect(() => assertRequiredPlanShape(captured)).not.toThrow()
     captured.query_text =
       '/* replayFailedMediaDeliveryRegistryRecords */ SELECT id FROM media_delivery_registry_records'
-    expect(() => assertRequiredPlanShape(captured)).toThrow('each locked UUID')
+    expect(() => assertRequiredPlanShape(captured)).toThrow('replay change insert')
     captured.query_text = boundQuery.replace('LIMIT 1', '')
     expect(() => assertRequiredPlanShape(captured)).toThrow('each locked UUID')
     captured.query_text = boundQuery

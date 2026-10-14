@@ -8,7 +8,13 @@ const RECORD_PRIMARY_KEY = 'media_delivery_registry_records_pkey'
 /** Gate the driving candidates, then the scoped current-history and actor-event partners. */
 export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
-  if (result.query_text.includes('replayFailedMediaDeliveryRegistryRecords:lock')) {
+  const statement = result.query_text.trimStart()
+  if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:lock */')) {
+    if (
+      !statement.includes('WITH candidates AS MATERIALIZED') ||
+      !statement.includes('FOR UPDATE OF record')
+    )
+      throw new Error(`${result.name} must lock the bounded candidate page`)
     const candidates = nodes.filter(node => node['Subplan Name'] === 'CTE candidates')
     if (
       candidates.length !== 1 ||
@@ -28,10 +34,22 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       throw new Error(`${result.name} must drive at most one page through ${FAILED_INDEX}`)
     return
   }
-  if (result.query_text.includes('/* replayFailedMediaDeliveryRegistryRecords:event */')) {
-    if (!result.query_text.includes('record.id = ANY($2::uuid[])'))
+  if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:event */')) {
+    if (
+      !/^\/\* replayFailedMediaDeliveryRegistryRecords:event \*\/\s+INSERT INTO copyright_notice_lifecycle_changes\b/.test(
+        statement,
+      )
+    )
+      throw new Error(`${result.name} must be the actor-audit event insert`)
+    if (!statement.includes('record.id = ANY($2::uuid[])'))
       throw new Error(`${result.name} must constrain actor audit to replayed UUIDs`)
-  } else {
+  } else if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords */')) {
+    if (
+      !/^\/\* replayFailedMediaDeliveryRegistryRecords \*\/\s+WITH inserted AS \(\s+INSERT INTO media_delivery_registry_changes\b/.test(
+        statement,
+      )
+    )
+      throw new Error(`${result.name} must be the replay change insert`)
     if (
       !result.query_text.includes('FROM unnest($2::uuid[]) selected(record_id)') ||
       !result.query_text.includes('CROSS JOIN LATERAL (') ||
@@ -57,7 +75,7 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       throw new Error(
         `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
       )
-  }
+  } else throw new Error(`${result.name} has an unknown media replay statement annotation`)
   for (const relation of [
     'media_delivery_registry_records',
     'media_delivery_registry_changes',
