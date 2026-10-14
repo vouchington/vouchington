@@ -52,7 +52,7 @@ async function insertMissingCategoriesChunk(
     `/* insertMissingCategories */
       INSERT INTO rss_feed_item_categories (
         rss_feed_item_id,
-        category_id,
+        category_identity_id,
         category_text,
         topic_id,
         topic_alias_id
@@ -78,8 +78,8 @@ async function insertMissingCategoriesChunk(
       LEFT JOIN topics t_alias ON t_alias.id = COALESCE(ta.topic_id, text_alias.topic_id) AND t_alias.deleted_at IS NULL AND t_alias.merged_into_topic_id IS NULL
       LEFT JOIN topics t_name ON LOWER(t_name.name) = LOWER(input.category_text) AND t_name.deleted_at IS NULL AND t_name.merged_into_topic_id IS NULL
       LEFT JOIN topics t_slug ON t_slug.slug = LOWER(input.category_text) AND t_slug.deleted_at IS NULL AND t_slug.merged_into_topic_id IS NULL
-      ORDER BY input.rss_feed_item_id, LOWER(input.category_text), input.category_text
-      ON CONFLICT (rss_feed_item_id, category_id) DO NOTHING
+      ORDER BY input.rss_feed_item_id, identity.id
+      ON CONFLICT (rss_feed_item_id, category_identity_id) DO NOTHING
       RETURNING rss_feed_item_id, NULL::uuid AS previous_topic_id, topic_id,
         NULL::uuid AS previous_topic_alias_id, topic_alias_id
     `,
@@ -157,20 +157,20 @@ async function updateMatchedCategoriesChunk(
       ), candidates AS (
         SELECT
           category.rss_feed_item_id,
-          category.category_id,
+          category.category_identity_id,
           category.topic_id AS previous_topic_id,
           category.topic_alias_id AS previous_topic_alias_id,
           updates.topic_id AS requested_topic_id,
           updates.topic_alias_id AS requested_topic_alias_id
         FROM rss_feed_item_categories category
         JOIN rss_category_identities identity
-          ON identity.id = category.category_id
+          ON identity.id = category.category_identity_id
         JOIN updates
           ON category.rss_feed_item_id = updates.rss_feed_item_id
          AND identity.category_text = LOWER(TRIM(updates.category_text))
         WHERE category.topic_id IS DISTINCT FROM COALESCE(updates.topic_id, category.topic_id)
            OR category.topic_alias_id IS DISTINCT FROM COALESCE(updates.topic_alias_id, category.topic_alias_id)
-        ORDER BY category.rss_feed_item_id, LOWER(category.category_text), category.category_text
+        ORDER BY category.rss_feed_item_id, category.category_identity_id
         FOR UPDATE OF category
       ), changed AS (
         UPDATE rss_feed_item_categories category
@@ -178,7 +178,7 @@ async function updateMatchedCategoriesChunk(
             topic_alias_id = COALESCE(candidates.requested_topic_alias_id, category.topic_alias_id)
         FROM candidates
         WHERE category.rss_feed_item_id = candidates.rss_feed_item_id
-          AND category.category_id = candidates.category_id
+          AND category.category_identity_id = candidates.category_identity_id
         RETURNING category.rss_feed_item_id, candidates.previous_topic_id, category.topic_id,
           candidates.previous_topic_alias_id, category.topic_alias_id
       )

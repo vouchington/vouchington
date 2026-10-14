@@ -39,7 +39,7 @@ async function backfillCategoryBatch(
       SELECT DISTINCT rss_feed_item_id FROM (
         SELECT category.rss_feed_item_id, category.category_text
         FROM rss_feed_item_categories category
-        JOIN rss_category_identities identity ON identity.id = category.category_id
+        JOIN rss_category_identities identity ON identity.id = category.category_identity_id
         WHERE
           ((
             (category.topic_alias_id IN (SELECT id FROM topic_aliases WHERE topic_id = $1)
@@ -61,9 +61,9 @@ async function backfillCategoryBatch(
     }>(
       `/* backfillCategoriesForTopicAliases */
       WITH candidates AS (
-        SELECT category.rss_feed_item_id, category.category_id, category.topic_id AS previous_topic_id
+        SELECT category.rss_feed_item_id, category.category_identity_id, category.topic_id AS previous_topic_id
         FROM rss_feed_item_categories category
-        JOIN rss_category_identities identity ON identity.id = category.category_id
+        JOIN rss_category_identities identity ON identity.id = category.category_identity_id
         WHERE category.rss_feed_item_id = ANY($3::uuid[]) AND (
           ((
             category.topic_alias_id IN (SELECT id FROM topic_aliases WHERE topic_id = $1)
@@ -71,7 +71,7 @@ async function backfillCategoryBatch(
           ) AND (category.topic_id IS NULL OR category.topic_id != $1))
           OR (category.topic_id IS NULL AND identity.category_text = (SELECT LOWER(name) FROM topics WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL))
           OR (category.topic_id IS NULL AND identity.category_text = (SELECT slug FROM topics WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL)))
-        ORDER BY category.rss_feed_item_id, category.category_text
+        ORDER BY category.rss_feed_item_id, category.category_identity_id
         LIMIT $2
         FOR UPDATE OF category
       )
@@ -79,7 +79,7 @@ async function backfillCategoryBatch(
       SET topic_id = $1
       FROM candidates
       WHERE target.rss_feed_item_id = candidates.rss_feed_item_id
-        AND target.category_id = candidates.category_id
+        AND target.category_identity_id = candidates.category_identity_id
       RETURNING target.rss_feed_item_id, candidates.previous_topic_id
     `,
       [topicId, CATEGORY_BACKFILL_BATCH_SIZE, candidateItemIds],

@@ -34,10 +34,10 @@ export async function clearUnlinkedTopicAliasCategories(
         WITH candidates AS (
           SELECT
             feed_category.rss_feed_id,
-            feed_category.category_id,
+            feed_category.category_identity_id,
             replacement.topic_id AS replacement_topic_id
           FROM rss_feed_categories feed_category
-          JOIN rss_category_identities identity ON identity.id = feed_category.category_id
+          JOIN rss_category_identities identity ON identity.id = feed_category.category_identity_id
           LEFT JOIN topic_aliases source_alias ON source_alias.id = $1
           LEFT JOIN LATERAL (
             SELECT topic.id AS topic_id
@@ -73,7 +73,7 @@ export async function clearUnlinkedTopicAliasCategories(
         SET topic_id = candidates.replacement_topic_id
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_id = candidates.category_id`,
+          AND target.category_identity_id = candidates.category_identity_id`,
       [topicAliasId, alias, formerTopicId ?? null],
     )
 

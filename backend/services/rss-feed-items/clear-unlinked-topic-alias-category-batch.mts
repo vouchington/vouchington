@@ -22,7 +22,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
       SELECT DISTINCT rss_feed_item_id FROM (
         SELECT category.rss_feed_item_id, category.category_text
         FROM rss_feed_item_categories category
-        JOIN rss_category_identities identity ON identity.id = category.category_id
+        JOIN rss_category_identities identity ON identity.id = category.category_identity_id
         WHERE (category.topic_alias_id = $1 OR identity.category_text = LOWER($2))
           AND category.topic_id IS NOT NULL
           AND ($3::uuid IS NULL OR category.topic_id = $3)
@@ -41,12 +41,12 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
       WITH candidates AS (
         SELECT
           category.rss_feed_item_id,
-          category.category_id,
+          category.category_identity_id,
           category.category_text,
           category.topic_id AS previous_topic_id,
           replacement.topic_id AS replacement_topic_id
         FROM rss_feed_item_categories category
-        JOIN rss_category_identities identity ON identity.id = category.category_id
+        JOIN rss_category_identities identity ON identity.id = category.category_identity_id
         LEFT JOIN topic_aliases source_alias ON source_alias.id = $1
         LEFT JOIN LATERAL (
           SELECT topic.id AS topic_id
@@ -78,7 +78,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
             WHERE current_alias.id = $1
               AND current_alias.topic_id IS NOT NULL
           )
-        ORDER BY category.rss_feed_item_id, category.category_text
+        ORDER BY category.rss_feed_item_id, category.category_identity_id
         LIMIT $4
         FOR UPDATE OF category
       )
@@ -86,7 +86,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
       SET topic_id = candidates.replacement_topic_id
       FROM candidates
       WHERE target.rss_feed_item_id = candidates.rss_feed_item_id
-        AND target.category_id = candidates.category_id
+        AND target.category_identity_id = candidates.category_identity_id
         AND target.topic_id IS DISTINCT FROM candidates.replacement_topic_id
       RETURNING
         target.rss_feed_item_id,

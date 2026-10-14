@@ -47,7 +47,7 @@ export async function upsertRssFeedCategories(
       WHERE category.rss_feed_id = ${rssFeedId}
         AND NOT EXISTS (
           SELECT 1 FROM rss_category_identities identity
-          WHERE identity.id = category.category_id
+          WHERE identity.id = category.category_identity_id
             AND identity.category_text = ANY (${normalized}::text[])
         )
     `,
@@ -75,7 +75,7 @@ async function upsertRssFeedCategoriesChunk(
     sql`/* upsertRssFeedCategories */
       INSERT INTO rss_feed_categories (
         rss_feed_id,
-        category_id,
+        category_identity_id,
         topic_id
       )
       SELECT
@@ -100,8 +100,8 @@ async function upsertRssFeedCategoriesChunk(
         ON t_slug.slug = input.category_text
         AND t_slug.deleted_at IS NULL
         AND t_slug.merged_into_topic_id IS NULL
-      ORDER BY rss_feed_id ASC NULLS LAST, input.category_text ASC NULLS LAST
-      ON CONFLICT (rss_feed_id, category_id) DO UPDATE
+      ORDER BY rss_feed_id ASC NULLS LAST, identity.id ASC NULLS LAST
+      ON CONFLICT (rss_feed_id, category_identity_id) DO UPDATE
         SET topic_id = EXCLUDED.topic_id
     `,
   )
@@ -120,10 +120,10 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
     const { rowCount } = await write(
       sql`/* backfillCategoriesForTopicAlias */
         WITH candidates AS (
-          SELECT category.rss_feed_id, category.category_id
+          SELECT category.rss_feed_id, category.category_identity_id
           FROM rss_feed_categories category
           JOIN rss_category_identities identity
-            ON identity.id = category.category_id
+            ON identity.id = category.category_identity_id
           WHERE
             (
               identity.category_text IN (SELECT alias FROM topic_aliases WHERE topic_id = ${topicId})
@@ -147,7 +147,7 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
                   AND merged_into_topic_id IS NULL
               )
             )
-          ORDER BY category.rss_feed_id, category.category_id
+          ORDER BY category.rss_feed_id, category.category_identity_id
           LIMIT ${RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE}
           FOR UPDATE OF category SKIP LOCKED
         )
@@ -155,7 +155,7 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
         SET topic_id = ${topicId}
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_id = candidates.category_id
+          AND target.category_identity_id = candidates.category_identity_id
       `,
     )
     const batchUpdated = rowCount ?? 0
@@ -175,7 +175,7 @@ export async function getRssFeedCategories(
     sql`/* getRssFeedCategories */
       SELECT identity.category_text, category.topic_id
       FROM rss_feed_categories category
-      JOIN rss_category_identities identity ON identity.id = category.category_id
+      JOIN rss_category_identities identity ON identity.id = category.category_identity_id
       WHERE category.rss_feed_id = ${rssFeedId}
       ORDER BY identity.category_text
     `,

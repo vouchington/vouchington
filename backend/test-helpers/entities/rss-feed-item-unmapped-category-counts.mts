@@ -10,7 +10,7 @@ export async function deleteUnmappedRssFeedItemCategory(
     allowUnannotatedQuery(sql`
     DELETE FROM rss_feed_item_categories
     WHERE rss_feed_item_id = ${rssFeedItemId}
-      AND category_id = (
+      AND category_identity_id = (
         SELECT id FROM rss_category_identities WHERE category_text = LOWER(TRIM(${categoryText}))
       )
       AND topic_id IS NULL
@@ -27,7 +27,7 @@ export async function getUnmappedRssFeedItemCategoryCount(categoryText: string):
     SELECT item_count::int,
       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at
     FROM rss_feed_item_unmapped_category_counts
-    WHERE category_id = (
+    WHERE category_identity_id = (
       SELECT id FROM rss_category_identities WHERE category_text = LOWER(TRIM(${categoryText}))
     )
   `),

@@ -111,7 +111,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
       SELECT $7, id, published_at FROM inserted_items
     ), inserted_categories AS (
-      INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_id, category_text, topic_id)
+      INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
       SELECT item_id, $11::uuid, $8, $9 FROM input
     ), inserted_posts AS (
       INSERT INTO posts (

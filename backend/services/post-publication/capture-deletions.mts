@@ -196,26 +196,26 @@ async function lockRssFeedHardDeleteCategories(
   let afterCategoryId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- category-relation pages follow all affected post locks.
-    const result = await query<{ rss_feed_item_id: string; category_id: string }>(
+    const result = await query<{ rss_feed_item_id: string; category_identity_id: string }>(
       `/* lockRssFeedHardDeleteCategories */
-      SELECT category.rss_feed_item_id, category.category_id
+      SELECT category.rss_feed_item_id, category.category_identity_id
       FROM rss_feed_item_categories category
       JOIN rss_feed_item_sources source ON source.rss_feed_item_id = category.rss_feed_item_id
       WHERE source.rss_feed_id = $1::uuid
         AND (
           $2::uuid IS NULL
-          OR (category.rss_feed_item_id, category.category_id) > ($2::uuid, $3::uuid)
+          OR (category.rss_feed_item_id, category.category_identity_id) > ($2::uuid, $3::uuid)
         )
-      ORDER BY category.rss_feed_item_id, category.category_id
+      ORDER BY category.rss_feed_item_id, category.category_identity_id
       LIMIT $4
       FOR UPDATE OF category`,
       [rssFeedId, afterItemId, afterCategoryId, RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE],
     )
-    const rows: Array<{ rss_feed_item_id: string; category_id: string }> = result.rows
+    const rows: Array<{ rss_feed_item_id: string; category_identity_id: string }> = result.rows
     if (rows.length === 0) return
     const last = rows.at(-1)!
     afterItemId = last.rss_feed_item_id
-    afterCategoryId = last.category_id
+    afterCategoryId = last.category_identity_id
   }
 }
 

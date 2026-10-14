@@ -84,11 +84,11 @@ describe('categories', () => {
       testRssFeedItemId,
     )
     expect(usage).toMatchObject({
-      feed_category_id: usage?.identity_id,
-      item_category_id: usage?.identity_id,
+      feed_category_identity_id: usage?.identity_id,
+      item_category_identity_id: usage?.identity_id,
       authored_category_text: categoryText,
-      rejection_category_id: usage?.identity_id,
-      count_category_id: usage?.identity_id,
+      rejection_category_identity_id: usage?.identity_id,
+      count_category_identity_id: usage?.identity_id,
       item_count: 1,
     })
   })

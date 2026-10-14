@@ -11,7 +11,7 @@ async function insertTestCategory(
   await write(
     `/* insertTestCategory */
     INSERT INTO rss_feed_item_categories
-      (rss_feed_item_id, category_id, category_text, topic_id, topic_alias_id)
+      (rss_feed_item_id, category_identity_id, category_text, topic_id, topic_alias_id)
     VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid)
     ON CONFLICT DO NOTHING`,
     [rssFeedItemId, categoryId, categoryText, topicId, topicAliasId],

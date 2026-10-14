@@ -134,7 +134,7 @@ export async function createTopHashtagRssSourceForTest({
   await write(
     `/* createTopHashtagRssSourceForTest category */
       INSERT INTO rss_feed_item_categories (
-        rss_feed_item_id, category_id, category_text, topic_alias_id
+        rss_feed_item_id, category_identity_id, category_text, topic_alias_id
       ) VALUES ($1::uuid, $4::uuid, $2, $3::uuid)`,
     [rssFeedItemId, authoredToken, topicAliasId, categoryId],
   )

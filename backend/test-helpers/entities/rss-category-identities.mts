@@ -25,36 +25,36 @@ export async function getTestRssCategoryIdentityUsage(
   rssFeedItemId: string,
 ): Promise<{
   identity_id: string
-  feed_category_id: string | null
-  item_category_id: string | null
+  feed_category_identity_id: string | null
+  item_category_identity_id: string | null
   authored_category_text: string | null
-  rejection_category_id: string | null
-  count_category_id: string | null
+  rejection_category_identity_id: string | null
+  count_category_identity_id: string | null
   item_count: number | null
 } | null> {
   const { rows } = await read<{
     identity_id: string
-    feed_category_id: string | null
-    item_category_id: string | null
+    feed_category_identity_id: string | null
+    item_category_identity_id: string | null
     authored_category_text: string | null
-    rejection_category_id: string | null
-    count_category_id: string | null
+    rejection_category_identity_id: string | null
+    count_category_identity_id: string | null
     item_count: number | null
   }>(
     `/* getTestRssCategoryIdentityUsage */
       SELECT identity.id AS identity_id,
-        (SELECT category_id FROM rss_feed_categories
-         WHERE rss_feed_id = $2 AND category_id = identity.id) AS feed_category_id,
-        (SELECT category_id FROM rss_feed_item_categories
-         WHERE rss_feed_item_id = $3 AND category_id = identity.id) AS item_category_id,
+        (SELECT category_identity_id FROM rss_feed_categories
+         WHERE rss_feed_id = $2 AND category_identity_id = identity.id) AS feed_category_identity_id,
+        (SELECT category_identity_id FROM rss_feed_item_categories
+         WHERE rss_feed_item_id = $3 AND category_identity_id = identity.id) AS item_category_identity_id,
         (SELECT category_text FROM rss_feed_item_categories
-         WHERE rss_feed_item_id = $3 AND category_id = identity.id) AS authored_category_text,
-        (SELECT category_id FROM rss_feed_item_category_rejections
-         WHERE category_id = identity.id) AS rejection_category_id,
-        (SELECT category_id FROM rss_feed_item_unmapped_category_counts
-         WHERE category_id = identity.id) AS count_category_id,
+         WHERE rss_feed_item_id = $3 AND category_identity_id = identity.id) AS authored_category_text,
+        (SELECT category_identity_id FROM rss_feed_item_category_rejections
+         WHERE category_identity_id = identity.id) AS rejection_category_identity_id,
+        (SELECT category_identity_id FROM rss_feed_item_unmapped_category_counts
+         WHERE category_identity_id = identity.id) AS count_category_identity_id,
         (SELECT item_count::int FROM rss_feed_item_unmapped_category_counts
-         WHERE category_id = identity.id) AS item_count
+         WHERE category_identity_id = identity.id) AS item_count
       FROM rss_category_identities identity
       WHERE identity.category_text = LOWER(TRIM($1))`,
     [categoryText, rssFeedId, rssFeedItemId],

@@ -11,9 +11,9 @@ export async function insertTestRssFeedCategory(
   const categoryId = await registerTestRssCategoryIdentity(categoryText)
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO rss_feed_categories (rss_feed_id, category_id, topic_id)
+    INSERT INTO rss_feed_categories (rss_feed_id, category_identity_id, topic_id)
     VALUES (${rssFeedId}, ${categoryId}, ${topicId})
-    ON CONFLICT (rss_feed_id, category_id) DO UPDATE SET topic_id = EXCLUDED.topic_id
+    ON CONFLICT (rss_feed_id, category_identity_id) DO UPDATE SET topic_id = EXCLUDED.topic_id
   `),
   )
 }
@@ -25,7 +25,7 @@ export async function getTestRssFeedCategories(
     allowUnannotatedQuery(sql`
     SELECT identity.category_text, category.topic_id
     FROM rss_feed_categories category
-    JOIN rss_category_identities identity ON identity.id = category.category_id
+    JOIN rss_category_identities identity ON identity.id = category.category_identity_id
     WHERE category.rss_feed_id = ${rssFeedId}
     ORDER BY identity.category_text
   `),
@@ -42,7 +42,7 @@ export async function clearTestRssFeedItemCategoryTopicAlias(
     UPDATE rss_feed_item_categories category
     SET topic_alias_id = NULL
     WHERE category.rss_feed_item_id = ${rssFeedItemId}
-      AND category.category_id = (
+      AND category.category_identity_id = (
         SELECT identity.id FROM rss_category_identities identity
         WHERE identity.category_text = LOWER(TRIM(${categoryText}))
       )

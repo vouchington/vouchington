@@ -72,7 +72,7 @@ export async function seedTopHashtags(): Promise<void> {
   )
   await transaction(
     `/* seedTopHashtagsCategories */ INSERT INTO rss_feed_item_categories
-      (rss_feed_item_id, category_id, category_text, topic_alias_id)
+      (rss_feed_item_id, category_identity_id, category_text, topic_alias_id)
      SELECT seed.id, identity.id, 'SeedHashtag', $2
      FROM jsonb_to_recordset($1::jsonb) AS seed(id uuid)
      JOIN rss_category_identities identity ON identity.category_text = 'seedhashtag'

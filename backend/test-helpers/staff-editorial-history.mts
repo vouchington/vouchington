@@ -18,7 +18,7 @@ export async function readStaffCategoryState(category: string) {
     alias: unknown
   }>(sql`/* readStaffCategoryState */
     SELECT EXISTS(SELECT 1 FROM rss_feed_item_category_rejections
-      WHERE category_id = (
+      WHERE category_identity_id = (
         SELECT id FROM rss_category_identities WHERE category_text = LOWER(TRIM(${category}))
       )) AS rejected,
       (SELECT to_jsonb(a) FROM topic_aliases a WHERE alias = ${category}) AS alias`)

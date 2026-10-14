@@ -11,7 +11,7 @@ export async function lockTestRssFeedItemCategory(
       SELECT rss_feed_item_id
       FROM rss_feed_item_categories
       WHERE rss_feed_item_id = ${rssFeedItemId}
-        AND category_id = (
+        AND category_identity_id = (
           SELECT id FROM rss_category_identities WHERE category_text = LOWER(TRIM(${categoryText}))
         )
       FOR UPDATE

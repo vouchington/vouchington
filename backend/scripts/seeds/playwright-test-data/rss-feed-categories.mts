@@ -20,7 +20,7 @@ export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery)
   // Insert unmapped categories for Playwright tests
   // Use ON CONFLICT DO NOTHING so re-seeding is safe
   await query(
-    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_id, category_text, topic_id)
+    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
     SELECT item.id, identity.id, category.category_text, NULL
     FROM unnest($1::uuid[]) AS item(id)
     CROSS JOIN (VALUES ('credit-cards-pw-test'), ('news-pw-test')) AS category(category_text)
@@ -31,7 +31,7 @@ export async function seedPlaywrightRssFeedCategoryData(query: TransactionQuery)
 
   // Pre-reject 'news-pw-test' so the rejected-status view has a row for Playwright tests
   await query(
-    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_category_rejections (category_id, created_by_id)
+    `/* seedPlaywrightRssFeedCategoryData */ INSERT INTO rss_feed_item_category_rejections (category_identity_id, created_by_id)
     SELECT id, NULL FROM rss_category_identities WHERE category_text = 'news-pw-test'
     ON CONFLICT DO NOTHING`,
   )

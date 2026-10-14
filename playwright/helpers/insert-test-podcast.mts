@@ -121,7 +121,7 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // Feed categories with topic_id linked (so the rss_feed_categories EXISTS filter works).
   await registerRssCategoryIdentities([categorySlug, 'news', topicSlug], write)
   await write(
-    allowUnannotatedQuery(`INSERT INTO rss_feed_categories (rss_feed_id, category_id, topic_id)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_categories (rss_feed_id, category_identity_id, topic_id)
      SELECT $1::uuid, identity.id, input.topic_id
      FROM (VALUES ($2::text, $3::uuid), ('news', NULL::uuid)) AS input(category_text, topic_id)
      JOIN rss_category_identities identity ON identity.category_text = input.category_text
@@ -175,7 +175,7 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   //   EXISTS (SELECT 1 FROM rss_feed_item_categories WHERE topic_id = topicId)
   // So the episode must have an rss_feed_item_categories row with topic_id = testPodcastTopicId.
   await write(
-    allowUnannotatedQuery(`INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_id, category_text, topic_id)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
      SELECT $1::uuid, identity.id, $2, $3::uuid
      FROM rss_category_identities identity WHERE identity.category_text = $2
      ON CONFLICT DO NOTHING`),

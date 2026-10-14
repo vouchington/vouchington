@@ -11,7 +11,7 @@ export async function seedRssFeedItemCategories(count = 5000): Promise<void> {
       ON CONFLICT (category_text) DO UPDATE SET category_text = EXCLUDED.category_text`,
   )
   await transaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_id, category_text, topic_id)
+    `/* seedExplainData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
       SELECT seeded.id, identity.id, identity.category_text, topic.topic_id
       FROM ( SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS row_index
         FROM rss_feed_item_guids WHERE guid LIKE 'seed-item-guid-%' LIMIT $1 ) seeded

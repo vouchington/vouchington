@@ -73,7 +73,7 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
         ) ORDER BY category_identity.category_text)
         FROM rss_feed_categories c
         JOIN rss_category_identities category_identity
-          ON category_identity.id = c.category_id
+          ON category_identity.id = c.category_identity_id
         LEFT JOIN topics t
           ON t.id = c.topic_id
           AND t.deleted_at IS NULL

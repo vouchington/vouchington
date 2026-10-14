@@ -56,7 +56,7 @@ async function deleteStaleCategoriesAndRetractVotes(
     `/* reconcileRssFeedItemCategorySnapshots */
       WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
       desired_categories AS (
-        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_id
+        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
         FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
         JOIN rss_category_identities identity
           ON identity.category_text = LOWER(TRIM(input.category_text))
@@ -65,7 +65,7 @@ async function deleteStaleCategoriesAndRetractVotes(
         WHERE category.rss_feed_item_id = snapshot.rss_feed_item_id
           AND NOT EXISTS (SELECT 1 FROM desired_categories desired
             WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-              AND desired.category_id = category.category_id)
+              AND desired.category_identity_id = category.category_identity_id)
         RETURNING category.rss_feed_item_id, category.topic_id, category.topic_alias_id
       ) SELECT * FROM stale_categories`,
     [itemIds, categoryItemIds, categoryTexts],
@@ -98,7 +98,7 @@ async function getStaleCategoryTopicAliasIds(
     `/* reconcileRssFeedItemCategorySnapshots staleAliasScopes */
       WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
       desired_categories AS (
-        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_id
+        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_identity_id
         FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
         JOIN rss_category_identities identity
           ON identity.category_text = LOWER(TRIM(input.category_text))
@@ -109,7 +109,7 @@ async function getStaleCategoryTopicAliasIds(
       WHERE category.topic_alias_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM desired_categories desired
           WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-            AND desired.category_id = category.category_id)
+            AND desired.category_identity_id = category.category_identity_id)
       ORDER BY category.topic_alias_id`,
     [itemIds, categoryItemIds, categoryTexts],
   )
