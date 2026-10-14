@@ -782,7 +782,7 @@ Current OAuth lifecycle and active exchange projected from timestamp facts and i
     (COALESCE((( SELECT max(attempt.attempt_number) AS max
            FROM oauth_authorization_exchange_attempts attempt
           WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,
-    linkedin_user_id
+    linkedin_account_id
    FROM oauth_authorizations flow;
 ```
 

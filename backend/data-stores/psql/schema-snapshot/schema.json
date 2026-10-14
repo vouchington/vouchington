@@ -47337,7 +47337,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -47348,19 +47348,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "linkedin_user_data": {
           "collation": null,
@@ -47370,7 +47381,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "jsonb"
         },
         "linkedin_user_email_address": {
@@ -47381,18 +47392,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "linkedin_user_id": {
           "collation": null,
-          "comment": "LinkedIn's unique user identifier (primary key).",
+          "comment": "LinkedIn's unique external user identifier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "refresh_token_ciphertext": {
@@ -47403,7 +47414,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "updated_at": {
@@ -47414,7 +47425,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -47425,7 +47436,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -47530,10 +47541,10 @@
           "unique": true,
           "valid": true
         },
-        "linkedin_accounts_pkey": {
+        "linkedin_accounts_linkedin_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX linkedin_accounts_pkey ON public.linkedin_accounts USING btree (linkedin_user_id)",
+          "definition": "CREATE UNIQUE INDEX linkedin_accounts_linkedin_user_id_key ON public.linkedin_accounts USING btree (linkedin_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -47542,6 +47553,26 @@
               "expression": "linkedin_user_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "linkedin_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX linkedin_accounts_pkey ON public.linkedin_accounts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -47554,14 +47585,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["linkedin_user_id"],
-        "definition": "PRIMARY KEY (linkedin_user_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_linkedin_accounts_updated_at": "CREATE TRIGGER trigger_linkedin_accounts_updated_at BEFORE UPDATE ON public.linkedin_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "linkedin_accounts_linkedin_user_id_key": {
+          "columns": ["linkedin_user_id"],
+          "definition": "UNIQUE (linkedin_user_id)"
+        }
+      }
     },
     "mcp_call_audit_events": {
       "checkConstraints": {
@@ -68335,10 +68371,10 @@
         "oauth_authorizations_check": "CHECK ((num_nonnulls(completed_at, rejected_at, expired_at) <= 1))",
         "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
         "oauth_authorizations_check2": "CHECK ((((callback_mode = 'native'::oauth_callback_modes) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::oauth_callback_modes) AND (completion_proof_challenge IS NULL))))",
-        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_user_id) <= 1))",
-        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_user_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_user_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_user_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL))))",
+        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) <= 1))",
+        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL))))",
         "oauth_authorizations_check5": "CHECK (((status <> ALL (ARRAY['callback_received'::oauth_authorization_statuses, 'exchanging'::oauth_authorization_statuses, 'completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR (callback_received_at IS NOT NULL)))",
-        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_user_id) = 1))))",
+        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) = 1))))",
         "oauth_authorizations_check7": "CHECK ((((status <> 'completed'::oauth_authorization_statuses) AND (completed_at IS NULL) AND (result_kind IS NULL) AND (result_user_id IS NULL) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL)) OR ((status = 'completed'::oauth_authorization_statuses) AND (completed_at IS NOT NULL) AND (result_user_id IS NOT NULL) AND (((result_kind = 'authenticated'::oauth_authorization_result_kinds) AND (result_device_id IS NOT NULL) AND (uuid_extract_version(result_device_id) = 7) AND (result_session_id IS NOT NULL) AND (uuid_extract_version(result_session_id) = 7) AND (login_attempt_id IS NULL)) OR ((result_kind = 'mfa_required'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NOT NULL) AND (uuid_extract_version(login_attempt_id) = 7)) OR ((result_kind = 'connected'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL))))))",
         "oauth_authorizations_provider_check": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers])))",
         "oauth_authorizations_purpose_check": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes])))",
@@ -68567,16 +68603,16 @@
           "ordinalPosition": 6,
           "type": "uuid"
         },
-        "linkedin_user_id": {
+        "linkedin_account_id": {
           "collation": null,
-          "comment": "LinkedIn account produced by a successful exchange; parent deletion cascades the authorization.",
+          "comment": "Internal LinkedIn account row produced by a successful exchange; parent deletion cascades the authorization.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 20,
-          "type": "text"
+          "type": "uuid"
         },
         "login_attempt_id": {
           "collation": null,
@@ -68762,12 +68798,12 @@
           "referencedTable": "users",
           "validated": true
         },
-        "oauth_authorizations_linkedin_user_id_fkey": {
-          "columns": ["linkedin_user_id"],
-          "definition": "FOREIGN KEY (linkedin_user_id) REFERENCES linkedin_accounts(linkedin_user_id) ON DELETE CASCADE",
+        "oauth_authorizations_linkedin_account_id_fkey": {
+          "columns": ["linkedin_account_id"],
+          "definition": "FOREIGN KEY (linkedin_account_id) REFERENCES linkedin_accounts(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["linkedin_user_id"],
+          "referencedColumns": ["id"],
           "referencedTable": "linkedin_accounts",
           "validated": true
         },
@@ -68913,21 +68949,21 @@
           "unique": false,
           "valid": true
         },
-        "idx_oauth_authorizations__linkedin_user": {
+        "idx_oauth_authorizations__linkedin_account": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_authorizations__linkedin_user ON public.oauth_authorizations USING btree (linkedin_user_id) WHERE (linkedin_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_oauth_authorizations__linkedin_account ON public.oauth_authorizations USING btree (linkedin_account_id) WHERE (linkedin_account_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "linkedin_user_id",
+              "column": "linkedin_account_id",
               "descending": false,
-              "expression": "linkedin_user_id",
+              "expression": "linkedin_account_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(linkedin_user_id IS NOT NULL)",
+          "predicate": "(linkedin_account_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -134010,7 +134046,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_user_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {
