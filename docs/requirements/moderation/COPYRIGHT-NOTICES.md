@@ -392,15 +392,18 @@ Receipt-time ancestor matching uses the same budget and leaves an over-budget re
 the staff queue instead of traversing the full historical thread.
 Staff review also caps the per-intake ancestor walk; an over-budget conflict is shown as an
 unresolved thread for manual association rather than scanning the full graph.
-For an unlinked intake left for manual review by that cap, a duplicated Message-ID, or ancestors
-that reach different notices, a copyright reviewer can enter an existing notice ID and associate
-that intake alone. The staff picker resolves the reference and displays the case before selection,
+For any unlinked intake in `unresolved_thread` (including one waiting for an unknown parent or
+left unlinked by the graph cap), `duplicate_message_id`, or `ancestor_notice_conflict`, a copyright
+reviewer can enter an existing notice ID and associate that intake alone. The staff picker resolves
+the reference and displays the case before selection,
 including an existing case that has not yet been accepted. This records an immutable staff-actor
 lifecycle event and opens the existing
 pending correspondence review; it does not create ancestor edges or link other replies. A case
 link or review committed while staff makes the choice returns `copyright_email_thread_changed`
 before the association or event is written. The reviewer then uses the normal correspondence
-classification. The event is staff-only in the case timeline.
+classification. An ordinary initial email must use statutory case approval, and a case already
+marked for retention erasure cannot receive a new association. Both conditions are checked under
+the row locks. The event is staff-only in the case timeline.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.

@@ -10,6 +10,7 @@ import { getCrawlersForHostname } from '@services/crawlers'
 import { attachRssFeedProvenance, attachTopicProvenance } from '@services/content-provenance'
 import {
   currentUserCanFilterHostnameModeration,
+  currentUserCanViewHostname,
   stripHostnameElectionFields,
   toPublicViewHostname,
   updateUrlHostname,
@@ -188,7 +189,7 @@ app.route('/api/v1/hostnames/:id/votes').get(async (ctx: Context) => {
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
   ctx.assert(hostname, 404, 'Hostname not found')
-
+  ctx.assert(currentUserCanViewHostname(currentUser, hostname), 404, 'Hostname not found')
   const collection = isAdminUser(currentUser)
     ? await getHostnameElectionVotesByElectionId(ctx.params.id!, { limit, after })
     : await getHostnameElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {

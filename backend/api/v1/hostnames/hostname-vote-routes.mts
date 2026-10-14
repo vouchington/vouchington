@@ -10,7 +10,7 @@ import {
   getHostnameElectionVote,
   upsertHostnameElectionVotes,
 } from '@services/elections-votes/hostname'
-import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
+import { currentUserCanViewHostname } from '@services/urls-hostnames'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateHostnameElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
@@ -27,8 +27,7 @@ const hostnameVoteHandler = createVoteHandler({
   upsertVotes: upsertHostnameElectionVotes,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateHostnameElectionVoteStats),
   assertAccess: (ctx, currentUser, hostname) => {
-    if (isBlockedHostname(hostname) && !currentUserCanFilterHostnameModeration(currentUser))
-      ctx.throw(404, 'Hostname not found')
+    if (!currentUserCanViewHostname(currentUser, hostname)) ctx.throw(404, 'Hostname not found')
   },
 })
 
@@ -44,10 +43,14 @@ const clearHostnameVoteHandler = createVoteClearHandler({
   getCurrentVote: getHostnameElectionVote,
   onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateHostnameElectionVoteStats),
   assertClearAccess: async (ctx, currentUser, hostname) => {
+    const isPrivate =
+      typeof hostname !== 'object' ||
+      hostname === null ||
+      !('publicly_introduced_at' in hostname) ||
+      !hostname.publicly_introduced_at
     if (
-      isBlockedHostname(hostname) &&
-      !currentUserCanFilterHostnameModeration(currentUser) &&
-      (await getHostnameElectionVote(currentUser.id, ctx.params.id!)) === null
+      !currentUserCanViewHostname(currentUser, hostname) &&
+      (isPrivate || (await getHostnameElectionVote(currentUser.id, ctx.params.id!)) === null)
     )
       ctx.throw(404, 'Hostname not found')
   },
@@ -66,12 +69,3 @@ app.route('/api/v1/hostnames/:id/vote').delete(async ctx => {
   apiOpenApiNoContent('DELETE:/api/v1/hostnames/:id/vote', 204)
   await clearHostnameVoteHandler(ctx)
 })
-
-function isBlockedHostname(hostname: unknown): hostname is { is_blocked: boolean } {
-  return (
-    typeof hostname === 'object' &&
-    hostname !== null &&
-    'is_blocked' in hostname &&
-    (hostname as { is_blocked?: unknown }).is_blocked === true
-  )
-}

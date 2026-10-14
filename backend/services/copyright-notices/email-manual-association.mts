@@ -6,6 +6,13 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailThreadChangedError } from './email-thread-graph.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import {
+  copyrightEmailAncestorNoticeConflictSql,
+  copyrightEmailDuplicateMessageIdSql,
+  copyrightEmailReplyReferenceSql,
+  copyrightEmailReviewPath,
+} from './email-thread-review-path.mts'
 
 type IntakeDecision = { id: string; linked: boolean; reviewed: boolean }
 
@@ -23,7 +30,11 @@ export async function getCopyrightNoticeAssociationTarget(
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
   const { rows } = await read<CopyrightNoticeAssociationTarget>(sql`
     /* getCopyrightNoticeAssociationTarget */
-    SELECT id, jurisdiction, received_at FROM copyright_notices WHERE id = ${noticeId}
+    SELECT id, jurisdiction, received_at FROM copyright_notices notice
+    WHERE id = ${noticeId} AND NOT EXISTS (
+      SELECT 1 FROM copyright_notice_retention_erasures erasure
+      WHERE erasure.copyright_notice_id = notice.id
+    )
   `)
   return rows[0]
 }
@@ -56,6 +67,14 @@ export async function associateCopyrightEmailIntakeWithNotice(
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
   assert(lockedNotices[0], 404, 'Copyright notice not found')
+  // A retention erasure takes the notice lock first. This fresh statement sees a marker
+  // committed while this association waited and fences a new marker until commit.
+  const { rows: erased } = await transaction(sql`
+    /* associateCopyrightEmailIntakeWithNotice:erasure */
+    SELECT 1 FROM copyright_notice_retention_erasures
+    WHERE copyright_notice_id = ${noticeId} LIMIT 1
+  `)
+  assert(!erased[0], 404, 'Copyright notice not found')
   observeSharedDbScope(
     'associateCopyrightEmailIntakeLocked',
     { kind: 'ids', ids: [intakeId] },
@@ -65,6 +84,8 @@ export async function associateCopyrightEmailIntakeWithNotice(
 
   const after = await readIntakeDecision(transaction, intakeId)
   if (!after || after.linked || after.reviewed) throw copyrightEmailThreadChangedError()
+  const reviewPath = await readManualAssociationReviewPath(transaction, intakeId)
+  assert(reviewPath !== 'initial', 409, 'Initial copyright email needs case approval')
   const { rows: links } = await transaction<{ id: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:link */
     INSERT INTO copyright_notice_email_intake_notice_links (
@@ -88,6 +109,27 @@ export async function associateCopyrightEmailIntakeWithNotice(
   `)
   await transaction.commit()
   return { copyright_notice: { id: noticeId }, copyright_email_intake: { id: intakeId } }
+}
+
+/** Eligibility is recomputed after both row locks; a new reply or claimant changes this result. */
+async function readManualAssociationReviewPath(transaction: TransactionQuery, intakeId: string) {
+  const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
+  const query = sql`/* readManualAssociationReviewPath */
+    SELECT `
+  query.append(copyrightEmailDuplicateMessageIdSql())
+  query.append(sql` AS has_duplicate_message_id, `)
+  query.append(copyrightEmailAncestorNoticeConflictSql(maxGraphRows))
+  query.append(sql` AS has_ancestor_notice_conflict, `)
+  query.append(copyrightEmailReplyReferenceSql())
+  query.append(sql` AS has_reply_reference
+    FROM copyright_notice_email_intakes intake WHERE intake.id = ${intakeId}`)
+  const { rows } = await transaction<{
+    has_duplicate_message_id: boolean
+    has_ancestor_notice_conflict: boolean
+    has_reply_reference: boolean
+  }>(query)
+  if (!rows[0]) throw copyrightEmailThreadChangedError()
+  return copyrightEmailReviewPath({ link_kind: null, ...rows[0] })
 }
 
 async function readIntakeDecision(

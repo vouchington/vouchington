@@ -2,10 +2,10 @@ import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   createCopyrightNoticeForManualAssociation,
   insertCopyrightEmailManualAssociationEvent,
+  markTestCopyrightNoticeErased,
   readCopyrightEmailManualAssociationEvent,
   readCopyrightEmailManualAssociationReview,
 } from '@voucha/test-helpers/copyright-email-manual-association'
-import { createUnparsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { lockTestCopyrightEmailIntakeForGraphChange } from '@voucha/test-helpers/copyright-email-ancestor-edges'
 import { readCopyrightEmailIntakeNoticeLinks } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -21,10 +21,70 @@ import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
+async function createManualReply(): Promise<{ id: string }> {
+  const reply = await recordThreadedCopyrightEmail({
+    messageId: copyrightEmailMessageId(),
+    replyReferences: [copyrightEmailMessageId()],
+  })
+  return { id: reply.intakeId }
+}
+
 describe('manual copyright email association', () => {
+  it('rejects an ordinary initial intake so its statutory case approval is not bypassed', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const initial = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      replyReferences: [],
+    })
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(moderator, initial.intakeId, noticeId),
+    ).rejects.toMatchObject({ status: 409 })
+    expect(await readCopyrightEmailIntakeNoticeLinks(initial.intakeId)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(initial.intakeId)).toEqual([])
+  })
+
+  it('does not attach an intake after a competing retention erasure commits', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createManualReply()
+    const noticeId = await createCopyrightNoticeForManualAssociation()
+    await using erasure = await beginTransaction()
+    await markTestCopyrightNoticeErased(noticeId, erasure)
+    let resolvePreflight!: () => void
+    const preflight = new Promise<void>(resolve => {
+      resolvePreflight = resolve
+    })
+    const dispose = installSharedDbScopeObserver(event => {
+      if (
+        event.operation === 'associateCopyrightEmailIntakePreflight' &&
+        event.scope.kind === 'ids' &&
+        event.scope.ids[0] === intake.id
+      )
+        resolvePreflight()
+    })
+    try {
+      const association = associateCopyrightEmailIntakeWithNotice(
+        moderator,
+        intake.id,
+        noticeId,
+      ).then(
+        () => new Error('Erased case was linked'),
+        err => err,
+      )
+      await preflight
+      await erasure.commit()
+      await expect(association).resolves.toMatchObject({ status: 404 })
+    } finally {
+      dispose()
+    }
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+  })
+
   it('links one intake to an existing case and records actor, case, intake, and pending review', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
 
     await expect(
@@ -50,7 +110,7 @@ describe('manual copyright email association', () => {
 
   it('requires the real link pair and a retained staff actor for the lifecycle event', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
 
     await expect(
@@ -64,7 +124,7 @@ describe('manual copyright email association', () => {
 
   it('returns 404 for a missing case without linking its owned intake', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createManualReply()
     const missingNoticeId = crypto.randomUUID()
     await expect(
       associateCopyrightEmailIntakeWithNotice(moderator, intake.id, missingNoticeId),
@@ -75,7 +135,7 @@ describe('manual copyright email association', () => {
 
   it('returns the stable conflict when a thread link wins between preflight and intake lock', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const intake = await createUnparsedCopyrightEmailIntake()
+    const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation()
     await using threading = await beginTransaction()
     await lockTestCopyrightEmailIntakeForGraphChange(intake.id, threading)

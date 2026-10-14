@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 /** The smallest accepted case row for a staff association boundary. */
@@ -56,4 +57,17 @@ export function insertCopyrightEmailManualAssociationEvent(
       copyright_notice_id, change_type, changed_by_id, copyright_notice_email_intake_id
     ) VALUES (${noticeId}, 'email_intake_manually_associated', ${actorId}, ${intakeId})
   `)
+}
+
+/** Hold the case row as the retention sweep does before it records the erasure marker. */
+export async function markTestCopyrightNoticeErased(
+  noticeId: string,
+  transaction: TransactionQuery,
+): Promise<void> {
+  await transaction(sql`/* markTestCopyrightNoticeErased:lock */
+    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
+  await transaction(sql`/* markTestCopyrightNoticeErased:marker */
+    INSERT INTO copyright_notice_retention_erasures
+      (copyright_notice_id, retention_days, erased_object_count)
+    VALUES (${noticeId}, 1, 0)`)
 }
