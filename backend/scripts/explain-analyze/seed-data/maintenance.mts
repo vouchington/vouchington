@@ -121,8 +121,65 @@ export async function runAnalyze(): Promise<void> {
       console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
     )
   }
-  // CI runs 38557423714 and 38559343345 had the same 50k relation rows and recommendation
-  // SQL, but their index-only plans needed 998 versus 0 heap fetches. Vacuum the seeded parent
-  // and its default partition before capture so autovacuum timing cannot decide this plan.
-  await write('/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic"')
+  // Paired CI captures changed scans on these seeded relations across fresh databases while
+  // retaining their SQL and row counts. Settle their visibility maps and statistics before the
+  // first capture, rather than letting autovacuum timing choose the measured plan. PostgreSQL
+  // includes each partition's default child when vacuuming its parent.
+  await write(
+    '/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic", "rss_feeds", "rss_feed_item_categories", "topics", "post_review_topic_ratings"',
+  )
+  const relationNames = [
+    'relation__post__category__topic',
+    'relation__post__category__topic__default',
+    'rss_feeds',
+    'rss_feed_item_categories',
+    'topics',
+    'post_review_topic_ratings',
+    'post_review_topic_ratings__default',
+  ]
+  const relationStats = await write(
+    `/* seedExplainData */ SELECT c.relname, c.relpages, c.reltuples,
+      c.relallvisible, s.last_autovacuum
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    LEFT JOIN pg_stat_all_tables s ON s.relid = c.oid
+    WHERE n.nspname = 'public' AND c.relname = ANY($1::name[])
+    ORDER BY c.relname`,
+    [relationNames],
+  )
+  const columnStats = await write(
+    `/* seedExplainData */ SELECT tablename, attname, n_distinct, correlation,
+      md5(COALESCE(most_common_vals::text, '')) AS mcv_md5
+    FROM pg_stats
+    WHERE schemaname = 'public' AND tablename = ANY($1::name[])
+      AND attname = ANY($2::name[])
+    ORDER BY tablename, attname`,
+    [relationNames, ['id', 'subject_id', 'object_id', 'topic_id', 'rss_feed_item_id', 'post_id']],
+  )
+  const seededKeys = await write(
+    `/* seedExplainData */
+    SELECT 'relation__post__category__topic' AS relation, count(*) AS rows,
+      md5(COALESCE(string_agg(id::text, ',' ORDER BY id), '')) AS key_md5
+    FROM relation__post__category__topic
+    UNION ALL SELECT 'rss_feeds', count(*), md5(COALESCE(string_agg(id::text, ',' ORDER BY id), ''))
+    FROM rss_feeds
+    UNION ALL SELECT 'rss_feed_item_categories', count(*),
+      md5(COALESCE(string_agg(rss_feed_item_id::text || ':' || category_identity_id::text,
+        ',' ORDER BY rss_feed_item_id, category_identity_id), ''))
+    FROM rss_feed_item_categories
+    UNION ALL SELECT 'topics', count(*), md5(COALESCE(string_agg(id::text, ',' ORDER BY id), ''))
+    FROM topics
+    UNION ALL SELECT 'post_review_topic_ratings', count(*),
+      md5(COALESCE(string_agg(post_id::text || ':' || topic_id::text,
+        ',' ORDER BY post_id, topic_id), ''))
+    FROM post_review_topic_ratings`,
+  )
+  console.log(
+    'EXPLAIN seed plan diagnostics:',
+    JSON.stringify({
+      relations: relationStats.rows,
+      columns: columnStats.rows,
+      keys: seededKeys.rows,
+    }),
+  )
 }

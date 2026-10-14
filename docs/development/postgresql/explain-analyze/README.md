@@ -300,15 +300,18 @@ relations. Monthly and default partition children use their parent relation name
 rollover does not create a new fingerprint. For each scenario, the harness captures the same SQL,
 parameters, plan-cache mode, and local settings twice, with `ANALYZE` of the touched large
 relations between captures. The service callback and fixture cleanup run only before the pair;
-EXPLAIN rolls back each statement. A fingerprint present in both captures but absent from the
-baseline fails, as does a baseline entry absent from the stable intersection. A scan seen in only
-one pass is reported as unstable and stays advisory. Estimate mismatch, append, planning-ratio,
-and buffer warnings remain advisory.
+EXPLAIN rolls back each statement's database writes, although PostgreSQL may still change physical
+visibility information. The diagnostic log hashes selected captured parameters and seeded relation
+keys and records relation and column statistics for plan comparisons. A fingerprint present in both
+captures but absent from the baseline fails, as does a baseline entry absent from the stable
+intersection. A scan seen in only one pass is reported as unstable and stays advisory. Estimate
+mismatch, append, planning-ratio, and buffer warnings remain advisory.
 
-After bulk seeding, fixture maintenance vacuums and analyzes the post-category relation and its
-partition before the first capture. This makes index-only plans start with a settled visibility
-map instead of depending on when autovacuum runs. The `ANALYZE` between paired captures still
-tests plan stability on the same seeded rows; production planner settings are unchanged.
+After bulk seeding, fixture maintenance vacuums and analyzes the five seeded relations whose
+plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
+topics, and post review topic ratings. This settles their visibility maps and statistics before
+the first capture instead of depending on autovacuum timing. The `ANALYZE` between paired captures
+still tests plan stability on the same seeded rows; production planner settings are unchanged.
 
 ```bash
 pnpm run explain:analyze

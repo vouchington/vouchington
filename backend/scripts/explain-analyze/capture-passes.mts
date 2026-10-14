@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import {
   explainAnalyze,
@@ -19,12 +20,37 @@ type Capture = {
 }
 
 const repeatedResults: ExplainResult[] = []
+const seedPlanDiagnosticScenarios = new Set([
+  'recommended-topics',
+  'rss-feed-item-feed-related-posts',
+  'topic-metrics-batch',
+  'topic-search-text',
+])
 
 export function resetRepeatedResults(): void {
   repeatedResults.length = 0
 }
 
-async function capturePlan(input: Capture): Promise<ExplainResult> {
+async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> {
+  if (seedPlanDiagnosticScenarios.has(input.scenarioId)) {
+    const sha256 = (value: string) => createHash('sha256').update(value).digest('hex')
+    console.log(
+      'EXPLAIN seed input:',
+      JSON.stringify({
+        scenarioId: input.scenarioId,
+        name: input.name,
+        captureIndex: input.captureIndex,
+        planCacheMode: input.planCacheMode,
+        pass,
+        sqlSha256: sha256(input.text),
+        valuesSha256: sha256(
+          JSON.stringify(input.values, (_, value: unknown) =>
+            typeof value === 'bigint' ? `bigint:${value}` : value,
+          ),
+        ),
+      }),
+    )
+  }
   const result = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: input.localSettings,
     planCacheMode: input.planCacheMode,
@@ -41,7 +67,7 @@ export async function captureScenarioTwice(
   const firstResults: ExplainResult[] = []
   const secondResults: ExplainResult[] = []
   for (const input of inputs) {
-    const result = await capturePlan(input)
+    const result = await capturePlan(input, 1)
     collectFirst(result)
     firstResults.push(result)
     console.log(
@@ -49,8 +75,8 @@ export async function captureScenarioTwice(
     )
   }
 
-  // Only planner statistics change between passes. Every EXPLAIN executes in its own rolled-back
-  // transaction, while the service callback and its fixture cleanup run only before this pair.
+  // No fixture row change is committed between passes. Every EXPLAIN runs in a rolled-back
+  // transaction, while the service callback and fixture cleanup run only before this pair.
   const relations = [...new Set(firstResults.flatMap(getLargeTableRelations))].toSorted()
   // getLargeTableRelations only returns parents from the fixed large-table registry (at most 22).
   if (relations.length > 0) {
@@ -59,7 +85,7 @@ export async function captureScenarioTwice(
   }
 
   for (const input of inputs) {
-    const result = await capturePlan(input)
+    const result = await capturePlan(input, 2)
     repeatedResults.push(result)
     secondResults.push(result)
     assertRequiredPlanShape(result)
