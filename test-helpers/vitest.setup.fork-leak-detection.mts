@@ -8,6 +8,7 @@ import {
   getRegisteredPsqlPoolMetrics,
 } from './vitest-fork-leak-diagnostics.mts'
 import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
+import { waitForForkLeakHandshakeSettle } from './vitest-fork-leak-handshake.mts'
 import { countResourcesByType } from './vitest-process-resources.mts'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
@@ -22,6 +23,11 @@ afterEach(async context => {
   // runs before close callbacks (close-callbacks phase) in the same loop iteration; setTimeout
   // schedules into the next iteration, after this iteration's close callbacks have all run.
   await waitForResourceCloseCallbacks()
+  // Collapse a serial pool handshake into the checkpoint that observes it.
+  // Continued growth after the sockets settle still fails this test.
+  await waitForForkLeakHandshakeSettle({
+    readResources: () => process.getActiveResourcesInfo(),
+  })
 
   const resources = process.getActiveResourcesInfo()
   const counts = countResourcesByType(resources)
