@@ -1789,7 +1789,7 @@
     },
     "native.friend-recommendations.default": {
       "fixtureIds": ["native.friend-recommendations.default"],
-      "hash": "333bbe6a0428f497509efadca0e07c4f860b3dcf304b5986a396f9f53d3dbca6"
+      "hash": "5c058e502843506d5039856f27a299f1ae214345bc54cd11c4d539f4a629269a"
     },
     "native.friend-recommendations.empty": {
       "fixtureIds": ["native.friend-recommendations.empty"],
@@ -1797,7 +1797,7 @@
     },
     "native.friend-recommendations.second-page": {
       "fixtureIds": ["native.friend-recommendations.second-page"],
-      "hash": "59c66aec0b52e18d9e49fc5e28775bcdcf6db8c908e741d1a758381a3d0780f0"
+      "hash": "9ee884ae2dfa81ab50249b11cc408fc1076b8463d75b52800804cec79969a118"
     },
     "native.hostname.default": {
       "fixtureIds": ["native.hostname.default"],
@@ -2557,7 +2557,7 @@
     },
     "native.users.followers.search": {
       "fixtureIds": ["native.users.followers.search"],
-      "hash": "4d49514ecf1cc470e840647b96b4ae48f5990d772ff81d47c14bf4f82a1616e9"
+      "hash": "ed6c16b19ebd4daeba87b5a9c3be55377cece95b93079c55c65b5ec260e50120"
     },
     "native.users.profile.communities-member.first-page": {
       "fixtureIds": ["native.users.profile.communities-member.first-page"],
@@ -2673,11 +2673,11 @@
     },
     "swift.users.followers.default": {
       "fixtureIds": ["swift.users.followers.default"],
-      "hash": "4d49514ecf1cc470e840647b96b4ae48f5990d772ff81d47c14bf4f82a1616e9"
+      "hash": "ed6c16b19ebd4daeba87b5a9c3be55377cece95b93079c55c65b5ec260e50120"
     },
     "swift.users.following.default": {
       "fixtureIds": ["swift.users.following.default"],
-      "hash": "4d49514ecf1cc470e840647b96b4ae48f5990d772ff81d47c14bf4f82a1616e9"
+      "hash": "ed6c16b19ebd4daeba87b5a9c3be55377cece95b93079c55c65b5ec260e50120"
     },
     "web.admin.article-syncs.status.active": {
       "fixtureIds": ["web.admin.article-syncs.status.active"],
