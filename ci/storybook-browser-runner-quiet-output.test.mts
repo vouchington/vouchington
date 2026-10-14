@@ -118,6 +118,16 @@ describe('Storybook browser runner quiet output', () => {
     expect(Buffer.byteLength(quiet.drain())).toBe(MAX_QUIET_TAIL_BYTES)
   })
 
+  it('keeps the newest bytes of the oldest chunk when a later line overflows', () => {
+    const quiet = new StorybookQuietOutput()
+    quiet.split(`${marker(1).trimEnd()}${'x'.repeat(MAX_QUIET_TAIL_BYTES * 2)}\n`)
+    quiet.split(marker(2))
+    const drained = quiet.drain()
+    expect(Buffer.byteLength(drained)).toBe(MAX_QUIET_TAIL_BYTES)
+    expect(drained.endsWith(marker(2))).toBe(true)
+    expect(drained).toContain('xxxx')
+  })
+
   it('bounds the retained quiet tail and drains it once', () => {
     const quiet = new StorybookQuietOutput()
     const line = marker(1)

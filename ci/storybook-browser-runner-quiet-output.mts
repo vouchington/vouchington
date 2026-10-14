@@ -74,8 +74,13 @@ export class StorybookQuietOutput {
         : encoded
     this.chunks.push(chunk)
     this.bytes += chunk.byteLength
-    while (this.bytes > MAX_QUIET_TAIL_BYTES && this.chunks.length > 1) {
-      this.bytes -= this.chunks.shift()?.byteLength ?? 0
+    while (this.bytes > MAX_QUIET_TAIL_BYTES) {
+      const oldest = this.chunks[0]
+      if (!oldest) break
+      const excess = this.bytes - MAX_QUIET_TAIL_BYTES
+      if (excess >= oldest.byteLength) this.chunks.shift()
+      else this.chunks[0] = oldest.subarray(excess)
+      this.bytes -= Math.min(excess, oldest.byteLength)
     }
   }
 }
