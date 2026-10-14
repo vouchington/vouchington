@@ -362,19 +362,25 @@ passed to `runAndCapture()`.
 
 ## Output format
 
-Each result file is a JSON array of `ExplainResult` objects:
+Each result file is an object with captured `ExplainResult` entries and the IDs of scenarios that
+completed every required plan mode:
 
 ```json
-[
-  {
-    "name": "feeds/posts/get-ids",
-    "query_text": "/* feeds/posts/get-ids */ SELECT ...",
-    "plan": { ... },
-    "execution_time_ms": 12.3,
-    "planning_time_ms": 0.8,
-    "timestamp": "2026-03-13T00:00:00.000Z"
-  }
-]
+{
+  "results": [
+    {
+      "name": "feeds/posts/get-ids",
+      "query_text": "/* feeds/posts/get-ids */ SELECT ...",
+      "plan": { "Plan": { "Node Type": "Index Scan" } },
+      "execution_time_ms": 12.3,
+      "planning_time_ms": 0.8,
+      "timestamp": "2026-03-13T00:00:00.000Z",
+      "scenario_id": "posts-feed",
+      "capture_index": 0
+    }
+  ],
+  "completedScenarioIds": ["posts-feed"]
+}
 ```
 
 ## JIT compilation
