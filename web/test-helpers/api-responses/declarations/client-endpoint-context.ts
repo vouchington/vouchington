@@ -1,3 +1,5 @@
+type TopicClient = typeof import('@/lib/api/client/topics')
+
 export interface WebFixtureClientEndpointContext {
   readonly admin: Pick<
     typeof import('@/lib/api/client/admin'),
@@ -185,10 +187,7 @@ export interface WebFixtureClientEndpointContext {
     'getCommunityPendingModerationReportsClient'
   >
   readonly stories: Pick<typeof import('@/lib/api/client/stories'), 'getStoryMemberPage'>
-  readonly topics: Pick<
-    typeof import('@/lib/api/client/topics'),
-    'createTopic' | 'fetchTopic' | 'fetchTopics'
-  >
+  readonly topics: Pick<TopicClient, 'createTopic' | 'fetchTopic' | 'fetchTopics'>
   readonly valkey: Pick<
     typeof import('@/lib/api/client/valkey'),
     'clearCache' | 'fetchCacheGroups' | 'flushValkey' | 'rebuildBloomFilter'
