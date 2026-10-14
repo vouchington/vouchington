@@ -1,4 +1,5 @@
 {
+  "election_vote": null,
   "html": "",
   "topic": {
     "__entity_type": "topic",
@@ -11,8 +12,12 @@
       "roles": [],
       "username": "testuser"
     },
-    "hero_image_id": null,
-    "hero_image_placement": null,
+    "hero_image_id": "00000000-0000-7000-8000-000000000206",
+    "hero_image_placement": {
+      "image_id": "00000000-0000-7000-8000-000000000206",
+      "placement_id": "00000000-0000-7000-8000-000000000307",
+      "placement_revision": 4
+    },
     "homepage_url_id": null,
     "hostname": null,
     "hostname_id": null,

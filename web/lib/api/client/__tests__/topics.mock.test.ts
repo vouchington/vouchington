@@ -61,6 +61,11 @@ describe('topics client API', () => {
       placement_id: '00000000-0000-7000-8000-000000000306',
       placement_revision: 3,
     })
+    expect(topic?.hero_image_placement).toEqual({
+      image_id: '00000000-0000-7000-8000-000000000206',
+      placement_id: '00000000-0000-7000-8000-000000000307',
+      placement_revision: 4,
+    })
     expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/test-topic')
   })
 

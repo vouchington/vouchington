@@ -17,7 +17,12 @@ const publicTopicWithLogoPlacement = {
     placement_revision: 3,
     image_id: '00000000-0000-7000-8000-000000000205',
   },
-  hero_image_placement: null,
+  hero_image_id: '00000000-0000-7000-8000-000000000206',
+  hero_image_placement: {
+    placement_id: '00000000-0000-7000-8000-000000000307',
+    placement_revision: 4,
+    image_id: '00000000-0000-7000-8000-000000000206',
+  },
 }
 
 export const webApiFixtureCases: ApiFixtureCase[] = [
@@ -125,6 +130,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
       topic_parents: [],
       topic_children: [],
       topic_content_update: null,
+      election_vote: null,
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/topics/topic-routes/topic-detail-route.mts'],

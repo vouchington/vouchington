@@ -185,7 +185,10 @@ export interface WebFixtureClientEndpointContext {
     'getCommunityPendingModerationReportsClient'
   >
   readonly stories: Pick<typeof import('@/lib/api/client/stories'), 'getStoryMemberPage'>
-  readonly topics: Pick<typeof import('@/lib/api/client/topics'), 'createTopic' | 'fetchTopics'>
+  readonly topics: Pick<
+    typeof import('@/lib/api/client/topics'),
+    'createTopic' | 'fetchTopic' | 'fetchTopics'
+  >
   readonly valkey: Pick<
     typeof import('@/lib/api/client/valkey'),
     'clearCache' | 'fetchCacheGroups' | 'flushValkey' | 'rebuildBloomFilter'

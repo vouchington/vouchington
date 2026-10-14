@@ -3101,7 +3101,7 @@
     },
     "web.topics.search.default": {
       "fixtureIds": ["web.topics.search.default"],
-      "hash": "5376c6b6489742fab71a232d5852d5f08daeaed3f9ad053a2e6300e864825a13"
+      "hash": "aa902578d806ff461b071bc6d80e16d5dde9d2f6a57ee99fad3f3de491f053c5"
     },
     "web.topics.search.referral-programs.default": {
       "fixtureIds": ["web.topics.search.referral-programs.default"],
@@ -3109,7 +3109,7 @@
     },
     "web.topics.show.default": {
       "fixtureIds": ["web.topics.show.default"],
-      "hash": "8b6ed72d4637ad217ef6427c21fe267ede8a9897d1eecd079e232764d17d5c4d"
+      "hash": "4155f0435e3c320f2024645ae70cf953f5dc99ed39bd32c3a44d755fb39f994f"
     },
     "web.trending-referral-programs.default": {
       "fixtureIds": ["web.trending-referral-programs.default"],
