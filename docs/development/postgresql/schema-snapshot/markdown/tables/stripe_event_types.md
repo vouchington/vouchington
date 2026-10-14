@@ -6,11 +6,11 @@ Stripe event type names registered on first sight; the provider owns this open s
 
 Not partitioned — growth: bounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                       |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this Stripe event type. |
-| `stripe_event_type` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.       |
-| `created_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.  |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                       |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Stable identifier for this Stripe event type. |
+| `stripe_event_type` | `text`                     | no       |                              |          |           |           | Exact provider value; never normalized.       |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When this provider value was first observed.  |
 
 **Primary key:** `PRIMARY KEY (id)`
 

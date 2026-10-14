@@ -6,11 +6,11 @@ Model provider service tier names (OpenAI flex/default, Anthropic standard/prior
 
 Not partitioned — growth: bounded.
 
-| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                 |
-| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
-| `id`           | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this model provider service tier. |
-| `service_tier` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.                 |
-| `created_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.            |
+| Column         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                 |
+| -------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `id`           | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Stable identifier for this model provider service tier. |
+| `service_tier` | `text`                     | no       |                              |          |           |           | Exact provider value; never normalized.                 |
+| `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When this provider value was first observed.            |
 
 **Primary key:** `PRIMARY KEY (id)`
 

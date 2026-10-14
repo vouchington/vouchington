@@ -5115,11 +5115,11 @@
         "created_at": {
           "collation": null,
           "comment": "When this provider value was first observed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
@@ -6110,11 +6110,11 @@
         "created_at": {
           "collation": null,
           "comment": "When this provider value was first observed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
@@ -7437,11 +7437,11 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
@@ -7613,15 +7613,15 @@
         "idx_bedrock_embedding_batches__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (created_at) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "definition": "CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
-              "column": "created_at",
+              "column": "id",
               "descending": false,
-              "expression": "created_at",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "timestamptz_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
@@ -7645,26 +7645,6 @@
             }
           ],
           "predicate": "(crawl_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__created_at": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__created_at ON public.bedrock_embedding_batches USING btree (created_at)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "created_at",
-              "descending": false,
-              "expression": "created_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            }
-          ],
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -45310,11 +45290,11 @@
         "created_at": {
           "collation": null,
           "comment": "When this provider value was first observed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
@@ -115733,11 +115713,11 @@
         "created_at": {
           "collation": null,
           "comment": "When this provider value was first observed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },

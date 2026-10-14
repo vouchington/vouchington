@@ -6,11 +6,11 @@ Identity provider document type names registered on first sight; the provider ow
 
 Not partitioned — growth: bounded.
 
-| Column                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                            |
-| ------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------- |
-| `id`                     | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this identity document type. |
-| `identity_document_type` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.            |
-| `created_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.       |
+| Column                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                            |
+| ------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------- |
+| `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Stable identifier for this identity document type. |
+| `identity_document_type` | `text`                     | no       |                              |          |           |           | Exact provider value; never normalized.            |
+| `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When this provider value was first observed.       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
