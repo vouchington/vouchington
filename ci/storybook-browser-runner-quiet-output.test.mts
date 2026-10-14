@@ -102,6 +102,16 @@ describe('Storybook browser runner quiet output', () => {
     expect(stdout.join('')).toContain(marker(1))
   })
 
+  it('keeps indented lifecycle lines and other streams visible after a vite:deps message', () => {
+    const quiet = new StorybookQuietOutput()
+    quiet.split('vite:deps Crawling dependencies:\n')
+    expect(quiet.split('  Vitest output on another stream\n', 'stderr')).toBe(
+      '  Vitest output on another stream\n',
+    )
+    expect(quiet.split('  new dependencies found: foo\n')).toBe('  new dependencies found: foo\n')
+    expect(quiet.split('  /repo/node_modules/a.js\n')).toBe('  /repo/node_modules/a.js\n')
+  })
+
   it('bounds the retained quiet tail and drains it once', () => {
     const quiet = new StorybookQuietOutput()
     const line = marker(1)

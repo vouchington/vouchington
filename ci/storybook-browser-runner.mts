@@ -381,8 +381,12 @@ async function runUpstreamAttempt(
   const newOptimizeDeps = new Set<string>()
   const bootstrapTelemetry = new StorybookBrowserBootstrapTelemetry()
   const quietOutput = new StorybookQuietOutput()
-  const writeVisible = (stream: Pick<NodeJS.WriteStream, 'write'>, output: string) => {
-    const visible = quietOutput.split(output)
+  const writeVisible = (
+    stream: Pick<NodeJS.WriteStream, 'write'>,
+    output: string,
+    source: 'stderr' | 'stdout',
+  ) => {
+    const visible = quietOutput.split(output, source)
     if (visible) stream.write(visible)
   }
   const observe = (source: 'stderr' | 'stdout', chunk: string | Buffer) => {
@@ -390,7 +394,7 @@ async function runUpstreamAttempt(
     const observed = bootstrapTelemetry.consume(source, chunk, now - startedAt)
     if (observed.output) {
       diagnostics.recordOutput(observed.output)
-      writeVisible(source === 'stdout' ? deps.stdout : deps.stderr, observed.output)
+      writeVisible(source === 'stdout' ? deps.stdout : deps.stderr, observed.output, source)
     }
     const text = String(chunk)
     outputBuffer = (outputBuffer + text).slice(-1000)
@@ -465,7 +469,7 @@ async function runUpstreamAttempt(
       const observed = bootstrapTelemetry.flush(source, deps.now() - startedAt)
       if (observed.output) {
         diagnostics.recordOutput(observed.output)
-        writeVisible(stream, observed.output)
+        writeVisible(stream, observed.output, source)
       }
     }
   }

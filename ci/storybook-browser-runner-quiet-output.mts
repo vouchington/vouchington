@@ -13,56 +13,66 @@ const viteDepsDebugPattern = /\bvite:deps\b/
 
 const indentedContinuationPattern = /^ {2,}\S/
 
-function isViteDepsDebugLine(plain: string): boolean {
+function isOptimizerLifecycleLine(plain: string): boolean {
   // Keep the optimizer lifecycle lines that classify retry and optimizeDeps guidance visible.
   return (
-    viteDepsDebugPattern.test(plain) &&
-    !hasStorybookBrowserViteDependencyReady(plain) &&
-    !hasStorybookViteNewDependenciesFound(plain) &&
-    !hasStorybookViteOptimizerReload(plain)
+    hasStorybookBrowserViteDependencyReady(plain) ||
+    hasStorybookViteNewDependenciesFound(plain) ||
+    hasStorybookViteOptimizerReload(plain)
   )
 }
 
+export type QuietOutputSource = 'stderr' | 'stdout'
+
 export class StorybookQuietOutput {
-  private tail = Buffer.alloc(0)
+  private chunks: Buffer[] = []
+  private bytes = 0
   // A vite:deps message lists its dependency paths on indented lines that carry no namespace.
-  private inViteDepsBlock = false
+  // The block is tracked per stream so interleaved output cannot extend it.
+  private readonly inViteDepsBlock: Record<QuietOutputSource, boolean> = {
+    stderr: false,
+    stdout: false,
+  }
 
   /** Returns the lines that belong in the job log and retains the quiet ones. */
-  split(output: string): string {
+  split(output: string, source: QuietOutputSource = 'stdout'): string {
     let visible = ''
     for (const line of output.split(/(?<=\r?\n|\r(?!\n))/)) {
-      if (this.isQuiet(line)) this.retain(line)
+      if (this.isQuiet(line, source)) this.retain(line)
       else visible += line
     }
     return visible
   }
 
-  private isQuiet(line: string): boolean {
+  private isQuiet(line: string, source: QuietOutputSource): boolean {
     const plain = stripAnsi(line)
+    const inBlock = this.inViteDepsBlock[source]
+    this.inViteDepsBlock[source] = false
     if (plain.includes(STORYBOOK_PROGRESS_MARKER_PREFIX)) return true
-    if (isViteDepsDebugLine(plain)) {
-      this.inViteDepsBlock = true
+    if (isOptimizerLifecycleLine(plain)) return false
+    if (viteDepsDebugPattern.test(plain)) {
+      this.inViteDepsBlock[source] = true
       return true
     }
-    const continuation = this.inViteDepsBlock && indentedContinuationPattern.test(plain)
-    this.inViteDepsBlock = continuation
-    return continuation
+    this.inViteDepsBlock[source] = inBlock && indentedContinuationPattern.test(plain)
+    return this.inViteDepsBlock[source]
   }
 
   /** Returns the retained quiet output once, or an empty string when there is none. */
   drain(): string {
-    const text = this.tail.toString('utf8')
-    this.tail = Buffer.alloc(0)
+    const text = Buffer.concat(this.chunks).toString('utf8')
+    this.chunks = []
+    this.bytes = 0
     return text
   }
 
   private retain(line: string): void {
-    const next = Buffer.concat([this.tail, Buffer.from(line)])
-    this.tail =
-      next.byteLength <= MAX_QUIET_TAIL_BYTES
-        ? next
-        : next.subarray(next.byteLength - MAX_QUIET_TAIL_BYTES)
+    const chunk = Buffer.from(line)
+    this.chunks.push(chunk)
+    this.bytes += chunk.byteLength
+    while (this.bytes > MAX_QUIET_TAIL_BYTES && this.chunks.length > 1) {
+      this.bytes -= this.chunks.shift()?.byteLength ?? 0
+    }
   }
 }
 
