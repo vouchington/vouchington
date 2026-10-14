@@ -202,6 +202,11 @@ Each failure mode below names its durable state and recovery, then the idempoten
 
 ## Receipt health
 
+Health tests inject business instants derived from their own persisted classifier receipts or
+the exact feed item's eligible-since timestamp. Their age and window offsets do not sample the
+wall clock or rewrite PostgreSQL audit timestamps or UUID identities; empty-receipt cases use
+their own synthetic classifier's persisted creation time.
+
 `readClassifierRunHealth(adapter, now, scope?)` is the one read every classifier's alarms come
 from, so a new classifier is monitored by registering its adapter and adds no query. It returns, per
 classifier:
