@@ -38,4 +38,28 @@ describe('syncArticles errors', () => {
     ])
     expect(result.summary).toMatchObject({ created: 0, updated: 0, errored: 3 })
   })
+
+  it('prepares bounded batches and continues after a lookup failure', async () => {
+    const currentUser = await createTestUser({ administrator: true })
+    const files = Array.from({ length: 51 }, (_, index) => ({
+      file: `article-${index}.md`,
+      key: `articles/article-${index}.md`,
+      cacheToken: `article-${index}:v1`,
+    }))
+    const lookupBatches: string[][] = []
+
+    const result = await syncArticles(currentUser, {
+      listArticleMarkdownFiles: async () => files,
+      getArticleMarkdown: async article =>
+        `---\ntitle: Article\nslug: ${article.file.slice(0, -3)}\n---\nBody.`,
+      prefetchPosts: async slugs => {
+        lookupBatches.push(slugs)
+        throw new Error('Post lookup failed')
+      },
+    })
+
+    expect(lookupBatches.map(batch => batch.length)).toEqual([50, 1])
+    expect(result.results.map(item => item.file)).toEqual(files.map(file => file.file))
+    expect(result.summary).toMatchObject({ created: 0, updated: 0, errored: 51 })
+  })
 })

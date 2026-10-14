@@ -3,20 +3,16 @@ import { basename, join } from 'node:path'
 
 import onError from '@modules/on-error'
 import { isSlug, isUUID } from '@modules/utils'
-import { createPost } from '@services/posts/create'
-import { tagPostWithTopics } from '@services/posts/tagging'
 import type { Post, PostType } from '@services/posts/types'
-import { updatePost } from '@services/posts/update'
 import type { PrivateUser } from '@services/users/types'
 import type { ArticleSyncItem, ArticleSyncResult } from '@voucha/types/article-sync'
 
 import { parseFrontmatter, extractTitleFromMarkdown } from './parse.mts'
 import { rewriteRelativeArticleLinks } from './relative-links.mts'
+import { processPreparedArticles } from './sync-process.mts'
 import { getArticleMarkdown, listArticleMarkdownFiles } from './storage.mts'
-import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import {
   contentHash,
-  lookupKey,
   prefetchPosts,
   summarizeResults,
   type PreparedArticle,
@@ -24,6 +20,7 @@ import {
 } from './sync-helpers.mts'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
+const ARTICLE_SYNC_BATCH_SIZE = 50
 
 type ArticleSyncFile = { file: string }
 
@@ -68,129 +65,82 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
   lookupPosts = prefetchPosts,
 ): Promise<ArticleSyncResult> {
   const results: ArticleSyncItem[] = []
-  const prepared: PreparedArticle[] = []
 
-  for (const articleFile of mdFiles) {
-    const item: ArticleSyncItem = { file: articleFile.file, slug: '', action: 'skipped' }
+  for (let offset = 0; offset < mdFiles.length; offset += ARTICLE_SYNC_BATCH_SIZE) {
+    const prepared: PreparedArticle[] = []
+    const batch = mdFiles.slice(offset, offset + ARTICLE_SYNC_BATCH_SIZE)
+    for (const articleFile of batch) {
+      const item: ArticleSyncItem = { file: articleFile.file, slug: '', action: 'skipped' }
 
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- preserve input order and isolate each file's load failure in its result
-      const content = await loadMarkdown(articleFile)
-      const { frontmatter, body: authoredBody } = parseFrontmatter(content)
-      const body = rewriteRelativeArticleLinks(authoredBody)
-      const topics = frontmatter.topics
+      try {
+        // oxlint-disable-next-line no-await-in-loop -- preserve input order and isolate each file's load failure in its result
+        const content = await loadMarkdown(articleFile)
+        const { frontmatter, body: authoredBody } = parseFrontmatter(content)
+        const body = rewriteRelativeArticleLinks(authoredBody)
+        const topics = frontmatter.topics
 
-      const slug = frontmatter.slug || basename(articleFile.file, '.md')
-      const title = frontmatter.title || extractTitleFromMarkdown(body)
-      const rawPostType = frontmatter.post_type
-      if (rawPostType && !ALLOWED_POST_TYPES.has(rawPostType)) {
-        item.slug = slug
-        item.action = 'error'
-        item.error = `Invalid post_type "${rawPostType}". Allowed: ${[...ALLOWED_POST_TYPES].join(', ')}`
-        results.push(item)
-        continue
-      }
-      const postType: PostType = rawPostType || 'article'
-      item.slug = slug
-
-      if (!title) {
-        item.action = 'error'
-        item.error = 'No title found'
-        results.push(item)
-        continue
-      }
-
-      if (!isUUID(slug) && !isSlug(slug)) {
-        item.action = 'error'
-        item.error = 'Invalid post id or slug'
-        results.push(item)
-        continue
-      }
-
-      prepared.push({
-        item,
-        body,
-        topics,
-        slug,
-        title,
-        postType,
-        fileHash: contentHash(title, body),
-      })
-      results.push(item)
-    } catch (err) {
-      item.action = 'error'
-      item.error = err instanceof Error ? err.message : String(err)
-      if (err instanceof Error) onError(err)
-      results.push(item)
-    }
-  }
-
-  let existingBySlug: Map<string, Post>
-  try {
-    existingBySlug = await lookupPosts(prepared.map(article => article.slug))
-  } catch (err) {
-    for (const { item } of prepared) {
-      item.action = 'error'
-      item.error = err instanceof Error ? err.message : String(err)
-    }
-    if (err instanceof Error) onError(err)
-    return summarizeResults(results)
-  }
-
-  for (const { item, slug, title, body, topics, postType, fileHash } of prepared) {
-    try {
-      const key = lookupKey(slug)
-      const existing = existingBySlug.get(key)
-
-      if (existing) {
-        if (existing.post_type !== postType) {
+        const slug = frontmatter.slug || basename(articleFile.file, '.md')
+        const title = frontmatter.title || extractTitleFromMarkdown(body)
+        const rawPostType = frontmatter.post_type
+        if (rawPostType && !ALLOWED_POST_TYPES.has(rawPostType)) {
+          item.slug = slug
           item.action = 'error'
-          item.error = `Post type mismatch: existing="${existing.post_type}", expected="${postType}"`
+          item.error = `Invalid post_type "${rawPostType}". Allowed: ${[...ALLOWED_POST_TYPES].join(', ')}`
+          results.push(item)
+          continue
+        }
+        const postType: PostType = rawPostType || 'article'
+        item.slug = slug
+
+        if (!title) {
+          item.action = 'error'
+          item.error = 'No title found'
+          results.push(item)
           continue
         }
 
-        const existingHash = contentHash(existing.title, existing.markdown)
-
-        if (fileHash === existingHash) {
-          item.action = 'skipped'
-          if (topics?.length) {
-            // oxlint-disable-next-line no-await-in-loop -- topic tagging must finish before this file's result is recorded
-            await tagPostWithTopics(currentUser, existing.id, topics)
-          }
-        } else {
-          // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require the update to finish before processing the next file
-          const updated = await updatePost(currentUser, existing, { markdown: body, title })
-          existingBySlug.set(key, updated)
-          item.action = 'updated'
-          if (topics?.length) {
-            // oxlint-disable-next-line no-await-in-loop -- topic tagging follows the completed update for this file
-            await tagPostWithTopics(currentUser, existing.id, topics)
-          }
+        if (!isUUID(slug) && !isSlug(slug)) {
+          item.action = 'error'
+          item.error = 'Invalid post id or slug'
+          results.push(item)
+          continue
         }
-      } else {
-        // Articles are platform-authored from the repository, whichever job or script syncs them.
-        // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require creation to finish before processing the next file
-        const post = await createPost(currentUser, SYSTEM_PROVENANCE, {
-          post_type: postType,
-          title,
-          markdown: body,
+
+        prepared.push({
+          item,
+          body,
+          topics,
           slug,
-          broadcast: 'everyone',
-          privacy: 'public',
+          title,
+          postType,
+          fileHash: contentHash(title, body),
         })
-        existingBySlug.set(key, post)
-        item.action = 'created'
-
-        if (topics?.length) {
-          // oxlint-disable-next-line no-await-in-loop -- topic tagging follows the completed creation for this file
-          await tagPostWithTopics(currentUser, post.id, topics)
-        }
+        results.push(item)
+      } catch (err) {
+        item.action = 'error'
+        item.error = err instanceof Error ? err.message : String(err)
+        if (err instanceof Error) onError(err)
+        results.push(item)
       }
-    } catch (err) {
-      item.action = 'error'
-      item.error = err instanceof Error ? err.message : String(err)
-      if (err instanceof Error) onError(err)
     }
+
+    if (prepared.length === 0) continue
+
+    let existingBySlug: Map<string, Post>
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- each bounded batch must complete before loading the next
+      existingBySlug = await lookupPosts(prepared.map(article => article.slug))
+    } catch (err) {
+      for (const { item } of prepared) {
+        item.action = 'error'
+        item.error = err instanceof Error ? err.message : String(err)
+      }
+      if (err instanceof Error) onError(err)
+      continue
+    }
+
+    // oxlint-disable-next-line no-await-in-loop -- writes in one batch precede reads and writes in the next
+    await processPreparedArticles(currentUser, prepared, existingBySlug)
   }
 
   return summarizeResults(results)
