@@ -52,7 +52,7 @@ complete `docker logs` at job teardown on every run, and the bundled search modu
 `Defined Info Field` warnings at warning level, so a green backend shard carried about 23 KB of
 Valkey output that no check reads and no log level could hide. The
 [`start-valkey`](../../.github/actions/start-valkey/action.yml) action starts the same digest-pinned
-image on the fixed host port 6379 (runners are single-job VMs), waits for `PING` under a 60 second
+image published to loopback on an ephemeral host port (resolved with `docker port`), waits for `PING` under a 60 second
 deadline, disables RDB saves on the disposable instance, and exports `VALKEY_URL`. A job that starts
 it ends with a `failure()`-only [`valkey-logs`](../../.github/actions/valkey-logs/action.yml) step,
 so the logs appear exactly when a job fails. `start-valkey.test.mts` requires that pairing and

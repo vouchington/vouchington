@@ -62,7 +62,7 @@ function hostPortSlot(mapping: string): string | null {
   //   "127.0.0.1:8080:80"  → "8080:80"
   //   "[::1]:8080:80"      → "8080:80"
   //   "127.0.0.1::80"      → ":80"
-  const portsOnly = base.replace(/^(?:\[[^\]]+\]|[\d.]+):/, '')
+  const portsOnly = base.replace(/^(?:\[[^\]]+\]|\d{1,3}(?:\.\d{1,3}){3}):/, '')
   const parts = portsOnly.split(':')
   if (parts.length === 1) {
     // Shorthand: just containerport — Docker assigns a random host port
@@ -126,6 +126,23 @@ describe('docker run port policy', () => {
     const mappings = blocks.flatMap(portMappings)
     const unsafe = mappings.filter(m => !isHostPortSafe(hostPortSlot(m)))
     expect(unsafe).toEqual([])
+  })
+
+  it('regression: rejects the two-segment hostport:containerport form', () => {
+    const fixture = `
+      docker run -d --name valkey -p 6379:6379 registry.test/example/valkey
+    `
+    const mappings = dockerRunBlocks(fixture).flatMap(portMappings)
+    expect(mappings).toEqual(['6379:6379'])
+    expect(hostPortSlot('6379:6379')).toBe('6379')
+    expect(mappings.filter(m => !isHostPortSafe(hostPortSlot(m)))).toEqual(['6379:6379'])
+  })
+
+  it('regression: allows loopback ephemeral ip::containerport for Valkey', () => {
+    const mappings = dockerRunBlocks('docker run -d -p 127.0.0.1::6379 x').flatMap(portMappings)
+    expect(mappings).toEqual(['127.0.0.1::6379'])
+    expect(hostPortSlot('127.0.0.1::6379')).toBe('')
+    expect(isHostPortSafe(hostPortSlot('127.0.0.1::6379'))).toBe(true)
   })
 
   it('regression: allows variable host port mappings', () => {

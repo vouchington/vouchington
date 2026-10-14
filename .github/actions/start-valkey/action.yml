@@ -4,7 +4,7 @@ description: >
   job `services:` entry because GitHub prints a service container's complete `docker logs` at job
   teardown on every run, and the search module logs ~150 info-field warning lines at startup. A
   step container prints nothing unless `valkey-logs` is asked to, so a green job stays quiet.
-  Runners are single-job VMs, so the published host port is the fixed 6379.
+  The container publishes to loopback on an ephemeral host port that is resolved after start.
 outputs:
   url:
     description: Valkey connection URL, also exported as VALKEY_URL for later steps.
@@ -21,7 +21,7 @@ runs:
         VALKEY_CONTAINER: voucha-valkey
       run: |
         set -euo pipefail
-        docker run -d --name "$VALKEY_CONTAINER" -p 6379:6379 --tmpfs /data:rw,size=64m \
+        docker run -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
           "$VALKEY_IMAGE" >/dev/null
         # Valkey has no readiness event to wait on, so poll `valkey-cli ping` under a hard deadline.
         if ! timeout 60 sh -c 'until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done' "$VALKEY_CONTAINER"; then
@@ -31,5 +31,10 @@ runs:
         fi
         # Disposable test instance on tmpfs: skip RDB snapshots (and their log lines).
         docker exec "$VALKEY_CONTAINER" valkey-cli config set save '' >/dev/null
-        echo "VALKEY_URL=redis://localhost:6379" >> "$GITHUB_ENV"
-        echo "url=redis://localhost:6379" >> "$GITHUB_OUTPUT"
+        port="$(docker port "$VALKEY_CONTAINER" 6379/tcp | head -n 1 | sed 's/.*://')"
+        if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+          echo "::error::Could not resolve the published Valkey host port"
+          exit 1
+        fi
+        echo "VALKEY_URL=redis://127.0.0.1:${port}" >> "$GITHUB_ENV"
+        echo "url=redis://127.0.0.1:${port}" >> "$GITHUB_OUTPUT"

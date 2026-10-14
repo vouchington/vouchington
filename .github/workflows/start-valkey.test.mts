@@ -32,7 +32,10 @@ describe('Valkey test container', () => {
       /^mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
     )
     expect(start?.run).toContain('timeout 60')
-    expect(start?.run).toContain('VALKEY_URL=redis://localhost:6379')
+    expect(start?.run).toContain('-p 127.0.0.1::6379')
+    expect(start?.run).not.toMatch(/-p\s+\d+:6379/u)
+    expect(start?.run).toContain('docker port "$VALKEY_CONTAINER" 6379/tcp')
+    expect(start?.run).toContain('VALKEY_URL=redis://127.0.0.1:${port}')
   })
 
   it('pairs every start with a failure-only log step in the same job', () => {
