@@ -9,6 +9,8 @@ import {
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { encodeCursor } from '@modules/pagination'
+import { caches } from '@services/entity-cache/caches'
+import { getTopicByAny } from '@services/topics/get'
 import { createTopicAliases } from '@services/topics/aliases'
 
 describe('topics', () => {
@@ -75,6 +77,34 @@ describe('topics', () => {
         expect(Object.hasOwn(topic, 'logo_image_placement')).toBe(true)
         expect(Object.hasOwn(topic, 'hero_image_placement')).toBe(true)
         expect(response.body.topics_metrics[topicId]).toBeDefined()
+      })
+
+      it('rejects a cached topic without nullable image placement fields', async () => {
+        const random = Math.random().toString(36).slice(2, 8)
+        const topicId = await insertTestTopic({
+          name: `Topic with stale cached shape ${random}`,
+          slug: `topic-with-stale-cached-shape-${random}`,
+          createdById: user.id,
+        })
+        const topic = await getTopicByAny(topicId)
+        expect(topic).not.toBeNull()
+        if (!topic) throw new Error('Inserted topic was not readable')
+
+        const staleCachedTopic = structuredClone(topic)
+        delete staleCachedTopic.logo_image_placement
+        await caches.topics.set(topicId, staleCachedTopic)
+
+        try {
+          const request = createRequest()
+          await request.authenticateAs(admin)
+          // The route streams JSON before resolving this cached topic batch. Rejecting the
+          // malformed entry aborts the response instead of returning a partial topic record.
+          await expect(
+            request.get(`/api/v1/topics?q=Topic+with+stale+cached+shape+${random}`),
+          ).rejects.toThrow('aborted')
+        } finally {
+          await caches.topics.delete(topicId)
+        }
       })
 
       it('should filter topics by exact slugs', async () => {
