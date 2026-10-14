@@ -30,7 +30,7 @@ export type TestOAuthAuthorizationRow = {
   github_user_id: string | null
   x_user_id: string | null
   linkedin_account_id: string | null
-  microsoft_user_id: string | null
+  microsoft_account_id: string | null
   result_kind: string | null
   result_user_id: string | null
   result_device_id: string | null
@@ -55,6 +55,7 @@ export type InsertTestOAuthAuthorizationOptions = {
   exchangeAttempts?: number
   exchangeClaimId?: string
   providerUserId?: string
+  microsoftAccountId?: string
   resultKind?: 'authenticated' | 'connected'
   resultUserId?: string
   resultDeviceId?: string
@@ -86,7 +87,7 @@ export async function insertTestOAuthAuthorization(
        completion_token_hash, completion_token_ciphertext, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
-       linkedin_account_id, microsoft_user_id
+       linkedin_account_id, microsoft_account_id
      )
      VALUES (
        $1, $2, $3, $4,
@@ -128,7 +129,7 @@ export async function insertTestOAuthAuthorization(
       options.expiresAt ?? new Date(Date.now() + 10 * 60_000),
       options.updatedAt ?? new Date(),
       linkedinAccountId,
-      provider === 'microsoft' ? (options.providerUserId ?? null) : null,
+      provider === 'microsoft' ? (options.microsoftAccountId ?? null) : null,
     ],
   )
   await seedTestOAuthExchangeAttempts(id, options)
@@ -142,7 +143,7 @@ export async function getTestOAuthAuthorization(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_user_id,
-       github_user_id, x_user_id, linkedin_account_id, microsoft_user_id, result_kind, result_user_id, result_device_id, result_session_id
+       github_user_id, x_user_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],

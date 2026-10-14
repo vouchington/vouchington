@@ -23,7 +23,7 @@ export async function completeOAuthAuthorizationExchange(
     x: 'x_user_id',
     github: 'github_user_id',
     linkedin: 'linkedin_account_id',
-    microsoft: 'microsoft_user_id',
+    microsoft: 'microsoft_account_id',
   }[provider]
   const { rowCount } = await query(
     `/* completeOAuthAuthorizationExchange */ UPDATE oauth_authorizations

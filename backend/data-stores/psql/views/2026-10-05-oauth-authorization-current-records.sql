@@ -49,6 +49,6 @@ SELECT
   COALESCE((SELECT MAX(attempt.attempt_number) FROM oauth_authorization_exchange_attempts attempt
     WHERE attempt.oauth_authorization_id = flow.id), 0)::smallint AS exchange_attempts,
   flow.linkedin_account_id,
-  flow.microsoft_user_id
+  flow.microsoft_account_id
 FROM oauth_authorizations flow;
 COMMENT ON VIEW view_oauth_authorization_current_records IS 'Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.';

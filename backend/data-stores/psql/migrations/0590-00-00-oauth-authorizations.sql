@@ -34,7 +34,7 @@ CREATE TABLE oauth_authorizations (
   x_user_id TEXT REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   github_user_id TEXT REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
   linkedin_account_id UUID,
-  microsoft_user_id TEXT,
+  microsoft_account_id UUID,
   result_kind oauth_authorization_result_kinds CHECK (result_kind IS NULL OR result_kind IN ('authenticated', 'mfa_required', 'connected')),
   result_user_id UUID REFERENCES users ON DELETE CASCADE,
   result_device_id UUID,
@@ -59,12 +59,12 @@ CREATE TABLE oauth_authorizations (
     (callback_mode = 'native' AND completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$')
     OR (callback_mode = 'web' AND completion_proof_challenge IS NULL)
   ),
-  CHECK (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_user_id) <= 1),
+  CHECK (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1),
   CHECK (
-    (provider = 'facebook' AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_user_id IS NULL)
-    OR (provider = 'x' AND facebook_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_user_id IS NULL)
-    OR (provider = 'github' AND facebook_user_id IS NULL AND x_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_user_id IS NULL)
-    OR (provider = 'linkedin' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND microsoft_user_id IS NULL)
+    (provider = 'facebook' AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'x' AND facebook_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'github' AND facebook_user_id IS NULL AND x_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'linkedin' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND microsoft_account_id IS NULL)
     OR (provider = 'microsoft' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL)
   ),
   CHECK (
@@ -76,7 +76,7 @@ CREATE TABLE oauth_authorizations (
     OR (
       completion_ready_at IS NOT NULL
       AND callback_code_ciphertext IS NULL
-      AND num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_user_id) = 1
+      AND num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1
     )
   ),
   CHECK (
@@ -129,12 +129,11 @@ ALTER TABLE oauth_authorizations
   VALIDATE CONSTRAINT oauth_authorizations_linkedin_account_id_fkey;
 
 ALTER TABLE oauth_authorizations
-  ADD CONSTRAINT oauth_authorizations_microsoft_user_id_fkey
-  FOREIGN KEY (microsoft_user_id) REFERENCES microsoft_accounts(microsoft_user_id)
-  ON DELETE CASCADE NOT VALID;
-
+  ADD CONSTRAINT oauth_authorizations_microsoft_account_id_fkey
+  FOREIGN KEY (microsoft_account_id) REFERENCES microsoft_accounts(id) ON DELETE CASCADE
+  NOT VALID;
 ALTER TABLE oauth_authorizations
-  VALIDATE CONSTRAINT oauth_authorizations_microsoft_user_id_fkey;
+  VALIDATE CONSTRAINT oauth_authorizations_microsoft_account_id_fkey;
 
 CREATE OR REPLACE TRIGGER trigger_oauth_authorizations_updated_at
 BEFORE UPDATE ON oauth_authorizations
@@ -178,9 +177,9 @@ CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__linkedin_account
 ON oauth_authorizations (linkedin_account_id)
 WHERE linkedin_account_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__microsoft_user
-ON oauth_authorizations (microsoft_user_id)
-WHERE microsoft_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__microsoft_account
+ON oauth_authorizations (microsoft_account_id)
+WHERE microsoft_account_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__result_user
 ON oauth_authorizations (result_user_id)
@@ -206,7 +205,7 @@ COMMENT ON COLUMN oauth_authorizations.facebook_user_id IS 'Facebook account pro
 COMMENT ON COLUMN oauth_authorizations.x_user_id IS 'X account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.github_user_id IS 'GitHub account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.linkedin_account_id IS 'Internal LinkedIn account row produced by a successful exchange; parent deletion cascades the authorization.';
-COMMENT ON COLUMN oauth_authorizations.microsoft_user_id IS 'Microsoft account produced by a successful exchange; parent deletion cascades the authorization.';
+COMMENT ON COLUMN oauth_authorizations.microsoft_account_id IS 'Internal Microsoft account row produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.result_kind IS 'Durable completion outcome: authenticated, MFA required, or connected.';
 COMMENT ON COLUMN oauth_authorizations.result_user_id IS 'Voucha user receiving the completion result; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.result_device_id IS 'Authenticated result device UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.';

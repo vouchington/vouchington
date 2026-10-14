@@ -1070,14 +1070,15 @@ COMMENT ON COLUMN linkedin_accounts.access_token_expires_at IS 'When the access 
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS microsoft_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  microsoft_user_id TEXT PRIMARY KEY,
+  microsoft_user_id TEXT NOT NULL UNIQUE,
   microsoft_user_email_address TEXT,
   microsoft_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
   refresh_token_ciphertext TEXT,
   access_token_expires_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -1103,8 +1104,9 @@ ON microsoft_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
 
 COMMENT ON TABLE microsoft_accounts IS 'Microsoft OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
+COMMENT ON COLUMN microsoft_accounts.id IS 'Internal UUIDv7 identity used by durable OAuth authorization references.';
 COMMENT ON COLUMN microsoft_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN microsoft_accounts.microsoft_user_id IS 'Microsoft''s unique user identifier (primary key).';
+COMMENT ON COLUMN microsoft_accounts.microsoft_user_id IS 'Microsoft''s unique external user identifier.';
 COMMENT ON COLUMN microsoft_accounts.microsoft_user_email_address IS 'Email address from the Microsoft profile.';
 COMMENT ON COLUMN microsoft_accounts.microsoft_user_data IS 'Raw JSONB profile data from Microsoft OAuth.';
 COMMENT ON COLUMN microsoft_accounts.access_token_ciphertext IS 'Encrypted OAuth 2.0 access token ciphertext for Microsoft API calls.';

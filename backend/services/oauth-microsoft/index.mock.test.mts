@@ -51,9 +51,10 @@ describe('Microsoft broker provider exchange', () => {
     )
 
     expect(account).toMatchObject({ provider_user_id: providerUserId })
+    expect(account.account_id).toMatch(/^[0-9a-f-]{36}$/i)
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'completion_ready',
-      microsoft_user_id: providerUserId,
+      microsoft_account_id: account.account_id,
       callback_code_ciphertext: null,
       exchange_claim_id: null,
     })

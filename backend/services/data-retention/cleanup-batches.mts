@@ -14,8 +14,15 @@ const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
   ['github_accounts', 'github_user_id'],
   ['linkedin_accounts', 'linkedin_account_id'],
   ['x_accounts', 'x_user_id'],
+  ['microsoft_accounts', 'microsoft_account_id'],
 ])
-const oauthAccountIdColumnByTable = new Map([['linkedin_accounts', 'id']])
+const oauthAccountIdColumnByTable = new Map([
+  ['facebook_accounts', 'facebook_user_id'],
+  ['github_accounts', 'github_user_id'],
+  ['linkedin_accounts', 'id'],
+  ['x_accounts', 'x_user_id'],
+  ['microsoft_accounts', 'id'],
+])
 const allowedOAuthAccountIdIdentifiers = new Set([...allowedOAuthCleanupIdentifiers, 'id'])
 export async function cleanupSoftDeletedUserBatch(
   cutoffDate: Date,
@@ -143,6 +150,11 @@ export async function deleteOrphanedOAuthAccountBatch(
   const authorizationProviderUserIdColumn =
     oauthAuthorizationProviderUserIdColumnByAccountTable.get(validatedTable)
   if (authorizationProviderUserIdColumn) {
+    const validatedAuthorizationColumn = assertWhitelistedSqlIdentifier(
+      authorizationProviderUserIdColumn,
+      new Set(oauthAuthorizationProviderUserIdColumnByAccountTable.values()),
+      'OAuth authorization account column',
+    )
     const validatedAccountIdColumn = assertWhitelistedSqlIdentifier(
       oauthAccountIdColumnByTable.get(validatedTable) ?? validatedProviderUserIdColumn,
       allowedOAuthAccountIdIdentifiers,
@@ -153,7 +165,7 @@ export async function deleteOrphanedOAuthAccountBatch(
         SELECT 1
         FROM oauth_authorizations active_authorization
         WHERE active_authorization.`)
-      .append(authorizationProviderUserIdColumn)
+      .append(validatedAuthorizationColumn)
       .append(sql` = `)
       .append(validatedTable)
       .append(sql`.`)

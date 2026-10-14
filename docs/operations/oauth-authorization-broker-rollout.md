@@ -1,12 +1,12 @@
 # OAuth Authorization Broker Rollout
 
-Enable or roll back the shared Facebook, X, GitHub, and LinkedIn authorization broker independently
-for web and native clients.
+Enable or roll back the shared Facebook, X, GitHub, LinkedIn, and Microsoft authorization broker
+independently for web and native clients.
 
 ## Scope
 
 - DynamicConfig key: `oauth-authorization-broker`
-- Providers: Facebook, X, GitHub, LinkedIn
+- Providers: Facebook, X, GitHub, LinkedIn, Microsoft
 - Modes: `web`, `native`
 - Purposes: authentication and account connection
 - Operator: developer with DynamicConfig access and API/worker log access
@@ -14,13 +14,18 @@ for web and native clients.
 ## Prerequisites
 
 - Deploy the API, exchange worker, Cloudflare callback rewrite, and client capability handling
-  before enabling any field. All eight fields default to `false`. Clients must also treat a missing
+  before enabling any field. All ten fields default to `false`. Clients must also treat a missing
   `broker_capabilities` field as all-disabled so they remain compatible while the API rolls out.
+- Microsoft rollout fields are `microsoft_web_enabled` and `microsoft_native_enabled`; leave both
+  false until the provider callback and matching client are deployed.
+- For Microsoft, verify the Entra application registers the exact HTTPS broker callback for each
+  deployed origin: `https://<deployed-origin>/auth/callback/microsoft/broker`. Keep the existing
+  `/auth/callback/microsoft` redirect registered while legacy traffic remains.
 - Confirm `oauth-authorization-exchange` is healthy and its 60-second dispatcher schedule exists.
 - Confirm exchange latency stays below the 30-second provider abort budget and the 60-second stale
   claim lease.
 - Confirm each provider accepts the exact public callback
-  `/auth/callback/{facebook|x|github|linkedin}/broker`.
+  `/auth/callback/{facebook|x|github|linkedin|microsoft}/broker`.
 - Record baseline success, rejection, and latency for the existing provider flow.
 
 ## Enable
