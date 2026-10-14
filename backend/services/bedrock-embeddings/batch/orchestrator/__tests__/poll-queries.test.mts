@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   cleanupTestEmbeddingsBatches,
@@ -8,6 +8,7 @@ import {
   getActiveBatchStats,
   getBatchIdByJobArn,
   getBatchInfo,
+  getBatchRecordsCreatedInLastHour,
   getPendingBatches,
 } from '../poll-queries.mts'
 
@@ -168,5 +169,22 @@ describe('getBatchInfo', () => {
 
   it('returns null when the batch does not exist', async () => {
     await expect(getBatchInfo(mintUUIDv7())).resolves.toBeNull()
+  })
+})
+
+describe('getBatchRecordsCreatedInLastHour', () => {
+  it('counts a current UUIDv7 batch but excludes a batch from two hours ago', async () => {
+    const recentId = mintUUIDv7()
+    const oldId = getMinUUIDv7ForDate(new Date(Date.now() - 2 * 60 * 60 * 1000))
+    const baseline = await getBatchRecordsCreatedInLastHour()
+
+    try {
+      await insertTestEmbeddingsBatch({ id: recentId, records: 7 })
+      await insertTestEmbeddingsBatch({ id: oldId, records: 11 })
+
+      await expect(getBatchRecordsCreatedInLastHour()).resolves.toBe(baseline + 7)
+    } finally {
+      await cleanupTestEmbeddingsBatches([recentId, oldId])
+    }
   })
 })
