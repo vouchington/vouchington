@@ -51,8 +51,6 @@ jobs:
       - name: Resolve backend-unit shard total
         timeout-minutes: 2
         id: shard-total
-        env:
-          FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}
         run: node ci/vitest/shard-total.mts test-backend-unit
       - uses: ./.github/actions/make-shard-matrix
         timeout-minutes: 2

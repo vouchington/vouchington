@@ -26,9 +26,12 @@ numeric fallback:
 | `test-web-api`         | One shard per 64 checked-out files  |
 | `test-web-integration` | Fixed at one                        |
 
-The `TEST_BACKEND_UNIT_FILES_PER_SHARD` and `TEST_WEB_FILES_PER_SHARD` repository variables, when
-set to a positive integer, replace the registry's files-per-shard value for their job. Leave them unset, or equal to the registry value, so the table above stays authoritative; a
-stale variable silently re-shards CI.
+The `TEST_WEB_FILES_PER_SHARD` repository variable, when set to a positive integer, replaces the
+registry's files-per-shard value for `test-web`. Leave it unset, or equal to the registry value,
+so the table above stays authoritative; a stale variable silently re-shards CI.
+`test-backend-unit` does not read `TEST_BACKEND_UNIT_FILES_PER_SHARD`. A repository value of 350
+kept about ten shards of 350 files, and those shards crossed the 10-minute `Run backend tests`
+watchdog on slower runners. The registry's 250 files per shard is the backend-unit size.
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning
 the report and artifact contracts. Its build and setup dominate its current runtime, so automatic
