@@ -53,7 +53,8 @@ describe('plan completion advisory workflow', () => {
       numberField(step['timeout-minutes'], 'audit step timeout'),
     )
     expect(stepBudgets).toBeDefined()
-    expect(jobBudget).toBeGreaterThan(stepBudgets!.reduce((total, budget) => total + budget, 0))
+    expect(jobBudget).toBeLessThan(stepBudgets!.reduce((total, budget) => total + budget, 0))
+    expect(jobBudget).toBeGreaterThanOrEqual(Math.max(...stepBudgets!))
     expect(audit?.permissions).toEqual({
       contents: 'read',
       issues: 'write',

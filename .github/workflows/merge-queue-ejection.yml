@@ -91,7 +91,7 @@ jobs:
     needs: [dispatch]
     if: needs.dispatch.result == 'success' && needs.dispatch.outputs.session-url != ''
     runs-on: ubuntu-slim
-    timeout-minutes: 2
+    timeout-minutes: 1
     permissions:
       contents: read
       issues: write

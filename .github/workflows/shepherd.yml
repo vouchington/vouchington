@@ -256,7 +256,7 @@ jobs:
       needs.gate.outputs.should_dispatch == 'true' &&
       (needs.dispatch.result == 'success' || needs.dispatch.result == 'failure')
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 7
     permissions:
       contents: read
       issues: write

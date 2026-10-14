@@ -32,9 +32,9 @@ jobs:
   cleanup-sweep:
     name: Sweep stale artifacts
     runs-on: ubuntu-latest
-    # Job ceiling must exceed the sum of step budgets: setup-node-pnpm (5 min) + the sweep engine
-    # itself (20 min), plus headroom for checkout/workspace-restore.
-    timeout-minutes: 26
+    # Job ceiling stays below the sum of step budgets (checkout 1 + setup-node-pnpm 5 + the sweep
+    # engine 20 = 26 min) and above the largest step.
+    timeout-minutes: 25
     permissions:
       actions: write
       contents: read

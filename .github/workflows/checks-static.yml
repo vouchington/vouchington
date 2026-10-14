@@ -42,7 +42,7 @@ jobs:
   static-backend:
     if: inputs.backend
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -131,7 +131,7 @@ jobs:
     if: inputs.lambdas
     # The Lambda architecture, so the deployment package smoke test loads the sharp binary it ships.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 16
+    timeout-minutes: 14
     permissions:
       contents: read
     steps:
@@ -155,7 +155,7 @@ jobs:
   static-cloudflare:
     if: inputs.cloudflare-worker
     runs-on: ubuntu-latest
-    timeout-minutes: 11
+    timeout-minutes: 9
     permissions:
       contents: read
     steps:

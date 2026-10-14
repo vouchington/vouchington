@@ -11,7 +11,13 @@ Runner-pool topology and per-step timeout tables live in the canonical reference
 
 Step and job timeouts guard different failure modes. A step timeout bounds one hung operation; the
 job timeout bounds unhealthy end-to-end execution. The Docker image jobs intentionally do not
-reserve the worst-case ceiling of every sequential step:
+reserve the worst-case ceiling of every sequential step. This is a universal rule with no
+additive exception: every job's `timeout-minutes` is strictly less than the sum of its steps'
+`timeout-minutes` and at least its largest step. Never size a job as the step sum plus headroom,
+and never raise a job cap because a step was added. A job with a single bounded step has no valid
+range, so it is exempt until the shared `github-actions-job-timeouts` rule decides how to treat
+it ([no-mistakes#1963](https://github.com/jonathanong/no-mistakes/issues/1963));
+`job-timeout-bounds.test.mts` enforces the rule locally for every other job.
 
 ### GitHub-hosted re-derivation
 
@@ -21,8 +27,7 @@ a 347-second maximum, Web Tests' 1,552 jobs had a 381-second maximum (337 second
 step), and Static Analysis' 75 jobs had a 442-second maximum. The remaining touched jobs ranged
 from 58 seconds (static Cloudflare) to 345 seconds (tooling). The job ceilings therefore leave
 provisioning headroom and bounded recovery work, rather than preserving retired self-hosted-runner
-or unobserved retry budgets. Additive jobs still reserve their serial artifact retry path; jobs
-with independent diagnostic step caps use the fail-fast relationship below.
+or unobserved retry budgets. Every job uses the fail-fast relationship below.
 
 ```
 max(step_timeout, observed_healthy_job_runtime + buffer)
@@ -45,17 +50,12 @@ it counts against the job but never against a step. A job whose real work takes 
 still keep provisioning headroom between its step and job timeout. A job clock sized to the step
 alone can turn slow runner boot into a false failure.
 
-Exact additive budgets remain valid only for explicitly catalogued structural chains, such as the
-Docker image jobs below, where each bounded fallback is expected to run serially after the prior
-one fails.
-
 Area coverage producers upload full LCOV directly to GitHub artifacts and their owning area gate
 downloads it in the same run. Job timeout ceilings are enforced generically by the
 `github-actions-job-timeouts` `no-mistakes` rule rather than a dedicated structural guard.
 
-For the Docker image jobs, workflow tests should assert the exact job and critical-step ceilings
-and that the job timeout remains below the sum of declared step timeouts. Other jobs retain their
-existing budget model unless they explicitly adopt and test this fail-fast relationship.
+Workflow tests assert the exact job and critical-step ceilings where a job's budget matters, and
+`job-timeout-bounds.test.mts` asserts the universal relationship across every workflow.
 
 The `static-web` job adopts the fail-fast relationship. It produces the shared web build that every
 Web suite waits on, and healthy runs finish in under four minutes, so its cap stays at the
@@ -63,14 +63,11 @@ repository's default job maximum rather than reserving the sum of its step ceili
 its own ceiling, so a hang is still attributed to the step that hung. `checks-static.test.mts`
 asserts that the cap exceeds the largest step and stays below the step sum.
 
-The static backend job retains its additive model with a 14-minute job ceiling: five minutes for
-setup, two for dependency analysis, four for PostgreSQL contracts, API fixtures, and the live MCP
-catalog checks, one for generated-file Git state, and provisioning and drain headroom.
-
-Lambda tests retain an additive budget that covers every declared step ceiling, including artifact
-fallbacks, with provisioning and drain headroom. The workflow test verifies this relationship and
-bounds remote checkout/fetch operations; only the local LCOV copy has no separate step timeout.
-The current budget is supported by a [48-second main job](https://github.com/vouchington/vouchington/actions/runs/36228728207/job/108367812863)
+The static backend job has a 10-minute cap against 16 minutes of step ceilings (healthy runs take
+under two minutes). Static lambdas (14 against 15) and static Cloudflare (9 against 10) are likewise
+capped below their step sums. Lambda tests cap at 11 against 12 minutes of declared step ceilings,
+including artifact fallbacks; only the local LCOV copy has no separate step timeout. The current
+runtime is supported by a [48-second main job](https://github.com/vouchington/vouchington/actions/runs/36228728207/job/108367812863)
 (36-second setup, 5-second Vitest) and a [75-second coverage PR job](https://github.com/vouchington/vouchington/actions/runs/36229036801/job/108369324502)
 (34-second setup, 21-second Vitest). Artifact upload retries and outcome guards remain intact;
 neither the observed runtime nor the timeout change justifies splitting this already short job.
@@ -120,8 +117,8 @@ in series, and one minute for the always-run timing summary and upload, rounded 
 minute. The summary and upload run before the producer's cache save, whose pinned action has no
 deadline, so a slow save cannot starve the evidence. `build-web-targets-timeouts.test.mts` derives
 the sum from the declared deadlines and holds every caller to it, so changing one deadline without
-the callers fails. The fallback producer jobs (`shards`, `prep`) keep additive budgets around that
-ceiling.
+the callers fails. The fallback producer jobs (`shards`, `prep`) follow the universal rule: their
+caps (15 against 16 and 16 against 21) are below their step sums.
 
 The backend image build smoke tests validate worker startup, Valkey connectivity, and universal
 heartbeat job processing. The `worker-cpu` smoke test also imports `vurst-ai` from the deployed

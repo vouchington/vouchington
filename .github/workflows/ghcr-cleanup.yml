@@ -32,7 +32,7 @@ jobs:
     # 14, not 15: slim enforces a hard 15-minute platform cap, and a job that reaches it is
     # killed by the platform rather than cancelled by GitHub, so nothing that runs on
     # cancellation gets a chance to. The work here is a handful of API calls either way.
-    timeout-minutes: 14
+    timeout-minutes: 11
     permissions:
       contents: read
       # Deleting a package version requires write, not read.

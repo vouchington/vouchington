@@ -35,7 +35,7 @@ describe('Docs Publish workflow', () => {
     expect(publish).toMatchObject({
       permissions: { contents: 'read' },
       'runs-on': 'ubuntu-latest',
-      'timeout-minutes': 10,
+      'timeout-minutes': 9,
     })
 
     expect(workflow.on?.push?.paths).toEqual(

@@ -48,24 +48,17 @@ function numberField(value: unknown, label: string): number {
   return value
 }
 
-function serialCriticalStepBudget(jobName: string): number {
+function stepTimeouts(jobName: string): number[] {
   const job = parsed.jobs?.[jobName]
   if (!job) {
     throw new TypeError(`${jobName} must exist`)
   }
 
-  return (
-    job.steps?.reduce((total, step) => {
-      const stepTimeout = typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0
-      if (!step.uses?.startsWith('nick-fields/retry@')) {
-        return total + stepTimeout
-      }
+  return (job.steps ?? []).map(step => numberField(step['timeout-minutes'], `${jobName} step`))
+}
 
-      const perAttempt = numberField(step.with?.timeout_minutes, `${jobName} retry timeout`)
-      const attempts = numberField(step.with?.max_attempts, `${jobName} retry attempts`)
-      return total + stepTimeout + perAttempt * attempts
-    }, 0) ?? 0
-  )
+function stepTimeoutSum(jobName: string): number {
+  return stepTimeouts(jobName).reduce((total, timeout) => total + timeout, 0)
 }
 
 describe('checks-static workflow', () => {
@@ -89,42 +82,17 @@ describe('checks-static workflow', () => {
     }
   })
 
-  it('budgets each additive job above its serial critical step timeouts', () => {
-    const expectedBudgets = new Map([
-      ['static-lambdas', 16],
-      ['static-cloudflare', 11],
-    ])
+  it.each([
+    ['static-lambdas', 14],
+    ['static-cloudflare', 9],
+    ['static-backend', 10],
+    ['static-web', 10],
+  ])('caps %s at %i, above its largest step and below the step sum', (jobName, expected) => {
+    const jobBudget = numberField(parsed.jobs?.[jobName]?.['timeout-minutes'], jobName)
 
-    for (const [jobName, expectedBudget] of expectedBudgets) {
-      const jobBudget = numberField(parsed.jobs?.[jobName]?.['timeout-minutes'], jobName)
-      expect(jobBudget).toBe(expectedBudget)
-      expect(jobBudget).toBeGreaterThan(serialCriticalStepBudget(jobName))
-    }
-  })
-
-  it('keeps the static-backend cap below its step sum and above its largest step', () => {
-    const job = parsed.jobs?.['static-backend']
-    const jobBudget = numberField(job?.['timeout-minutes'], 'static-backend')
-    const stepTimeouts = (job?.steps ?? []).map(step =>
-      typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0,
-    )
-
-    expect(jobBudget).toBe(14)
-    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts))
-    expect(jobBudget).toBeLessThan(serialCriticalStepBudget('static-backend'))
-  })
-
-  it('gives the static-web gate a fail-fast budget between its largest step and the step sum', () => {
-    const jobBudget = numberField(parsed.jobs?.['static-web']?.['timeout-minutes'], 'static-web')
-    const stepTimeouts = (parsed.jobs?.['static-web']?.steps ?? []).map(step =>
-      typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0,
-    )
-
-    expect(jobBudget).toBe(10)
-    // Provisioning headroom above the largest single step, but no reserve for every step
-    // degrading to its own ceiling in one run.
-    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts))
-    expect(jobBudget).toBeLessThan(serialCriticalStepBudget('static-web'))
+    expect(jobBudget).toBe(expected)
+    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts(jobName)))
+    expect(jobBudget).toBeLessThan(stepTimeoutSum(jobName))
   })
 
   it('uses setup-backend on the static backend job', () => {
