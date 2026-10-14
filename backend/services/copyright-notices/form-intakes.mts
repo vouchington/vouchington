@@ -9,10 +9,10 @@ import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import {
-  claimantCanViewCopyrightImagePlacement,
-  resolveCopyrightImagePlacement,
+  resolveCopyrightImagePlacements,
   type CopyrightImageSelector,
 } from './placement-resolution.mts'
+import { claimantCanViewCopyrightImagePlacements } from './placement-visibility-batch.mts'
 import { assertStructuredNoticeStatutoryFields } from './form-input-validation.mts'
 
 export type CreateCopyrightFormIntakeInput = {
@@ -72,18 +72,18 @@ export async function createCopyrightFormIntake(
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = options.now ?? new Date()
   if (!Number.isFinite(now.getTime())) throw new TypeError('Copyright form clock must be valid')
-  const targets: CopyrightNoticeTargetInput[] = []
-  for (const target of input.request.claimantTargets) {
-    // oxlint-disable-next-line no-await-in-loop -- use the same filing transaction for the visibility and target snapshot.
-    const viewable = await claimantCanViewCopyrightImagePlacement(
-      target,
-      input.currentUser,
-      transaction,
-    )
+  const viewability = await claimantCanViewCopyrightImagePlacements(
+    input.request.claimantTargets,
+    input.currentUser,
+    transaction,
+  )
+  for (const viewable of viewability) {
     assert(viewable, 422, 'Hosted image placement was not found')
-    // oxlint-disable-next-line no-await-in-loop -- one transaction owns the idempotency lock and authoritative target snapshot.
-    targets.push(await resolveCopyrightImagePlacement(target, transaction))
   }
+  const targets: CopyrightNoticeTargetInput[] = await resolveCopyrightImagePlacements(
+    input.request.claimantTargets,
+    transaction,
+  )
   const notice = await createCopyrightNoticeAggregateInTransaction(
     {
       jurisdiction: input.request.jurisdiction,

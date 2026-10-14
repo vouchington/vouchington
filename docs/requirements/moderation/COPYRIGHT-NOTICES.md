@@ -409,6 +409,10 @@ cannot be used to learn whether a post or image the claimant cannot see exists. 
 already accepted notice is answered before this check. Avatar and profile-link targets require a
 live owner; topic targets require a live, unmerged topic; community images use the community
 viewability rule. A hidden surface has the same missing-placement 422 and stores nothing.
+The filing transaction checks the bounded post and community visibility sets before resolving
+placements, then reads post-image and surface placements by family and preserves submitted target
+order. Staff territorial decisions read their bounded, canonically sorted post-image pairs after
+the receipt and existing-decision fences.
 
 Email admission trusts the SES receipt-rule classification and the configured
 `copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3
