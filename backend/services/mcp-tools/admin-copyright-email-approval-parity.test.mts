@@ -23,6 +23,10 @@ import {
   readCopyrightEmailManualAssociationEvent,
 } from '@voucha/test-helpers/copyright-email-manual-association'
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
+import {
+  copyrightEmailMessageId,
+  recordThreadedCopyrightEmail,
+} from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { callMcpTool } from './call-tool.mts'
 import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
 
@@ -130,15 +134,18 @@ describe('copyright email approval parity between REST and MCP', () => {
   it.each(['REST', 'MCP'] as const)(
     '%s associates one unresolved intake and returns the same case/intake pair',
     async surface => {
-      const intake = await createUnparsedCopyrightEmailIntake()
+      const intake = await recordThreadedCopyrightEmail({
+        messageId: copyrightEmailMessageId(),
+        replyReferences: [copyrightEmailMessageId()],
+      })
       const noticeId = await createCopyrightNoticeForManualAssociation()
-      const outcome = await associateSurface(surface, intake.id, noticeId)
+      const outcome = await associateSurface(surface, intake.intakeId, noticeId)
       expect(outcome.status).toBe(201)
       expect(outcome.body).toMatchObject({
         copyright_notice: { id: noticeId },
-        copyright_email_intake: { id: intake.id },
+        copyright_email_intake: { id: intake.intakeId },
       })
-      expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toHaveLength(1)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toHaveLength(1)
     },
   )
 
@@ -157,16 +164,19 @@ describe('copyright email approval parity between REST and MCP', () => {
   it.each(['REST', 'MCP'] as const)(
     '%s returns 404 for a missing case and 409 for an intake already linked by staff',
     async surface => {
-      const intake = await createUnparsedCopyrightEmailIntake()
+      const intake = await recordThreadedCopyrightEmail({
+        messageId: copyrightEmailMessageId(),
+        replyReferences: [copyrightEmailMessageId()],
+      })
       const noticeId = await createCopyrightNoticeForManualAssociation()
-      const missing = await associateSurface(surface, intake.id, crypto.randomUUID())
+      const missing = await associateSurface(surface, intake.intakeId, crypto.randomUUID())
       expect(missing.status).toBe(404)
-      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
-      expect((await associateSurface(surface, intake.id, noticeId)).status).toBe(201)
-      const conflict = await associateSurface(surface, intake.id, noticeId)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.intakeId)).toEqual([])
+      expect((await associateSurface(surface, intake.intakeId, noticeId)).status).toBe(201)
+      const conflict = await associateSurface(surface, intake.intakeId, noticeId)
       expect(conflict.status).toBe(409)
       expect(conflict.body.code).toBe('copyright_email_thread_changed')
-      expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toHaveLength(1)
+      expect(await readCopyrightEmailManualAssociationEvent(intake.intakeId)).toHaveLength(1)
     },
   )
 

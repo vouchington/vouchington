@@ -875,14 +875,24 @@
     "issue": 2610
   },
   {
+    "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
+    "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
+    "issue": 2607
+  },
+  {
+    "annotation": "readCopyrightEmailGraphTokens:references",
+    "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
+    "issue": 2607
+  },
+  {
     "annotation": "readCopyrightEmailThreadGraph:incoming",
     "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
-    "issue": 2763
+    "issue": 2607
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:outgoing",
     "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
-    "issue": 2763
+    "issue": 2607
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
