@@ -1,89 +1,8 @@
-import { execFile } from 'node:child_process'
-import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
+import { guardPath, runFixture } from '../playwright/test-helpers/public-cap-fixture.mts'
 
-const exec = promisify(execFile)
-const guardPath = fileURLToPath(new URL('../playwright/config/test-timeout.mts', import.meta.url))
-const modules = fileURLToPath(new URL('../node_modules', import.meta.url))
-const cli = fileURLToPath(new URL('../node_modules/@playwright/test/cli.js', import.meta.url))
 const capError =
   /positive finite number at most 30,000 ms|slow modifiers are forbidden|timeout guard overrides are forbidden/
-
-async function runFixture(
-  body: string,
-  options: {
-    collection?: string
-    cliTimeout?: string
-    extended?: boolean
-    workerFixture?: boolean
-  } = {},
-) {
-  const dir = await mkdtemp(join(tmpdir(), 'playwright-public-cap-'))
-  try {
-    await symlink(modules, join(dir, 'node_modules'), 'dir')
-    await writeFile(
-      join(dir, 'setup.mts'),
-      `export { assertResolvedPlaywrightTimeouts as default } from ${JSON.stringify(guardPath)}`,
-    )
-    await writeFile(
-      join(dir, 'playwright.config.mts'),
-      `export default { testDir: '.', testMatch: '**/*.spec.mts', globalSetup: './setup.mts', timeout: 30000, workers: 1, retries: 0, reporter: 'json' }`,
-    )
-    const specSource = `
-      import { test as raw } from '@playwright/test'
-      import { writeFileSync } from 'node:fs'
-      import { guardPlaywrightTestTimeouts, protectPlaywrightHookTimeouts } from ${JSON.stringify(guardPath)}
-      const guarded = guardPlaywrightTestTimeouts(raw)
-      const test = ${options.extended ? `guarded.extend({ sample: ${options.workerFixture ? "[async ({}, use) => await use('fixture'), { scope: 'worker' }]" : "async ({}, use) => await use('fixture')"} })` : 'guarded'}
-      ${options.collection ?? ''}
-      test('tiny public boundary', async (${options.extended ? '{ sample }' : '{}'}, info) => {
-        ${body}
-        writeFileSync(${JSON.stringify(join(dir, 'body.marker'))}, 'continued')
-      })
-    `
-    await writeFile(join(dir, 'tiny.spec.mts'), specSource)
-    const args = [cli, 'test', '--config', join(dir, 'playwright.config.mts')]
-    if (options.cliTimeout !== undefined) args.push('--timeout', options.cliTimeout)
-    let code = 0
-    let output = ''
-    let stats: { expected: number; unexpected: number } | undefined
-    let errors: { message: string; location?: { file: string; line: number } }[] = []
-    const capture = (stdout: string, stderr: string) => {
-      output = stdout + stderr
-      try {
-        const report = JSON.parse(stdout) as {
-          stats: typeof stats
-          suites: { specs: { tests: { results: { errors: typeof errors }[] }[] }[] }[]
-        }
-        stats = report.stats
-        errors = report.suites.flatMap(suite =>
-          suite.specs.flatMap(spec =>
-            spec.tests.flatMap(test => test.results.flatMap(result => result.errors)),
-          ),
-        )
-      } catch {
-        /* CLI argument failures may precede reporter creation. */
-      }
-    }
-    try {
-      const result = await exec(process.execPath, args, { cwd: dir, timeout: 30_000 })
-      capture(result.stdout, result.stderr)
-    } catch (err) {
-      const result = err as Error & { code: number; stdout: string; stderr: string }
-      code = result.code
-      capture(result.stdout, result.stderr)
-    }
-    const marker = await readFile(join(dir, 'body.marker'), 'utf8').catch(() => undefined)
-    const hookMarker = await readFile(join(dir, 'hook.marker'), 'utf8').catch(() => undefined)
-    return { code, output, marker, hookMarker, stats, errors, specSource }
-  } finally {
-    await rm(dir, { recursive: true, force: true })
-  }
-}
 
 describe('Playwright public timeout runtime', () => {
   it.each([
@@ -134,12 +53,130 @@ describe('Playwright public timeout runtime', () => {
     ['collection slow', 'test.slow()'],
     ['extend guard replacement', 'test.extend({ vouchaTestTimeout: undefined })'],
     ['use guard replacement', 'test.use({ vouchaTestTimeout: undefined })'],
+    [
+      'test fixture tuple ceiling',
+      `test.extend({ sample: [async ({}, use) => await use('fixture'), { timeout: 30001 }] })`,
+    ],
+    [
+      'worker fixture tuple ceiling',
+      `test.extend({ sample: [async ({}, use) => await use('fixture'), { scope: 'worker', timeout: 30001 }] })`,
+    ],
+    [
+      'computed fixture tuple ceiling',
+      `const budget = 30000 + 1; const options = { ['time' + 'out']: budget }; test.extend({ sample: [async ({}, use) => await use('fixture'), options] })`,
+    ],
+    [
+      'zero fixture tuple deadline',
+      `test.extend({ sample: [async ({}, use) => await use('fixture'), { timeout: 0 }] })`,
+    ],
+    [
+      'infinite fixture tuple deadline',
+      `test.extend({ sample: [async ({}, use) => await use('fixture'), { timeout: Infinity }] })`,
+    ],
+    [
+      'use fixture tuple ceiling',
+      `test.use({ sample: [async ({}, use) => await use('fixture'), { timeout: 30001 }] })`,
+    ],
   ])('rejects %s during collection', async (_name, collection) => {
     const result = await runFixture('', { collection })
     expect(result.code).toBe(1)
     expect(result.output).toMatch(capError)
     expect(result.marker).toBeUndefined()
   })
+
+  it.each([
+    ['test', 30_000],
+    ['worker', 30_000],
+    ['test', undefined],
+    ['worker', undefined],
+  ] as const)('preserves legal %s fixture tuple timeout %s', async (scope, timeout) => {
+    const result = await runFixture('', {
+      collection: `
+        const options = { scope: ${JSON.stringify(scope)}, timeout: ${String(timeout)} }
+        const child = test.extend({ sample: [async ({}, use) => await use('fixture'), options] })
+        child('legal tuple fixture', async ({ sample }) => {
+          if (sample !== 'fixture') throw new Error('fixture value lost')
+        })`,
+    })
+    expect(result.code).toBe(0)
+    expect(result.stats).toMatchObject({ expected: 2, unexpected: 0 })
+    expect(result.marker).toBe('continued')
+  })
+
+  it.each(['30000', 'undefined'])(
+    'forwards a captured accessor timeout %s without re-reading or mutating input',
+    async initial => {
+      const result = await runFixture('', {
+        collection: `
+          let reads = 0
+          let scopeReads = 0
+          let original
+          const options = Object.freeze({
+            get timeout() { reads++; return reads === 1 ? ${initial} : 30001 },
+            get scope() { if (this !== original) throw new Error('receiver changed'); scopeReads++; return 'test' }
+          })
+          original = options
+          const tuple = Object.freeze([async ({}, use) => await use('fixture'), options])
+          const child = test.extend({ sample: tuple })
+          child('captured accessor fixture', async ({ sample }) => {
+            if (reads !== 1 || scopeReads < 1) throw new Error('options read incorrectly')
+            if (sample !== 'fixture' || tuple[1] !== options || !Object.isFrozen(options)) throw new Error('input changed')
+          })`,
+      })
+      expect(result.code).toBe(0)
+      expect(result.stats).toMatchObject({ expected: 2, unexpected: 0 })
+      expect(result.marker).toBe('continued')
+    },
+  )
+
+  it('preserves shared fixture identity through native mergeTests', async () => {
+    const result = await runFixture('', {
+      collection: `
+        const { mergeTests } = await import('@playwright/test')
+        let overrides = 0
+        const base = test.extend({ sample: async ({}, use) => await use('base') })
+        const shared = { data: NaN, sample: async ({ sample }, use) => { overrides++; await use(sample + '/child') } }
+        const combined = mergeTests(base.extend(shared), base.extend(shared))
+        combined('shared override', async ({ sample, data }) => {
+          if (!Number.isNaN(data) || sample !== 'base/child' || overrides !== 1) throw new Error('shared fixture duplicated')
+        })`,
+    })
+    expect(result.code).toBe(0)
+    expect(result.stats).toMatchObject({ expected: 2, unexpected: 0 })
+    expect(result.marker).toBe('continued')
+  })
+
+  it('rejects changed fixture input instead of trusting a stale shared snapshot', async () => {
+    const result = await runFixture('', {
+      collection: `
+        const shared = { sample: [async ({}, use) => await use('fixture'), { timeout: 30000 }] }
+        test.extend(shared)
+        shared.sample[1].timeout = 30001
+        test.extend(shared)`,
+    })
+    expect(result.code).toBe(1)
+    expect(result.output).toMatch(/RangeError/)
+    expect(result.marker).toBeUndefined()
+  })
+
+  it.each(['30000', 'undefined'])(
+    'captures configure accessor timeout %s at the real test slot',
+    async initial => {
+      const result = await runFixture(
+        `
+      if (reads !== 1 || info.timeout !== 30000) throw new Error('suite deadline not captured')`,
+        {
+          collection: `
+        let reads = 0
+        const options = Object.freeze({ get timeout() { reads++; return reads === 1 ? ${initial} : 30001 } })
+        test.describe.configure(options)`,
+        },
+      )
+      expect(result.code).toBe(0)
+      expect(result.stats).toMatchObject({ expected: 1, unexpected: 0 })
+      expect(result.marker).toBe('continued')
+    },
+  )
 
   it.each(['0', 'Infinity', '30001'])(
     'rejects resolved CLI timeout %s before body',

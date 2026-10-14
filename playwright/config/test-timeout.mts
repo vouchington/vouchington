@@ -1,3 +1,4 @@
+import { snapshotFixtureTimeouts, snapshotOptionsTimeout } from './fixture-timeout.mts'
 import type {
   FullConfig,
   PlaywrightTestConfig,
@@ -78,12 +79,6 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
   const setTimeout = Reflect.get(test, 'setTimeout') as TestType<T, W>['setTimeout']
   const extend = test.extend
   const use = test.use
-  const assertGuardPreserved = (fixtures: object) => {
-    if (Object.hasOwn(fixtures, 'vouchaTestTimeout'))
-      throw new RangeError(
-        'Playwright timeout guard overrides are forbidden by the 30,000 ms test cap',
-      )
-  }
   const configure = Reflect.get(test.describe, 'configure') as TestType<
     T,
     W
@@ -105,17 +100,17 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
       writable: false,
       configurable: false,
       value: (fixtures: Parameters<typeof use>[0]) => {
-        assertGuardPreserved(fixtures)
-        return Reflect.apply(use, test, [fixtures])
+        return Reflect.apply(use, test, [snapshotFixtureTimeouts(fixtures, playwrightTestTimeout)])
       },
     },
     extend: {
       writable: false,
       configurable: false,
       value: (fixtures: Parameters<typeof extend>[0]) => {
-        assertGuardPreserved(fixtures)
         return protectPublicMethods(
-          Reflect.apply(extend, test, [fixtures]) as ReturnType<typeof extend>,
+          Reflect.apply(extend, test, [
+            snapshotFixtureTimeouts(fixtures, playwrightTestTimeout),
+          ]) as ReturnType<typeof extend>,
         )
       },
     },
@@ -124,9 +119,9 @@ function protectPublicMethods<T extends object, W extends object>(test: TestType
     writable: false,
     configurable: false,
     value: (options: Parameters<typeof configure>[0]) => {
-      if (options.timeout !== undefined)
-        playwrightTestTimeout(options.timeout, 'Playwright suite test timeout')
-      return Reflect.apply(configure, test.describe, [options])
+      return Reflect.apply(configure, test.describe, [
+        snapshotOptionsTimeout(options, playwrightTestTimeout, 'Playwright suite test timeout'),
+      ])
     },
   })
   return test

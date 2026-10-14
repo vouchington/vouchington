@@ -41,6 +41,14 @@ idempotent with this guard. Server readiness and external protocol deadlines are
 Browser-free native CLI controls retain setter/slow negatives in both phases, named worker
 fixtures and legal budgets, and exercise the actual timeout location in both all-hook phases.
 
+Fixture tuple deadlines passed through the shared registrar's `extend` and `use` methods are
+snapshotted before native registration and forwarded without mutating caller options.
+Accessor deadlines are read once; omitted budgets remain omitted. Reusing a stable fixture
+object reuses its captured identity for native merging; changed input configurations must use
+a new object. Explicit fixture budgets must be positive, finite and at
+most 30 seconds, including worker-scoped fixtures; omitted budgets retain the SDK's inherited
+value. Ordinary fixture data is unchanged, and this boundary does not replace the hook guard.
+
 ## Seed Setup
 
 Global setup calls `seedPlaywrightTestData()`. That seed runs under the

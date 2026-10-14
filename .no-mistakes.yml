@@ -1971,6 +1971,20 @@ rules:
       unknownCalls: ignore
       targets:
         - function: { file: ci/repo-topology.mts, symbol: loadRepoTopology }
+  - name: Vitest tests do not generate the full PostgreSQL schema snapshot
+    rule: forbidden-calls
+    scope: repository
+    options:
+      roots:
+        - vitest: true
+      # File traversal catches imports, aliases, and re-exports in a test file.
+      # It deliberately does not follow helper call chains.
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - function:
+            file: backend/data-stores/psql/schema-snapshot/generate.mts
+            symbol: generateSchemaSnapshot
   - name: exported error classes are constructed in production
     rule: unconstructed-error-class
     scope: repository

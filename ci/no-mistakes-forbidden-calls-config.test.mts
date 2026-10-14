@@ -63,6 +63,7 @@ describe('no-mistakes forbidden-calls config', () => {
       'Vitest tests do not assert benchmarks',
       'Vitest tests do not run live no-mistakes analysis',
       'Vitest tests do not load the live workflow topology',
+      'Vitest tests do not generate the full PostgreSQL schema snapshot',
       'integration tests do not call mock helpers',
     ])
 
@@ -234,6 +235,30 @@ describe('no-mistakes forbidden-calls config', () => {
         targets: [{ function: { file: 'ci/repo-topology.mts', symbol: 'loadRepoTopology' } }],
       },
     })
+    expect(rule('Vitest tests do not generate the full PostgreSQL schema snapshot')).toEqual({
+      name: 'Vitest tests do not generate the full PostgreSQL schema snapshot',
+      rule: 'forbidden-calls',
+      scope: 'repository',
+      options: {
+        roots: [{ vitest: true }],
+        traversal: 'file',
+        unknownCalls: 'ignore',
+        targets: [
+          {
+            function: {
+              file: 'backend/data-stores/psql/schema-snapshot/generate.mts',
+              symbol: 'generateSchemaSnapshot',
+            },
+          },
+        ],
+      },
+    })
+    const workflow = parseYaml(
+      readFileSync(`${repoRoot}/.github/workflows/static-code-analysis.yml`, 'utf8'),
+    ) as { jobs: { 'no-mistakes': { steps: { run?: string }[] } } }
+    expect(workflow.jobs['no-mistakes'].steps.map(step => step.run)).toContain(
+      'node ci/check-schema-generation-guard-fixtures.mts',
+    )
     expect(withoutBaseline(rule('integration tests do not call mock helpers'))).toEqual({
       name: 'integration tests do not call mock helpers',
       rule: 'forbidden-calls',
