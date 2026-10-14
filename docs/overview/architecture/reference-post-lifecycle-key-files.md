@@ -4,18 +4,18 @@
 
 ## Key Files
 
-| Purpose                         | File                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| Post creation service           | `backend/services/posts/create.mts`                                    |
-| Entity listener (post events)   | `backend/queues/entity-listeners/processors/posts.mts`                 |
-| Entity listener enqueues        | `backend/queues/entity-listeners/enqueues.mts`                         |
-| Classifier-run lifecycle        | `backend/services/classifier-runs/`                                    |
-| Clearance gate                  | `backend/services/post-clearance/check-clearance.mts`                  |
-| Community review add            | `backend/services/communities/publications/add.mts`                    |
-| Community review moderation     | `backend/services/communities/publications/moderate.mts`               |
-| Community moderation dispatcher | `backend/queues/ai-agents/processors/process-community-moderation.mts` |
-| Spam detection                  | `backend/queues/spam-detection/processors.mts`                         |
-| Notification reconciliation     | `backend/queues/notifications/enqueues.mts`                            |
+| Purpose                         | File                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Post creation service           | `backend/services/posts/create.mts`                                            |
+| Entity listener (post events)   | `backend/workers/entity-listeners/processors/posts.mts`                        |
+| Entity listener enqueues        | `backend/queues/entity-listeners/enqueues.mts`                                 |
+| Classifier-run lifecycle        | `backend/services/classifier-runs/`                                            |
+| Clearance gate                  | `backend/services/post-clearance/check-clearance.mts`                          |
+| Community review add            | `backend/services/communities/publications/add.mts`                            |
+| Community review moderation     | `backend/services/communities/publications/moderate.mts`                       |
+| Community moderation classifier | `backend/workers/ai-agents/processors/classifier-run-community-moderation.mts` |
+| Spam detection                  | `backend/workers/spam-detection/processors.mts`                                |
+| Notification reconciliation     | `backend/queues/notifications/enqueues.mts`                                    |
 
 ## Related
 
