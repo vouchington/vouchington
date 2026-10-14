@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { refreshSessionState } from './flows.mts'
 import { applyHotWarmCold } from './hot-warm-cold.mts'
-import { revokeSession } from './revocation.mts'
+import { isSessionRevoked, revokeSession } from './revocation.mts'
 import { markJwtStale } from './invalidation.mts'
 import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
 import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
@@ -268,18 +268,18 @@ describe('flows warm and cold paths', () => {
 
     it('cold path: retains an authenticated session when a real user is suspended', async () => {
       const user = await createTestUser()
-      const { deviceToken, sessionToken } = await makeWarmPathTokens(user.id)
+      const { deviceToken, sessionToken, sid } = await makeWarmPathTokens(user.id)
       await markJwtStale(user.id)
       await suspendTestUser(user.id)
-
       const result = await refreshSessionState({
         fetchUser: getTestPrivateUserById,
         deviceToken,
         sessionToken,
       })
       expect(result.uid).toBe(user.id)
+      expect(result.sid).toBe(sid)
       expect(result.st).not.toBe(sessionToken)
-
+      await expect(isSessionRevoked(sid, { userId: user.id })).resolves.toBe(false)
       await unsuspendTestUser(user.id)
     }, 20_000)
 

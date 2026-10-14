@@ -59,7 +59,8 @@ separate challenge step.
 4. Records successful use and advances the passkey counter via `updatePasskeyCounter`.
 5. `issueDiscoverablePasskeyLogin` checks that the loaded user is that credential's account.
    A missing or different account returns 401 and does not mint a session. A suspended account
-   returns 403.
+   still receives `dt`/`st`. Later writes follow the
+   [suspended-user write policy](../../../../requirements/security/reference-security-authentication-sessions.md#suspended-user-write-policy).
 6. Issues `dt`/`st` tokens via `createDeviceAndSessionTokens` and returns them.
 
 API routes: `POST /api/v1/auth/passkeys/authentication/options` and

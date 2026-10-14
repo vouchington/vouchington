@@ -33,7 +33,8 @@ Verifies a client's discoverable passkey assertion:
    found — never provisions a new account.
 3. Calls `verifyAuthenticationResponse`. Returns 401 if verification fails.
 4. Updates the passkey's signature counter.
-5. Checks user suspension. Issues `dt`/`st` JWT tokens.
+5. Issues `dt`/`st` JWT tokens, including when the account is suspended. Later writes follow the
+   [suspended-user write policy](../../../security/reference-security-authentication-sessions.md#suspended-user-write-policy).
 
 **Success response:**
 
@@ -56,6 +57,5 @@ Sets `dt` and `st` HTTP-only cookies on success.
 - `400` — challenge expired or not found (options not requested first)
 - `400` — invalid response (missing `id` field)
 - `401` — passkey sign-in failed (generic; covers both unknown credentials and failed verification to prevent enumeration)
-- `403` — account suspended
 - `415` — body must be JSON
 - `422 response is required`

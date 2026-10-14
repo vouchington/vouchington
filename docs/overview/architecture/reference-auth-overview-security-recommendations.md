@@ -76,13 +76,16 @@ Authenticated request (warm path)
 
 Authenticated request (cold path)
   → now >= rca or stale flag set: reload user from DB (1 Valkey script + 1 DB)
-  → if suspended: revoke + issue anon session
-  → else: re-issue with fresh enrichment
+  → if the user row is gone: revoke + issue anon session
+  → otherwise, including a suspended account: re-issue with fresh enrichment
 
 User logs out
   → session revoked in Valkey (sid-scoped)
   → cookies cleared
 ```
+
+A suspended account keeps that authenticated session. Ordinary writes are blocked by the
+[suspended-user write policy](../../requirements/security/reference-security-authentication-sessions.md#suspended-user-write-policy).
 
 ## Related
 
