@@ -23,7 +23,12 @@
       "id": "topic-1",
       "is_noindexed": false,
       "lingua_rs_detected_language": null,
-      "logo_image_id": null,
+      "logo_image_id": "00000000-0000-7000-8000-000000000205",
+      "logo_image_placement": {
+        "image_id": "00000000-0000-7000-8000-000000000205",
+        "placement_id": "00000000-0000-7000-8000-000000000306",
+        "placement_revision": 3
+      },
       "markdown": "",
       "name": "Test Topic",
       "referral_program_id": null,

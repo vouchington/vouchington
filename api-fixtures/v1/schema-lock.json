@@ -2605,7 +2605,7 @@
     },
     "native.users.profile.topics-following.first-page": {
       "fixtureIds": ["native.users.profile.topics-following.first-page"],
-      "hash": "51a9c0aa20cfb7e95f16e8069e449aac39353f4497513dd34917da5a16afd6b3"
+      "hash": "9e6d156df7b75ebb05399201a7128c186f7625ecea00d460528538222818cd1a"
     },
     "native.users.profile.topics-following.next-page": {
       "fixtureIds": ["native.users.profile.topics-following.next-page"],
