@@ -6,15 +6,17 @@ Model provider service tier names (OpenAI flex/default, Anthropic standard/prior
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`         | `text`                     | no       |                     |          |           |           | Exact provider value used as the natural lookup key; never normalized. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.                           |
+| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                 |
+| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `id`           | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this model provider service tier. |
+| `service_tier` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.                 |
+| `created_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `ai_service_tiers_service_tier_key`: `UNIQUE (service_tier)`
 
 **Check constraints:**
 _none_
@@ -25,6 +27,7 @@ _none_
 **Indexes:**
 
 - `ai_service_tiers_pkey`: `CREATE UNIQUE INDEX ai_service_tiers_pkey ON public.ai_service_tiers USING btree (id)`
+- `ai_service_tiers_service_tier_key`: `CREATE UNIQUE INDEX ai_service_tiers_service_tier_key ON public.ai_service_tiers USING btree (service_tier)`
 
 **Triggers:**
 _none_

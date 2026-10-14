@@ -6,15 +6,17 @@ Identity provider document type names registered on first sight; the provider ow
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`         | `text`                     | no       |                     |          |           |           | Exact provider value used as the natural lookup key; never normalized. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.                           |
+| Column                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                            |
+| ------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------- |
+| `id`                     | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this identity document type. |
+| `identity_document_type` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.            |
+| `created_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `identity_document_types_identity_document_type_key`: `UNIQUE (identity_document_type)`
 
 **Check constraints:**
 _none_
@@ -24,6 +26,7 @@ _none_
 
 **Indexes:**
 
+- `identity_document_types_identity_document_type_key`: `CREATE UNIQUE INDEX identity_document_types_identity_document_type_key ON public.identity_document_types USING btree (identity_document_type)`
 - `identity_document_types_pkey`: `CREATE UNIQUE INDEX identity_document_types_pkey ON public.identity_document_types USING btree (id)`
 
 **Triggers:**

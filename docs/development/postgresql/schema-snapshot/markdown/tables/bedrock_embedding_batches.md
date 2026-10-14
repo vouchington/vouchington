@@ -8,7 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column           | Type                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                            |
 | ---------------- | ----------------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`             | `text`                              | no       |                     |          |           |           |                                                                                                    |
+| `id`             | `uuid`                              | no       | `uuidv7()`          |          |           |           | UUIDv7 identifier of this Bedrock embedding batch.                                                 |
 | `job_arn`        | `text`                              | yes      |                     |          |           |           | The Bedrock model invocation job ARN.                                                              |
 | `model_id`       | `text`                              | no       |                     |          |           |           | The Amazon Bedrock model id used for embeddings.                                                   |
 | `job_type`       | `bedrock_embedding_batch_job_types` | no       |                     |          |           |           | Which entity type this batch processes.                                                            |

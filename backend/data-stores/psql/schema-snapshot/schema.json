@@ -5120,18 +5120,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "id": {
           "collation": null,
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "defaultExpression": null,
+          "comment": "Stable identifier for this model provider service tier.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "service_tier": {
+          "collation": null,
+          "comment": "Exact provider value; never normalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -5150,11 +5161,31 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_service_tiers_service_tier_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_service_tiers_service_tier_key ON public.ai_service_tiers USING btree (service_tier)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "service_tier",
+              "descending": false,
+              "expression": "service_tier",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -5168,7 +5199,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "ai_service_tiers_service_tier_key": {
+          "columns": ["service_tier"],
+          "definition": "UNIQUE (service_tier)"
+        }
+      }
     },
     "ai_usage_provider_response_keys": {
       "checkConstraints": {
@@ -5541,14 +5577,14 @@
         },
         "service_tier_id": {
           "collation": null,
-          "comment": "The service tier actually served, from the response (e.g. flex, default, standard) — not necessarily the requested tier.",
+          "comment": "Identifier of the service tier actually served (e.g. flex, default, standard), not necessarily the requested tier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 9,
-          "type": "text"
+          "type": "uuid"
         }
       },
       "comment": "Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.",
@@ -5719,7 +5755,7 @@
               "descending": false,
               "expression": "service_tier_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -5750,7 +5786,6 @@
     },
     "amazon_ses_bounce_events": {
       "checkConstraints": {
-        "amazon_ses_bounce_events_amazon_ses_bounce_subtype_id_check": "CHECK (((amazon_ses_bounce_subtype_id IS NULL) OR ((char_length(amazon_ses_bounce_subtype_id) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype_id) = amazon_ses_bounce_subtype_id))))",
         "amazon_ses_bounce_events_amazon_ses_feedback_id_check": "CHECK (((amazon_ses_feedback_id IS NULL) OR ((char_length(amazon_ses_feedback_id) <= 1024) AND (TRIM(BOTH FROM amazon_ses_feedback_id) = amazon_ses_feedback_id))))",
         "amazon_ses_bounce_events_amazon_ses_message_id_check": "CHECK (((amazon_ses_message_id IS NULL) OR ((char_length(amazon_ses_message_id) <= 1024) AND (TRIM(BOTH FROM amazon_ses_message_id) = amazon_ses_message_id))))",
         "amazon_ses_bounce_events_dedup_key_check": "CHECK (((dedup_key IS NULL) OR (char_length(dedup_key) = 64)))",
@@ -5760,14 +5795,14 @@
       "columns": {
         "amazon_ses_bounce_subtype_id": {
           "collation": null,
-          "comment": "Detailed bounce sub-type from SES (e.g. General, NoEmail).",
+          "comment": "Identifier of the detailed SES bounce subtype (e.g. General, NoEmail).",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5,
-          "type": "text"
+          "type": "uuid"
         },
         "amazon_ses_feedback_id": {
           "collation": null,
@@ -5947,7 +5982,7 @@
               "descending": false,
               "expression": "amazon_ses_bounce_subtype_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -6057,8 +6092,21 @@
       "uniqueConstraints": {}
     },
     "amazon_ses_bounce_subtypes": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_check": "CHECK (((char_length(amazon_ses_bounce_subtype) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype) = amazon_ses_bounce_subtype)))"
+      },
       "columns": {
+        "amazon_ses_bounce_subtype": {
+          "collation": null,
+          "comment": "Exact provider value; never normalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
         "created_at": {
           "collation": null,
           "comment": "When this provider value was first observed.",
@@ -6067,25 +6115,45 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "id": {
           "collation": null,
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "defaultExpression": null,
+          "comment": "Stable identifier for this SES bounce subtype.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "text"
+          "type": "uuid"
         }
       },
       "comment": "SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key ON public.amazon_ses_bounce_subtypes USING btree (amazon_ses_bounce_subtype)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "amazon_ses_bounce_subtype",
+              "descending": false,
+              "expression": "amazon_ses_bounce_subtype",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "amazon_ses_bounce_subtypes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -6097,7 +6165,7 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -6115,7 +6183,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key": {
+          "columns": ["amazon_ses_bounce_subtype"],
+          "definition": "UNIQUE (amazon_ses_bounce_subtype)"
+        }
+      }
     },
     "api_keys": {
       "checkConstraints": {
@@ -7005,7 +7078,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "text"
+          "type": "uuid"
         },
         "crawl_id": {
           "collation": null,
@@ -7177,7 +7250,7 @@
               "descending": false,
               "expression": "batch_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -7396,14 +7469,14 @@
         },
         "id": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": null,
+          "comment": "UUIDv7 identifier of this Bedrock embedding batch.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "text"
+          "type": "uuid"
         },
         "in_progress_at": {
           "collation": null,
@@ -7528,7 +7601,7 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -45242,18 +45315,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "id": {
           "collation": null,
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "defaultExpression": null,
+          "comment": "Stable identifier for this identity document type.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "identity_document_type": {
+          "collation": null,
+          "comment": "Exact provider value; never normalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -45261,6 +45345,26 @@
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
+        "identity_document_types_identity_document_type_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX identity_document_types_identity_document_type_key ON public.identity_document_types USING btree (identity_document_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "identity_document_type",
+              "descending": false,
+              "expression": "identity_document_type",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "identity_document_types_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -45272,7 +45376,7 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -45290,7 +45394,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "identity_document_types_identity_document_type_key": {
+          "columns": ["identity_document_type"],
+          "definition": "UNIQUE (identity_document_type)"
+        }
+      }
     },
     "identity_verification_attempts": {
       "checkConstraints": {
@@ -115629,18 +115738,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "id": {
           "collation": null,
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "defaultExpression": null,
+          "comment": "Stable identifier for this Stripe event type.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "stripe_event_type": {
+          "collation": null,
+          "comment": "Exact provider value; never normalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -115659,11 +115779,31 @@
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "stripe_event_types_stripe_event_type_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX stripe_event_types_stripe_event_type_key ON public.stripe_event_types USING btree (stripe_event_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "stripe_event_type",
+              "descending": false,
+              "expression": "stripe_event_type",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -115677,7 +115817,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "stripe_event_types_stripe_event_type_key": {
+          "columns": ["stripe_event_type"],
+          "definition": "UNIQUE (stripe_event_type)"
+        }
+      }
     },
     "stripe_events": {
       "checkConstraints": {},
@@ -115805,14 +115950,14 @@
         },
         "stripe_event_type_id": {
           "collation": null,
-          "comment": "Stripe event type.",
+          "comment": "Identifier of the Stripe event type.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3,
-          "type": "text"
+          "type": "uuid"
         },
         "subscription_id": {
           "collation": null,
@@ -115878,7 +116023,7 @@
               "descending": false,
               "expression": "stripe_event_type_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             },
             {
               "column": "id",
@@ -132089,14 +132234,14 @@
         },
         "identity_document_type_id": {
           "collation": null,
-          "comment": "Document type (passport, id_card, driving_license, etc.).",
+          "comment": "Identifier of the document type (passport, id_card, driving_license, etc.).",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 7,
-          "type": "text"
+          "type": "uuid"
         },
         "identity_fingerprint": {
           "collation": null,
@@ -132241,7 +132386,7 @@
               "descending": false,
               "expression": "identity_document_type_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,

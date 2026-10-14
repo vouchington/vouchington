@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
 | `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                             |
 | `stripe_event_id`      | `text`                     | no       |                              |          |           |           | Unique Stripe event identity used for deduplication.        |
-| `stripe_event_type_id` | `text`                     | no       |                              |          |           |           | Stripe event type.                                          |
+| `stripe_event_type_id` | `uuid`                     | no       |                              |          |           |           | Identifier of the Stripe event type.                        |
 | `is_live_mode`         | `boolean`                  | no       | `false`                      |          |           |           | Whether Stripe issued the event in live mode.               |
 | `api_version`          | `text`                     | yes      |                              |          |           |           | Stripe API version that generated the event.                |
 | `occurred_at`          | `timestamp with time zone` | no       |                              |          |           |           | When Stripe created the event.                              |

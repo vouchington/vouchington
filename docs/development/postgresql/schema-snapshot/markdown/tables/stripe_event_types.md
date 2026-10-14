@@ -6,15 +6,17 @@ Stripe event type names registered on first sight; the provider owns this open s
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`         | `text`                     | no       |                     |          |           |           | Exact provider value used as the natural lookup key; never normalized. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.                           |
+| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                       |
+| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`          |          |           |           | Stable identifier for this Stripe event type. |
+| `stripe_event_type` | `text`                     | no       |                     |          |           |           | Exact provider value; never normalized.       |
+| `created_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `stripe_event_types_stripe_event_type_key`: `UNIQUE (stripe_event_type)`
 
 **Check constraints:**
 _none_
@@ -25,6 +27,7 @@ _none_
 **Indexes:**
 
 - `stripe_event_types_pkey`: `CREATE UNIQUE INDEX stripe_event_types_pkey ON public.stripe_event_types USING btree (id)`
+- `stripe_event_types_stripe_event_type_key`: `CREATE UNIQUE INDEX stripe_event_types_stripe_event_type_key ON public.stripe_event_types USING btree (stripe_event_type)`
 
 **Triggers:**
 _none_
