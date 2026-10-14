@@ -175,8 +175,8 @@ One worker per native stack. That worker implements the stack and runs its sheph
 does not run `pnpm exec pr-shepherd`. The parent reconciles open stacks, starts a worker when the
 stack's first owned pull request exists, and asks the human each merge question.
 
-Independent stacks run at the same time, one worker each. Dependent or
-[conflicting](../agent-workflow/git-and-prs.md#branch-and-commit) unmerged work is the next layer
+Independent stacks run at the same time, one worker each. Only work that
+[must stack](../agent-workflow/git-and-prs.md#branch-and-commit) is the next layer
 of the same stack (`gh stack add`), in the same worktree, within the
 [length limits](../agent-workflow/git-and-prs.md#branch-and-commit). A second stack whose base is an
 unmerged head is not a stack this procedure can drain.
@@ -184,6 +184,11 @@ unmerged head is not a stack this procedure can drain.
 A lower layer is in decent shape when it is committed, the before-push checks have passed, its pull
 request is open with an updated body, and the worker has started shepherding. Start the next layer
 then. Decent shape does not require green CI, ready-for-review, the ready-delay, or a merge.
+
+Work bottom-up. Write layers in stack order; never start a layer before the one below it is in
+decent shape. On each shepherd result, act on the lowest owned layer that is not ready before any
+higher layer, and put each fix on the lowest layer that owns it. A bottom layer that reaches ready
+early frees the ready prefix above it to merge in one command.
 
 A ready, mergeable, or queued lower layer blocks only a git operation that would rewrite that layer.
 Keep shepherding and reviewing every other owned layer. One poll process runs for the stack. The
