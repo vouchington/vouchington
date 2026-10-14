@@ -33,7 +33,7 @@ CREATE TABLE oauth_authorizations (
   facebook_user_id TEXT REFERENCES facebook_accounts(facebook_user_id) ON DELETE CASCADE,
   x_user_id TEXT REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   github_user_id TEXT REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
-  linkedin_user_id TEXT REFERENCES linkedin_accounts(linkedin_user_id) ON DELETE CASCADE,
+  linkedin_user_id TEXT,
   result_kind oauth_authorization_result_kinds CHECK (result_kind IS NULL OR result_kind IN ('authenticated', 'mfa_required', 'connected')),
   result_user_id UUID REFERENCES users ON DELETE CASCADE,
   result_device_id UUID,
@@ -117,6 +117,14 @@ CREATE TABLE oauth_authorizations (
     )
   )
 );
+
+ALTER TABLE oauth_authorizations
+  ADD CONSTRAINT oauth_authorizations_linkedin_user_id_fkey
+  FOREIGN KEY (linkedin_user_id) REFERENCES linkedin_accounts(linkedin_user_id)
+  ON DELETE CASCADE NOT VALID;
+
+ALTER TABLE oauth_authorizations
+  VALIDATE CONSTRAINT oauth_authorizations_linkedin_user_id_fkey;
 
 CREATE OR REPLACE TRIGGER trigger_oauth_authorizations_updated_at
 BEFORE UPDATE ON oauth_authorizations

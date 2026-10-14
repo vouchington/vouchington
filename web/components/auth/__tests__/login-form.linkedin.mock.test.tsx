@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { LoginForm } from '../login-form'
 import type { OAuthProvider } from '@/types/user'
 import {
@@ -17,13 +18,9 @@ vi.mock(
       ),
     }) as unknown as typeof import('next/link'),
 )
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: vi.fn<VitestLooseMock>(), replace: vi.fn<VitestLooseMock>() }),
-    }) as unknown as typeof import('next/navigation'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
+
+const mockNav = createNavMock()
 
 const mockGetConfiguredOAuthProviders = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(import('@/lib/api/client'), () => ({
@@ -68,6 +65,7 @@ vi.mock(import('../oauth-login-button'), () => ({
 
 describe('LinkedIn login broker visibility', () => {
   beforeEach(() => {
+    mockNav.reset()
     mockGetConfiguredOAuthProviders.mockReset()
   })
   afterEach(() => {
