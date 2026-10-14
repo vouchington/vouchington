@@ -4,8 +4,8 @@ import { createServer, connect, type Server, type Socket } from 'node:net'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { Pool } from '@data-stores/psql'
 import { deferPostgresConnectionTimeout } from '@modules/queue-errors'
+import { createTestPostgresConnectionWaitPool } from '@voucha/test-helpers/postgres-connection-wait'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -13,13 +13,15 @@ const connection = { connection: workerQueueConnection, prefix: workerQueuePrefi
 const CONNECTION_TIMEOUT_MS = 100
 const DEFERRAL_MS = 30_000
 
-async function runDeferredConnectionWait(pool: InstanceType<typeof Pool>) {
+async function runDeferredConnectionWait(
+  pool: ReturnType<typeof createTestPostgresConnectionWaitPool>,
+) {
   const name = `psql_connect_wait_${randomUUID()}`
   const queue = new Queue(name, connection)
   const events = new QueueEvents(name, { ...connection, lastEventId: '0', blockTimeout: 1_000 })
   const worker = new Worker(
     name,
-    (job: Job) => deferPostgresConnectionTimeout(job, () => pool.query('SELECT 1')),
+    (job: Job) => deferPostgresConnectionTimeout(job, () => pool.queryProbe()),
     { ...connection, blockTimeout: 1_000 },
   )
   const failed: string[] = []
@@ -94,7 +96,7 @@ describe('PostgreSQL connection timeout deferral with real PostgreSQL and GlideM
     const databaseUrl = process.env.DATABASE_URL
     if (!databaseUrl) throw new Error('DATABASE_URL is required')
     const proxy = await startHeldHandshakeProxy(databaseUrl)
-    const pool = new Pool({
+    const pool = createTestPostgresConnectionWaitPool({
       connectionString: proxy.connectionString,
       connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
     })
@@ -107,7 +109,7 @@ describe('PostgreSQL connection timeout deferral with real PostgreSQL and GlideM
       })
       expect(result).toMatchObject({ state: 'delayed', attemptsMade: 0, failed: [] })
     } finally {
-      await pool.end()
+      await pool.close()
       await proxy.close()
     }
   })
@@ -115,12 +117,12 @@ describe('PostgreSQL connection timeout deferral with real PostgreSQL and GlideM
   it('defers an occupied-pool checkout timeout without consuming an attempt', async () => {
     const databaseUrl = process.env.DATABASE_URL
     if (!databaseUrl) throw new Error('DATABASE_URL is required')
-    const pool = new Pool({
+    const pool = createTestPostgresConnectionWaitPool({
       connectionString: databaseUrl,
       max: 1,
       connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
     })
-    const held = await pool.connect()
+    const releaseHeldClient = await pool.holdClient()
     try {
       const result = await runDeferredConnectionWait(pool)
       expect(result.event).toMatchObject({
@@ -130,8 +132,8 @@ describe('PostgreSQL connection timeout deferral with real PostgreSQL and GlideM
       })
       expect(result).toMatchObject({ state: 'delayed', attemptsMade: 0, failed: [] })
     } finally {
-      held.release()
-      await pool.end()
+      releaseHeldClient()
+      await pool.close()
     }
   })
 })
