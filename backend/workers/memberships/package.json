@@ -21,6 +21,7 @@
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/memberships": "workspace:^",

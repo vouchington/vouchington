@@ -8,6 +8,7 @@ import { getRetryAfterMs, throwRateLimited } from './rate-limit.mts'
 
 export { UnrecoverableError }
 export * from './rate-limit.mts'
+export * from './postgres-connection-timeout.mts'
 
 const BEDROCK_COOLDOWN_MS = 60_000
 

@@ -33,6 +33,11 @@ Pool configuration includes:
 - advisory-lock sizing via `PG_ADVISORY_LOCK_POOL_MAX`; its default is the smaller of four and the
   configured write-pool maximum, and an explicit override may not exceed that write-pool ceiling
 - connection acquisition and establishment timeout via `PG_CONNECTION_TIMEOUT_MS`
+- `pg-pool` reports establishment timeout as `Connection terminated due to connection timeout`;
+  a queued checkout that cannot obtain a client before the same deadline reports
+  `timeout exceeded when trying to connect`. The `psql` and `memberships` workers treat these
+  exact failures as bounded job deferrals. The second message can also mean pool saturation; it
+  does not by itself identify an Aurora resume. API queries retain ordinary error behavior.
 - test pools keep the same default size as production (`PG_TEST_POOL_MAX`, default 20) but evict
   idle clients after 100ms
 
