@@ -98,6 +98,21 @@ describe('web-vitest-sigsegv', () => {
     },
   )
 
+  it('does not match when a different process segfaults and a later line repeats the web command', () => {
+    const webCommand = webTestsKilledCommand()
+    const log = [
+      'ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGSEGV (Segmentation fault): node ./other-tool.js',
+      `2026-10-13T00:00:00.0000000Z > retrying: ${webCommand}`,
+      '##[error]Process completed with exit code 1.',
+    ].join('\n')
+    expect(hasWebVitestSegfault(log)).toBe(false)
+    expect(hasWebVitestSegfault(log.replaceAll('\n', '\r\n'))).toBe(false)
+  })
+
+  it('matches a CRLF-terminated killed-command line', () => {
+    expect(hasWebVitestSegfault(matchingLog.replaceAll('\n', '\r\n'))).toBe(true)
+  })
+
   it('fails closed for the removed unsharded coverage command', () => {
     expect(
       hasWebVitestSegfault(matchingLog.replace('--shard 1/3 --passWithNoTests', '--coverage')),
