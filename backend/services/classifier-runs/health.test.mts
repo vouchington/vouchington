@@ -124,7 +124,7 @@ describe('classifier run health: terminal counts (real PG)', () => {
     await reserveSyntheticRun(setup)
 
     const clock = await readClassifierHealthClockForTest(setup.slug)
-    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.fresh)
+    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.afterHours(0))
 
     expect(terminal).toEqual({
       completed: 1,
@@ -143,7 +143,7 @@ describe('classifier run health: terminal counts (real PG)', () => {
     await supersedeStaleClassifierRun(setup.adapter, replaced)
 
     const clock = await readClassifierHealthClockForTest(setup.slug)
-    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.fresh)
+    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.afterHours(0))
 
     expect(terminal).toMatchObject({ superseded: 1, incomplete: 1, failedTotal: 0 })
   })
