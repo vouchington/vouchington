@@ -20,6 +20,7 @@ import {
   prefetchPosts,
   summarizeResults,
   type PreparedArticle,
+  type SyncArticlesDeps,
 } from './sync-helpers.mts'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
@@ -27,11 +28,6 @@ const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post
 type ArticleSyncFile = { file: string }
 
 const LOCAL_ARTICLES_DIR = join(import.meta.dirname, '..', '..', '..', 'articles')
-
-type SyncArticlesDeps = {
-  listArticleMarkdownFiles: typeof listArticleMarkdownFiles
-  getArticleMarkdown: typeof getArticleMarkdown
-}
 
 const defaultSyncArticlesDeps: SyncArticlesDeps = {
   listArticleMarkdownFiles,
@@ -46,6 +42,7 @@ export async function syncArticles(
     currentUser,
     await deps.listArticleMarkdownFiles(),
     deps.getArticleMarkdown,
+    deps.prefetchPosts,
   )
 }
 
@@ -68,6 +65,7 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
   currentUser: PrivateUser,
   mdFiles: T[],
   loadMarkdown: (articleFile: T) => Promise<string>,
+  lookupPosts = prefetchPosts,
 ): Promise<ArticleSyncResult> {
   const results: ArticleSyncItem[] = []
   const prepared: PreparedArticle[] = []
@@ -129,7 +127,7 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
 
   let existingBySlug: Map<string, Post>
   try {
-    existingBySlug = await prefetchPosts(prepared.map(article => article.slug))
+    existingBySlug = await lookupPosts(prepared.map(article => article.slug))
   } catch (err) {
     for (const { item } of prepared) {
       item.action = 'error'

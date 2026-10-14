@@ -6,6 +6,14 @@ import type { Post, PostType } from '@services/posts/types'
 import type { ArticleSyncItem, ArticleSyncResult } from '@voucha/types/article-sync'
 import sql from 'sql-template-strings'
 
+import type { getArticleMarkdown, listArticleMarkdownFiles } from './storage.mts'
+
+export type SyncArticlesDeps = {
+  listArticleMarkdownFiles: typeof listArticleMarkdownFiles
+  getArticleMarkdown: typeof getArticleMarkdown
+  prefetchPosts?: typeof prefetchPosts
+}
+
 export type PreparedArticle = {
   item: ArticleSyncItem
   body: string
