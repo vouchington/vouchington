@@ -14,10 +14,7 @@ export interface WebFixtureClientEndpointContext {
     'createApiKey' | 'getApiKeys' | 'rotateApiKey'
   >
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>
-  readonly captchaConfig: Pick<
-    typeof import('@/lib/api/client/captcha-config'),
-    'fetchCaptchaConfig'
-  >
+  readonly captchaConfig: typeof import('@/lib/api/client/captcha-config')
   readonly communities: Pick<
     typeof import('@/lib/api/client/communities'),
     'fetchCommunityPinnedPosts' | 'updateCommunityPostTypeSettings'
