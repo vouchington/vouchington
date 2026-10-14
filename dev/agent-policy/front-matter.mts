@@ -26,7 +26,8 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     throw new Error('retrospective doc front-matter block is not closed with a second "---"')
   }
 
-  const parsed: Record<string, unknown> = {}
+  // Null prototype so a hand-written `__proto__` key stays an own property.
+  const parsed: Record<string, unknown> = Object.create(null)
   for (const line of lines.slice(1, endIndex)) {
     const match = /^([a-z_]+): (.*)$/.exec(line)
     if (!match)

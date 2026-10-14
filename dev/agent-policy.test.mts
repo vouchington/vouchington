@@ -94,6 +94,13 @@ describe('validateRetrospective', () => {
     expect(errors).toEqual([expect.stringContaining(message)])
   })
 
+  it('does not let a __proto__ key stand in for the required fields', () => {
+    const lines = ['__proto__: {"date":"2026-10-14","issues":[],"prs":[]}']
+    const markdown = doc(lines).replace(/date: "2026-10-12"\nissues: \[\]\nprs: \[\]\n/, '')
+    const { errors } = validateRetrospective(input(markdown))
+    expect(errors).toEqual([expect.stringContaining('missing a non-empty "date" field')])
+  })
+
   it('rejects an invalid reference', () => {
     const { errors } = validateRetrospective(input(doc().replace('prs: []', 'prs: [0]')))
     expect(errors).toEqual([expect.stringContaining('references must be positive integers')])
