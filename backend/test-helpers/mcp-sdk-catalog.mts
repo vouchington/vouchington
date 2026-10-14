@@ -74,7 +74,10 @@ export const sdkCatalogCases = [
 export async function connectSdkCatalog<T>(
   testCase: (typeof sdkCatalogCases)[number],
   account: Awaited<ReturnType<typeof createTestUser>> | undefined,
-  makeClient: (url: URL, fetch: typeof globalThis.fetch) => Promise<T>,
+  makeClient: (
+    url: URL,
+    fetch: (input: Request | string | URL, init?: RequestInit) => Promise<Response>,
+  ) => Promise<T>,
 ): Promise<T> {
   const owner = account ?? (await createTestUser({ administrator: testCase.admin }))
   if (testCase.plan === 'pro') await createTestMembership({ user_id: owner.id, plan: 'pro' })
