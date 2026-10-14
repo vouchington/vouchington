@@ -8,6 +8,7 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'user_lists',
   'podcast_shows',
   'remote_actors',
+  'rss_category_identities',
   'rss_feeds',
   'topics',
   'url_hostnames',

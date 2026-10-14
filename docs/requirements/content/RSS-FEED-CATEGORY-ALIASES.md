@@ -22,7 +22,8 @@ replaces the item's normalized category snapshot, so an empty category array rem
 
 | Column             | Type   | Description                                                  |
 | ------------------ | ------ | ------------------------------------------------------------ |
-| `category_text`    | `text` | Raw category string from the feed (part of composite PK)     |
+| `category_id`      | `uuid` | FK to the normalized category identity; PK with item ID      |
+| `category_text`    | `text` | First authored category string from the feed                 |
 | `rss_feed_item_id` | `uuid` | FK to the RSS feed item                                      |
 | `topic_id`         | `uuid` | FK to `topics`; `NULL` when the category has not been mapped |
 
@@ -32,11 +33,15 @@ Rows with `topic_id IS NULL` are "unmapped" and appear in the admin triage queue
 
 Records categories that an admin has explicitly rejected (hidden from the pending queue).
 
-| Column          | Type          | Description                          |
-| --------------- | ------------- | ------------------------------------ |
-| `category_text` | `text PK`     | The rejected category string         |
-| `created_at`    | `timestamptz` | When the rejection was recorded      |
-| `created_by_id` | `uuid`        | FK to the admin user who rejected it |
+| Column          | Type          | Description                            |
+| --------------- | ------------- | -------------------------------------- |
+| `category_id`   | `uuid PK`     | FK to the normalized category identity |
+| `created_at`    | `timestamptz` | When the rejection was recorded        |
+| `created_by_id` | `uuid`        | FK to the admin user who rejected it   |
+
+`rss_category_identities` maps normalized external category text to a UUID. Feed categories,
+item categories, rejections, and unmapped counts relate by this ID; API input and output remain
+category strings.
 
 ### Topic Resolution
 

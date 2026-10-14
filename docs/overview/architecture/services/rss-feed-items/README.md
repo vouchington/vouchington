@@ -37,7 +37,8 @@ cross-surface entity contract.
 Every multi-row conflict write is globally deduplicated and ordered by its live unique-index key
 before it is chunked: identities by `(url_hostname_id, guid)`, item content by `id`, sources by
 `(rss_feed_id, rss_feed_item_id)`, snapshots by their item keys, and categories by
-`(rss_feed_item_id, lower(category_text))`. This lets concurrent feeds submit the same items in
+`(rss_feed_item_id, category_id)`. The shared category identity is registered in normalized-text
+order before item rows are written. This lets concurrent feeds submit the same items in
 opposite parsed-feed order without taking incompatible PostgreSQL row locks. Ordering is an
 internal persistence invariant: RSS result and duplicate-resolution semantics remain unchanged.
 The real-PostgreSQL regression races those production writers through separate clients; the
@@ -176,7 +177,7 @@ Post-upsert fanout waits for embedding, autotagger, notification, and cache work
 
 ### `rss_feed_item_category_rejections` table
 
-Admins can permanently hide a category from the pending triage queue by rejecting it. Rejections are stored in `rss_feed_item_category_rejections (category_text PK, created_at, created_by_id)` and can be reversed.
+Admins can permanently hide a category from the pending triage queue by rejecting it. Rejections are stored in `rss_feed_item_category_rejections (category_id PK, created_at, created_by_id)` and can be reversed. The ID points to `rss_category_identities`; each item row retains its first authored category text for presentation.
 
 ### Service functions
 

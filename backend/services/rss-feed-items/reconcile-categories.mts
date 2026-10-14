@@ -56,14 +56,16 @@ async function deleteStaleCategoriesAndRetractVotes(
     `/* reconcileRssFeedItemCategorySnapshots */
       WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
       desired_categories AS (
-        SELECT DISTINCT rss_feed_item_id, LOWER(category_text) AS category_text
+        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_id
         FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
+        JOIN rss_category_identities identity
+          ON identity.category_text = LOWER(TRIM(input.category_text))
       ), stale_categories AS (
         DELETE FROM rss_feed_item_categories category USING snapshot_items snapshot
         WHERE category.rss_feed_item_id = snapshot.rss_feed_item_id
           AND NOT EXISTS (SELECT 1 FROM desired_categories desired
             WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-              AND desired.category_text = LOWER(category.category_text))
+              AND desired.category_id = category.category_id)
         RETURNING category.rss_feed_item_id, category.topic_id, category.topic_alias_id
       ) SELECT * FROM stale_categories`,
     [itemIds, categoryItemIds, categoryTexts],
@@ -96,8 +98,10 @@ async function getStaleCategoryTopicAliasIds(
     `/* reconcileRssFeedItemCategorySnapshots staleAliasScopes */
       WITH snapshot_items AS (SELECT unnest($1::uuid[]) AS rss_feed_item_id),
       desired_categories AS (
-        SELECT DISTINCT rss_feed_item_id, LOWER(category_text) AS category_text
+        SELECT DISTINCT input.rss_feed_item_id, identity.id AS category_id
         FROM unnest($2::uuid[], $3::text[]) AS input(rss_feed_item_id, category_text)
+        JOIN rss_category_identities identity
+          ON identity.category_text = LOWER(TRIM(input.category_text))
       )
       SELECT DISTINCT category.topic_alias_id
       FROM rss_feed_item_categories category
@@ -105,7 +109,7 @@ async function getStaleCategoryTopicAliasIds(
       WHERE category.topic_alias_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM desired_categories desired
           WHERE desired.rss_feed_item_id = category.rss_feed_item_id
-            AND desired.category_text = LOWER(category.category_text))
+            AND desired.category_id = category.category_id)
       ORDER BY category.topic_alias_id`,
     [itemIds, categoryItemIds, categoryTexts],
   )

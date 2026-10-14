@@ -16,14 +16,20 @@ END $$;
 -- Mirrors rss_feed_item_categories but keyed by feed, not item.
 CREATE TABLE IF NOT EXISTS rss_feed_categories (
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
-  category_text TEXT NOT NULL, -- normalized (trimmed, lowercased) Apple itunes:category text
+  category_id UUID NOT NULL, -- normalized Apple itunes:category identity
   topic_id UUID REFERENCES topics ON DELETE SET NULL, -- the mapped internal topic; NULL if not yet mapped
 
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-  PRIMARY KEY (rss_feed_id, category_text)
+  PRIMARY KEY (rss_feed_id, category_id)
 );
+
+-- rss_category_identities is created in the earlier RSS-item schema file.
+ALTER TABLE rss_feed_categories
+  ADD CONSTRAINT fk_rss_feed_categories__category_id
+  FOREIGN KEY (category_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE rss_feed_categories VALIDATE CONSTRAINT fk_rss_feed_categories__category_id;
 
 CREATE OR REPLACE TRIGGER trigger_rss_feed_categories_updated_at
 BEFORE UPDATE ON rss_feed_categories
@@ -35,13 +41,13 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_categories__topic_id
 ON rss_feed_categories (topic_id, rss_feed_id DESC)
 WHERE topic_id IS NOT NULL;
 
--- for category-text filtering and joins (text is already normalized to lowercase before storage)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_categories__category_text
-ON rss_feed_categories (category_text);
+-- for category identity filtering and joins
+CREATE INDEX IF NOT EXISTS idx_rss_feed_categories__category_id
+ON rss_feed_categories (category_id, rss_feed_id);
 
-COMMENT ON TABLE rss_feed_categories IS 'Maps feed-level Apple itunes:category values to internal topics. One row per (feed, category_text) pair.';
+COMMENT ON TABLE rss_feed_categories IS 'Maps feed-level Apple itunes:category identities to internal topics. One row per feed and category pair.';
 COMMENT ON COLUMN rss_feed_categories.rss_feed_id IS 'The RSS feed (podcast show) these categories belong to.';
-COMMENT ON COLUMN rss_feed_categories.category_text IS 'Normalized (trimmed, lowercased) Apple itunes:category text from the feed.';
+COMMENT ON COLUMN rss_feed_categories.category_id IS 'Canonical normalized Apple itunes:category identity.';
 COMMENT ON COLUMN rss_feed_categories.topic_id IS 'The mapped internal topic. NULL if not yet mapped by the autotagger.';
 
 -------------------------------------------------------------------------------

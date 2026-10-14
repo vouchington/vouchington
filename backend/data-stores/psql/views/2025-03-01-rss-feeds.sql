@@ -67,11 +67,13 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
       END AS podcast_show,
       COALESCE((
         SELECT json_agg(json_build_object(
-          'category_text', c.category_text,
+          'category_text', category_identity.category_text,
           'topic_id', c.topic_id,
           'topic_slug', t.slug
-        ) ORDER BY c.category_text)
+        ) ORDER BY category_identity.category_text)
         FROM rss_feed_categories c
+        JOIN rss_category_identities category_identity
+          ON category_identity.id = c.category_id
         LEFT JOIN topics t
           ON t.id = c.topic_id
           AND t.deleted_at IS NULL

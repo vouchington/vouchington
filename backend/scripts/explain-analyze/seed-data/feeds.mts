@@ -1,12 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import {
-  contentHash,
-  FEED_URL_COUNT,
-  HOSTNAME_COUNT,
-  ITEM_URL_POOL,
-  SEED_PREFIX,
-  seedUuid,
-} from './common.mts'
+import { contentHash, FEED_URL_COUNT, HOSTNAME_COUNT, ITEM_URL_POOL, seedUuid } from './common.mts'
 
 export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<void> {
   console.log(`Seeding ${feedCount} RSS feeds and ${itemCount} items...`)
@@ -90,16 +83,6 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
   await sourcesTransaction.commit()
 }
 
-export async function seedRssFeedItemCategories(count = 5000): Promise<void> {
-  console.log(`Seeding ${count} RSS feed item categories...`)
-  await using transaction = await beginTransaction()
-  await transaction(
-    `/* seedExplainData */ INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id) SELECT seeded.id, 'seed-category-' || (seeded.row_index % 200), topic.topic_id FROM ( SELECT id, (row_number() OVER (ORDER BY id) - 1)::int AS row_index FROM rss_feed_item_guids WHERE guid LIKE 'seed-item-guid-%' LIMIT $1 ) seeded CROSS JOIN LATERAL ( SELECT ($2 || lpad(to_hex(seeded.row_index % 200), 12, '0'))::uuid AS topic_id ) topic ON CONFLICT DO NOTHING`,
-    [count, `${SEED_PREFIX}-0400-7000-8000-`],
-  )
-
-  await transaction.commit()
-}
 export async function seedFollowRssFeedRelations(count = 500): Promise<void> {
   console.log(`Seeding ${count} follow RSS feed relations...`)
   await using transaction = await beginTransaction()

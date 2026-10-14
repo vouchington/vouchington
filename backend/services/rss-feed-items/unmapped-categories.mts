@@ -8,6 +8,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanManageRssFeedCategories } from './authorization.mts'
 import { createTopicAliases } from '@services/topics/aliases'
 import { backfillCategoriesForTopicAliases } from './backfill-categories-for-topic-aliases.mts'
+import { registerRssCategoryIdentities } from './category-identities.mts'
 
 export type UnmappedCategoryStatus = 'pending' | 'rejected' | 'all'
 
@@ -27,11 +28,6 @@ export type GetUnmappedCategoriesResult = {
   results: UnmappedCategory[]
   page_info: PageInfo
 }
-
-const UNMAPPED_COUNTS_SQL = `
-  SELECT category_text, item_count::int
-  FROM rss_feed_item_unmapped_category_counts
-`
 
 export async function getUnmappedRssFeedItemCategories(
   options: GetUnmappedCategoriesOptions = {},
@@ -54,42 +50,44 @@ export async function getUnmappedRssFeedItemCategories(
   // - all:      union of both (each category appears once in the correct bucket)
   const innerSql =
     status === 'pending'
-      ? `SELECT c.category_text, c.item_count::int, FALSE AS rejected
+      ? `SELECT c.category_id, c.item_count::int, FALSE AS rejected
          FROM rss_feed_item_unmapped_category_counts c
          WHERE NOT EXISTS (
              SELECT 1 FROM rss_feed_item_category_rejections r
-             WHERE r.category_text = c.category_text
+             WHERE r.category_id = c.category_id
            )`
       : status === 'rejected'
-        ? `SELECT r.category_text, COALESCE(g.item_count, 0)::int AS item_count, TRUE AS rejected
+        ? `SELECT r.category_id, COALESCE(g.item_count, 0)::int AS item_count, TRUE AS rejected
            FROM rss_feed_item_category_rejections r
-           LEFT JOIN (${UNMAPPED_COUNTS_SQL}) g ON g.category_text = r.category_text`
+           LEFT JOIN rss_feed_item_unmapped_category_counts g ON g.category_id = r.category_id`
         : /* all */
-          `SELECT c.category_text, c.item_count::int, FALSE AS rejected
+          `SELECT c.category_id, c.item_count::int, FALSE AS rejected
            FROM rss_feed_item_unmapped_category_counts c
            WHERE NOT EXISTS (
                SELECT 1 FROM rss_feed_item_category_rejections r2
-               WHERE r2.category_text = c.category_text
+               WHERE r2.category_id = c.category_id
              )
            UNION ALL
-           SELECT r.category_text, COALESCE(g.item_count, 0)::int AS item_count, TRUE AS rejected
+           SELECT r.category_id, COALESCE(g.item_count, 0)::int AS item_count, TRUE AS rejected
            FROM rss_feed_item_category_rejections r
-           LEFT JOIN (${UNMAPPED_COUNTS_SQL}) g ON g.category_text = r.category_text`
+           LEFT JOIN rss_feed_item_unmapped_category_counts g ON g.category_id = r.category_id`
 
   const query = sql`/* getUnmappedRssFeedItemCategories */
-    SELECT category_text, item_count, rejected
+    SELECT identity.category_text, base.item_count, base.rejected
     FROM (`
   // Append the static inner SQL (no user data — safe string interpolation)
   query.append(innerSql)
-  query.append(sql`) base WHERE TRUE`)
+  query.append(sql`) base
+    JOIN rss_category_identities identity ON identity.id = base.category_id
+    WHERE TRUE`)
 
   if (cursorScore !== null && cursorId !== null) {
     query.append(
-      sql` AND (item_count < ${cursorScore} OR (item_count = ${cursorScore} AND category_text > ${cursorId}))`,
+      sql` AND (base.item_count < ${cursorScore} OR (base.item_count = ${cursorScore} AND identity.category_text > ${cursorId}))`,
     )
   }
 
-  query.append(sql` ORDER BY item_count DESC, category_text ASC LIMIT ${limit + 1}`)
+  query.append(sql` ORDER BY base.item_count DESC, identity.category_text ASC LIMIT ${limit + 1}`)
 
   const { rows } = await read(query)
   const hasNextPage = rows.length > limit
@@ -113,10 +111,12 @@ export async function rejectRssFeedItemCategory(
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
+    await registerRssCategoryIdentities([normalized], query)
     const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
-    INSERT INTO rss_feed_item_category_rejections (category_text, created_by_id)
-    VALUES (${normalized}, ${currentUser.id})
-    ON CONFLICT (category_text) DO NOTHING
+    INSERT INTO rss_feed_item_category_rejections (category_id, created_by_id)
+    SELECT id, ${currentUser.id} FROM rss_category_identities
+    WHERE category_text = ${normalized}
+    ON CONFLICT (category_id) DO NOTHING
   `)
     await recordModeratorAction(
       currentUser.id,
@@ -140,8 +140,10 @@ export async function unrejectRssFeedItemCategory(
   assert(normalized, 422, 'category_text is required')
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rowCount } = await query(sql`/* unrejectRssFeedItemCategory */
-    DELETE FROM rss_feed_item_category_rejections
-    WHERE category_text = ${normalized}
+    DELETE FROM rss_feed_item_category_rejections rejection
+    USING rss_category_identities identity
+    WHERE rejection.category_id = identity.id
+      AND identity.category_text = ${normalized}
   `)
     await recordModeratorAction(
       currentUser.id,

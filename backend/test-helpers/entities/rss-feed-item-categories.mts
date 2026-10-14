@@ -11,7 +11,10 @@ export async function setTestRssFeedItemCategoryTopicId(
     allowUnannotatedQuery(sql`
     UPDATE rss_feed_item_categories
     SET topic_id = ${topicId}
-    WHERE rss_feed_item_id = ${rssFeedItemId} AND category_text = ${categoryText}
+    WHERE rss_feed_item_id = ${rssFeedItemId}
+      AND category_id = (
+        SELECT id FROM rss_category_identities WHERE category_text = LOWER(TRIM(${categoryText}))
+      )
   `),
   )
 }
