@@ -8,6 +8,10 @@ import type { PrivateUser } from '@services/users/types'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { getPostByAny } from '@services/posts/get'
 import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
+import {
   createArticleSyncFixtures,
   seedArticleSyncTimestamp,
   syncOwnedArticles,
@@ -83,6 +87,33 @@ describe('syncArticles', () => {
     for (const item of result.results) {
       expect(item.action).toBe('skipped')
     }
+  })
+
+  it('prefetches distinct slugs once and processes duplicate slugs in file order', async () => {
+    const slug = `ordered-sync-${randomUUID()}`
+    ownedSlugs = new Set([slug, keyboardSlug])
+    const files = ['first.md', 'second.md', 'third.md', 'keyboard-shortcuts.md']
+    listArticleMarkdownFiles.mockResolvedValue(
+      files.map(file => ({ file, key: `articles/${file}`, cacheToken: `${file}:v1` })),
+    )
+    const markdown = new Map([
+      ['first.md', `---\ntitle: First\nslug: ${slug}\n---\nFirst body.`],
+      ['second.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
+      ['third.md', `---\ntitle: Second\nslug: ${slug}\n---\nSecond body.`],
+      ['keyboard-shortcuts.md', articleFixtures.get('keyboard-shortcuts.md')!],
+    ])
+    getArticleMarkdown.mockImplementation(article => Promise.resolve(markdown.get(article.file)!))
+
+    const { result, queries } = await withCapturedTestQueries(() => syncFixtureArticles())
+
+    expect(countCapturedQueriesByAnnotation(queries, 'prefetchArticlePosts')).toBe(1)
+    expect(result.results.map(item => item.action)).toEqual([
+      'created',
+      'updated',
+      'skipped',
+      'created',
+    ])
+    expect((await getPostByAny(slug))?.title).toBe('Second')
   })
 
   describe('relative article links', () => {

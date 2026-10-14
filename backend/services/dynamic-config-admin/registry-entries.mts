@@ -40,6 +40,7 @@ const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'articles-work-config',
   'pagination-config',
   'moderation-analytics-work-config',
   'post-clearance-work-config',

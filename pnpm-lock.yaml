@@ -3966,12 +3966,21 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1149.0
         version: 3.1149.0
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
@@ -3984,6 +3993,9 @@ importers:
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
     devDependencies:
       '@services/markdown':
         specifier: workspace:^
@@ -5554,6 +5566,9 @@ importers:
       '@services/app-attestation':
         specifier: workspace:^
         version: link:../app-attestation
+      '@services/articles':
+        specifier: workspace:^
+        version: link:../articles
       '@services/autotagger':
         specifier: workspace:^
         version: link:../autotagger

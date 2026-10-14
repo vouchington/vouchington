@@ -31,6 +31,7 @@
     "@services/api-egress-proxy": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/app-attestation": "workspace:^",
+    "@services/articles": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",

@@ -14,6 +14,8 @@ Parses article Markdown with `gray-matter` frontmatter extraction from the asset
 - `syncArticles(currentUser): Promise<ArticleSyncResult>` — syncs all Markdown objects from S3 as posts, creating or updating as needed
 - `syncLocalArticles(currentUser, articlesDir?): Promise<ArticleSyncResult>` — syncs the committed local `articles/` directory for local/test database seeding only
 
+Both sync entrypoints load, prefetch, and process files in input order using `articles-work-config.sync_batch_size` (default 50, maximum 100). Each batch reads existing posts for its distinct valid slugs in one database round trip, then creates, updates, or skips posts in file order. A successful write updates the in-memory post state by ID before the next file, so repeated slugs and slug/UUID aliases observe the preceding file's result without retaining the entire bucket's article bodies. The batch size is read once at the start of a sync, so one run keeps a consistent bound.
+
 ## Related
 
 - Article source: [../../../docs/requirements/content/articles/README.md](../../../../requirements/content/articles/README.md)
