@@ -45,10 +45,30 @@ export function functionCallReports(
   })
 }
 
+function parentRelationName(relationName: string): string {
+  return relationName.replace(/__(?:default|p_\w+)$/, '')
+}
+
 function isLargeTable(relationName: string): boolean {
-  if (LARGE_TABLES.has(relationName)) return true
-  const base = relationName.replace(/__(?:default|p_\w+)$/, '')
-  return base !== relationName && LARGE_TABLES.has(base)
+  return LARGE_TABLES.has(parentRelationName(relationName))
+}
+
+export function getLargeTableRelations(result: ExplainResult): string[] {
+  return [
+    ...new Set(
+      collectNodes(result.plan).flatMap(node =>
+        node.relationName && isLargeTable(node.relationName)
+          ? [parentRelationName(node.relationName)]
+          : [],
+      ),
+    ),
+  ].toSorted()
+}
+
+export function getLargeTableSeqScanRelations(result: ExplainResult): string[] {
+  return [
+    ...new Set(analyzeResult(result).seqScans.map(scan => parentRelationName(scan.relationName))),
+  ].toSorted()
 }
 
 // The root plan node's own reported WAL Bytes is cumulative over the whole query (it already

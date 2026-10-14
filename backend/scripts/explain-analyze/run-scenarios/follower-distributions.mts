@@ -23,6 +23,7 @@ export async function runFollowerDistributionScenarios(): Promise<void> {
         { kind: 'maxProcessedRows', relation: 'follower_distribution_deliveries', max: 4 },
       ],
     })
+    // no-mistakes-disable-next-line query-reached-per-item: four fixed EXPLAIN actions, each with one bounded ANALYZE between identical captures
     await runAndCapture(id, async () => {
       await using query = await beginTransaction()
       await assert.rejects(

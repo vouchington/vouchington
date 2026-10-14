@@ -122,10 +122,19 @@ describe('writeResults', () => {
 
     writeResults()
 
-    const newFile = readdirSync(OUTPUT_DIR).find(name => !before.has(name))
-    if (!newFile) throw new Error('writeResults did not create a new output file')
-    const written = JSON.parse(readFileSync(join(OUTPUT_DIR, newFile), 'utf8'))
-    expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
-    rmSync(join(OUTPUT_DIR, newFile))
+    const resultFile = readdirSync(OUTPUT_DIR).find(
+      name => !before.has(name) && name.startsWith('results-'),
+    )
+    if (!resultFile) throw new Error('writeResults did not create a new result file')
+    const repeatFile = resultFile.replace(/^results-/, 'repeat-')
+    try {
+      const written = JSON.parse(readFileSync(join(OUTPUT_DIR, resultFile), 'utf8'))
+      expect(written).toMatchObject({ results: [failing], completedScenarioIds: [] })
+      const repeated = JSON.parse(readFileSync(join(OUTPUT_DIR, repeatFile), 'utf8'))
+      expect(repeated).toMatchObject({ results: [], completedScenarioIds: [] })
+    } finally {
+      rmSync(join(OUTPUT_DIR, resultFile), { force: true })
+      rmSync(join(OUTPUT_DIR, repeatFile), { force: true })
+    }
   })
 })

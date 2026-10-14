@@ -1,4 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
 import {
@@ -10,6 +9,10 @@ import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
 } from './resource-pressure-baseline.mts'
+import { assertNoNewSeqScans, getExplainResultIdentity } from './seq-scan-baseline.mts'
+import { loadLatestPairedResults } from './paired-results.mts'
+
+export { getExplainResultIdentity } from './seq-scan-baseline.mts'
 
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 
@@ -27,15 +30,6 @@ export function assertResultsPresent(results: readonly ExplainResult[]): void {
   if (results.length === 0) {
     throw new Error('Latest EXPLAIN output contains no query results')
   }
-}
-
-export function getExplainResultIdentity(result: ExplainResult): string {
-  return [
-    result.scenario_id ?? 'unscoped',
-    result.capture_index ?? 0,
-    result.name,
-    result.plan_cache_mode ?? 'auto',
-  ].join('|')
 }
 
 export function assertNoDisallowedRegressions(
@@ -57,28 +51,13 @@ export function assertNoDisallowedRegressions(
 }
 
 function main() {
-  let files: string[]
-  try {
-    files = readdirSync(OUTPUT_DIR)
-      .filter(f => f.startsWith('results-') && f.endsWith('.json'))
-      .toSorted()
-      .toReversed()
-  } catch {
-    console.error(`No output directory found at ${OUTPUT_DIR}. Run explain:run first.`)
-    process.exit(1)
-  }
-
-  if (files.length === 0) {
-    console.error('No result files found. Run explain:run first.')
-    process.exit(1)
-  }
-
-  const latest = files[0]
-  const filePath = join(OUTPUT_DIR, latest)
+  const { filePath, results, repeatedResults } = loadLatestPairedResults(OUTPUT_DIR)
   console.error(`Reading: ${filePath}`)
-
-  const { results } = JSON.parse(readFileSync(filePath, 'utf8')) as { results: ExplainResult[] }
   assertResultsPresent(results)
+  assertResultsPresent(repeatedResults)
+  const unstable = assertNoNewSeqScans(results, repeatedResults)
+  if (unstable.onlyFirst.length > 0 || unstable.onlyRepeated.length > 0)
+    console.error(`Unstable sequential scans (advisory): ${JSON.stringify(unstable)}`)
   assertNoDisallowedRegressions(results)
   console.error(`Loaded ${results.length} query results`)
 
@@ -189,7 +168,7 @@ function main() {
     }
   }
 
-  console.log(`\n*${results.length} queries analyzed from ${latest}*`)
+  console.log(`\n*${results.length} queries analyzed from ${filePath}*`)
 
   process.exit(0)
 }

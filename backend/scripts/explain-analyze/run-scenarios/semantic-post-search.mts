@@ -45,6 +45,7 @@ export async function runSemanticPostSearchScenarios(): Promise<void> {
           expectations: [{ kind: 'custom', name: 'semanticPost' }],
           crossPartition: { posts: 'Semantic post search ranks matching posts across id ranges.' },
         })
+        // no-mistakes-disable-next-line query-reached-per-item: two sorts × two modes, fixed EXPLAIN scenarios with bounded ANALYZE
         await runAndCapture(
           scenario,
           () => executePostSearchQuery(buildPostSearchQuery(seedUser, options), true),
@@ -81,6 +82,7 @@ export async function runSimilarPostSearchScenarios(): Promise<void> {
         expectations: [],
         crossPartition: { posts: 'Similar-item search ranks matching posts across id ranges.' },
       })
+      // no-mistakes-disable-next-line query-reached-per-item: two sorts × two sources, fixed EXPLAIN scenarios with bounded ANALYZE
       await runAndCapture(
         scenario,
         () =>

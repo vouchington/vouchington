@@ -14,6 +14,7 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
     )
     const definition = rows[0]?.definition
     if (!definition) throw new Error(`Missing materialized view ${view}`)
+    // no-mistakes-disable-next-line query-reached-per-item: two fixed materialized-view EXPLAIN scenarios pair captures around bounded ANALYZE
     await runAndCapture(scenarioId, async () => {
       const result = await read(`/* ${scenarioId} */ ${definition}`)
       if (result.rows.length === 0) throw new Error(`Empty ${view} defining query`)

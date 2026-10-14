@@ -284,6 +284,7 @@ Reads the latest result file and prints:
 
 - Summary table sorted by execution time
 - Seq scan warnings on large tables
+- New or stale large-table sequential-scan fingerprints relative to the checked-in baseline
 - Row estimate mismatch warnings (>10x)
 - Costliest node per query
 - New resource-pressure fingerprints relative to the checked-in baseline
@@ -293,6 +294,16 @@ Scenario contracts can use `maxFunctionCalls` with a function name and maximum c
 checks every captured query in both plan-cache modes; a cap that no query in its scenario exercises
 also fails, so a removed function cannot leave a stale budget. `explain:dump` prints the complete
 function-call list, including an empty list when no user function ran.
+
+The sequential-scan baseline keys each captured query and plan-cache mode to its scanned large
+relations. Monthly and default partition children use their parent relation name, so partition
+rollover does not create a new fingerprint. For each scenario, the harness captures the same SQL,
+parameters, plan-cache mode, and local settings twice, with `ANALYZE` of the touched large
+relations between captures. The service callback and fixture cleanup run only before the pair;
+EXPLAIN rolls back each statement. A fingerprint present in both captures but absent from the
+baseline fails, as does a baseline entry absent from the stable intersection. A scan seen in only
+one pass is reported as unstable and stays advisory. Estimate mismatch, append, planning-ratio,
+and buffer warnings remain advisory.
 
 ```bash
 pnpm run explain:analyze
