@@ -16,7 +16,13 @@ ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 j
 ## Queue boundaries
 
 Each queue costs a blocking connection, timers, and metrics, so merge queues whose worker class,
-limiter, concurrency, lock duration, and priority kind match and whose job names do not collide.
+limiter, lock duration, and priority kind match. Ordering keys, deduplication IDs, job IDs,
+scheduler IDs, and job names share the queue's namespace: check them for collisions, and rename
+them before merging. Set the merged worker's concurrency to the combined load it replaces.
+
+Throttle work that only touches our own datastores with worker concurrency, which self-throttles.
+Use a `limiter` only to stay under an external service's rate limit.
+
 Keep transactional work, meaning jobs a user is actively waiting on such as login tokens and
 verification emails, in its own queue. Ranked priority orders only the jobs promoted together, so
 a ranked job enqueued later still waits behind every job already in the ready list.
