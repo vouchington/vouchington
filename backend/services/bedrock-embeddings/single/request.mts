@@ -5,6 +5,7 @@ import {
   BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
   BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
   EMBEDDING_DIMENSION,
+  NOVA_EMBEDDING_CHARACTERS_PER_TOKEN,
   truncateEmbeddingText,
 } from '../config.mts'
 import { shouldSkipUnavailableBedrockIntegration } from '../test-availability.mts'
@@ -17,12 +18,11 @@ type CreateBedrockEmbeddingOptions = {
 type BedrockEmbeddingResponse = {
   embedding?: number[]
   embeddings?: Array<{ embedding: number[] } | number[]>
-  inputTokenCount?: number
 }
 
 type BedrockEmbeddingResult = {
   embedding: number[]
-  tokens: number | null
+  tokens: number
 }
 
 export const createBedrockEmbedding = async (
@@ -35,7 +35,7 @@ export const createBedrockEmbedding = async (
     trackAIEmbeddingCall({
       service: 'bedrock',
       model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
-      tokens: result.tokens ?? 0,
+      tokens: result.tokens,
       durationMs: Date.now() - start,
       success: true,
       entityType: options?.entityType || 'unknown',
@@ -70,6 +70,7 @@ async function requestBedrockEmbedding(
   text: string,
   abortSignal?: AbortSignal,
 ): Promise<BedrockEmbeddingResult> {
+  const inputText = truncateEmbeddingText(text)
   const command = new InvokeModelCommand({
     modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
     contentType: 'application/json',
@@ -81,7 +82,7 @@ async function requestBedrockEmbedding(
         embeddingDimension: EMBEDDING_DIMENSION,
         text: {
           truncationMode: 'END',
-          value: truncateEmbeddingText(text),
+          value: inputText,
         },
       },
     }),
@@ -103,7 +104,7 @@ async function requestBedrockEmbedding(
 
   return {
     embedding,
-    tokens: Number.isFinite(parsed.inputTokenCount) ? parsed.inputTokenCount! : null,
+    tokens: Math.ceil(inputText.length / NOVA_EMBEDDING_CHARACTERS_PER_TOKEN),
   }
 }
 

@@ -125,7 +125,7 @@ describe('createSingleEmbedding', () => {
     })
     const embedding = new Array(1024).fill(0.25)
     const send = vi.fn<VitestLooseMock>().mockResolvedValueOnce({
-      body: new TextEncoder().encode(JSON.stringify({ embedding, inputTokenCount: 5 })),
+      body: new TextEncoder().encode(JSON.stringify({ embedding })),
     })
     Object.defineProperty(BedrockEmbeddingsClient, 'send', {
       value: send,

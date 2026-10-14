@@ -67,14 +67,13 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
         text: { truncationMode: 'END', value: TEXT },
       },
     })
-    // The documented Nova body carries no token count, so the call succeeds with none and the
-    // ledger records zero tokens rather than failing.
-    expect(result.tokens).toBeNull()
+    // Nova documents no token count; accounting uses a rounded-up character estimate.
+    expect(result.tokens).toBe(10)
     expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         service: 'bedrock',
         model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
-        tokens: 0,
+        tokens: 10,
         success: true,
         entityType: 'search',
         invocation: 'single',
@@ -83,15 +82,19 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
     replay.assertDrained()
   })
 
-  it('records the input token count when the response body carries one', async () => {
-    // The shape `request.mts` reads (and `request.test.mts` mocks); the Nova docs do not list it.
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-nova-embedding-text-token-count.http'))
+  it('caps 8,193 inline characters and estimates only the text sent to Nova', async () => {
+    replay.respondWith(loadRecordedResponse('bedrock/invoke-nova-embedding-text.http'))
 
-    const result = await createBedrockEmbedding(TEXT, { entityType: 'topic' })
+    const result = await createBedrockEmbedding('x'.repeat(8_193), { entityType: 'topic' })
 
-    expect(result.tokens).toBe(9)
+    const body = replay.requests[0]!.json() as {
+      singleEmbeddingParams: { text: { value: string } }
+    }
+    expect(body.singleEmbeddingParams.text.value).toHaveLength(8_192)
+    expect(body.singleEmbeddingParams.text.value).toBe('x'.repeat(8_192))
+    expect(result.tokens).toBe(2_048)
     expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ tokens: 9, success: true, entityType: 'topic' }),
+      expect.objectContaining({ tokens: 2_048, success: true, entityType: 'topic' }),
     )
     replay.assertDrained()
   })

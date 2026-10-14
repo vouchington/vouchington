@@ -1,5 +1,10 @@
-// Amazon Nova multimodal embeddings reject text.value longer than this (UTF-16 code units).
-export const MAX_EMBEDDING_TEXT_LENGTH = 50000
+// Nova's inline text.value cap; UTF-16 slicing preserves the existing truncation contract.
+// https://docs.aws.amazon.com/nova/latest/userguide/embeddings-schema.html
+export const MAX_EMBEDDING_TEXT_LENGTH = 8_192
+
+// Nova documents no input token count. This character-based accounting estimate is approximate;
+// replace it only after a captured response establishes a reliable usage source (#2874).
+export const NOVA_EMBEDDING_CHARACTERS_PER_TOKEN = 4
 
 // Slice to the limit, then back up to the last whitespace so we don't cut mid-word.
 // Also strips a trailing high surrogate that would otherwise produce an unpaired surrogate.

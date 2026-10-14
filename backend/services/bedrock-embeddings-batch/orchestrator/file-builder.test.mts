@@ -1,6 +1,5 @@
 import { readFile, unlink } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import { MAX_EMBEDDING_TEXT_LENGTH } from '@services/bedrock-embeddings/config'
 import { BatchFileBuilder } from './file-builder.mts'
 
 describe('BatchFileBuilder', () => {
@@ -113,9 +112,9 @@ describe('BatchFileBuilder', () => {
     }
   })
 
-  it('truncates over-limit entity content in the JSONL text.value', async () => {
+  it('caps 8,193 inline characters in the batch JSONL text.value', async () => {
     const builder = new BatchFileBuilder()
-    const longContent = 'word '.repeat(MAX_EMBEDDING_TEXT_LENGTH)
+    const longContent = 'x'.repeat(8_193)
     await builder.addEntity({
       entity_id: 'entity-long',
       content: longContent,
@@ -127,9 +126,8 @@ describe('BatchFileBuilder', () => {
       const fileContents = await readFile(filePath, 'utf8')
       const [line] = fileContents.trim().split('\n')
       const record = JSON.parse(line)
-      expect(record.modelInput.singleEmbeddingParams.text.value.length).toBeLessThanOrEqual(
-        MAX_EMBEDDING_TEXT_LENGTH,
-      )
+      expect(record.modelInput.singleEmbeddingParams.text.value).toHaveLength(8_192)
+      expect(record.modelInput.singleEmbeddingParams.text.value).toBe('x'.repeat(8_192))
     } finally {
       await unlink(filePath).catch(() => {})
       await unlink(entityIdsFilePath).catch(() => {})
