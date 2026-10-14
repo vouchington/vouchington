@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   lockPostPublicationPostScopes,
   recordPostPublicationChange,
@@ -17,6 +16,7 @@ import { compensatePostRevision } from '@services/post-revisions'
 import { restoreImagePlacementsAfterImageDeletion } from './placements.mts'
 import { lockImageAssetMutation } from '@services/media-delivery-safety'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { getImageDeletionRollbackSnapshots } from './delete-rollback-snapshots.mts'
 
 type CompletedImageDeleteResult = Extract<ImageDeleteResult, { deletedThisImage: true }>
 
@@ -48,28 +48,23 @@ export async function rollbackImageDeletion(
     () => restoreImagePlacementsAfterImageDeletion(deleteResult.retiredPlacements, query),
   ])
   await lockPostPublicationPostScopes(query, deleteResult.affectedPostIds)
+  const affectedPostIds = new Set(deleteResult.affectedPostIds)
+  const { currentPosts, restoredPosts } = await getImageDeletionRollbackSnapshots(
+    query,
+    deleteResult.postRollbacks,
+    affectedPostIds,
+  )
   for (const rollback of deleteResult.postRollbacks) {
-    if (!deleteResult.affectedPostIds.includes(rollback.post_id)) continue
+    if (!affectedPostIds.has(rollback.post_id)) continue
     const postId = rollback.post_id
-    // oxlint-disable-next-line no-await-in-loop -- each row is locked before checking whether the deleted-image hash is current
-    const { rows } = await query<{
-      llm_moderation_content_sha256: Buffer | null
-      latest_clearance_change_id: string | null
-    }>(sql`/* rollbackImageDeletion */
-        SELECT llm_moderation_content_sha256, latest_clearance_change_id
-        FROM posts
-        WHERE id = ${postId}
-        FOR UPDATE
-    `)
-    const currentPost = rows[0]
+    const currentPost = currentPosts.get(postId)
     if (!currentPost) continue
     if (rollback.deleted_content_sha256 === null) {
       throw new Error(
         `Image deletion rollback is missing the deleted content hash for post ${postId}`,
       )
     }
-    // oxlint-disable-next-line no-await-in-loop -- the restored image and locked post must be read on this transaction before selecting the rollback path
-    const post = await getPostModerationInput(postId, { query })
+    const post = restoredPosts.get(postId)
     if (!post) continue
     const restoredContentSha256 = createPostModerationContent(post).content_sha256
     const deletionStateIsCurrent =
