@@ -34,6 +34,7 @@ import { checkPlaywrightVisibilityFallback } from './playwright-visibility-fallb
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
+  formKeyboardDeadline?: bigint
 }
 
 export async function checkRepoFilePolicy(
@@ -78,7 +79,7 @@ export async function checkRepoFilePolicy(
     trackedFileSet.has('docs/requirements/navigation/reference-components-patterns.md')
   ) {
     try {
-      checkFormKeyboardReference(ctx.repoRoot)
+      checkFormKeyboardReference(ctx.repoRoot, options.formKeyboardDeadline)
     } catch (err) {
       errors.push(`::error::${err instanceof Error ? err.message : String(err)}`)
     }

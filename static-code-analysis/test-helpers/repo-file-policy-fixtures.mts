@@ -143,7 +143,10 @@ export function setupRepoFilePolicyTest() {
     }
   }
 
-  async function run(repoRoot: string): Promise<{ stdout: string }> {
+  async function run(
+    repoRoot: string,
+    options: { formKeyboardDeadline?: bigint } = {},
+  ): Promise<{ stdout: string }> {
     const trackedFiles = [...(trackedFilesByRepo.get(repoRoot) ?? [])]
     const ctx: SharedContext = {
       repoRoot,
@@ -153,6 +156,7 @@ export function setupRepoFilePolicyTest() {
     }
     const result = await checkRepoFilePolicy(ctx, {
       schemaSnapshot: emptySchemaSnapshot(snapshotTablesByRepo.get(repoRoot) ?? {}),
+      formKeyboardDeadline: options.formKeyboardDeadline,
     })
     if (result.errors.length > 0) {
       const stdout = result.errors.join('\n')
