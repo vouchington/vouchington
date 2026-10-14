@@ -16,8 +16,8 @@ const workflows = readdirSync(WORKFLOW_DIR)
 
 describe('Valkey test container', () => {
   it('runs as a step container so a green job prints no Valkey logs', () => {
-    for (const { file, parsed } of workflows) {
-      for (const [name, job] of Object.entries(parsed.jobs ?? {})) {
+    for (const { parsed } of workflows) {
+      for (const job of Object.values(parsed.jobs ?? {})) {
         expect(job.services?.valkey).toBeUndefined()
       }
     }
@@ -37,8 +37,8 @@ describe('Valkey test container', () => {
 
   it('pairs every start with a failure-only log step in the same job', () => {
     let starts = 0
-    for (const { file, parsed } of workflows) {
-      for (const [name, job] of Object.entries(parsed.jobs ?? {})) {
+    for (const { parsed } of workflows) {
+      for (const job of Object.values(parsed.jobs ?? {})) {
         const steps = job.steps ?? []
         const start = steps.findIndex(step => step.uses === './.github/actions/start-valkey')
         if (start < 0) continue
