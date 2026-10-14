@@ -268,6 +268,6 @@
     "@vouchington/utils": "^0.5.3",
     "node-app-attest": "^1.0.1",
     "supertest": "^7.3.1",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.4"
   }
 }
