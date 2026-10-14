@@ -4,18 +4,19 @@
 
 - Default to one coherent PR against `main`. Split independent work into separate PRs. Do not
   invent source issues just to satisfy a PR workflow. Keep each PR's accepted scope explicit.
-- Stack PRs that depend on or conflict with each other in a [native stack](../stacked-prs/SKILL.md).
-  Two open PRs conflict when they edit the same files, including generated fixtures, schema
-  snapshots, registries, and docs, or when one changes a contract that the other's new code uses.
-  Conflicting PRs opened separately against `main` go dirty when either lands, so each landing
-  forces another rebase, regeneration, and CI run. A contract conflict fails only in the merge
-  queue. Before opening a PR, compare its changed files and contracts with open PRs. On overlap,
-  add the work as the next layer of that stack. Otherwise, rebase it onto the open PR and run
-  `gh stack link <lower> <upper>` before either PR is enqueued.
-- Make independent PRs against `main` whenever the work neither depends on nor conflicts with other
-  open work. When it does, stack it without asking, whatever the stack's length. Never grow a stack
-  beyond 10 PRs: hold the next layer until the bottom layers merge. Put ready layers at the bottom
-  and append later work on top.
+- Do not stack unless you have to. Stack in a [native stack](../stacked-prs/SKILL.md) only when one
+  PR needs the other's code, or when one changes a contract that the other's new code uses. A
+  contract conflict fails only in the merge queue. Before opening a PR, compare its changed files
+  and contracts with open PRs to find dependencies. Editing the same file does not require a stack.
+  Overlaps in generated output, such as fixtures, schema snapshots, registries, `openapi.json`,
+  and `mcp.json`, never require one: whichever PR lands second rebases and regenerates. The same
+  goes for handwritten files the second PR can rebase cleanly. Do not enqueue overlapping PRs in
+  the same merge-queue batch.
+- When a stack is required, stack without asking, whatever its length: add the work as the next
+  layer, or rebase it onto the open PR and run `gh stack link <lower> <upper>` before either PR is
+  enqueued. Never grow a stack beyond 10 PRs: hold the next layer until the bottom layers merge.
+  Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
+  an exception to stacking. Ask the human only when no option above resolves the conflict.
 - The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
   along independently reviewable boundaries; dependencies and conflicts determine whether to stack.
   Disclose the 150-file automated-review limit for larger atomic changes. Verified CI-generated
