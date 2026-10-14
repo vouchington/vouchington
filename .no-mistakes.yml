@@ -7,30 +7,27 @@ effects:
       - { module: '@data-stores/psql', export: read }
       - { module: '@data-stores/psql', export: write }
       - { module: '@data-stores/psql', export: query }
-    transactionFunctions:
-      [
-        query,
-        transaction,
-        stagedTransaction,
-        recoveryTransaction,
-        abandonmentTransaction,
-        feedsTransaction,
-        itemsTransaction,
-        sourcesTransaction,
-        rssFeedTransaction,
-        topicTransaction,
-        userTransaction,
-        transactionQuery,
-        txQuery,
-        validationQuery,
-        finalize,
-        finalizeQuery,
-        initial,
-        rejected,
-        owned,
-        client.query,
-        query.client.query,
-      ]
+      - { module: '@data-stores/psql', export: createAsyncGeneratorFromCursor }
+      - { module: '@data-stores/psql/cursors', export: createAsyncGeneratorFromCursor }
+    returnedExecutors:
+      - { module: '@data-stores/psql', export: beginTransaction }
+      - { module: '@data-stores/psql', export: beginBoundedTransaction }
+      - { module: '@data-stores/psql/setup', export: beginTransaction }
+      - { module: '@data-stores/psql/setup', export: beginBoundedTransaction }
+      - { module: '@voucha/test-helpers', export: beginTransaction }
+      - { module: '@voucha/test-helpers', export: beginBoundedTransaction }
+      - { module: '../index.mts', export: beginTransaction }
+      - { module: '../setup.mts', export: beginTransaction }
+      - { module: './setup.mts', export: beginTransaction }
+      - { module: './setup.mts', export: beginBoundedTransaction }
+      - { module: '../data-stores/psql/setup.mts', export: beginTransaction }
+      - { module: '../../../backend/data-stores/psql/index.mts', export: beginTransaction }
+      - { module: './index.mts', export: beginTransaction }
+      - { module: './index.mts', export: beginBoundedTransaction }
+      - { module: './transactions.mts', export: beginTransaction }
+      - { module: './transactions.mts', export: beginBoundedTransaction }
+    # Probes still require these spellings for injected transaction parameters.
+    transactionFunctions: [query, transaction, txQuery]
     batchFunctions: [pipelineBatch]
   valkey:
     targets:
@@ -553,7 +550,6 @@ rules:
             file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
             callee: 'hasRssFeedItemSourcesMissingPublication',
           }
-        - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/pruning/capture.mts,
             callee: 'getPartitionLeaves',
@@ -561,16 +557,8 @@ rules:
         - { file: backend/scripts/explain-analyze/pruning/partitions.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/pruning/seed.mts, callee: 'write' }
         - {
-            file: backend/scripts/explain-analyze/run-scenarios/follower-distributions.mts,
-            callee: 'runAndCapture',
-          }
-        - {
             file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
             callee: 'read',
-          }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
-            callee: 'runAndCapture',
           }
         - {
             file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
@@ -585,16 +573,8 @@ rules:
             callee: 'countOwnedReplayAuditEvents',
           }
         - {
-            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
-            callee: 'runAndCapture',
-          }
-        - {
             file: backend/scripts/explain-analyze/run-scenarios/notification-block-set.mts,
             callee: 'getUserIdsBlockedOrMutedEitherWay',
-          }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
-            callee: 'runAndCapture',
           }
         - {
             file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
@@ -612,19 +592,6 @@ rules:
             file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
             callee: 'recordSemanticPostFailure',
           }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
-            callee: 'runAndCapture',
-          }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
-            callee: 'captureHydration',
-          }
-        - {
-            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
-            callee: 'capturePage',
-          }
-        - { file: backend/scripts/explain-analyze/run-support.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/seed-data/admin-emails.mts,
             callee: 'transaction',
@@ -661,10 +628,6 @@ rules:
         - { file: backend/scripts/explain-analyze/seed-data/memberships.mts, callee: 'transaction' }
         - { file: backend/scripts/explain-analyze/seed-data/notifications.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/seed-data/point-valuations.mts, callee: 'query' }
-        - {
-            file: backend/scripts/explain-analyze/seed-data/post-diagnostics.mts,
-            callee: 'client.query',
-          }
         - {
             file: backend/scripts/explain-analyze/seed-data/post-feed-shares.mts,
             callee: 'transaction',
@@ -708,6 +671,14 @@ rules:
             file: backend/services/account-data-requests/recovery.mts,
             callee: 'lockActiveDataRequestUser',
           }
+        - {
+            file: backend/services/account-data-requests/stream-bookmarks.mts,
+            callee: 'createAsyncGeneratorFromCursor',
+          }
+        - {
+            file: backend/services/account-data-requests/stream-entity-relations.mts,
+            callee: 'createAsyncGeneratorFromCursor',
+          }
         - { file: backend/services/admin-imports/create-batch.mts, callee: 'write' }
         - {
             file: backend/services/admin-imports/process-topic-row-relations.mts,
@@ -740,8 +711,16 @@ rules:
             callee: 'write',
           }
         - {
+            file: backend/services/bedrock-embeddings-batch/result-processing.mts,
+            callee: 'applyUpdates',
+          }
+        - {
             file: backend/services/bluesky-follows/disconnect.mts,
             callee: 'deleteBlueskyFollowReceipt',
+          }
+        - {
+            file: backend/services/bookmarks/bloom-filter.mts,
+            callee: 'bookmarkBloomBatchesFromDb',
           }
         - {
             file: backend/services/bookmarks/bloom-filter.mts,
@@ -1032,14 +1011,6 @@ rules:
             callee: 'selectReportContextRows',
           }
         - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
-        - {
-            file: backend/services/notifications/reconcile-batches.mts,
-            callee: 'createNextRecipientNotificationBatch',
-          }
-        - {
-            file: backend/services/notifications/reconcile-batches.mts,
-            callee: 'dispatchNextCreatedNotificationBatch',
-          }
         - { file: backend/services/oauth-authorization-server/active-users.mts, callee: 'query' }
         - {
             file: backend/services/oauth-authorization-server/retention.mts,
@@ -1202,7 +1173,6 @@ rules:
             file: backend/services/post-publication/identity-source-paging.mts,
             callee: 'listSourceRows',
           }
-        - { file: backend/services/post-publication/lock.mts, callee: 'client.query' }
         - {
             file: backend/services/post-publication/orphan-identities.mts,
             callee: 'getOrCreateSnapshot',
@@ -1284,6 +1254,7 @@ rules:
           }
         - { file: backend/services/rss-feed-items/story-publication-change.mts, callee: 'query' }
         - { file: backend/services/rss-feed-items/upsert-existing.mts, callee: 'read' }
+        - { file: backend/services/rss-feed-items/upsert-prepare.mts, callee: 'addUrls' }
         - { file: backend/services/rss-feed-items/upsert-write-locks.mts, callee: 'txQuery' }
         - {
             file: backend/services/rss-feed-items/upsert-write-locks.mts,
@@ -1315,6 +1286,10 @@ rules:
         - {
             file: backend/services/topic-recommendations/approve-topic-recommendation.mts,
             callee: 'createTopicRecommendationUrlRelation',
+          }
+        - {
+            file: backend/services/topic-recommendations/find-topic-recommendation-duplicates.mts,
+            callee: 'dependencies.getTopicByAny',
           }
         - {
             file: backend/services/topics/publication-change.mts,
@@ -1356,6 +1331,7 @@ rules:
             file: backend/services/users/record-deleted-relation-impacts.mts,
             callee: 'recordRelationTableImpacts',
           }
+        - { file: backend/services/web-risk/check.mts, callee: 'assertUrlAllowedByWebRisk' }
         - {
             file: backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts,
             callee: 'giveUpSweepRun',
@@ -1404,6 +1380,7 @@ rules:
             file: backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts,
             callee: 'checkPostClearance',
           }
+        - { file: integration-tests/web/helpers/fetch-retry.mts, callee: 'attempt' }
         - { file: playwright/tests/tags/tag-voting-helpers.mts, callee: 'deleteTestPost' }
         - {
             file: playwright/tests/tags/tag-voting-helpers.mts,
