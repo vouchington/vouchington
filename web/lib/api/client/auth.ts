@@ -12,7 +12,7 @@ export function continueOAuthLogin<T>(provider: string, body: unknown): Promise<
 export type OAuthBrokerPurpose = 'authenticate' | 'connect'
 
 export function beginOAuthAuthorization(
-  provider: 'facebook' | 'x' | 'github',
+  provider: 'facebook' | 'x' | 'github' | 'linkedin',
   purpose: OAuthBrokerPurpose,
 ): Promise<{ flow_id: string; redirect_url: string; expires_at: string }> {
   return clientApi.post(`/api/v1/auth/oauth/${provider}/authorizations`, {

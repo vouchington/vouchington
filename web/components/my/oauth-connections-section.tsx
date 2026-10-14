@@ -34,7 +34,10 @@ export function OAuthConnectionsSection({ accounts }: Props) {
           initialAccount={accounts[provider]}
           providerConfigured={configuredProviders.includes(provider)}
           brokerEnabled={
-            (provider === 'facebook' || provider === 'x' || provider === 'github') &&
+            (provider === 'facebook' ||
+              provider === 'x' ||
+              provider === 'github' ||
+              provider === 'linkedin') &&
             Boolean(brokerCapabilities[provider]?.modes.web)
           }
         />

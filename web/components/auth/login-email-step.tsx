@@ -55,7 +55,6 @@ export function LoginEmailStep({
   useEffect(() => {
     if (active) emailInputRef.current?.focus()
   }, [active])
-
   return (
     <div className={active ? 'space-y-4' : 'hidden'}>
       {hasOAuthProviders && (
@@ -68,7 +67,10 @@ export function LoginEmailStep({
                 onToken={onOAuthToken}
                 disabled={loading}
                 broker={
-                  (provider === 'facebook' || provider === 'x' || provider === 'github') &&
+                  (provider === 'facebook' ||
+                    provider === 'x' ||
+                    provider === 'github' ||
+                    provider === 'linkedin') &&
                   oauthBrokerCapabilities[provider]?.modes.web
                     ? { purpose: 'authenticate', returnTo: oauthReturnTo }
                     : undefined
@@ -76,7 +78,6 @@ export function LoginEmailStep({
               />
             ))}
           </div>
-
           <div className='relative'>
             <div className='absolute inset-0 flex items-center'>
               <span className='w-full border-t' />
@@ -89,7 +90,6 @@ export function LoginEmailStep({
           </div>
         </>
       )}
-
       <form
         onSubmit={onSubmit}
         className='space-y-4'

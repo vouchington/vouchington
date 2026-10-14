@@ -48,6 +48,21 @@ describe('OAuth broker auth client', () => {
     })
   })
 
+  it('begins a LinkedIn web connection through the broker endpoint', async () => {
+    const response = {
+      flow_id: 'linkedin-flow',
+      redirect_url: 'https://www.linkedin.com/oauth/v2/authorization',
+      expires_at: '2026-07-30T00:00:00.000Z',
+    }
+    mockPost.mockResolvedValue(response)
+
+    await expect(beginOAuthAuthorization('linkedin', 'connect')).resolves.toEqual(response)
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/oauth/linkedin/authorizations', {
+      purpose: 'connect',
+      callback_mode: 'web',
+    })
+  })
+
   it('completes the authorization with its opaque flow id', async () => {
     mockPost.mockResolvedValue({ user: { id: 'user-1' } })
 

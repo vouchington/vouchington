@@ -26,7 +26,13 @@ export function OAuthLoginButton({
   onAvailabilityChange,
   broker,
 }: Props) {
-  if (broker && (provider === 'facebook' || provider === 'x' || provider === 'github')) {
+  if (
+    broker &&
+    (provider === 'facebook' ||
+      provider === 'x' ||
+      provider === 'github' ||
+      provider === 'linkedin')
+  ) {
     return (
       <OAuthBrokerButton
         provider={provider}

@@ -12,8 +12,17 @@ const mockGetConfiguredOAuthProviders = vi.hoisted(() =>
 )
 
 vi.mock(import('@/components/auth/oauth-login-button'), () => ({
-  OAuthLoginButton: ({ provider }: { provider: OAuthProvider }) => (
-    <button type='button'>{`Connect ${provider}`}</button>
+  OAuthLoginButton: ({
+    provider,
+    broker,
+  }: {
+    provider: OAuthProvider
+    broker?: { purpose: string }
+  }) => (
+    <button
+      type='button'
+      data-broker-purpose={broker?.purpose}
+    >{`Connect ${provider}`}</button>
   ),
 }))
 
@@ -93,5 +102,25 @@ describe('OAuthConnectionsSection', () => {
 
     expect(screen.getByText('GitHub User')).toBeDefined()
     expect(screen.getByText('Disconnect')).toBeDefined()
+  })
+
+  it('offers LinkedIn broker connection without a public client ID when backend web mode is enabled', async () => {
+    mockGetConfiguredOAuthProviders.mockResolvedValue({
+      providers: ['linkedin'],
+      broker_capabilities: {
+        linkedin: {
+          version: 1,
+          modes: { web: true, native: false },
+          purposes: ['authenticate', 'connect'],
+        },
+      },
+    })
+
+    render(<OAuthConnectionsSection accounts={emptyAccounts} />)
+
+    expect(await screen.findByRole('button', { name: 'Connect linkedin' })).toHaveAttribute(
+      'data-broker-purpose',
+      'connect',
+    )
   })
 })

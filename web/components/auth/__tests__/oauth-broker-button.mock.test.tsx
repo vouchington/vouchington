@@ -10,6 +10,7 @@ vi.mock(import('@/lib/auth/oauth-broker'), () => ({
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError }))
 
 import { OAuthBrokerButton } from '../oauth-broker-button'
+import { OAuthLoginButton } from '../oauth-login-button'
 
 describe('OAuthBrokerButton', () => {
   beforeEach(() => {
@@ -74,6 +75,27 @@ describe('OAuthBrokerButton', () => {
     expect(mockOnError).toHaveBeenCalledWith(error, {
       fallback: 'Unable to connect Facebook. Please try again.',
       tags: { form: 'oauth-broker', provider: 'facebook', purpose: 'authenticate' },
+    })
+  })
+
+  it('routes a broker-enabled LinkedIn login through the broker request', async () => {
+    mockStartOAuthBrokerAuthorization.mockResolvedValue(undefined)
+
+    render(
+      <OAuthLoginButton
+        provider='linkedin'
+        onToken={vi.fn<VitestLooseMock>()}
+        broker={{ purpose: 'authenticate', returnTo: '/my' }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with LinkedIn' }))
+
+    await waitFor(() => {
+      expect(mockStartOAuthBrokerAuthorization).toHaveBeenCalledWith({
+        provider: 'linkedin',
+        purpose: 'authenticate',
+        returnTo: '/my',
+      })
     })
   })
 })

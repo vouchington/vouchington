@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { v7 } from 'uuid'
 import {
   createRandomString,
   createTestRetentionWindow,
@@ -9,6 +10,11 @@ import {
 import { oauthProviders, providerTableConfigs } from '@services/oauth/providers'
 import { cleanupOrphanedOAuthAccounts } from '../cleanup.mts'
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
+import {
+  deleteTestOAuthAuthorizationFixtures,
+  getTestOAuthAuthorization,
+  insertTestOAuthAuthorization,
+} from '@voucha/test-helpers/entities/oauth-authorizations'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -95,6 +101,51 @@ describe('orphaned OAuth account cleanup', () => {
         await Promise.all(firstIds.map(id => oauthAccountExistsByProviderUserId(firstProvider, id)))
       ).filter(Boolean),
     ).toHaveLength(1)
+  }, 30_000)
+
+  it('preserves an old orphaned LinkedIn account during its active broker completion', async () => {
+    const window = createTestRetentionWindow()
+    const activeAccountId = `retained-linkedin-${createRandomString(12)}`
+    const unrelatedAccountId = `unrelated-linkedin-${createRandomString(12)}`
+    const authorizationId = v7()
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        linkedinUserIds: [activeAccountId, unrelatedAccountId],
+      })
+    })
+
+    await insertTestOAuthAccount('linkedin', activeAccountId)
+    await insertTestOAuthAccount('linkedin', unrelatedAccountId)
+    await setOAuthAccountCreatedAt('linkedin', activeAccountId, window.firstEligibleDate)
+    await setOAuthAccountCreatedAt('linkedin', unrelatedAccountId, window.secondEligibleDate)
+    const now = new Date()
+    await insertTestOAuthAuthorization({
+      id: authorizationId,
+      provider: 'linkedin',
+      status: 'completion_ready',
+      providerUserId: activeAccountId,
+      callbackReceivedAt: now,
+      completionReadyAt: now,
+      expiresAt: new Date(now.getTime() + 10 * 60_000),
+    })
+
+    await expect(
+      deleteOrphanedOAuthAccountBatch(
+        'linkedin_accounts',
+        'linkedin_user_id',
+        window.upperBoundDate,
+        2,
+        window.lowerBoundDate,
+      ),
+    ).resolves.toBe(1)
+    await expect(oauthAccountExistsByProviderUserId('linkedin', activeAccountId)).resolves.toBe(
+      true,
+    )
+    await expect(oauthAccountExistsByProviderUserId('linkedin', unrelatedAccountId)).resolves.toBe(
+      false,
+    )
+    await expect(getTestOAuthAuthorization(authorizationId)).resolves.not.toBeNull()
   }, 30_000)
 
   it('rejects table and column identifiers outside the configured provider allowlist', async () => {

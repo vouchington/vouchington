@@ -7,7 +7,7 @@ export interface OAuthProvidersResponse {
   providers: OAuthProvider[]
   broker_capabilities: Partial<
     Record<
-      Extract<OAuthProvider, 'facebook' | 'x' | 'github'>,
+      Extract<OAuthProvider, 'facebook' | 'x' | 'github' | 'linkedin'>,
       {
         version: 1
         modes: { web: boolean; native: boolean }

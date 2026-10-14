@@ -4,7 +4,7 @@ import { beginOAuthAuthorization, type OAuthBrokerPurpose } from '@/lib/api/clie
 import type { OAuthProvider } from '@/types/user'
 import { OAuthCancelledError } from './oauth-error'
 
-export type BrokerOAuthProvider = Extract<OAuthProvider, 'facebook' | 'x' | 'github'>
+export type BrokerOAuthProvider = Extract<OAuthProvider, 'facebook' | 'x' | 'github' | 'linkedin'>
 
 type BrokerLockManager = Pick<LockManager, 'request'>
 
