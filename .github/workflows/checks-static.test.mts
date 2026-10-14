@@ -91,7 +91,6 @@ describe('checks-static workflow', () => {
 
   it('budgets each additive job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
-      ['static-backend', 17],
       ['static-lambdas', 16],
       ['static-cloudflare', 11],
     ])
@@ -101,6 +100,18 @@ describe('checks-static workflow', () => {
       expect(jobBudget).toBe(expectedBudget)
       expect(jobBudget).toBeGreaterThan(serialCriticalStepBudget(jobName))
     }
+  })
+
+  it('keeps the static-backend cap below its step sum and above its largest step', () => {
+    const job = parsed.jobs?.['static-backend']
+    const jobBudget = numberField(job?.['timeout-minutes'], 'static-backend')
+    const stepTimeouts = (job?.steps ?? []).map(step =>
+      typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0,
+    )
+
+    expect(jobBudget).toBe(14)
+    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts))
+    expect(jobBudget).toBeLessThan(serialCriticalStepBudget('static-backend'))
   })
 
   it('gives the static-web gate a fail-fast budget between its largest step and the step sum', () => {
