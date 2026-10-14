@@ -112,6 +112,12 @@ describe('Storybook browser runner quiet output', () => {
     expect(quiet.split('  /repo/node_modules/a.js\n')).toBe('  /repo/node_modules/a.js\n')
   })
 
+  it('trims a single oversized quiet line to the tail limit', () => {
+    const quiet = new StorybookQuietOutput()
+    quiet.split(`${marker(1).trimEnd()}${'x'.repeat(MAX_QUIET_TAIL_BYTES * 2)}\n`)
+    expect(Buffer.byteLength(quiet.drain())).toBe(MAX_QUIET_TAIL_BYTES)
+  })
+
   it('bounds the retained quiet tail and drains it once', () => {
     const quiet = new StorybookQuietOutput()
     const line = marker(1)

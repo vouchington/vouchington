@@ -67,7 +67,11 @@ export class StorybookQuietOutput {
   }
 
   private retain(line: string): void {
-    const chunk = Buffer.from(line)
+    const encoded = Buffer.from(line)
+    const chunk =
+      encoded.byteLength > MAX_QUIET_TAIL_BYTES
+        ? encoded.subarray(encoded.byteLength - MAX_QUIET_TAIL_BYTES)
+        : encoded
     this.chunks.push(chunk)
     this.bytes += chunk.byteLength
     while (this.bytes > MAX_QUIET_TAIL_BYTES && this.chunks.length > 1) {
