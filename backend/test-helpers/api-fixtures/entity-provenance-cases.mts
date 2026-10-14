@@ -100,7 +100,7 @@ const entityCase = (
   auth: staff ? 'fixture-admin' : 'fixture-user',
   status: 200,
   body,
-  consumers: staff ? [] : ['dotnet-core', 'swift-ui'],
+  consumers: staff ? ['dotnet-core', 'swift-core', 'swift-ui'] : ['dotnet-core', 'swift-ui'],
   migratedFrom: [],
 })
 
