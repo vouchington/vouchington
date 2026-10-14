@@ -418,19 +418,23 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/DirectMessages/DirectMessagesSurface.swift"
           ],
           "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/DirectMessagesSurfaceTests.swift"]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/DirectMessagesPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Messages/DirectMessagesViewModel.MutationTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Native inbox, thread, recipient, participant, and send flows are rendered and tested, but native main does not yet render the canonical profile_image_placement now staged for deliverable direct-message participants. The paired native participant-roster consumer remains in client PR #297.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/192"
       }
     },
     {
