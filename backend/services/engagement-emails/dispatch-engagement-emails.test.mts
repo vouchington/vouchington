@@ -12,26 +12,20 @@ import {
   markPostsAsViewed,
 } from '@voucha/test-helpers'
 import { insertTestUserReferralProgramLink } from '@voucha/test-helpers/entities/referral-links'
-import { claimEngagementEmailSend, hasEngagementEmailSent } from '@services/users/engagement-emails'
+import {
+  ownedEngagementDispatch,
+  scopedEngagementClaimResult,
+} from '@voucha/test-helpers/engagement-dispatch-jobs'
 import {
   buildFollowNewsSourceItems,
   buildFollowTopicsItems,
   buildReferralProgramItems,
-  dispatchEngagementEmails,
 } from './dispatch-engagement-emails.mts'
-
-const scopedEngagementClaimResult = {
-  ownedSent: false,
-  ownedClaimAfterDispatch: false,
-  foreignClaimBeforeDispatch: true,
-  foreignClaimAfterDispatch: false,
-}
 
 describe('dispatchEngagementEmails', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
-
   it('dispatches follow-topic recommendations based on missing topic follows, not signup age', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const admin = await createTestUser({ administrator: true })
@@ -51,10 +45,21 @@ describe('dispatchEngagementEmails', () => {
     await linkPostToTopic(postId, topicId, admin.id)
     await markPostsAsViewed(user.id, [postId])
     await markPostsAsViewed(foreign.id, [postId])
-
-    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
-      scopedEngagementClaimResult,
-    )
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
+    expect(observed.targetJobs).toMatchObject([
+      {
+        name: 'processSendFollowTopicsEmail',
+        data: {
+          input: { userId: user.id },
+          variables: {
+            topics: expect.arrayContaining([
+              expect.objectContaining({ name: `Email Young Topic ${random}` }),
+            ]),
+          },
+        },
+      },
+    ])
   })
 
   it('dispatches follow-news-sources recommendations to eligible users', async () => {
@@ -84,10 +89,21 @@ describe('dispatchEngagementEmails', () => {
         urlId: url!.id,
       })
     }
-
-    await expect(
-      ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources'),
-    ).resolves.toEqual(scopedEngagementClaimResult)
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
+    expect(observed.targetJobs).toMatchObject([
+      {
+        name: 'processSendFollowNewsSourcesEmail',
+        data: {
+          input: { userId: user.id },
+          variables: {
+            sources: expect.arrayContaining([
+              expect.objectContaining({ name: `Email Source Feed ${random}` }),
+            ]),
+          },
+        },
+      },
+    ])
   })
 
   it('dispatches follow-topic recommendations to eligible users', async () => {
@@ -109,10 +125,21 @@ describe('dispatchEngagementEmails', () => {
     await linkPostToTopic(postId, topicId, admin.id)
     await markPostsAsViewed(user.id, [postId])
     await markPostsAsViewed(foreign.id, [postId])
-
-    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
-      scopedEngagementClaimResult,
-    )
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
+    expect(observed.targetJobs).toMatchObject([
+      {
+        name: 'processSendFollowTopicsEmail',
+        data: {
+          input: { userId: user.id },
+          variables: {
+            topics: expect.arrayContaining([
+              expect.objectContaining({ name: `Email Topic ${random}` }),
+            ]),
+          },
+        },
+      },
+    ])
   })
 
   it('dispatches referral-link recommendations to eligible users', async () => {
@@ -141,19 +168,32 @@ describe('dispatchEngagementEmails', () => {
       referralProgramId,
       urlId: url!.id,
     })
-
-    await expect(
-      ownedEngagementDispatch(user.id, foreign.id, 'post_referral_link'),
-    ).resolves.toEqual(scopedEngagementClaimResult)
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'post_referral_link')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
+    expect(observed.targetJobs).toMatchObject([
+      {
+        name: 'processSendPostReferralLinkEmail',
+        data: {
+          input: { userId: user.id },
+          variables: {
+            referralPrograms: expect.arrayContaining([
+              expect.objectContaining({
+                name: expect.any(String),
+                url: expect.stringContaining('/referral-program/'),
+                linkCount: expect.any(Number),
+              }),
+            ]),
+          },
+        },
+      },
+    ])
   })
 
   it('claims follow-topic recipients with no recommendations so later users can be considered', async () => {
     const user = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
     const foreign = await createTestUserWithAge(1.5 * 24 * 60 * 60 * 1000)
-
-    await expect(ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')).resolves.toEqual(
-      scopedEngagementClaimResult,
-    )
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_topics')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
   })
 
   it('claims follow-news-source recipients with no recommendations so later users can be considered', async () => {
@@ -179,10 +219,8 @@ describe('dispatchEngagementEmails', () => {
         urlId: url!.id,
       })
     }
-
-    await expect(
-      ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources'),
-    ).resolves.toEqual(scopedEngagementClaimResult)
+    const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources')
+    expect(observed.claims).toEqual(scopedEngagementClaimResult)
   })
 
   it('builds follow-topic items from recommendation order', () => {
@@ -260,21 +298,3 @@ describe('dispatchEngagementEmails', () => {
     ])
   })
 })
-
-async function ownedEngagementDispatch(
-  userId: string,
-  foreignUserId: string,
-  emailType: 'follow_topics' | 'post_referral_link' | 'follow_news_sources',
-): Promise<typeof scopedEngagementClaimResult> {
-  await dispatchEngagementEmails([userId])
-  const ownedSent = await hasEngagementEmailSent(userId, emailType)
-  const ownedClaimAfterDispatch = await claimEngagementEmailSend(userId, emailType)
-  const foreignClaimBeforeDispatch = await claimEngagementEmailSend(foreignUserId, emailType)
-  await dispatchEngagementEmails([foreignUserId])
-  return {
-    ownedSent,
-    ownedClaimAfterDispatch,
-    foreignClaimBeforeDispatch,
-    foreignClaimAfterDispatch: await claimEngagementEmailSend(foreignUserId, emailType),
-  }
-}
