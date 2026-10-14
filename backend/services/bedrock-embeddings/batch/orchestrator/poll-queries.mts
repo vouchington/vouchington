@@ -23,7 +23,9 @@ export const getBatchRecordsCreatedInLastHour = async (
     `/* getBatchRecordsCreatedInLastHour */
     SELECT COALESCE(SUM(records), 0) as records
     FROM bedrock_embedding_batches
-    WHERE created_at > NOW() - INTERVAL '1 hour'
+    -- UUIDv7 timestamps have millisecond precision, so the next millisecond
+    -- is the first one strictly after the one-hour cutoff.
+    WHERE id >= fn_min_uuidv7(NOW() - INTERVAL '1 hour' + INTERVAL '1 millisecond')
   `,
     [],
     options,

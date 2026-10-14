@@ -988,7 +988,7 @@ CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON members
 CREATE TABLE IF NOT EXISTS stripe_event_types (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   stripe_event_type TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE stripe_event_types IS 'Stripe event type names registered on first sight; the provider owns this open set and exact spelling.';
 COMMENT ON COLUMN stripe_event_types.id IS 'Stable identifier for this Stripe event type.';

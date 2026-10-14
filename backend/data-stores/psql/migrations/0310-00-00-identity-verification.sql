@@ -16,7 +16,7 @@ CREATE TYPE identity_verification_attempt_sources AS ENUM (
 CREATE TABLE IF NOT EXISTS identity_document_types (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   identity_document_type TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE identity_document_types IS 'Identity provider document type names registered on first sight; the provider owns this open set and exact spelling.';
 COMMENT ON COLUMN identity_document_types.id IS 'Stable identifier for this identity document type.';

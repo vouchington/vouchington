@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS ai_service_tiers (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   service_tier TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE ai_service_tiers IS 'Model provider service tier names (OpenAI flex/default, Anthropic standard/priority/batch) registered on first sight; each provider owns this open set and exact spelling.';
 COMMENT ON COLUMN ai_service_tiers.id IS 'Stable identifier for this model provider service tier.';

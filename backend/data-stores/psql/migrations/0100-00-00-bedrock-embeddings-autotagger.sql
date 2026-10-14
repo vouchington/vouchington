@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
   url_id UUID REFERENCES urls ON DELETE SET NULL,
   crawl_id UUID REFERENCES crawls ON DELETE SET NULL,
   records INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   submitted_at TIMESTAMPTZ,
   in_progress_at TIMESTAMPTZ,
@@ -56,15 +56,11 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'canc
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__active
-ON bedrock_embedding_batches (created_at)
+ON bedrock_embedding_batches (id)
 WHERE submitted_at IS NOT NULL
   AND completed_at IS NULL
   AND failed_at IS NULL
   AND cancelled_at IS NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__created_at
-ON bedrock_embedding_batches (created_at);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__job_arn

@@ -27,7 +27,6 @@ export async function insertTestEmbeddingsBatch(
     crawlId?: string | null
     records?: number
     completedAt?: Date | null
-    createdAt?: Date
     submittedAt?: Date | null
     inProgressAt?: Date | null
   },
@@ -70,7 +69,7 @@ export async function insertTestEmbeddingsBatch(
   await write(
     allowUnannotatedQuery(sql`
     INSERT INTO bedrock_embedding_batches
-      (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
+      (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at)
     VALUES (
       ${data.id},
       ${model},
@@ -84,8 +83,7 @@ export async function insertTestEmbeddingsBatch(
       ${in_progress_at},
       ${completed_at},
       ${failed_at},
-      ${cancelled_at},
-      ${data.createdAt ?? now}
+      ${cancelled_at}
     )
   `),
     options,

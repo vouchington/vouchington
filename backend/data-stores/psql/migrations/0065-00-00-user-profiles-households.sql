@@ -583,7 +583,7 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_subtypes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   amazon_ses_bounce_subtype TEXT NOT NULL UNIQUE,
   CHECK (char_length(amazon_ses_bounce_subtype) <= 255 AND TRIM(amazon_ses_bounce_subtype) = amazon_ses_bounce_subtype),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE amazon_ses_bounce_subtypes IS 'SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.';
 COMMENT ON COLUMN amazon_ses_bounce_subtypes.id IS 'Stable identifier for this SES bounce subtype.';
