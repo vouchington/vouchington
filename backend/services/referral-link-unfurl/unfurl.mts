@@ -7,7 +7,7 @@ import { getMembershipByUserId } from '@services/memberships'
 import { hasPlusTier } from '@modules/membership-helpers'
 import { getUrlById } from '@services/urls/get'
 import { crawlWithBrowser } from '@services/browser-crawl'
-import { isUrlReferralLink } from '@services/referral-program-link-validations'
+import { validateReferralLinkUrls } from '@services/referral-program-link-validations'
 import {
   getUserReferralLink,
   createChildReferralLink,
@@ -76,7 +76,7 @@ export async function runReferralLinkUnfurl(
     // personal and business child URLs (see plan § Empirical verification) -- whether the
     // personal landed page's params also authorize business URLs, or a separate crawl of the
     // business landed page is needed, is an unverified build-time assumption tracked in
-    // Follow-ups; isUrlReferralLink below gates every constructed URL regardless, so
+    // Follow-ups; the validation below gates every constructed URL regardless, so
     // constructing business children from the same params is structurally safe either way.
     const doCrawlWithBrowser = dependencies?.crawlWithBrowser ?? crawlWithBrowser
     const crawlResult = await doCrawlWithBrowser(parentUrl.url)
@@ -93,13 +93,12 @@ export async function runReferralLinkUnfurl(
     const doGetAmexCardSlugCatalog = dependencies?.getAmexCardSlugCatalog ?? getAmexCardSlugCatalog
     const catalog = await doGetAmexCardSlugCatalog()
     const candidateUrls = constructChildUrls(finalUrl, catalog)
+    // Load the ordered enabled-rule catalog once before opening the write transaction.
+    const validations = await validateReferralLinkUrls(candidateUrls)
 
     validCandidates = []
-    for (const url of candidateUrls) {
-      // Read-only validation, run before opening the write transaction below so the
-      // connection isn't held open for the duration of these checks.
-      // oxlint-disable-next-line no-await-in-loop
-      const validation = await isUrlReferralLink(url)
+    for (const [index, url] of candidateUrls.entries()) {
+      const validation = validations[index]!
       if (validation.is_valid && validation.referral_program_id) {
         validCandidates.push({ url, referralProgramId: validation.referral_program_id })
       }

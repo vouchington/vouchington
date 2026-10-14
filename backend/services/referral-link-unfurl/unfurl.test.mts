@@ -15,6 +15,7 @@ import { addUrl } from '@services/urls/upsert'
 import type { PrivateUser } from '@services/users/types'
 import type { BrowserCrawlResult } from '@services/browser-crawl'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { constructChildUrls, type AmexCardSlug } from './construct-amex-children.mts'
 import { runReferralLinkUnfurl } from './unfurl.mts'
 
@@ -93,20 +94,22 @@ describe('runReferralLinkUnfurl', () => {
     ]
     await Promise.all(cards.map(card => createAmexCardFixture(owner, card)))
     const finalUrl = `https://redirected.example.com/landed?corid=${randomSlug('corid')}`
-
-    await runReferralLinkUnfurl(parent.id, {
-      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-      getAmexCardSlugCatalog: stubCatalog(cards).getAmexCardSlugCatalog,
-    })
-
+    const { queries } = await withCapturedTestQueries(() =>
+      runReferralLinkUnfurl(parent.id, {
+        crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
+        getAmexCardSlugCatalog: stubCatalog(cards).getAmexCardSlugCatalog,
+      }),
+    )
+    // Child creation still validates each write; the candidate scan now loads rules once.
+    expect(queries.filter(query => query.text.includes('/* isUrlReferralLink */'))).toHaveLength(
+      cards.length + 1,
+    )
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_completed_at).toBeTruthy()
     expect(updated?.unfurl_failed_at).toBeNull()
-
     const childIds = await getActiveChildUrlIdsForParent(parent.id)
     expect(childIds).toHaveLength(cards.length)
   })
-
   it('no-ops for a missing parent link id, never crawling', async () => {
     const crawl = stubCrawl('https://example.com/never-used')
 
