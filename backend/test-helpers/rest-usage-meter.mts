@@ -1,12 +1,8 @@
-import { afterAll, afterEach, beforeAll, beforeEach, expect, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { routeRateLimitConfig } from '../services/route-rate-limits/index.mts'
 import app from '../api/app.mts'
-import {
-  readAnonymousApiUsageRows,
-  readApiUsageRows,
-  startLocalAnalyticsForTest,
-} from './api-usage-analytics.mts'
+import { startLocalAnalyticsForTest } from './api-usage-analytics.mts'
 import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
@@ -80,29 +76,6 @@ export function useRestUsageMetering(analyticsPrefix: string) {
     await stopLocalAnalytics()
     await closeScopedDynamicConfigContext([routeRateLimitConfig])
   })
-}
-
-// The usage event is emitted when the response closes, so it lands just after the response does.
-export function waitForUsageRows(userId: string, count: number) {
-  return vi.waitFor(
-    async () => {
-      const rows = await readApiUsageRows(userId)
-      expect(rows).toHaveLength(count)
-      return rows
-    },
-    { timeout: 15_000, interval: 100 },
-  )
-}
-
-export function waitForAnonymousUsageRows(count: number) {
-  return vi.waitFor(
-    async () => {
-      const rows = await readAnonymousApiUsageRows()
-      expect(rows).toHaveLength(count)
-      return rows
-    },
-    { timeout: 15_000, interval: 100 },
-  )
 }
 
 /** Every Valkey key the usage quota holds, across all callers. */
