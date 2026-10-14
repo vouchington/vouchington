@@ -35,6 +35,36 @@ const fixtures = [
     `import { generateSchemaSnapshot } from '${target}'; generateSchemaSnapshot()`,
     false,
   ],
+  [
+    'helper.test.mts',
+    "import {run} from './test-helpers/one.mts'; run()",
+    true,
+    'test-helpers/one.mts',
+  ],
+  [
+    'two-helpers.test.mts',
+    "import {run} from './test-helpers/two-outer.mts'; run()",
+    true,
+    'test-helpers/two-inner.mts',
+  ],
+  [
+    'namespace-helper.test.mts',
+    "import * as helper from './test-helpers/namespace.mts'; helper.run()",
+    true,
+    'test-helpers/namespace.mts',
+  ],
+  [
+    'unused-helper.test.mts',
+    "import {run} from './test-helpers/unused.mts'; void run; function harmless(){} harmless()",
+    false,
+  ],
+  ['dormant-helper.test.mts', "import {run} from './test-helpers/dormant.mts'; run()", false],
+  [
+    'cycle.test.mts',
+    "import {one} from './test-helpers/cycle-one.mts'; one()",
+    true,
+    'test-helpers/cycle-two.mts',
+  ],
 ] as const
 
 // A dedicated finite CLI: Vitest never invokes repository analyzers, directly or through a helper.
@@ -51,6 +81,16 @@ export async function checkSchemaGenerationGuardFixtures(rule: object): Promise<
     [target]:
       'export function generateSchemaSnapshot() {} export function writeSchemaSnapshot() {}',
     'bridge.mts': `export { generateSchemaSnapshot as snapshot } from '${target}'`,
+    'test-helpers/one.mts': `import {generateSchemaSnapshot} from '.${target}'; export function run(){generateSchemaSnapshot()}`,
+    'test-helpers/two-outer.mts':
+      "import {run as inner} from './two-inner.mts'; export function run(){inner()}",
+    'test-helpers/two-inner.mts': `import {generateSchemaSnapshot as snapshot} from '.${target}'; export function run(){snapshot()}`,
+    'test-helpers/namespace.mts': `import * as schema from '.${target}'; export function run(){schema.generateSchemaSnapshot()}`,
+    'test-helpers/unused.mts': `import {generateSchemaSnapshot} from '.${target}'; export function run(){generateSchemaSnapshot()}`,
+    'test-helpers/dormant.mts': `import {generateSchemaSnapshot} from '.${target}'; export function run(){return 1}; export function unused(){generateSchemaSnapshot()}`,
+    'test-helpers/cycle-one.mts':
+      "import {two} from './cycle-two.mts'; export function one(){two()}",
+    'test-helpers/cycle-two.mts': `import {one} from './cycle-one.mts'; import {generateSchemaSnapshot} from '.${target}'; export function two(){generateSchemaSnapshot(); one()}`,
     '.no-mistakes.json': JSON.stringify({
       rules: [rule],
       tests: { vitest: { configs: 'vitest.config.mts' } },
@@ -73,7 +113,9 @@ export async function checkSchemaGenerationGuardFixtures(rule: object): Promise<
   const actual = report.rules
     .flatMap(finding => (finding.rule === 'forbidden-calls' ? [finding.file] : []))
     .toSorted()
-  const expected = fixtures.flatMap(([file, , forbidden]) => (forbidden ? [file] : [])).toSorted()
+  const expected = fixtures
+    .flatMap(([file, , forbidden, location]) => (forbidden ? [location ?? file] : []))
+    .toSorted()
   if (report.warnings.length || JSON.stringify(actual) !== JSON.stringify(expected))
     throw new Error(
       `Schema guard fixture mismatch: ${JSON.stringify({ expected, actual, warnings: report.warnings })}`,

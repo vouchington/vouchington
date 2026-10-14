@@ -241,7 +241,7 @@ describe('no-mistakes forbidden-calls config', () => {
       scope: 'repository',
       options: {
         roots: [{ vitest: true }],
-        traversal: 'file',
+        traversal: 'transitive',
         unknownCalls: 'ignore',
         targets: [
           {

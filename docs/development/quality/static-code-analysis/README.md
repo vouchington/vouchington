@@ -18,12 +18,12 @@ in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 The `Vitest tests do not generate the full PostgreSQL schema snapshot` guard in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) rejects static imports, aliases, namespaces,
 and re-exports that call the live `generateSchemaSnapshot` entrypoint from Vitest files.
-Its file-only traversal does not follow helper chains; destructured dynamic imports remain
-uncovered. Fragment writers, unrelated functions with the same name, and non-test commands
+Transitive traversal also follows resolved static helper calls, including multi-hop and cyclic
+helper graphs. Destructured dynamic imports and unresolved call provenance remain uncovered. Fragment writers, unrelated functions with the same name, and non-test commands
 remain allowed. This is partial enforcement, not full schema-generation isolation.
 
-Run `node ci/check-schema-generation-guard-fixtures.mts` for seven finite native-analyzer
-fixtures. Static CI runs that command after the normal NoMist gate, outside Vitest and without
+Run `node ci/check-schema-generation-guard-fixtures.mts` for thirteen finite native-analyzer
+fixtures, including unused-helper and unrelated-call controls. Static CI runs that command after the normal NoMist gate, outside Vitest and without
 loading the repository application or database. The config contract test separately checks wiring.
 
 ## Dependency License Policy
