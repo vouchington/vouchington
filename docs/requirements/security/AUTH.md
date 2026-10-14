@@ -97,12 +97,14 @@ Prerequisites:
 
 1. Log in (via email OTP or test user API)
 2. Visit `/my/identity`
-3. Scroll to the Facebook, X, or GitHub section
+3. Scroll to the Facebook, X, GitHub, or LinkedIn section
 4. Click its connect button
 5. Approve the provider popup
 6. Confirm the section shows the provider identity with a "Connected" badge
 7. Reload and confirm the connected state persists
-8. Replay the completion and confirm friend synchronization is scheduled only once
+8. Replay the completion and confirm it does not create a second connection. For Facebook, X, and
+   GitHub, also confirm friend synchronization is scheduled only once; LinkedIn has no friend-sync
+   enqueue path.
 
 #### When already connected
 
