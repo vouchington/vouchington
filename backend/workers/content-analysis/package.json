@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@services/urls": "workspace:^",
-    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

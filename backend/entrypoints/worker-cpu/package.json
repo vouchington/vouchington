@@ -37,7 +37,6 @@
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
     "@queues/heartbeat": "workspace:^",
-    "@queues/image-uploads": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@workers/ai-agents": "workspace:^",
     "@workers/bedrock-embeddings": "workspace:^",

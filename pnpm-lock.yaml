@@ -807,9 +807,6 @@ importers:
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../queues/heartbeat
-      '@queues/image-uploads':
-        specifier: workspace:^
-        version: link:../queues/image-uploads
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../queues/kagi-smallweb
@@ -1688,9 +1685,6 @@ importers:
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
-      '@queues/image-uploads':
-        specifier: workspace:^
-        version: link:../../queues/image-uploads
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -6695,9 +6689,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/content-analysis':
-        specifier: workspace:^
-        version: link:../../queues/content-analysis
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -12026,9 +12017,6 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

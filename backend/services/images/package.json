@@ -31,7 +31,6 @@
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/content-analysis": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
