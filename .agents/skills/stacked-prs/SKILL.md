@@ -188,7 +188,7 @@ then. Decent shape does not require green CI, ready-for-review, the ready-delay,
 Work bottom-up. Write layers in stack order; never start a layer before the one below it is in
 decent shape. On each shepherd result, act on the lowest owned layer that is not ready before any
 higher layer, and put each fix on the lowest layer that owns it. A bottom layer that reaches ready
-early frees the whole stack to merge one layer at a time.
+early frees the ready prefix above it to merge in one command.
 
 A ready, mergeable, or queued lower layer blocks only a git operation that would rewrite that layer.
 Keep shepherding and reviewing every other owned layer. One poll process runs for the stack. The

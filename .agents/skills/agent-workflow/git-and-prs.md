@@ -14,9 +14,10 @@
   the same merge-queue batch.
 - When a stack is required, stack without asking, whatever its length: add the work as the next
   layer, or rebase it onto the open PR and run `gh stack link <lower> <upper>` before either PR is
-  enqueued. Never grow a stack beyond 10 PRs. Before each `gh stack add` or `gh stack link`, count
-  the open layers from the forge; at 10, open work that does not depend on the stack as its own PR
-  on `main`, and hold dependent work until the bottom layers merge.
+  enqueued. Never grow a stack beyond 10 PRs. Before each `gh stack add` or `gh stack link`, add
+  the open layers from the forge to every layer the command would add; above 10, open work that
+  does not depend on the stack as its own PR on `main`, and hold dependent work until the bottom
+  layers merge.
   Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
   an exception to stacking. Ask the human only when no option above resolves the conflict.
 - The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
