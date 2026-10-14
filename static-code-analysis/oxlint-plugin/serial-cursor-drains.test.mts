@@ -3,7 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 
 const OXLINT = resolve('node_modules/.bin/oxlint')
 const PLUGIN = fileURLToPath(import.meta.resolve('eslint-plugin-vouchington'))
@@ -33,6 +36,10 @@ describe('configured serial cursor drains', () => {
         },
       }),
     )
+  })
+
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
   })
 
   afterAll(() => {
@@ -83,6 +90,8 @@ describe('configured serial cursor drains', () => {
     const result = spawnSync(OXLINT, ['-c', '.oxlintrc.json', '--format', 'json', file], {
       cwd: root,
       encoding: 'utf8',
+      timeout: remaining(),
+      killSignal: 'SIGKILL',
     })
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(expected === 0 ? 0 : 1)
