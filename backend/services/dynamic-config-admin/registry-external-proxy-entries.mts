@@ -38,6 +38,12 @@ export const externalProxyDynamicConfigRegistryEntries = [
       linkedin_native_enabled: {
         description: 'Allow new LinkedIn native authorization broker flows.',
       },
+      microsoft_web_enabled: {
+        description: 'Allow new Microsoft web authorization broker flows.',
+      },
+      microsoft_native_enabled: {
+        description: 'Allow new Microsoft native authorization broker flows.',
+      },
     },
   }),
   defineDynamicConfigNamespace({
