@@ -1,3 +1,4 @@
+import type { RenewalBusinessTime } from './renewal-business-time.mts'
 import type { RenewalPriceIncreaseNotificationClaim } from './renewal-check.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -7,7 +8,9 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
   userId: string,
   membershipProviderObservationId: string,
   claim: RenewalPriceIncreaseNotificationClaim,
+  time?: RenewalBusinessTime,
 ): Promise<boolean> {
+  const observedAt = time?.iso ?? null
   const { rows } = await write(sql`/* markRenewalPriceIncreaseNotificationDeliveryAttempted */
     WITH target AS MATERIALIZED (
       SELECT candidate.id
@@ -50,14 +53,14 @@ export async function markRenewalPriceIncreaseNotificationDeliveryAttempted(
       AND state.membership_product_id = m.membership_product_id
       AND state.source_kind = 'direct' AND state.should_auto_renew = true
       AND state.cancelled_at IS NULL AND state.past_due_at IS NULL
-      AND state.expires_at > CURRENT_TIMESTAMP
+      AND state.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
-      AND observation.expires_at > CURRENT_TIMESTAMP
+      AND observation.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND m.cancelled_at IS NULL
       AND m.expired_at IS NULL AND m.past_due_at IS NULL AND m.paused_at IS NULL
-      AND m.should_cancel_at_period_end = false AND m.expires_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
+      AND m.should_cancel_at_period_end = false AND m.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at <= COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP) + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
       AND work.completed_at IS NULL
