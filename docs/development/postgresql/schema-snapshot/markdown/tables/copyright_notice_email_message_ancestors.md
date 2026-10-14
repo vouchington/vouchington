@@ -30,7 +30,7 @@ _none_
 **Indexes:**
 
 - `copyright_notice_email_message_ancestors_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_message_ancestors_pkey ON public.copyright_notice_email_message_ancestors USING btree (reply_message_intake_id, ancestor_message_intake_id)`
-- `idx_copyright_email_message_ancestors__ancestor_reply`: `CREATE INDEX idx_copyright_email_message_ancestors__ancestor_reply ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id, reply_message_intake_id)`
+- `idx_copyright_notice_email_message_ancestors__ancestor_reply`: `CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id, reply_message_intake_id)`
 
 **Triggers:**
 

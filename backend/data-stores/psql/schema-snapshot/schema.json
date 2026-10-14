@@ -29724,10 +29724,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_email_message_ancestors__ancestor_reply": {
+        "idx_copyright_notice_email_message_ancestors__ancestor_reply": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_email_message_ancestors__ancestor_reply ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id, reply_message_intake_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id, reply_message_intake_id)",
           "includedColumns": [],
           "keys": [
             {
