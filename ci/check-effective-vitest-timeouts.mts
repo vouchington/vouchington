@@ -16,6 +16,13 @@ try {
       plugin => plugin.name === effectiveTimeoutCap().name,
     )
     assert.equal(guards.length, 1, project.name)
+    for (const field of ['testTimeout', 'hookTimeout'] as const) {
+      const value = project.config[field]
+      assert.ok(
+        Number.isFinite(value) && value > 0 && value <= 30_000,
+        `${project.name}: resolved ${field}=${value}`,
+      )
+    }
     assert.equal(project.browser, undefined, project.name)
     projects.push(project.name)
   }
