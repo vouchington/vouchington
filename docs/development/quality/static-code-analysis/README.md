@@ -38,6 +38,20 @@ Run `node ci/check-schema-generation-guard-fixtures.mts` for thirteen finite nat
 fixtures, including unused-helper and unrelated-call controls. Static CI runs that command after the normal NoMist gate, outside Vitest and without
 loading the repository application or database. The config contract test separately checks wiring.
 
+## Effective Vitest project timeout admission
+
+The root [Vitest configuration](../../../../vitest.config.mts) installs a public
+`configureVitest` plugin that rejects effective selected-project test and hook budgets
+when disabled, non-finite, or above the suite cap, before application global setup imports.
+Framework-normalized bounded values remain allowed, including bounded child projects under
+unused zero-valued root placeholders. Project defaults are unchanged.
+
+`node ci/check-effective-vitest-timeouts.mts` verifies every resolved project and finite
+framework controls outside Vitest, including pre-setup rejection and a removed-guard negative.
+This admission check does not cover individual test, hook, or fixture overrides or later runtime
+changes. It does not replace native source-carrier analysis; unresolved findings remain open rather
+than receiving new ignores.
+
 ## Dependency License Policy
 
 [`dependency-license-policy/`](../../../../static-code-analysis/dependency-license-policy/) enforces a license policy against
