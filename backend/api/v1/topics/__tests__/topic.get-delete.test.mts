@@ -35,6 +35,8 @@ describe('topic', () => {
 
         expect(response.body.topic.id).toBe(topicId)
         expect(response.body.topic.name).toBe(`Test Topic ${random}`)
+        expect(Object.hasOwn(response.body.topic, 'logo_image_placement')).toBe(true)
+        expect(Object.hasOwn(response.body.topic, 'hero_image_placement')).toBe(true)
         expect(response.body).toHaveProperty('topic_metrics')
         expect(response.body).toHaveProperty('topic_election')
         expect(response.body.topic_metrics).toHaveProperty('id', topicId)
