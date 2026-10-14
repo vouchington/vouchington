@@ -1,4 +1,4 @@
-import type { ExplainResult } from '@data-stores/psql'
+import type { ExplainResult, FunctionCall } from '@data-stores/psql/explain-analyze'
 import { collectNodes, type NodeStats } from './plan-node-stats.mts'
 
 const LARGE_TABLES = new Set([
@@ -27,6 +27,22 @@ const LARGE_TABLES = new Set([
 
 const HIGH_SHARED_BLOCKS_THRESHOLD = 10_000
 const HIGH_WAL_BYTES_THRESHOLD = 10 * 1024 * 1024
+
+export function busiestFunctionCall(result: ExplainResult): FunctionCall | null {
+  return (result.function_calls ?? []).reduce<FunctionCall | null>(
+    (busiest, call) => (busiest === null || call.calls > busiest.calls ? call : busiest),
+    null,
+  )
+}
+
+export function frequentFunctionCalls(
+  results: readonly ExplainResult[],
+): Array<{ result: ExplainResult; busiest: FunctionCall }> {
+  return results.flatMap(result => {
+    const busiest = busiestFunctionCall(result)
+    return busiest && busiest.calls >= 50 ? [{ result, busiest }] : []
+  })
+}
 
 function isLargeTable(relationName: string): boolean {
   if (LARGE_TABLES.has(relationName)) return true

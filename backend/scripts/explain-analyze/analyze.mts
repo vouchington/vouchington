@@ -1,7 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
-import { analyzeResult, getResourcePressureFingerprints } from './plan-warnings.mts'
+import {
+  analyzeResult,
+  frequentFunctionCalls,
+  getResourcePressureFingerprints,
+} from './plan-warnings.mts'
 import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
@@ -117,6 +121,13 @@ function main() {
     console.log(
       `| ${displayName} | ${user} | ${r.execution_time_ms.toFixed(1)} | ${r.planning_time_ms.toFixed(1)} | ${warningStr} |`,
     )
+  }
+
+  const frequentCalls = frequentFunctionCalls(sorted)
+  if (frequentCalls.length > 0) {
+    console.log('\n### Queries with frequent function calls\n')
+    for (const { result, busiest } of frequentCalls)
+      console.log(`- ${result.name}: ${busiest.funcname} called ${busiest.calls} times`)
   }
 
   // Print detailed warnings section

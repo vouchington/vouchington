@@ -6,9 +6,36 @@ import {
   buildExplainAnalyzeText,
   buildExplainPreparedStatementText,
   explainAnalyze,
+  functionCallsSince,
 } from './explain-analyze.mts'
 
 describe('buildExplainAnalyzeText', () => {
+  it('excludes setup-time function calls from the captured query count', () => {
+    expect(
+      functionCallsSince(
+        [{ funcid: '1', funcname: 'fn_before', calls: '2', total_time: 3, self_time: 2 }],
+        [
+          { funcid: '1', funcname: 'fn_before', calls: '2', total_time: 3, self_time: 2 },
+          { funcid: '2', funcname: 'fn_target', calls: '3', total_time: 4, self_time: 3 },
+        ],
+      ),
+    ).toEqual([{ funcname: 'fn_target', calls: 3, total_time: 4, self_time: 3 }])
+  })
+
+  it('captures calls made by the explained statement and none from the next capture', async () => {
+    const target = `/* explainFunctionCallsTest */
+      SELECT fn_text_to_timestamptz('2026-01-0' || value::text || 'T00:00:00Z')
+      FROM generate_series(1, 3) value`
+    const first = await explainAnalyze('tracked-functions', target)
+    const second = await explainAnalyze('no-functions', '/* explainFunctionCallsTest */ SELECT 1')
+    expect(first.function_calls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ funcname: 'fn_text_to_timestamptz', calls: 3 }),
+      ]),
+    )
+    expect(second.function_calls).toEqual([])
+  })
+
   it('captures WAL statistics alongside buffers', () => {
     expect(buildExplainAnalyzeText('SELECT 1')).toBe(
       'EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON) SELECT 1',

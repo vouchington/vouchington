@@ -27,6 +27,54 @@ export interface ExplainResult {
   plan_cache_mode?: ExplainPlanCacheMode
   scenario_id?: string
   capture_index?: number
+  function_calls?: FunctionCall[]
+}
+
+export interface FunctionCall {
+  funcname: string
+  calls: number
+  total_time: number
+  self_time: number
+}
+
+interface TrackedFunctionRow {
+  funcid: string
+  funcname: string
+  calls: string
+  total_time: number
+  self_time: number
+}
+
+export function functionCallsSince(
+  before: readonly TrackedFunctionRow[],
+  after: readonly TrackedFunctionRow[],
+): FunctionCall[] {
+  const baseline = new Map(before.map(row => [row.funcid, row]))
+  return after
+    .flatMap(row => {
+      const previous = baseline.get(row.funcid)
+      const calls = Number(row.calls) - Number(previous?.calls ?? 0)
+      if (calls <= 0) return []
+      return [
+        {
+          funcname: row.funcname,
+          calls,
+          total_time: row.total_time - (previous?.total_time ?? 0),
+          self_time: row.self_time - (previous?.self_time ?? 0),
+        },
+      ]
+    })
+    .toSorted((a, b) => b.calls - a.calls || a.funcname.localeCompare(b.funcname))
+}
+
+async function readTransactionFunctionCalls(
+  client: Awaited<ReturnType<typeof connectWithRetry>>,
+): Promise<TrackedFunctionRow[]> {
+  const { rows } = await client.query<TrackedFunctionRow>(`/* explainAnalyzeFunctionCalls */
+    SELECT funcid::text AS funcid, funcname::text AS funcname, calls,
+           total_time, self_time
+    FROM pg_stat_xact_user_functions`)
+  return rows
 }
 
 export type ExplainPlanCacheMode = 'auto' | 'force_custom_plan' | 'force_generic_plan'
@@ -81,10 +129,12 @@ export async function explainAnalyze(
   const planCacheMode = options.planCacheMode ?? 'auto'
   const client = await connectWithRetry(readPool)
   let rows: Array<Record<string, unknown>>
+  let functionCalls: FunctionCall[] = []
   let prepared = false
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- database transaction/setup statements must remain ordered
     await client.query(sql`/* explainAnalyze */ BEGIN`)
+    await client.query("/* explainAnalyze */ SET LOCAL track_functions = 'all'")
     // Configure before PREPARE so generic planning and execution use identical settings.
     await client.query(sql`/* explainAnalyze */
       SELECT set_config(key, value, true)
@@ -98,7 +148,9 @@ export async function explainAnalyze(
     prepared = true
     const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])
     const explainText = buildExplainPreparedStatementText(preparedStatementName, argumentSql)
+    const beforeFunctions = await readTransactionFunctionCalls(client)
     const queryResult = await client.query(explainText)
+    functionCalls = functionCallsSince(beforeFunctions, await readTransactionFunctionCalls(client))
     await client.query(`/* explainAnalyze */ DEALLOCATE ${preparedStatementName}`)
     prepared = false
     await client.query(sql`/* explainAnalyze */ ROLLBACK`)
@@ -126,6 +178,7 @@ export async function explainAnalyze(
     timestamp: new Date().toISOString(),
     jit_mode: jitMode,
     plan_cache_mode: planCacheMode,
+    function_calls: functionCalls,
   }
 }
 

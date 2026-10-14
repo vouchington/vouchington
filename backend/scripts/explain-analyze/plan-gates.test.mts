@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ExplainResult } from '@data-stores/psql'
-import { assertRequiredPlanShape, SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD } from './plan-gates.mts'
+import {
+  assertRequiredPlanShape,
+  assertScenarioFunctionCalls,
+  SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD,
+} from './plan-gates.mts'
 import {
   assertPlanRegistry,
   registerScenarioContract,
@@ -185,6 +189,24 @@ describe('plan expectation registry', () => {
       'Actual Loops': 1,
     })
     expect(() => assertRequiredPlanShape(empty)).not.toThrow()
+  })
+
+  it('caps actual function calls and rejects a cap no captured query exercises', () => {
+    registerScenarioContract('post-search-new', {
+      expectations: [{ kind: 'maxFunctionCalls', function: 'fn_image_policy', max: 2 }],
+    })
+    const captured = result('post-search-new', { 'Node Type': 'Result' })
+    captured.function_calls = [
+      { funcname: 'fn_image_policy', calls: 2, total_time: 1, self_time: 1 },
+    ]
+    expect(() => assertRequiredPlanShape(captured)).not.toThrow()
+    expect(() => assertScenarioFunctionCalls('post-search-new', [captured])).not.toThrow()
+    captured.function_calls[0]!.calls = 3
+    expect(() => assertRequiredPlanShape(captured)).toThrow('called fn_image_policy 3 times')
+    captured.function_calls = []
+    expect(() => assertScenarioFunctionCalls('post-search-new', [captured])).toThrow(
+      'never called capped function fn_image_policy',
+    )
   })
 })
 

@@ -8,6 +8,7 @@ export type PlanExpectation =
   | { kind: 'queryBinds'; token: string }
   | { kind: 'forbidCorrelatedAggregates' }
   | { kind: 'singleLeaf'; parent: string; key?: string }
+  | { kind: 'maxFunctionCalls'; function: string; max: number }
   | { kind: 'custom'; name: string }
 
 export interface ScenarioPlanContract {
@@ -59,6 +60,7 @@ export function assertExpectationKinds(id: string, contract: ScenarioPlanContrac
     'queryBinds',
     'forbidCorrelatedAggregates',
     'singleLeaf',
+    'maxFunctionCalls',
     'custom',
   ])
   for (const expectation of contract.expectations)
@@ -66,6 +68,13 @@ export function assertExpectationKinds(id: string, contract: ScenarioPlanContrac
       throw new Error(`Unknown plan expectation kind: ${expectation.kind} in ${id}`)
     else if (expectation.kind === 'custom' && !isKnownCustomPlanCheck(expectation.name))
       throw new Error(`Unknown custom plan check: ${expectation.name} in ${id}`)
+    else if (
+      expectation.kind === 'maxFunctionCalls' &&
+      (expectation.function.trim() === '' ||
+        !Number.isSafeInteger(expectation.max) ||
+        expectation.max < 0)
+    )
+      throw new Error(`${id} needs a nonempty function and a nonnegative call cap`)
 }
 
 /** Unit tests use this to avoid leaking dynamic declarations between cases. */

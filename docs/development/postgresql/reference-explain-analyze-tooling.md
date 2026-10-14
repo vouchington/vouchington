@@ -19,6 +19,9 @@ Notable behavior:
   [`explain-analyze.mts`](../../../backend/data-stores/psql/explain-analyze.mts)), issued
   before `PREPARE` so planning and execution see the same budget — this is what makes a local
   `pnpm run explain:analyze` reach the same disk-spill verdict as CI (#11081)
+- `track_functions = all` is transaction-local; `pg_stat_xact_user_functions` is read immediately
+  before and after replay to count only the captured statement's non-inlined user-function calls.
+  Setting it requires a superuser or a role with `SET` privilege on that parameter.
 - replay runs inside a transaction that is rolled back after plan capture, so mutating statements
   discovered by query capture do not persist profiling side effects
 

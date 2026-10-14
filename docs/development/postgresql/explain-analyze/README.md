@@ -164,6 +164,11 @@ query; CI uses this mode. Individual `auto`, `force_custom_plan`, and `force_gen
 also supported. Every capture also runs under a fixed `work_mem` (`EXPLAIN_WORK_MEM` in
 `backend/data-stores/psql/explain-analyze.mts`) so a local run and CI reach the same
 spill verdict — see `reference-explain-analyze-tooling.md`.
+Each replay sets `track_functions = all` inside its rollback-only transaction and records
+`function_calls` (name, calls, total and self milliseconds). Counts are the difference between
+the readings immediately before and after the explained statement, so preparation work is excluded.
+Inlined SQL functions do not appear in PostgreSQL's function statistics. The harness role must be
+allowed to set `track_functions`; the CI PostgreSQL service connects as its superuser.
 
 ```bash
 pnpm run explain:run
@@ -280,6 +285,12 @@ Reads the latest result file and prints:
 - Row estimate mismatch warnings (>10x)
 - Costliest node per query
 - New resource-pressure fingerprints relative to the checked-in baseline
+- Queries whose busiest tracked user function ran at least 50 times
+
+Scenario contracts can use `maxFunctionCalls` with a function name and maximum count. The gate
+checks every captured query in both plan-cache modes; a cap that no query in its scenario exercises
+also fails, so a removed function cannot leave a stale budget. `explain:dump` prints the complete
+function-call list, including an empty list when no user function ran.
 
 ```bash
 pnpm run explain:analyze
@@ -377,6 +388,7 @@ completed every required plan mode:
       "plan": { "Plan": { "Node Type": "Index Scan" } },
       "execution_time_ms": 12.3,
       "planning_time_ms": 0.8,
+      "function_calls": [],
       "timestamp": "2026-03-13T00:00:00.000Z",
       "scenario_id": "posts-feed",
       "capture_index": 0

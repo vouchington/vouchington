@@ -112,6 +112,7 @@ function main() {
     console.log(`\nSQL:\n${r.query_text}\n`)
     console.log(`Plan:`)
     console.log(formatPlan(r.plan))
+    console.log(`Function calls: ${JSON.stringify(r.function_calls ?? [])}`)
     console.log('')
   }
 
