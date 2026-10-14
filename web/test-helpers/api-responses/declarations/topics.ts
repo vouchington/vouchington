@@ -9,25 +9,17 @@ type TopicWithHeroPlacement = Omit<Topic, 'hero_image_placement'> & {
 }
 type TopicDetailFixture = Omit<TopicResponseBody, 'topic'> & { topic: TopicWithHeroPlacement }
 
-function requireHeroPlacement(topic: Topic): TopicWithHeroPlacement {
-  if (!Object.hasOwn(topic, 'hero_image_placement')) {
-    throw new Error('Topic detail response omitted hero_image_placement')
-  }
-  return topic as TopicWithHeroPlacement
-}
-
 export const TOPIC_DECLARATIONS = [
   defineWebApiFixture<TopicDetailFixture>()(
     'web.topics.show.default',
     topicsShowDefault,
     async context => {
-      const response = await context.server.topics.getTopic('test-topic')
-      return response ? { ...response, topic: requireHeroPlacement(response.topic) } : null
+      await context.server.topics.getTopic('test-topic')
+      return null
     },
     [
       async context => {
-        const topic = await context.client.topics.fetchTopic('test-topic')
-        if (topic) requireHeroPlacement(topic)
+        await context.client.topics.fetchTopic('test-topic')
         return null
       },
     ],

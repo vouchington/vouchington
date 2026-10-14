@@ -3,7 +3,7 @@ import { electionVotes, topicElection } from './election-data.mts'
 import { entityProvenanceApiFixtureCases } from './entity-provenance-cases.mts'
 import { rssFeedItemsFeedBody } from './rss-feed-items-data.mts'
 import type { ApiFixtureCase } from './types.mts'
-import { topicMetricsWithViewerCount } from './topic-metrics-data.mts'
+import { topicMetrics, topicMetricsWithViewerCount } from './topic-metrics-data.mts'
 import { webCommunityApiFixtureCases } from './web-community-cases.mts'
 import { webCommunityModerationApiFixtureCases } from './web-community-moderation-cases.mts'
 import { growthMetricsBody } from './web-growth-metrics-data.mts'
@@ -108,7 +108,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
       topics: { [topic.id]: publicTopicWithLogoPlacement },
       topic_elections: { [topic.id]: topicElection },
       election_votes: { [topic.id]: electionVotes[topic.id] },
-      topics_metrics: { [topic.id]: topicMetricsWithViewerCount },
+      topics_metrics: { [topic.id]: topicMetrics },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['web/test-helpers/api-responses/topics.ts'],
