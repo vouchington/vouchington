@@ -48,14 +48,14 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(backendJob).not.toContain('Check backend dependencies')
     expect(backendJob).not.toContain('Typecheck backend and email templates')
   })
-  it('prepares a demand-neutral configurable backend test shard matrix on ubuntu-latest', () => {
+  it('prepares a demand-neutral registry-sized backend test shard matrix on ubuntu-latest', () => {
     const prep = jobSection('prep')
     expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
-    expect(prep).toContain(
-      'FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}',
-    )
+    // 350 files per shard kept ten shards on the 10-minute step watchdog (#2111).
+    expect(prep).not.toContain('FILES_PER_SHARD_OVERRIDE')
+    expect(prep).not.toContain('TEST_BACKEND_UNIT_FILES_PER_SHARD')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
