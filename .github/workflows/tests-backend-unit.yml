@@ -235,9 +235,6 @@ jobs:
           rm -rf coverage-merge-input
           mkdir -p coverage-full coverage-merge-input/parent
           cp coverage/lcov.info coverage-merge-input/parent/lcov.info
-          if [ -d coverage-isolated ]; then
-            cp -R coverage-isolated coverage-merge-input/isolated
-          fi
           ./ci/node_modules/.bin/coverage-check merge \
             --artifacts coverage-merge-input \
             --output coverage-full/lcov.info

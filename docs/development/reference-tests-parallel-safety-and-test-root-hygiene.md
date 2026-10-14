@@ -93,8 +93,8 @@ transaction allocation and correlates completion after the real query and COMMIT
 must have that owned ID and timestamp. An unasserted lookahead row supplies pagination only;
 default global reads, other actors or tuples, missing completion, and foreign first rows remain
 violations. See the [owned-keyset policy proof](../../test-helpers/vitest-owned-keyset-read-policy.test.mts). The staff queue intentionally has no production ID
-filter, so its exact global-pagination cases use the disposable database runner in
-`test-helpers/vitest-isolated-database-case.mts`; the push recovery test retains its owned
+filter, so its pagination tests bind the registered owned fixture and validate the actual query
+and completion through the owned-keyset policy above; the push recovery test retains its owned
 notification IDs on every page. Timestamps, scan snapshots, and page sizes alone are not ownership scopes.
 Explicit empty-ID inputs return before SQL. Production global calls remain legal. Tests should
 assert an owned and an equally eligible unrelated fixture, verifying the latter is excluded and
@@ -359,8 +359,8 @@ guards the bound and its attribution wiring.
 
 ### Database-backed projects never reach AWS
 
-`backend-data-stores`, `backend-platform-stats-cache`, `backend-activitypub-capacity` and the
-isolated-database child config load `backend/test-helpers/vitest.setup.s3-offline.mts`. It replaces
+`backend-data-stores`, `backend-platform-stats-cache` and `backend-activitypub-capacity` load
+`backend/test-helpers/vitest.setup.s3-offline.mts`. It replaces
 `S3Client.prototype.send` with a rejection shaped like S3's answer to fake credentials
 (`InvalidAccessKeyId`, 403) before a socket is opened. These projects have fake static credentials
 and no endpoint override, so an unstubbed S3 call can only return 403 from the public AWS endpoint

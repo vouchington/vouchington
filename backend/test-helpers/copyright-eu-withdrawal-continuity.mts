@@ -5,7 +5,7 @@ import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices
 import { createTestGuestEuCase } from './copyright-eu-guest-cases.mts'
 import { createTestThreadedTerritorialComplaintEmail } from './copyright-territorial-complaint-email.mts'
 
-/** Call before withdrawing the isolated database's approval. */
+/** Prepare an owned guest case before withdrawing its intake approval. */
 export async function prepareTestEuWithdrawalGuestCase() {
   const scene = await createTestGuestEuCase()
   return { noticeId: scene.noticeId, notifierEmail: scene.email }

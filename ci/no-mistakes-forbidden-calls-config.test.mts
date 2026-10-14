@@ -59,7 +59,6 @@ describe('no-mistakes forbidden-calls config', () => {
       'Vitest tests do not poll or wait on timers',
       'Test helpers and vitest setup do not invoke real timers or polls',
       'Playwright tests do not poll on timers',
-      'Tests do not create a database',
       'Vitest tests do not assert benchmarks',
       'Vitest tests do not run live no-mistakes analysis',
       'Vitest tests do not load the live workflow topology',
@@ -72,7 +71,6 @@ describe('no-mistakes forbidden-calls config', () => {
     ).toEqual([
       'Vitest tests do not poll or wait on timers',
       'Test helpers and vitest setup do not invoke real timers or polls',
-      'Tests do not create a database',
       'Vitest tests do not assert benchmarks',
       'Vitest tests do not run live no-mistakes analysis',
     ])
@@ -167,24 +165,6 @@ describe('no-mistakes forbidden-calls config', () => {
         traversal: 'file',
         unknownCalls: 'ignore',
         targets: pollTargets.slice(0, 6),
-      },
-    })
-    expect(withoutBaseline(rule('Tests do not create a database'))).toEqual({
-      name: 'Tests do not create a database',
-      rule: 'forbidden-calls',
-      scope: 'repository',
-      options: {
-        roots: [{ vitest: true }, { glob: ['test-helpers/**/*.mts', '**/test-helpers/**/*.mts'] }],
-        traversal: 'file',
-        unknownCalls: 'ignore',
-        targets: [
-          {
-            function: {
-              file: 'test-helpers/vitest-isolated-database-case.mts',
-              symbol: 'runIsolatedDatabaseCase',
-            },
-          },
-        ],
       },
     })
     expect(withoutBaseline(rule('Vitest tests do not assert benchmarks'))).toEqual({

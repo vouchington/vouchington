@@ -15,14 +15,6 @@ export function realGlideMqAlias(): Alias {
   }
 }
 
-export function isolatedDatabaseCaseAliases(file: string): Alias[] {
-  const realGlideMq = file.endsWith('.real-glide.mock.test.mts')
-  return [
-    ...(realGlideMq ? [realGlideMqAlias()] : []),
-    ...backendAliases({ useGlideMqShim: !realGlideMq }),
-  ]
-}
-
 export function backendAliases({
   useGlideMqShim = true,
 }: { useGlideMqShim?: boolean } = {}): Alias[] {

@@ -164,7 +164,6 @@ ignores:
   - 'ci/coverage-rules-scope.test.mts'
   - 'static-code-analysis/i18n-extract/route-bounds.test.mts'
   - 'static-code-analysis/i18n-extract/route-source-scan.test.mts'
-  - 'test-helpers/vitest-isolated-database-cases.test.mts'
 # Specific shapes come before it($A, $B, $N). An earlier structural match that
 # fails the number constraint does not fall through to the next branch.
 rule:

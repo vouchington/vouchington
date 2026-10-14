@@ -43,8 +43,6 @@ ignores:
   # Frozen baseline of executed SQL. Cleanup PRs do not edit it. #2145 deletes it.
   # #2116
   - 'backend/test-helpers/entities/api-keys.mts'
-  # #2135
-  - 'test-helpers/vitest-isolated-database-case.mts'
   # #2136 pg_sleep
   - 'backend/scripts/explain-analyze/seed-data/post-diagnostics.test.mts'
   - 'backend/test-helpers/entities/contribution-admission-claims.mts'
