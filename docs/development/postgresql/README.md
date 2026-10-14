@@ -88,7 +88,9 @@ can dispatch outside an admission's HTTP context. A per-worker subscriber owns s
 independently. Observation callbacks do not introduce asynchronous work joined to processor
 completion. Reporting faults remain on the owned view and cannot replace the processor result or
 rejection. Genuine HTTP repeats retain the existing enforcement and baseline below; this boundary
-does not filter query annotations or add exemptions.
+does not filter query annotations or add exemptions. Worker repeats are not enforced, so the
+flush helper writes a `pg-worker-profile` stderr line per worker only with `VITEST_DIAGNOSTICS=1`
+or when a reporting failure occurred; routine CI logs stay quiet.
 
 ### Enforcement and the baseline
 

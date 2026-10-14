@@ -165,13 +165,7 @@ function workerProfileSnapshot(profile: WorkerQueryProfile): unknown {
 
 function reportWorkerProfile(profile: WorkerQueryProfile): void {
   try {
-    const summary = profile.summarize()
-    if (
-      process.env.VITEST_DIAGNOSTICS !== '1' &&
-      summary.repeats.length === 0 &&
-      profile.reportingFailures().length === 0
-    )
-      return
+    if (process.env.VITEST_DIAGNOSTICS !== '1' && profile.reportingFailures().length === 0) return
     process.stderr.write(
       `${JSON.stringify({
         kind: 'pg-worker-profile',
