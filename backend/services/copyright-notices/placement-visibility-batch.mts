@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import { canViewPostsBatch } from '@services/posts'
 import type { PrivateUser } from '@services/users/types'
 import sql from 'sql-template-strings'
@@ -8,7 +8,7 @@ import type { CopyrightImageSelector } from './placement-resolution.mts'
 export async function claimantCanViewCopyrightImagePlacements(
   inputs: CopyrightImageSelector[],
   currentUser: PrivateUser | null,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: QueryExecutor,
 ): Promise<boolean[]> {
   const posts = inputs.filter(input => input.surfaceKind === 'post-image')
   const postVisibility = await canViewPostsBatch(

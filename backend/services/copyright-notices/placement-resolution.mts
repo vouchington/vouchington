@@ -4,10 +4,6 @@ import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ImageSurfaceReference } from '@services/media-delivery-safety/surface-lock'
-import type { PrivateUser } from '@services/users/types'
-import { canViewPostsBatch } from '@services/posts'
-import { getCommunityWithViewer } from '@services/communities/load-with-viewer'
-import { currentUserCanViewCommunity } from '@services/communities/authorization'
 import {
   resolveCopyrightSurfacePlacement,
   resolveCopyrightSurfacePlacements,
@@ -173,24 +169,4 @@ function mapPostPlacement(placement: PostPlacement): CopyrightNoticeTargetInput 
       SITEMAP_CONFIG.BASE_URL,
     ).href,
   }
-}
-
-/** The claimant must be able to see the named page; staff approval resolves without this gate. */
-export async function claimantCanViewCopyrightImagePlacement(
-  input: CopyrightImageSelector,
-  currentUser: PrivateUser | null,
-  query: typeof write | Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<boolean> {
-  if (input.surfaceKind === 'post-image') {
-    const viewable = await canViewPostsBatch(currentUser, [{ id: input.postId }], { query })
-    return Boolean(viewable.get(input.postId))
-  }
-  if ('communityId' in input) {
-    const loaded = await getCommunityWithViewer(input.communityId, currentUser?.id ?? null, {
-      query,
-    })
-    if (!loaded) return false
-    return currentUserCanViewCommunity(currentUser, loaded.community, loaded.membership)
-  }
-  return true
 }

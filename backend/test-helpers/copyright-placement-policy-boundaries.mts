@@ -5,10 +5,8 @@ import {
   copyrightPlacementPartiesSql,
   type CopyrightPlacementPartyPurpose,
 } from '../services/media-delivery-safety/copyright-placement-parties.mts'
-import {
-  claimantCanViewCopyrightImagePlacement,
-  type CopyrightImageSelector,
-} from '../services/copyright-notices/placement-resolution.mts'
+import type { CopyrightImageSelector } from '../services/copyright-notices/placement-resolution.mts'
+import { claimantCanViewCopyrightImagePlacements } from '../services/copyright-notices/placement-visibility-batch.mts'
 
 /** Reads the production policy fragment at its target-correlated database boundary. */
 export async function readTestCopyrightPlacementParties(
@@ -27,9 +25,9 @@ export async function readTestCopyrightPlacementParties(
 }
 
 /** Exercises claimant visibility with the production query executor. */
-export function testClaimantCanViewCopyrightImage(
+export async function testClaimantCanViewCopyrightImage(
   selector: CopyrightImageSelector,
   claimant: PrivateUser | null,
 ): Promise<boolean> {
-  return claimantCanViewCopyrightImagePlacement(selector, claimant, write)
+  return (await claimantCanViewCopyrightImagePlacements([selector], claimant, write))[0] ?? false
 }
