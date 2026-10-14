@@ -105,15 +105,19 @@ The build ignores
 stdin and disables Next and Storybook telemetry, both of which can wait on an open pipe or a stalled
 network call.
 
-The build deadline is about three times the slowest healthy build on GitHub-hosted ARM runners.
-From 2026-10-05 07:34 to 2026-10-07 05:43 UTC, 624 successful `static-web` builds took at most 91
-seconds. Their median rose from about 56 to 80 seconds on 2026-10-06. The Next build cache is
-disabled, so each one is cold: about 56 seconds of Next and 25 of Storybook. Consumer fallback rebuilds match that profile. Every caller's composite
-step ceiling is that deadline plus one minute for the timing summary and upload, rounded up, and
-`build-web-targets-timeouts.test.mts` holds them together. This replaced a 13-minute ceiling carried
-over from a self-hosted host's lock-acquisition budget. The fallback producer jobs keep additive
-budgets around the shorter build, and the consumer jobs' fail-safe caps dropped by the same seven
-minutes.
+Every `build-web-targets` deadline is a generous multiple of the slowest healthy cold build on
+GitHub-hosted ARM runners; the Next build cache is disabled, so each build is cold, and consumer
+fallback rebuilds match that profile. Observed build timings live in the private docs repository.
+
+The composite bounds each step on its critical path: the cache restore download (the cache action's
+`SEGMENT_DOWNLOAD_TIMEOUT_MINS`), the manifest `verify` (under `run-bounded.py`), and the build. A
+stalled restore or verify therefore falls through to the bounded rebuild instead of consuming the
+caller's step ceiling. Every caller's composite step ceiling is the sum of those three deadlines,
+`run-bounded.py`'s kill grace after a deadline (SIGTERM wait plus output relay join), and one minute
+for the always-run timing summary and upload, rounded up to a whole minute.
+`build-web-targets-timeouts.test.mts` derives that sum from the declared deadlines and holds every
+caller to it, so changing one deadline without the callers fails. The fallback producer jobs keep
+additive budgets around the shorter build.
 
 The backend image build smoke tests validate worker startup, Valkey connectivity, and universal
 heartbeat job processing. The `worker-cpu` smoke test also imports `vurst-ai` from the deployed

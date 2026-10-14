@@ -58,7 +58,7 @@ jobs:
         timeout-minutes: 5
       - uses: ./.github/actions/build-web-targets
         if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
-        timeout-minutes: 6
+        timeout-minutes: 8
         with:
           artifact-suffix: web-integration-producer
           shared-build-cache-mode: producer
@@ -125,7 +125,7 @@ jobs:
         timeout-minutes: 3
 
       - uses: ./.github/actions/build-web-targets
-        timeout-minutes: 6
+        timeout-minutes: 8
         with:
           artifact-suffix: web-integration-${{ matrix.shard }}
           shared-build-cache-mode: consumer

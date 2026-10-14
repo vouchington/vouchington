@@ -7,13 +7,15 @@ import {
   type WorkflowStep,
 } from '../test-helpers/workflow-fixtures.mts'
 
-// Each caller bounds the build-web-targets composite step, and the composite bounds its build
-// command with run-bounded.py. The inner deadline must fire first and leave room for the
-// composite's always() timing summary and upload, or a hung build leaves no timing evidence. The
-// step ceiling is that deadline plus the margin, rounded up to a whole minute, so raising one
-// without the other fails here.
+// Each caller bounds the whole build-web-targets composite step, so its ceiling must cover every
+// deadline the composite declares on its critical path: the cache restore, the manifest verify, the
+// bounded build, run-bounded's kill grace after a deadline, and a margin for the always() timing
+// summary and upload. The ceiling is that sum rounded up to a whole minute, so raising any one
+// deadline without the callers fails here.
 const BUILD_WEB_TARGETS = './.github/actions/build-web-targets'
 const POST_DEADLINE_MARGIN_SECONDS = 60
+
+type Deadlines = { restore: number; verify: number; build: number; killGrace: number }
 
 type Workflow = {
   jobs?: Record<string, { steps?: (WorkflowStep & { 'timeout-minutes'?: unknown })[] }>
@@ -31,20 +33,56 @@ function callerTimeouts(workflows: Record<string, Workflow>): CallerTimeout[] {
   )
 }
 
-function buildDeadlineSeconds(action: string): number {
-  const match = /run-bounded\.py" ([1-9]\d*) node ci\/setup-web-integration\.mts/.exec(action)
-  if (!match) throw new TypeError('build-web-targets must run its build under run-bounded.py')
+function boundedSeconds(action: string, command: string): number {
+  const match = new RegExp(`run-bounded\\.py" ([1-9]\\d*) ${command}`).exec(action)
+  if (!match) throw new TypeError(`build-web-targets must run ${command} under run-bounded.py`)
   return Number(match[1])
 }
 
-function timeoutViolations(callers: readonly CallerTimeout[], deadlineSeconds: number): string[] {
-  const expected = Math.ceil((deadlineSeconds + POST_DEADLINE_MARGIN_SECONDS) / 60)
+function restoreSeconds(action: string): number {
+  const match = /SEGMENT_DOWNLOAD_TIMEOUT_MINS: '([1-9]\d*)'/.exec(action)
+  if (!match) throw new TypeError('build-web-targets must bound its cache restore download')
+  return Number(match[1]) * 60
+}
+
+// run-bounded waits for SIGTERM, then for the relayed output pipes, before it returns.
+function killGraceSeconds(source: string): number {
+  const term = /proc\.wait\(timeout=(\d+)\)/.exec(source)
+  const relay = /RELAY_JOIN_SECONDS = (\d+)/.exec(source)
+  if (!term || !relay) throw new TypeError('run-bounded kill grace is no longer declared')
+  return Number(term[1]) + Number(relay[1])
+}
+
+function readDeadlines(): Deadlines {
+  const action = readFileSync('.github/actions/build-web-targets/action.yml', 'utf8')
+  const runBounded = readFileSync('ci/run-bounded.py', 'utf8')
+  const process = readFileSync('ci/run_bounded_process.py', 'utf8')
+  return {
+    restore: restoreSeconds(action),
+    verify: boundedSeconds(action, 'node ci/web-build-cache-manifest\\.mts verify'),
+    build: boundedSeconds(action, 'node ci/setup-web-integration\\.mts'),
+    killGrace: killGraceSeconds(runBounded + process),
+  }
+}
+
+function expectedMinutes(deadlines: Deadlines): number {
+  const total =
+    deadlines.restore +
+    deadlines.verify +
+    deadlines.build +
+    deadlines.killGrace +
+    POST_DEADLINE_MARGIN_SECONDS
+  return Math.ceil(total / 60)
+}
+
+function timeoutViolations(callers: readonly CallerTimeout[], deadlines: Deadlines): string[] {
+  const expected = expectedMinutes(deadlines)
   return callers
     .filter(caller => caller.timeoutMinutes !== expected)
     .map(
       caller =>
         `${caller.job}: timeout-minutes is ${JSON.stringify(caller.timeoutMinutes)}, expected ${expected} ` +
-        `(the ${deadlineSeconds}s build deadline plus ${POST_DEADLINE_MARGIN_SECONDS}s)`,
+        `(restore, verify, build and kill grace deadlines plus ${POST_DEADLINE_MARGIN_SECONDS}s)`,
     )
 }
 
@@ -56,41 +94,46 @@ function readWorkflows(): Record<string, Workflow> {
 }
 
 describe('build-web-targets timeouts', () => {
-  it('sizes every caller step ceiling from the composite build deadline', () => {
+  const deadlines: Deadlines = { restore: 60, verify: 30, build: 300, killGrace: 13 }
+
+  it('sizes every caller step ceiling from the composite deadlines', () => {
     const callers = callerTimeouts(readWorkflows())
-    const deadline = buildDeadlineSeconds(
-      readFileSync('.github/actions/build-web-targets/action.yml', 'utf8'),
-    )
 
     // Guard against a vacuous pass: the static-web producer must be discovered.
     expect(callers.map(caller => caller.job)).toContain('checks-static.yml#static-web')
     assertNoWorkflowViolations(
-      timeoutViolations(callers, deadline),
+      timeoutViolations(callers, readDeadlines()),
       'build-web-targets timeout violations',
     )
   })
 
-  it('reports callers whose step ceiling is missing or does not match the deadline', () => {
+  it('counts pre-build and kill-grace time, not only the build deadline', () => {
+    expect(expectedMinutes(deadlines)).toBe(8)
+    expect(expectedMinutes({ ...deadlines, restore: 0, verify: 0, killGrace: 0 })).toBe(6)
+  })
+
+  it('reports callers whose step ceiling is missing or does not match the deadlines', () => {
     const violations = timeoutViolations(
       [
-        { job: 'a.yml#build', timeoutMinutes: 6 },
-        { job: 'b.yml#test', timeoutMinutes: 5 },
-        { job: 'c.yml#test', timeoutMinutes: 13 },
+        { job: 'a.yml#build', timeoutMinutes: 8 },
+        { job: 'b.yml#test', timeoutMinutes: 6 },
         { job: 'd.yml#test', timeoutMinutes: undefined },
       ],
-      300,
+      deadlines,
     )
 
+    const suffix = '(restore, verify, build and kill grace deadlines plus 60s)'
     expect(violations).toEqual([
-      'b.yml#test: timeout-minutes is 5, expected 6 (the 300s build deadline plus 60s)',
-      'c.yml#test: timeout-minutes is 13, expected 6 (the 300s build deadline plus 60s)',
-      'd.yml#test: timeout-minutes is undefined, expected 6 (the 300s build deadline plus 60s)',
+      `b.yml#test: timeout-minutes is 6, expected 8 ${suffix}`,
+      `d.yml#test: timeout-minutes is undefined, expected 8 ${suffix}`,
     ])
   })
 
-  it('rejects a composite that does not bound its build command', () => {
-    expect(() => buildDeadlineSeconds('node ci/setup-web-integration.mts')).toThrow(
-      'build-web-targets must run its build under run-bounded.py',
-    )
+  it('rejects a composite that leaves a step unbounded', () => {
+    expect(() =>
+      boundedSeconds('node ci/setup-web-integration.mts', 'node ci/setup-web-integration\\.mts'),
+    ).toThrow('under run-bounded.py')
+    expect(() => restoreSeconds('uses: actions/cache/restore')).toThrow('bound its cache restore')
+    expect(() => killGraceSeconds('')).toThrow('kill grace')
   })
 })
