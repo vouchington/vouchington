@@ -77,6 +77,31 @@ describe('Storybook browser runner quiet output', () => {
     expect(later).toBe('  an indented line outside a block\n')
   })
 
+  it('splits carriage-return status updates into independent lines', () => {
+    const quiet = new StorybookQuietOutput()
+    expect(quiet.split(`visible status\r${marker(1).trimEnd()}\r\nTest Files  1 passed\r\n`)).toBe(
+      'visible status\rTest Files  1 passed\r\n',
+    )
+  })
+
+  it('replays suppressed output when a watchdog terminates a child that exits zero', async () => {
+    let now = 0
+    const child = makeChild(2104)
+    const { deps, intervals, stdout } = makeDeps([child], { now: () => now })
+    const result = runStorybookBrowserTests(
+      { env: { STORYBOOK_BROWSER_HANG_MS: '1000', STORYBOOK_BROWSER_STARTUP_ATTEMPTS: '1' } },
+      deps,
+    )
+
+    child.stdout.emit('data', marker(1))
+    now = 1051
+    intervals[0].callback()
+    child.emit('close', 0, null)
+
+    await result
+    expect(stdout.join('')).toContain(marker(1))
+  })
+
   it('bounds the retained quiet tail and drains it once', () => {
     const quiet = new StorybookQuietOutput()
     const line = marker(1)

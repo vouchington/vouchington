@@ -31,7 +31,7 @@ export class StorybookQuietOutput {
   /** Returns the lines that belong in the job log and retains the quiet ones. */
   split(output: string): string {
     let visible = ''
-    for (const line of output.split(/(?<=\n)/)) {
+    for (const line of output.split(/(?<=\r?\n|\r(?!\n))/)) {
       if (this.isQuiet(line)) this.retain(line)
       else visible += line
     }

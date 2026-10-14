@@ -515,7 +515,13 @@ async function runUpstreamAttempt(
         onOutput: ({ source, chunk }) => observe(source, chunk),
         onAttemptComplete: session => {
           flush()
-          if (session.exit.code !== 0 || session.exit.signal || spawnFailed) replayQuietOutput()
+          if (
+            session.reason !== 'exit' ||
+            session.exit.code !== 0 ||
+            session.exit.signal ||
+            spawnFailed
+          )
+            replayQuietOutput()
           const finishedAt = deps.now()
           const optimizerReloadFromNewDeps = sawNewOptimizeDeps && sawOptimizerReload
           const runnerMissing =
