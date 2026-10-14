@@ -12,6 +12,7 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
   if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:lock */')) {
     if (
       !statement.includes('candidates AS MATERIALIZED (') ||
+      !statement.includes('ORDER BY media_delivery_registry_record_id LIMIT ') ||
       !statement.includes('CROSS JOIN LATERAL (') ||
       !statement.includes('WHERE id = candidates.media_delivery_registry_record_id') ||
       !statement.includes('LIMIT 1') ||

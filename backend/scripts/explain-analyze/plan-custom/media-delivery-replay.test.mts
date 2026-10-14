@@ -160,6 +160,28 @@ describe('media replay captured statement budgets', () => {
     }
   })
 
+  it('requires explicit candidate order and a page limit before row locking', () => {
+    for (const queryText of [
+      lockSql,
+      continuationLockSql,
+      scopedLockSql,
+      scopedContinuationLockSql,
+    ]) {
+      const unordered = captured('lock', 'force_custom_plan')
+      unordered.query_text = queryText.replace(
+        'ORDER BY media_delivery_registry_record_id LIMIT ',
+        'LIMIT ',
+      )
+      expect(() => assertMediaDeliveryReplayPlan(unordered)).toThrow('bounded candidate page')
+      const unbounded = captured('lock', 'force_generic_plan')
+      unbounded.query_text = queryText.replace(
+        /LIMIT (?:\$\d+|\(SELECT page_size FROM replay_cursor\))(?=\s*\) SELECT record\.id)/,
+        '',
+      )
+      expect(() => assertMediaDeliveryReplayPlan(unbounded)).toThrow('bounded candidate page')
+    }
+  })
+
   it('does not let the event bitmap budget classify a mislabeled main write', () => {
     const write = captured('write', 'force_custom_plan')
     write.query_text = write.query_text
