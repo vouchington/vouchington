@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+content-type: text/event-stream
+
+: OPENROUTER PROCESSING
+
+event: error
+data: {"type":"error","code":"previous_response_not_found","message":"The previous response expired","param":"previous_response_id","sequence_number":0}
+
+: replay complete

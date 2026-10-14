@@ -72,34 +72,18 @@ describe('request', () => {
     )
   })
 
-  it('forwards an idempotency key to the OpenAI moderation boundary', async () => {
-    requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
-
-    await createOpenAIModeration(['only text'], undefined, {
-      dependencies,
-      idempotencyKey: 'moderation-key',
-    })
-
-    expect(requestOpenAIModeration).toHaveBeenCalledWith(
-      [{ type: 'text', text: 'only text' }],
-      'omni-moderation-latest',
-      { idempotencyKey: 'moderation-key' },
-    )
-  })
-
   it('marks an API safety check for the shorter request deadline', async () => {
     requestOpenAIModeration.mockResolvedValueOnce(emptyResponse)
 
     await createOpenAIModeration(['only text'], undefined, {
       dependencies,
       apiSafetyCheck: true,
-      idempotencyKey: 'moderation-key',
     })
 
     expect(requestOpenAIModeration).toHaveBeenCalledWith(
       [{ type: 'text', text: 'only text' }],
       'omni-moderation-latest',
-      { apiSafetyCheck: true, idempotencyKey: 'moderation-key' },
+      { apiSafetyCheck: true },
     )
   })
 })

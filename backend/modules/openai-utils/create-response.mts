@@ -13,7 +13,6 @@ import { withOpenAIFlexFallback } from './flex-fallback.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   OpenAIResponseNotCompletedError,
-  OpenAIResponseStreamError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
@@ -70,9 +69,6 @@ export async function* streamOpenAIResponseEvents(
       emittedTextDelta = true
       yield { delta: event.delta }
       continue
-    }
-    if (event.type === 'error') {
-      throw new OpenAIResponseStreamError(event)
     }
     if (
       event.type === 'response.completed' ||

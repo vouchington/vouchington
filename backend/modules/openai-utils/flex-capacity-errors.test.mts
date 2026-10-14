@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   isOpenAIFlexCapacityFailedResponseError,
   OpenAIResponseNotCompletedError,
-  OpenAIResponseStreamError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
 import { makeSdkResponse } from '../../test-helpers/modules/openai-utils/responses.mts'
@@ -60,11 +59,6 @@ describe('isOpenAIFlexCapacityFailedResponseError', () => {
 
   it('rejects errors that are not terminal-response errors', () => {
     expect(isOpenAIFlexCapacityFailedResponseError(new Error(FLEX_MESSAGE))).toBe(false)
-    expect(
-      isOpenAIFlexCapacityFailedResponseError(
-        new OpenAIResponseStreamError({ code: 'server_error', message: FLEX_MESSAGE, param: null }),
-      ),
-    ).toBe(false)
     expect(isOpenAIFlexCapacityFailedResponseError(undefined)).toBe(false)
   })
 })

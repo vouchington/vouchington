@@ -4,7 +4,6 @@ import { trackAIModerationCall } from '@services/analytics'
 
 interface CreateOpenAIModerationOptions {
   apiSafetyCheck?: true
-  idempotencyKey?: string
   model?: 'omni-moderation-latest'
   dependencies?: Partial<CreateOpenAIModerationDependencies>
 }
@@ -34,7 +33,6 @@ export const createOpenAIModeration = async (
 
     const requestOptions = {
       ...(options?.apiSafetyCheck ? { apiSafetyCheck: true } : {}),
-      ...(options?.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
     } satisfies Parameters<CreateOpenAIModerationDependencies['requestOpenAIModeration']>[2]
     const response =
       Object.keys(requestOptions).length > 0

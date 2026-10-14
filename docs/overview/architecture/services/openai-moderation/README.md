@@ -6,8 +6,8 @@ Source entrypoint: [backend/services/openai-moderation/README.md](../../../../..
 
 ### API Conversation Text Moderation
 
-- `createOpenAIModeration(texts, undefined, { idempotencyKey })` remains the single provider boundary
-  for conversation text moderation when a caller needs to forward an external idempotency key.
+- `createOpenAIModeration(texts)` remains the single provider boundary for conversation text
+  moderation. The OpenAI SDK's moderation request option does not send an idempotency key on the wire.
 - API callers invoke it in-process. Its provider-scoped egress flag selects the guarded direct
   transport or HTTP CONNECT proxy without changing the moderation operation.
 - Prompt-injection detection and `PROMPT_INJECTION` / `MODERATION_VIOLATION` HTTP policy errors are
@@ -28,7 +28,7 @@ API's package.
 
 Callers must inject a `CreateTextModeration` capability; this guard has no default provider.
 The API's `checkApiMessageSafety()` injects a capability backed by `createOpenAIModeration` with
-`apiSafetyCheck` and a per-call idempotency key.
+`apiSafetyCheck` for a bounded provider request.
 
 ### Post Moderation
 

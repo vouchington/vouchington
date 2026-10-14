@@ -30,7 +30,7 @@ describe('checkApiMessageSafety', () => {
     moderation.mockReset()
   })
 
-  it('sends provider moderation with a stable idempotency key', async () => {
+  it('sends provider moderation with the API safety deadline', async () => {
     moderation.mockResolvedValue(createOpenAIModerationResponse())
 
     await expect(checkApiMessageSafety('moderate this message')).resolves.toBeUndefined()
@@ -38,7 +38,7 @@ describe('checkApiMessageSafety', () => {
     expect(moderation).toHaveBeenCalledWith(
       [{ type: 'text', text: 'moderate this message' }],
       'omni-moderation-latest',
-      { apiSafetyCheck: true, idempotencyKey: expect.any(String) },
+      { apiSafetyCheck: true },
     )
   })
 
