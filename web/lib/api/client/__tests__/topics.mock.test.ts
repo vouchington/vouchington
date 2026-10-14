@@ -66,6 +66,10 @@ describe('topics client API', () => {
       placement_id: '00000000-0000-7000-8000-000000000307',
       placement_revision: 4,
     })
+    expect(response.topic_metrics).toMatchObject({
+      count: { discussions: 1, latest: 1 },
+      viewer_count: { discussions: 1 },
+    })
     expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/test-topic')
   })
 

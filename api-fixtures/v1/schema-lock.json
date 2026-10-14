@@ -3109,7 +3109,7 @@
     },
     "web.topics.show.default": {
       "fixtureIds": ["web.topics.show.default"],
-      "hash": "4155f0435e3c320f2024645ae70cf953f5dc99ed39bd32c3a44d755fb39f994f"
+      "hash": "a5996ec59ba64ecae2ad641dd11e5d08dee9f6c187497791ded8fcff6ec90074"
     },
     "web.trending-referral-programs.default": {
       "fixtureIds": ["web.trending-referral-programs.default"],

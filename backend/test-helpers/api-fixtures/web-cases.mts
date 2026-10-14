@@ -3,6 +3,7 @@ import { electionVotes, topicElection } from './election-data.mts'
 import { entityProvenanceApiFixtureCases } from './entity-provenance-cases.mts'
 import { rssFeedItemsFeedBody } from './rss-feed-items-data.mts'
 import type { ApiFixtureCase } from './types.mts'
+import { topicMetricsWithViewerCount } from './topic-metrics-data.mts'
 import { webCommunityApiFixtureCases } from './web-community-cases.mts'
 import { webCommunityModerationApiFixtureCases } from './web-community-moderation-cases.mts'
 import { growthMetricsBody } from './web-growth-metrics-data.mts'
@@ -125,6 +126,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
     body: {
       topic: publicTopicWithLogoPlacement,
       html: '',
+      topic_metrics: topicMetricsWithViewerCount,
       topic_election: topicElection,
       topic_categories: [],
       topic_parents: [],
