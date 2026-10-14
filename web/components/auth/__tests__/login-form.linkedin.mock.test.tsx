@@ -100,4 +100,33 @@ describe('LinkedIn login broker visibility', () => {
       await screen.findByRole('button', { name: /continue with linkedin/i }),
     ).not.toHaveAttribute('data-broker-purpose')
   })
+
+  it('uses the Microsoft web broker when the server advertises it without a browser client ID', async () => {
+    mockGetConfiguredOAuthProviders.mockResolvedValue({
+      providers: ['microsoft'],
+      broker_capabilities: {
+        microsoft: {
+          version: 1,
+          modes: { web: true, native: false },
+          purposes: ['authenticate', 'connect'],
+        },
+      },
+    })
+
+    render(<LoginForm />)
+    expect(await screen.findByRole('button', { name: /continue with microsoft/i })).toHaveAttribute(
+      'data-broker-purpose',
+      'authenticate',
+    )
+  })
+
+  it('keeps the Microsoft legacy path when web broker mode is disabled', async () => {
+    setRuntimePublicConfigForTest({ microsoftClientId: 'test-microsoft-client-id' })
+    mockGetConfiguredOAuthProviders.mockResolvedValue({ providers: ['microsoft'] })
+
+    render(<LoginForm />)
+    expect(
+      await screen.findByRole('button', { name: /continue with microsoft/i }),
+    ).not.toHaveAttribute('data-broker-purpose')
+  })
 })

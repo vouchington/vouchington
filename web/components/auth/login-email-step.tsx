@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
+import { isOAuthBrokerProvider } from '@/lib/auth/oauth-broker-provider'
 import type { OAuthProvider } from '@/types/user'
 import { OAuthLoginButton } from './oauth-login-button'
 import { LoginTurnstileSlot } from './login-turnstile-slot'
@@ -67,11 +68,7 @@ export function LoginEmailStep({
                 onToken={onOAuthToken}
                 disabled={loading}
                 broker={
-                  (provider === 'facebook' ||
-                    provider === 'x' ||
-                    provider === 'github' ||
-                    provider === 'linkedin') &&
-                  oauthBrokerCapabilities[provider]?.modes.web
+                  isOAuthBrokerProvider(provider) && oauthBrokerCapabilities[provider]?.modes.web
                     ? { purpose: 'authenticate', returnTo: oauthReturnTo }
                     : undefined
                 }

@@ -13,6 +13,7 @@ import {
 } from './oauth-provider-buttons'
 import { OAuthBrokerButton } from './oauth-broker-button'
 import type { OAuthBrokerPurpose } from '@/lib/api/client'
+import { isOAuthBrokerProvider } from '@/lib/auth/oauth-broker-provider'
 
 type Props = OAuthButtonProps & {
   provider: OAuthProvider
@@ -26,13 +27,7 @@ export function OAuthLoginButton({
   onAvailabilityChange,
   broker,
 }: Props) {
-  if (
-    broker &&
-    (provider === 'facebook' ||
-      provider === 'x' ||
-      provider === 'github' ||
-      provider === 'linkedin')
-  ) {
+  if (broker && isOAuthBrokerProvider(provider)) {
     return (
       <OAuthBrokerButton
         provider={provider}

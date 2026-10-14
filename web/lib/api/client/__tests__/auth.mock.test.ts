@@ -63,6 +63,21 @@ describe('OAuth broker auth client', () => {
     })
   })
 
+  it('begins a Microsoft web connection through the broker endpoint', async () => {
+    const response = {
+      flow_id: 'microsoft-flow',
+      redirect_url: 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize',
+      expires_at: '2026-07-30T00:00:00.000Z',
+    }
+    mockPost.mockResolvedValue(response)
+
+    await expect(beginOAuthAuthorization('microsoft', 'connect')).resolves.toEqual(response)
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/oauth/microsoft/authorizations', {
+      purpose: 'connect',
+      callback_mode: 'web',
+    })
+  })
+
   it('completes the authorization with its opaque flow id', async () => {
     mockPost.mockResolvedValue({ user: { id: 'user-1' } })
 
