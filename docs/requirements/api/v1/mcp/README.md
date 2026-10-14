@@ -45,7 +45,10 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 
 ## MCP Operations
 
-- `initialize` returns capabilities and server `instructions`.
+- `initialize` returns capabilities and server `instructions`. Both servers declare only the
+  `tools` capability: no MCP resources or prompts. Public articles are posts read through
+  `read_posts`, and RSS/news through the RSS read tools
+  ([#207](https://github.com/vouchington/vouchington/issues/207)).
 - `tools/list` lists tools filtered by role, plan, and key permissions.
 - `tools/call` executes a tool and enforces the same checks as `tools/list`.
 
