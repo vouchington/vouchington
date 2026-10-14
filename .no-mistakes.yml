@@ -1915,9 +1915,8 @@ rules:
     options:
       roots:
         - vitest: true
-      # File traversal catches imports, aliases, and re-exports in a test file.
-      # It deliberately does not follow helper call chains.
-      traversal: file
+      # Follow resolved helper calls without guessing unresolved or dynamic provenance.
+      traversal: transitive
       unknownCalls: ignore
       targets:
         - function:
