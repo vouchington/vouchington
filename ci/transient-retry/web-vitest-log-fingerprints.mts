@@ -22,7 +22,11 @@ export function hasWebVitestSegfault(log: string): boolean {
   const terminalFailure = log.slice(failureIndex)
   const markerIndex = terminalFailure.lastIndexOf(webVitestSigsegvMarker)
   if (markerIndex === -1) return false
-  const command = terminalFailure.slice(markerIndex + webVitestSigsegvMarker.length)
+  // Only the killed-command line is evidence; later lines may repeat the web command for another process.
+  const command = terminalFailure
+    .slice(markerIndex + webVitestSigsegvMarker.length)
+    .split('\n', 1)[0]
+    .replace(/\r$/, '')
 
   return (
     hasCurrentWebVitestShardCommand(command) &&
