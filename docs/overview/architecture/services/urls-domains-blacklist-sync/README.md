@@ -21,6 +21,9 @@ The database projects each domain diff into hostname block history and updates U
 once per statement, including bulk syncs. Changing a configured source between URL and email
 reclassifies its active projected blocks in the same transaction; email blocks do not block URL
 crawls.
+When a sync first creates a hostname below an independently blocked parent, it also records the
+inherited parent block. Removing the feed entry then leaves the administrator's parent policy in
+effect for that hostname.
 
 ## Public Helpers
 

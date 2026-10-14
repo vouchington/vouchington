@@ -16,6 +16,7 @@ import {
 } from './sync-bloom.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
+import { persistDomainDiff } from './sync-db-domain-diff.mts'
 import {
   ADDED_DOMAINS_TABLE,
   REMOVED_DOMAINS_TABLE,
@@ -153,45 +154,6 @@ async function applyPreparedDomainDiff(
     domainsAdded: Number(addedRows[0]?.count ?? 0),
     domainsRemoved: Number(removedRows[0]?.count ?? 0),
   }
-}
-async function persistDomainDiff(
-  query: TransactionQuery,
-  sourceId: DomainBlacklistSourceId,
-  sourceType: 'url' | 'email',
-): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- hostname FK owners must exist before block rows; ordered insert/delete projects policy in one transaction.
-  await query(
-    `/* syncDomainsWithDatabase */
-      INSERT INTO url_hostnames (hostname, publicly_introduced_at)
-      SELECT domain, CASE WHEN $1::text = 'url' THEN CURRENT_TIMESTAMP ELSE NULL END
-      FROM ${ADDED_DOMAINS_TABLE}
-      ORDER BY domain
-      ON CONFLICT (hostname) DO UPDATE SET
-        publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
-      WHERE EXCLUDED.publicly_introduced_at IS NOT NULL
-        AND url_hostnames.publicly_introduced_at IS NULL
-    `,
-    [sourceType],
-  )
-  await query(
-    `/* syncDomainsWithDatabase */
-        INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
-        SELECT $1::bigint AS source_id, added.domain, hostname.id
-        FROM ${ADDED_DOMAINS_TABLE} added
-        JOIN url_hostnames hostname ON hostname.hostname = added.domain
-        ORDER BY added.domain ASC NULLS LAST, source_id ASC NULLS LAST
-        ON CONFLICT (domain, source_id) DO NOTHING
-      `,
-    [sourceId],
-  )
-  await query(
-    `/* syncDomainsWithDatabase */
-        DELETE FROM blocklisted_domains d
-        USING ${REMOVED_DOMAINS_TABLE} r
-        WHERE d.source_id = $1 AND d.domain = r.domain
-    `,
-    [sourceId],
-  )
 }
 async function dropSyncTempTables(client: PoolClient): Promise<void> {
   await client.query(`/* syncDomainsWithDatabase */ DROP TABLE IF EXISTS

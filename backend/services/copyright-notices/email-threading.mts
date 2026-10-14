@@ -104,6 +104,12 @@ async function insertCopyrightEmailIntakeNoticeLink(
     await lockCopyrightEmailThreadTokens(transaction, [digest])
     matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
   }
+  // Fence a competing promotion before taking the link's unique key. Without this lock,
+  // a speculative thread insert can hold that key while its FK waits on the intake row
+  // already locked by promotion, and promotion's initial link then waits on the unique key.
+  await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
+    SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR KEY SHARE
+  `)
   const { rows: inserted } = await transaction<{
     copyright_notice_id: string
     link_kind: string

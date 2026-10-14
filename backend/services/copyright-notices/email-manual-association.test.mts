@@ -16,7 +16,10 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
 import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
-import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
+import {
+  associateCopyrightEmailIntakeWithNotice,
+  getCopyrightNoticeAssociationTarget,
+} from './email-manual-association.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
@@ -30,6 +33,20 @@ async function createManualReply(): Promise<{ id: string }> {
 }
 
 describe('manual copyright email association', () => {
+  it('does not strand a reply on a UK notice that cannot admit correspondence', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createManualReply()
+    const noticeId = await createCopyrightNoticeForManualAssociation(true, 'uk')
+
+    expect(await getCopyrightNoticeAssociationTarget(moderator, noticeId)).toBeUndefined()
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
+    ).rejects.toMatchObject({ status: 422 })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+  })
+
   it('rejects an ordinary initial intake so its statutory case approval is not bypassed', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const initial = await recordThreadedCopyrightEmail({

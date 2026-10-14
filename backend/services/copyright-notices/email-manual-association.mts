@@ -31,7 +31,9 @@ export async function getCopyrightNoticeAssociationTarget(
   const { rows } = await read<CopyrightNoticeAssociationTarget>(sql`
     /* getCopyrightNoticeAssociationTarget */
     SELECT id, jurisdiction, received_at FROM copyright_notices notice
-    WHERE id = ${noticeId} AND NOT EXISTS (
+    WHERE id = ${noticeId}
+      AND jurisdiction IN ('us_dmca', 'eu_dsa')
+      AND NOT EXISTS (
       SELECT 1 FROM copyright_notice_retention_erasures erasure
       WHERE erasure.copyright_notice_id = notice.id
     )
@@ -62,11 +64,16 @@ export async function associateCopyrightEmailIntakeWithNotice(
     SELECT id FROM copyright_notice_email_intakes WHERE id = ${intakeId} FOR UPDATE
   `)
   assert(lockedIntakes[0], 404, 'Copyright email intake not found')
-  const { rows: lockedNotices } = await transaction<{ id: string }>(sql`
+  const { rows: lockedNotices } = await transaction<{ id: string; jurisdiction: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:lockNotice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+    SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
   assert(lockedNotices[0], 404, 'Copyright notice not found')
+  assert(
+    lockedNotices[0].jurisdiction !== 'uk',
+    422,
+    'Correspondence kind does not apply to this jurisdiction',
+  )
   // A retention erasure takes the notice lock first. This fresh statement sees a marker
   // committed while this association waited and fences a new marker until commit.
   const { rows: erased } = await transaction(sql`

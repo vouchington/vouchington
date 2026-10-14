@@ -6,6 +6,7 @@ import {
   getTestHostnameRow,
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
+  updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
@@ -18,6 +19,28 @@ import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostnam
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
 describe('sync-db', () => {
+  it('retains an inherited administrator block when a child first arrives from a URL feed', async () => {
+    const suffix = crypto.randomUUID()
+    const parent = `admin-parent-${suffix}.example.com`
+    const child = `sub.${parent}`
+    const parentId = (await upsertUrlHostnames(null, [parent])).get(parent)!
+    await updateUrlHostnameBlocked(parentId, true)
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `sync-parent-${randomSourceSuffix()}`,
+      url: 'https://example.com/parent-blacklist.txt',
+    })
+
+    await syncDomainsWithDatabase(sourceId, new Response(`${child}\n`), 'url')
+    const hostname = await getUrlHostnameByAnyCached(child)
+    expect(hostname?.is_blocked).toBe(true)
+    if (!hostname) throw new Error('Expected feed-created child hostname')
+
+    await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+    expect((await getTestHostnameRow(hostname.id))?.is_blocked).toBe(true)
+    expect((await getUrlHostnameByAnyCached(child))?.is_blocked).toBe(true)
+  })
+
   it('syncDomainsWithDatabase stages URL domains in SQL, returns diff counts, and applies database changes', async () => {
     const suffix = randomSourceSuffix()
     const sourceName = `sync-db-url-${suffix}`

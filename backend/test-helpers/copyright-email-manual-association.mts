@@ -4,14 +4,17 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 /** The smallest accepted case row for a staff association boundary. */
-export async function createCopyrightNoticeForManualAssociation(accepted = true): Promise<string> {
+export async function createCopyrightNoticeForManualAssociation(
+  accepted = true,
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk' = 'us_dmca',
+): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
     /* createCopyrightNoticeForManualAssociation */
     INSERT INTO copyright_notices (
       jurisdiction, legal_basis, received_at, accepted_at,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      'us_dmca', 'copyright', CURRENT_TIMESTAMP,
+      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP,
       CASE WHEN ${accepted} THEN CURRENT_TIMESTAMP ELSE NULL END,
       ${`cipher-${randomUUID()}`}, ${`work-${randomUUID()}`}, 'test-v1'
     ) RETURNING id
