@@ -29,9 +29,9 @@ The processor function `processExtractImageMetadata` is internal to this package
 ## Worker coverage
 
 [`images.real-glide.mock.test.mts`](../../../../../../backend/workers/images/workers/images.real-glide.mock.test.mts)
-enqueues a native cleanup job and checks its persisted result. The parent launches the existing
-isolated database case before importing the worker; the child owns the fresh database and queue
-prefix for the global abandoned-upload sweep.
+enqueues native jobs through its own queue prefix and checks their persisted completion and
+failure results. The abandoned-upload dispatch control uses the public processor boundary;
+fixture and queue ownership follow [rule R1](../../../../../development/tests.md#test-suite-rules).
 
 ## Related
 

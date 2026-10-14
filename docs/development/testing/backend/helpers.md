@@ -564,16 +564,9 @@ after `afterAll`, including setup/import failures, and retains per-file reported
 leaked GlideMQ workers. The catalog is intentionally finite, not a SQL-wide interception rule;
 new global-head or sweep services require an explicit catalog and bound-scope review. See the
 [parallel-safety reference](../../reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
-Intentionally global cases run through `test-helpers/vitest-isolated-database-case.mts` against a
-fresh, disposable local database. The registry in `test-helpers/vitest-isolated-database-cases.mts`
-names each case's file and test. Their real assertions run without scanning or mutating another
-test's shared fixtures. Register a test's `fullName` in the form `suite > test`, the form Vitest
-matches `testNamePattern` against and reports; the registry type rejects any other separator. A
-child that exits 0 after skipping the test or running no test would otherwise pass silently, so the
-child config's reporter lists every collected test and the parent fails unless exactly one test
-with the registered name passed and none failed.
-`VITEST_ISOLATED_DATABASE_CASE` and `VITEST_ISOLATED_DATABASE_CHILD` are harness-owned, validated
-child markers, not settings for test authors to supply.
+Tests use the shared dirty database and must scope observations and mutations to their owned
+fixtures under [rule R1](../../tests.md#test-suite-rules). A global production default does not
+authorize a test to consume or count another suite's fixtures.
 
 ### Materialized-view refresh lock
 
@@ -714,17 +707,15 @@ and any other test's unreadable row fails the request. Seek to the test's own ro
 just before the first-queued of the given notices by `(urgency, waiting_since, id)`, so every page
 starts at rows the test created. `readCopyrightStaffQueueCursorRows(noticeIds)` returns those
 notices' queue keys in queue order. Because urgency tiers sort ahead of wait time, a test that mixes
-deadline tiers seeks from its most urgent notice. Global urgency ordering, where another fixture's
-missed deadline would change the result, runs in the isolated `copyright-staff-queue-urgency` case.
+deadline tiers seeks from its most urgent notice. Assert urgency and ordering on the owned notice keys rather than assuming an empty global head.
 `@voucha/test-helpers/data-stores/psql/copyright-staff-queue` records a form intake review and adds
 an open due or missed counter-notice deadline for those cases.
 The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`) applies the same
 keyset ordering, but its global query cannot prove fixture ownership from an `after` cursor alone.
-Its exact global pagination cases run against fresh disposable databases through
-`test-helpers/vitest-isolated-database-case.mts`; shared-DB calls to this cataloged operation are
-rejected by the test guard. The reply-failure listing runs in the isolated
-`copyright-staff-email-intake-reply-failures` case for the same reason, and so does the check that a
-legal-process intake leaves the queue (`copyright-email-legal-process-queue`). For notification push intent recovery, pass the test's owned
+Its pagination fixtures register the owned eligible row and actor before the actual bounded
+query, then correlate completion through the
+[owned-keyset policy](../../reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
+For notification push intent recovery, pass the test's owned
 `notificationIds` on every page, including pages with an `after` cursor. A cursor only advances
 ordering; it does not exclude another fixture's eligible row.
 

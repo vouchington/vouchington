@@ -60,10 +60,9 @@ Reporter policy:
   supply per-test timings for the timeout audit; the cleanup sweep keeps them until their one-day
   expiry. Cancelled runs may have no report.
 
-Backend tests that launch a registered isolated database case keep that database boundary when
-coverage is enabled. Each child writes LCOV to its own directory, and `tests-backend-unit.yml`
-merges those reports with the parent shard before uploading full coverage. A child that ran under
-coverage but did not write LCOV fails its parent case.
+Backend tests use the shared dirty database and ownership-scoped fixtures under
+[rule R1](../../tests.md#test-suite-rules). With coverage enabled, `tests-backend-unit.yml`
+requires a nonempty parent-shard LCOV report and preserves it for the full-coverage upload.
 
 <!-- BEGIN GENERATED: vitest-ownership -->
 

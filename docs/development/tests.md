@@ -36,7 +36,7 @@ These rules apply to backend, web, and tooling tests, and to every file a test c
 
 Dirty-database proof for a changed database test: run the file twice on the same database without resetting it, then run two processes on that file at the same time.
 
-`forbidden-calls` enforces the timer, isolated-database, benchmark, and live no-mistakes analysis bans. Oxlint [`no-mistakes/test-no-skips`](../../.oxlintrc.json) enforces R6. ast-grep enforces executed DDL, `pg_sleep`, the 30-second cap, and oversized `Array.from({ length })` / `it.each` fixtures until those checks are configured with parity (jonathanong/no-mistakes#1562, #1563, #1564, #1566).
+`forbidden-calls` enforces the timer, benchmark, and live no-mistakes analysis bans. Oxlint [`no-mistakes/test-no-skips`](../../.oxlintrc.json) enforces R6. ast-grep enforces executed DDL, `pg_sleep`, the 30-second cap, and oversized `Array.from({ length })` / `it.each` fixtures until those checks are configured with parity (jonathanong/no-mistakes#1562, #1563, #1564, #1566).
 
 ## Live-provider smoke checks
 
