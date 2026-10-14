@@ -13,6 +13,18 @@ Before authoring or changing a guard, use the
 placement, authoring, rollout, and cleanup sections below. Scoped repository-state invariants remain
 in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 
+## Tooling Vitest timeout overrides
+
+The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest calls in `ci/`,
+`dev/`, and `static-code-analysis/`, including aliased registrars, same-file expressions,
+individual tests, hooks, and runtime timeout updates. Unresolved admitted timeout carriers
+fail rather than silently escaping the cap. The normal Oxlint gate owns enforcement;
+`ci/vitest-timeout-policy.test.mts` exercises finite accepted and rejected inputs.
+
+This scoped activation does not change project defaults, activate a global runtime cap, or
+remove the frozen ast-grep baseline outside tooling. The five-second project-default rollout
+and cross-file configuration/runtime enforcement remain separate work.
+
 ## Full-schema generation in Vitest
 
 The `Vitest tests do not generate the full PostgreSQL schema snapshot` guard in
