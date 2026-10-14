@@ -36,7 +36,10 @@ export const createSingleEmbedding = async (data: CreateEmbeddingJobData): Promi
         ${EMBEDDING_COLUMNS.created_at} = NOW(),
         ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
           existing.input_token_count,
-          entity.${EMBEDDING_COLUMNS.input_token_count}
+          CASE WHEN entity.${EMBEDDING_COLUMNS.input_sha256} = existing.content_sha256
+            THEN entity.${EMBEDDING_COLUMNS.input_token_count}
+            ELSE NULL
+          END
         )
       FROM ${EMBEDDINGS_TABLE} existing
       WHERE existing.content_sha256 = $1
@@ -62,7 +65,13 @@ export const createSingleEmbedding = async (data: CreateEmbeddingJobData): Promi
     SET ${EMBEDDING_COLUMNS.input_sha256} = $1,
       ${EMBEDDING_COLUMNS.embedding} = $2,
       ${EMBEDDING_COLUMNS.created_at} = NOW(),
-      ${EMBEDDING_COLUMNS.input_token_count} = COALESCE($4, ${EMBEDDING_COLUMNS.input_token_count})
+      ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
+        $4,
+        CASE WHEN ${EMBEDDING_COLUMNS.input_sha256} = $1
+          THEN ${EMBEDDING_COLUMNS.input_token_count}
+          ELSE NULL
+        END
+      )
     WHERE id = $5
       AND ${EMBEDDING_COLUMNS.content_sha256} = $3
   `,

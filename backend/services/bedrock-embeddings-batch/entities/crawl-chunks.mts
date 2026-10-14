@@ -121,7 +121,13 @@ export async function applyCrawlChunkBatchUpdates(items: BatchUpdateItem[]): Pro
       SET bedrock_nova_multimodal_v1_input_sha256 = u.content_sha256,
         bedrock_nova_multimodal_v1_embedding = u.embedding,
         bedrock_nova_multimodal_v1_embedding_created_at = NOW(),
-        bedrock_nova_multimodal_v1_input_token_count = COALESCE(u.input_token_count, crawl_chunks.bedrock_nova_multimodal_v1_input_token_count)
+        bedrock_nova_multimodal_v1_input_token_count = COALESCE(
+          u.input_token_count,
+          CASE WHEN crawl_chunks.bedrock_nova_multimodal_v1_input_sha256 = u.content_sha256
+            THEN crawl_chunks.bedrock_nova_multimodal_v1_input_token_count
+            ELSE NULL
+          END
+        )
       FROM ${tempTable} u
       WHERE crawl_chunks.crawl_id = u.crawl_id
         AND crawl_chunks.order_index = u.order_index`,

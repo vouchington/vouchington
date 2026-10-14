@@ -76,7 +76,13 @@ export async function applyBatchUpdates(
       SET ${EMBEDDING_COLUMNS.input_sha256} = u.content_sha256,
         ${EMBEDDING_COLUMNS.embedding} = u.embedding,
         ${EMBEDDING_COLUMNS.created_at} = NOW(),
-        ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(u.input_token_count, ${tableName}.${EMBEDDING_COLUMNS.input_token_count})
+        ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
+          u.input_token_count,
+          CASE WHEN ${tableName}.${EMBEDDING_COLUMNS.input_sha256} = u.content_sha256
+            THEN ${tableName}.${EMBEDDING_COLUMNS.input_token_count}
+            ELSE NULL
+          END
+        )
       FROM ${tempTable} u
       WHERE ${tableName}.id = u.entity_id::uuid
         AND ${tableName}.${EMBEDDING_COLUMNS.content_sha256} = u.content_sha256

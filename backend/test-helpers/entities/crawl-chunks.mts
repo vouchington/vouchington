@@ -81,6 +81,20 @@ export async function getAllCrawlChunksForUrl(urlId: string): Promise<unknown[]>
   return rows
 }
 
+export async function setCrawlChunkEmbeddingContentSha256(
+  crawlId: string,
+  orderIndex: number,
+  contentSha256: Buffer,
+): Promise<void> {
+  await write(
+    allowUnannotatedQuery(sql`
+      UPDATE crawl_chunks
+      SET bedrock_nova_multimodal_v1_content_sha256 = ${contentSha256}
+      WHERE crawl_id = ${crawlId} AND order_index = ${orderIndex}
+    `),
+  )
+}
+
 /**
  * Get crawl chunks with embedding status
  */
