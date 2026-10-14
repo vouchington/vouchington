@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
+import { encodeUuidCursorBefore } from '../../test-helpers/modules/pagination/uuid-cursors.mts'
 import { appendCopyrightLegalHoldAssessment, appendCopyrightNoticeSubmission } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import {
@@ -32,8 +33,16 @@ async function createCounterNoticedRestriction() {
 }
 
 async function materializeListedDeadline(deadlineId: string, now: Date): Promise<number> {
-  await expect(readDueDeadlineIds(deadlineId, now)).resolves.toEqual([deadlineId])
-  return createDueStatutoryCopyrightRestoreIntentsForDeadline(deadlineId, now)
+  const page = await searchDueStatutoryCopyrightRestorationDeadlineIds({
+    now,
+    after: encodeUuidCursorBefore(deadlineId),
+    limit: 1,
+  })
+  expect(page.results).toEqual([deadlineId])
+  return createDueStatutoryCopyrightRestoreIntentsForDeadline(
+    page.candidates[deadlineId] ?? [],
+    now,
+  )
 }
 
 function readDueDeadlineIds(deadlineId: string, now: Date): Promise<string[]> {

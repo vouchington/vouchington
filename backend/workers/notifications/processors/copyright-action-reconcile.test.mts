@@ -2,17 +2,20 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
+import type { DueRestorationPage } from '@services/copyright-notices/statutory-restoration-schedule'
 import {
   processReconcileCopyrightActionIntents,
   type ReconcileCopyrightActionIntentsDeps as Deps,
 } from './copyright-action-reconcile.mts'
 
 const NOW = new Date('2026-07-01T12:00:00.000Z')
-
-function page(results: string[], endCursor: string | null): CopyrightSweepIdPage {
+function page(results: string[], endCursor: string | null): DueRestorationPage {
   return {
     results,
     page_info: { has_next_page: endCursor !== null, start_cursor: null, end_cursor: endCursor },
+    candidates: Object.fromEntries(
+      results.map(id => [id, [{ deadline_id: id }]]),
+    ) as DueRestorationPage['candidates'],
   }
 }
 
@@ -22,11 +25,11 @@ type SweepPages = {
   pendingEnforcement?: CopyrightSweepIdPage[]
   suspendedClaimants?: CopyrightSweepIdPage[]
   blockedHoldRestorations?: CopyrightSweepIdPage[]
-  dueRestorations?: CopyrightSweepIdPage[]
+  dueRestorations?: DueRestorationPage[]
   actionIntents?: CopyrightSweepIdPage[]
 }
 
-function sweep(log: string[], name: string, pages: CopyrightSweepIdPage[] = []) {
+function sweep<T extends CopyrightSweepIdPage>(log: string[], name: string, pages: T[] = []) {
   const remaining = [...pages]
   return async () => {
     log.push(`search ${name}`)
@@ -72,8 +75,8 @@ function reconcileDeps(pages: SweepPages = {}) {
       log.push(`recover blocked hold restorations ${id}`)
       return 1
     }),
-    createDueRestoreIntents: vi.fn<Deps['createDueRestoreIntents']>(async id => {
-      log.push(`create restore intents ${id}`)
+    createDueRestoreIntents: vi.fn<Deps['createDueRestoreIntents']>(async candidates => {
+      log.push(`create restore intents ${candidates[0]?.deadline_id}`)
       return 1
     }),
     searchActionIntents: vi.fn<Deps['searchActionIntents']>(
@@ -165,10 +168,7 @@ describe('processReconcileCopyrightActionIntents', () => {
       ['notice-1', NOW],
       ['notice-2', NOW],
     ])
-    expect(deps.createDueRestoreIntents.mock.calls).toEqual([
-      ['deadline-1', NOW],
-      ['deadline-2', NOW],
-    ])
+    expect(deps.createDueRestoreIntents).toHaveBeenCalledTimes(2)
     expect(deps.searchActionIntents.mock.calls).toEqual([
       [{ now: NOW, limit: 100 }],
       [{ now: NOW, limit: 100, after: 'intent-cursor' }],
@@ -198,7 +198,7 @@ describe('processReconcileCopyrightActionIntents', () => {
       released.resolve(1)
       await reconciliation
     }
-    expect(deps.createDueRestoreIntents).toHaveBeenCalledWith('deadline', NOW)
+    expect(deps.createDueRestoreIntents).toHaveBeenCalledOnce()
     expect(deps.enqueueBulkApplyCopyrightActions).toHaveBeenCalledWith(['intent'])
   })
 

@@ -1,4 +1,4 @@
-import { enqueueSubmitDsaStatementOfReasons } from '@queues/notifications/enqueues'
+import { enqueueBulkSubmitDsaStatementOfReasons } from '@queues/notifications/enqueues'
 import {
   processDsaStatementSubmission,
   type ProcessDsaStatementSubmissionResult,
@@ -20,7 +20,7 @@ export async function processReconcileDsaStatementSubmissions(
   overrides: {
     prepare?: typeof prepareDsaStatementSubmissionSweep
     search?: typeof searchRecoverableDsaStatementSubmissionIds
-    enqueue?: typeof enqueueSubmitDsaStatementOfReasons
+    enqueue?: typeof enqueueBulkSubmitDsaStatementOfReasons
   } = {},
 ): Promise<{ enqueued: number }> {
   const from = await (overrides.prepare ?? prepareDsaStatementSubmissionSweep)()
@@ -29,11 +29,6 @@ export async function processReconcileDsaStatementSubmissions(
     from,
     limit: 100,
   })
-  let enqueued = 0
-  for (const submissionId of page.results) {
-    // oxlint-disable-next-line no-await-in-loop -- a bounded page must finish enqueueing before success.
-    await (overrides.enqueue ?? enqueueSubmitDsaStatementOfReasons)(submissionId)
-    enqueued += 1
-  }
-  return { enqueued }
+  await (overrides.enqueue ?? enqueueBulkSubmitDsaStatementOfReasons)(page.results)
+  return { enqueued: page.results.length }
 }
