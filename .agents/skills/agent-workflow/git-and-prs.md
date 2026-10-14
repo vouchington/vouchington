@@ -6,7 +6,8 @@
   invent source issues just to satisfy a PR workflow. Keep each PR's accepted scope explicit.
 - Do not stack unless you have to. Stack in a [native stack](../stacked-prs/SKILL.md) only when one
   PR needs the other's code, or when one changes a contract that the other's new code uses. A
-  contract conflict fails only in the merge queue. Editing the same file does not require a stack.
+  contract conflict fails only in the merge queue. Before opening a PR, compare its changed files
+  and contracts with open PRs to find dependencies. Editing the same file does not require a stack.
   Overlaps in generated output, such as fixtures, schema snapshots, registries, `openapi.json`,
   and `mcp.json`, never require one: whichever PR lands second rebases and regenerates. The same
   goes for handwritten files the second PR can rebase cleanly. Do not enqueue overlapping PRs in
