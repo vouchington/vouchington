@@ -42,26 +42,15 @@ jobs:
   static-backend:
     if: inputs.backend
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 17
     permissions:
       actions: read
       contents: read
-    services:
-      valkey:
-        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
-        ports:
-          - 6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
-          --health-start-interval 1s
-          --tmpfs /data:rw,size=64m
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
@@ -73,7 +62,6 @@ jobs:
           pnpm run backend-row-contracts:check
           pnpm run api-fixtures:check
           export NODE_ENV=test
-          export VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}
           export S3_BUCKET_IMAGES=test-images
           export S3_BUCKET_IMAGE_UPLOADS=test-image-uploads
           export S3_BUCKET_SITEMAPS=test-sitemaps
@@ -95,6 +83,9 @@ jobs:
             printf '%s\n' "$untracked_generated_files"
             exit 1
           fi
+        timeout-minutes: 1
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
         timeout-minutes: 1
 
   static-web:

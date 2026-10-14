@@ -1,0 +1,10 @@
+name: Valkey logs
+description: >
+  Prints the container logs of the Valkey started by `start-valkey`. Call it with
+  `if: failure()` so only a failed job pays for the log volume.
+runs:
+  using: composite
+  steps:
+    - name: Print Valkey container logs
+      shell: bash
+      run: docker logs voucha-valkey || true

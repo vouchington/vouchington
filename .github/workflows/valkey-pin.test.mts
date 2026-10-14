@@ -4,17 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { assertWorkflowInvariant } from '../test-helpers/workflow-fixtures.mts'
 
-const WORKFLOW_VALKEY_FILES = [
-  '.github/workflows/checks-backend-smoke.yml',
-  '.github/workflows/explain-analyze.yml',
-  '.github/workflows/tests-backend-credentialed.yml',
-  '.github/workflows/tests-backend-unit.yml',
-  '.github/workflows/tests-playwright-credentialed.yml',
-  '.github/workflows/tests-playwright.yml',
-  '.github/workflows/tests-postgres-schema.yml',
-  '.github/workflows/publish-backend-images.yml',
-  '.github/workflows/tests-web-integration.yml',
-]
+const WORKFLOW_VALKEY_FILES = ['.github/actions/start-valkey/action.yml']
 
 const DEV_VALKEY_FILES = ['dev/initialize']
 
@@ -67,6 +57,7 @@ describe('Valkey bundle image pin', () => {
     for (const filePattern of [
       '.github/workflows/*.yml',
       '.github/workflows/*.yaml',
+      '.github/actions/*/action.yml',
       'dev/initialize',
     ]) {
       expect(manager.managerFilePatterns).toContain(filePattern)

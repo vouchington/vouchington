@@ -33,24 +33,14 @@ jobs:
           --health-start-period 30s
           --health-start-interval 1s
           --tmpfs /var/lib/postgresql:rw,size=1g
-      valkey:
-        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
-        ports:
-          - 6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
-          --health-start-interval 1s
-          --tmpfs /data:rw,size=64m
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 2
         with:
           fetch-depth: 0
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
       - name: Set service connections
         timeout-minutes: 1
         run: |
@@ -58,7 +48,6 @@ jobs:
           {
             echo "DATABASE_URL=${postgres_url}"
             echo "READ_DATABASE_URL=${postgres_url}"
-            echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}"
           } >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
@@ -81,3 +70,6 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1

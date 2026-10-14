@@ -73,18 +73,6 @@ jobs:
     # this job from 8 vCPU to 2 at the same 20-minute ceiling, so that margin is thinner than it
     # looks and is not the place to find room for a registry push.
     timeout-minutes: 30
-    services:
-      valkey:
-        image: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
-        ports:
-          - 6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
-          --health-start-interval 1s
     env:
       IMAGE_REPOSITORY: voucha-validation
       SHA_TAG: sha-${{ github.sha }}
@@ -95,6 +83,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
       - uses: ./.github/actions/setup-aws
         timeout-minutes: 2
         with:
@@ -204,3 +194,6 @@ jobs:
         timeout-minutes: 1
         if: ${{ always() }}
         run: docker logout ghcr.io >/dev/null 2>&1 || true
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1

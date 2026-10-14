@@ -47,6 +47,7 @@
       "managerFilePatterns": [
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml",
+        ".github/actions/*/action.yml",
         "dev/initialize"
       ],
       "matchStrings": [

@@ -58,7 +58,7 @@ describe('backend image workflow', () => {
       candidate => candidate.name === 'Run API smoke test',
     )
 
-    expect(step?.env?.VALKEY_URL).toBe("redis://localhost:${{ job.services.valkey.ports['6379'] }}")
+    expect(step?.env?.VALKEY_URL).toBeUndefined()
     expect(step?.run).toContain('PORT=$(python3 ci/allocate-browser-safe-ports.py 1)')
     const [serverSmoke, diagnosticSmoke] =
       step?.run?.split('Running deployed Valkey diagnostic') ?? []
@@ -118,18 +118,19 @@ describe('backend image workflow', () => {
 
   it('gives worker-io smoke tests a reachable Valkey service', () => {
     const buildJob = readBuildBackendWorkflow().jobs?.build
-    expect(buildJob?.services?.valkey).toMatchObject({ ports: [6379] })
-    expect(buildJob?.services?.valkey?.image).toMatch(
-      /^mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
+    expect(buildJob?.services?.valkey).toBeUndefined()
+    const steps = buildJob?.steps ?? []
+    const startValkey = steps.findIndex(step => step.uses === './.github/actions/start-valkey')
+    const buildImages = steps.findIndex(
+      step => step.uses === './.github/actions/build-backend-images',
     )
-    expect(buildJob?.services?.valkey?.options).toContain('valkey-cli ping')
+    expect(startValkey).toBeGreaterThanOrEqual(0)
+    expect(startValkey).toBeLessThan(buildImages)
 
     const workerIoSmokeStep = readBuildBackendImagesSteps().find(
       step => step.name === 'Run worker-io smoke test',
     )
-    expect(workerIoSmokeStep?.env?.VALKEY_URL).toBe(
-      "redis://localhost:${{ job.services.valkey.ports['6379'] }}",
-    )
+    expect(workerIoSmokeStep?.env?.VALKEY_URL).toBeUndefined()
     expect(workerIoSmokeStep?.run).toContain(
       'docker run -d --name "$WORKER_CONTAINER" --network host',
     )
@@ -149,9 +150,8 @@ describe('backend image workflow', () => {
     const workerCpuSmokeStep = readBuildBackendImagesSteps().find(
       step => step.name === 'Run worker-cpu smoke test',
     )
-    expect(workerCpuSmokeStep?.env?.VALKEY_URL).toBe(
-      "redis://localhost:${{ job.services.valkey.ports['6379'] }}",
-    )
+    expect(workerCpuSmokeStep?.env?.VALKEY_URL).toBeUndefined()
+    expect(workerCpuSmokeStep?.run).toContain('-e VALKEY_URL')
     expect(workerCpuSmokeStep?.if).toBe(
       "${{ !cancelled() && (steps.bake-core.outcome == 'success' || steps.bake-all.outcome == 'success') }}",
     )

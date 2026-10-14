@@ -8,12 +8,8 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(workflow).toMatch(
       /image: mirror\.gcr\.io\/pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}/u,
     )
-    expect(workflow).toMatch(
-      /image: mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}/u,
-    )
-    expect(workflow).toContain(
-      "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}",
-    )
+    expect(workflow).toContain('uses: ./.github/actions/start-valkey')
+    expect(workflow).not.toContain('services.valkey')
     expect(workflow).toContain('--project backend-activitypub-capacity')
   })
 
