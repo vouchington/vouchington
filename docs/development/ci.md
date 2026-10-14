@@ -47,6 +47,17 @@ full `buildx.build.provenance` object, about 670 lines per image, around a diges
 that no workflow reads. The setting changes only the metadata file and log, not the build output.
 `cache-policy.test.mts` requires it on every such step in a workflow or composite action.
 
+Valkey runs as a step container, not a job `services:` entry. GitHub prints a service container's
+complete `docker logs` at job teardown on every run, and the bundled search module logs about 150
+`Defined Info Field` warnings at warning level, so a green backend shard carried about 23 KB of
+Valkey output that no check reads and no log level could hide. The
+[`start-valkey`](../../.github/actions/start-valkey/action.yml) action starts the same digest-pinned
+image published to loopback on an ephemeral host port (resolved with `docker port`), waits for `PING` under a 60 second
+deadline, disables RDB saves on the disposable instance, and exports `VALKEY_URL`. A job that starts
+it ends with a `failure()`-only [`valkey-logs`](../../.github/actions/valkey-logs/action.yml) step,
+so the logs appear exactly when a job fails. `start-valkey.test.mts` requires that pairing and
+rejects any workflow that declares a `valkey` service again.
+
 Both `setup-node-pnpm` installs pass `--loglevel=warn`. At the default level each job printed about
 85 to 135 install lines (93 in the install region of run `36216699892`): `Progress: resolved …`
 lines, a `devDependencies:` summary of the root manifest, and every dependency's lifecycle-script

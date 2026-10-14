@@ -18,7 +18,7 @@ describe('web API workflow', () => {
     expect(parsedWorkflow.jobs?.prep?.['runs-on']).toBe(armLabel)
     expect(parsedWorkflow.jobs?.['web-api-tests']?.['runs-on']).toBe(armLabel)
     expect(workflow).toContain('postgres:')
-    expect(workflow).toContain('valkey:')
+    expect(workflow).toContain('uses: ./.github/actions/start-valkey')
     expect(workflow).toContain('uses: ./.github/actions/setup-backend')
     expect(workflow).toContain('node data-stores/psql/migrate.mts')
     expect(workflow).not.toContain('build-web-targets')

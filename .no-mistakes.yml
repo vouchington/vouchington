@@ -4191,8 +4191,8 @@ rules:
       maxMinutes: 10
       rejectStepExceedingJob: true
       allow:
-        # Serial setup, dependency, contract, and snapshot steps total 12m; healthy max was 75s
-        # across 67 GitHub-hosted successes in #2260.
+        # Step limits sum to 16m; the 14m job cap is below the sum (fail-fast); healthy runtime
+        # ~1.4m (max 75s across 67 GitHub-hosted successes in #2260).
         - job: '.github/workflows/checks-static.yml#static-backend'
           maxMinutes: 14
         # Serial setup, dependency, image smoke, package build, and package smoke steps total 15m

@@ -91,7 +91,6 @@ describe('checks-static workflow', () => {
 
   it('budgets each additive job above its serial critical step timeouts', () => {
     const expectedBudgets = new Map([
-      ['static-backend', 14],
       ['static-lambdas', 16],
       ['static-cloudflare', 11],
     ])
@@ -101,6 +100,18 @@ describe('checks-static workflow', () => {
       expect(jobBudget).toBe(expectedBudget)
       expect(jobBudget).toBeGreaterThan(serialCriticalStepBudget(jobName))
     }
+  })
+
+  it('keeps the static-backend cap below its step sum and above its largest step', () => {
+    const job = parsed.jobs?.['static-backend']
+    const jobBudget = numberField(job?.['timeout-minutes'], 'static-backend')
+    const stepTimeouts = (job?.steps ?? []).map(step =>
+      typeof step['timeout-minutes'] === 'number' ? step['timeout-minutes'] : 0,
+    )
+
+    expect(jobBudget).toBe(14)
+    expect(jobBudget).toBeGreaterThan(Math.max(...stepTimeouts))
+    expect(jobBudget).toBeLessThan(serialCriticalStepBudget('static-backend'))
   })
 
   it('gives the static-web gate a fail-fast budget between its largest step and the step sum', () => {
@@ -143,9 +154,7 @@ describe('checks-static workflow', () => {
         'pnpm run backend-row-contracts:check\npnpm run api-fixtures:check\nexport NODE_ENV=test\n',
       ),
     ).toBe(true)
-    expect(compilation?.run).toContain(
-      "export VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}",
-    )
+    expect(compilation?.run).not.toContain('services.valkey')
     expect(compilation?.run?.trim().split('\n').slice(-2)).toEqual([
       'node ci/check-live-mcp-catalog.mjs',
       'pnpm run mcp:catalog -- --check',
@@ -165,12 +174,8 @@ if [ -n "$untracked_generated_files" ]; then
   exit 1
 fi\n`,
     })
-    const valkey = parsed.jobs?.['static-backend']?.services?.valkey
-    expect(valkey?.image).toMatch(
-      /^mirror\.gcr\.io\/valkey\/valkey-bundle:[^@]+@sha256:[a-f0-9]{64}$/,
-    )
-    expect(valkey?.ports).toEqual([6379])
-    expect(valkey?.options).toContain('--health-cmd "valkey-cli ping"')
+    expect(parsed.jobs?.['static-backend']?.services?.valkey).toBeUndefined()
+    expect(steps.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
     expect(parsed.jobs?.['static-backend']?.services?.postgres).toBeUndefined()
     for (const name of [
       'S3_BUCKET_IMAGES',

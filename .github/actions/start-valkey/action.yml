@@ -1,0 +1,40 @@
+name: Start Valkey
+description: >
+  Starts the pinned Valkey bundle container for a test job and exports VALKEY_URL. It replaces a
+  job `services:` entry because GitHub prints a service container's complete `docker logs` at job
+  teardown on every run, and the search module logs ~150 info-field warning lines at startup. A
+  step container prints nothing unless `valkey-logs` is asked to, so a green job stays quiet.
+  The container publishes to loopback on an ephemeral host port that is resolved after start.
+outputs:
+  url:
+    description: Valkey connection URL, also exported as VALKEY_URL for later steps.
+    value: ${{ steps.start.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Start Valkey
+      id: start
+      shell: bash
+      env:
+        VALKEY_IMAGE: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        VALKEY_CONTAINER: voucha-valkey
+      run: |
+        set -euo pipefail
+        docker run -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
+          "$VALKEY_IMAGE" >/dev/null
+        # Valkey has no readiness event to wait on, so poll `valkey-cli ping` under a hard deadline.
+        if ! timeout 60 sh -c 'until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done' "$VALKEY_CONTAINER"; then
+          echo "::error::Valkey did not answer PING within 60s"
+          docker logs "$VALKEY_CONTAINER" || true
+          exit 1
+        fi
+        # Disposable test instance on tmpfs: skip RDB snapshots (and their log lines).
+        docker exec "$VALKEY_CONTAINER" valkey-cli config set save '' >/dev/null
+        port="$(docker port "$VALKEY_CONTAINER" 6379/tcp | head -n 1 | sed 's/.*://')"
+        if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+          echo "::error::Could not resolve the published Valkey host port"
+          exit 1
+        fi
+        echo "VALKEY_URL=redis://127.0.0.1:${port}" >> "$GITHUB_ENV"
+        echo "url=redis://127.0.0.1:${port}" >> "$GITHUB_OUTPUT"

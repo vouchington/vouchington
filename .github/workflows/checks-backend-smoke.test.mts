@@ -30,9 +30,8 @@ describe('checks-backend-smoke workflow', () => {
     expect(smoke?.services?.postgres?.image).toMatch(
       /^mirror\.gcr\.io\/pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u,
     )
-    expect(smoke?.services?.valkey?.image).toMatch(
-      /^mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
-    )
+    expect(smoke?.services?.valkey).toBeUndefined()
+    expect(smoke?.steps?.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
   })
 
   it('migrates before the allocated-port API and worker smoke without coverage transport', () => {

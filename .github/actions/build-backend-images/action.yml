@@ -4,8 +4,8 @@ description: >
   smoke tests against them, and gates on a Trivy CRITICAL/HIGH scan before generating SBOMs.
   Produces validated local images tagged sha-<sha> under the voucha-validation namespace; does
   not publish anywhere. The caller must run actions/checkout (fetch-depth 0) before
-  invoking this action, must run the valkey service container, must set job env
-  IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
+  invoking this action, must run ./.github/actions/start-valkey (which exports VALKEY_URL), must
+  set job env IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   ./.github/actions/setup-aws) before invoking this action, so AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
   for the smoke test steps.
@@ -160,7 +160,6 @@ runs:
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
-        VALKEY_URL: redis://localhost:${{ job.services.valkey.ports['6379'] }}
       run: |
         set -euo pipefail
         IMAGE="$IMAGE_REPOSITORY/api:$IMAGE_TAG"
@@ -241,7 +240,6 @@ runs:
       shell: bash
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
-        VALKEY_URL: redis://localhost:${{ job.services.valkey.ports['6379'] }}
       run: |
         set -euo pipefail
         IMAGE="$IMAGE_REPOSITORY/worker-cpu:$IMAGE_TAG"
@@ -322,7 +320,6 @@ runs:
       env:
         IMAGE_TAG: ${{ env.SHA_TAG }}
         ACTIVE_WORKER_IMAGES: ${{ steps.images.outputs.active_worker_images }}
-        VALKEY_URL: redis://localhost:${{ job.services.valkey.ports['6379'] }}
       run: |
         set -euo pipefail
         IMAGE="$IMAGE_REPOSITORY/worker-io:$IMAGE_TAG"

@@ -13,12 +13,12 @@ function docker(args: string[]): string {
 }
 
 function valkeyImage(): string {
-  const workflow = parse(
-    readFileSync(new URL('../.github/workflows/tests-backend-unit.yml', import.meta.url), 'utf8'),
-  ) as { jobs?: { 'backend-tests'?: { services?: { valkey?: { image?: unknown } } } } }
-  const image = workflow.jobs?.['backend-tests']?.services?.valkey?.image
+  const action = parse(
+    readFileSync(new URL('../.github/actions/start-valkey/action.yml', import.meta.url), 'utf8'),
+  ) as { runs?: { steps?: Array<{ env?: { VALKEY_IMAGE?: unknown } }> } }
+  const image = action.runs?.steps?.[0]?.env?.VALKEY_IMAGE
   if (typeof image !== 'string' || !image) {
-    throw new Error('Missing backend-tests.services.valkey.image in tests-backend-unit.yml')
+    throw new Error('Missing VALKEY_IMAGE in the start-valkey action')
   }
   return image
 }
