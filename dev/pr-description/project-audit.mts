@@ -4,7 +4,7 @@ import type { RunGh } from './issue-closure.mts'
 import type { ClosingIssueForAudit } from './validate.mts'
 
 /**
- * Composition point for `dev/pr-description.mts`: adapts `vouchington-tooling/github-projects`'s
+ * Composition point for the pull-request policy (`dev/agent-policy/pull-request.mts`): adapts `vouchington-tooling/github-projects`'s
  * `auditProjectCompletion` to the `(closingIssues) => Promise<string[]>` shape `validate.mts`
  * expects — no project-querying logic lives here, only the `ClosingIssueForAudit` -> `{ number,
  * repo }` shape adaptation. Purely advisory: unlike `createMilestoneAuditor`, its output never

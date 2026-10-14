@@ -65,8 +65,8 @@ Every flaky test and every defect in this repository gets one fix PR per group:
    assertion, first show that the assertion fails for the expected reason against the pre-fix
    source, per [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s
    regression-test rule, and record that evidence under `## Implementation choice`.
-6. **Publish.** Create one draft PR with
-   `node dev/pr-description.mts create --title <title> --body-file <path>`. The body needs
+6. **Publish.** Create one draft PR with the
+   `pr_create` tool of the `vouchington-tooling` MCP server. The body needs
    `## Root cause`, `## Implementation choice`, `## Options considered` with pros and cons,
    implementation details, the failing runs, validation evidence, `## Related issues` with the
    closing reference, remaining follow-ups, and the `Workspace setup:` line named above. Apply both

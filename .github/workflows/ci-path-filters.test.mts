@@ -139,7 +139,7 @@ describe('detect-changes path filters', () => {
       'dev/worktree-port-policy.json',
       'ci/download-with-diagnostics.sh',
     ]
-    const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description.mts']
+    const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description/validate.mts']
     assertNoWorkflowViolations(
       hits.filter(path => !filterMatches(shellScripts, path)),
       'shell-scripts misses:',

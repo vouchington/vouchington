@@ -139,7 +139,7 @@ describe('Codex hook coarse automation merge rule — accepted overmatches', () 
     'git commit -m "fix: block gh pr merge"',
     "grep x <<< 'gh pr merge 1'",
     String.raw`bash -c echo\ gh\ pr\ merge\ 1`,
-    "gh pr create --draft --title t --body 'Closes #1. Run gh pr merge 1 later.'",
+    "gh pr comment 1 --body 'Closes #1. Run gh pr merge 1 later.'",
     // `git merge` beside gh, merge help, and a GET of the merge endpoint.
     'gh pr checkout 1 && git merge main',
     'gh pr merge --help',
@@ -188,7 +188,7 @@ describe('Codex hook coarse automation merge rule — commands with no merge', (
     'echo repos/o/r/pulls | xargs -n1 gh api',
     // Comments and heredoc bodies no shell reads are data.
     'echo safe # gh pr merge 1',
-    "gh pr create --draft --body-file - <<'EOF'\nCloses #1\ngh pr merge 1 now blocks\nEOF",
+    "gh pr comment 1 --body-file - <<'EOF'\nCloses #1\ngh pr merge 1 now blocks\nEOF",
     "git commit -F - <<'EOF'\nfix: gh pr merge\nEOF",
     "cat > notes.md <<'EOF'\ngh pr merge 1\nEOF",
   ])('does not block: %s', command => {

@@ -1,22 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-
-export function ghBodyIsOpaqueToHook(options: GhOptions): boolean {
-  const inlineBody = options.body.at(-1)
-  if (inlineBody !== undefined) {
-    // Inline body containing unexpanded shell substitutions ($(cmd) or `cmd`) cannot
-    // be evaluated by the hook — treat as opaque to avoid false positives.
-    return /\$\(|`/.test(inlineBody)
-  }
-
-  const bodyFile = options.bodyFile.at(-1)
-  if (bodyFile === undefined) {
-    return false
-  }
-
-  return bodyFile === '-'
-}
-
 export function addOptionValue(
   options: GhOptions,
   key: Exclude<keyof GhOptions, 'draft'>,
@@ -143,51 +124,4 @@ export function parseGhOptions(tokens: string[]): GhOptions {
   }
 
   return options
-}
-
-export function ghBodyFromOptions(options: GhOptions, cwd: string): string | null {
-  const inlineBody = options.body.at(-1)
-  if (inlineBody !== undefined) {
-    return inlineBody
-  }
-
-  const bodyFile = options.bodyFile.at(-1)
-  if (bodyFile === undefined || bodyFile === '-') {
-    return null
-  }
-
-  for (const candidate of bodyFileCandidates(cwd, bodyFile)) {
-    try {
-      return readFileSync(candidate, 'utf8')
-    } catch {
-      continue
-    }
-  }
-
-  return null
-}
-
-export function bodyFileCandidates(cwd: string, bodyFile: string): string[] {
-  const candidates = [resolve(cwd, bodyFile)]
-  const expanded = expandShellLikePath(bodyFile)
-  if (expanded !== bodyFile) {
-    candidates.push(resolve(cwd, expanded))
-  }
-
-  return [...new Set(candidates)]
-}
-
-export function expandShellLikePath(path: string): string {
-  let expanded = path
-  if (expanded === '~' || expanded.startsWith('~/')) {
-    const home = process.env.HOME
-    if (home !== undefined) {
-      expanded = `${home}${expanded.slice(1)}`
-    }
-  }
-
-  return expanded.replace(/\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))/g, match => {
-    const name = match.startsWith('${') ? match.slice(2, -1) : match.slice(1)
-    return process.env[name] ?? match
-  })
 }

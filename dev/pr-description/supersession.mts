@@ -142,7 +142,7 @@ export function validateAuditHits(
 }
 
 /**
- * Composition point for `dev/pr-description.mts`: bundles vocabulary building, search, and decision
+ * Composition point for the pull-request policy (`dev/agent-policy/pull-request.mts`): bundles vocabulary building, search, and decision
  * policy behind the `(body, closingRefs) => Promise<string[]>` shape `validate.mts` expects, so the
  * CLI only wires `runGh`, `repo`, and an incrementally-reduced diff summary — no auditor internals
  * leak into the CLI.

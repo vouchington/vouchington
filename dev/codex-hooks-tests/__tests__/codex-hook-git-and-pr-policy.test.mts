@@ -1,16 +1,8 @@
-import { rm } from 'node:fs/promises'
-
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 
-const testDirs: string[] = []
-
 describe('Codex hook git and PR policy', () => {
-  afterEach(async () => {
-    await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
-  })
-
   it.each([
     ['git push --force origin docs/codex-workflow', 'Force pushes'],
     ['git push -f origin docs/codex-workflow', 'Force pushes'],
@@ -68,30 +60,6 @@ describe('Codex hook git and PR policy', () => {
   })
 
   it.each([
-    'gh pr create --fill',
-    'gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
-    'env GH_TOKEN=token gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
-    'command gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
-  ])('blocks PR creation without --draft: %s', command => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: { command },
-      })?.reason,
-    ).toContain('New PRs must be opened as draft first')
-  })
-
-  it.each(['gh pr create --draft --fill'])(
-    'allows PR creation with --draft when other policy requirements pass: %s',
-    command => {
-      expect(
-        findPreToolUseBlock({
-          tool_input: { command },
-        }),
-      ).toBeNull()
-    },
-  )
-
-  it.each([
     'GIT_EDITOR=true git rebase --continue',
     'GIT_EDITOR="true" git rebase --continue',
     "GIT_EDITOR='true' git rebase --continue",
@@ -138,151 +106,4 @@ describe('Codex hook git and PR policy', () => {
       ).toBeNull()
     },
   )
-
-  it('blocks PR creation without closing issue references', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command: 'gh pr create --draft --title "feat: test" --body "## Summary\\n- changed"',
-        },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it.each([
-    'GH_TOKEN=token gh pr create --draft --title "feat: test" --body "## Summary"',
-    'env GH_TOKEN=token gh pr create --draft --title "feat: test" --body "## Summary"',
-    'env -u GH_HOST GH_TOKEN=token gh pr create --draft --title "feat: test" --body "## Summary"',
-    'command gh pr create --draft --title "feat: test" --body "## Summary"',
-    'GH_TOKEN=token command gh pr create --draft --title "feat: test" --body "## Summary"',
-  ])('blocks PR creation without closing references through wrapper form: %s', command => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: { command },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it('allows PR creation with closing issue references', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command:
-            'gh pr create --draft --title "feat: test" --body "## Related issues\nCloses #2476"',
-        },
-      }),
-    ).toBeNull()
-  })
-
-  it('allows scheduled prompt PR creation with the exact no-source representation', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command:
-            "gh pr create --draft --title 'Automation scheduled: test' --body $'## Related issues\\n\\nNo source issue; scheduled prompt run.\\n<!-- related-issues-validation: no-source-scheduled-prompt -->\\n\\nWorkspace setup: Auto Harness scheduled prompt'",
-        },
-      }),
-    ).toBeNull()
-  })
-
-  it('allows scheduled prompt PR body replacement with the exact no-source representation', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command:
-            "gh pr edit 123 --body $'## Related issues\\n\\nNo source issue; scheduled prompt run.\\n<!-- related-issues-validation: no-source-scheduled-prompt -->\\n\\nWorkspace setup: Auto Harness scheduled prompt'",
-        },
-      }),
-    ).toBeNull()
-  })
-
-  it('blocks scheduled no-source strings that appear only inside fenced examples', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command:
-            "gh pr create --draft --title 'feat: example' --body $'## Related issues\\n\\n~~~md\\nNo source issue; scheduled prompt run.\\n<!-- related-issues-validation: no-source-scheduled-prompt -->\\n~~~\\n\\n~~~text\\nWorkspace setup: Auto Harness scheduled prompt\\n~~~'",
-        },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it.each([
-    'gh pr create --draft --title "feat: test" --body $\'## Related issues\\nCloses #2476\'',
-    'gh pr create --draft --title "feat: test" --body=$\'## Related issues\\nCloses #2476\'',
-    "gh pr edit 123 --body $'## Related issues\\nCloses #2476'",
-    'zsh -lc "gh pr edit 123 --body $\'## Related issues\\nCloses #2476\'"',
-  ])('allows PR body closing references in ANSI-C quoted shell strings: %s', command => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: { command },
-      }),
-    ).toBeNull()
-  })
-
-  it('does not treat backslash-escaped issue references as PR closing keywords', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command: 'gh pr create --draft --title "feat: test" --body "Closes \\#2476"',
-        },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it('does not treat backslash-escaped issue references in ANSI-C quoted strings as PR closing keywords', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command: 'gh pr create --draft --title "feat: test" --body $\'Closes \\\\#2476\'',
-        },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it('blocks PR creation without closing references inside grouped commands', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command: '(gh pr create --draft --title "feat: test" --body "## Summary")',
-        },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it.each([
-    'if gh pr create --draft --title "feat: test" --body "## Summary"; then echo ok; fi',
-    'if false; then echo no; elif gh pr create --draft --title "feat: test" --body "## Summary"; then echo ok; fi',
-    'while gh pr create --draft --title "feat: test" --body "## Summary"; do echo ok; done',
-    'until gh pr create --draft --title "feat: test" --body "## Summary"; do echo ok; done',
-    'if ! gh pr create --draft --title "feat: test" --body "## Summary"; then echo ok; fi',
-    'time gh pr create --draft --title "feat: test" --body "## Summary"',
-  ])('blocks PR creation without closing references after shell control prefix: %s', command => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: { command },
-      })?.reason,
-    ).toContain('Closes #123')
-  })
-
-  it('ignores gh workflow text that is not in command position', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command: 'echo gh pr create --draft --body "## Summary"',
-        },
-      }),
-    ).toBeNull()
-  })
-
-  it('stops PR option parsing at background and newline command separators', () => {
-    expect(
-      findPreToolUseBlock({
-        tool_input: {
-          command:
-            'gh pr create --draft --title "feat: test" --fill & echo --body "## Summary"\ngh pr create --draft --title "feat: test" --fill',
-        },
-      }),
-    ).toBeNull()
-  })
 })

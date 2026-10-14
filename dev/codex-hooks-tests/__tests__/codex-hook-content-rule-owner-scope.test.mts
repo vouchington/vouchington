@@ -11,8 +11,8 @@ import { withTestTempDir } from '../test-temp-root.mts'
 // Synthetic owners: the session checkout belongs to `acme`; `widgets-inc` is another owner.
 const SESSION = { sessionOwners: () => new Set(['acme']) }
 const UNREAD_CWD = '/owner-scope-session'
-const DRAFT_FIRST = 'New PRs must be opened as draft first'
-const CLOSING_KEYWORD = 'PR bodies must include at least one GitHub closing keyword'
+const DRAFT_FIRST = 'pr_create'
+const CLOSING_KEYWORD = 'pr_update'
 const TARGET_MAIN = 'PRs must target main'
 
 const nonDraftPr = (flags: string, prefix = '') =>

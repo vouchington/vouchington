@@ -24,7 +24,7 @@ Include the supplied related candidates in the search for existing work; none is
 - **Fix base:** the checked-out commit.
 - **Fix PR title:** begins with `Automation fix: {{WORKFLOW_NAME}} @ {{COMMIT_SHA}}`. When an
   earlier Fix Main session already opened that PR, update it with
-  `node dev/pr-description.mts update <pr> --body-file <path>` instead of creating another.
+  `pr_update` (`vouchington-tooling` MCP server) instead of creating another.
 - **Workspace setup line:** `Workspace setup: Automation fix-main run`.
 - **Before publication,** re-fetch the source run and require the same run identity and
   conclusion, then commit and push without overwriting concurrent work.

@@ -75,8 +75,8 @@ before releasing the worktree lock.
 
 - `./dev/ci-local <target> [--dry-run]` — Runs the selected CI-equivalent command in the current
   worktree; `--list` and `--dry-run` are read-only.
-- `node dev/pr-description.mts create|update ...` — Creates or replaces a GitHub PR body after
-  validation; `validate` is read-only.
+- `pr_create` and `pr_update` (`vouchington-tooling` MCP tools) — Create a draft PR or replace a
+  PR body after validation by `dev/agent-policy.mts`; `pr_validate` is read-only.
 - `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`
   — Creates the tracked `.claude/skills/<name>` symlink after `.agents/skills/<name>/SKILL.md`
   exists; no-ops when the relative target is already correct.

@@ -43,7 +43,7 @@ No source issue; scheduled prompt run.
 Put those two exact standalone lines consecutively in the visible `## Related issues` section, with no
 blank line or other content between them. In the PR body, do not wrap the pair in a code fence or
 collapsed details section. Before publication, confirm the exact scheduled workspace-setup line
-in every body and validate it with `node dev/pr-description.mts validate --body-file <path>`.
+in every body and validate it with the `pr_validate` tool of the `vouchington-tooling` MCP server.
 For a no-source body, the validator checks the pair's adjacency and placement and the exact
 scheduled workspace-setup line.
 

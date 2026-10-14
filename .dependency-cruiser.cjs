@@ -34,7 +34,7 @@ module.exports = {
       comment: 'runtime tooling source files must not import vitest. Use plain Node.js instead.',
       severity: 'error',
       from: {
-        path: '^(ci|dev/agent-issue-labels|static-code-analysis)/(?!.*\\.test\\.mts$)|^dev/pr-description(\\.mts$|/(?!.*\\.test\\.mts$))',
+        path: '^(ci|dev/agent-issue-labels|static-code-analysis)/(?!.*\\.test\\.mts$)|^dev/pr-description/(?!.*\\.test\\.mts$)',
       },
       to: {
         path: '^vitest($|/)',

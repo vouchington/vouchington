@@ -5,7 +5,6 @@ const PROTECTED_TOKENS = [
   'dev/codex-hooks/policy.mts',
   'dev/codex-hooks/pre-tool-use.mts',
   'dev/agent-session-id/persist.mts',
-  'dev/pr-description/closing-refs.mts',
   '.codex/config.toml',
   '.codex/rules/default.rules',
   '.cursor/hooks.json',

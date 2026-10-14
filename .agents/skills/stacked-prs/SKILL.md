@@ -46,8 +46,8 @@ Use only these non-interactive forms:
 - `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
   number also works. Hook-enforced: it takes exactly one numeric stack or PR number. See
   [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
-- `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
-  new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
+- `gh stack submit --auto` — creates drafts. Immediately `pr_update` (the `vouchington-tooling` MCP tool) each
+  new PR from that layer's worktree, since the tool requires the PR head to be the worktree branch; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
   does not check that the body update ran.
 - `gh stack view --json` — acting only; never use its output, or `gh stack bottom`, to decide
   topology, ownership, or bottom-ness (see "Local metadata is advisory" below).
@@ -207,8 +207,8 @@ The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn 
 3. **Partition by ownership**, applied to that topology read. Shepherd only PRs this agent owns; never
    poll, fix, rebase, or push the others — but list them in the report so the human sees the whole
    stack. **Owned** means this session opened the PR, or a human named it in this session:
-   - The made-by-me half is a durable remote fact: `dev/pr-description/provenance.mts` stamps every
-     PR body it updates with `Agent: <harness> (<model>) session <id>`, resolved via
+   - The made-by-me half is a durable remote fact: the `pr_create` and `pr_update` tools stamp every
+     PR body they write with `Agent: <harness> (<model>) session <id>`, resolved via
      `inspectHarnessEnvironment` across claude-code, codex, cursor, and grok. Compare against the
      current session with `dev/agent-session-id/resolve.mts`'s `resolveSessionId()`:
      ```bash
@@ -220,8 +220,8 @@ The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn 
      session id, is **not owned** — report it as "ownership unverifiable", never poll it.
    - **A parent may assign its stack to one worker.** The assignment lists the pull request numbers
      and the provenance session id already stamped on those bodies. The worker treats that list as
-     assigned. It does not need its own session id on the `Agent:` line. `dev/pr-description.mts update`
-     preserves an existing `Agent:` line. The worker still refuses a layer outside the list.
+     assigned. It does not need its own session id on the `Agent:` line; a worker's `pr_update`
+     restamps the line with the worker's session. The worker still refuses a layer outside the list.
      pr-shepherd's `owned` mark stays author-equals-viewer; a layer that mark omits stays untouched.
 
 ### B. Shepherd the owned PRs
@@ -377,7 +377,7 @@ as a record of what exists.
 ## Known gaps
 
 - **Provenance is not tamper-proof.** It is a body line any writer can edit, and it is absent whenever
-  a PR was opened without `pr-description.mts`, or the harness exposed no valid session id. It is an
+  a PR was opened without `pr_create`, or the harness exposed no valid session id. It is an
   ownership signal, not an authorization boundary — sound here because every merge is human-gated
   regardless of ownership.
 - **Stack/PR number disjointness** is not guaranteed by GitHub — it is a shared repo counter. The

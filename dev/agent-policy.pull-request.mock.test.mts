@@ -90,6 +90,38 @@ describe('validatePullRequest', () => {
     expect(calls).not.toContain('api graphql')
   })
 
+  it('accepts the H2 body the pr_create tool renders', async () => {
+    install()
+    const body = [
+      '## Summary',
+      '',
+      'Brief summary.',
+      '',
+      '## Impact',
+      '',
+      'Developers get actionable PR descriptions; product behavior is unchanged.',
+      '',
+      '## Related issues',
+      '',
+      '- Closes #123 — resolved here',
+      '',
+      '## Details',
+      '',
+      'Details.',
+      '',
+      'Workspace setup: ./dev/initialize monorepo',
+      'Agent: claude-code (opus) session 11111111-1111-1111-1111-111111111111',
+      'Device: test@test-host',
+      'Worktree: test-worktree',
+      '',
+    ].join('\n')
+    expect((await validatePullRequest({ ...base, body })).errors).toEqual([])
+    const h3 = body.replaceAll('## ', '### ')
+    expect((await validatePullRequest({ ...base, body: h3 })).errors.join('\n')).toContain(
+      '## Related issues',
+    )
+  })
+
   it('blocks a non-main base on create but not on update', async () => {
     install()
     const create = await validatePullRequest({ ...base, base: 'feature-parent' })
@@ -135,6 +167,8 @@ describe('pullRequestDefaults', () => {
       repositories: [REPO],
     })
     expect(await pullRequestDefaults()).toEqual({ repositories: [REPO] })
+    // retrospective_save passes an empty object, not the pr_create input.
+    expect(await pullRequestDefaults({})).toEqual({ repositories: [REPO] })
     expect(gh.runGh).not.toHaveBeenCalled()
   })
 

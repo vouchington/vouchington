@@ -1,11 +1,7 @@
-import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 import { parseCommandPrefix } from '../../codex-hooks/policy/shell-command-wrappers.mts'
-import { withTestTempDir } from '../test-temp-root.mts'
 
 describe('parseCommandPrefix', () => {
   it('collects env assignments, unsets, and each env -C across a wrapper chain', () => {
@@ -103,27 +99,7 @@ describe('Codex hook gh policies behind a modeled wrapper chain', () => {
   it.each([
     'env -C /tmp gh pr create --title t --body "Closes #1"',
     'nohup env -u GH_TOKEN gh pr create --title t --body "Closes #1"',
-  ])('requires draft PRs behind a wrapper: %s', command => {
-    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
-      'New PRs must be opened as draft first',
-    )
-  })
-
-  it('reads a relative body file from the env -C directory', async () => {
-    await withTestTempDir('voucha-env-c-session-', async sessionDir => {
-      await withTestTempDir('voucha-env-c-body-', async otherDir => {
-        await writeFile(join(sessionDir, 'pr-body.md'), '## Summary\nno closing ref\n')
-        await writeFile(join(otherDir, 'pr-body.md'), '## Related issues\nCloses #1\n')
-        const command = (dir: string) =>
-          `env -C ${dir} gh pr create --draft --title t --body-file pr-body.md`
-        expect(
-          findPreToolUseBlock({ tool_input: { command: command(sessionDir), cwd: otherDir } })
-            ?.reason,
-        ).toContain('Closes #123')
-        expect(
-          findPreToolUseBlock({ tool_input: { command: command(otherDir), cwd: sessionDir } }),
-        ).toBeNull()
-      })
-    })
+  ])('blocks raw PR creation behind a wrapper: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain('pr_create')
   })
 })

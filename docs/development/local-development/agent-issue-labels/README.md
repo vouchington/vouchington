@@ -124,7 +124,7 @@ authority and verifies metadata around every mutation.
 
 - [`labels-from-paths.mts`](../../../../dev/agent-issue-labels/labels-from-paths.mts) — the same path → component-label derivation
   the one-at-a-time skill flow uses, imported directly rather than reimplemented.
-- `dev/pr-description.mts`'s `import.meta.url` main-guard structure is the
+- The `import.meta.url` main-guard structure of `dev/agent-issue-labels/` entrypoints is the
   template every module here follows: pure logic (`batch/manifest.mts`, `batch/intra-dedup.mts`,
   `batch/resolve-entry.mts`) is separated from IO-driving orchestration (`batch/preflight.mts`), and
   every IO dependency (`runGh`, `pathExists`, `readBody`, `writeArtifact`) is injected so tests

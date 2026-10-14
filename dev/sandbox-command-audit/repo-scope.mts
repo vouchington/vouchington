@@ -4,8 +4,7 @@
  * (~/.claude/projects/**, ~/.codex/sessions/**) while policy loads from process.cwd()
  * only — every other repo's commands get systematically misreported as this repo's
  * allowlist gaps (root cause of #9406). Every git dependency is injectable so tests
- * never shell to real git — see dev/pr-description/provenance.mts for the pattern
- * this follows. Reading a transcript's own recorded cwd is the other half of this fix —
+ * never shell to real git. Reading a transcript's own recorded cwd is the other half of this fix —
  * see ./transcript-cwd.mts (split out to stay under the 200-line-per-file cap).
  */
 

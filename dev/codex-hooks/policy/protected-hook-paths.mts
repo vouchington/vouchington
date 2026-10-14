@@ -13,7 +13,6 @@ import { tokenizeShellWords } from './shell-tokenizer.mts'
 export const PROTECTED_HOOK_DIR_PREFIXES = [
   'dev/codex-hooks/',
   'dev/agent-session-id/',
-  'dev/pr-description/',
   '.codex/rules/',
   '.grok/hooks/',
 ]

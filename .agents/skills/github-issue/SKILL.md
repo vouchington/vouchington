@@ -39,8 +39,8 @@ A stop condition in an issue names a real decision for a human. Adding or changi
 rewrite that returns the same rows, is never one: the worker makes the change and records the plan
 before and after.
 
-Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and `dev/pr-description.mts`
-always operate there. Default `TARGET_REPO` to `vouchington/vouchington`; set another repository
+Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and the `pr_create`/`pr_update`
+tools always operate there. Default `TARGET_REPO` to `vouchington/vouchington`; set another repository
 only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
 relationship, batch preflight, post-write verification, and label-creation decision to the canonical
 skill. Its `Mutation authority` gate re-fetches and re-verifies the exact canonical repository
@@ -91,8 +91,8 @@ in its authorized owning repository.
 
 An optional `Plan:` issue uses this ordinary issue workflow and its authority gate for the exact
 `TARGET_REPO`; it has no separate template or validation helper. Prefer the existing plan record
-when one already exists. For PR links and body mutation, use `node dev/pr-description.mts` in
-`PR_REPO`; same-repository closes are `Closes #N`, and cross-repository closes are
+when one already exists. For PR links and body mutation, use the `pr_create` and `pr_update` tools of the
+`vouchington-tooling` MCP server in `PR_REPO`; same-repository closes are `Closes #N`, and cross-repository closes are
 `Closes owner/repo#N`.
 
 ## Batch preflight

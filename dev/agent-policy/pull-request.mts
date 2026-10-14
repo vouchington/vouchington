@@ -32,10 +32,11 @@ export type PullRequestPolicyInput = {
   pr?: number
 }
 
+// pr_create passes all three; retrospective_save passes `{}`.
 export type PullRequestDefaultsInput = {
-  title: string
-  base: string
-  relatedIssues: { number: number; relation: 'closes' | 'refs'; reason: string }[]
+  title?: string
+  base?: string
+  relatedIssues?: { number: number; relation: 'closes' | 'refs'; reason: string }[]
 }
 
 export type PullRequestDefaults = {

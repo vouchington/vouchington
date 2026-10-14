@@ -3,7 +3,6 @@ import { spawnSync } from 'node:child_process'
 export const TOOLING_DEPENDENCY_CRUISER_ROOTS = [
   'ci',
   'dev/agent-issue-labels',
-  'dev/pr-description.mts',
   'dev/pr-description',
   'static-code-analysis',
 ] as const

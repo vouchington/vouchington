@@ -88,7 +88,7 @@ describe('Codex hook gh policies in a script a shell reads from stdin', () => {
 
   it.each([
     // Heredoc bodies no shell reads are data, whether or not the delimiter is quoted.
-    'gh pr create --draft --title t --body "$(cat <<EOF\n## Summary\n- gh pr merge now blocks\nEOF\n)"',
+    'gh pr comment 1 --body "$(cat <<EOF\n## Summary\n- gh pr merge now blocks\nEOF\n)"',
     'git commit -F - <<EOF\nfix: x\n\n- gh pr merge now confirms\nEOF',
     'cat > notes.yml <<EOF\nsteps:\n  - gh pr merge 1\nEOF',
     'cat > notes.md <<EOF\ngh pr merge 1\nEOF',
@@ -96,7 +96,7 @@ describe('Codex hook gh policies in a script a shell reads from stdin', () => {
     'cat > notes.md <<EOF\n\\$(gh pr merge 1) and \\`gh pr merge 1\\`\nEOF',
     `: ${MERGE_HEREDOC}`,
     `cat > f ${MERGE_HEREDOC}`,
-    `gh pr create --draft --title t --body-file - ${MERGE_HEREDOC}`,
+    `gh pr comment 1 --body-file - ${MERGE_HEREDOC}`,
     `git commit -F - ${MERGE_HEREDOC}`,
     `git commit -m "$(cat ${MERGE_HEREDOC}\n)"`,
     `python3 - ${MERGE_HEREDOC}`,
