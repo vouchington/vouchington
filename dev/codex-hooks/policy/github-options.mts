@@ -52,6 +52,26 @@ export type GhOptions = {
   title: string[]
 }
 
+type OptionKey = Exclude<keyof GhOptions, 'draft'>
+const OPTION_SPECS: readonly (readonly [OptionKey, string, string])[] = [
+  ['body', '--body', '-b'],
+  ['bodyFile', '--body-file', '-F'],
+  ['label', '--label', '-l'],
+  ['repo', '--repo', '-R'],
+  ['title', '--title', '-t'],
+]
+
+// Records the value for the first spec `token` names and returns how many tokens it consumed
+// (2 for a separate value, 1 for an attached one, 0 when no spec matches).
+function consumeOption(options: GhOptions, token: string, nextToken: string | undefined): number {
+  for (const [key, long, short] of OPTION_SPECS) {
+    if ((token === long || token === short) && addOptionValue(options, key, nextToken)) return 2
+    const attached = optionValueFromLongToken(token, long) ?? attachedShortOptionValue(token, short)
+    if (addOptionValue(options, key, attached ?? undefined)) return 1
+  }
+  return 0
+}
+
 export function parseGhOptions(tokens: string[]): GhOptions {
   const options: GhOptions = {
     body: [],
@@ -64,63 +84,9 @@ export function parseGhOptions(tokens: string[]): GhOptions {
 
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index]
-    if (isGhCommandSeparator(token)) {
-      break
-    }
-
-    const nextToken = tokens[index + 1]
-    if (token === '--draft') {
-      options.draft = true
-      continue
-    }
-    if ((token === '--body' || token === '-b') && addOptionValue(options, 'body', nextToken)) {
-      index += 1
-      continue
-    }
-    const attachedBody =
-      optionValueFromLongToken(token, '--body') ?? attachedShortOptionValue(token, '-b')
-    if (addOptionValue(options, 'body', attachedBody ?? undefined)) {
-      continue
-    }
-    if (
-      (token === '--body-file' || token === '-F') &&
-      addOptionValue(options, 'bodyFile', nextToken)
-    ) {
-      index += 1
-      continue
-    }
-    const attachedBodyFile =
-      optionValueFromLongToken(token, '--body-file') ?? attachedShortOptionValue(token, '-F')
-    if (addOptionValue(options, 'bodyFile', attachedBodyFile ?? undefined)) {
-      continue
-    }
-    if ((token === '--label' || token === '-l') && addOptionValue(options, 'label', nextToken)) {
-      index += 1
-      continue
-    }
-    const attachedLabel =
-      optionValueFromLongToken(token, '--label') ?? attachedShortOptionValue(token, '-l')
-    if (addOptionValue(options, 'label', attachedLabel ?? undefined)) {
-      continue
-    }
-    if ((token === '--repo' || token === '-R') && addOptionValue(options, 'repo', nextToken)) {
-      index += 1
-      continue
-    }
-    const attachedRepo =
-      optionValueFromLongToken(token, '--repo') ?? attachedShortOptionValue(token, '-R')
-    if (addOptionValue(options, 'repo', attachedRepo ?? undefined)) {
-      continue
-    }
-    if ((token === '--title' || token === '-t') && addOptionValue(options, 'title', nextToken)) {
-      index += 1
-      continue
-    }
-    const attachedTitle =
-      optionValueFromLongToken(token, '--title') ?? attachedShortOptionValue(token, '-t')
-    if (addOptionValue(options, 'title', attachedTitle ?? undefined)) {
-      continue
-    }
+    if (isGhCommandSeparator(token)) break
+    if (token === '--draft') options.draft = true
+    else index += Math.max(consumeOption(options, token, tokens[index + 1]) - 1, 0)
   }
 
   return options
