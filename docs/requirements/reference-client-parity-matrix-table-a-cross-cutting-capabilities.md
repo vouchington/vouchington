@@ -40,3 +40,4 @@ Clients must handle the server rejection without committing optimistic state.
 [vouchington/vouchington-clients#138]: https://github.com/vouchington/vouchington-clients/pull/138
 [vouchington#2819]: https://github.com/vouchington/vouchington/issues/2819
 [clients#274]: https://github.com/vouchington/vouchington-clients/issues/274
+[clients#275]: https://github.com/vouchington/vouchington-clients/issues/275

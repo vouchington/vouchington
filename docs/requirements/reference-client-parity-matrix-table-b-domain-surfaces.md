@@ -60,3 +60,4 @@ below web even when the domain also contains substantial complete native UI.
 | 49  | RSS feed provenance label            | 🟢        | 🔴           | 🔴           | Source list items show a "via API", "via MCP" or "via {app}" badge for RSS feeds created through the API or MCP, and administrators and moderators also see the raw channel and OAuth client. Web-only; native follows clients#206.                                                                                                                                                                                                                                     |
 
 [clients#274]: https://github.com/vouchington/vouchington-clients/issues/274
+[clients#275]: https://github.com/vouchington/vouchington-clients/issues/275
