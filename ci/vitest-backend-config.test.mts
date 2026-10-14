@@ -140,7 +140,7 @@ describe('backend Vitest project config', () => {
 
   it('resolves GlideMQ to the installed package after inheriting root aliases', () => {
     const project = realGlideProjectConfig()
-    const effectiveConfig = mergeConfig({ resolve: config.resolve }, project ?? {})
+    const effectiveConfig = mergeConfig({ resolve: config.resolve }, { resolve: project?.resolve })
     const effectiveAliases = effectiveConfig.resolve?.alias as
       | Array<{ find: RegExp; replacement: string }>
       | undefined
@@ -163,9 +163,9 @@ describe('backend Vitest project config', () => {
       hookTimeout: 5000,
     })
     expect(config.test?.sequence?.groupOrder).toBe(1)
-    expect(mergeConfig({ resolve: config.resolve }, capacity ?? {}).resolve?.alias).toEqual(
-      effectiveAliases,
-    )
+    expect(
+      mergeConfig({ resolve: config.resolve }, { resolve: capacity?.resolve }).resolve?.alias,
+    ).toEqual(effectiveAliases)
   })
 
   it('keeps no-data mocks disjoint from DB-backed mocks without service setup', () => {

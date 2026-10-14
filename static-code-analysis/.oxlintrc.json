@@ -18,6 +18,10 @@
     "node"
   ],
   "rules": {
+    "no-mistakes/vitest-timeout-cap": [
+      "error",
+      { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+    ],
     "no-console": "off",
     "no-void": "off",
     "no-await-in-loop": "off"

@@ -1206,6 +1206,19 @@
   },
   "overrides": [
     {
+      "files": [
+        "**/ci/**/*.{mts,ts,tsx}",
+        "**/dev/**/*.{mts,ts,tsx}",
+        "**/static-code-analysis/**/*.{mts,ts,tsx}"
+      ],
+      "rules": {
+        "no-mistakes/vitest-timeout-cap": [
+          "error",
+          { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+        ]
+      }
+    },
+    {
       "files": ["**/backend/mcp/**/*.mts"],
       "rules": {
         // React Doctor skipped this style rule under /tools/. Preserve that treatment after
