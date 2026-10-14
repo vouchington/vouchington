@@ -7,6 +7,16 @@ import {
 } from './story-cluster-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
+const communityMemberUser = {
+  ...user,
+  profile_image_id: '00000000-0000-7000-8000-000000000201',
+  profile_image_placement: {
+    placement_id: '00000000-0000-7000-8000-000000000301',
+    placement_revision: 2,
+    image_id: '00000000-0000-7000-8000-000000000201',
+  },
+}
+
 export const webCommunityFeedApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'web.communities.members.default',
@@ -23,7 +33,7 @@ export const webCommunityFeedApiFixtureCases: ApiFixtureCase[] = [
       results: [{ __entity_type: 'community_member', id: communityMember.id }],
       page_info: pageInfo,
       community_members: { [communityMember.id]: communityMember },
-      users: { [user.id]: user },
+      users: { [user.id]: communityMemberUser },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/members.mts'],
