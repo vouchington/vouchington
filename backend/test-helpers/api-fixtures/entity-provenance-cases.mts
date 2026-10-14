@@ -55,7 +55,10 @@ const communitySearch = (staff: boolean) => ({
 })
 
 const topicSearch = (staff: boolean) => ({
-  ...entityPage('topic', variants(topic, staff)),
+  ...entityPage(
+    'topic',
+    variants({ ...topic, logo_image_placement: null, hero_image_placement: null }, staff),
+  ),
   topic_elections: {},
   election_votes: {},
   topics_metrics: {},

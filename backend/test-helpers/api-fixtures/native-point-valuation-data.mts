@@ -55,4 +55,6 @@ export const rewardsProgramTopic = {
   name: firstPointValuation.rewards_program.name,
   slug: firstPointValuation.rewards_program.slug,
   topic_type: 'rewards_program',
+  logo_image_placement: null,
+  hero_image_placement: null,
 }

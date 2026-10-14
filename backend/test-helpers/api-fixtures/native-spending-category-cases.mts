@@ -9,7 +9,14 @@ const firstEntryId = '00000000-0000-7000-8000-000000000742'
 const secondEntryId = '00000000-0000-7000-8000-000000000743'
 const thirdEntryId = '00000000-0000-7000-8000-000000000744'
 const scope = `my-spending-categories:${individualId}:id-asc`
-const spendingCategory = { ...topic, id: categoryId, name: 'Groceries', slug: 'groceries' }
+const spendingCategory = {
+  ...topic,
+  id: categoryId,
+  name: 'Groceries',
+  slug: 'groceries',
+  logo_image_placement: null,
+  hero_image_placement: null,
+}
 const personalEntry = {
   id: firstEntryId,
   spending_category_topic_id: categoryId,

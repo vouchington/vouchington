@@ -70,7 +70,10 @@ describe('topics', () => {
         // Only verify our specific topic to avoid race conditions from parallel tests:
         // topics API has no user filter, so other tests' topics may appear in results
         // and be deleted mid-flight by their afterAll cleanup.
-        expect(response.body.topics[topicId]).toBeDefined()
+        const topic = response.body.topics[topicId]
+        expect(topic).toBeDefined()
+        expect(Object.hasOwn(topic, 'logo_image_placement')).toBe(true)
+        expect(Object.hasOwn(topic, 'hero_image_placement')).toBe(true)
         expect(response.body.topics_metrics[topicId]).toBeDefined()
       })
 

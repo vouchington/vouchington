@@ -27,6 +27,7 @@
         "username": "testuser"
       },
       "hero_image_id": null,
+      "hero_image_placement": null,
       "homepage_url_id": null,
       "hostname": null,
       "hostname_id": null,
@@ -34,6 +35,7 @@
       "is_noindexed": false,
       "lingua_rs_detected_language": null,
       "logo_image_id": null,
+      "logo_image_placement": null,
       "markdown": "A referral program used by native client parity tests.",
       "name": "Test Referral Program",
       "referral_program_id": null,

@@ -1,4 +1,5 @@
 {
+  "bookmarks": {},
   "election_votes": {
     "topic-1": {
       "__entity_type": "election_vote",
@@ -8,6 +9,7 @@
       "user_id": "user-1"
     }
   },
+  "markdown_to_html": {},
   "page_info": {
     "end_cursor": null,
     "has_next_page": false,
