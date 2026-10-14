@@ -92,7 +92,12 @@ export const nativeFriendRecommendationApiFixtureCases: ApiFixtureCase[] = [
           id: user.id,
           username: user.username,
           roles: [],
-          profile_image_id: user.profile_image_id,
+          profile_image_id: '00000000-0000-7000-8000-000000000201',
+          profile_image_placement: {
+            placement_id: '00000000-0000-7000-8000-000000000301',
+            placement_revision: 2,
+            image_id: '00000000-0000-7000-8000-000000000201',
+          },
         },
         [secondFriendId]: {
           __entity_type: 'user',
