@@ -169,5 +169,6 @@ and returns `{sessionId, saved, entries}`; each entry is `{sourceEventId, timest
 a retrospective, oldest first. `saved: false` covers both a session with no retrospective and a
 session that was never created. It is read-only and never creates the session, so it costs nothing
 even for a session that will never get a retrospective. A failing check (server unreachable, invalid
-session id) is a tool error; [SKILL.md](SKILL.md) continues fact collection after it, so a
-blackboard outage does not lose the session's only chance at a retrospective.
+session id) is a tool error. Do not continue fact collection: restore the server per the
+[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the
+retrospective as blocked, and correct an invalid session id before retrying.

@@ -256,8 +256,8 @@ persists a fresh URL-safe `codex-<UUID>` at the ignored `.local/codex-session-id
 invocations reuse that value with only `--root-codex`. A real `CODEX_THREAD_ID` always wins; on a
 root-aware invocation it replaces the generated value. An explicit `--session-id` and
 `--root-codex` are mutually exclusive.
-Root-aware commands locate the enclosing worktree root, and read commands (retrospective `check`)
-refresh and read back its persistence file before contacting the server.
+Root-aware commands locate the enclosing worktree root, then refresh and read back its persistence
+file before contacting the server.
 The flags are deliberately explicit: runtime hints, transcript paths, hooks,
 detached processes, and children never generate a Codex id, and Codex never reads Cursor or Grok
 persistence files. Root authority is self-attested rather than detectable; a child that violates
