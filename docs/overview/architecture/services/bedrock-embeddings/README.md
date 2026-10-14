@@ -94,7 +94,9 @@ the existing whitespace and surrogate-safe truncation behavior. The cap follows 
 The documented Nova response contains no input token count. Successful single calls therefore
 record an approximate token count from the text actually sent, rounded up using the named
 characters-per-token ratio in `config.mts`. This is an accounting estimate, not provider-reported
-usage. SDK wire replays use a documentation-derived response; neither an undocumented token header
+usage. It is emitted only to spend analytics: the returned provider count and stored
+`input_token_count` remain unknown, so a later reported count can populate the cache and entity.
+SDK wire replays use a documentation-derived response; neither an undocumented token header
 nor a live call is required to pass CI.
 Reliable provider counts remain tracked by [#2874](https://github.com/vouchington/vouchington/issues/2874).
 

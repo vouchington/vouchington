@@ -21,7 +21,7 @@ describe('createBedrockEmbedding', () => {
     const result = await createBedrockEmbedding('hello world', { entityType: 'post' })
 
     expect(result.embedding).toEqual(embedding)
-    expect(result.tokens).toBe(3)
+    expect(result.tokens).toBeNull()
     expect(send).toHaveBeenCalledOnce()
 
     const command = send.mock.calls[0][0] as { input: { modelId: string; body: string } }

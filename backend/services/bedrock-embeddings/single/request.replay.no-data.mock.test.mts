@@ -68,7 +68,7 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
       },
     })
     // Nova documents no token count; accounting uses a rounded-up character estimate.
-    expect(result.tokens).toBe(10)
+    expect(result.tokens).toBeNull()
     expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         service: 'bedrock',
@@ -92,7 +92,7 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
     }
     expect(body.singleEmbeddingParams.text.value).toHaveLength(8_192)
     expect(body.singleEmbeddingParams.text.value).toBe('x'.repeat(8_192))
-    expect(result.tokens).toBe(2_048)
+    expect(result.tokens).toBeNull()
     expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ tokens: 2_048, success: true, entityType: 'topic' }),
     )

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { BedrockEmbeddingsClient } from '@modules/aws/bedrock-runtime'
 import { UnrecoverableError } from '@modules/queue-errors'
 import { insertCentralizedEmbeddingsBulk } from '../../centralized-table.mts'
+import { lookupExistingEmbedding } from '../../lookup.mts'
 import { createTopicEmbeddingContent } from '@voucha/types/entities/topic'
 import {
   createTestBatch,
@@ -112,7 +113,7 @@ describe('createSingleEmbedding', () => {
     })
   })
 
-  it('writes a Bedrock dense vector onto the topic', async () => {
+  it('keeps stored provider counts unknown until an actual count arrives', async () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Bedrock Hit ${suffix}`
@@ -137,6 +138,19 @@ describe('createSingleEmbedding', () => {
     expect(await getTopicEmbeddingData(topicId)).toMatchObject({
       bedrock_nova_multimodal_v1_input_sha256: content_sha256,
       bedrock_nova_multimodal_v1_embedding: embedding,
+      bedrock_nova_multimodal_v1_input_token_count: null,
     })
+    expect(await lookupExistingEmbedding(content_sha256)).toMatchObject({
+      input_token_count: null,
+    })
+
+    await insertCentralizedEmbeddingsBulk([{ content_sha256, embedding, input_token_count: 7 }])
+    await createSingleEmbedding({ type: 'topic', id: topicId, content })
+
+    expect(await lookupExistingEmbedding(content_sha256)).toMatchObject({ input_token_count: 7 })
+    expect(await getTopicEmbeddingData(topicId)).toMatchObject({
+      bedrock_nova_multimodal_v1_input_token_count: 7,
+    })
+    expect(send).toHaveBeenCalledOnce()
   })
 })

@@ -11,6 +11,7 @@ export async function getTopicEmbeddingData(topicId: string): Promise<unknown | 
       bedrock_nova_multimodal_v1_content_sha256,
       bedrock_nova_multimodal_v1_input_sha256,
       bedrock_nova_multimodal_v1_embedding,
+      bedrock_nova_multimodal_v1_input_token_count,
       bedrock_nova_multimodal_v1_embedding_created_at
     FROM topics
     WHERE id = ${topicId}
