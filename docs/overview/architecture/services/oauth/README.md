@@ -144,6 +144,40 @@ This service orchestrates OAuth flows across seven providers (Facebook, Apple, G
 
 ## Queue-owned exchange continuation
 
+```mermaid
+stateDiagram-v2
+  state "completion_ready" as CompletionReady
+  state "released" as Released
+  state "superseded" as Superseded
+  state "terminal" as Terminal
+  state "authorization expired" as Expired
+  state "provider_code_expired" as CodeExpired
+  state "provider_exchange_outcome_unknown" as OutcomeUnknown
+  state "provider_exchange_failed" as ExchangeFailed
+
+  [*] --> Claimed: PostgreSQL claim
+  Claimed --> Owned: persist exchangeClaimId
+  Owned --> Armed: persist armed marker
+  Armed --> CompletionReady: provider call and account commit
+
+  Owned --> Released: unarmed failure releases the claim
+  Owned --> ExchangeFailed: known unarmed exhaustion
+
+  Armed --> Settle: provider failure keeps the claim
+  Settle --> Expired: authorization expiry first
+  Settle --> CodeExpired: X code expiry next
+  Settle --> OutcomeUnknown: armed or indeterminate claim
+  Settle --> ExchangeFailed: known unarmed exhaustion
+  Settle --> Released: known unused claim
+  Settle --> Superseded: successor claim
+  Settle --> Terminal: completed or already settled
+
+  Expired --> Terminal
+  CodeExpired --> Terminal
+  OutcomeUnknown --> Terminal
+  ExchangeFailed --> Terminal
+```
+
 Exchange jobs persist the authorization ID and claim ID before decrypting. Immediately before
 provider admission they persist a secret-free `exchangeProviderRequestArmed` marker. A retry carrying that claim resumes the owned rejection/release, rather than acquiring
 a new claim or repeating the provider. The disposition reads current history after acquiring the
