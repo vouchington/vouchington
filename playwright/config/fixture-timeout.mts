@@ -45,34 +45,53 @@ export function snapshotFixtureTimeouts(fixtures: object, validate: Validation):
       'Playwright timeout guard overrides are forbidden by the 30,000 ms test cap',
     )
   const watchpoints: Watchpoint[] = []
-  const view = Object.freeze(
-    Object.fromEntries(
-      Object.entries(fixtures).map(([name, value]) => {
-        if (!Array.isArray(value)) return [name, value]
-        const options = value[1]
-        if (typeof options !== 'object' || options === null) return [name, value]
-        const captured = snapshotOptionsTimeout(
-          options,
-          validate,
-          `Playwright fixture ${name} timeout`,
-        )
-        const tuple: unknown[] = []
-        Object.defineProperties(tuple, {
-          0: { enumerable: true, get: () => Reflect.get(value, '0', value) },
-          1: { enumerable: true, value: captured },
-        })
-        watchpoints.push(watch(value))
-        for (
-          let owner: object | null = options;
-          owner !== null;
-          owner = Object.getPrototypeOf(owner)
-        ) {
-          watchpoints.push(watch(owner))
-          if (Object.hasOwn(owner, 'timeout')) break
-        }
-        return [name, Object.freeze(tuple)]
-      }),
-    ),
+  const tuples = new WeakMap<object, readonly unknown[]>()
+  const normalize = (value: unknown, knownOptions?: object): unknown => {
+    if (!Array.isArray(value)) return value
+    const existingTuple = tuples.get(value)
+    if (existingTuple !== undefined) return existingTuple
+    const options = knownOptions ?? Reflect.get(value, '1', value)
+    if (typeof options !== 'object' || options === null) return value
+    const captured = snapshotOptionsTimeout(options, validate, 'Playwright fixture timeout')
+    const tuple: unknown[] = []
+    Object.defineProperties(tuple, {
+      0: { enumerable: true, get: () => Reflect.get(value, '0', value) },
+      1: { enumerable: true, value: captured },
+    })
+    watchpoints.push(watch(value))
+    for (let owner: object | null = options; owner !== null; owner = Object.getPrototypeOf(owner)) {
+      watchpoints.push(watch(owner))
+      if (Object.hasOwn(owner, 'timeout')) break
+    }
+    tuples.set(value, Object.freeze(tuple))
+    return tuple
+  }
+  // Validate known data tuples without invoking fixture or tuple-slot getters.
+  for (const descriptor of Object.values(Object.getOwnPropertyDescriptors(fixtures))) {
+    if (!descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) continue
+    const value: unknown = descriptor.value
+    if (!Array.isArray(value)) continue
+    const slot = Object.getOwnPropertyDescriptor(value, '1')
+    const options: unknown = slot && Object.hasOwn(slot, 'value') ? slot.value : undefined
+    if (typeof options === 'object' && options !== null) normalize(value, options)
+  }
+  // Native fixture pools enumerate later. A separate extensible target also supports frozen inputs.
+  const view = new Proxy(
+    {},
+    {
+      ownKeys() {
+        if (Object.hasOwn(fixtures, 'vouchaTestTimeout'))
+          throw new RangeError(
+            'Playwright timeout guard overrides are forbidden by the 30,000 ms test cap',
+          )
+        return Reflect.ownKeys(fixtures)
+      },
+      getOwnPropertyDescriptor(_target, key) {
+        const descriptor = Object.getOwnPropertyDescriptor(fixtures, key)
+        return descriptor && { ...descriptor, configurable: true }
+      },
+      get: (_target, key) => normalize(Reflect.get(fixtures, key, fixtures)),
+    },
   )
   watchpoints.push(watch(fixtures))
   snapshots.set(fixtures, { view, validate, watchpoints })

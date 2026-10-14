@@ -138,6 +138,9 @@ jobs:
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 4
+      - name: Check schema generation guard fixtures
+        run: node ci/check-schema-generation-guard-fixtures.mts
+        timeout-minutes: 2
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
         timeout-minutes: 1

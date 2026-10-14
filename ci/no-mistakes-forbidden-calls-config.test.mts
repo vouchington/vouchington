@@ -253,6 +253,12 @@ describe('no-mistakes forbidden-calls config', () => {
         ],
       },
     })
+    const workflow = parseYaml(
+      readFileSync(`${repoRoot}/.github/workflows/static-code-analysis.yml`, 'utf8'),
+    ) as { jobs: { 'no-mistakes': { steps: { run?: string }[] } } }
+    expect(workflow.jobs['no-mistakes'].steps.map(step => step.run)).toContain(
+      'node ci/check-schema-generation-guard-fixtures.mts',
+    )
     expect(withoutBaseline(rule('integration tests do not call mock helpers'))).toEqual({
       name: 'integration tests do not call mock helpers',
       rule: 'forbidden-calls',
