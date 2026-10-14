@@ -159,6 +159,16 @@ describe('processMembershipJob', () => {
     })
     expect(processors.dispatchMembershipPauseCollection).toHaveBeenCalledOnce()
     expect(processors.syncMembershipPauseCollection).toHaveBeenCalledWith(pauseData)
+
+    const timeout = new Error('Connection terminated due to connection timeout')
+    processors.expireElapsedMemberships.mockRejectedValueOnce(timeout)
+    await expect(
+      processMembershipJob(job('expireElapsedMemberships'), processors),
+    ).rejects.toMatchObject({
+      name: 'RateLimitError',
+      delayMs: 30_000,
+      cause: timeout,
+    })
   })
 
   it('rejects unknown jobs', async () => {
@@ -276,5 +286,5 @@ describe('recoverStripeEvents', () => {
 })
 
 function job(name: string, data: Record<string, unknown> = {}): Job {
-  return { name, data, attemptsMade: 2, opts: { attempts: 3 } } as Job
+  return { name, data, timestamp: Date.now(), attemptsMade: 2, opts: { attempts: 3 } } as Job
 }
