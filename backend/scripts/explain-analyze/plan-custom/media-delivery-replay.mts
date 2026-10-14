@@ -12,7 +12,10 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
   if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:lock */')) {
     if (
       !statement.includes('WITH candidates AS MATERIALIZED') ||
-      !statement.includes('FOR UPDATE OF record')
+      !statement.includes('CROSS JOIN LATERAL (') ||
+      !statement.includes('WHERE id = candidates.media_delivery_registry_record_id') ||
+      !statement.includes('LIMIT 1') ||
+      !statement.includes('ORDER BY record.id FOR UPDATE OF record')
     )
       throw new Error(`${result.name} must lock the bounded candidate page`)
     const candidates = nodes.filter(node => node['Subplan Name'] === 'CTE candidates')
@@ -32,6 +35,19 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       scans.reduce((sum, node) => sum + processedRows(node), 0) > MEDIA_REPLAY_PAGE_SIZE
     )
       throw new Error(`${result.name} must drive at most one page through ${FAILED_INDEX}`)
+    const authorityScans = nodes.filter(
+      node => baseRelationName(node) === 'media_delivery_registry_records',
+    )
+    if (
+      authorityScans.length !== 1 ||
+      authorityScans[0]?.['Node Type'] !== 'Index Scan' ||
+      authorityScans[0]['Index Name'] !== RECORD_PRIMARY_KEY ||
+      Number(authorityScans[0]['Actual Loops']) !== MEDIA_REPLAY_PAGE_SIZE ||
+      Number(authorityScans[0]['Actual Rows']) !== 1
+    )
+      throw new Error(
+        `${result.name} must probe the bounded authority page through ${RECORD_PRIMARY_KEY}`,
+      )
     return
   }
   if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords:event */')) {

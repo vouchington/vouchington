@@ -6,7 +6,10 @@ const prefix = 'replayFailedMediaDeliveryRegistryRecords'
 const lockSql = `/* ${prefix}:lock */ WITH candidates AS MATERIALIZED (
   SELECT media_delivery_registry_record_id FROM media_delivery_registry_projection_work_items
   WHERE failed_change_id IS NOT NULL ORDER BY media_delivery_registry_record_id LIMIT $1
-) SELECT record.id FROM candidates JOIN media_delivery_registry_records record ON record.id = candidates.media_delivery_registry_record_id FOR UPDATE OF record`
+) SELECT record.id FROM candidates CROSS JOIN LATERAL (
+  SELECT id FROM media_delivery_registry_records
+  WHERE id = candidates.media_delivery_registry_record_id LIMIT 1
+) record ORDER BY record.id FOR UPDATE OF record`
 const writeSql = `/* ${prefix} */ WITH inserted AS (
   INSERT INTO media_delivery_registry_changes SELECT media_delivery_registry_record_id
   FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (
@@ -39,6 +42,13 @@ function captured(statement: ReplayStatement, mode: PlanMode): ExplainResult {
                 'Actual Loops': 1,
               },
             ],
+          },
+          {
+            'Node Type': 'Index Scan',
+            'Relation Name': 'media_delivery_registry_records',
+            'Index Name': 'media_delivery_registry_records_pkey',
+            'Actual Rows': 1,
+            'Actual Loops': 1000,
           },
         ]
       : statement === 'write'
@@ -143,6 +153,17 @@ describe('media replay captured statement budgets', () => {
     expect(() => assertMediaDeliveryReplayPlan(lock)).toThrow(
       'one full bounded UUID candidate page',
     )
+    const flattenedLock = captured('lock', 'force_custom_plan')
+    flattenedLock.query_text = flattenedLock.query_text.replace('CROSS JOIN LATERAL (', 'JOIN (')
+    expect(() => assertMediaDeliveryReplayPlan(flattenedLock)).toThrow('bounded candidate page')
+    const unboundedLock = captured('lock', 'force_generic_plan')
+    Object.assign(scan(unboundedLock, 1), {
+      'Node Type': 'Seq Scan',
+      'Index Name': undefined,
+      'Actual Rows': 17000,
+      'Actual Loops': 1,
+    })
+    expect(() => assertMediaDeliveryReplayPlan(unboundedLock)).toThrow('bounded authority page')
     const write = captured('write', 'force_custom_plan')
     scan(write, 0)['Actual Loops'] = 1001
     expect(() => assertMediaDeliveryReplayPlan(write)).toThrow('probe only locked authority ids')

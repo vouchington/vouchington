@@ -56,7 +56,12 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   candidates.append(after ? sql`(SELECT page_size FROM replay_cursor)` : sql`${limit}`)
   candidates.append(sql`
     ) SELECT record.id FROM candidates
-      JOIN media_delivery_registry_records record ON record.id = candidates.media_delivery_registry_record_id
+      -- The materialized UUID page drives one authority probe and lock per id, in page order.
+      CROSS JOIN LATERAL (
+        SELECT id FROM media_delivery_registry_records
+        WHERE id = candidates.media_delivery_registry_record_id
+        LIMIT 1
+      ) record
     ORDER BY record.id FOR UPDATE OF record
   `)
   const { rows: locked } = await transaction<{ id: string }>(candidates)
