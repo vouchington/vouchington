@@ -1,5 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo, topic } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const consumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as const
@@ -69,7 +70,9 @@ export const nativeSpendingCategoryApiFixtureCases: ApiFixtureCase[] = [
       topics: { [categoryId]: spendingCategory },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: { [categoryId]: topicMetricsFor(categoryId) },
+      markdown_to_html: {},
+      bookmarks: {},
     },
     consumers: [...consumers],
     migratedFrom,

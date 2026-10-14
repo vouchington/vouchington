@@ -18,6 +18,8 @@ export const topicMetrics = {
   bookmarks__updated_at: '2026-01-01T00:00:00Z',
 }
 
+export const topicMetricsFor = (id: string) => ({ ...topicMetrics, id })
+
 export const topicMetricsWithViewerCount = {
   ...topicMetrics,
   viewer_count: {

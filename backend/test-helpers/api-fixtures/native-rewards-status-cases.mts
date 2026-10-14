@@ -1,5 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const path = '/api/v1/my/rewards-program-statuses'
@@ -112,7 +113,11 @@ export const nativeRewardsStatusApiFixtureCases: ApiFixtureCase[] = [
       topics: { [rewardsProgramStatusTopic.id]: rewardsProgramStatusTopic },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: {
+        [rewardsProgramStatusTopic.id]: topicMetricsFor(rewardsProgramStatusTopic.id),
+      },
+      markdown_to_html: {},
+      bookmarks: {},
     },
     ...shared,
   },

@@ -88948,7 +88948,7 @@
         "spending_category": "true"
       },
       "responseSchema": {
-        "hash": "b4478859bfc5575cf9fd8f18cd1ae555d2a04f5cd05825fd340242fb2d00c3c7",
+        "hash": "da9e1069e3d8238527e4d0139936aec23676e2e9c5b40a3f2c3c814c670000bd",
         "key": "native.spending-category-topics.search.default"
       },
       "route": {
@@ -89181,7 +89181,7 @@
         "topic_types": "rewards_program_status"
       },
       "responseSchema": {
-        "hash": "7d3308005960c69bc40dd206dbf9b96e463568f34f5b89dbe1aa9b9acf8d96e0",
+        "hash": "9d69661ef61de7e6dcfb25f553cf19670853a214e686998ac5d717f389cae357",
         "key": "native.rewards-program-status-topics.search.default"
       },
       "route": {
@@ -89408,7 +89408,7 @@
         "topic_types": "rewards_program"
       },
       "responseSchema": {
-        "hash": "bf16388c4ac596628636e0cde1170f2792f9c7293b2168b34885072a3fc3d212",
+        "hash": "1ea30044a61e057c70d15acb2ce422644022a7695ad3594fd74239cc7d76f37c",
         "key": "native.rewards-program-topics.search.default"
       },
       "route": {
@@ -89649,7 +89649,7 @@
         "topic_types": "card"
       },
       "responseSchema": {
-        "hash": "1f243d01c8380941ae6118e8b583d3b71ed1cbd3d882926af21d671aae481160",
+        "hash": "e2634bd296de30d26f1f19641e2199a15a4c817cfb528329575310abd22f4814",
         "key": "native.card-topics.search.default"
       },
       "route": {
@@ -90670,7 +90670,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "d41ccb9728be5658f663f8353857a13749cb917145560012ebb3d8d5b3565ff7",
+        "hash": "9dbdfcf8edcd005b027d4ec5b7e84ca96edd2b22808f6895ef934c4731f20146",
         "key": "entity-provenance.topics"
       },
       "route": {
@@ -90767,7 +90767,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "9b54439851af431ac352ebafa5f6a250a520a3d88fdcc5c984f8c93f7b56ca80",
+        "hash": "4d3131e58adb0e936a8354abe16cae621f715a17a2b6e91dd9ecca943e61cc5a",
         "key": "entity-provenance.topics.staff"
       },
       "route": {
@@ -93084,7 +93084,7 @@
         "topic_types": "referral_program"
       },
       "responseSchema": {
-        "hash": "69621744cbe1b7d5d6607f233597bc349ec6f502047006e394f29b7bc89f5f36",
+        "hash": "fa39f9f5da472f81168586700a7b12e370c9e2303888138ec6130261890fdc20",
         "key": "web.topics.search.referral-programs.default"
       },
       "route": {

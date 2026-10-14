@@ -1,4 +1,5 @@
 import { pageInfo } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import { encodeCursor } from '@modules/pagination'
 import {
   prioritizedReferralLink,
@@ -37,7 +38,11 @@ export const referralApiFixtureCases: ApiFixtureCase[] = [
       topics: { [referralProgramTopic.id]: referralProgramTopic },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: { [referralProgramTopic.id]: topicMetricsFor(referralProgramTopic.id) },
+      markdown_to_html: {
+        [referralProgramTopic.id]: '<p>A referral program used by native client parity tests.</p>',
+      },
+      bookmarks: {},
     },
     consumers: ['web', 'swift-core', 'dotnet-core'],
     migratedFrom: ['web/components/my/referral-links-manager/add-referral-link.tsx'],

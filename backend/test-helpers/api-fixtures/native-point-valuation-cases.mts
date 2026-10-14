@@ -1,5 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 import {
   firstPointValuation,
@@ -38,7 +39,9 @@ export const nativePointValuationApiFixtureCases: ApiFixtureCase[] = [
       topics: { [rewardsProgramTopic.id]: rewardsProgramTopic },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: { [rewardsProgramTopic.id]: topicMetricsFor(rewardsProgramTopic.id) },
+      markdown_to_html: {},
+      bookmarks: {},
     },
     consumers: [...consumers],
     migratedFrom: pointValuationMigratedFrom,
