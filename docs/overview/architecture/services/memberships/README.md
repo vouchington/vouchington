@@ -280,7 +280,14 @@ creates a fresh append-only projection and reactivation outbox.
 - Stripe: [../stripe/README.md](../stripe/README.md)
 - Database schema: [../../data-stores/psql/AGENTS.md](../../../../../backend/data-stores/psql/AGENTS.md)
 
-Grant expiry normalizes a configured number of bounded pages. Background expiry shares one page budget across all selected users, commits progress, and reports remaining due grants. Synchronous grant mutations return a retryable conflict when normalization still has work, so a capped pass cannot apply an operation against stale access. Renewal-email dispatch resumes from its last membership ID through a continuation.
+Grant expiry normalizes a configured number of bounded pages. Each selected page closes its grant
+source states and open activation periods with two set-based updates before recording expiration
+history and promoting queued grants in order. The unique current-projection index currently permits
+at most one selected membership per user and page, so those updates do not reduce round trips under
+the present schema. Background expiry shares one page budget across all selected users, commits
+progress, and reports remaining due grants. Synchronous grant mutations return a retryable conflict
+when normalization still has work, so a capped pass cannot apply an operation against stale access.
+Renewal-email dispatch resumes from its last membership ID through a continuation.
 
 ## Provisional export status (#1360)
 

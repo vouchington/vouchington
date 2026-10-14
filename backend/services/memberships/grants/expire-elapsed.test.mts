@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@data-stores/psql'
 import {
   attachTestStripeProductionProviderObservation,
   createTestSku,
   createTestUser,
   endTestMembershipProjection,
   getTestGrantQueue,
+  getTestMembershipGrant,
   getTestMembershipEntitlementEffects,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
@@ -17,12 +19,32 @@ import {
   expireElapsedMembershipsForUsers,
   getElapsedMembershipUserIdsBatch,
 } from './expire-elapsed-batch.mts'
-import { expireElapsedMembershipsForUser } from './expire-elapsed.mts'
+import { expireElapsedMemberships, expireElapsedMembershipsForUser } from './expire-elapsed.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { membershipWorkConfig } from '../work-limits.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('expireElapsedMembershipsForUser', () => {
+  it('closes the grant source and activation at the selected expiry boundary', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const member = await createTestUser()
+    const sku = await createTestSku({ plan: 'plus' })
+    const grant = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const expiresAt = (await getMembershipByUserId(member.id))?.expires_at
+    expect(expiresAt).toBeInstanceOf(Date)
+
+    await using query = await beginTransaction()
+    await expect(
+      expireElapsedMemberships(member.id, query, { expiresThrough: expiresAt! }),
+    ).resolves.toEqual({ expired: 1, hasMore: false })
+    await query.commit()
+
+    await expect(getTestMembershipGrant(grant.grantId)).resolves.toMatchObject({
+      activation_ended_at: expiresAt,
+      source_expired_at: expiresAt,
+    })
+  })
+
   it('shares one page budget across users and leaves the remainder for the next run', async () => {
     const admin = await createTestUser({ administrator: true })
     const members = await Promise.all([createTestUser(), createTestUser()])

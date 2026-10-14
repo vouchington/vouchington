@@ -69,20 +69,26 @@ export async function expireElapsedMemberships(
     }>
     if (elapsed.length === 0) return { expired, hasMore: false }
     expired += elapsed.length
+    const sourceIds = elapsed.map(membership => membership.membership_source_id)
+    const expiresAt = elapsed.map(membership => membership.expires_at)
+    // eslint-disable-next-line no-await-in-loop
+    await query(sql`/* expireElapsedMemberships: close sources */
+      UPDATE membership_source_states state
+      SET cancelled_at = NULL, expired_at = expired.expires_at,
+        past_due_at = NULL, paused_at = NULL, should_auto_renew = false
+      FROM unnest(${sourceIds}::uuid[], ${expiresAt}::timestamptz[])
+        AS expired(membership_source_id, expires_at)
+      WHERE state.membership_source_id = expired.membership_source_id`)
+    // eslint-disable-next-line no-await-in-loop
+    await query(sql`/* expireElapsedMemberships: close activations */
+      UPDATE membership_grant_activation_periods activation
+      SET ended_at = expired.expires_at
+      FROM membership_grants grant_row,
+        unnest(${sourceIds}::uuid[], ${expiresAt}::timestamptz[])
+          AS expired(membership_source_id, expires_at)
+      WHERE grant_row.membership_source_id = expired.membership_source_id
+        AND activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL`)
     for (const membership of elapsed) {
-      // eslint-disable-next-line no-await-in-loop
-      await query(sql`/* expireElapsedMemberships: close source */
-        UPDATE membership_source_states
-        SET cancelled_at = NULL, expired_at = ${membership.expires_at},
-          past_due_at = NULL, paused_at = NULL, should_auto_renew = false
-        WHERE membership_source_id = ${membership.membership_source_id}`)
-      // eslint-disable-next-line no-await-in-loop
-      await query(sql`/* expireElapsedMemberships: close activation */
-        UPDATE membership_grant_activation_periods activation
-        SET ended_at = ${membership.expires_at}
-        FROM membership_grants grant_row
-        WHERE grant_row.membership_source_id = ${membership.membership_source_id}
-          AND activation.membership_grant_id = grant_row.id AND activation.ended_at IS NULL`)
       // eslint-disable-next-line no-await-in-loop
       await recordMembershipChange({
         membershipId: membership.id,
