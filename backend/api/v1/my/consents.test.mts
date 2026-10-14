@@ -3,6 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { grantConsent } from '@services/user-consents/create'
 import type { PrivateUser } from '@services/users/types'
+import { TERMS_OF_SERVICE_VERSION } from '@services/users/create-helpers'
 
 describe('GET /api/v1/my/consents', () => {
   let user: PrivateUser
@@ -89,12 +90,12 @@ describe('POST /api/v1/my/consents', () => {
     const response = await request
       .post('/api/v1/my/consents')
       .set('Content-Type', 'application/json')
-      .send({ consent_type: 'terms_of_service', version: '2.0' })
+      .send({ consent_type: 'terms_of_service', version: TERMS_OF_SERVICE_VERSION })
       .expect(201)
 
     expect(response.body.consent).toBeDefined()
     expect(response.body.consent.consent_type).toBe('terms_of_service')
-    expect(response.body.consent.version).toBe('2.0')
+    expect(response.body.consent.version).toBe(TERMS_OF_SERVICE_VERSION)
     expect(response.body.consent.revoked_at).toBeNull()
   })
 })

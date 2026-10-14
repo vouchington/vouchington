@@ -6,7 +6,7 @@ post_type: article
 
 # Terms of Service
 
-**Effective Date:** April 27, 2026
+**Effective Date:** October 13, 2026
 **Company:** Voucha, Inc.
 **Contact:** team@voucha.ai
 
@@ -129,7 +129,9 @@ You may cancel your subscription at any time from your account settings. Cancell
 
 ### Refunds
 
-Voucha does not provide refunds for partial billing periods. If you experience a billing error, contact us at team@voucha.ai within 30 days.
+Voucha does not provide refunds for partial billing periods, except where we decide otherwise after a suspension is overturned. If you experience a billing error, contact us at team@voucha.ai within 30 days.
+
+While your account is suspended, we pause collection on your paid membership: no new membership charges are issued for the suspended period, and no amount for that period becomes due later. Payment already made for the current billing period is not refunded, except where we decide otherwise after a suspension is overturned. Any invoice issued before the suspension may still be collected. Collection resumes when the suspension is lifted. Memberships granted without billing, and memberships billed through an app store, are outside this pause.
 
 ### Plan Changes
 

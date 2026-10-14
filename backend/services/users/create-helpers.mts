@@ -13,9 +13,9 @@ import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, CreateUserOptions, GetUserOptions } from './types.mts'
 
 // Effective dates of the current consent documents.
-// Update the relevant constant whenever a document is revised and re-consent is required.
+// Update the relevant constant whenever a document is revised.
 export const PRIVACY_POLICY_VERSION = '2026-04-27'
-export const TERMS_OF_SERVICE_VERSION = '2026-04-27'
+export const TERMS_OF_SERVICE_VERSION = '2026-10-13'
 
 export const createUser = async ({
   oauthAccount,
