@@ -39,11 +39,10 @@ export interface RssFeedSidecars {
 /**
  * Builds the election and bookmark sidecar maps for a page of RSS feed results.
  *
- * Always fetches `topic_elections` and `hostname_elections` in parallel (Valkey-cached).
- * When `currentUser` is present, also fetches viewer-keyed `election_votes` and `bookmarks`
- * in a second parallel batch. The optional fields are omitted when empty so the response
- * shape matches the documented contract: "Both are omitted for anonymous viewers and when
- * there is no relevant data."
+ * Fetches topic elections, hostname elections, and — for an authenticated viewer — votes and
+ * bookmarks in one parallel batch. Votes and bookmarks do not depend on the election rows.
+ * The optional fields are omitted when empty so the response shape matches the documented
+ * contract: "Both are omitted for anonymous viewers and when there is no relevant data."
  */
 export async function buildRssFeedSidecars(
   feeds: ViewRssFeed[],
@@ -59,31 +58,30 @@ export async function buildRssFeedSidecars(
       ),
     ),
   ]
+  const feedIds = feeds.map(feed => feed.id)
 
-  const [topic_elections, hostname_elections] = await Promise.all([
-    topicIds.length > 0
-      ? getTopicElectionByIdCachedBatch(topicIds).then(indexById)
-      : Promise.resolve({} as Record<string, ViewTopicElection>),
-    hostnameIds.length > 0
-      ? getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById)
-      : Promise.resolve({} as Record<string, ViewHostnameElection>),
-  ])
+  const [topic_elections, hostname_elections, votes, feedBookmarks, topicBookmarks] =
+    await Promise.all([
+      topicIds.length > 0
+        ? getTopicElectionByIdCachedBatch(topicIds).then(indexById)
+        : Promise.resolve({} as Record<string, ViewTopicElection>),
+      hostnameIds.length > 0
+        ? getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById)
+        : Promise.resolve({} as Record<string, ViewHostnameElection>),
+      currentUser && topicIds.length > 0
+        ? getTopicElectionVotesByUser(currentUser.id, topicIds)
+        : Promise.resolve([]),
+      currentUser && feedIds.length > 0
+        ? getBookmarksForEntities(currentUser, 'rss_feed', feedIds)
+        : Promise.resolve({}),
+      currentUser && topicIds.length > 0
+        ? getBookmarksForEntities(currentUser, 'topic', topicIds)
+        : Promise.resolve({}),
+    ])
 
   const sidecars: RssFeedSidecars = { topic_elections, hostname_elections }
 
   if (currentUser) {
-    const feedIds = feeds.map(feed => feed.id)
-    const [votes, feedBookmarks, topicBookmarks] = await Promise.all([
-      topicIds.length > 0
-        ? getTopicElectionVotesByUser(currentUser.id, topicIds)
-        : Promise.resolve([]),
-      feedIds.length > 0
-        ? getBookmarksForEntities(currentUser, 'rss_feed', feedIds)
-        : Promise.resolve({}),
-      topicIds.length > 0
-        ? getBookmarksForEntities(currentUser, 'topic', topicIds)
-        : Promise.resolve({}),
-    ])
     // Feed and topic IDs are both UUIDs; collision risk is zero.
     const bookmarks = { ...feedBookmarks, ...topicBookmarks }
     if (votes.length > 0) {
