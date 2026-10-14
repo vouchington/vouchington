@@ -11,10 +11,7 @@ export type CopyrightEmailThreadGraph = {
   overflow: boolean
 }
 
-/**
- * Read at most maxRows + 1 graph rows. Each indexed wave fetches no more edges than the remaining
- * budget plus one; visited intake ids stop cycles, and every edge identity is retained for replay.
- */
+/** Read at most maxRows + 1 edge identities, then count distinct intakes and edges. */
 export async function readCopyrightEmailThreadGraph(
   transaction: TransactionQuery,
   rootId: string,
@@ -23,68 +20,48 @@ export async function readCopyrightEmailThreadGraph(
   const intakeIds = new Set([rootId])
   const descendants = new Set([rootId])
   const edges = new Set<string>()
-  const parentsByReply = new Map<string, Set<string>>()
-  let frontier = [rootId]
-  while (frontier.length > 0) {
-    const remaining = maxRows - intakeIds.size - edges.size
-    // eslint-disable-next-line no-await-in-loop -- each indexed wave discovers the next bounded frontier.
-    const { rows } = await transaction<{ reply_id: string; ancestor_id: string }>( // no-mistakes-disable-line query-reached-per-item: each indexed wave is bounded by the remaining graph budget and discovers the next frontier
-      sql`
-      /* readCopyrightEmailThreadGraph:boundedWave */
-      SELECT edge.reply_message_intake_id AS reply_id,
-        edge.ancestor_message_intake_id AS ancestor_id
-      FROM unnest(${frontier}::uuid[]) AS parent(id)
+  // The outer LIMIT consumes the recursive CTE incrementally. No aggregate or sort may sit
+  // between it and the CTE: otherwise an over-cap graph could still be fully traversed.
+  const { rows: outgoing } = await transaction<{ reply_id: string; ancestor_id: string }>(sql`
+    /* readCopyrightEmailThreadGraph:outgoing */
+    WITH RECURSIVE reached(reply_id, ancestor_id) AS (
+      SELECT ${rootId}::uuid, ${rootId}::uuid
+      UNION
+      SELECT edge.reply_message_intake_id, edge.ancestor_message_intake_id
+      FROM reached parent
       JOIN LATERAL (
         SELECT reply_message_intake_id, ancestor_message_intake_id
         FROM copyright_notice_email_message_ancestors
-        WHERE ancestor_message_intake_id = parent.id
+        WHERE ancestor_message_intake_id = parent.reply_id
         ORDER BY reply_message_intake_id
-        LIMIT ${remaining + 1}
+        LIMIT ${maxRows + 1}
       ) edge ON true
-      LIMIT ${remaining + 1}
-    `,
     )
-    const next: string[] = []
-    for (const row of rows) {
-      edges.add(`${row.reply_id}:${row.ancestor_id}`)
-      const parents = parentsByReply.get(row.reply_id) ?? new Set<string>()
-      parents.add(row.ancestor_id)
-      parentsByReply.set(row.reply_id, parents)
-      if (!intakeIds.has(row.reply_id)) {
-        intakeIds.add(row.reply_id)
-        descendants.add(row.reply_id)
-        next.push(row.reply_id)
-      }
-      const observedRows = intakeIds.size + edges.size
-      if (observedRows > maxRows) {
-        return snapshot(true)
-      }
-    }
-    frontier = next
+    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 2}
+  `)
+  for (const row of outgoing) {
+    if (row.reply_id === rootId && row.ancestor_id === rootId) continue
+    edges.add(`${row.reply_id}:${row.ancestor_id}`)
+    intakeIds.add(row.reply_id)
+    intakeIds.add(row.ancestor_id)
+    descendants.add(row.reply_id)
+    if (intakeIds.size + edges.size > maxRows) return snapshot(true)
   }
 
   // A descendant may name an ancestor outside the root's descendant closure. The backfill checks
   // those parents for other notices, so count and lock them too before making any link decision.
-  for (const replyId of [...descendants].toSorted()) {
-    const remaining = maxRows - intakeIds.size - edges.size
-    const knownParents = [...(parentsByReply.get(replyId) ?? [])]
-    // eslint-disable-next-line no-await-in-loop -- each indexed reply lookup consumes the remaining graph budget.
-    const { rows } = await transaction<{ ancestor_id: string }>( // no-mistakes-disable-line query-reached-per-item: each indexed incoming-edge page consumes at most the remaining graph budget plus one
-      sql`
-      /* readCopyrightEmailThreadGraph:incoming */
-      SELECT ancestor_message_intake_id AS ancestor_id
-      FROM copyright_notice_email_message_ancestors
-      WHERE reply_message_intake_id = ${replyId}
-        AND ancestor_message_intake_id <> ALL(${knownParents}::uuid[])
-      ORDER BY ancestor_message_intake_id
-      LIMIT ${remaining + 1}
-    `,
-    )
-    for (const row of rows) {
-      edges.add(`${replyId}:${row.ancestor_id}`)
-      intakeIds.add(row.ancestor_id)
-      if (intakeIds.size + edges.size > maxRows) return snapshot(true)
-    }
+  const { rows: incoming } = await transaction<{ reply_id: string; ancestor_id: string }>(sql`
+    /* readCopyrightEmailThreadGraph:incoming */
+    SELECT reply_message_intake_id AS reply_id, ancestor_message_intake_id AS ancestor_id
+    FROM copyright_notice_email_message_ancestors
+    WHERE reply_message_intake_id = ANY(${[...descendants]}::uuid[])
+    ORDER BY reply_message_intake_id, ancestor_message_intake_id
+    LIMIT ${maxRows + 1}
+  `)
+  for (const row of incoming) {
+    edges.add(`${row.reply_id}:${row.ancestor_id}`)
+    intakeIds.add(row.ancestor_id)
+    if (intakeIds.size + edges.size > maxRows) return snapshot(true)
   }
   return snapshot(false)
 

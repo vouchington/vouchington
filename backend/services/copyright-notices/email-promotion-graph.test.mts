@@ -12,6 +12,7 @@ import {
 import {
   copyrightEmailMessageId,
   copyrightEmailPromotionInput,
+  promoteInitialCopyrightEmail,
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it, vi } from 'vitest'
@@ -24,6 +25,7 @@ import {
 import { buildCopyrightEmailThreadReferenceRows } from './email-thread-references.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
+import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-graph.mts'
 import { readCopyrightEmailThreadGraph } from './email-thread-graph.mts'
 import { searchCopyrightStaffEmailIntakes } from './read-models-staff-email-intakes.mts'
 
@@ -219,5 +221,75 @@ describe('copyright email promotion graph bound', () => {
     expect(exact.intakeIds).toEqual([root.intakeId, outside.intakeId, reply.intakeId].toSorted())
     expect(exact.edges).toHaveLength(2)
     expect(over.overflow).toBe(true)
+  })
+
+  it('reads a chain in two graph queries and bounds the reverse ancestor walk', async () => {
+    const rootMessageId = copyrightEmailMessageId()
+    const childMessageId = copyrightEmailMessageId()
+    const root = await recordThreadedCopyrightEmail({
+      messageId: rootMessageId,
+      replyReferences: [],
+    })
+    const child = await recordThreadedCopyrightEmail({
+      messageId: childMessageId,
+      replyReferences: [rootMessageId],
+    })
+    const grandchild = await recordThreadedCopyrightEmail({
+      messageId: copyrightEmailMessageId(),
+      replyReferences: [childMessageId],
+    })
+    await using transaction = await beginTransaction()
+    let queryCount = 0
+    const counted = new Proxy(transaction, {
+      apply(target, thisArg, args) {
+        queryCount += 1
+        return Reflect.apply(target, thisArg, args)
+      },
+    })
+    const graph = await readCopyrightEmailThreadGraph(counted, root.intakeId, 5)
+    expect(graph).toMatchObject({ overflow: false, observedRows: 5 })
+    expect(graph.descendantIntakeIds).toEqual(
+      [root.intakeId, child.intakeId, grandchild.intakeId].toSorted(),
+    )
+    expect(queryCount).toBe(2)
+    expect(await readBoundedCopyrightEmailAncestorIds(transaction, grandchild.intakeId, 5)).toEqual(
+      [root.intakeId, child.intakeId].toSorted(),
+    )
+    expect(
+      await readBoundedCopyrightEmailAncestorIds(transaction, grandchild.intakeId, 4),
+    ).toBeNull()
+    await transaction.commit()
+  })
+
+  it('leaves an over-budget inbound ancestor chain unlinked at receipt', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const rootMessageId = copyrightEmailMessageId()
+    const childMessageId = copyrightEmailMessageId()
+    const root = await promoteInitialCopyrightEmail({ moderator, messageId: rootMessageId })
+    const child = await recordThreadedCopyrightEmail({
+      messageId: childMessageId,
+      replyReferences: [rootMessageId],
+    })
+    expect(child.match?.noticeId).toBe(root.noticeId)
+    const restore = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      emailThreadGraphMaxRows: 4,
+    })
+    try {
+      const grandchild = await recordThreadedCopyrightEmail({
+        messageId: copyrightEmailMessageId(),
+        replyReferences: [childMessageId],
+      })
+      expect(grandchild.match).toBeNull()
+      const queue = await searchCopyrightStaffEmailIntakes(moderator, {
+        limit: 1,
+        intakeIds: [grandchild.intakeId],
+      })
+      expect(queue.intakes[0]).toMatchObject({
+        linked_notice_id: null,
+        review_path: 'unresolved_thread',
+      })
+    } finally {
+      restore()
+    }
   })
 })

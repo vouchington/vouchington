@@ -385,6 +385,8 @@ notice, review, link, or delivery intent. The service does not retry automatical
 exceeds the budget, approval still creates the initial notice and leaves every reply unlinked for
 the existing staff email queue; it records the notice ID and observed row count in the operational
 log, without storing a new thread status. No subset of replies is linked automatically.
+Receipt-time ancestor matching uses the same budget and leaves an over-budget reply unlinked in
+the staff queue instead of traversing the full historical thread.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.

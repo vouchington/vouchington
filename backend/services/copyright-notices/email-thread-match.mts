@@ -2,6 +2,8 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { readBoundedCopyrightEmailAncestorIds } from './email-thread-ancestor-graph.mts'
 import { findOutboundCopyrightEmailThreadMatch } from './email-threading-outbound.mts'
 import { copyrightEmailReferencedTokenIsAmbiguousSql } from './email-thread-review-path.mts'
 import { COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE } from './email-thread-references.mts'
@@ -75,17 +77,16 @@ async function findInboundCopyrightEmailThreadMatch(
   tokenIds: string[],
   transaction: TransactionQuery,
 ): Promise<InboundAncestorMatch> {
+  const ancestorIds = await readBoundedCopyrightEmailAncestorIds(
+    transaction,
+    intakeId,
+    await getCopyrightEmailThreadGraphMaxRows(),
+  )
+  if (ancestorIds === null) {
+    return { status: 'blocked', noticeId: null, matchedIntakeId: null, matchedTokenId: null }
+  }
   const matchQuery = sql`/* findCopyrightEmailThreadMatch */
-    WITH RECURSIVE ancestors(intake_id) AS (
-      SELECT ancestor.ancestor_message_intake_id
-      FROM copyright_notice_email_message_ancestors ancestor
-      WHERE ancestor.reply_message_intake_id = ${intakeId}
-      UNION
-      SELECT edge.ancestor_message_intake_id
-      FROM ancestors parent
-      JOIN copyright_notice_email_message_ancestors edge
-        ON edge.reply_message_intake_id = parent.intake_id
-    )
+    WITH ancestors(intake_id) AS (SELECT unnest(${ancestorIds}::uuid[]))
     SELECT (SELECT count(*)::int FROM ancestors) AS "ancestorCount",
       (
         SELECT count(DISTINCT link.copyright_notice_id)::int
