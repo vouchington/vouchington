@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 import ts from 'typescript'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 interface Config {
   extends?: string[]
@@ -15,6 +15,7 @@ interface Config {
 }
 
 const oxlint = resolve('node_modules/.bin/oxlint')
+let childDeadline = 0n
 const tracked = spawnSync('git', ['ls-files', '-z', '.oxlintrc*.json', '**/.oxlintrc*.json'], {
   encoding: 'utf8',
 })
@@ -38,9 +39,11 @@ function ancestors(path: string): Config[] {
 }
 
 function printConfig(path: string): Config {
+  const remaining = Number((childDeadline - process.hrtime.bigint()) / 1_000_000n)
+  if (remaining <= 0) throw new Error('Oxlint fixture child deadline exhausted')
   const result = spawnSync(oxlint, ['--print-config', '--config', path], {
     encoding: 'utf8',
-    timeout: 20_000,
+    timeout: remaining,
   })
   expect(result.error).toBeUndefined()
   expect(result.signal).toBeNull()
@@ -83,6 +86,10 @@ function missingPlugins(configs: Config[], effective: Config): string[] {
 }
 
 describe('configured builtin Oxlint plugins', () => {
+  beforeEach(() => {
+    childDeadline = process.hrtime.bigint() + 4_000_000_000n
+  })
+
   // Shared fragments are exercised through their concrete consumers, which supply plugins.
   const concreteConfigs = configPaths.filter(
     path => path.endsWith('/.oxlintrc.json') || path === '.oxlintrc.json',

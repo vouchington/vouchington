@@ -1,9 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import {
-  I18N_ANALYSIS_BUDGET_MS,
-  withI18nAnalysisBudget,
-  type AnalysisBudgetClock,
-} from './analysis-budget.mts'
+import { describe, expect, it, vi } from 'vitest'
+import { withI18nAnalysisBudget, type AnalysisBudgetClock } from './analysis-budget.mts'
 
 describe('withI18nAnalysisBudget', () => {
   it('returns the work result when it finishes inside the budget', async () => {
@@ -35,8 +31,30 @@ describe('withI18nAnalysisBudget', () => {
     )
   })
 
-  it('keeps the analysis budget under the 30s project testTimeout', () => {
-    expect(I18N_ANALYSIS_BUDGET_MS).toBeLessThan(30_000)
+  it('honors an explicitly requested budget at the resolved project deadline', async ({ task }) => {
+    expect(task.timeout).toBe(5_000)
+    vi.useFakeTimers()
+    let settled = false
+    const result = withI18nAnalysisBudget('analyzeProject', new Promise(() => undefined), {
+      budgetMs: task.timeout,
+    }).catch((err: unknown) => {
+      settled = true
+      return err
+    })
+    try {
+      await vi.advanceTimersByTimeAsync(task.timeout - 1)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(result).resolves.toMatchObject({
+        message: `no-mistakes analyzeProject exceeded ${task.timeout}ms (lock wait or hung analysis)`,
+      })
+    } finally {
+      try {
+        await vi.runAllTimersAsync()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
   })
 
   it('shares one deadline across successive no-mistakes calls', async () => {

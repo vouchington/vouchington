@@ -71,7 +71,7 @@ describe('effective TypeScript Oxlint plugin', () => {
           invalid,
           valid,
         ],
-        { cwd: fixtureRoot, encoding: 'utf8', timeout: 20_000 },
+        { cwd: fixtureRoot, encoding: 'utf8', timeout: 4_000 },
       )
       expect(result.error).toBeUndefined()
       expect(result.signal).toBeNull()
