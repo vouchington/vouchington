@@ -246,6 +246,21 @@ describe('media replay read budgets', () => {
       'Actual Rows': 1,
       'Actual Loops': 1000,
     }
+    const authority = {
+      'Node Type': 'Index Scan',
+      'Relation Name': 'media_delivery_registry_records',
+      'Index Name': 'media_delivery_registry_records_pkey',
+      'Actual Rows': 1,
+      'Actual Loops': 1000,
+    }
+    const boundQuery = `/* replayFailedMediaDeliveryRegistryRecords */
+      INSERT INTO media_delivery_registry_changes
+      SELECT id FROM unnest($2::uuid[]) selected(record_id)
+      CROSS JOIN LATERAL (
+        SELECT media_delivery_registry_record_id
+        FROM view_media_delivery_registry_current_records
+        WHERE media_delivery_registry_record_id = selected.record_id LIMIT 1
+      ) current_record`
     const captured = result(
       'media-delivery-replay-first',
       {
@@ -254,14 +269,30 @@ describe('media replay read budgets', () => {
         'Relation Name': 'media_delivery_registry_changes',
         'Actual Rows': 1000,
         'Actual Loops': 1,
-        Plans: [history],
+        Plans: [
+          history,
+          authority,
+          { 'Node Type': 'Index Scan', 'Relation Name': 'users', 'Index Name': 'users_pkey' },
+        ],
       },
-      '/* replayFailedMediaDeliveryRegistryRecords */ INSERT INTO media_delivery_registry_changes SELECT id WHERE id = ANY($1::uuid[])',
+      boundQuery,
     )
     expect(() => assertRequiredPlanShape(captured)).not.toThrow()
+    captured.query_text =
+      '/* replayFailedMediaDeliveryRegistryRecords */ SELECT id FROM media_delivery_registry_records'
+    expect(() => assertRequiredPlanShape(captured)).toThrow('each locked UUID')
+    captured.query_text = boundQuery.replace('LIMIT 1', '')
+    expect(() => assertRequiredPlanShape(captured)).toThrow('each locked UUID')
+    captured.query_text = boundQuery
     history['Actual Loops'] = 1001
     expect(() => assertRequiredPlanShape(captured)).toThrow(
       'media_delivery_registry_changes driving-row budget',
     )
+    history['Actual Loops'] = 1000
+    authority['Node Type'] = 'Seq Scan'
+    authority['Index Name'] = ''
+    authority['Actual Rows'] = 17000
+    authority['Actual Loops'] = 1
+    expect(() => assertRequiredPlanShape(captured)).toThrow('probe only locked authority ids')
   })
 })

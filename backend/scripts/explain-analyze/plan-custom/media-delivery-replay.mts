@@ -3,6 +3,7 @@ import { baseRelationName, collectPlanNodes, processedRows } from '../plan-nodes
 import { MEDIA_REPLAY_PAGE_SIZE } from '../seed-data/media-delivery-replay-cohort.mts'
 
 const FAILED_INDEX = 'idx_media_delivery_registry_projection_work_items__failed'
+const RECORD_PRIMARY_KEY = 'media_delivery_registry_records_pkey'
 
 /** Gate the driving candidates, then the scoped current-history and actor-event partners. */
 export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
@@ -27,8 +28,31 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       throw new Error(`${result.name} must drive at most one page through ${FAILED_INDEX}`)
     return
   }
-  if (!result.query_text.includes('ANY('))
-    throw new Error(`${result.name} must constrain replay writes to the locked UUID array`)
+  if (
+    !result.query_text.includes('FROM unnest($2::uuid[]) selected(record_id)') ||
+    !result.query_text.includes('CROSS JOIN LATERAL (') ||
+    !result.query_text.includes('media_delivery_registry_record_id = selected.record_id') ||
+    !result.query_text.includes('LIMIT 1')
+  )
+    throw new Error(`${result.name} must constrain replay writes to each locked UUID`)
+  const authorityScans = nodes.filter(
+    node => baseRelationName(node) === 'media_delivery_registry_records',
+  )
+  if (
+    authorityScans.length === 0 ||
+    authorityScans.some(
+      node =>
+        node['Node Type'] !== 'Index Scan' ||
+        node['Index Name'] !== RECORD_PRIMARY_KEY ||
+        !Number.isFinite(Number(node['Actual Loops'])) ||
+        Number(node['Actual Loops']) > MEDIA_REPLAY_PAGE_SIZE ||
+        !Number.isFinite(Number(node['Actual Rows'])) ||
+        Number(node['Actual Rows']) > 1,
+    )
+  )
+    throw new Error(
+      `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
+    )
   for (const relation of [
     'media_delivery_registry_records',
     'media_delivery_registry_changes',
