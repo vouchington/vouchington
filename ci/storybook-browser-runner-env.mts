@@ -19,6 +19,7 @@ export function makeAttemptEnv(
   return {
     ...env,
     DEBUG: appendDebugNamespace(debug, 'vite:deps'),
+    STORYBOOK_DISABLE_TELEMETRY: '1',
     VITEST_COVERAGE_SCOPE: 'web-storybook-browser',
     VITEST_PW_DEBUG: '1',
     VITEST_STORYBOOK_BROWSER: '1',
