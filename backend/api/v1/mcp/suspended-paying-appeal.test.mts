@@ -62,6 +62,8 @@ describe('suspended paying users on MCP', () => {
   it('refreshes, lists only the appeal tools, files and reads an appeal, and denies the rest', async () => {
     const user = await createTestUser()
     await createTestMembership({ user_id: user.id, plan: 'plus' })
+    const rest = createRequest()
+    await rest.authenticateAs(user)
     const staff = await createTestUser()
     const warning = await insertTestUserWarning({ userId: user.id, issuedById: staff.id })
     const token = await refreshAfterSuspension(user)
@@ -88,6 +90,32 @@ describe('suspended paying users on MCP', () => {
     })
 
     const appealId = (appeal.appeal as { id: string }).id
+    const restAppeal = await rest.get(`/api/v1/appeals/${appealId}`).expect(200)
+    const mcpAppeal = await postMcp(
+      USER_MCP,
+      token,
+      toolCall('read_my_moderation_appeals', optionArgs('get', { appeal_id: appealId })),
+    ).expect(200)
+    const mcpFacts = structuredResult(mcpAppeal.body).appeal as Record<string, unknown>
+    const restFacts = restAppeal.body.appeal as Record<string, unknown>
+    // MCP exposes target ids rather than REST's display context; authorization and shared facts agree.
+    expect(mcpFacts.target_type).toBe('warning')
+    expect(mcpFacts.target_id).toBe(restFacts.user_warning_id)
+    for (const field of [
+      'id',
+      'status',
+      'community_id',
+      'post_removal_kind',
+      'is_overdue',
+      'resolution_action',
+      'public_response',
+      'resolved_at',
+      'sent_at',
+      'created_at',
+      'updated_at',
+    ]) {
+      expect(mcpFacts[field]).toEqual(restFacts[field])
+    }
     const read = await postMcp(
       USER_MCP,
       token,
@@ -109,6 +137,17 @@ describe('suspended paying users on MCP', () => {
       error: { code: -32600, message: 'MCP error -32600: suspended' },
     })
 
+    await rest.patch('/api/v1/my/profile').send({ markdown: 'Suspended write' }).expect(403)
+    const deniedWrite = await postMcp(
+      USER_MCP,
+      token,
+      toolCall('edit_my_profile', optionArgs('bio', { markdown: 'Suspended write' })),
+    ).expect(200)
+    expect(deniedWrite.body.error).toMatchObject({
+      code: -32600,
+      message: expect.stringContaining('suspended'),
+    })
+
     expect(await readTestMcpCallAuditEvents(user.id)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -119,6 +158,11 @@ describe('suspended paying users on MCP', () => {
         expect.objectContaining({
           actor_user_id: user.id,
           tool_name: 'read_my_profile',
+          outcome: 'suspended',
+        }),
+        expect.objectContaining({
+          actor_user_id: user.id,
+          tool_name: 'edit_my_profile',
           outcome: 'suspended',
         }),
       ]),

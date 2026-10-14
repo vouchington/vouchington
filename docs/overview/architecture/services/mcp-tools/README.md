@@ -28,6 +28,25 @@ that refuses an admitted call still writes the existing `accepted` and `tool_err
 the selected option. For example, free callers can read RSS feed details, while crawl reads retain
 their existing runtime 403 rather than becoming a declared plan denial.
 
+## Consolidation acceptance
+
+The [route completeness test](../../../../../backend/services/mcp-tools/route-completeness.test.mts)
+uses [pinned contract data](../../../../../backend/test-helpers/mcp-route-baseline.json) from
+`65fb7b2cf`. A REST route can have several contracts with different scopes, roles, plans, hints,
+or write fields. Each contract retains one current tool/option mapping; repeated REST twins of
+one option remain separate route records. Shared routes carry reviewed REST body projections.
+Additional routes require explicit PR provenance. The copyright-off catalog must be exactly the
+copyright-on catalog with the pinned decision operations removed.
+
+The [operation boundary matrix](../../../../../backend/services/mcp-tools/current-operations.boundary.test.mts)
+exercises every registered operation's admission, scope denial, malformed-input error, real REST
+rate-limit counters, and durable audit rows. Successful handler behavior remains covered by the
+domain contract suites. The [official SDK round trip](../../../../../backend/services/mcp-tools/build-tool-result.test.mts)
+and its sibling registered-catalog suites discover both servers for every representative grant,
+execute every merged tool, reject unknown options and extra fields, and validate advertised
+structured outputs with local references. The isolated operational and article-sync cases belong
+to the [real GlideMQ test project](../../../../development/reference-tests-vitest-projects.md).
+
 ## Structured tool results
 
 A tool declares `meta.outputSchema` (JSON Schema, object root) and `toolToMcpTool` publishes it as
