@@ -9,8 +9,8 @@ Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-qu
 scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 [`backend/workers/`](../../../backend/workers/AGENTS.md).
 
-1. Before adding a queue, apply [queue boundaries](../../../docs/checklists/backend-queues.md#queue-boundaries):
-   add a domain to the shared queue for its worker class, and never wait on a job result.
+1. Before adding a queue, merging queues, or waiting on another job, apply
+   [queue boundaries](../../../docs/checklists/backend-queues.md#queue-boundaries).
 2. Keep enqueue configuration and payload types in the queue package, processor orchestration in the
    worker package, and business logic and durable idempotency in services.
 3. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
