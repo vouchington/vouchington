@@ -526,6 +526,11 @@ use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
 
+`no-mistakes/test-no-skips` owns suite rule R6 (skipped, conditional, pending, and focused tests) at error severity in the root Oxlint configuration.
+[`test-no-skips-oxlint.test.mts`](../../../../static-code-analysis/__tests__/test-no-skips-oxlint.test.mts) exercises the installed rule with rejected Vitest and Playwright forms and accepted ordinary tests/data fields;
+[`ci/no-mistakes-config.test.mts`](../../../../ci/no-mistakes-config.test.mts) retains its configuration contract.
+The interim `ast-grep-rules/test-no-skips.yml` guard was retired. This inventory records the static rule owner, not completion of the repository-wide runtime R6 audit.
+
 `unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
 
 `unicorn/prefer-array-some` is enforced as an error for boolean-only searches: use `.some(predicate)` instead of allocating a filtered array just to read its length. When callers also need the matching IDs, compute `.filter()` once and reuse its result. The installed-Oxlint fixture at [`prefer-array-some-oxlint.test.mts`](../../../../static-code-analysis/__tests__/prefer-array-some-oxlint.test.mts) proves that boolean-only `.filter().length` is rejected and named filtered-array reuse is accepted; run it with `pnpm exec vitest run --project static-analysis-ast-grep static-code-analysis/__tests__/prefer-array-some-oxlint.test.mts`.

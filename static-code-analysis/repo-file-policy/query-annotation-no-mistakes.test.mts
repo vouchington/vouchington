@@ -1,10 +1,12 @@
-import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
 import { parse, stringify } from 'yaml'
+
+let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -13,6 +15,9 @@ type Rule = { rule?: string }
 type Diagnostic = { file: string; rule: string }
 
 describe('query annotation no-mistakes configuration', () => {
+  beforeEach(() => {
+    budget = createAnalyzerFixtureBudget()
+  })
   it('covers runtime scripts and helpers while preserving annotation exclusions', async () => {
     const root = await mkdtemp(join(tmpdir(), 'query-annotation-scope-'))
     const covered = [
@@ -40,10 +45,10 @@ describe('query annotation no-mistakes configuration', () => {
       expect(rules).toHaveLength(2)
       await writeFile(join(root, '.no-mistakes.yml'), stringify({ rules }))
       for (const file of [...covered, ...excluded]) await fixture(root, file, false)
-      expect(spawnSync('git', ['init', '-q', root]).status).toBe(0)
-      expect(spawnSync('git', ['-C', root, 'add', '.']).status).toBe(0)
+      expect(budget.git(['init', '-q', root]).status).toBe(0)
+      expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
 
-      const rejected = check(root)
+      const rejected = await check(root)
       expect(rejected.status).toBe(1)
       const findings = (JSON.parse(rejected.stdout) as { rules: Diagnostic[] }).rules
       expect(findings.map(finding => finding.file).toSorted()).toEqual(covered.toSorted())
@@ -52,7 +57,7 @@ describe('query annotation no-mistakes configuration', () => {
       )
 
       for (const file of covered) await fixture(root, file, true)
-      const accepted = check(root)
+      const accepted = await check(root)
       expect(accepted.status).toBe(0)
       expect((JSON.parse(accepted.stdout) as { rules: Diagnostic[] }).rules).toEqual([])
     } finally {
@@ -71,7 +76,5 @@ async function fixture(root: string, file: string, annotated: boolean): Promise<
 }
 
 function check(root: string) {
-  return spawnSync(process.execPath, [cli, 'check', '--root', root, '--format', 'json'], {
-    encoding: 'utf8',
-  })
+  return budget.check(cli, root)
 }

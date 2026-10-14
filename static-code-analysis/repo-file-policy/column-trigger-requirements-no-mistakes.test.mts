@@ -1,11 +1,13 @@
-import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
 import { parse, stringify } from 'yaml'
+
+let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -18,6 +20,9 @@ type CatalogTable = Record<string, unknown>
 // Use the released analyzer and the checked-in rule entries. The fixture proves
 // the narrow posts exception retains every other trigger requirement.
 describe('column trigger requirements no-mistakes configuration', () => {
+  beforeEach(() => {
+    budget = createAnalyzerFixtureBudget()
+  })
   const dirs: string[] = []
 
   afterEach(async () => {
@@ -29,7 +34,7 @@ describe('column trigger requirements no-mistakes configuration', () => {
     dirs.push(directory)
     await writeFixture(directory, cleanTables())
 
-    const accepted = check(directory)
+    const accepted = await check(directory)
     expect(accepted.status).toBe(0)
     expect(findings(accepted)).toEqual([])
 
@@ -42,7 +47,7 @@ describe('column trigger requirements no-mistakes configuration', () => {
       [tablesWithOrphanedTrigger(), 'table:orphaned_clock'],
     ] as const) {
       await writeCatalog(directory, tables)
-      const rejected = check(directory)
+      const rejected = await check(directory)
       expect(rejected.status).toBe(1)
       expect(findings(rejected)).toContainEqual(
         expect.objectContaining({ rule: 'postgres-column-requires-trigger', target }),
@@ -54,8 +59,8 @@ describe('column trigger requirements no-mistakes configuration', () => {
 async function writeFixture(root: string, tables: Record<string, CatalogTable>): Promise<void> {
   await writeCatalog(root, tables)
   await writeFile(join(root, '.no-mistakes.yml'), stringify({ rules: await fixtureRules() }))
-  expect(spawnSync('git', ['init', '-q', root]).status).toBe(0)
-  expect(spawnSync('git', ['-C', root, 'add', '.']).status).toBe(0)
+  expect(budget.git(['init', '-q', root]).status).toBe(0)
+  expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
 }
 
 async function writeCatalog(root: string, tables: Record<string, CatalogTable>): Promise<void> {
@@ -171,9 +176,7 @@ async function track(root: string, path: string, content: string): Promise<void>
 }
 
 function check(directory: string) {
-  return spawnSync(process.execPath, [cli, 'check', '--root', directory, '--format', 'json'], {
-    encoding: 'utf8',
-  })
+  return budget.check(cli, directory)
 }
 
 function findings(result: { stdout: string }): Diagnostic[] {
