@@ -1140,8 +1140,9 @@ RSS feed response projection with current discoverability and topic references.
             WHEN (podcast_show.rss_feed_id IS NULL) THEN NULL::json
             ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)
         END AS podcast_show,
-    COALESCE(( SELECT json_agg(json_build_object('category_text', c.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY c.category_text) AS json_agg
-           FROM (rss_feed_categories c
+    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg
+           FROM ((rss_feed_categories c
+             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_id)))
              LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))))
           WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories
    FROM (((((((rss_feeds

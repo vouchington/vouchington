@@ -6,13 +6,13 @@ Category strings marked by admins as too vague to map to a topic (e.g. "news"). 
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                       |
-| --------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| `category_text` | `text`                     | no       |                     |          |           |           | Normalized (trimmed, lowercased) category text — matches rss_feed_item_categories.category_text. Primary key. |
-| `created_at`    | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
-| `created_by_id` | `uuid`                     | yes      |                     |          |           |           |                                                                                                               |
+| Column          | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                     |
+| --------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `category_id`   | `uuid`                     | no       |                     |          |           |           | Canonical category identity rejected from editorial triage. |
+| `created_at`    | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                             |
+| `created_by_id` | `uuid`                     | yes      |                     |          |           |           |                                                             |
 
-**Primary key:** `PRIMARY KEY (category_text)`
+**Primary key:** `PRIMARY KEY (category_id)`
 
 **Unique constraints:**
 _none_
@@ -22,11 +22,12 @@ _none_
 
 **Foreign keys:**
 
+- `rss_feed_item_category_rejections_category_id_fkey`: `FOREIGN KEY (category_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
 - `rss_feed_item_category_rejections_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `rss_feed_item_category_rejections_pkey`: `CREATE UNIQUE INDEX rss_feed_item_category_rejections_pkey ON public.rss_feed_item_category_rejections USING btree (category_text)`
+- `rss_feed_item_category_rejections_pkey`: `CREATE UNIQUE INDEX rss_feed_item_category_rejections_pkey ON public.rss_feed_item_category_rejections USING btree (category_id)`
 
 **Triggers:**
 _none_
