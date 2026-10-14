@@ -5,7 +5,7 @@ import {
   type QueryOptions,
   type OwnedTransaction,
 } from '@data-stores/psql'
-import { finishEntityReconciliationCheckpoint } from '../entity-reconciliation-checkpoint-outcome.mts'
+import { finishEntityReconciliationCheckpoint } from './entity-reconciliation-checkpoint-outcome.mts'
 import { acquireTestPostgresAdvisoryLock } from '../postgres-advisory-lock.mts'
 
 type Checkpoint = { reconciled_through_at: string; updated_at: string }
