@@ -1,7 +1,12 @@
-import { bloomValkeyClient } from '@data-stores/valkey'
+import { bloomValkeyClient } from '@data-stores/valkey/clients'
+import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import type { RebuildBloomFilterData } from '@queues/bloom-filters/types'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
 import onError from '@modules/on-error'
+
+const deleteReadyMarkerIfUnreadableScript = registerScript(
+  loadScript('delete-ready-marker-if-unreadable.lua', import.meta.url),
+)
 
 type RepairBloomFilterUnavailableReadOptions = {
   filter: RebuildBloomFilterData['filter']
@@ -15,19 +20,6 @@ type CheckBloomFilterReadOptions = {
   existsIfReady: (readyKey: string, value: string) => Promise<boolean | null>
   repairUnavailableRead: () => Promise<void>
 }
-
-const DELETE_READY_MARKER_IF_UNREADABLE_SCRIPT = `
-local keyType = redis.call('TYPE', KEYS[1])
-if type(keyType) == 'table' then
-  keyType = keyType['ok']
-end
-
-if keyType == 'list' or keyType == 'set' or keyType == 'zset' or keyType == 'hash' or keyType == 'stream' then
-  return redis.call('DEL', KEYS[1])
-end
-
-return 0
-`
 
 export async function repairBloomFilterUnavailableRead({
   filter,
@@ -129,11 +121,8 @@ function isUnreadableReadyMarkerKeyType(keyType: string): boolean {
 }
 
 async function deleteReadyMarkerIfUnreadable(key: string): Promise<number> {
-  const result = await bloomValkeyClient.customCommand([
-    'EVAL',
-    DELETE_READY_MARKER_IF_UNREADABLE_SCRIPT,
-    '1',
-    key,
-  ])
+  const result = await bloomValkeyClient.invokeScript(deleteReadyMarkerIfUnreadableScript, {
+    keys: [key],
+  })
   return Number(result)
 }
