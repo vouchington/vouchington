@@ -35,7 +35,7 @@ export async function insertLockRowsWithQuery(
       image_id
     )
     SELECT DISTINCT
-      $1,
+      $1::uuid,
       $2::bedrock_embedding_batch_job_types,
       CASE WHEN $2 = 'topics' THEN entity_id::uuid ELSE NULL END,
       CASE WHEN $2 = 'posts' THEN entity_id::uuid ELSE NULL END,

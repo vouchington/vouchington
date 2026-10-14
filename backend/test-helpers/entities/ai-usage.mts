@@ -113,7 +113,7 @@ export async function findAiUsageRecordForPost(
     FROM ai_usage_records record
     JOIN ai_service_tiers tier ON tier.id = record.service_tier_id
     WHERE post_id = ${postId} AND agent_slug = ${agentSlug}
-    ORDER BY id DESC
+    ORDER BY record.id DESC
     LIMIT 1
   `)
   return rows[0] ?? null
@@ -140,7 +140,7 @@ export async function findAiUsageRecordForAgent(
     WHERE agent_slug = ${agentSlug}
       AND input_tokens = ${usage.inputTokens}
       AND output_tokens = ${usage.outputTokens}
-    ORDER BY id DESC
+    ORDER BY record.id DESC
     LIMIT 1
   `)
   return rows[0] ?? null
