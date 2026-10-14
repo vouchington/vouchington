@@ -139,11 +139,23 @@ describe('owned embedding cleanup failures', () => {
     const owner = await ownQueue('native_pending')
     await owner.owned.ready()
     const id = randomUUID()
-    const admitted = owner.owned.waitFor(id, 'added')
+    // The stream event can arrive before the add reply; closing then rejects the in-flight
+    // command with the client's own empty-message ClosingError. Wait for the reply so the
+    // close always lands on the queue's result wait.
+    const addReturned = Promise.withResolvers<void>()
+    const queue = owner.owned.queue
+    const nativeAdd = Queue.prototype.add
+    vi.spyOn(queue, 'add').mockImplementation(async (...args) => {
+      try {
+        return await nativeAdd.apply(queue, args)
+      } finally {
+        addReturned.resolve()
+      }
+    })
     const completion = owner.owned.addAndWait('pending', {}, { jobId: id, waitTimeout: 1000 })
     void completion.catch(() => {})
-    // The real stream witnesses admission; no worker exists to complete this native wait.
-    await admitted
+    // No worker exists to complete this native wait.
+    await addReturned.promise
     const result = await owner.close()
     expect(result.status).toBe('rejected')
     await expect(completion).rejects.toThrow('Queue is closing')
