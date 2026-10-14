@@ -1,5 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo, topic } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const consumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as const
@@ -9,7 +10,14 @@ const firstEntryId = '00000000-0000-7000-8000-000000000742'
 const secondEntryId = '00000000-0000-7000-8000-000000000743'
 const thirdEntryId = '00000000-0000-7000-8000-000000000744'
 const scope = `my-spending-categories:${individualId}:id-asc`
-const spendingCategory = { ...topic, id: categoryId, name: 'Groceries', slug: 'groceries' }
+const spendingCategory = {
+  ...topic,
+  id: categoryId,
+  name: 'Groceries',
+  slug: 'groceries',
+  logo_image_placement: null,
+  hero_image_placement: null,
+}
 const personalEntry = {
   id: firstEntryId,
   spending_category_topic_id: categoryId,
@@ -62,7 +70,9 @@ export const nativeSpendingCategoryApiFixtureCases: ApiFixtureCase[] = [
       topics: { [categoryId]: spendingCategory },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: { [categoryId]: topicMetricsFor(categoryId) },
+      markdown_to_html: {},
+      bookmarks: {},
     },
     consumers: [...consumers],
     migratedFrom,

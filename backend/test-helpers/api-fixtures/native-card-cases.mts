@@ -1,5 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
 import { pageInfo } from './data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 import {
   authorizedCard,
@@ -38,7 +39,9 @@ export const nativeCardApiFixtureCases: ApiFixtureCase[] = [
       topics: { [cardTopic.id]: cardTopic },
       topic_elections: {},
       election_votes: {},
-      topics_metrics: {},
+      topics_metrics: { [cardTopic.id]: topicMetricsFor(cardTopic.id) },
+      markdown_to_html: {},
+      bookmarks: {},
     },
     consumers: [...consumers],
     migratedFrom: cardMigratedFrom,

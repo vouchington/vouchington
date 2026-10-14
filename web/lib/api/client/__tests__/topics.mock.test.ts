@@ -13,10 +13,12 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
+import { loadWebApiFixture } from '../../../../test-helpers/api-responses/fixture-loader'
 import {
   createTopicAliases,
   deleteTopicAlias,
   fetchTopicAliases,
+  fetchTopic,
   linkTopicAlias,
   mergeTopicAliases,
   unlinkTopicAlias,
@@ -46,6 +48,29 @@ describe('topics client API', () => {
     expect(mockPost).toHaveBeenCalledWith('/api/v1/topics/source-topic/merges', {
       destination_id_or_slug: 'destination-topic',
     })
+  })
+
+  it('fetches public topic placement through the detail endpoint', async () => {
+    const response = loadWebApiFixture('web.topics.show.default')
+    mockGet.mockResolvedValueOnce(response)
+
+    const topic = await fetchTopic('test-topic')
+
+    expect(topic?.logo_image_placement).toEqual({
+      image_id: '00000000-0000-7000-8000-000000000205',
+      placement_id: '00000000-0000-7000-8000-000000000306',
+      placement_revision: 3,
+    })
+    expect(topic?.hero_image_placement).toEqual({
+      image_id: '00000000-0000-7000-8000-000000000206',
+      placement_id: '00000000-0000-7000-8000-000000000307',
+      placement_revision: 4,
+    })
+    expect(response.topic_metrics).toMatchObject({
+      count: { discussions: 1, latest: 1 },
+      viewer_count: { discussions: 1 },
+    })
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/test-topic')
   })
 
   it('creates topic aliases', async () => {

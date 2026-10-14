@@ -178,12 +178,12 @@ describe('get', () => {
   })
 
   it('caches.topics has correct prefix and TTL', () => {
-    expect(caches.topics.prefix).toBe('topics:v2')
+    expect(caches.topics.prefix).toBe('topics:v3')
     expect(caches.topics.ttl).toBeGreaterThan(0)
   })
 
   it('caches.topics_with_redirect has correct prefix and TTL', () => {
-    expect(caches.topics_with_redirect.prefix).toBe('topics_with_redirect:v2')
+    expect(caches.topics_with_redirect.prefix).toBe('topics_with_redirect:v3')
     expect(caches.topics_with_redirect.ttl).toBeGreaterThan(0)
   })
 

@@ -805,7 +805,11 @@
         "web.topics.search.default",
         "web.topics.search.referral-programs.default"
       ],
-      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+      "hash": "5772ff96e271be256fce9ab3452a5abcdbc70231813e4769cc40f87ffccdae8f"
+    },
+    "GET:/api/v1/topics/:idOrSlug": {
+      "fixtureIds": ["web.topics.show.default"],
+      "hash": "ded5b0aa7009e21f2a95014ffd6d1169b75ea30e2a0552d31082d36f838bf830"
     },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
       "fixtureIds": ["web.referral-links.prioritized.default"],
@@ -1473,11 +1477,11 @@
     },
     "entity-provenance.topics": {
       "fixtureIds": ["entity-provenance.topics"],
-      "hash": "7108c033fa4dd4afc4266fccf58e0ebd6b9469d58980f082bdb5f1369e186708"
+      "hash": "9dbdfcf8edcd005b027d4ec5b7e84ca96edd2b22808f6895ef934c4731f20146"
     },
     "entity-provenance.topics.staff": {
       "fixtureIds": ["entity-provenance.topics.staff"],
-      "hash": "bd4f578fa088f4b23a528d6b08885a1eca26d6bf9f967745ecfd57d890b345e9"
+      "hash": "4d3131e58adb0e936a8354abe16cae621f715a17a2b6e91dd9ecca943e61cc5a"
     },
     "native.admin-ai-costs.default": {
       "fixtureIds": ["native.admin-ai-costs.default"],
@@ -1577,7 +1581,7 @@
     },
     "native.card-topics.search.default": {
       "fixtureIds": ["native.card-topics.search.default"],
-      "hash": "6dc0d11a172522462b990823170912468300344e186e9ef9bf8cfbd470adb1fb"
+      "hash": "e2634bd296de30d26f1f19641e2199a15a4c817cfb528329575310abd22f4814"
     },
     "native.cards.create.default": {
       "fixtureIds": ["native.cards.create.default"],
@@ -2421,11 +2425,11 @@
     },
     "native.rewards-program-status-topics.search.default": {
       "fixtureIds": ["native.rewards-program-status-topics.search.default"],
-      "hash": "fef1195a430d5beea71cce1e3b748251e0fc7f9aba41bc85d315c8f59a11b8b8"
+      "hash": "9d69661ef61de7e6dcfb25f553cf19670853a214e686998ac5d717f389cae357"
     },
     "native.rewards-program-topics.search.default": {
       "fixtureIds": ["native.rewards-program-topics.search.default"],
-      "hash": "f9c9612630ccde6440df3c62f62f55378834c15bd48dd2a3135e6f046d1c718e"
+      "hash": "1ea30044a61e057c70d15acb2ce422644022a7695ad3594fd74239cc7d76f37c"
     },
     "native.rewards-statuses.create.default": {
       "fixtureIds": ["native.rewards-statuses.create.default"],
@@ -2497,7 +2501,7 @@
     },
     "native.spending-category-topics.search.default": {
       "fixtureIds": ["native.spending-category-topics.search.default"],
-      "hash": "76d2c6606883c9d87f4136cd831b98dcb10804536f4da4b037dfbfbab6102a79"
+      "hash": "da9e1069e3d8238527e4d0139936aec23676e2e9c5b40a3f2c3c814c670000bd"
     },
     "native.stories.get.after": {
       "fixtureIds": ["native.stories.get.after"],
@@ -3097,11 +3101,15 @@
     },
     "web.topics.search.default": {
       "fixtureIds": ["web.topics.search.default"],
-      "hash": "e5aae61275902740b189d987098762fe3f5e13ed92f3f942e0f5ed5fec9f58c8"
+      "hash": "08de945503e8afcf7a12776e6179a67f66f788380aeb5f15e707b9f00dc9131d"
     },
     "web.topics.search.referral-programs.default": {
       "fixtureIds": ["web.topics.search.referral-programs.default"],
-      "hash": "040d64802669200a650c526e84f4546250960718fba14b731b6dadfaa2fa5033"
+      "hash": "fa39f9f5da472f81168586700a7b12e370c9e2303888138ec6130261890fdc20"
+    },
+    "web.topics.show.default": {
+      "fixtureIds": ["web.topics.show.default"],
+      "hash": "a5996ec59ba64ecae2ad641dd11e5d08dee9f6c187497791ded8fcff6ec90074"
     },
     "web.trending-referral-programs.default": {
       "fixtureIds": ["web.trending-referral-programs.default"],

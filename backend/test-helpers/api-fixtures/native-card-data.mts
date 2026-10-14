@@ -76,4 +76,6 @@ export const cardTopic = {
   name: authorizedCard.card.name,
   slug: authorizedCard.card.slug,
   topic_type: 'card',
+  logo_image_placement: null,
+  hero_image_placement: null,
 }

@@ -31,6 +31,18 @@ import { currentUserCanCreateTopic } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
 import { apiQuery } from '../../response-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import type { Topic } from '@voucha/types/entities/topic'
+
+type TopicListTopic = Topic & Required<Pick<Topic, 'logo_image_placement' | 'hero_image_placement'>>
+
+function requireTopicListImagePlacements(topic: Topic): TopicListTopic {
+  for (const field of ['logo_image_placement', 'hero_image_placement'] as const) {
+    if (!Object.hasOwn(topic, field) || topic[field] === undefined) {
+      throw new Error(`Topic list response is missing ${field}`)
+    }
+  }
+  return topic as TopicListTopic
+}
 
 app
   .route('/api/v1/topics')
@@ -86,6 +98,11 @@ app
     const topicsPromise = getTopicByAnyCachedBatch(topicIds)
     const topicsIndexedPromise = topicsPromise
       .then(topics => attachTopicProvenance(topics, currentUser))
+      .then(topics =>
+        topics
+          .filter((topic): topic is Topic => topic !== null && topic !== undefined)
+          .map(requireTopicListImagePlacements),
+      )
       .then(indexById)
     const topicMetricsIndexedPromise = getTopicMetricsByAnyCachedBatch(topicIds).then(indexById)
     const visibleResultsPromise = Promise.all([
@@ -94,7 +111,7 @@ app
     ]).then(([topicsMap, topicMetricsMap]) =>
       result.results.filter(r => topicsMap[r.id] != null && topicMetricsMap[r.id] != null),
     )
-    const output: Record<string, unknown> = {
+    const output = {
       // Filter results to only include IDs present in the sidecar maps — a topic may
       // have been soft-deleted between the search query and the batch entity fetch,
       // which would leave an orphaned ID in results with missing sidecar entries.
@@ -118,16 +135,17 @@ app
 
         return renderMarkdownBatch(entities, adminIds)
       }),
-    }
-
-    if (currentUser) {
-      output.bookmarks = getBookmarksForEntities(currentUser, 'topic', topicIds)
-      output.election_votes =
-        topicIds.length === 0
-          ? Promise.resolve({})
-          : getTopicElectionVotesByUser(currentUser.id, topicIds).then(votes =>
-              Object.fromEntries(votes.map(v => [v.entity_id, v])),
-            )
+      ...(currentUser
+        ? {
+            bookmarks: getBookmarksForEntities(currentUser, 'topic', topicIds),
+            election_votes:
+              topicIds.length === 0
+                ? Promise.resolve({})
+                : getTopicElectionVotesByUser(currentUser.id, topicIds).then(votes =>
+                    Object.fromEntries(votes.map(v => [v.entity_id, v])),
+                  ),
+          }
+        : {}),
     }
 
     ctx.setType('json')

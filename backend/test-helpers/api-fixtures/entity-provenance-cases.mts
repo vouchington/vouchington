@@ -1,5 +1,6 @@
 import { community, pageInfo, topic } from './data.mts'
 import { swiftRssFeedSource } from './swift-data.mts'
+import { topicMetricsFor } from './topic-metrics-data.mts'
 import { communityOwner } from './web-community-member-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
@@ -54,12 +55,17 @@ const communitySearch = (staff: boolean) => ({
   bookmarks: {},
 })
 
-const topicSearch = (staff: boolean) => ({
-  ...entityPage('topic', variants(topic, staff)),
-  topic_elections: {},
-  election_votes: {},
-  topics_metrics: {},
-})
+const topicSearch = (staff: boolean) => {
+  const rows = variants({ ...topic, logo_image_placement: null, hero_image_placement: null }, staff)
+  return {
+    ...entityPage('topic', rows),
+    topic_elections: {},
+    election_votes: {},
+    topics_metrics: byId(rows.map(row => topicMetricsFor(row.id))),
+    markdown_to_html: {},
+    bookmarks: {},
+  }
+}
 
 const listRows = (staff: boolean) =>
   variants(

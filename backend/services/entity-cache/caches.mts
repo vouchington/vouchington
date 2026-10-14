@@ -8,6 +8,7 @@ import {
 import { EntityBloomCache } from './entity-bloom-cache.mts'
 
 const PUBLIC_USER_SHAPE_CACHE_VERSION = 'v2'
+const TOPIC_PLACEMENT_SHAPE_CACHE_VERSION = 'v3'
 
 export const caches = {
   users_private: new EntityBloomCache('users', {
@@ -27,11 +28,11 @@ export const caches = {
     ttlSeconds: CACHE_TTLS_SECONDS.user_metrics,
   }),
   topics: new EntityBloomCache('topics', {
-    prefix: `topics:${PUBLIC_USER_SHAPE_CACHE_VERSION}`,
+    prefix: `topics:${TOPIC_PLACEMENT_SHAPE_CACHE_VERSION}`,
     ttlSeconds: CACHE_TTLS_SECONDS.topics,
   }),
   topics_with_redirect: new EntityBloomCache('topics', {
-    prefix: `topics_with_redirect:${PUBLIC_USER_SHAPE_CACHE_VERSION}`,
+    prefix: `topics_with_redirect:${TOPIC_PLACEMENT_SHAPE_CACHE_VERSION}`,
     ttlSeconds: CACHE_TTLS_SECONDS.topics_with_redirect,
   }),
   topics_lookup: new ValkeyCache({
