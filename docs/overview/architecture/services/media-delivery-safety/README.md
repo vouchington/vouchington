@@ -62,8 +62,10 @@ publication remains placement-only and does not expand into asset admission.
 
 Surface mutations then use explicit user-profile, profile-link, topic, and community owner domains
 (topic/community domains cover both slots) and retain the complete historical placement
-footprint in canonical order. They then re-read current tuples, pre-deny those revisions, and mutate
-the owner. Image moderation retains the same placement domain from pre-denial through unsafe
+footprint in canonical order. The retained transaction discovers all historical placement IDs in
+one query after owner locking, then reads each surface's latest live tuple in one query after
+placement locking. It pre-denies those revisions before mutating the owner. Image moderation
+retains the same placement domain from pre-denial through unsafe
 flag/quarantine admission. An autocommit query cannot satisfy the retained-transaction contract.
 Same-value surface updates compare UUID identity under the retained owner fence and do not deny an
 unchanged route. Disabled registry publication leaves existing repair markers untouched and makes

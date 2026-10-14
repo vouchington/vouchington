@@ -58,12 +58,30 @@ export function imageSurfaceWhere(reference: ImageSurfaceReference): ReturnType<
   return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.user_profile_link_id = ${reference.userProfileLinkId}`
 }
 
+/** Preserve input order (and duplicate references) while querying all surface kinds together. */
+export function imageSurfaceReferences(
+  references: (ImageSurfaceReference & { nextImageId?: string | null })[],
+): ReturnType<typeof sql> {
+  return sql`SELECT surface_kind, user_id, topic_id, community_id, user_profile_link_id,
+      next_image_id, ordinality
+    FROM unnest(
+      ${references.map(ref => ref.surfaceKind)}::image_surface_placement_surface_kinds[],
+      ${references.map(ref => ('userId' in ref ? ref.userId : null))}::uuid[],
+      ${references.map(ref => ('topicId' in ref ? ref.topicId : null))}::uuid[],
+      ${references.map(ref => ('communityId' in ref ? ref.communityId : null))}::uuid[],
+      ${references.map(ref => ('userProfileLinkId' in ref ? ref.userProfileLinkId : null))}::uuid[],
+      ${references.map(ref => ref.nextImageId ?? null)}::uuid[]
+    ) WITH ORDINALITY AS refs(
+      surface_kind, user_id, topic_id, community_id, user_profile_link_id,
+      next_image_id, ordinality
+    )`
+}
+
 /** Includes historical reusable bindings: later owner writes cannot expand a held domain. */
 export async function lockImageSurfacePlacements(
   references: ImageSurfaceReference[],
   query: QueryExecutor,
 ): Promise<void> {
-  const placementIds: string[] = []
   await lockSurfaceOwnerDomains(
     {
       userIds: references.flatMap(ref => ('userId' in ref ? [ref.userId] : [])),
@@ -75,13 +93,19 @@ export async function lockImageSurfacePlacements(
     },
     query,
   )
-  for (const reference of references) {
-    const statement = sql`/* lockImageSurfacePlacements */
-      SELECT surface.placement_id FROM image_surface_placements surface WHERE `
-    statement.append(imageSurfaceWhere(reference))
-    // oxlint-disable-next-line no-await-in-loop -- discover the entire domain before retaining any placement.
-    const { rows } = await query<{ placement_id: string }>(statement)
-    placementIds.push(...rows.map(row => row.placement_id))
-  }
+  const statement = sql`/* lockImageSurfacePlacements */
+    WITH refs AS (`
+  statement.append(imageSurfaceReferences(references))
+  statement.append(sql`)
+    SELECT surface.placement_id
+    FROM refs
+    JOIN image_surface_placements surface ON surface.surface_kind = refs.surface_kind
+      AND (surface.user_id = refs.user_id OR surface.topic_id = refs.topic_id
+        OR surface.community_id = refs.community_id
+        OR surface.user_profile_link_id = refs.user_profile_link_id)
+    ORDER BY refs.ordinality`)
+  const placementIds = references.length
+    ? (await query<{ placement_id: string }>(statement)).rows.map(row => row.placement_id)
+    : []
   await lockImageDeliveryMutation(query, { placementIds, placementOnly: true })
 }

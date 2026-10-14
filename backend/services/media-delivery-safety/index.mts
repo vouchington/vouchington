@@ -1,7 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
-  imageSurfaceWhere,
+  imageSurfaceReferences,
   lockImageSurfacePlacements,
   type ImageSurfaceReference,
 } from './surface-lock.mts'
@@ -45,24 +45,50 @@ export async function prepublishImageSurfaceDenials(
     query,
   )
   await lockImageSurfacePlacements(ordered, query)
-  for (const reference of ordered) {
-    const statement = sql`/* prepublishImageSurfaceDenial:current */
-    SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id,
-      surface.image_id = ${reference.nextImageId ?? null}::uuid AS same_image
-    FROM image_surface_placements surface
-    JOIN media_placements placement ON placement.id = surface.placement_id
-    WHERE `
-    statement.append(imageSurfaceWhere(reference))
-    statement.append(sql` AND placement.retired_at IS NULL ORDER BY placement.id DESC LIMIT 1`)
-    // oxlint-disable-next-line no-await-in-loop -- discovers every tuple before locking any placement.
-    const { rows } = await query<{
-      placement_id: string
-      placement_revision: number
-      image_id: string
-      same_image: boolean
-    }>(statement)
-    if (reference.nextImageId && !rows[0]?.same_image) changedImageIds.push(reference.nextImageId)
-    if (rows[0] && (!('nextImageId' in reference) || !rows[0].same_image)) tuples.push(rows[0])
+  const statement = sql`/* prepublishImageSurfaceDenial:current */
+    WITH refs AS (`
+  statement.append(imageSurfaceReferences(ordered))
+  statement.append(sql`)
+    SELECT refs.ordinality, current.placement_id, current.placement_revision,
+      current.image_id, current.image_id = refs.next_image_id AS same_image
+    FROM refs
+    LEFT JOIN LATERAL (
+      SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id
+      FROM image_surface_placements surface
+      JOIN media_placements placement ON placement.id = surface.placement_id
+      WHERE surface.surface_kind = refs.surface_kind
+        AND (surface.user_id = refs.user_id OR surface.topic_id = refs.topic_id
+          OR surface.community_id = refs.community_id
+          OR surface.user_profile_link_id = refs.user_profile_link_id)
+        AND placement.retired_at IS NULL
+      ORDER BY placement.id DESC LIMIT 1
+    ) current ON true
+    ORDER BY refs.ordinality`)
+  const { rows } = ordered.length
+    ? await query<{
+        ordinality: string
+        placement_id: string | null
+        placement_revision: number | null
+        image_id: string | null
+        same_image: boolean | null
+      }>(statement)
+    : { rows: [] }
+  for (const row of rows) {
+    const reference = ordered[Number(row.ordinality) - 1]!
+    if (reference.nextImageId && !row.same_image) changedImageIds.push(reference.nextImageId)
+    if (
+      row.placement_id &&
+      row.placement_revision !== null &&
+      row.image_id &&
+      (!('nextImageId' in reference) || !row.same_image)
+    ) {
+      tuples.push({
+        placement_id: row.placement_id,
+        placement_revision: row.placement_revision,
+        image_id: row.image_id,
+        same_image: row.same_image ?? false,
+      })
+    }
   }
   await assertImagesReadyForSurface(changedImageIds, query)
   for (const current of tuples) {

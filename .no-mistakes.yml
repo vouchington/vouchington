@@ -956,8 +956,6 @@ rules:
             file: backend/services/media-delivery-safety/index.mts,
             callee: 'prepublishImagePlacementDenial',
           }
-        - { file: backend/services/media-delivery-safety/index.mts, callee: 'query' }
-        - { file: backend/services/media-delivery-safety/surface-lock.mts, callee: 'query' }
         - { file: backend/services/memberships/entitlement-effects.mts, callee: 'query' }
         - {
             file: backend/services/memberships/google/lineage.mts,
