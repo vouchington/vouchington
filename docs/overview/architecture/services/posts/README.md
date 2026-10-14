@@ -40,6 +40,7 @@ The posts service is the core content creation system. It handles multiple post 
 - `slugs.mts` — Post slug generation and management
 - `content.mts` — Generates content hashes for embeddings and moderation
 - `images.mts` — Validates post image inputs
+- `image-placements.mts` — In the post transaction, locks existing placements, retires absent images, and allocates, pins, and inserts missing image placements in ordered sets. Parent rows precede child rows; retained image and binding identities stay pinned until commit.
 - `hashtag-votes.mts` — Casts editor hashtag votes and active post-owner topic votes in the create/update transaction, including score-zero writes for removed relations
 - `category-vote-stats.mts` — Recomputes primary category scores in the same transaction and registers cache, top-hashtag, and one post-notification publication action for commit
 - `review-successions/` — Exact-topic root-review reconciliation, immutable automatic archive epochs, and read-only historical audit

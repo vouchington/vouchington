@@ -1210,11 +1210,6 @@ rules:
         - { file: backend/services/post-publication/story-lifecycle-lock.mts, callee: 'query' }
         - { file: backend/services/posts/hashtags.mts, callee: 'createUnlinkedTopicAlias' }
         - {
-            file: backend/services/posts/image-placements.mts,
-            callee: 'ensureImagePlacementBinding',
-          }
-        - { file: backend/services/posts/image-placements.mts, callee: 'query' }
-        - {
             file: backend/services/posts/register-post-related-urls-guard.mts,
             callee: 'assertCommunityNoLinksAllowed',
           }
