@@ -13,18 +13,19 @@ export function createAnalyzerFixtureBudget() {
     actors,
     git: (args: string[]) => spawnSync('git', args, { encoding: 'utf8', timeout: remaining() }),
     check: (cli: string, root: string) => {
-      // Lock wait precedes execution. Reserve one second for it and 500ms for launch/exit.
-      const seconds = Math.floor((remaining() - 1_500) / 1_000)
-      if (seconds < 1) throw new Error('Insufficient analyzer fixture case budget')
+      // Lock wait precedes execution. Reserve 500ms for launch/exit, then bound
+      // execution to one second and give acquisition the remaining whole seconds.
+      const seconds = Math.floor((remaining() - 500) / 1_000)
+      if (seconds < 2) throw new Error('Insufficient analyzer fixture case budget')
       return new Promise<{ status: number; stdout: string; stderr: string }>((resolve, reject) => {
         const child = execFile(
           process.execPath,
           [
             cli,
             '--lock-timeout',
-            '1',
+            String(seconds - 1),
             '--timeout',
-            String(seconds),
+            '1',
             'check',
             '--root',
             root,

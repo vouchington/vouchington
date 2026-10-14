@@ -88,5 +88,7 @@ runtime timeout settings are outside this command boundary; this is not a global
 
 The `no-mistakes` job first runs `ci/check-analyzer-fixture-budget.mts` against an owned finite Git fixture.
 This intentional native-timeout control runs outside parallel Vitest files because it holds the machine-wide analyzer lock.
-The six configured-rule suites share a four-second fixture budget across Git and the public CLI; ordinary analyzer deadlines are unchanged.
+The configured-rule suites and helper-basename fixture share a four-second case budget across Git and the public CLI.
+After reserving launch/exit time, the helper bounds execution to one second and assigns the remaining whole seconds to lock acquisition; ordinary analyzer deadlines are unchanged.
+The standalone control also verifies that a real lock contender completes after the owned timed-out holder releases its lock.
 The control records native status, wrapper close and owned hook-channel disposal, not a universal OS-descendant reaping guarantee.

@@ -11,6 +11,8 @@ async function main(): Promise<void> {
   let root: string | undefined
   let observer: ReturnType<typeof observeFixtureExit> | undefined
   let work: ReturnType<typeof budget.check> | undefined
+  let contenderRoot: string | undefined
+  let contender: ReturnType<typeof budget.check> | undefined
   let settled = false
   let fallbackUsed = false
   let failed = false
@@ -43,6 +45,11 @@ async function main(): Promise<void> {
       { mode: 0o700 },
     )
     assert.equal(budget.git(['-C', root, 'config', 'core.fsmonitor', hook]).status, 0)
+    contenderRoot = await mkdtemp(join(tmpdir(), 'analyzer-budget-contender-'))
+    const contenderBudget = createAnalyzerFixtureBudget()
+    assert.equal(contenderBudget.git(['init', '-q', contenderRoot]).status, 0)
+    await writeFile(join(contenderRoot, '.no-mistakes.yml'), 'rules: []\n')
+    assert.equal(contenderBudget.git(['-C', contenderRoot, 'add', '.']).status, 0)
     work = budget.check(resolve('node_modules/no-mistakes/bin/no-mistakes.js'), root)
     void work.then(
       () => {
@@ -66,14 +73,24 @@ async function main(): Promise<void> {
     assert.equal(actor.root, root)
     assert.ok(Number.isInteger(actor.pid) && actor.pid > 0)
     assert.ok(Number.isInteger(actor.parent) && actor.parent > 0)
-    const result = await work
+    contender = contenderBudget.check(
+      resolve('node_modules/no-mistakes/bin/no-mistakes.js'),
+      contenderRoot,
+    )
+    const [result, contenderResult] = await Promise.all([work, contender])
     assert.equal(result.status, 124, result.stderr)
+    assert.equal(contenderResult.status, 0, contenderResult.stderr)
+    assert.deepEqual(JSON.parse(contenderResult.stdout).rules, [])
+    assert.match(contenderResult.stderr, /waiting for lock held by/)
+    assert.equal(contenderBudget.actors[0]?.closed, true)
     await observer.closed
     assert.equal(observer.error(), undefined)
     assert.equal(budget.actors.length, 1)
     assert.equal(budget.actors[0]?.closed, true)
     receipt = {
       nativeExit: result.status,
+      contenderExit: contenderResult.status,
+      contenderWrapper: contenderBudget.actors[0],
       wrapper: budget.actors[0],
       hook: actor,
       hookConnectionClosed: true,
@@ -101,6 +118,11 @@ async function main(): Promise<void> {
     } catch (err) {
       if (!failed || err !== primary) cleanup.push(err)
     }
+    try {
+      await contender
+    } catch (err) {
+      if (!failed || err !== primary) cleanup.push(err)
+    }
     if (observer?.connected()) {
       try {
         await observer.closed
@@ -113,9 +135,10 @@ async function main(): Promise<void> {
     } catch (err) {
       cleanup.push(err)
     }
-    if (root) {
+    for (const directory of [root, contenderRoot]) {
+      if (!directory) continue
       try {
-        await rm(root, { recursive: true, force: true })
+        await rm(directory, { recursive: true, force: true })
       } catch (err) {
         cleanup.push(err)
       }

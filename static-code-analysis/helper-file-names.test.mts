@@ -1,16 +1,17 @@
-import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
+import { createAnalyzerFixtureBudget } from './test-helpers/analyzer-fixture-budget.mts'
 
 const repository = fileURLToPath(new URL('../', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
 
 describe('helper file basename policy', () => {
   it('rejects tracked forbidden basenames while allowing helper directories and ignoring untracked files', async () => {
+    const budget = createAnalyzerFixtureBudget()
     const config = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8'))
     const guard = config.rules
       .find((rule: { name: string }) => rule.name === 'banned repository paths')
@@ -44,9 +45,9 @@ describe('helper file basename policy', () => {
           ],
         }),
       )
-      expect(spawnSync('git', ['init', '-q', directory]).status).toBe(0)
+      expect(budget.git(['init', '-q', directory]).status).toBe(0)
       expect(
-        spawnSync('git', [
+        budget.git([
           '-C',
           directory,
           'add',
@@ -56,13 +57,7 @@ describe('helper file basename policy', () => {
           '.no-mistakes.yml',
         ]).status,
       ).toBe(0)
-      const result = spawnSync(
-        process.execPath,
-        [cli, 'check', '--root', directory, '--format', 'json'],
-        {
-          encoding: 'utf8',
-        },
-      )
+      const result = await budget.check(cli, directory)
       expect(result.status).toBe(1)
       const diagnostics = JSON.parse(result.stdout).rules as { file: string; message: string }[]
       expect(diagnostics.map(item => item.file).toSorted()).toEqual(rejected.toSorted())
