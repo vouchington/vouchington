@@ -1,4 +1,5 @@
 import userFixtures from './merged-user-options.json' with { type: 'json' }
+import { createUniqueTestEmail } from './data.mts'
 import { ALL_TOOLS } from '../mcp/registry/index.mts'
 import { userMergedReadingGroups } from '../mcp/registry/user-merged-reading-tools.mts'
 import { userMergedParticipationGroups } from '../mcp/registry/user-merged-participation-tools.mts'
@@ -46,7 +47,7 @@ function sample(schema: Record<string, unknown>, root = schema, depth = 0): unkn
     if (schema['format'] === 'uuid') return UUID
     if (schema['format'] === 'date-time') return '2026-01-01T00:00:00.000Z'
     if (schema['format'] === 'date') return '2026-01-01'
-    if (schema['format'] === 'email') return 'synthetic@example.com'
+    if (schema['format'] === 'email') return createUniqueTestEmail('mcp-operation')
     if (schema['format'] === 'uri' || schema['format'] === 'url') return 'https://example.com/test'
     const min = typeof schema['minLength'] === 'number' ? schema['minLength'] : 1
     const max = typeof schema['maxLength'] === 'number' ? schema['maxLength'] : Math.max(min, 16)
