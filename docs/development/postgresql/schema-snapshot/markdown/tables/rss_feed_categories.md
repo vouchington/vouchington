@@ -6,15 +6,15 @@ Maps feed-level Apple itunes:category identities to internal topics. One row per
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                              |
-| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
-| `rss_feed_id` | `uuid`                     | no       |                     |          |           |           | The RSS feed (podcast show) these categories belong to.              |
-| `category_id` | `uuid`                     | no       |                     |          |           |           | Canonical normalized Apple itunes:category identity.                 |
-| `topic_id`    | `uuid`                     | yes      |                     |          |           |           | The mapped internal topic. NULL if not yet mapped by the autotagger. |
-| `created_at`  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
-| `updated_at`  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                              |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
+| `rss_feed_id`          | `uuid`                     | no       |                     |          |           |           | The RSS feed (podcast show) these categories belong to.              |
+| `category_identity_id` | `uuid`                     | no       |                     |          |           |           | Canonical normalized Apple itunes:category identity.                 |
+| `topic_id`             | `uuid`                     | yes      |                     |          |           |           | The mapped internal topic. NULL if not yet mapped by the autotagger. |
+| `created_at`           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
+| `updated_at`           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
 
-**Primary key:** `PRIMARY KEY (rss_feed_id, category_id)`
+**Primary key:** `PRIMARY KEY (rss_feed_id, category_identity_id)`
 
 **Unique constraints:**
 _none_
@@ -24,15 +24,15 @@ _none_
 
 **Foreign keys:**
 
-- `fk_rss_feed_categories__category_id`: `FOREIGN KEY (category_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
+- `fk_rss_feed_categories__category_identity_id`: `FOREIGN KEY (category_identity_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
 - `rss_feed_categories_rss_feed_id_fkey`: `FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE`
 - `rss_feed_categories_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `idx_rss_feed_categories__category_id`: `CREATE INDEX idx_rss_feed_categories__category_id ON public.rss_feed_categories USING btree (category_id, rss_feed_id)`
+- `idx_rss_feed_categories__category_identity_id`: `CREATE INDEX idx_rss_feed_categories__category_identity_id ON public.rss_feed_categories USING btree (category_identity_id, rss_feed_id)`
 - `idx_rss_feed_categories__topic_id`: `CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC) WHERE (topic_id IS NOT NULL)`
-- `rss_feed_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_id)`
+- `rss_feed_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_identity_id)`
 
 **Triggers:**
 

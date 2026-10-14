@@ -6,17 +6,17 @@ Maps RSS feed item categories to internal topics. Categories belong to the item,
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                    |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
-| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | The RSS feed item these categories belong to.                                              |
-| `category_id`      | `uuid`                     | no       |                     |          |           |           | Canonical normalized category identity; paired with the item id for one row per category.  |
-| `category_text`    | `text`                     | no       |                     |          |           |           | The first authored category text from the RSS feed; identity is case-insensitive per item. |
-| `topic_id`         | `uuid`                     | yes      |                     |          |           |           | The mapped internal topic. NULL if not yet mapped.                                         |
-| `topic_alias_id`   | `uuid`                     | yes      |                     |          |           |           | The valid canonical hashtag alias. NULL for non-hashtag RSS labels.                        |
-| `created_at`       | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
-| `updated_at`       | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                    |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
+| `rss_feed_item_id`     | `uuid`                     | no       |                     |          |           |           | The RSS feed item these categories belong to.                                              |
+| `category_identity_id` | `uuid`                     | no       |                     |          |           |           | Canonical normalized category identity; paired with the item id for one row per category.  |
+| `category_text`        | `text`                     | no       |                     |          |           |           | The first authored category text from the RSS feed; identity is case-insensitive per item. |
+| `topic_id`             | `uuid`                     | yes      |                     |          |           |           | The mapped internal topic. NULL if not yet mapped.                                         |
+| `topic_alias_id`       | `uuid`                     | yes      |                     |          |           |           | The valid canonical hashtag alias. NULL for non-hashtag RSS labels.                        |
+| `created_at`           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
+| `updated_at`           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
 
-**Primary key:** `PRIMARY KEY (rss_feed_item_id, category_id)`
+**Primary key:** `PRIMARY KEY (rss_feed_item_id, category_identity_id)`
 
 **Unique constraints:**
 _none_
@@ -26,20 +26,20 @@ _none_
 
 **Foreign keys:**
 
-- `rss_feed_item_categories_category_id_fkey`: `FOREIGN KEY (category_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
+- `rss_feed_item_categories_category_identity_id_fkey`: `FOREIGN KEY (category_identity_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
 - `rss_feed_item_categories_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
 - `rss_feed_item_categories_topic_alias_id_fkey`: `FOREIGN KEY (topic_alias_id) REFERENCES topic_aliases(id) ON DELETE RESTRICT`
 - `rss_feed_item_categories_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `idx_rss_feed_item_categories__category_id`: `CREATE INDEX idx_rss_feed_item_categories__category_id ON public.rss_feed_item_categories USING btree (category_id, rss_feed_item_id)`
+- `idx_rss_feed_item_categories__category_identity_id`: `CREATE INDEX idx_rss_feed_item_categories__category_identity_id ON public.rss_feed_item_categories USING btree (category_identity_id, rss_feed_item_id)`
 - `idx_rss_feed_item_categories__rss_feed_item_id__mapped`: `CREATE INDEX idx_rss_feed_item_categories__rss_feed_item_id__mapped ON public.rss_feed_item_categories USING btree (rss_feed_item_id) INCLUDE (topic_alias_id, category_text) WHERE (topic_alias_id IS NOT NULL)`
 - `idx_rss_feed_item_categories__topic_alias_id`: `CREATE INDEX idx_rss_feed_item_categories__topic_alias_id ON public.rss_feed_item_categories USING btree (topic_alias_id, rss_feed_item_id DESC) WHERE (topic_alias_id IS NOT NULL)`
 - `idx_rss_feed_item_categories__topic_id`: `CREATE INDEX idx_rss_feed_item_categories__topic_id ON public.rss_feed_item_categories USING btree (topic_id, rss_feed_item_id DESC) WHERE (topic_id IS NOT NULL)`
-- `rss_feed_item_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_item_categories_pkey ON public.rss_feed_item_categories USING btree (rss_feed_item_id, category_id)`
+- `rss_feed_item_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_item_categories_pkey ON public.rss_feed_item_categories USING btree (rss_feed_item_id, category_identity_id)`
 
 **Triggers:**
 
-- `trigger_refresh_rss_feed_item_unmapped_category_count`: `CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_id, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()`
+- `trigger_refresh_rss_feed_item_unmapped_category_count`: `CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_identity_id, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()`
 - `trigger_rss_feed_item_categories_updated_at`: `CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

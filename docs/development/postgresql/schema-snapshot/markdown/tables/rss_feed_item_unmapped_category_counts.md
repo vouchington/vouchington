@@ -6,13 +6,13 @@ Transactionally refreshed counts of RSS category identities whose item topic_id 
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `category_id` | `uuid`                     | no       |                     |          |           |           | Canonical category identity with no current topic mapping.          |
-| `item_count`  | `bigint`                   | no       |                     |          |           |           | Number of RSS feed items currently carrying this unmapped category. |
-| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this category count last changed.                              |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `category_identity_id` | `uuid`                     | no       |                     |          |           |           | Canonical category identity with no current topic mapping.          |
+| `item_count`           | `bigint`                   | no       |                     |          |           |           | Number of RSS feed items currently carrying this unmapped category. |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this category count last changed.                              |
 
-**Primary key:** `PRIMARY KEY (category_id)`
+**Primary key:** `PRIMARY KEY (category_identity_id)`
 
 **Unique constraints:**
 _none_
@@ -23,11 +23,11 @@ _none_
 
 **Foreign keys:**
 
-- `rss_feed_item_unmapped_category_counts_category_id_fkey`: `FOREIGN KEY (category_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
+- `rss_feed_item_unmapped_category_count_category_identity_id_fkey`: `FOREIGN KEY (category_identity_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `rss_feed_item_unmapped_category_counts_pkey`: `CREATE UNIQUE INDEX rss_feed_item_unmapped_category_counts_pkey ON public.rss_feed_item_unmapped_category_counts USING btree (category_id)`
+- `rss_feed_item_unmapped_category_counts_pkey`: `CREATE UNIQUE INDEX rss_feed_item_unmapped_category_counts_pkey ON public.rss_feed_item_unmapped_category_counts USING btree (category_identity_id)`
 
 **Triggers:**
 

@@ -1142,7 +1142,7 @@ RSS feed response projection with current discoverability and topic references.
         END AS podcast_show,
     COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg
            FROM ((rss_feed_categories c
-             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_id)))
+             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))
              LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))))
           WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories
    FROM (((((((rss_feeds
