@@ -44,10 +44,16 @@ export async function exchangeClaimedOAuthAuthorization(
   signal: AbortSignal,
 ): Promise<void> {
   const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
-  const codeVerifier =
+  const providerInput =
     authorization.provider === 'facebook' || authorization.provider === 'linkedin'
-      ? undefined
-      : dependencies.decryptVerifier(authorization.id, authorization.pkce_verifier_ciphertext)
+      ? { provider: authorization.provider, codeVerifier: undefined }
+      : {
+          provider: authorization.provider,
+          codeVerifier: dependencies.decryptVerifier(
+            authorization.id,
+            authorization.pkce_verifier_ciphertext,
+          ),
+        }
   await ownership?.persist(authorization.exchange_claim_id, true)
   admission.armed = ownership !== undefined
   signal.throwIfAborted()
@@ -58,20 +64,21 @@ export async function exchangeClaimedOAuthAuthorization(
     authorizationClaimId: authorization.exchange_claim_id,
     signal,
   }
-  switch (authorization.provider) {
+  switch (providerInput.provider) {
     case 'facebook':
       await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
       break
     case 'x':
-      if (codeVerifier === undefined)
-        throw new Error('X provider admission requires its PKCE verifier')
-      await dependencies.upsertX(code, authorization.redirect_uri, codeVerifier, completionOptions)
+      await dependencies.upsertX(
+        code,
+        authorization.redirect_uri,
+        providerInput.codeVerifier,
+        completionOptions,
+      )
       break
     case 'github':
-      if (codeVerifier === undefined)
-        throw new Error('GitHub provider admission requires its PKCE verifier')
       await dependencies.upsertGithub(code, authorization.redirect_uri, {
-        codeVerifier,
+        codeVerifier: providerInput.codeVerifier,
         ...completionOptions,
       })
       break
@@ -84,12 +91,10 @@ export async function exchangeClaimedOAuthAuthorization(
       )
       break
     case 'microsoft':
-      if (codeVerifier === undefined)
-        throw new Error('Microsoft provider admission requires its PKCE verifier')
       await dependencies.upsertMicrosoft(
         code,
         authorization.redirect_uri,
-        codeVerifier,
+        providerInput.codeVerifier,
         completionOptions,
       )
       break
