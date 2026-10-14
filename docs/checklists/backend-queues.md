@@ -8,9 +8,10 @@ contracts.
 ## Priority kinds
 
 Declare one priority kind when creating each queue: `none` accepts only 0, while `ranked`
-accepts 1 through 2048 and defaults to 10. Never mix the two kinds in one queue. Task jobs use
-10; dispatchers, cleanup, recovery, and backfills use 100 so they run behind the tasks they
-create. In [glide-mq's priority order](https://github.com/avifenesh/glide-mq/blob/main/docs/USAGE.md),
+accepts 1 through 2048 and defaults to 10. Never mix the two kinds in one queue. Task jobs
+default to 10 and may use other tiers below 100 when a domain ranks its own work; dispatchers,
+cleanup, recovery, and backfills use 100 so they run behind the tasks they create.
+In [glide-mq's priority order](https://github.com/avifenesh/glide-mq/blob/main/docs/USAGE.md),
 ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 jobs.
 
 ## Queue boundaries
@@ -21,14 +22,18 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   queue as a domain. Express domain limits per job: group (`ordering`) `concurrency`, `rateLimit`,
   or `tokenBucket` in place of a separate queue, `setGlobalConcurrency`, or a queue-wide
   `limiter`; per-job `lockDuration` and `timeout` in place of worker-level values.
-- **Operate per domain.** Pause, retry, and stats work per domain, and pausing is a domain-control
-  database field, not `Queue.pause()`.
+- **Operate per domain.** A shared queue needs pause, retry, and stats per domain, with pausing as a
+  domain-control database field, not `Queue.pause()`. Move a domain into a shared queue only once
+  those controls exist ([#2855](https://github.com/vouchington/vouchington/issues/2855)).
 - **Add a queue only when sharing cannot work:** a different worker class; latency-critical work
   a person is watching, such as login emails or upload finalization, which gets a queue holding
   only that work; a limiter a group cannot express, such as a token limiter charged by actual
-  usage; a batch worker; or a distinct runtime.
-- **Never wait on a job result.** No request or job calls `addAndWait`, `waitUntilFinished`, or an
-  `enqueue*AndWait` helper; return a pending resource and let clients poll.
+  usage; a domain that needs both a domain-wide concurrency cap and per-entity ordering keys,
+  since a job has one ordering key; a batch worker; or a distinct runtime.
+- **Never wait on a job result.** New code never makes a request or job wait for another job's
+  result (`addAndWait`, `waitUntilFinished`, polling a job's return value); return a pending resource
+  and let clients poll. The crawler's remaining wait path is being removed in
+  [#2853](https://github.com/vouchington/vouchington/issues/2853).
 - **Fan out in pages.** Dispatchers, backfills, and other fan-out jobs enqueue one bounded page,
   then continue through a cursor. Ranked priority orders only jobs promoted together, so a large
   batch already in the ready list delays every later task in the shared queue, whatever its
@@ -36,8 +41,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
 - **Throttle our own datastores with concurrency.** Use a `limiter` or group `rateLimit` only to
   stay under an external service's rate limit.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering
-  keys by domain, and size the worker for the combined load. A job has one ordering key, so a job
-  that already needs one keeps its own key, namespaced.
+  keys by domain, and size the worker for the combined load. A job that already needs an ordering
+  key keeps it, namespaced, and gives up any domain-wide group cap.
 
 ```mermaid
 flowchart LR
