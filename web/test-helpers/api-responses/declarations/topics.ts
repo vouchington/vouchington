@@ -4,10 +4,19 @@ import type { ImagePlacementTuple } from '@/types/user'
 import type { Topic } from '@/types/topics'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
-type TopicWithHeroPlacement = Omit<Topic, 'hero_image_placement'> & {
+type TopicWithImagePlacements = Omit<Topic, 'logo_image_placement' | 'hero_image_placement'> & {
+  logo_image_placement: ImagePlacementTuple | null
   hero_image_placement: ImagePlacementTuple | null
 }
-type TopicDetailFixture = Omit<TopicResponseBody, 'topic'> & { topic: TopicWithHeroPlacement }
+type TopicDetailFixture = Omit<TopicResponseBody, 'topic'> & { topic: TopicWithImagePlacements }
+
+function assertTopicImagePlacements(topic: Topic): asserts topic is TopicWithImagePlacements {
+  for (const field of ['logo_image_placement', 'hero_image_placement'] as const) {
+    if (!Object.hasOwn(topic, field) || topic[field] === undefined) {
+      throw new Error(`Topic detail response is missing ${field}`)
+    }
+  }
+}
 
 export const TOPIC_DECLARATIONS = [
   defineWebApiFixture<TopicDetailFixture>()(
@@ -17,16 +26,12 @@ export const TOPIC_DECLARATIONS = [
       const response = await context.server.topics.getTopic('test-topic')
       const topic = response?.topic
       if (!topic) return null
-      if (
-        !Object.hasOwn(topic, 'hero_image_placement') ||
-        topic.hero_image_placement === undefined
-      ) {
-        throw new Error('Topic detail response is missing hero_image_placement')
-      }
+      assertTopicImagePlacements(topic)
       return {
         ...response,
         topic: {
           ...topic,
+          logo_image_placement: topic.logo_image_placement,
           hero_image_placement: topic.hero_image_placement,
         },
       }

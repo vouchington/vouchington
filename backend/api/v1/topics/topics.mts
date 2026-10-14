@@ -100,7 +100,7 @@ app
       .then(topics => attachTopicProvenance(topics, currentUser))
       .then(topics =>
         topics
-          .filter((topic): topic is Topic => topic !== null)
+          .filter((topic): topic is Topic => topic !== null && topic !== undefined)
           .map(requireTopicListImagePlacements),
       )
       .then(indexById)
