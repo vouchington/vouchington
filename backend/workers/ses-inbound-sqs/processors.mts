@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 import type { SqsMessage } from '@backend/worker-runtime'
-import { enqueueSesInboundProcess } from '@queues/ses-inbound/enqueues'
+import { enqueueBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
 import {
   createSesInboundProcessJobId,
   decodeS3EventObjectKey,
@@ -51,10 +51,7 @@ export async function processSesInboundSqsMessage(message: SqsMessage): Promise<
   }
   if (isS3TestEvent(event)) return
   const jobs = parseS3Event(event)
-  for (const data of jobs) {
-    // oxlint-disable-next-line no-await-in-loop -- preserve S3 batch backpressure; a rejection must retry the message
-    await enqueueSesInboundProcess(data)
-  }
+  await enqueueBulkSesInboundProcess(jobs)
 }
 
 function parseS3Event(event: S3Event): SesInboundProcessJobData[] {
