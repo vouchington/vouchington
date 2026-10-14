@@ -3,8 +3,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { ai_agents } from '@queues/ai-agents/queues'
 import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
-import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/language-detection/config'
-import { language_detection } from '@queues/language-detection/queues'
+import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/content-analysis/config'
+import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { notifications } from '@queues/notifications/queues'
 import { enqueueRssFeedItemPostUpsertJobsWithCompletion } from './upsert-enqueues.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
@@ -88,7 +88,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
           name: 'processReconcileRssFeedItemNotifications',
           data: { rssFeedItemId: itemId },
         }),
-        language_detection.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+        contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
       ],
     )
     expect({
@@ -115,7 +115,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         name: 'processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: itemId },
       }),
-      language_detection.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+      contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
     ])
     expect({
       languageDetection: languageDetectionJobs.length > 0,
@@ -142,7 +142,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       await languageDetectionEnqueue
 
       for (const row of rows) {
-        const jobs = await language_detection.searchJobs({
+        const jobs = await contentAnalysisQueue.searchJobs({
           name: 'rss_feed_item',
           data: { id: row.id },
         })
@@ -150,7 +150,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         expect(jobs[0]?.opts).toMatchObject({
           priority: PRIORITY_DEFAULT,
           deduplication: {
-            id: `language_detection_rss_feed_item_${row.id}`,
+            id: `content-analysis:language:rss_feed_item:${row.id}`,
             mode: 'debounce',
             ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
           },
@@ -187,7 +187,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         name: 'processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: skippedItemId },
       }),
-      language_detection.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
+      contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
     ])
     expect({
       languageDetection: languageDetectionJobs.length > 0,

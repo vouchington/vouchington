@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { enqueueStaydownHash } from '@queues/images/enqueues'
+import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 

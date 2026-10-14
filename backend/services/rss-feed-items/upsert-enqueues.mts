@@ -1,7 +1,7 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
-import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache'

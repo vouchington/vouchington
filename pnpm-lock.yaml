@@ -786,6 +786,9 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../queues/bluesky-follow-propagation
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../queues/content-analysis
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../queues/crawl-dispatch
@@ -804,9 +807,9 @@ importers:
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../queues/heartbeat
-      '@queues/images':
+      '@queues/image-uploads':
         specifier: workspace:^
-        version: link:../queues/images
+        version: link:../queues/image-uploads
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../queues/kagi-smallweb
@@ -1673,6 +1676,9 @@ importers:
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -1682,12 +1688,9 @@ importers:
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
-      '@queues/images':
+      '@queues/image-uploads':
         specifier: workspace:^
-        version: link:../../queues/images
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
+        version: link:../../queues/image-uploads
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -1700,6 +1703,9 @@ importers:
       '@workers/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../workers/bedrock-embeddings-batch
+      '@workers/content-analysis':
+        specifier: workspace:^
+        version: link:../../workers/content-analysis
       '@workers/crawl-browser':
         specifier: workspace:^
         version: link:../../workers/crawl-browser
@@ -1712,12 +1718,9 @@ importers:
       '@workers/crawler':
         specifier: workspace:^
         version: link:../../workers/crawler
-      '@workers/images':
+      '@workers/image-uploads':
         specifier: workspace:^
-        version: link:../../workers/images
-      '@workers/language-detection':
-        specifier: workspace:^
-        version: link:../../workers/language-detection
+        version: link:../../workers/image-uploads
       '@workers/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../workers/unfurl-referral-links
@@ -2842,6 +2845,21 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
+  backend/queues/content-analysis:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
   backend/queues/crawl-browser:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -2992,14 +3010,11 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/queues/images:
+  backend/queues/image-uploads:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3018,15 +3033,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/language-detection:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -4632,15 +4638,15 @@ importers:
       '@queues/ban-evasion':
         specifier: workspace:^
         version: link:../../queues/ban-evasion
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -4915,12 +4921,12 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
-      '@queues/images':
-        specifier: workspace:^
-        version: link:../../queues/images
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -5281,6 +5287,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -5293,9 +5302,6 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
@@ -6689,12 +6695,15 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/images':
+      '@queues/image-uploads':
         specifier: workspace:^
-        version: link:../../queues/images
+        version: link:../../queues/image-uploads
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
@@ -8779,6 +8788,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
@@ -8809,15 +8821,12 @@ importers:
       '@queues/heartbeat':
         specifier: workspace:^
         version: link:../../queues/heartbeat
-      '@queues/images':
+      '@queues/image-uploads':
         specifier: workspace:^
-        version: link:../../queues/images
+        version: link:../../queues/image-uploads
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../../queues/kagi-smallweb
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -9342,9 +9351,9 @@ importers:
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
-      '@queues/language-detection':
+      '@queues/content-analysis':
         specifier: workspace:^
-        version: link:../../queues/language-detection
+        version: link:../../queues/content-analysis
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -9460,12 +9469,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
@@ -11981,6 +11990,49 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
+  backend/workers/content-analysis:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+      '@services/images':
+        specifier: workspace:^
+        version: link:../../services/images
+      '@services/language-detection':
+        specifier: workspace:^
+        version: link:../../services/language-detection
+      '@ts-shared/deploy-environment':
+        specifier: workspace:^
+        version: link:../../../ts-shared/deploy-environment
+      '@vouchington/media':
+        specifier: ^0.2.0
+        version: 0.2.0
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@26.6.5)
+    devDependencies:
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../../services/urls
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/workers/crawl-browser:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -12252,6 +12304,9 @@ importers:
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -12261,9 +12316,6 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12425,7 +12477,7 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  backend/workers/images:
+  backend/workers/image-uploads:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -12445,12 +12497,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
-      '@queues/images':
+      '@queues/image-uploads':
         specifier: workspace:^
-        version: link:../../queues/images
-      '@services/copyright-notices':
-        specifier: workspace:^
-        version: link:../../services/copyright-notices
+        version: link:../../queues/image-uploads
       '@services/images':
         specifier: workspace:^
         version: link:../../services/images
@@ -12470,6 +12519,9 @@ importers:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@26.6.5)
     devDependencies:
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -12497,31 +12549,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/workers/language-detection:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../../queues/language-detection
-      '@services/language-detection':
-        specifier: workspace:^
-        version: link:../../services/language-detection
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/workers/memberships:
     dependencies:

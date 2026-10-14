@@ -137,12 +137,12 @@ examples:
         batch: { size: 10, timeout: 1000 },
       })
     isValid: false
-  - file: backend/workers/images/processors/create-images-worker.mts
+  - file: backend/workers/image-uploads/processors/create-image-uploads-worker.mts
     code: |
       import { Worker } from 'glide-mq'
 
-      export function createImagesWorker() {
-        return new Worker<ImagesJobData>('images', handleImagesJob, { connection, prefix })
+      export function createImageUploadsWorker() {
+        return new Worker<ImageUploadsJobData>('image-uploads', handleImageUploadsJob, { connection, prefix })
       }
     isValid: false
   - file: backend/workers/ai-agents/workers/core.mts

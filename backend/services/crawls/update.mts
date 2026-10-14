@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import type { UpdateCrawlOptions, CrawlBasic } from './types.mts'
 import createError from 'http-errors'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
 import onError from '@modules/on-error'
 import { appendEmbedMetadataUpdate } from './update-embed-metadata.mts'
 

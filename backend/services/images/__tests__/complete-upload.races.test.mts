@@ -10,7 +10,7 @@ import { completeImageUpload } from '../complete-upload.mts'
 import { getImageByHash, getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
 import * as storageLifecycleLock from '../storage-lifecycle-lock.mts'
-import { imagesQueue } from '@queues/images/queues'
+import { imageUploadsQueue } from '@queues/image-uploads/queues'
 
 import * as s3Module from '../s3-upload-lifecycle.mts'
 import { Readable } from 'node:stream'
@@ -28,7 +28,7 @@ describe('completeImageUpload - duplicate recovery and races', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    await imagesQueue.obliterate({ force: true })
+    await imageUploadsQueue.obliterate({ force: true })
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
     vi.spyOn(s3Module, 'deleteImageDeliveryAliasFromS3').mockResolvedValue()
     vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(
@@ -71,7 +71,7 @@ describe('completeImageUpload - duplicate recovery and races', () => {
     expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: failedImageId }))
     expect(deleteFromS3Spy).toHaveBeenCalledWith(expect.objectContaining({ id: retryImageId }))
     expect(s3Module.deleteImageDeliveryAliasFromS3).toHaveBeenCalledWith(failedImageId)
-    const replacementJobs = await imagesQueue.searchJobs({ data: { id: retryImageId } })
+    const replacementJobs = await imageUploadsQueue.searchJobs({ data: { id: retryImageId } })
     expect(replacementJobs).toHaveLength(1)
   })
 

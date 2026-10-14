@@ -4,7 +4,7 @@ import onError from '@modules/on-error'
 import { markImageUploadSourceDeleted } from './complete-upload-state.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
-import { enqueueExtractImageMetadata } from '@queues/images/enqueues'
+import { enqueueExtractImageMetadata } from '@queues/image-uploads/enqueues'
 
 const STAGED_SOURCE_CLEANUP_CONCURRENCY = 4
 const ABANDONED_UPLOAD_ERROR = 'Upload abandoned before completion'

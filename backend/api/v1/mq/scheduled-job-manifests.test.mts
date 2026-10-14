@@ -47,7 +47,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'entity-listeners/entityListenerReconciliation',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
-  'images/cleanup-abandoned-uploads-schedule',
+  'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
   'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',

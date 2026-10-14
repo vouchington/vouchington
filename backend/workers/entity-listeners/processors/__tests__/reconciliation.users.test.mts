@@ -8,7 +8,7 @@ import {
   setUserReferrerId,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { language_detection } from '@queues/language-detection/queues'
+import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   streamEntityReconciliationCandidateBatches,
@@ -45,7 +45,7 @@ function trackEnqueues() {
     }) as never)
   }
   const voteWeightAdd = track(voteAggregation)
-  track(language_detection)
+  track(contentAnalysisQueue)
   return {
     settle: () => Promise.all(pending),
     voteWeightEnqueuesFor: (userId: string) =>
@@ -111,7 +111,7 @@ async function hasVoteWeightJob(userId: string): Promise<boolean> {
 }
 
 async function hasLanguageDetectionJob(userId: string): Promise<boolean> {
-  const jobs = await language_detection.searchJobs({ name: 'user', data: { id: userId } })
+  const jobs = await contentAnalysisQueue.searchJobs({ name: 'user', data: { id: userId } })
   return jobs.length > 0
 }
 

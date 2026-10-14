@@ -10,7 +10,7 @@ import { scheduledJobManifest as emails } from '@queues/emails/enqueues/schedule
 import { scheduledJobManifest as entityListeners } from '@queues/entity-listeners/enqueues/schedules'
 import { scheduledJobManifest as findYourFriends } from '@queues/find-your-friends/enqueues/schedules'
 import { scheduledJobManifest as heartbeat } from '@queues/heartbeat/enqueues/schedules'
-import { scheduledJobManifest as images } from '@queues/images/enqueues/schedules'
+import { scheduledJobManifest as contentAnalysis } from '@queues/content-analysis/enqueues/schedules'
 import { scheduledJobManifest as kagiSmallweb } from '@queues/kagi-smallweb/enqueues/schedules'
 import { scheduledJobManifest as memberships } from '@queues/memberships/enqueues/schedules'
 import { scheduledJobManifest as notifications } from '@queues/notifications/enqueues/schedules'
@@ -39,7 +39,7 @@ export const SCHEDULED_JOB_MANIFESTS = [
   entityListeners,
   findYourFriends,
   heartbeat,
-  images,
+  contentAnalysis,
   kagiSmallweb,
   memberships,
   notifications,

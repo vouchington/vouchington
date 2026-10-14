@@ -5,7 +5,7 @@ import { completeImageUpload } from '../complete-upload.mts'
 import { deleteImageById } from '../delete.mts'
 import { getImageById } from '../get.mts'
 import { deriveUploadStatus } from '../get-upload-state.mts'
-import { imagesQueue } from '@queues/images/queues'
+import { imageUploadsQueue } from '@queues/image-uploads/queues'
 
 import * as s3Module from '../s3-upload-lifecycle.mts'
 import * as finalS3 from '../s3.mts'
@@ -24,7 +24,7 @@ describe('completeImageUpload - success path', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    await imagesQueue.obliterate({ force: true })
+    await imageUploadsQueue.obliterate({ force: true })
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue()
     vi.spyOn(s3Module, 'promoteFrozenImageToS3').mockImplementation(
       async ({ filename, sha256 }) => {
@@ -61,7 +61,7 @@ describe('completeImageUpload - success path', () => {
       image_id,
       expect.objectContaining({ sha256: expect.any(Buffer) }),
     )
-    const [job] = await imagesQueue.searchJobs({ data: { id: image_id } })
+    const [job] = await imageUploadsQueue.searchJobs({ data: { id: image_id } })
     expect(job?.data).toEqual({ id: image_id })
   })
 
@@ -94,7 +94,7 @@ describe('completeImageUpload - success path', () => {
     vi.spyOn(s3Module, 'getImageUploadSourceFromS3').mockResolvedValue({
       Body: Readable.from([bytes]),
     } as Awaited<ReturnType<typeof s3Module.getImageUploadSourceFromS3>>)
-    vi.spyOn(imagesQueue, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
+    vi.spyOn(imageUploadsQueue, 'add').mockRejectedValueOnce(new Error('queue unavailable'))
 
     const result = await completeImageUpload(user, image_id)
 
@@ -195,12 +195,12 @@ describe('completeImageUpload - success path', () => {
 
     // Verify metadata extraction was enqueued for the worker using the production options. There
     // is deliberately no custom jobId: it would outlive the job and block the hourly recovery.
-    const [queuedJob] = await imagesQueue.searchJobs({ data: { id: image_id } })
+    const [queuedJob] = await imageUploadsQueue.searchJobs({ data: { id: image_id } })
     expect(queuedJob).toMatchObject({
       name: 'extract-metadata',
       data: { id: image_id },
       opts: {
-        priority: 5,
+        priority: 0,
         deduplication: {
           id: `extract-image-metadata-${image_id}`,
           mode: 'simple',

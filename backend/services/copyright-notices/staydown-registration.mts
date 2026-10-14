@@ -1,6 +1,6 @@
 import type { OwnedTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueStaydownHash } from '@queues/images/enqueues'
+import { enqueueStaydownHash } from '@queues/content-analysis/enqueues/image-jobs'
 import sql from 'sql-template-strings'
 import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'

@@ -35,7 +35,7 @@
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
-    "@queues/language-detection": "workspace:^",
+    "@queues/content-analysis": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",

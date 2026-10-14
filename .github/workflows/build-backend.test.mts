@@ -213,7 +213,7 @@ describe('backend image workflow', () => {
   })
 
   it('imports lingua-rs from the deployed worker-cpu dependency tree', () => {
-    expect(deployedNativeAddonSmoke).toContain("requireFromConsumer('@workers/language-detection')")
+    expect(deployedNativeAddonSmoke).toContain("requireFromConsumer('@workers/content-analysis')")
     expect(deployedNativeAddonSmoke).toContain("resolve('@services/language-detection/detector')")
     expect(deployedNativeAddonSmoke).toContain("resolve('lingua-rs')")
     expect(deployedNativeAddonSmoke).toContain('import(pathToFileURL(lingua).href)')

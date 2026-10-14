@@ -21,7 +21,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'dispatchEngagementEmails',
   'dispatchCommunityModerationSummaryEmails',
   'account-data-requests-cleanup',
-  'cleanup-abandoned-uploads-schedule',
+  'content-analysis:cleanup-abandoned-uploads-schedule',
   'reconcile-image-quarantines',
   'reconcile-post-moderation',
   'dailyVoteWeightRecalculation',

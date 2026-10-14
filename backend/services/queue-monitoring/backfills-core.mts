@@ -14,7 +14,7 @@ import {
   enqueueBackfillLanguageDetectionCommunities,
   enqueueBackfillLanguageDetectionUsers,
   enqueueBackfillLanguageDetectionTopics,
-} from '@queues/language-detection/enqueues'
+} from '@queues/content-analysis/enqueues'
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
 import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
@@ -109,7 +109,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-posts',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_posts',
     description: 'Backfill language detection for posts missing results',
     source_table: 'posts',
@@ -117,7 +117,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-rss-feed-items',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_rss_feed_items',
     description: 'Backfill language detection for RSS feed items missing results',
     source_table: 'rss_feed_items',
@@ -125,7 +125,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-crawls',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_crawls',
     description: 'Backfill language detection for crawls missing results',
     source_table: 'crawls',
@@ -133,7 +133,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-communities',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_communities',
     description: 'Backfill language detection for communities missing results',
     source_table: 'communities',
@@ -141,7 +141,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-users',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_users',
     description: 'Backfill language detection for user bios missing results',
     source_table: 'users',
@@ -149,7 +149,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'language-detection-topics',
-    queue_name: 'language_detection',
+    queue_name: 'content-analysis',
     job_name: 'backfill_topics',
     description: 'Backfill language detection for topics missing results',
     source_table: 'topics',

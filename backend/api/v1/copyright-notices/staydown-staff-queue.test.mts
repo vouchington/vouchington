@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import * as imageEnqueues from '@queues/images/enqueues'
+import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { recordCopyrightStaydownExactMatch } from '@services/copyright-notices/staydown-matches'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'

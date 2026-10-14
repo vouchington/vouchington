@@ -1,6 +1,6 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { read } from '@data-stores/psql'
-import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
 import onError from '@modules/on-error'
 import { chunkArray } from '@services/rss-feed-items/processing-limits'
 import { updateRssFeedById } from './update.mts'

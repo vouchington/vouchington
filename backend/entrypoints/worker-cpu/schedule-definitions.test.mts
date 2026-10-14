@@ -4,7 +4,7 @@ import { upsertSchedules as upsertBedrockEmbeddingBatchSchedules } from '@queues
 import { upsertSchedules as upsertCrawlDispatchSchedules } from '@queues/crawl-dispatch/enqueues/schedules'
 import { upsertSchedules as upsertCrawlReferralLinkSchedules } from '@queues/crawl-referral-links/enqueues/schedules'
 import { upsertSchedules as upsertQueueMetricsSchedules } from '@queues/heartbeat/enqueues/schedules'
-import { upsertSchedules as upsertImageSchedules } from '@queues/images/enqueues/schedules'
+import { upsertSchedules as upsertContentAnalysisSchedules } from '@queues/content-analysis/enqueues/schedules'
 import { upsertSchedules as upsertUnfurlReferralLinkSchedules } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
@@ -25,7 +25,7 @@ describe('worker-cpu schedule definitions', () => {
     await expect(byQueue('unfurl_referral_links').load()).resolves.toBe(
       upsertUnfurlReferralLinkSchedules,
     )
-    await expect(byQueue('images').load()).resolves.toBe(upsertImageSchedules)
+    await expect(byQueue('content-analysis').load()).resolves.toBe(upsertContentAnalysisSchedules)
     await expect(byQueue('bedrock-embeddings-batch').load()).resolves.toBe(
       upsertBedrockEmbeddingBatchSchedules,
     )

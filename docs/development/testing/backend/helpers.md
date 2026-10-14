@@ -250,7 +250,7 @@ GlideMQ queue under a unique name plus one worker, for `*.real-glide.mock.test.m
 `lifecycle.queue`, choose the worker's outcome with `setOutcome('complete' | 'fail')`, and wait on
 `lifecycle.settled(job)` (the worker's own terminal event, never a timer). Pass
 `{ connection: workerQueueConnection, prefix: workerQueuePrefix }`, and call `lifecycle.close()` in
-`finally`. See `backend/queues/images/enqueues.real-glide.mock.test.mts`.
+`finally`. See `backend/queues/image-uploads/enqueues.real-glide.mock.test.mts`.
 
 ## Reducing Entity-Listener Load
 
