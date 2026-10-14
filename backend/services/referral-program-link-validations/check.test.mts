@@ -4,11 +4,13 @@ import {
   assignValidationToReferralProgram,
   createReferralProgramLinkValidation,
   createReferralProgramLinkValidationRule,
+  createReferralProgramFixture,
   createTestUser,
   enableReferralProgramByTopicId,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import { isUrlReferralLink } from './check.mts'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { isUrlReferralLink, validateReferralLinkUrls } from './check.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('check', () => {
@@ -150,5 +152,26 @@ describe('check', () => {
     assert.equal(result.topic_id, null)
     assert.equal(result.referral_program_id, null)
     assert.equal(result.user_error_text, null)
+  })
+
+  it('validates an ordered mixed batch with one enabled-rule read', async () => {
+    const fixture = await createReferralProgramFixture({ createdById: userId! })
+    const urls = [
+      `https://${fixture.hostname}/ref/first`,
+      `https://${fixture.hostname}/ref/fragment#invite`,
+      `https://${fixture.hostname}/unmatched`,
+      `https://${fixture.hostname}/ref/last`,
+    ]
+    const { result, queries } = await withCapturedTestQueries(() => validateReferralLinkUrls(urls))
+    assert.equal(queries.filter(query => query.text.includes('/* isUrlReferralLink */')).length, 1)
+    assert.deepEqual(
+      result.map(item => item.referral_program_id),
+      [fixture.referralProgramId, null, null, fixture.referralProgramId],
+    )
+    assert.equal(result[1]?.user_error_text, 'URL fragments are not supported')
+    assert.equal(result[2]?.user_error_text, null)
+    const empty = await withCapturedTestQueries(() => validateReferralLinkUrls([]))
+    assert.deepEqual(empty.result, [])
+    assert.equal(empty.queries.length, 0)
   })
 })

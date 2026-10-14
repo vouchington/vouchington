@@ -27,6 +27,10 @@ The seeded per-card `referral_program` rows are the single source of truth for t
 there is no separate catalog artifact. Adding support for a new Amex card means adding one CSV row;
 `getAmexCardSlugCatalog` picks it up automatically.
 
+An unfurl loads the enabled referral-link validation rules once for its constructed child URLs
+and matches them in catalog order before opening the child-write transaction. Child creation
+still validates each write in order on that transaction connection.
+
 ## Modules
 
 - `construct-amex-children.mts`

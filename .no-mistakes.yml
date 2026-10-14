@@ -1222,7 +1222,6 @@ rules:
             file: backend/services/referral-link-unfurl/unfurl.mts,
             callee: 'createChildReferralLink',
           }
-        - { file: backend/services/referral-link-unfurl/unfurl.mts, callee: 'isUrlReferralLink' }
         - {
             file: backend/services/rss-feed-items/categories-chunks.mts,
             callee: 'insertMissingCategoriesChunk',

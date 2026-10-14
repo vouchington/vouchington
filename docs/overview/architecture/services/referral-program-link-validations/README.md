@@ -11,6 +11,7 @@ Validates referral program links against configurable rules and checks whether U
 - `containsReferralLinks(urls)` — checks whether any of the given URL strings match an enabled referral-program rule; streams hostname/pathname rules from PostgreSQL and returns `{ has_referral_links, matched_urls }`
 - `listReferralProgramLinkValidations(linkId)` — retrieves validation results for a link
 - `getReferralProgramLinkRules()` — returns active validation rules
+- `validateReferralLinkUrls(urls)` — checks an ordered batch against one enabled-rule snapshot
 
 ## Integrations
 
