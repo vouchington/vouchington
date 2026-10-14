@@ -28,6 +28,10 @@ import {
   type StorybookBrowserBootstrapSnapshot,
 } from './storybook-browser-bootstrap-telemetry.mts'
 import { StorybookBrowserDiagnostics } from './storybook-browser-runner-diagnostics.mts'
+import {
+  quietOutputHeader,
+  StorybookQuietOutput,
+} from './storybook-browser-runner-quiet-output.mts'
 import { storybookBrowserRuntimeMetadata } from './storybook-browser-runtime-metadata.mts'
 import {
   hasStorybookBrowserViteDependencyReady,
@@ -376,12 +380,17 @@ async function runUpstreamAttempt(
   let completed: AttemptResult | undefined
   const newOptimizeDeps = new Set<string>()
   const bootstrapTelemetry = new StorybookBrowserBootstrapTelemetry()
+  const quietOutput = new StorybookQuietOutput()
+  const writeVisible = (stream: Pick<NodeJS.WriteStream, 'write'>, output: string) => {
+    const visible = quietOutput.split(output)
+    if (visible) stream.write(visible)
+  }
   const observe = (source: 'stderr' | 'stdout', chunk: string | Buffer) => {
     const now = deps.now()
     const observed = bootstrapTelemetry.consume(source, chunk, now - startedAt)
     if (observed.output) {
       diagnostics.recordOutput(observed.output)
-      ;(source === 'stdout' ? deps.stdout : deps.stderr).write(observed.output)
+      writeVisible(source === 'stdout' ? deps.stdout : deps.stderr, observed.output)
     }
     const text = String(chunk)
     outputBuffer = (outputBuffer + text).slice(-1000)
@@ -456,9 +465,15 @@ async function runUpstreamAttempt(
       const observed = bootstrapTelemetry.flush(source, deps.now() - startedAt)
       if (observed.output) {
         diagnostics.recordOutput(observed.output)
-        stream.write(observed.output)
+        writeVisible(stream, observed.output)
       }
     }
+  }
+  const replayQuietOutput = () => {
+    const quiet = quietOutput.drain()
+    if (!quiet) return
+    deps.stderr.write(quietOutputHeader(Buffer.byteLength(quiet)))
+    deps.stdout.write(quiet)
   }
   const nativeDisabledStallTimers = new Set<ReturnType<typeof setTimeout>>()
   const browserDeps: BrowserSessionDeps = {
@@ -500,6 +515,7 @@ async function runUpstreamAttempt(
         onOutput: ({ source, chunk }) => observe(source, chunk),
         onAttemptComplete: session => {
           flush()
+          if (session.exit.code !== 0 || session.exit.signal || spawnFailed) replayQuietOutput()
           const finishedAt = deps.now()
           const optimizerReloadFromNewDeps = sawNewOptimizeDeps && sawOptimizerReload
           const runnerMissing =

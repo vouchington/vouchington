@@ -27,6 +27,7 @@ describe('makeAttemptEnv', () => {
     )
     expect(env.VITEST_COVERAGE_SCOPE).toBe('web-storybook-browser')
     expect(env.VITEST_PW_DEBUG).toBe('1')
+    expect(env.STORYBOOK_DISABLE_TELEMETRY).toBe('1')
     expect(env.VITEST_STORYBOOK_BROWSER).toBe('1')
     expect(env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
       '/runner-temp/vite-storybook-browser-attempt-2',
