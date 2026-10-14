@@ -113,6 +113,7 @@ export async function syncPostImagePlacements(
           AND binding.binding_family = 'post'
         ORDER BY requested.position FOR KEY SHARE OF binding
       `)
+      /* v8 ignore next -- defensive: fresh database UUIDv7 placement IDs cannot be controlled by post input. */
       if (bindingCount !== missing.length) {
         throw new Error('Image placement identity is already bound to another image or family')
       }
