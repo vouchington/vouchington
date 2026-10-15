@@ -10,7 +10,7 @@ type Add = typeof entitiesListeners.add
  * first.
  */
 export function interceptNextEntityListenerAdd(onAdd: () => Promise<never>) {
-  const original = entitiesListeners.add.bind(entitiesListeners) as Add
+  const original = entitiesListeners.add as Add
   let intercepted = false
   return vi.spyOn(entitiesListeners, 'add').mockImplementation(((
     ...args: Parameters<Add>
@@ -19,6 +19,6 @@ export function interceptNextEntityListenerAdd(onAdd: () => Promise<never>) {
       intercepted = true
       return onAdd() as ReturnType<Add>
     }
-    return original(...args)
+    return Reflect.apply(original, entitiesListeners, args) as ReturnType<Add>
   }) as Add)
 }
