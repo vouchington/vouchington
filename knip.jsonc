@@ -113,8 +113,6 @@
         "credentialed/**/*.spec.mts",
         "helpers/**/*.test.mts",
         "../playwright.credentialed.config.mts",
-        // createReporter() returns this path only for CI; Playwright loads it through its reporter option.
-        "test-lifecycle-reporter.mts",
         // Passed as a CLI path by dev/localization/local-smoke.mts, not imported.
         "localization-tmux.config.mts",
         // Loaded by the localization config through Playwright's string-valued globalSetup.

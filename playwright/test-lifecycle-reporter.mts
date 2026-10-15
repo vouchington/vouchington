@@ -2,6 +2,8 @@ import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/tes
 import { relative } from 'node:path'
 
 export default class TestLifecycleReporter implements Reporter {
+  static readonly modulePath = import.meta.filename
+
   private rootDir = ''
   private shard: FullConfig['shard'] = null
 
