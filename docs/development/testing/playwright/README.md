@@ -36,7 +36,8 @@ This protects the public `TestInfo` before callback work and preserves native ti
 at the original spec declaration. Each hook keeps its own timeout slot. The same rule applies
 inside describes using the native `test` object imported from the supported shared fixture barrel.
 Spec-level aliased, default, namespace and locally extended registration flows are rejected by the
-source rule. For fixture barrels, it also rejects direct `await import` and `require`, deferred
+source rule. It recognizes the shared `helpers/test.mts` barrel and the tag spec's actual
+`./tag-voting-helpers.mts` import path. For fixture barrels, it also rejects direct `await import` and `require`, deferred
 import bindings and assignments, `.then` access, and imports in a directly awaited `Promise.all`
 array. Type-only imports remain allowed. Computed and transitive
 import flows are not a complete static provenance boundary. Use static named imports from the

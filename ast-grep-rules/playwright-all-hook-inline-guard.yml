@@ -129,7 +129,7 @@ rule:
               - kind: import_statement
               - has:
                   kind: string
-                  regex: ^['\"](?:\.\./)+helpers/(?:test|tag-voting-helpers)\.mts['\"]$
+                  regex: ^['\"](?:(?:\.\./)+helpers/test|\./tag-voting-helpers)\.mts['\"]$
                   stopBy: end
             stopBy: end
     - all:
@@ -143,8 +143,29 @@ rule:
         - *id001
 constraints:
   FIXTURE_MODULE:
-    regex: ^['\"](?:\.\./)+helpers/(?:test|tag-voting-helpers)\.mts['\"]$
+    regex: ^['\"](?:(?:\.\./)+helpers/test|\./tag-voting-helpers)\.mts['\"]$
 examples:
+  - code: "import * as voting from './tag-voting-helpers.mts'; voting.test.beforeAll(async () => {});"
+    isValid: false
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "const voting = await import('./tag-voting-helpers.mts'); voting.test.beforeAll(async () => {});"
+    isValid: false
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "import { test as voting } from './tag-voting-helpers.mts'; voting.afterAll(async () => {});"
+    isValid: false
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "import voting from './tag-voting-helpers.mts'; voting.afterAll(async () => {});"
+    isValid: false
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "type Voting = typeof import('./tag-voting-helpers.mts').test"
+    isValid: true
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "const values = await import('./tag-voting-helpers-extra.mts')"
+    isValid: true
+    file: playwright/tests/tags/all-hook.spec.mts
+  - code: "import { test } from './tag-voting-helpers.mts'; test('owned fixture', async () => {});"
+    isValid: true
+    file: playwright/tests/tags/all-hook.spec.mts
   - code: const [fixture] = await Promise.all([import('../../helpers/test.mts')]); fixture.test.beforeAll(async () => {});
     isValid: false
     file: playwright/tests/contracts/all-hook.spec.mts
@@ -169,9 +190,9 @@ examples:
   - code: let page; import('../../helpers/test.mts').then(value => { page = value; })
     isValid: false
     file: playwright/tests/contracts/all-hook.spec.mts
-  - code: const fixture = await import('../../helpers/tag-voting-helpers.mts')
+  - code: const fixture = await import('./tag-voting-helpers.mts')
     isValid: false
-    file: playwright/tests/contracts/all-hook.spec.mts
+    file: playwright/tests/tags/all-hook.spec.mts
   - code: "let page: import('../../helpers/test.mts').Page"
     isValid: true
     file: playwright/tests/contracts/all-hook.spec.mts
