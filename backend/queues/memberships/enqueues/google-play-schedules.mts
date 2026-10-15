@@ -1,31 +1,32 @@
-import type { JobOptions } from 'glide-mq'
+import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
+import {
+  MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB,
+} from '@queues/background/enqueues/memberships-jobs'
 import {
   GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS,
   GOOGLE_PLAY_OIDC_REFRESH_INTERVAL_MS,
   GOOGLE_PLAY_RECOVERY_INTERVAL_MS,
-  PRIORITY_DISPATCHER,
 } from '../config.mts'
 import {
   enqueueRecoverGooglePlayAcknowledgements,
   enqueueRecoverGooglePlayActiveSources,
   enqueueRecoverGooglePlayNotifications,
   enqueueRefreshGooglePlayOidcTrust,
-} from '../enqueues.mts'
+} from './google-play.mts'
 
 export const googlePlaySchedules = [
   {
     schedulerId: 'googlePlayNotificationRecovery',
     repeat: { every: GOOGLE_PLAY_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverGooglePlayNotifications',
+      name: MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -41,15 +42,11 @@ export const googlePlaySchedules = [
     schedulerId: 'googlePlayAcknowledgementRecovery',
     repeat: { every: GOOGLE_PLAY_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverGooglePlayAcknowledgements',
+      name: MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -65,15 +62,11 @@ export const googlePlaySchedules = [
     schedulerId: 'googlePlayActiveSourceRecovery',
     repeat: { every: GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverGooglePlayActiveSources',
+      name: MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -89,15 +82,9 @@ export const googlePlaySchedules = [
     schedulerId: 'googlePlayOidcTrustRefresh',
     repeat: { every: GOOGLE_PLAY_OIDC_REFRESH_INTERVAL_MS },
     template: {
-      name: 'refreshGooglePlayOidcTrust',
+      name: MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB.options }),
     },
     operatorSurfaces: [
       {

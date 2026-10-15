@@ -39,18 +39,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {
-    queueName: 'account-lifecycle',
-    load: () =>
-      import('@workers/account-lifecycle/workers').then(module => module.accountLifecycle),
-  },
-  {
-    queueName: 'oauth-authorization-exchange',
-    load: () =>
-      import('@workers/oauth-authorization-exchange/workers').then(
-        module => module.oauthAuthorizationExchangeWorker,
-      ),
-  },
-  {
     queueName: 'activitypub',
     load: () => import('@workers/activitypub/workers').then(module => module.activitypubWorker),
   },
@@ -74,10 +62,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/sitemaps/workers').then(module => module.sitemaps),
   },
   {
-    queueName: 'memberships',
-    load: () => import('@workers/memberships/workers').then(module => module.memberships),
-  },
-  {
     queueName: 'notifications',
     load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
   },
@@ -98,10 +82,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     queueName: 'user-rss-feed-imports',
     load: () =>
       import('@workers/user-rss-feed-imports/workers').then(module => module.userRssFeedImports),
-  },
-  {
-    queueName: 'article-sync',
-    load: () => import('@workers/article-sync/workers').then(module => module.articleSyncWorker),
   },
   {
     queueName: 'kagi-smallweb',

@@ -6,6 +6,11 @@ import type {
 } from '@services/account-data-requests/recovery'
 import type { enqueueBulkExportRequests } from '@queues/account-lifecycle/enqueues/account-data-requests'
 import {
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
+import {
   type processCleanupExpiredExports,
   type processExportRequest,
   recoverExportRequests,
@@ -21,15 +26,15 @@ describe('processAccountDataRequestJob', () => {
     }
 
     await processAccountDataRequestJob(
-      job('processExportRequest', {
+      job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, {
         requestId: 'request-1',
         userId: 'user-1',
         processingAttemptId: 'attempt-1',
       }),
       processors,
     )
-    await processAccountDataRequestJob(job('processCleanupExpiredExports'), processors)
-    await processAccountDataRequestJob(job('recoverExportRequests'), processors)
+    await processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name), processors)
+    await processAccountDataRequestJob(job(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name), processors)
 
     expect(processors.processExportRequest).toHaveBeenCalledWith(
       'request-1',
@@ -55,7 +60,7 @@ describe('processAccountDataRequestJob', () => {
   it('leaves legacy unfenced export jobs for database recovery', async () => {
     const mockProcessExportRequest = vi.fn<typeof processExportRequest>()
     await processAccountDataRequestJob(
-      job('processExportRequest', { requestId: 'request-1', userId: 'user-1' }),
+      job(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, { requestId: 'request-1', userId: 'user-1' }),
       {
         processCleanupExpiredExports: vi.fn<typeof processCleanupExpiredExports>(),
         processExportRequest: mockProcessExportRequest,

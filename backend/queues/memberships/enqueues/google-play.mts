@@ -1,71 +1,38 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  MEMBERSHIPS_GOOGLE_PLAY_ACKNOWLEDGE_JOB,
+  MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB,
+  MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB,
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB,
+} from '@queues/background/enqueues/memberships-jobs'
+import type { AcknowledgeGooglePlayPurchaseData } from '@queues/background/enqueues/memberships-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS,
   GOOGLE_PLAY_OIDC_REFRESH_INTERVAL_MS,
   GOOGLE_PLAY_RECOVERY_INTERVAL_MS,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
 } from '../config.mts'
-import { memberships } from '../queues.mts'
 import {
   buildGooglePlayNotificationJob,
   googlePlayAcknowledgementJobOptions,
-  googlePlayJobDefaults as defaults,
   type GooglePlayNotificationInput,
 } from './google-play-jobs.mts'
-import type {
-  AcknowledgeGooglePlayPurchaseData,
-  MembershipsJobs,
-  ProcessGooglePlayNotificationData,
-} from '../types.mts'
 
-const enqueueNotification = createEnqueueFunction<
-  ProcessGooglePlayNotificationData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'processGooglePlayNotification',
-  defaults,
-})
-const enqueueAcknowledgement = createEnqueueFunction<
-  AcknowledgeGooglePlayPurchaseData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'acknowledgeGooglePlayPurchase',
-  defaults,
-})
-const enqueueNotificationRecovery = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'recoverGooglePlayNotifications',
-  defaults,
-})
-const enqueueActiveSourceRecovery = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'recoverGooglePlayActiveSources',
-  defaults,
-})
-const enqueueAcknowledgementRecovery = createEnqueueFunction<
-  Record<string, never>,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'recoverGooglePlayAcknowledgements',
-  defaults,
-})
-const enqueueOidcRefresh = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: 'refreshGooglePlayOidcTrust',
-  defaults,
-})
+const enqueueNotification = createBackgroundEnqueue(MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB)
+const enqueueAcknowledgement = createBackgroundEnqueue(MEMBERSHIPS_GOOGLE_PLAY_ACKNOWLEDGE_JOB)
+const enqueueNotificationRecovery = createBackgroundEnqueue(
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB,
+)
+const enqueueActiveSourceRecovery = createBackgroundEnqueue(
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB,
+)
+const enqueueAcknowledgementRecovery = createBackgroundEnqueue(
+  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB,
+)
+const enqueueOidcRefresh = createBackgroundEnqueue(MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB)
 
 export function enqueueProcessGooglePlayNotification(
   data: GooglePlayNotificationInput,
@@ -114,7 +81,6 @@ export function enqueueRefreshGooglePlayOidcTrust(): EnqueueReturnType {
 function recoveryOptions(id: string, intervalMs: number): Partial<JobOptions> {
   return {
     jobId: `${id}__${Math.floor(Date.now() / intervalMs)}`,
-    priority: PRIORITY_DISPATCHER,
     deduplication: { id, mode: 'throttle', ttl: intervalMs },
   }
 }

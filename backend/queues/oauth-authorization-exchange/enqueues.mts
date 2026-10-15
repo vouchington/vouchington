@@ -1,61 +1,27 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  type OAuthAuthorizationExchangeJobData,
+} from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import type { JobOptions } from 'glide-mq'
 import {
-  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCHER_PRIORITY,
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS,
   OAUTH_AUTHORIZATION_EXCHANGE_ORDERING,
-  OAUTH_AUTHORIZATION_EXCHANGE_PRIORITY,
-  OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME,
 } from './config.mts'
 import { oauthAuthorizationExchangeQueue } from './queues.mts'
-import type { OAuthAuthorizationExchangeJobData, OAuthAuthorizationExchangeJobs } from './types.mts'
 
-const exchangeJobDefaults = {
-  attempts: 5,
-  backoff: { type: 'exponential' as const, delay: 250 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-}
+const enqueueExchangeJob = createBackgroundEnqueue(OAUTH_AUTHORIZATION_EXCHANGE_JOB)
 
-const enqueueExchangeJob = createEnqueueFunction<
-  OAuthAuthorizationExchangeJobData,
-  OAuthAuthorizationExchangeJobs
->({
-  queue: oauthAuthorizationExchangeQueue,
-  queueName: OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME,
-  jobName: 'exchangeOAuthAuthorization',
-  defaults: exchangeJobDefaults,
-})
+const enqueueDispatcherJob = createBackgroundEnqueue(OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB)
 
-const enqueueDispatcherJob = createEnqueueFunction<
-  Record<string, never>,
-  OAuthAuthorizationExchangeJobs
->({
-  queue: oauthAuthorizationExchangeQueue,
-  queueName: OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME,
-  jobName: 'dispatchOAuthAuthorizationExchanges',
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1_000 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
-})
-
-export const enqueueBulkOAuthAuthorizationExchanges = createBulkEnqueueFunction<
-  OAuthAuthorizationExchangeJobData,
-  OAuthAuthorizationExchangeJobData,
-  OAuthAuthorizationExchangeJobs
->({
-  queue: oauthAuthorizationExchangeQueue,
-  queueName: OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME,
-  jobName: 'exchangeOAuthAuthorization',
-  defaults: exchangeJobDefaults,
-  buildJob: data => ({
+export const enqueueBulkOAuthAuthorizationExchanges = createBackgroundBulkEnqueue(
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  (data: OAuthAuthorizationExchangeJobData) => ({
     data,
     opts: getOAuthAuthorizationExchangeJobOptions(data.authorizationId),
   }),
-})
+)
 
 type RetryableOAuthAuthorizationExchangeJob = {
   id: string
@@ -92,12 +58,12 @@ export async function enqueueOrReactivateBulkOAuthAuthorizationExchanges(
     dependencies.getFailedJobs([...authorizationIds]),
   ])
   const removableJobs = completedJobs.filter(
-    job => job.name === 'exchangeOAuthAuthorization' && authorizationIds.has(job.id),
+    job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
   )
   await Promise.all(removableJobs.map(job => job.remove()))
   await dependencies.enqueueBulk(inputs)
   const retryableJobs = failedJobs.filter(
-    job => job.name === 'exchangeOAuthAuthorization' && authorizationIds.has(job.id),
+    job => job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name && authorizationIds.has(job.id),
   )
   await Promise.all(retryableJobs.map(job => job.retry()))
   return retryableJobs.length
@@ -125,7 +91,6 @@ export function getOAuthAuthorizationExchangeDispatcherJobOptions(
   deduplicationId: string = DEFAULT_DISPATCHER_DEDUPLICATION_ID,
 ) {
   return {
-    priority: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCHER_PRIORITY,
     ordering: OAUTH_AUTHORIZATION_EXCHANGE_ORDERING.dispatcher,
     deduplication: {
       id: deduplicationId,
@@ -144,10 +109,10 @@ export async function enqueueOAuthAuthorizationExchangeDispatcher(options?: {
   )
 }
 
+// The authorization UUID is globally unique, so it cannot collide with another domain's job id.
 function getOAuthAuthorizationExchangeJobOptions(authorizationId: string): Partial<JobOptions> {
   return {
     jobId: authorizationId,
-    priority: OAUTH_AUTHORIZATION_EXCHANGE_PRIORITY,
     deduplication: { id: authorizationId, mode: 'simple' },
   }
 }

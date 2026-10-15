@@ -10,15 +10,20 @@ retained retry jobs can therefore carry both UUIDs; no provider code, token, or 
 
 ## Jobs
 
-- `exchangeOAuthAuthorization` claims one `oauth_authorizations` row with a fenced claim UUID,
+This is the `oauth-authorization-exchange` domain of the shared [`background`](../background/README.md)
+queue (group kind `entity`: no domain-wide cap, only the dispatcher lane). Job names are namespaced
+as `<domain>.<name>`; the job ID stays the bare authorization UUID, which cannot collide with another
+domain. Pause, retry, and stats are by domain.
+
+- `oauth-authorization-exchange.exchangeOAuthAuthorization` claims one `oauth_authorizations` row with a fenced claim UUID,
   decrypts the server-held code and PKCE verifier, and atomically persists the provider account plus
   the `completion_ready` transition. The authorization UUID is both the job ID and deduplication ID.
-- `dispatchOAuthAuthorizationExchanges` scans up to 500 recoverable `callback_received` rows and
+- `oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges` scans up to 500 recoverable `callback_received` rows and
   stale `exchanging` claims, removes matching retained completed jobs, re-enqueues missing jobs,
   and retries matching retained failed jobs. It runs every 60 seconds (the global 1-minute
   scheduling floor; see `scheduled-job-manifest/validation.mts`) and is also available as
   the `oauth-authorization-exchange-dispatch` admin backfill. All dispatcher variants share the
-  `dispatcher` ordering key at concurrency one so terminal-state inspection and reactivation cannot
+  `oauth-authorization-exchange:dispatcher` ordering key at concurrency one so terminal-state inspection and reactivation cannot
   race another recovery pass. The same constant also backs the dispatcher enqueue's Valkey
   throttle-dedup TTL, so the dedup window widened from 5s to 60s together with the interval. The
   manual and backfill triggers carry only that throttle window and no custom job id: a custom id

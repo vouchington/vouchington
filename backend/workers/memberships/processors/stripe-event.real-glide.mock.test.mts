@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { memberships } from '@queues/memberships/queues'
-import type { ProcessStripeEventData } from '@queues/memberships/types'
+import type { ProcessStripeEventData } from '@queues/background/enqueues/memberships-domain'
 import { getStripeEventById, ingestStripeEvent } from '@services/stripe/events'
 import { claimRecoverableStripeEvents } from '@services/stripe/recovery'
 import { makeStripeEventRecoverableForTest } from '@voucha/test-helpers'

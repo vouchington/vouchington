@@ -15,8 +15,10 @@ index tests in `backend/entrypoints/worker-cpu/` and `backend/entrypoints/worker
 baselines to the helper's resolution behavior.
 
 `ignoreScale: true` is reserved for workers whose concurrency must not move with the global scale
-knob (`psql`, `account-lifecycle`, `kagi-smallweb` — they serialize themselves or hit an
-upstream rate-limited API).
+knob (`psql`, `kagi-smallweb` — they serialize themselves or hit an
+upstream rate-limited API). `account-lifecycle` (baseline 2) and `article-sync` (baseline 1) were
+such workers; as domains of the shared `background` worker they add 3 to its summed baseline,
+which scales, and keep their old caps as domain-wide groups of 2 and 1.
 
 `vote-aggregation` is a domain of the shared `background` worker with baseline 10 (it adds 10 to the worker's summed baseline): election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; a domain-wide group of 10 keeps the former cap, so a backlog here cannot take the background worker's other slots. `WORKER_CONCURRENCY_VOTE_AGGREGATION` no longer exists; use `WORKER_CONCURRENCY_BACKGROUND`.
 

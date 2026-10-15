@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/queues/memberships/README.md](../../../../../backend/queues/memberships/README.md)
 
-Job queue for membership lifecycle events.
+`memberships` is a domain of the shared [`background`](../background/README.md) queue. Its jobs run as `memberships.<name>` (for example `memberships.processStripeEvent`); the names below are the local names. Each job keeps its payload, job ID, deduplication, retries, and schedule. The domain has no domain-wide cap: every job orders per entity, and each ordering key (concurrency 1) is namespaced `memberships:`, so `stripe-subscription:<environment>:<subscription-id>` is stored as `memberships:stripe-subscription:<environment>:<subscription-id>`. Operators pause the domain, read its stats, and retry its failed jobs through the background domain routes. The recovery and dispatcher jobs below already claim one bounded page per run, so none needed paged continuation jobs. Baseline worker concurrency is five (the former `WORKER_CONCURRENCY_MEMBERSHIPS`, now part of the shared worker). `processStripeEvent` takes three attempts on every path, so the final-attempt failure marking also holds for single enqueues.
 
 ## Processors
 

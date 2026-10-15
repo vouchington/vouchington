@@ -41,8 +41,14 @@ describe('account data request enqueues', () => {
   it('runs operator-triggered export cleanup at background priority', async () => {
     await enqueueCleanupExpiredExports()
     const jobs = await readAllQueueJobs(accountLifecycle)
-    expect(jobs.find(job => job.name === 'processCleanupExpiredExports')).toMatchObject({
-      opts: { priority: 100 },
+    expect(
+      jobs.find(job => job.name === 'account-lifecycle.processCleanupExpiredExports'),
+    ).toMatchObject({
+      opts: {
+        priority: 100,
+        lockDuration: 600_000,
+        ordering: { key: 'account-lifecycle', concurrency: 2 },
+      },
     })
   })
 })

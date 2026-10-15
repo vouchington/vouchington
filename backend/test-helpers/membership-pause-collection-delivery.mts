@@ -3,7 +3,8 @@ import * as psql from '@data-stores/psql'
 import { vi } from 'vitest'
 import { enqueueSyncMembershipPauseCollection } from '../queues/memberships/enqueues/pause-collection.mts'
 import { memberships } from '../queues/memberships/queues.mts'
-import type { SyncMembershipPauseCollectionData } from '../queues/memberships/types.mts'
+import type { SyncMembershipPauseCollectionData } from '../queues/background/enqueues/memberships-domain.mts'
+import { MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB } from '../queues/background/enqueues/memberships-jobs-2.mts'
 import { DEFAULT_STRIPE_CATALOG_CONTEXT } from '../services/memberships/get-catalog.mts'
 import { dispatchDuePauseCollectionWork } from '../services/memberships/pause-collection/dispatch.mts'
 import { recordMembershipPauseCollectionWork } from '../services/memberships/pause-collection/record.mts'
@@ -92,7 +93,7 @@ export async function readTestPauseCollectionSyncJobs(
   return jobs.flatMap(job => {
     const data: unknown = job.data
     if (
-      job.name !== 'syncMembershipPauseCollection' ||
+      job.name !== MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB.name ||
       typeof data !== 'object' ||
       data === null ||
       !('userId' in data) ||

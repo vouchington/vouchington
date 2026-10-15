@@ -6,7 +6,7 @@ Worker package for membership billing, Stripe event processing, renewal notifica
 
 ## Exports
 
-- `memberships` - worker instance for the `memberships` queue.
+- `membershipsHandlers` - the handlers for the `memberships` domain of the shared [background worker](../background/README.md). The package has no worker of its own: the shared worker serves each `memberships.<name>` job, honors the domain's pause switch, and runs it with the domain's per-entity ordering keys (no domain-wide cap, baseline concurrency five). Each handler defers a PostgreSQL connection or checkout timeout without spending an attempt.
 - Stripe processors use persisted attempt UUIDs, and the recovery dispatcher reclaims stale work.
 - Membership-verification processors claim only due pending rows with a UUID lease token. The
   five-minute recovery dispatcher re-derives work from Postgres, and the foundation adapter releases

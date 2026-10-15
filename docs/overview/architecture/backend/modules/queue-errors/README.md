@@ -64,15 +64,15 @@ duration (about one second), so a bare `new Worker.RateLimitError()` drops the p
 it through these helpers instead; the `backend-no-worker-ratelimit` ast-grep rule rejects a bare
 construction and any `worker.rateLimit(ms)` call.
 
-| Export                                                  | Behavior                                                                                                                                                                                                                             |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none                                                                                                |
-| `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                                                                                                                |
-| `throwIfRateLimitedResponse(response, endpoint)`        | Cancels the unread body of a 429 `fetch` response, then throws the signal; `cause` is an `HttpRateLimitError` with status and wait                                                                                                   |
-| `boundRateLimitDeferral(job, run)`                      | Runs a processor; once `job` is older than `MAX_RATE_LIMIT_DEFERRAL_AGE_MS` (24 h) a requeue signal becomes its plain `cause`, so the job spends attempts and ends. For hosts the operator does not control                          |
-| `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                                                                                                                          |
-| `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                                                                                                                       |
-| `deferPostgresConnectionTimeout(job, run)`              | In the `psql` and `memberships` workers, defers the two PostgreSQL pool connection or checkout timeout errors for 30 seconds without using an attempt; after the existing 24-hour deferral bound, the original error spends attempts |
+| Export                                                  | Behavior                                                                                                                                                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clampRateLimitDelayMs(ms?)`                            | Clamps to `MIN_RATE_LIMIT_DELAY_MS` (1 s) through `MAX_RATE_LIMIT_DELAY_MS` (15 min); `DEFAULT_RATE_LIMIT_DELAY_MS` (1 min) when none                                                                                                                   |
+| `createRateLimitError(ms?, cause?)`, `throwRateLimited` | The signal, carrying the clamped `delayMs` and the failure as `cause`                                                                                                                                                                                   |
+| `throwIfRateLimitedResponse(response, endpoint)`        | Cancels the unread body of a 429 `fetch` response, then throws the signal; `cause` is an `HttpRateLimitError` with status and wait                                                                                                                      |
+| `boundRateLimitDeferral(job, run)`                      | Runs a processor; once `job` is older than `MAX_RATE_LIMIT_DEFERRAL_AGE_MS` (24 h) a requeue signal becomes its plain `cause`, so the job spends attempts and ends. For hosts the operator does not control                                             |
+| `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                                                                                                                                             |
+| `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                                                                                                                                          |
+| `deferPostgresConnectionTimeout(job, run)`              | In the `psql` worker and the `memberships` domain handlers, defers the two PostgreSQL pool connection or checkout timeout errors for 30 seconds without using an attempt; after the existing 24-hour deferral bound, the original error spends attempts |
 
 The wait travels with the job, so every replica that receives a 429 honors it. `worker.rateLimit(ms)`
 only set a timestamp in that one process, so other replicas kept calling the provider. GlideMQ also
@@ -89,14 +89,14 @@ first; that call is redundant because GlideMQ applies the signal's `delayMs` its
 
 ## Error Classification
 
-| Error type                                                                         | Action                                                                                   |
-| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Non-retryable 4xx HTTP (except 408 and 429)                                        | `wrapHttpForRetry(err)`                                                                  |
-| 429 with a stated `Retry-After`                                                    | `wrapHttpForRetry(err)` or `throwRateLimited(ms)` (requeued, no attempt used)            |
-| Validation error / missing entity                                                  | `unrecoverable(err)`                                                                     |
-| Soft-deleted entity (processor early-exits after fetch)                            | `return` early — already idempotent                                                      |
-| PostgreSQL pool connection or checkout timeout in `psql` and `memberships` workers | Requeue after 30 seconds without an attempt, bounded to 24 hours before ordinary retries |
-| 429 with no stated wait, 5xx HTTP, other network/DB errors, AWS throttling         | re-throw — glide-mq retries with backoff                                                 |
+| Error type                                                                                            | Action                                                                                   |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Non-retryable 4xx HTTP (except 408 and 429)                                                           | `wrapHttpForRetry(err)`                                                                  |
+| 429 with a stated `Retry-After`                                                                       | `wrapHttpForRetry(err)` or `throwRateLimited(ms)` (requeued, no attempt used)            |
+| Validation error / missing entity                                                                     | `unrecoverable(err)`                                                                     |
+| Soft-deleted entity (processor early-exits after fetch)                                               | `return` early — already idempotent                                                      |
+| PostgreSQL pool connection or checkout timeout in the `psql` worker and `memberships` domain handlers | Requeue after 30 seconds without an attempt, bounded to 24 hours before ordinary retries |
+| 429 with no stated wait, 5xx HTTP, other network/DB errors, AWS throttling                            | re-throw — glide-mq retries with backoff                                                 |
 
 ## Related
 

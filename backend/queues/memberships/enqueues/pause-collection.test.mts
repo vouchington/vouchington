@@ -26,7 +26,7 @@ describe('pause collection enqueues', () => {
     const child = await readEnqueuedJob(memberships, sync)
 
     expect(child).toMatchObject({
-      name: 'syncMembershipPauseCollection',
+      name: 'memberships.syncMembershipPauseCollection',
       data: { userId, requestedAt, leaseToken },
       opts: {
         attempts: 5,
@@ -35,7 +35,7 @@ describe('pause collection enqueues', () => {
           id: `membership-pause-collection__${userId}__${requestedAtMs}__${leaseToken}`,
           mode: 'simple',
         },
-        ordering: { key: `pause-collection:${userId}`, concurrency: 1 },
+        ordering: { key: `memberships:pause-collection:${userId}`, concurrency: 1 },
       },
     })
 
@@ -43,7 +43,7 @@ describe('pause collection enqueues', () => {
     const dispatcher = await readEnqueuedJob(memberships, dispatch)
     expect(dispatcher).toMatchObject({
       id: `membership-pause-collection-dispatch__${Math.floor(Date.now() / 60_000)}`,
-      name: 'dispatchMembershipPauseCollection',
+      name: 'memberships.dispatchMembershipPauseCollection',
       data: {},
       opts: {
         deduplication: {

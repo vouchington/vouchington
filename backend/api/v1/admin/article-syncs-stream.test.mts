@@ -2,6 +2,7 @@ import { describe, it, beforeAll, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { articleSync } from '@queues/article-sync/queues'
+import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
 import { articleSyncPubSub } from '@data-stores/valkey-pubsub'
 import type { PrivateUser } from '@services/users/types'
 
@@ -37,7 +38,11 @@ describe('GET /api/v1/admin/article-syncs/:jobId/stream', () => {
   it('streams a terminal queue status and closes the response', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    const job = await articleSync.add('processArticleSync', { userId: admin.id })
+    const job = await articleSync.add(
+      ARTICLE_SYNC_PROCESS_JOB.name,
+      { userId: admin.id },
+      ARTICLE_SYNC_PROCESS_JOB.options,
+    )
     expect(job).toBeTruthy()
     if (!job) throw new Error('Article sync job was not enqueued')
     const terminal = { status: 'failed' as const, error: 'Source unavailable — retry later' }

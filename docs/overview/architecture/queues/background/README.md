@@ -52,8 +52,9 @@ registry does not know.
   cursor, because ranked priority orders only the jobs promoted together.
 
 Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
-`story-post-related-url-projections`, `post-publication`, `vote-aggregation`, and
-`entity-listeners`.
+`story-post-related-url-projections`, `post-publication`, `vote-aggregation`,
+`entity-listeners`, `account-lifecycle`, `article-sync`, `memberships`, and
+`oauth-authorization-exchange`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.

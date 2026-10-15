@@ -1,39 +1,19 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  MEMBERSHIPS_REFUND_DISPATCH_JOB,
+  MEMBERSHIPS_REFUND_OPERATION_JOB,
+} from '@queues/background/enqueues/memberships-jobs-2'
+import type { ReconcileMembershipRefundOperationData } from '@queues/background/enqueues/memberships-domain'
+import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
+import onError from '@modules/on-error'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import onError from '@modules/on-error'
-import {
-  MEMBERSHIP_REFUND_RECONCILIATION_INTERVAL_MS,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
-import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ReconcileMembershipRefundOperationData } from '../types.mts'
+import { MEMBERSHIP_REFUND_RECONCILIATION_INTERVAL_MS } from '../config.mts'
 
-const DISPATCH_JOB_NAME: MembershipsJobs = 'dispatchMembershipRefundReconciliation'
-const RECONCILIATION_JOB_NAME: MembershipsJobs = 'reconcileMembershipRefundOperation'
 const INTERVAL_MS = 300_000
 
-const enqueueDispatchJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: DISPATCH_JOB_NAME,
-})
-const enqueueReconciliationJob = createEnqueueFunction<
-  ReconcileMembershipRefundOperationData,
-  MembershipsJobs
->({
-  queue: memberships,
-  queueName: QUEUE_NAME,
-  jobName: RECONCILIATION_JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
-})
+const enqueueDispatchJob = createBackgroundEnqueue(MEMBERSHIPS_REFUND_DISPATCH_JOB)
+const enqueueReconciliationJob = createBackgroundEnqueue(MEMBERSHIPS_REFUND_OPERATION_JOB)
 
 export function enqueueDispatchMembershipRefundReconciliation(
   options: { deduplicationId?: string } = {},
@@ -42,7 +22,6 @@ export function enqueueDispatchMembershipRefundReconciliation(
   const deduplicationId = options.deduplicationId ?? 'membership-refund-reconciliation-dispatch'
   return enqueueDispatchJob({}, {
     jobId: `${deduplicationId}__${bucket}`,
-    priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: deduplicationId,
       mode: 'throttle',
@@ -52,23 +31,17 @@ export function enqueueDispatchMembershipRefundReconciliation(
 }
 
 export const refundReconciliationSchedule = {
-  schedulerId: DISPATCH_JOB_NAME,
+  schedulerId: 'dispatchMembershipRefundReconciliation',
   repeat: { every: MEMBERSHIP_REFUND_RECONCILIATION_INTERVAL_MS },
   template: {
-    name: DISPATCH_JOB_NAME,
+    name: MEMBERSHIPS_REFUND_DISPATCH_JOB.name,
     data: {},
-    opts: {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DISPATCHER,
-    } satisfies JobOptions,
+    opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_REFUND_DISPATCH_JOB.options }),
   },
   operatorSurfaces: [
     {
       kind: 'scheduled-jobs',
-      id: DISPATCH_JOB_NAME,
+      id: 'dispatchMembershipRefundReconciliation',
       schedule: 'every 5m',
       description: 'Dispatch due membership refund reconciliations',
       trigger: enqueueDispatchMembershipRefundReconciliation,
@@ -89,7 +62,6 @@ export function enqueueReconcileMembershipRefundOperation(
   const jobId = `membership-refund-reconciliation__${data.operationId}__${data.leaseToken}`
   return enqueueReconciliationJob(data, {
     jobId,
-    priority: PRIORITY_DEFAULT,
     deduplication: { id: jobId, mode: 'simple' },
   } satisfies Partial<JobOptions>)
 }

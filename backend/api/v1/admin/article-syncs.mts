@@ -7,7 +7,7 @@ import type { Context } from '@jongleberry/api-server'
 import { isHttpError } from 'http-errors'
 import { isAdminUser } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { articleSync } from '@queues/article-sync/queues'
+import { readArticleSyncJob } from '@queues/article-sync/enqueues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
 import { apiResponse, apiSseFrame } from '../../response-contract.mts'
@@ -67,9 +67,9 @@ app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) 
   }
   const abortBeforeSSE = watchForAbortBeforeSSE(ctx.signal, closeSubscription)
   try {
-    let job: Awaited<ReturnType<typeof articleSync.getJob>>
+    let job: Awaited<ReturnType<typeof readArticleSyncJob>>
     try {
-      job = await articleSync.getJob(jobId)
+      job = await readArticleSyncJob(jobId)
     } catch (err) {
       if (isHttpError(err)) throw err
       ctx.throw(503, 'Failed to load sync status')

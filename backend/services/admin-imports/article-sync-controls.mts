@@ -1,5 +1,5 @@
 import assert from 'http-assert'
-import { enqueueArticleSync } from '@queues/article-sync/enqueues'
+import { enqueueArticleSync, readArticleSyncJob } from '@queues/article-sync/enqueues'
 import { articleSync } from '@queues/article-sync/queues'
 import { recordStaffOperation } from '@services/moderator-actions'
 import { assertNotSuspended, isAdminUser } from '@services/users'
@@ -30,7 +30,7 @@ export async function getAdminArticleSyncStatus(
   jobId: string,
 ): Promise<AdminArticleSyncStatus> {
   assert(isAdminUser(currentUser), 403, 'Administrator role required')
-  const job = await articleSync.getJob(jobId)
+  const job = await readArticleSyncJob(jobId)
   assert(job, 404, 'Sync job not found')
   if (job.failedReason) return { status: 'failed' as const, error: job.failedReason }
   if (job.finishedOn != null) return { status: 'completed' as const, result: job.returnvalue }

@@ -1,3 +1,4 @@
+import { OAUTH_AUTHORIZATION_EXCHANGE_JOB } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import type { Queue } from 'glide-mq'
 import { oauthAuthorizationExchangeQueue } from '../queues.mts'
 
@@ -11,7 +12,7 @@ export async function hasRetainedUnarmedOAuthExchangeClaim(
   if (
     !job ||
     job.id !== authorizationId ||
-    job.name !== 'exchangeOAuthAuthorization' ||
+    job.name !== OAUTH_AUTHORIZATION_EXCHANGE_JOB.name ||
     typeof job.data !== 'object' ||
     job.data === null ||
     !('authorizationId' in job.data) ||

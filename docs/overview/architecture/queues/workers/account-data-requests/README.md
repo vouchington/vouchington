@@ -6,7 +6,7 @@ Worker package for account data export and expired export cleanup jobs.
 
 ## Exports
 
-- `accountLifecycle` - shared worker instance for the `account-lifecycle` queue.
+- `accountLifecycleHandlers` - handlers of the `account-lifecycle` domain, served by the shared background worker.
 - Processing is fenced by the persisted attempt UUID and the active-user lifecycle lock; the
   recovery dispatcher reclaims only active users' stale work.
 - Recovery keeps an unstarted attempt's token and removes any completed or failed queue record under

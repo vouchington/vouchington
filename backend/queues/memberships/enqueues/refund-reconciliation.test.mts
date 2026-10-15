@@ -42,7 +42,7 @@ describe('refund reconciliation enqueues', () => {
     })
     const dispatcher = await readEnqueuedJob(memberships, dispatch)
     expect(dispatcher).toMatchObject({
-      name: 'dispatchMembershipRefundReconciliation',
+      name: 'memberships.dispatchMembershipRefundReconciliation',
       opts: { deduplication: { id: deduplicationId, mode: 'throttle', ttl: 300_000 } },
     })
     expect(dispatcher.data).toStrictEqual({})
@@ -61,7 +61,7 @@ describe('refund reconciliation enqueues', () => {
       await memberships.getJob(`membership-refund-reconciliation__${operationId}__${leaseToken}`),
     ).toMatchObject({
       data: { operationId, leaseToken },
-      name: 'reconcileMembershipRefundOperation',
+      name: 'memberships.reconcileMembershipRefundOperation',
     })
   })
 })

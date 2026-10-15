@@ -45,7 +45,7 @@ describe('Apple notification recovery with real GlideMQ', () => {
 
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
-        name: 'processAppleNotification',
+        name: 'memberships.processAppleNotification',
         data: {
           evidenceId: accepted.evidenceId,
           providerLineageId: 'original-transaction-id',

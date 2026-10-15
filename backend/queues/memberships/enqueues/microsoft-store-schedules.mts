@@ -1,22 +1,22 @@
-import type { JobOptions } from 'glide-mq'
-import { MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS, PRIORITY_DISPATCHER } from '../config.mts'
-import { enqueueRecoverMicrosoftStoreSources } from '../enqueues.mts'
+import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
+import { MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB } from '@queues/background/enqueues/memberships-jobs'
+import { MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS } from '../config.mts'
+import {
+  enqueueRecoverMicrosoftStoreSources,
+  microsoftStoreRecoveryOrdering,
+} from './microsoft-store.mts'
 
 export const microsoftStoreSchedules = [
   {
     schedulerId: 'microsoftStoreSourceRecovery',
     repeat: { every: MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverMicrosoftStoreSources',
+      name: MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-        ordering: { key: 'microsoft-store-recovery', concurrency: 1 },
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB.options,
+        ordering: microsoftStoreRecoveryOrdering,
+      }),
     },
     operatorSurfaces: [
       {

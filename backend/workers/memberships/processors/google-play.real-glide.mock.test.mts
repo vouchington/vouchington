@@ -63,7 +63,7 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
       const purchaseTokenLookupSha256 = createHash('sha256').update(purchaseToken).digest('hex')
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
-        name: 'processGooglePlayNotification',
+        name: 'memberships.processGooglePlayNotification',
         data: {
           evidenceId: accepted.evidenceId,
           purchaseTokenLookupSha256,
@@ -72,7 +72,7 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
         opts: {
           deduplication: { id: jobId, mode: 'simple' },
           ordering: {
-            key: `google-play-token:test:${purchaseTokenLookupSha256}`,
+            key: `memberships:google-play-token:test:${purchaseTokenLookupSha256}`,
             concurrency: 1,
           },
         },
@@ -94,12 +94,12 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
 
       await expect(memberships.getJob(sourceJobId)).resolves.toMatchObject({
         id: sourceJobId,
-        name: 'reconcileGooglePlayActiveSource',
+        name: 'memberships.reconcileGooglePlayActiveSource',
         data: { sourceId: fixture.sourceId },
       })
       await expect(memberships.getJob(acknowledgementJobId)).resolves.toMatchObject({
         id: acknowledgementJobId,
-        name: 'acknowledgeGooglePlayPurchase',
+        name: 'memberships.acknowledgeGooglePlayPurchase',
         data: { acknowledgementId: fixture.acknowledgementId },
       })
     } finally {
@@ -117,7 +117,7 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
     try {
       await expect(memberships.getJob(acknowledgementJobId)).resolves.toMatchObject({
         id: acknowledgementJobId,
-        name: 'acknowledgeGooglePlayPurchase',
+        name: 'memberships.acknowledgeGooglePlayPurchase',
         data: { acknowledgementId: fixture.acknowledgementId },
       })
     } finally {

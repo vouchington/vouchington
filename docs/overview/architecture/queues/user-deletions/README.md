@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/queues/account-lifecycle/enqueues/user-deletions.mts](../../../../../backend/queues/account-lifecycle/enqueues/user-deletions.mts)
 
-The `account-lifecycle` queue accelerates the durable account-deletion lifecycle. Processing jobs carry
+The `account-lifecycle` background domain accelerates the durable account-deletion lifecycle. Processing jobs carry
 only `{ requestId, processingAttemptId }` and use
 `user-deletion__<request-id>__<processing-attempt-id>` as both job and deduplication ID.
 

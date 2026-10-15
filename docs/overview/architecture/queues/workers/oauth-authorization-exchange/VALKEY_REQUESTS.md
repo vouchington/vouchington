@@ -2,10 +2,10 @@
 
 Application-level Valkey calls per job, excluding GlideMQ stream operations:
 
-| Job                                   |                                                     Calls |
-| ------------------------------------- | --------------------------------------------------------: |
-| `exchangeOAuthAuthorization`          |                                                         0 |
-| `dispatchOAuthAuthorizationExchanges` | `3–5`, plus one remove or retry per matching terminal job |
+| Job                                                                |                                                     Calls |
+| ------------------------------------------------------------------ | --------------------------------------------------------: |
+| `oauth-authorization-exchange.exchangeOAuthAuthorization`          |                                                         0 |
+| `oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges` | `3–5`, plus one remove or retry per matching terminal job |
 
 The dispatcher scans the bounded retained completed and failed sets once each. Each nonempty set
 adds one metadata-hydration batch. It removes matching completed jobs, uses one bulk add for the

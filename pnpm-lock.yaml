@@ -1811,18 +1811,12 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@workers/account-lifecycle':
-        specifier: workspace:^
-        version: link:../../workers/account-lifecycle
       '@workers/activitypub':
         specifier: workspace:^
         version: link:../../workers/activitypub
       '@workers/admin-imports':
         specifier: workspace:^
         version: link:../../workers/admin-imports
-      '@workers/article-sync':
-        specifier: workspace:^
-        version: link:../../workers/article-sync
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
@@ -1856,15 +1850,9 @@ importers:
       '@workers/kagi-smallweb':
         specifier: workspace:^
         version: link:../../workers/kagi-smallweb
-      '@workers/memberships':
-        specifier: workspace:^
-        version: link:../../workers/memberships
       '@workers/notifications':
         specifier: workspace:^
         version: link:../../workers/notifications
-      '@workers/oauth-authorization-exchange':
-        specifier: workspace:^
-        version: link:../../workers/oauth-authorization-exchange
       '@workers/psql':
         specifier: workspace:^
         version: link:../../workers/psql
@@ -2671,6 +2659,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2739,9 +2730,9 @@ importers:
 
   backend/queues/article-sync:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../background
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3066,6 +3057,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3100,6 +3094,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -7203,6 +7200,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -8855,9 +8855,6 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/article-sync':
-        specifier: workspace:^
-        version: link:../../queues/article-sync
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -11561,12 +11558,12 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@queues/account-lifecycle':
         specifier: workspace:^
         version: link:../../queues/account-lifecycle
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
@@ -11847,24 +11844,18 @@ importers:
 
   backend/workers/article-sync:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@data-stores/valkey-pubsub':
         specifier: workspace:^
         version: link:../../data-stores/valkey-pubsub
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@queues/article-sync':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/article-sync
+        version: link:../../queues/background
       '@services/articles':
         specifier: workspace:^
         version: link:../../services/articles
@@ -11892,6 +11883,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/oauth-authorization-exchange':
+        specifier: workspace:^
+        version: link:../../queues/oauth-authorization-exchange
       '@queues/post-mentions':
         specifier: workspace:^
         version: link:../../queues/post-mentions
@@ -11904,9 +11898,21 @@ importers:
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
+      '@workers/account-lifecycle':
+        specifier: workspace:^
+        version: link:../account-lifecycle
+      '@workers/article-sync':
+        specifier: workspace:^
+        version: link:../article-sync
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../entity-listeners
+      '@workers/memberships':
+        specifier: workspace:^
+        version: link:../memberships
+      '@workers/oauth-authorization-exchange':
+        specifier: workspace:^
+        version: link:../oauth-authorization-exchange
       '@workers/openai-moderation':
         specifier: workspace:^
         version: link:../openai-moderation
@@ -12719,18 +12725,12 @@ importers:
 
   backend/workers/memberships:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
@@ -12740,6 +12740,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -12832,12 +12835,9 @@ importers:
 
   backend/workers/oauth-authorization-exchange:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/oauth-authorization-exchange':
         specifier: workspace:^
         version: link:../../queues/oauth-authorization-exchange

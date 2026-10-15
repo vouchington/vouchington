@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { enqueueBulkProcessStripeEvents } from '@queues/memberships/enqueues'
+import { getBackgroundJobNames } from '@queues/background/enqueues/registry'
+import { MEMBERSHIPS_REFUND_OPERATION_JOB } from '@queues/background/enqueues/memberships-jobs-2'
 import { memberships } from '@queues/memberships/queues'
 import type { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
@@ -35,8 +37,21 @@ import type {
   processMicrosoftStoreSource,
   recoverMicrosoftStoreSources,
 } from './microsoft-store.mts'
-import { processMembershipJob } from './process-job.mts'
+import type { MembershipJobProcessors } from './job-processors.mts'
+import { createMembershipsHandlers } from './process-job.mts'
 import { type processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
+
+/** Runs the one handler registered for the job's name, the way the shared background worker does. */
+async function processMembershipJob(
+  queued: Job,
+  processors?: MembershipJobProcessors,
+): Promise<unknown> {
+  const handler = createMembershipsHandlers(processors).find(
+    candidate => candidate.job.name === queued.name,
+  )
+  if (!handler) throw new Error(`Unknown job name: ${queued.name}`)
+  return handler.handle(queued)
+}
 
 describe('processMembershipJob', () => {
   it('routes every membership job', async () => {
@@ -171,38 +186,9 @@ describe('processMembershipJob', () => {
     })
   })
 
-  it('rejects unknown jobs', async () => {
-    await expect(
-      processMembershipJob(job('unknown'), {
-        deliverMembershipEntitlementEffects:
-          vi.fn<typeof deliverPendingMembershipEntitlementEffects>(),
-        expireElapsedMemberships: vi.fn<typeof expireElapsedMembershipsBatch>(),
-        processAppleNotification: vi.fn<typeof reconcileAppleNotification>(),
-        processMembershipVerification: vi.fn<typeof processMembershipVerification>(),
-        processRenewalNotificationCheckDispatcher:
-          vi.fn<typeof processRenewalNotificationCheckDispatcher>(),
-        processSendRenewalPriceIncreaseEmail: vi.fn<typeof processSendRenewalPriceIncreaseEmail>(),
-        processStripeEvent: vi.fn<typeof processStripeEvent>(),
-        recoverMembershipVerifications: vi.fn<typeof recoverMembershipVerifications>(),
-        recoverAppleNotifications: vi.fn<typeof recoverAppleNotifications>(),
-        processGooglePlayNotification: vi.fn<typeof processGooglePlayNotification>(),
-        recoverGooglePlayNotifications: vi.fn<typeof recoverGooglePlayNotifications>(),
-        recoverGooglePlayActiveSources: vi.fn<typeof recoverGooglePlayActiveSources>(),
-        processGooglePlayActiveSource: vi.fn<typeof processGooglePlayActiveSource>(),
-        processGooglePlayAcknowledgement: vi.fn<typeof processGooglePlayAcknowledgement>(),
-        recoverGooglePlayAcknowledgements: vi.fn<typeof recoverGooglePlayAcknowledgements>(),
-        refreshGooglePlayOidcTrust: vi.fn<typeof refreshConfiguredGoogleOidcTrustMaterial>(),
-        recoverMicrosoftStoreSources: vi.fn<typeof recoverMicrosoftStoreSources>(),
-        reconcileMicrosoftStoreSource: vi.fn<typeof processMicrosoftStoreSource>(),
-        recoverStripeEvents: vi.fn<typeof recoverStripeEvents>(),
-        reconcileStripeMembershipCatalog: vi.fn<typeof reconcileStripeMembershipCatalog>(),
-        dispatchMembershipRefundReconciliation: vi.fn<() => Promise<void>>(),
-        reconcileMembershipRefundOperation: vi.fn<typeof reconcileMembershipRefundOperation>(),
-        dispatchMembershipPauseCollection: vi.fn<() => Promise<void>>(),
-        syncMembershipPauseCollection:
-          vi.fn<(data: { userId: string; requestedAt: string }) => Promise<void>>(),
-      }),
-    ).rejects.toThrow('Unknown job name: unknown')
+  it('serves exactly the jobs the memberships domain registers', () => {
+    const served = createMembershipsHandlers().map(handler => handler.job.name)
+    expect(served.toSorted()).toEqual(getBackgroundJobNames('memberships').toSorted())
   })
 
   it('dispatches due refund reconciliations through the default processor', async () => {
@@ -232,19 +218,14 @@ describe('processMembershipJob', () => {
     try {
       await processMembershipJob(job('dispatchMembershipRefundReconciliation'))
 
-      await expect
-        .poll(async () => readAllQueueJobs(memberships), { timeout: 5_000 })
-        .toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              data: expect.objectContaining({ operationId: operation.id }),
-              name: 'reconcileMembershipRefundOperation',
-            }),
-          ]),
-        )
+      const reconciliations = (await readAllQueueJobs(memberships)).filter(
+        queued =>
+          queued.name === MEMBERSHIPS_REFUND_OPERATION_JOB.name &&
+          (queued.data as { operationId?: string }).operationId === operation.id,
+      )
+      expect(reconciliations).toHaveLength(1)
     } finally {
       await cleanupRefundReconciliationOperationsForTest([operation.id])
-      await memberships.obliterate({ force: true })
     }
   })
 })
@@ -286,5 +267,11 @@ describe('recoverStripeEvents', () => {
 })
 
 function job(name: string, data: Record<string, unknown> = {}): Job {
-  return { name, data, timestamp: Date.now(), attemptsMade: 2, opts: { attempts: 3 } } as Job
+  return {
+    name: `memberships.${name}`,
+    data,
+    timestamp: Date.now(),
+    attemptsMade: 2,
+    opts: { attempts: 3 },
+  } as Job
 }

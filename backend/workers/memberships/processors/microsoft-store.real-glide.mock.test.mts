@@ -51,7 +51,7 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
       const expectedJobMetadata = accepted
         ? {
             id: jobId,
-            name: 'recoverMicrosoftStoreSources',
+            name: 'memberships.recoverMicrosoftStoreSources',
             data: {},
             deduplication: {
               id: 'microsoft-store-recovery',
@@ -74,10 +74,10 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
     try {
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
-        name: 'recoverMicrosoftStoreSources',
+        name: 'memberships.recoverMicrosoftStoreSources',
         data: {},
         opts: {
-          ordering: { key: 'microsoft-store-recovery', concurrency: 1 },
+          ordering: { key: 'memberships:microsoft-store-recovery', concurrency: 1 },
           priority: 100,
         },
       })
@@ -109,11 +109,14 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
 
       await expect(memberships.getJob(sourceJobId)).resolves.toMatchObject({
         id: sourceJobId,
-        name: 'reconcileMicrosoftStoreSource',
+        name: 'memberships.reconcileMicrosoftStoreSource',
         data: { sourceId: fixture.sourceId },
         opts: {
           deduplication: { id: sourceJobId, mode: 'simple' },
-          ordering: { key: `microsoft-store-source:${fixture.sourceId}`, concurrency: 1 },
+          ordering: {
+            key: `memberships:microsoft-store-source:${fixture.sourceId}`,
+            concurrency: 1,
+          },
         },
       })
     } finally {

@@ -8,6 +8,10 @@ import type {
   enqueueBulkUserDeletions,
   enqueueUserDeletion,
 } from '@queues/account-lifecycle/enqueues/user-deletions'
+import {
+  ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
+  ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import { processUserDeletionJob } from './user-deletion-job.mts'
 import { processUserDeletion, recoverUserDeletions } from './user-deletions.mts'
 
@@ -17,7 +21,7 @@ describe('user-deletions processor', () => {
     const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
 
     await processUserDeletionJob(
-      job('processUserDeletion', {
+      job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, {
         requestId: 'request-1',
         processingAttemptId: 'attempt-1',
       }),
@@ -40,7 +44,7 @@ describe('user-deletions processor', () => {
 
     await processUserDeletionJob(
       job(
-        'processUserDeletion',
+        ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name,
         { requestId: 'request-1', processingAttemptId: 'attempt-1' },
         2,
         3,
@@ -58,7 +62,7 @@ describe('user-deletions processor', () => {
 
   it('treats a missing attempt limit as a final attempt', async () => {
     const processDeletion = vi.fn<typeof processUserDeletion>()
-    const jobWithoutAttemptLimit = job('processUserDeletion', {
+    const jobWithoutAttemptLimit = job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, {
       requestId: 'request-1',
       processingAttemptId: 'attempt-1',
     })
@@ -81,7 +85,7 @@ describe('user-deletions processor', () => {
     const processDeletion = vi.fn<typeof processUserDeletion>()
     const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
 
-    await processUserDeletionJob(job('processUserDeletion', data), {
+    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, data), {
       processUserDeletion: processDeletion,
       recoverUserDeletions: recoverDeletions,
     })
@@ -94,7 +98,7 @@ describe('user-deletions processor', () => {
     const processDeletion = vi.fn<typeof processUserDeletion>()
     const recoverDeletions = vi.fn<typeof recoverUserDeletions>()
 
-    await processUserDeletionJob(job('recoverUserDeletions'), {
+    await processUserDeletionJob(job(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name), {
       processUserDeletion: processDeletion,
       recoverUserDeletions: recoverDeletions,
     })

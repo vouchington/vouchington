@@ -12,7 +12,7 @@ import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-import type { ProcessStripeEventData } from '@queues/memberships/types'
+import type { ProcessStripeEventData } from '@queues/background/enqueues/memberships-domain'
 
 type RecoverStripeEventsDependencies = {
   claimRecoverableStripeEvents: typeof claimRecoverableStripeEvents

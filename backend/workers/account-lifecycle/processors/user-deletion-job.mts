@@ -1,5 +1,8 @@
 import type { Job } from 'glide-mq'
-import type { UserDeletionJobs } from '@queues/account-lifecycle/enqueues/types-user-deletions'
+import {
+  ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
+  ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import { processUserDeletion, recoverUserDeletions } from './user-deletions.mts'
 
 type UserDeletionJobProcessors = {
@@ -10,8 +13,7 @@ type UserDeletionJobProcessors = {
 const PROCESSORS: UserDeletionJobProcessors = { processUserDeletion, recoverUserDeletions }
 
 export async function processUserDeletionJob(job: Job, processors = PROCESSORS): Promise<void> {
-  const name = job.name as UserDeletionJobs
-  if (name === 'processUserDeletion') {
+  if (job.name === ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name) {
     const { requestId, processingAttemptId } = job.data
     if (!requestId || !processingAttemptId) return
     await processors.processUserDeletion(requestId, processingAttemptId, {
@@ -19,7 +21,7 @@ export async function processUserDeletionJob(job: Job, processors = PROCESSORS):
     })
     return
   }
-  if (name === 'recoverUserDeletions') {
+  if (job.name === ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name) {
     await processors.recoverUserDeletions()
     return
   }

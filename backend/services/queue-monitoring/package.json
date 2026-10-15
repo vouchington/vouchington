@@ -31,7 +31,6 @@
     "@queues/activitypub": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/ai-agents": "workspace:^",
-    "@queues/article-sync": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",

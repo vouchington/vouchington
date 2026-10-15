@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
-import type { OAuthAuthorizationExchangeJobData } from '../queues/oauth-authorization-exchange/types.mts'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  type OAuthAuthorizationExchangeJobData,
+} from '../queues/background/enqueues/oauth-authorization-exchange-jobs.mts'
 import { hasRetainedUnarmedOAuthExchangeClaim } from '../queues/oauth-authorization-exchange/enqueues/recovery.mts'
 import { getRecoverableOAuthAuthorizationIds } from '../services/oauth/authorization-exchange-recovery.mts'
 import { processOAuthAuthorizationExchangeJob } from '../workers/oauth-authorization-exchange/processors/process-job.mts'
@@ -72,7 +75,7 @@ export async function recoverTestRetainedOAuthClaim(
     await owner.run(() => firstWorker.waitUntilReady())
     const added = await owner.run(() =>
       queue.add(
-        'exchangeOAuthAuthorization',
+        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
         {
           authorizationId,
           exchangeClaimId: marker === 'foreign-claim' ? randomUUID() : claimId,

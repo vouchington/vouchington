@@ -1,17 +1,25 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  MEMBERSHIPS_ENTITLEMENT_EFFECTS_JOB,
+  MEMBERSHIPS_GRANT_EXPIRY_JOB,
+  MEMBERSHIPS_RECOVER_VERIFICATIONS_JOB,
+  MEMBERSHIPS_RENEWAL_CHECK_JOB,
+} from '@queues/background/enqueues/memberships-jobs-2'
+import {
+  MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB,
+  MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB,
+  MEMBERSHIPS_STRIPE_CATALOG_JOB,
+} from '@queues/background/enqueues/memberships-jobs'
 import {
   APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS,
   MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS,
   MEMBERSHIP_GRANT_EXPIRY_INTERVAL_MS,
   STRIPE_CATALOG_RECONCILIATION_INTERVAL_MS,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
 } from '../config.mts'
-import { memberships } from '../queues.mts'
 import {
   enqueueDeliverMembershipEntitlementEffects,
   enqueueExpireElapsedMemberships,
@@ -24,21 +32,16 @@ import {
 import { googlePlaySchedules } from './google-play-schedules.mts'
 import { microsoftStoreSchedules } from './microsoft-store-schedules.mts'
 import { directBillingSchedules } from './direct-billing-schedules.mts'
+import { stripeCatalogOrdering } from './stripe-catalog.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'appleNotificationRecovery',
     repeat: { every: APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverAppleNotifications',
+      name: MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -57,16 +60,12 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'stripeCatalogReconciliation',
     repeat: { every: STRIPE_CATALOG_RECONCILIATION_INTERVAL_MS },
     template: {
-      name: 'reconcileStripeMembershipCatalog',
+      name: MEMBERSHIPS_STRIPE_CATALOG_JOB.name,
       data: {},
-      opts: {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-        ordering: { key: 'stripe-catalog:voucha-web', concurrency: 1 },
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...MEMBERSHIPS_STRIPE_CATALOG_JOB.options,
+        ordering: stripeCatalogOrdering,
+      }),
     },
     operatorSurfaces: [
       {
@@ -82,15 +81,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'membershipGrantExpiry',
     repeat: { every: MEMBERSHIP_GRANT_EXPIRY_INTERVAL_MS },
     template: {
-      name: 'expireElapsedMemberships',
+      name: MEMBERSHIPS_GRANT_EXPIRY_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_GRANT_EXPIRY_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -106,15 +99,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'membershipEntitlementEffects',
     repeat: { every: MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS },
     template: {
-      name: 'deliverMembershipEntitlementEffects',
+      name: MEMBERSHIPS_ENTITLEMENT_EFFECTS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_ENTITLEMENT_EFFECTS_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -130,14 +117,8 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'renewalNotificationCheck',
     repeat: { pattern: '0 9 * * *' },
     template: {
-      name: 'processRenewalNotificationCheck',
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      name: MEMBERSHIPS_RENEWAL_CHECK_JOB.name,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_RENEWAL_CHECK_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -153,15 +134,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'membershipVerificationRecovery',
     repeat: { every: 300_000 },
     template: {
-      name: 'recoverMembershipVerifications',
+      name: MEMBERSHIPS_RECOVER_VERIFICATIONS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_RECOVER_VERIFICATIONS_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -177,21 +152,15 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'stripeEventRecovery',
     repeat: { every: 300_000 },
     template: {
-      name: 'recoverStripeEvents',
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      name: MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB.name,
+      opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB.options }),
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'stripe-event-recovery' }],
   },
 ])
 
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(memberships, scheduledJobManifest)
+/** Seeds the two recovery jobs once at worker start, instead of waiting for their first interval. */
+export async function enqueueMembershipStartupJobs(): Promise<void> {
   await Promise.all([
     enqueueReconcileStripeMembershipCatalog(),
     enqueueRefreshGooglePlayOidcTrust(),

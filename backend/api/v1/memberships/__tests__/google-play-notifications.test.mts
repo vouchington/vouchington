@@ -134,7 +134,7 @@ describe('Google Play RTDN ingress route', () => {
       ): item is (typeof jobs)[number] & {
         data: { evidenceId: string; purchaseTokenLookupSha256: string }
       } =>
-        item.name === 'processGooglePlayNotification' &&
+        item.name === 'memberships.processGooglePlayNotification' &&
         typeof item.data === 'object' &&
         item.data !== null &&
         'evidenceId' in item.data &&
@@ -145,7 +145,7 @@ describe('Google Play RTDN ingress route', () => {
     if (!job) throw new Error('Expected Google Play RTDN job')
     expect(job).toMatchObject({
       id: `google-play-notification__${job.data.evidenceId}`,
-      name: 'processGooglePlayNotification',
+      name: 'memberships.processGooglePlayNotification',
     })
   })
 

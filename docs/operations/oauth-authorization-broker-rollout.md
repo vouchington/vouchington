@@ -21,7 +21,7 @@ independently for web and native clients.
 - For Microsoft, verify the Entra application registers the exact HTTPS broker callback for each
   deployed origin: `https://<deployed-origin>/auth/callback/microsoft/broker`. Keep the existing
   `/auth/callback/microsoft` redirect registered while legacy traffic remains.
-- Confirm `oauth-authorization-exchange` is healthy and its 60-second dispatcher schedule exists.
+- Confirm the `oauth-authorization-exchange` background domain is healthy and not paused and its 60-second dispatcher schedule exists.
 - Confirm exchange latency stays below the 30-second provider abort budget and the 60-second stale
   claim lease.
 - Confirm each provider accepts the exact public callback

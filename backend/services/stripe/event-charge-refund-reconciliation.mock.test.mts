@@ -170,7 +170,7 @@ describe('charge.refunded reconciliation receipt', () => {
         .mockImplementation((...args: Parameters<typeof add>) => {
           const [name, data] = args
           const matches =
-            name === 'reconcileMembershipRefundOperation' &&
+            name === 'memberships.reconcileMembershipRefundOperation' &&
             typeof data === 'object' &&
             data !== null &&
             (data as { operationId?: unknown }).operationId === operation.id
@@ -207,7 +207,7 @@ describe('charge.refunded reconciliation receipt', () => {
       await handlerPromise
       const job = await readEnqueuedJob(memberships, await admission.promise)
       expect(job).toMatchObject({
-        name: 'reconcileMembershipRefundOperation',
+        name: 'memberships.reconcileMembershipRefundOperation',
         data: { operationId: operation.id },
       })
       const { leaseToken } = job.data as { leaseToken: string }

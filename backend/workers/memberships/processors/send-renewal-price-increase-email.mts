@@ -1,4 +1,4 @@
-import type { ProcessSendRenewalPriceIncreaseEmailData } from '@queues/memberships/types'
+import type { ProcessSendRenewalPriceIncreaseEmailData } from '@queues/background/enqueues/memberships-domain'
 import { renderRenewalPriceIncreaseEmail } from '@email-templates/core'
 import { getSiteUrl } from '@modules/utils'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'

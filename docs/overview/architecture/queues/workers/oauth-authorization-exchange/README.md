@@ -7,8 +7,11 @@ Runs the ID-only OAuth authorization exchange and PostgreSQL recovery dispatcher
 Provider exchange and durable state transitions remain in `@services/oauth`; the worker processors
 only route jobs to those service operations.
 
-The worker is I/O-capable, fixed at concurrency 4, and registered in the worker-I/O definition
-catalog. Its deployed worker runtime is selected by infrastructure.
+`@workers/oauth-authorization-exchange` has no worker of its own:
+`oauthAuthorizationExchangeHandlers` registers the two job names with the shared
+[background worker](../background/README.md), which serves them with a baseline concurrency of 4
+(added to the shared worker's baseline), no domain-wide cap, and the domain's pause switch. Only the
+recovery dispatcher is serialized, under the `oauth-authorization-exchange:dispatcher` ordering key.
 
 ## Related
 

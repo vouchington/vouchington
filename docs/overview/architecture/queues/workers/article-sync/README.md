@@ -6,7 +6,7 @@ Worker package for processing article sync jobs from S3 markdown files.
 
 ## Exports
 
-- `articleSyncWorker` - worker instance for the `article-sync` queue (concurrency 1).
+- `articleSyncHandlers` - handlers of the `article-sync` domain, served by the shared background worker under a domain-wide group of one.
 
 ## Related
 

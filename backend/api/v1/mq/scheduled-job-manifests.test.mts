@@ -18,8 +18,8 @@ import {
 } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
-  'account-lifecycle/account-data-requests-cleanup',
-  'account-lifecycle/accountDataRequestRecovery',
+  'background/account-data-requests-cleanup',
+  'background/accountDataRequestRecovery',
   'activitypub/activitypub-inbox-recovery',
   'activitypub/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
@@ -49,20 +49,20 @@ const EXPECTED_SCHEDULED_JOBS = [
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
-  'memberships/dispatchMembershipPauseCollection',
-  'memberships/dispatchMembershipRefundReconciliation',
-  'memberships/membershipEntitlementEffects',
-  'memberships/membershipGrantExpiry',
-  'memberships/appleNotificationRecovery',
-  'memberships/googlePlayNotificationRecovery',
-  'memberships/googlePlayAcknowledgementRecovery',
-  'memberships/googlePlayActiveSourceRecovery',
-  'memberships/googlePlayOidcTrustRefresh',
-  'memberships/microsoftStoreSourceRecovery',
-  'memberships/membershipVerificationRecovery',
-  'memberships/renewalNotificationCheck',
-  'memberships/stripeCatalogReconciliation',
-  'memberships/stripeEventRecovery',
+  'background/dispatchMembershipPauseCollection',
+  'background/dispatchMembershipRefundReconciliation',
+  'background/membershipEntitlementEffects',
+  'background/membershipGrantExpiry',
+  'background/appleNotificationRecovery',
+  'background/googlePlayNotificationRecovery',
+  'background/googlePlayAcknowledgementRecovery',
+  'background/googlePlayActiveSourceRecovery',
+  'background/googlePlayOidcTrustRefresh',
+  'background/microsoftStoreSourceRecovery',
+  'background/membershipVerificationRecovery',
+  'background/renewalNotificationCheck',
+  'background/stripeCatalogReconciliation',
+  'background/stripeEventRecovery',
   'notifications/community-activity-digest-weekly',
   'notifications/media-delivery-registry-reconciliation',
   'notifications/copyright-action-reconciliation',
@@ -73,7 +73,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'notifications/notification-push-intent-recovery',
   'background/reconcile-image-quarantines',
   'background/reconcile-post-moderation',
-  'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
+  'background/oauthAuthorizationExchangeDispatcher',
   'background/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
   'psql/create-partitions-monthly',
@@ -91,16 +91,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
-  'urls-domains-blacklist/hostnameCacheInvalidationSweep',
-  'account-lifecycle/userDeletionRecovery',
+  'background/userDeletionRecovery',
   'background/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 22 manifests and 75 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(22)
+  it('imports the exact 19 manifests and 75 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(19)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -175,8 +174,8 @@ describe('scheduled job manifest catalog', () => {
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
       expect.objectContaining({
         id: 'stripeCatalogReconciliation',
-        queue_name: 'memberships',
-        job_name: 'reconcileStripeMembershipCatalog',
+        queue_name: 'background',
+        job_name: 'memberships.reconcileStripeMembershipCatalog',
         schedule: 'every 5m',
       }),
     )

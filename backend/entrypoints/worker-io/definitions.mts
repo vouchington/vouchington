@@ -12,8 +12,17 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/post-publication/enqueues/schedules'),
         import('@queues/vote-aggregation/enqueues/schedules'),
         import('@queues/entity-listeners/enqueues/schedules'),
+        import('@queues/account-lifecycle/enqueues/schedules'),
+        import('@queues/oauth-authorization-exchange/enqueues/schedules'),
       ])
-      return () => upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
+      const memberships = await import('@queues/memberships/enqueues/schedules')
+      return async () => {
+        await upsertBackgroundSchedules(
+          [...domains, memberships].map(domain => domain.scheduledJobManifest),
+        )
+        // Memberships also seeds two recovery jobs at worker start, ahead of their first interval.
+        await memberships.enqueueMembershipStartupJobs()
+      }
     },
   },
   {
@@ -54,18 +63,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     load: () => import('@queues/psql/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'account-lifecycle',
-    load: () =>
-      import('@queues/account-lifecycle/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'oauth-authorization-exchange',
-    load: () =>
-      import('@queues/oauth-authorization-exchange/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
     queueName: 'bloom-filters',
     load: () =>
       import('@queues/bloom-filters/enqueues/schedules').then(module => module.upsertSchedules),
@@ -79,11 +76,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     queueName: 'sitemaps',
     load: () =>
       import('@queues/sitemaps/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'memberships',
-    load: () =>
-      import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'kagi-smallweb',

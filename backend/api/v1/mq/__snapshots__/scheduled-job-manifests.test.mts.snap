@@ -6,99 +6,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Clean up expired data export files",
-        "id": "account-data-requests-cleanup",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "account-data-requests-cleanup",
-    "template": {
-      "data": {},
-      "name": "processCleanupExpiredExports",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "account-data-request-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "accountDataRequestRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverExportRequests",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "user-deletion-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "userDeletionRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverUserDeletions",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recover abandoned durable ActivityPub inbox envelopes",
         "id": "activitypub-inbox-recovery",
         "kind": "scheduled-jobs",
@@ -553,6 +460,612 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 10,
           "key": "vote-aggregation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up expired data export files",
+        "id": "account-data-requests-cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "account-data-requests-cleanup",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.processCleanupExpiredExports",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "account-data-request-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "accountDataRequestRecovery",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.recoverExportRequests",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "user-deletion-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "userDeletionRecovery",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.recoverUserDeletions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending Apple App Store notifications",
+        "id": "appleNotificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "appleNotificationRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverAppleNotifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending Google Play notifications",
+        "id": "googlePlayNotificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "googlePlayNotificationRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverGooglePlayNotifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending Google Play acknowledgements",
+        "id": "googlePlayAcknowledgementRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "googlePlayAcknowledgementRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverGooglePlayAcknowledgements",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recheck known active Google Play sources when RTDN delivery is missing",
+        "id": "googlePlayActiveSourceRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "googlePlayActiveSourceRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverGooglePlayActiveSources",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Refresh offline Google Pub/Sub OIDC signing keys",
+        "id": "googlePlayOidcTrustRefresh",
+        "kind": "scheduled-jobs",
+        "schedule": "every 3h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 10800000,
+    },
+    "schedulerId": "googlePlayOidcTrustRefresh",
+    "template": {
+      "data": {},
+      "name": "memberships.refreshGooglePlayOidcTrust",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recheck known Microsoft Store sources with usable credentials",
+        "id": "microsoftStoreSourceRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "microsoftStoreSourceRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverMicrosoftStoreSources",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "memberships:microsoft-store-recovery",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch due membership refund reconciliations",
+        "id": "dispatchMembershipRefundReconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "dispatchMembershipRefundReconciliation",
+    "template": {
+      "data": {},
+      "name": "memberships.dispatchMembershipRefundReconciliation",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover Stripe pause-collection work lost after a suspension change",
+        "id": "dispatchMembershipPauseCollection",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "dispatchMembershipPauseCollection",
+    "template": {
+      "data": {},
+      "name": "memberships.dispatchMembershipPauseCollection",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Reconcile the Stripe membership catalog",
+        "id": "stripeCatalogReconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "stripeCatalogReconciliation",
+    "template": {
+      "data": {},
+      "name": "memberships.reconcileStripeMembershipCatalog",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "memberships:stripe-catalog:voucha-web",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Expire elapsed administrator membership grants",
+        "id": "membershipGrantExpiry",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "membershipGrantExpiry",
+    "template": {
+      "data": {},
+      "name": "memberships.expireElapsedMemberships",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Deliver durable membership entitlement effects",
+        "id": "membershipEntitlementEffects",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "membershipEntitlementEffects",
+    "template": {
+      "data": {},
+      "name": "memberships.deliverMembershipEntitlementEffects",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Check membership renewals and send notifications",
+        "id": "renewalNotificationCheck",
+        "kind": "scheduled-jobs",
+        "schedule": "0 9 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 9 * * *",
+    },
+    "schedulerId": "renewalNotificationCheck",
+    "template": {
+      "name": "memberships.processRenewalNotificationCheck",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending membership verification work",
+        "id": "membershipVerificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "membershipVerificationRecovery",
+    "template": {
+      "data": {},
+      "name": "memberships.recoverMembershipVerifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": true,
+        "removeOnFail": true,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "stripe-event-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "stripeEventRecovery",
+    "template": {
+      "name": "memberships.recoverStripeEvents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "oauth-authorization-exchange-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "oauthAuthorizationExchangeDispatcher",
+    "template": {
+      "data": {},
+      "name": "oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "oauth-authorization-exchange:dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1359,471 +1872,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Re-enqueue pending Apple App Store notifications",
-        "id": "appleNotificationRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "appleNotificationRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverAppleNotifications",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending Google Play notifications",
-        "id": "googlePlayNotificationRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "googlePlayNotificationRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverGooglePlayNotifications",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending Google Play acknowledgements",
-        "id": "googlePlayAcknowledgementRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "googlePlayAcknowledgementRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverGooglePlayAcknowledgements",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Recheck known active Google Play sources when RTDN delivery is missing",
-        "id": "googlePlayActiveSourceRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1h",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 3600000,
-    },
-    "schedulerId": "googlePlayActiveSourceRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverGooglePlayActiveSources",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Refresh offline Google Pub/Sub OIDC signing keys",
-        "id": "googlePlayOidcTrustRefresh",
-        "kind": "scheduled-jobs",
-        "schedule": "every 3h",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 10800000,
-    },
-    "schedulerId": "googlePlayOidcTrustRefresh",
-    "template": {
-      "data": {},
-      "name": "refreshGooglePlayOidcTrust",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Recheck known Microsoft Store sources with usable credentials",
-        "id": "microsoftStoreSourceRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1h",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 3600000,
-    },
-    "schedulerId": "microsoftStoreSourceRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverMicrosoftStoreSources",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "microsoft-store-recovery",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch due membership refund reconciliations",
-        "id": "dispatchMembershipRefundReconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "dispatchMembershipRefundReconciliation",
-    "template": {
-      "data": {},
-      "name": "dispatchMembershipRefundReconciliation",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Recover Stripe pause-collection work lost after a suspension change",
-        "id": "dispatchMembershipPauseCollection",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "dispatchMembershipPauseCollection",
-    "template": {
-      "data": {},
-      "name": "dispatchMembershipPauseCollection",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Reconcile the Stripe membership catalog",
-        "id": "stripeCatalogReconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "stripeCatalogReconciliation",
-    "template": {
-      "data": {},
-      "name": "reconcileStripeMembershipCatalog",
-      "opts": {
-        "attempts": 5,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "stripe-catalog:voucha-web",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Expire elapsed administrator membership grants",
-        "id": "membershipGrantExpiry",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "membershipGrantExpiry",
-    "template": {
-      "data": {},
-      "name": "expireElapsedMemberships",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Deliver durable membership entitlement effects",
-        "id": "membershipEntitlementEffects",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "membershipEntitlementEffects",
-    "template": {
-      "data": {},
-      "name": "deliverMembershipEntitlementEffects",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Check membership renewals and send notifications",
-        "id": "renewalNotificationCheck",
-        "kind": "scheduled-jobs",
-        "schedule": "0 9 * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 9 * * *",
-    },
-    "schedulerId": "renewalNotificationCheck",
-    "template": {
-      "name": "processRenewalNotificationCheck",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending membership verification work",
-        "id": "membershipVerificationRecovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "membershipVerificationRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverMembershipVerifications",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "stripe-event-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "memberships",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "stripeEventRecovery",
-    "template": {
-      "name": "recoverStripeEvents",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Enqueue due public copyright DSA statement submissions",
         "id": "copyright-dsa-statement-reconciliation",
         "kind": "scheduled-jobs",
@@ -2079,39 +2127,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "oauth-authorization-exchange-dispatch",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "oauth-authorization-exchange",
-    "registration": "parallel",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "oauthAuthorizationExchangeDispatcher",
-    "template": {
-      "data": {},
-      "name": "dispatchOAuthAuthorizationExchanges",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -2803,8 +2818,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Clean up expired data export files",
     "id": "account-data-requests-cleanup",
-    "job_name": "processCleanupExpiredExports",
-    "queue_name": "account-lifecycle",
+    "job_name": "account-lifecycle.processCleanupExpiredExports",
+    "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueCleanupExpiredExports",
   },
@@ -2875,104 +2890,104 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Deliver durable membership entitlement effects",
     "id": "membershipEntitlementEffects",
-    "job_name": "deliverMembershipEntitlementEffects",
-    "queue_name": "memberships",
+    "job_name": "memberships.deliverMembershipEntitlementEffects",
+    "queue_name": "background",
     "schedule": "every 1m",
     "triggerName": "enqueueDeliverMembershipEntitlementEffects",
   },
   {
     "description": "Expire elapsed administrator membership grants",
     "id": "membershipGrantExpiry",
-    "job_name": "expireElapsedMemberships",
-    "queue_name": "memberships",
+    "job_name": "memberships.expireElapsedMemberships",
+    "queue_name": "background",
     "schedule": "every 1m",
     "triggerName": "enqueueExpireElapsedMemberships",
   },
   {
     "description": "Re-enqueue pending Apple App Store notifications",
     "id": "appleNotificationRecovery",
-    "job_name": "recoverAppleNotifications",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverAppleNotifications",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverAppleNotifications",
   },
   {
     "description": "Re-enqueue pending Google Play notifications",
     "id": "googlePlayNotificationRecovery",
-    "job_name": "recoverGooglePlayNotifications",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverGooglePlayNotifications",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverGooglePlayNotifications",
   },
   {
     "description": "Re-enqueue pending Google Play acknowledgements",
     "id": "googlePlayAcknowledgementRecovery",
-    "job_name": "recoverGooglePlayAcknowledgements",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverGooglePlayAcknowledgements",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverGooglePlayAcknowledgements",
   },
   {
     "description": "Recheck known active Google Play sources when RTDN delivery is missing",
     "id": "googlePlayActiveSourceRecovery",
-    "job_name": "recoverGooglePlayActiveSources",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverGooglePlayActiveSources",
+    "queue_name": "background",
     "schedule": "every 1h",
     "triggerName": "enqueueRecoverGooglePlayActiveSources",
   },
   {
     "description": "Refresh offline Google Pub/Sub OIDC signing keys",
     "id": "googlePlayOidcTrustRefresh",
-    "job_name": "refreshGooglePlayOidcTrust",
-    "queue_name": "memberships",
+    "job_name": "memberships.refreshGooglePlayOidcTrust",
+    "queue_name": "background",
     "schedule": "every 3h",
     "triggerName": "enqueueRefreshGooglePlayOidcTrust",
   },
   {
     "description": "Recheck known Microsoft Store sources with usable credentials",
     "id": "microsoftStoreSourceRecovery",
-    "job_name": "recoverMicrosoftStoreSources",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverMicrosoftStoreSources",
+    "queue_name": "background",
     "schedule": "every 1h",
     "triggerName": "enqueueRecoverMicrosoftStoreSources",
   },
   {
     "description": "Re-enqueue pending membership verification work",
     "id": "membershipVerificationRecovery",
-    "job_name": "recoverMembershipVerifications",
-    "queue_name": "memberships",
+    "job_name": "memberships.recoverMembershipVerifications",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverMembershipVerifications",
   },
   {
     "description": "Dispatch due membership refund reconciliations",
     "id": "dispatchMembershipRefundReconciliation",
-    "job_name": "dispatchMembershipRefundReconciliation",
-    "queue_name": "memberships",
+    "job_name": "memberships.dispatchMembershipRefundReconciliation",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueDispatchMembershipRefundReconciliation",
   },
   {
     "description": "Recover Stripe pause-collection work lost after a suspension change",
     "id": "dispatchMembershipPauseCollection",
-    "job_name": "dispatchMembershipPauseCollection",
-    "queue_name": "memberships",
+    "job_name": "memberships.dispatchMembershipPauseCollection",
+    "queue_name": "background",
     "schedule": "every 1m",
     "triggerName": "enqueueDispatchMembershipPauseCollection",
   },
   {
     "description": "Reconcile the Stripe membership catalog",
     "id": "stripeCatalogReconciliation",
-    "job_name": "reconcileStripeMembershipCatalog",
-    "queue_name": "memberships",
+    "job_name": "memberships.reconcileStripeMembershipCatalog",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileStripeMembershipCatalog",
   },
   {
     "description": "Check membership renewals and send notifications",
     "id": "renewalNotificationCheck",
-    "job_name": "processRenewalNotificationCheck",
-    "queue_name": "memberships",
+    "job_name": "memberships.processRenewalNotificationCheck",
+    "queue_name": "background",
     "schedule": "0 9 * * *",
     "triggerName": "enqueueRenewalNotificationCheck",
   },

@@ -4,7 +4,7 @@
 
 Remaining follow-up and scope caveat:
 
-1. `article-sync` worker has no explicit `lockDuration`; set one from its heartbeat and
+1. The `article-sync` background job has no explicit `lockDuration`; set one from its heartbeat and
    crash-recovery requirements rather than coupling it to the SSE connection cycle. Follow-up
    formerly filed as jonathanong/filaments#8122.
 2. Full durable replayability remains tracked by

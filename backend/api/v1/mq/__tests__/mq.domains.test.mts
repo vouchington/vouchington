@@ -66,7 +66,11 @@ describe('background queue domain routes', () => {
         (body.domains as { domain: string }[]).map(entry => [entry.domain, entry]),
       )
       expect([...byDomain.keys()].toSorted()).toEqual([
+        'account-lifecycle',
+        'article-sync',
         'entity-listeners',
+        'memberships',
+        'oauth-authorization-exchange',
         'openai-moderation',
         'post-mentions',
         'post-publication',
