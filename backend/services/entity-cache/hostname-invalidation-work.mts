@@ -10,6 +10,7 @@ export async function enqueueHostnameCacheInvalidation(
     `/* enqueueHostnameCacheInvalidation */
     INSERT INTO url_hostname_cache_invalidation_work_items (url_hostname_id)
     SELECT DISTINCT id FROM unnest($1::uuid[]) AS changed(id)
+    ORDER BY id ASC NULLS LAST
     ON CONFLICT (url_hostname_id) DO UPDATE SET
       generation = url_hostname_cache_invalidation_work_items.generation + 1,
       enqueued_at = CURRENT_TIMESTAMP,

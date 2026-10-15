@@ -17,6 +17,7 @@ export async function enqueueChangedHostnameCaches(query: TransactionQuery): Pro
         SELECT domain FROM ${REMOVED_DOMAINS_TABLE}
       ) changed
       JOIN url_hostnames hostname ON hostname.hostname = changed.domain
+      ORDER BY hostname.id ASC NULLS LAST
       ON CONFLICT (url_hostname_id) DO UPDATE SET
         generation = url_hostname_cache_invalidation_work_items.generation + 1,
         enqueued_at = CURRENT_TIMESTAMP,
