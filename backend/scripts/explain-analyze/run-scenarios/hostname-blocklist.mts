@@ -30,7 +30,7 @@ export async function runHostnameBlocklistScenario(): Promise<void> {
         throw new Error(`Expected one full cache-invalidation page; got ${claimed}`)
     },
     undefined,
-    'drainHostnameCacheInvalidationWork:claim',
+    'drainHostnameCacheInvalidationWork:claimAvailable',
     { afterCapture: seedHostnameCacheInvalidationWork },
   )
 }
@@ -60,7 +60,8 @@ registerScenarioContract('hostname-cache-invalidation-claim', {
   expectations: [
     { kind: 'usesIndexes', indexes: ['idx_url_hostname_cache_invalidation_work_items__available'] },
     { kind: 'usesIndexes', indexes: ['url_hostname_cache_invalidation_work_items_pkey'] },
-    { kind: 'maxProcessedRows', relation: 'url_hostname_cache_invalidation_work_items', max: 1000 },
+    // A 500-row claim visits the updated rows, the due-page index, and up to 500 PK probes.
+    { kind: 'maxProcessedRows', relation: 'url_hostname_cache_invalidation_work_items', max: 1500 },
     { kind: 'queryBinds', token: 'LIMIT' },
   ],
   seededRows: { url_hostname_cache_invalidation_work_items: 20_000 },

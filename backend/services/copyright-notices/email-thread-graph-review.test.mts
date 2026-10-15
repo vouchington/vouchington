@@ -62,7 +62,7 @@ describe('copyright email graph review boundaries', () => {
     })
   })
 
-  it('does not backfill a reply whose own Message-ID gained a second claimant', async () => {
+  it('keeps a recorded ancestor edge when its reply Message-ID gains a second claimant', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const rootMessageId = copyrightEmailMessageId()
     const replyMessageId = copyrightEmailMessageId()
@@ -74,15 +74,31 @@ describe('copyright email graph review boundaries', () => {
       messageId: replyMessageId,
       replyReferences: [rootMessageId],
     })
-    await recordThreadedCopyrightEmail({ messageId: replyMessageId, replyReferences: [] })
+    const secondClaimant = await recordThreadedCopyrightEmail({
+      messageId: replyMessageId,
+      replyReferences: [],
+    })
 
-    await promoteCopyrightEmailIntake(await copyrightEmailPromotionInput(moderator, root.intakeId))
-    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([])
+    const promoted = await promoteCopyrightEmailIntake(
+      await copyrightEmailPromotionInput(moderator, root.intakeId),
+    )
+    expect(await readCopyrightEmailIntakeNoticeLinks(reply.intakeId)).toEqual([
+      { copyright_notice_id: promoted.noticeId, link_kind: 'thread' },
+    ])
     const queue = await searchCopyrightStaffEmailIntakes(moderator, {
       limit: 1,
       intakeIds: [reply.intakeId],
     })
     expect(queue.intakes[0]).toMatchObject({
+      linked_notice_id: promoted.noticeId,
+      review_path: 'matched_thread',
+    })
+    expect(await readCopyrightEmailIntakeNoticeLinks(secondClaimant.intakeId)).toEqual([])
+    const secondQueue = await searchCopyrightStaffEmailIntakes(moderator, {
+      limit: 1,
+      intakeIds: [secondClaimant.intakeId],
+    })
+    expect(secondQueue.intakes[0]).toMatchObject({
       linked_notice_id: null,
       review_path: 'duplicate_message_id',
     })

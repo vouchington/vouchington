@@ -47,9 +47,12 @@ export async function linkPendingCopyrightEmailRepliesInTransaction(
       UNION
       SELECT descendant.intake_id FROM descendants descendant WHERE `
   linkQuery.append(copyrightEmailReferencedTokenIsAmbiguousSql(sql`descendant.intake_id`))
-  linkQuery.append(sql` OR `)
+  linkQuery.append(sql` OR (NOT EXISTS (
+    SELECT 1 FROM copyright_notice_email_message_ancestors retained_edge
+    WHERE retained_edge.reply_message_intake_id = descendant.intake_id
+  ) AND `)
   linkQuery.append(copyrightEmailOwnMessageIdIsAmbiguousSql(sql`descendant.intake_id`))
-  linkQuery.append(sql`
+  linkQuery.append(sql`)
     ),
     blocked(intake_id) AS (
       SELECT intake_id FROM blocked_seeds

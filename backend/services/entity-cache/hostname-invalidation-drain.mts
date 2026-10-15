@@ -122,9 +122,7 @@ async function claimHostnameCacheInvalidations(
       : 'lease_token IS NOT NULL AND lease_expires_at <= CURRENT_TIMESTAMP AND available_at <= CURRENT_TIMESTAMP'
   const order = kind === 'available' ? 'available_at' : 'lease_expires_at'
   const scope = hostnameIds ? 'AND url_hostname_id = ANY($2::uuid[])' : ''
-  const { rows } = await write<ClaimedHostname>(
-    `/* drainHostnameCacheInvalidationWork:claim */
-    /* no-mistakes: deadlock-safe -- SKIP LOCKED never waits for other work-table claimers; the bounded page locks only work rows. */
+  const statement = `/* no-mistakes: deadlock-safe -- SKIP LOCKED never waits for other work-table claimers; the bounded page locks only work rows. */
     WITH picked AS MATERIALIZED (
       SELECT url_hostname_id FROM url_hostname_cache_invalidation_work_items
       WHERE ${predicate} ${scope}
@@ -141,9 +139,18 @@ async function claimHostnameCacheInvalidations(
     WHERE work.url_hostname_id = ANY(picked_ids.ids)
       AND hostname.id = work.url_hostname_id
     RETURNING work.url_hostname_id, hostname.hostname, work.generation::text,
-      work.lease_token`,
-    hostnameIds ? [limit, hostnameIds] : [limit],
-  )
+      work.lease_token`
+  const values = hostnameIds ? [limit, hostnameIds] : [limit]
+  const { rows } =
+    kind === 'available'
+      ? await write<ClaimedHostname>(
+          `/* drainHostnameCacheInvalidationWork:claimAvailable */\n${statement}`,
+          values,
+        )
+      : await write<ClaimedHostname>(
+          `/* drainHostnameCacheInvalidationWork:claimExpired */\n${statement}`,
+          values,
+        )
   return rows
 }
 

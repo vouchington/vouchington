@@ -22,10 +22,16 @@ export async function upsertAndBlockHostname(
   const hostnameMap = await upsertUrlHostnames(adminUserId, [hostname], { query })
   const hostnameId = hostnameMap.get(hostname)
   if (!hostnameId) throw createHttpError(500, 'Failed to upsert hostname')
-  const { result, creatorIds } = await blockHostnameInTransaction(adminUserId, hostnameId, query)
+  const { result, hostnames, creatorIds } = await blockHostnameInTransaction(
+    adminUserId,
+    hostnameId,
+    query,
+  )
   await query.commit()
 
-  await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
+  await drainHostnameCacheInvalidationWork({
+    hostnameIds: hostnames.map(affected => affected.id),
+  }).catch(onError)
   enqueueBlockHostnameVoteWeightRecalculation(creatorIds)
   return { id: hostnameId, result }
 }
