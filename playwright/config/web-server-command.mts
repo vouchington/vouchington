@@ -30,6 +30,7 @@ export function createReporter(junitOutputFile: string, ci: boolean): ReporterDe
     ? [
         ['github'],
         ['junit', { outputFile: process.env.PLAYWRIGHT_JUNIT_OUTPUT_FILE || junitOutputFile }],
+        [join(repoRoot, 'playwright/test-lifecycle-reporter.mts')],
       ]
     : [['html', { open: 'never' }]]
 }

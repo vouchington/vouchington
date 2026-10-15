@@ -404,6 +404,14 @@ Use `waitForBelowFoldHydration(page)` from [`playwright/helpers/wait-for-hydrati
 
 ## CF Worker Logs
 
+CI appends a public Playwright reporter that emits `playwright-test-lifecycle` JSON lines at each
+attempt's begin and end, with an ISO UTC observation time, relative spec location, opaque test ID,
+project, shard, retry and worker indexes. Match these intervals to raw Wrangler log timestamps to
+identify overlapping attempts; interleaved output alone does not establish which request caused an
+error. Existing reporters, sharding and unfiltered worker artifacts remain unchanged. The reporter
+does not log titles, request URLs, query strings, headers, tokens or error payloads. This is correlation
+instrumentation for #2834, not a diagnosis or suppression of `Uncaught Error: Network connection lost`.
+
 The CF Worker is started via [`cloudflare-worker/scripts/wrangler/start.mts`](../../../../cloudflare-worker/scripts/wrangler/start.mts), which writes full unfiltered wrangler logs to disk. The launcher redirects Wrangler home, XDG, log, registry, cache, Miniflare, and persist paths into `cloudflare-worker/.wrangler/runtime/` locally and `${RUNNER_TEMP:-$TMPDIR}/voucha-wrangler/worker-${WORKER_PORT}-attempt-${GITHUB_RUN_ATTEMPT:-0}/` in CI so tests do not write to user-level Wrangler directories. In CI, logs are uploaded as `wrangler-logs-<shard>` artifacts after every run.
 
 - `wrangler-stderr.log` — crash details, stack traces, exit signals
