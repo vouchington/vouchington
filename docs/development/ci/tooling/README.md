@@ -8,7 +8,9 @@ The [Valkey starter](../../../../.github/actions/start-valkey/action.yml) owns t
 [`pull-image.sh`](../../../../.github/actions/start-valkey/pull-image.sh) first acquires that image from the mirror.
 Only a final bare `unknown blob` or image-configuration download `unknown blob` error with explicit
 pull exit 1 permits one Docker Hub fallback with the same
-repository, version, and digest. Each pull is bounded; both attempt logs remain in the runner's
+repository, version, and digest. Both pulls share one 50s acquisition deadline (plus at most 2s termination), leaving the
+existing 60s readiness deadline and 8s startup/configuration headroom within the 120s caller.
+A timeout never permits fallback. Both attempt logs remain in the runner's
 temporary directory and are printed to the job log. Other failures remain failures. Container
 creation uses the successfully acquired reference with `--pull=never`, so it cannot initiate an
 additional implicit pull. The existing readiness deadline and caller step budgets remain unchanged.

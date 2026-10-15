@@ -11,13 +11,17 @@ logs="$(mktemp -d "${RUNNER_TEMP:-/tmp}/valkey-pull.XXXXXX")"
 echo "Valkey pull diagnostics: $logs" >&2
 pull_image() {
   local reference="$1" log="$2" status
-  # Two 20s pulls plus termination margins leave the existing 60s readiness budget intact.
-  if timeout --kill-after=2s 20s docker pull "$reference" >"$log" 2>&1; then
-    cat "$log" >&2
+  local -a statuses
+  # The action owns one deadline across both attempts. Stream diagnostics even on cancellation.
+  if docker pull "$reference" 2>&1 | tee "$log" >&2; then
     return 0
   else
-    status=$?
-    cat "$log" >&2
+    statuses=("${PIPESTATUS[@]}")
+    status="${statuses[0]}"
+    if [ "${statuses[1]}" -ne 0 ]; then
+      echo "Valkey pull diagnostics failed (docker=$status, tee=${statuses[1]})" >&2
+      return 125
+    fi
     echo "Valkey pull exited $status ($reference)" >&2
     return "$status"
   fi

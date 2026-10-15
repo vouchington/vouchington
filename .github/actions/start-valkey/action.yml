@@ -21,7 +21,8 @@ runs:
         VALKEY_CONTAINER: voucha-valkey
       run: |
         set -euo pipefail
-        pulled_image="$(bash "$GITHUB_WORKSPACE/.github/actions/start-valkey/pull-image.sh" "$VALKEY_IMAGE")"
+        # One acquisition deadline covers both registries; reserve 60s readiness and 8s headroom.
+        pulled_image="$(timeout --kill-after=2s 50s bash "$GITHUB_WORKSPACE/.github/actions/start-valkey/pull-image.sh" "$VALKEY_IMAGE")"
         docker run --pull=never -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
           "$pulled_image" >/dev/null
         # Valkey has no readiness event to wait on, so poll `valkey-cli ping` under a hard deadline.

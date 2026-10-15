@@ -25,6 +25,10 @@ async function start(
     canonicalExit?: number
     canonicalError?: string
     runExit?: number
+    teeFailure?: boolean
+    scaledDeadline?: boolean
+    mirrorDelay?: number
+    canonicalDelay?: number
   } = {},
 ) {
   const dir = await mkdtemp(join(tmpdir(), 'valkey-pull-control-'))
@@ -44,8 +48,10 @@ fs.appendFileSync(process.env.CALLS, JSON.stringify(args) + '\\n');
 if (args[0] === 'pull') {
   if (args[1].startsWith('mirror.gcr.io/')) {
     if (process.env.MIRROR_ERROR) console.error(process.env.MIRROR_ERROR);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.MIRROR_DELAY));
     process.exit(Number(process.env.MIRROR_EXIT));
   }
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.CANONICAL_DELAY));
   if (Number(process.env.CANONICAL_EXIT)) console.error(process.env.CANONICAL_ERROR);
   process.exit(Number(process.env.CANONICAL_EXIT));
 }
@@ -54,6 +60,25 @@ if (args[0] === 'port') console.log('127.0.0.1:32123');
 `,
   )
   await chmod(docker, 0o755)
+  if (options.scaledDeadline) {
+    const timeout = join(dir, 'timeout')
+    await writeFile(
+      timeout,
+      `#!/usr/bin/env bash
+if [ "$1" = '--kill-after=2s' ] && [ "$2" = '50s' ]; then
+  shift 2
+  exec /usr/bin/timeout --kill-after=0.1s 2s "$@"
+fi
+exec /usr/bin/timeout "$@"
+`,
+    )
+    await chmod(timeout, 0o755)
+  }
+  if (options.teeFailure) {
+    const tee = join(dir, 'tee')
+    await writeFile(tee, '#!/usr/bin/env bash\n/usr/bin/tee "$@"\nexit 1\n')
+    await chmod(tee, 0o755)
+  }
   const result = await exec('bash', ['-c', step.run], {
     timeout: 5000,
     env: {
@@ -70,6 +95,8 @@ if (args[0] === 'port') console.log('127.0.0.1:32123');
       CANONICAL_EXIT: String(options.canonicalExit ?? 0),
       CANONICAL_ERROR: options.canonicalError ?? 'canonical pull failure',
       RUN_EXIT: String(options.runExit ?? 0),
+      MIRROR_DELAY: String(options.mirrorDelay ?? 0),
+      CANONICAL_DELAY: String(options.canonicalDelay ?? 0),
     },
   }).then(
     value => ({ code: 0, ...value }),
@@ -187,6 +214,47 @@ describe('Valkey image acquisition and single container start', () => {
     expect(result.code).toBe(125)
     expect(result.calls.filter(call => call[0] === 'pull')).toEqual([['pull', image]])
     expect(result.calls.filter(call => call[0] === 'run')).toHaveLength(1)
+    expect(result.output).toBe('')
+  })
+
+  it('allows a fallback only within the remaining shared acquisition budget', async () => {
+    const result = await start({
+      error: missingContent,
+      mirrorExit: 1,
+      scaledDeadline: true,
+      mirrorDelay: 500,
+      canonicalDelay: 1800,
+    })
+    expect(result.code).toBe(124)
+    expect(result.stderr).toContain(missingContent)
+    expect(result.calls).toEqual([
+      ['pull', image],
+      ['pull', canonical],
+    ])
+    expect(result.output).toBe('')
+    expect(result.environment).toBe('')
+  })
+
+  it('does not admit fallback or container startup after acquisition budget exhaustion', async () => {
+    const result = await start({
+      error: missingContent,
+      mirrorExit: 1,
+      scaledDeadline: true,
+      mirrorDelay: 2300,
+    })
+    expect(result.code).toBe(124)
+    expect(result.stderr).toContain(missingContent)
+    expect(result.calls).toEqual([['pull', image]])
+    expect(result.output).toBe('')
+    expect(result.environment).toBe('')
+  })
+
+  it('fails closed when diagnostics fail instead of mistaking tee status for pull status', async () => {
+    const result = await start({ error: missingContent, teeFailure: true })
+    expect(result.code).toBe(125)
+    expect(result.stderr).toContain(missingContent)
+    expect(result.stderr).toContain('diagnostics failed (docker=0, tee=1)')
+    expect(result.calls).toEqual([['pull', image]])
     expect(result.output).toBe('')
   })
 })
