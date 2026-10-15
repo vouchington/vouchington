@@ -17,7 +17,8 @@ in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 
 The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest calls in `ci/`,
 `dev/`, `static-code-analysis/`, `.husky/`, `.pr-shepherd/`, `.agents/catalog/`,
-`.github/actions/`, `.github/workflows/`, and `backend/dependency-cruiser-rules/`,
+`.github/actions/`, `.github/workflows/`, `backend/dependency-cruiser-rules/`,
+and root `test-helpers/*.test.mts`,
 including aliased registrars, same-file expressions,
 individual tests, hooks, and runtime timeout updates. Unresolved admitted timeout carriers
 fail rather than silently escaping the cap. The normal Oxlint gate owns enforcement;

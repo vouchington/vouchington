@@ -1224,6 +1224,16 @@
       }
     },
     {
+      "files": ["**/test-helpers/*.test.mts"],
+      "excludeFiles": ["**/*/test-helpers/*.test.mts"],
+      "rules": {
+        "no-mistakes/vitest-timeout-cap": [
+          "error",
+          { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+        ]
+      }
+    },
+    {
       "files": ["**/backend/mcp/**/*.mts"],
       "rules": {
         // React Doctor skipped this style rule under /tools/. Preserve that treatment after

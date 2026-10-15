@@ -1,14 +1,43 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 import config from '../vitest.config.mts'
 
 const binary = resolve('node_modules/.bin/oxlint')
+const require = createRequire(resolve('.oxlintrc.json'))
 const fixtures = [
   {
-    path: '.pr-shepherd/unknown.test.mts',
+    path: 'backend/test-helpers/other-project.test.mts',
+    source: "import { it } from 'vitest'; it('outside this project', () => {}, 30001)",
+    rejected: true,
+    excludedFromRootScope: true,
+  },
+  {
+    path: 'test-helpers/alias.test.mts',
+    source: "import { it as check } from 'vitest'; check('slow', () => {}, 30 * 1000 + 1)",
+    rejected: true,
+  },
+  {
+    path: 'test-helpers/runtime.test.mts',
+    source: "import { vi as runtime } from 'vitest'; runtime.setConfig({ testTimeout: 30001 })",
+    rejected: true,
+  },
+  {
+    path: 'test-helpers/unknown.test.mts',
+    source: "import { afterEach } from 'vitest'; afterEach(() => {}, Number(process.env.DEADLINE))",
+    rejected: true,
+  },
+  {
+    path: 'test-helpers/bounded.test.mts',
+    source: "import { it } from 'vitest'; it('bounded', { timeout: 30000 }, () => {})",
+    rejected: false,
+  },
+  {
+    path: '.pr-shepherd/__tests__/unknown.test.mts',
     source: "import { it } from 'vitest'; it('unknown', () => {}, Number(process.env.DEADLINE))",
     rejected: true,
   },
@@ -107,6 +136,23 @@ const fixtures = [
   },
 ] as const
 
+function writeFixtureConfig(configPath: string, root: string): string {
+  for (const path of new Set(['.oxlintrc.json', configPath])) {
+    const config = parseJsonc(readFileSync(path, 'utf8')) as {
+      jsPlugins?: Array<string | { name: string; specifier: string }>
+    }
+    config.jsPlugins = config.jsPlugins?.map(plugin =>
+      typeof plugin === 'string'
+        ? { name: plugin.replace(/^eslint-plugin-/, ''), specifier: require.resolve(plugin) }
+        : { ...plugin, specifier: require.resolve(plugin.specifier) },
+    )
+    const target = join(root, path)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, JSON.stringify(config))
+  }
+  return join(root, configPath)
+}
+
 describe('native tooling Vitest timeout policy', () => {
   it('resolves five-second defaults for the isolated static-analysis fixture project', () => {
     const projects = (config.test?.projects ?? []).filter(
@@ -130,9 +176,9 @@ describe('native tooling Vitest timeout policy', () => {
   it.each(['.oxlintrc.json', 'ci/.oxlintrc.json', 'static-code-analysis/.oxlintrc.json'])(
     '%s rejects unsafe framework carriers without rejecting bounded or unrelated calls',
     configPath => {
-      const config = resolve(configPath)
       const root = mkdtempSync(join(tmpdir(), 'tooling-timeout-policy-'))
       try {
+        const config = writeFixtureConfig(configPath, root)
         for (const fixture of fixtures) {
           const file = join(root, fixture.path)
           mkdirSync(dirname(file), { recursive: true })
@@ -156,7 +202,15 @@ describe('native tooling Vitest timeout policy', () => {
             .toSorted(),
         ).toEqual(
           fixtures
-            .filter(fixture => fixture.rejected)
+            .filter(
+              fixture =>
+                fixture.rejected &&
+                !(
+                  configPath === '.oxlintrc.json' &&
+                  'excludedFromRootScope' in fixture &&
+                  fixture.excludedFromRootScope
+                ),
+            )
             .map(fixture => fixture.path)
             .toSorted(),
         )
