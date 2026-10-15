@@ -36,6 +36,11 @@ export async function insertClassifierDecisionBatch(
     'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
   >,
 ): Promise<boolean> {
+  // ON CONFLICT (id) does not absorb a concurrent duplicate PostgreSQL reports against a
+  // composite unique index that exists only so a foreign key can reference this batch.
+  await query(sql`/* insertClassifierDecisionBatch:lock */
+    SELECT pg_advisory_xact_lock(hashtextextended('classifier-decision-batch:' || ${input.batchId}::text, 0))
+  `)
   const { rowCount } = await query(sql`
     /* insertClassifierDecisionBatch */
     INSERT INTO classifier_decision_batches (
