@@ -41,6 +41,8 @@ const runtimeConsumerAllowlist: IForbiddenRuleType = {
 
 async function violationsFor(rule: IForbiddenRuleType, entrypoint: string) {
   const result = await cruise([entrypoint], {
+    // This direct-edge rule needs each explicit root's imports, not their dependency graphs.
+    maxDepth: 1,
     moduleSystems: ['es6', 'cjs'],
     ruleSet: { forbidden: [rule] },
     tsConfig: { fileName: 'backend/tsconfig.json' },

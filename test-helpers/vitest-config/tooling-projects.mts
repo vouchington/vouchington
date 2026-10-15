@@ -22,6 +22,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'dev-tools',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts', '.agents/catalog/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
@@ -79,6 +81,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'ci-tools',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['ci/**/*.test.mts', 'test-helpers/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
@@ -89,6 +93,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'github-actions',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['.github/{actions,workflows}/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
@@ -149,6 +155,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'docker-deploy',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: [
         'static-code-analysis/docker-deploy/dockerfile-runtime-cmd.test.mts',
         'static-code-analysis/docker-deploy/dockerfile-prewarm-ports.test.mts',

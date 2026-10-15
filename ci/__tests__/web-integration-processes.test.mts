@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:net'
 import { readFileSync, rmSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -9,7 +11,10 @@ import {
   type ManagedProcess,
   waitForService,
 } from '../../integration-tests/web/helpers/processes.mts'
-import { allocateReservedPorts } from '../../integration-tests/web/helpers/ports.mts'
+import {
+  listenOnFetchSafeEphemeralPort,
+  isFetchSafePort,
+} from '../../integration-tests/web/helpers/ports.mts'
 
 describe('web integration managed processes', () => {
   afterEach(() => {
@@ -88,34 +93,22 @@ describe('web integration managed processes', () => {
   })
 
   it('does not reject when a ready managed process exits later', async () => {
-    const reservation = await releasedReservation()
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     try {
-      await withManagedProcess(
-        startTestProcess('ready-then-exit', [
-          "const http = require('node:http')",
-          String.raw`const server = http.createServer((request, response) => {
-            if (request.url === '/exit') {
-              response.end('closing', () => server.close(() => process.exit(0)))
-              return
-            }
-            response.end('ok')
-          })`,
-          `server.listen(${String(reservation.port)}, '127.0.0.1', () => {`,
-          '})',
-        ]),
-        async managedProcess => {
+      await withManagedHttpProcess(
+        'ready-then-exit',
+        `(request, response) => {
+          if (request.url === '/exit') {
+            response.end('closing', () => server.close(() => process.exit(0)))
+            return
+          }
+          response.end('ok')
+        }`,
+        async (managedProcess, origin) => {
           await expect(
-            waitForService(
-              'backend',
-              `http://127.0.0.1:${String(reservation.port)}/infra/ping`,
-              [200],
-              managedProcess,
-            ),
+            waitForService('backend', `${origin}/infra/ping`, [200], managedProcess),
           ).resolves.toBeUndefined()
-          await expect(
-            fetch(`http://127.0.0.1:${String(reservation.port)}/exit`),
-          ).resolves.toMatchObject({ status: 200 })
+          await expect(fetch(`${origin}/exit`)).resolves.toMatchObject({ status: 200 })
           const exit = await managedProcess.exited
           expect(writtenStderr(stderrSpy)).toContain(
             `${POST_READY_EXIT_MARKER_PREFIX} backend exited unexpectedly after ready: ${formatExitStatus(exit)}`,
@@ -128,23 +121,14 @@ describe('web integration managed processes', () => {
   })
 
   it('suppresses the post-ready exit marker when stop() initiates the exit', async () => {
-    const reservation = await releasedReservation()
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     try {
-      await withManagedProcess(
-        startTestProcess('ready-then-stop', [
-          "const http = require('node:http')",
-          "const server = http.createServer((_request, response) => response.end('ok'))",
-          `server.listen(${String(reservation.port)}, '127.0.0.1')`,
-        ]),
-        async managedProcess => {
+      await withManagedHttpProcess(
+        'ready-then-stop',
+        "(_request, response) => response.end('ok')",
+        async (managedProcess, origin) => {
           await expect(
-            waitForService(
-              'backend',
-              `http://127.0.0.1:${String(reservation.port)}/infra/ping`,
-              [200],
-              managedProcess,
-            ),
+            waitForService('backend', `${origin}/infra/ping`, [200], managedProcess),
           ).resolves.toBeUndefined()
           await managedProcess.stop()
           expect(writtenStderr(stderrSpy)).not.toContain(POST_READY_EXIT_MARKER_PREFIX)
@@ -177,16 +161,99 @@ async function withManagedProcess<T>(
   }
 }
 
-// Reserves a port then immediately releases it so a spawned test child can bind it
-// without racing the harness's own port-allocation bookkeeping.
-async function releasedReservation() {
-  const reservations = await allocateReservedPorts(1)
-  const reservation = reservations[0]
-  if (!reservation) {
-    throw new Error('Failed to allocate a test port')
+// The child binds its own port before publishing it; no reservation is released
+// between parent allocation and child startup, so the kernel range is irrelevant.
+async function withManagedHttpProcess(
+  logFilePrefix: string,
+  handler: string,
+  callback: (managedProcess: ManagedProcess, origin: string) => Promise<void>,
+): Promise<void> {
+  const nonce = randomUUID()
+  let resolvePort!: (port: number) => void
+  let rejectPort!: (err: unknown) => void
+  const portReceipt = new Promise<number>((resolve, reject) => {
+    resolvePort = resolve
+    rejectPort = reject
+  })
+  void portReceipt.catch(() => undefined)
+  const control = createServer(socket => {
+    let message = ''
+    socket.setEncoding('utf8')
+    socket.on('data', (chunk: string) => {
+      message += chunk
+      if (message.length > 1024) rejectPort(new Error('Oversized fixture port receipt'))
+    })
+    socket.once('error', rejectPort)
+    socket.once('end', () => {
+      try {
+        const receipt = JSON.parse(message) as { nonce: string; port: number }
+        if (
+          receipt.nonce !== nonce ||
+          !Number.isInteger(receipt.port) ||
+          receipt.port < 1 ||
+          receipt.port > 65535 ||
+          !isFetchSafePort(receipt.port)
+        ) {
+          throw new Error('Invalid fixture port receipt')
+        }
+        resolvePort(receipt.port)
+      } catch (err) {
+        rejectPort(err)
+      }
+    })
+  })
+  const errors: unknown[] = []
+  let managed: ManagedProcess | undefined
+  try {
+    const controlPort = await listenOnFetchSafeEphemeralPort(control)
+    const portHelper = new URL('../../integration-tests/web/helpers/ports.mts', import.meta.url)
+      .href
+    managed = startTestProcess(logFilePrefix, [
+      "const http = require('node:http')",
+      "const net = require('node:net')",
+      `(async () => {
+        const { listenOnFetchSafeEphemeralPort } = await import(${JSON.stringify(portHelper)})
+        const server = http.createServer(${handler})
+        const port = await listenOnFetchSafeEphemeralPort(server)
+        const receipt = net.createConnection({ host: '127.0.0.1', port: ${controlPort} })
+        receipt.on('error', err => {
+          console.error(err)
+          server.close(() => { process.exitCode = 1 })
+        })
+        receipt.end(JSON.stringify({ nonce: ${JSON.stringify(nonce)}, port }))
+      })().catch(err => { console.error(err); process.exitCode = 1 })`,
+    ])
+    const port = await Promise.race([
+      portReceipt,
+      managed.exited.then(exit => {
+        throw new Error(
+          `HTTP fixture exited before its native port receipt: ${formatExitStatus(exit)}`,
+        )
+      }),
+    ])
+    await callback(managed, `http://127.0.0.1:${port}`)
+  } catch (err) {
+    errors.push(err)
+  } finally {
+    if (managed) {
+      try {
+        await managed.stop()
+      } catch (err) {
+        errors.push(err)
+      }
+    }
+    if (control.listening) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          control.close(err => (err ? reject(err) : resolve()))
+        })
+      } catch (err) {
+        errors.push(err)
+      }
+    }
   }
-  await reservation.release()
-  return reservation
+  if (errors.length)
+    throw new AggregateError(errors, 'HTTP fixture lifecycle failed', { cause: errors[0] })
 }
 
 function writtenStderr(spy: { mock: { calls: unknown[][] } }): string {

@@ -17,6 +17,7 @@ const testDirs: string[] = []
 async function makeTempDir(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'resolve-session-persist-'))
   testDirs.push(dir)
+  await writeFile(join(dir, '.git'), 'gitdir: /synthetic/worktree\n', 'utf8')
   return dir
 }
 

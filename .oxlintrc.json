@@ -1210,7 +1210,11 @@
         "**/.husky/**/*.{mts,ts,tsx}",
         "**/ci/**/*.{mts,ts,tsx}",
         "**/dev/**/*.{mts,ts,tsx}",
-        "**/static-code-analysis/**/*.{mts,ts,tsx}"
+        "**/static-code-analysis/**/*.{mts,ts,tsx}",
+        "**/.pr-shepherd/**/*.{mts,ts,tsx}",
+        "**/.agents/catalog/**/*.{mts,ts,tsx}",
+        "**/.github/{actions,workflows}/**/*.{mts,ts,tsx}",
+        "**/backend/dependency-cruiser-rules/**/*.{mts,ts,tsx}"
       ],
       "rules": {
         "no-mistakes/vitest-timeout-cap": [

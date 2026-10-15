@@ -8,6 +8,31 @@ import config from '../vitest.config.mts'
 const binary = resolve('node_modules/.bin/oxlint')
 const fixtures = [
   {
+    path: '.pr-shepherd/unknown.test.mts',
+    source: "import { it } from 'vitest'; it('unknown', () => {}, Number(process.env.DEADLINE))",
+    rejected: true,
+  },
+  {
+    path: '.agents/catalog/hook.test.mts',
+    source: "import { afterEach } from 'vitest'; afterEach(() => {}, 30001)",
+    rejected: true,
+  },
+  {
+    path: '.github/workflows/deadline.test.mts',
+    source: "import { it as check } from 'vitest'; check('slow', () => {}, 30 * 1000 + 1)",
+    rejected: true,
+  },
+  {
+    path: 'backend/dependency-cruiser-rules/slow.test.mts',
+    source: "import { it } from 'vitest'; it('slow', { timeout: 30001 }, () => {})",
+    rejected: true,
+  },
+  {
+    path: 'backend/dependency-cruiser-rules/bounded.test.mts',
+    source: "import { it } from 'vitest'; it('bounded', { timeout: 30000 }, () => {})",
+    rejected: false,
+  },
+  {
     path: '.husky/alias.test.mts',
     source: "import { it as check } from 'vitest'; check('slow', () => {}, 30 * 1000 + 1)",
     rejected: true,
