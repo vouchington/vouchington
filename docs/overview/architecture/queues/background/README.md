@@ -54,8 +54,8 @@ registry does not know.
 Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
 `story-post-related-url-projections`, `post-publication`, `vote-aggregation`,
 `entity-listeners`, `account-lifecycle`, `article-sync`,
-`oauth-authorization-exchange`, `notifications`, `activitypub`, and
-`follower-distributions`.
+`oauth-authorization-exchange`, `notifications`, `activitypub`,
+`follower-distributions`, `bluesky-follow-propagation`, and `find-your-friends`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.

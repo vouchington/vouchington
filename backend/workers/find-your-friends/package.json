@@ -18,7 +18,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/oauth-facebook": "workspace:^",

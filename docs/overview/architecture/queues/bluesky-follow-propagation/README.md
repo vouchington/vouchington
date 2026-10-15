@@ -11,11 +11,16 @@ function-level detail `reconcileFollow` calls into.
 
 ## Queue
 
-- Queue name: `bluesky-follow-propagation`
+- Domain `bluesky-follow-propagation` of the shared [`background` queue](../background/README.md);
+  job names are `bluesky-follow-propagation.<name>`. The domain is one domain-wide group of 1: every
+  job shares the ordering key `bluesky-follow-propagation` at concurrency 1, so two replicas never
+  run Bluesky-token jobs at once (worker concurrency only bounds one process). The group replaces
+  the old queue-wide `setGlobalConcurrency(1)`, and adds a worker baseline of one.
+  `WORKER_CONCURRENCY_BLUESKY_FOLLOW_PROPAGATION` no longer exists.
 
 ## Jobs
 
-- `reconcileFollow`
+- `bluesky-follow-propagation.reconcileFollow`
   - Data: `{ followerUserId, followeeUserId }`.
   - Calls `reconcileBlueskyFollow` — re-derives desired state from `relation__user__follow__user`
     and compares it against the `bluesky_follow_records` receipt on every run, rather than
@@ -24,12 +29,14 @@ function-level detail `reconcileFollow` calls into.
     collapses a rapid follow/unfollow toggle for the same pair into a single job that reads final
     state once the pair settles, matching `notification-reconcile.mts`'s established
     reconcile-shaped-job convention.
-- `backfillBlueskyFollowPropagation`
-  - Streams reconcile candidates from PostgreSQL (`@services/bluesky-follows`'s
-    `streamBlueskyFollowPropagationCandidateBatches`) and bulk-enqueues `reconcileFollow` jobs.
-    Safe to run at any time — every candidate is reconciled idempotently, so over-inclusion is
-    harmless. `throttle` deduplication, 1h TTL, priority `100`.
-- `disconnectRequested`
+- `bluesky-follow-propagation.backfillBlueskyFollowPropagation`
+  - Enqueues `reconcileFollow` jobs for one page of reconcile candidates (`backfill_batch_size`,
+    keyset on `(follower_user_id, followee_user_id)`, from `@services/bluesky-follows`'s
+    `listBlueskyFollowPropagationCandidatePage`) and, when the page is full, enqueues a
+    continuation job at priority `100` carrying the last pair; its job id is that cursor. Safe to
+    run at any time — every candidate is reconciled idempotently, so over-inclusion is harmless.
+    The first page has `throttle` deduplication, 1h TTL, priority `100`.
+- `bluesky-follow-propagation.disconnectRequested`
   - Data: `{ userId, blueskyDid, linkAuthorizationId }` for one exact credential generation.
   - Runs the idempotent disconnect cleanup after the API has persisted
     `bluesky_linked_accounts.disconnect_requested_at`; retries never re-read a newer generation.
@@ -37,10 +44,11 @@ function-level detail `reconcileFollow` calls into.
   - Removes both completed and terminally failed queue state. PostgreSQL owns the durable intent,
     so the backfill can recreate the same stable job id after retries are exhausted instead of a
     retained GlideMQ job hash blocking recovery.
-- `backfillBlueskyDisconnectRequests`
-  - Streams linked-account rows with durable disconnect intent and bulk-enqueues
-    `disconnectRequested`. This is the recovery path for enqueue loss or a Valkey reset.
-    `throttle` deduplication, 1h TTL, priority `100`.
+- `bluesky-follow-propagation.backfillBlueskyDisconnectRequests`
+  - Enqueues `disconnectRequested` for one page of linked-account rows with durable disconnect
+    intent (`backfill_batch_size`, keyset on `link_authorization_id`) and, when the page is full,
+    continues from the last authorization id at priority `100`. This is the recovery path for
+    enqueue loss or a Valkey reset. The first page has `throttle` deduplication, 1h TTL.
 
 ## Related
 

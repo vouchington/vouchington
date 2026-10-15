@@ -18,27 +18,29 @@ describe('user vouch follow side effects', () => {
 
   beforeEach(async () => {
     ownedVoterId = undefined
-    await blueskyFollowPropagation.obliterate({ force: true })
+    // ActivityPub and Bluesky propagation share the background queue, so one spy sees both.
     const pending: Promise<unknown>[] = []
-    for (const queue of [activitypub, blueskyFollowPropagation]) {
-      const addBulk = queue.addBulk
-      vi.spyOn(queue, 'addBulk').mockImplementation((...args: Parameters<typeof addBulk>) => {
-        const jobs = addBulk.call(queue, ...args)
-        pending.push(jobs)
-        return jobs
-      })
-    }
+    const addBulk = activitypub.addBulk
+    vi.spyOn(activitypub, 'addBulk').mockImplementation((...args: Parameters<typeof addBulk>) => {
+      const jobs = addBulk.call(activitypub, ...args)
+      pending.push(jobs)
+      return jobs
+    })
     settleSideEffects = () => Promise.all(pending).then(() => undefined)
   })
 
   afterEach(async () => {
     vi.mocked(activitypub.addBulk).mockRestore()
-    vi.mocked(blueskyFollowPropagation.addBulk).mockRestore()
     await settleSideEffects()
     const jobs = await readAllQueueJobs(activitypub)
     await Promise.all(
       jobs
-        .filter(job => (job.data as DistributeActivityData).sourceUserId === ownedVoterId)
+        .filter(
+          job =>
+            (job.data as { sourceUserId?: string; followerUserId?: string }).sourceUserId ===
+              ownedVoterId ||
+            (job.data as { followerUserId?: string }).followerUserId === ownedVoterId,
+        )
         .map(job => job.remove()),
     )
   })

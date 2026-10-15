@@ -43,10 +43,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/bloom-filters/workers').then(module => module.bloomFilters),
   },
   {
-    queueName: 'find-your-friends',
-    load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
-  },
-  {
     queueName: 'sitemaps',
     load: () => import('@workers/sitemaps/workers').then(module => module.sitemaps),
   },
@@ -75,12 +71,5 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'kagi-smallweb',
     load: () => import('@workers/kagi-smallweb/workers').then(module => module.kagiSmallWeb),
-  },
-  {
-    queueName: 'bluesky-follow-propagation',
-    load: () =>
-      import('@workers/bluesky-follow-propagation/workers').then(module =>
-        module.createBlueskyFollowPropagationWorker(),
-      ),
   },
 ]

@@ -1,27 +1,19 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import type { FindYourFriendsDispatcherJobs } from '../types.mts'
-import { findYourFriendsQueue } from '../queues.mts'
-import { FIND_YOUR_FRIENDS_DEFAULTS, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { FIND_YOUR_FRIENDS_ENQUEUE_DISPATCH_JOB } from '@queues/background/enqueues/find-your-friends-jobs'
 import { enqueueDispatchFindYourFriends } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'dispatchFindYourFriends',
     repeat: { pattern: '0 3 * * *' },
     template: {
-      name: 'enqueueDispatchFindYourFriends' as FindYourFriendsDispatcherJobs,
+      name: FIND_YOUR_FRIENDS_ENQUEUE_DISPATCH_JOB.name,
       data: {},
-      opts: {
-        attempts: FIND_YOUR_FRIENDS_DEFAULTS.attempts,
-        backoff: FIND_YOUR_FRIENDS_DEFAULTS.backoff,
-        removeOnComplete: FIND_YOUR_FRIENDS_DEFAULTS.removeOnComplete,
-        removeOnFail: FIND_YOUR_FRIENDS_DEFAULTS.removeOnFail,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...FIND_YOUR_FRIENDS_ENQUEUE_DISPATCH_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -35,7 +27,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(findYourFriendsQueue, scheduledJobManifest)
-}

@@ -33,7 +33,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
       ['psql', 'psql', 'psql'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
-      ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['sitemaps', 'sitemaps', 'sitemaps'],
       ['memberships', 'memberships', 'memberships'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
@@ -41,11 +40,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['admin-imports', 'admin-imports', 'adminImports'],
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
       ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
-      [
-        'bluesky-follow-propagation',
-        'bluesky-follow-propagation',
-        'createBlueskyFollowPropagationWorker',
-      ],
     ] as const
     const byQueue = (name: string) =>
       WORKER_DEFINITIONS.find(definition => definition.queueName === name)!

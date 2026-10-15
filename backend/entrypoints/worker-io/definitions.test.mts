@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { upsertSchedules as upsertBloomFilterSchedules } from '@queues/bloom-filters/enqueues/schedules'
-import { upsertSchedules as upsertFindYourFriendsSchedules } from '@queues/find-your-friends/enqueues/schedules'
 import { upsertSchedules as upsertKagiSmallwebSchedules } from '@queues/kagi-smallweb/enqueues/schedules'
 import { upsertSchedules as upsertMembershipSchedules } from '@queues/memberships/enqueues/schedules'
 import { upsertSchedules as upsertEmailSchedules } from '@queues/emails/enqueues/schedules'
@@ -25,7 +24,6 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('emails').load()).resolves.toBe(upsertEmailSchedules)
     await expect(byQueue('psql').load()).resolves.toBe(upsertPsqlSchedules)
     await expect(byQueue('bloom-filters').load()).resolves.toBe(upsertBloomFilterSchedules)
-    await expect(byQueue('find-your-friends').load()).resolves.toBe(upsertFindYourFriendsSchedules)
     await expect(byQueue('sitemaps').load()).resolves.toBe(upsertSitemapSchedules)
     await expect(byQueue('memberships').load()).resolves.toBe(upsertMembershipSchedules)
     await expect(byQueue('kagi-smallweb').load()).resolves.toBe(upsertKagiSmallwebSchedules)

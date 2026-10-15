@@ -15,14 +15,12 @@ import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
-import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { memberships } from '@queues/memberships/queues'
 import { sitemaps } from '@queues/sitemaps/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
 import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
-import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import { ban_evasion as banEvasion } from '@queues/ban-evasion/queues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
@@ -47,7 +45,6 @@ const allQueues = [
   bloomFilters,
   adminImports,
   crawlReferralLinksQueue,
-  findYourFriendsQueue,
   imageUploadsQueue,
   kagiSmallWeb,
   memberships,
@@ -55,7 +52,6 @@ const allQueues = [
   spam_detection,
   aiAgentsQueue,
   spendCapRechecks,
-  blueskyFollowPropagation,
   banEvasion,
   cachePurge,
   crawlBrowserQueue,

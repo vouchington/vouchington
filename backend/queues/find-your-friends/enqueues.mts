@@ -1,93 +1,70 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  FIND_YOUR_FRIENDS_DISPATCH_JOB,
+  FIND_YOUR_FRIENDS_SYNC_FACEBOOK_JOB,
+  FIND_YOUR_FRIENDS_SYNC_GITHUB_JOB,
+  FIND_YOUR_FRIENDS_SYNC_X_JOB,
+} from '@queues/background/enqueues/find-your-friends-jobs'
+import type { BackgroundJobDefinition } from '@queues/background/types'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   getFindYourFriendsWorkLimit,
-  FIND_YOUR_FRIENDS_DEFAULTS,
+  FIND_YOUR_FRIENDS_DEDUPLICATION_TTL_MS,
   FIND_YOUR_FRIENDS_ORDERING,
   FIND_YOUR_FRIENDS_RATE_LIMITS,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
 } from './config.mts'
-import { findYourFriendsQueue } from './queues.mts'
-import type {
-  FriendsDispatchData,
-  FindYourFriendsDispatcherJobs,
-  FindYourFriendsSyncJobs,
-} from './types.mts'
-
-const { attempts, backoff, removeOnComplete, removeOnFail, deduplicationTtlMs } =
-  FIND_YOUR_FRIENDS_DEFAULTS
-
-const defaults = { attempts, backoff, removeOnComplete, removeOnFail } satisfies Partial<JobOptions>
 
 type SyncConfig<TData> = {
-  jobName: FindYourFriendsSyncJobs
+  job: BackgroundJobDefinition<TData>
   buildData: (id: string) => TData
   deduplicationPrefix: string
   ordering: JobOptions['ordering']
 }
 
+// Priority comes from the job definition; the lane and the dedup id are per sync.
 function buildJobOptions(
   deduplicationId: string,
   ordering: JobOptions['ordering'],
-  priority: number,
 ): Partial<JobOptions> {
   return {
-    priority,
     deduplication: {
       id: deduplicationId,
       mode: 'throttle' as const,
-      ttl: deduplicationTtlMs,
+      ttl: FIND_YOUR_FRIENDS_DEDUPLICATION_TTL_MS,
     },
     ordering,
   }
 }
 
 function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
-  const enqueueOne = createEnqueueFunction<TData, FindYourFriendsSyncJobs>({
-    queue: findYourFriendsQueue,
-    queueName: QUEUE_NAME,
-    jobName: config.jobName,
-    defaults,
-  })
-  const enqueueBulk = createBulkEnqueueFunction<string, TData, FindYourFriendsSyncJobs>({
-    queue: findYourFriendsQueue,
-    queueName: QUEUE_NAME,
-    jobName: config.jobName,
-    defaults,
-    buildJob: id => ({
-      data: config.buildData(id),
-      opts: buildJobOptions(
-        `${config.deduplicationPrefix}__${id}`,
-        config.ordering,
-        PRIORITY_DEFAULT,
-      ),
-    }),
-  })
+  const enqueueOne = createBackgroundEnqueue(config.job)
+  const enqueueBulk = createBackgroundBulkEnqueue(config.job, (id: string) => ({
+    data: config.buildData(id),
+    opts: buildJobOptions(`${config.deduplicationPrefix}__${id}`, config.ordering),
+  }))
 
   return {
-    one: async (id: string, priority = PRIORITY_DEFAULT): Promise<void> => {
+    one: async (id: string): Promise<void> => {
       await enqueueOne(
         config.buildData(id),
-        buildJobOptions(`${config.deduplicationPrefix}__${id}`, config.ordering, priority),
+        buildJobOptions(`${config.deduplicationPrefix}__${id}`, config.ordering),
       )
     },
-    bulk: async (ids: string[], priority = PRIORITY_DEFAULT): Promise<void> => {
+    bulk: async (ids: string[]): Promise<void> => {
       const ENQUEUE_BATCH_SIZE = getFindYourFriendsWorkLimit('enqueue_batch_size')
       if (ids.length === 0) return
       for (let i = 0; i < ids.length; i += ENQUEUE_BATCH_SIZE) {
         const batch = ids.slice(i, i + ENQUEUE_BATCH_SIZE)
         // oxlint-disable-next-line no-await-in-loop -- one batch must settle before the next to bound queue enqueue backpressure
-        await enqueueBulk(batch, { priority })
+        await enqueueBulk(batch)
       }
     },
   }
 }
 
 const facebookSync = createSyncEnqueues({
-  jobName: 'syncFacebookFriends',
+  job: FIND_YOUR_FRIENDS_SYNC_FACEBOOK_JOB,
   buildData: facebookUserId => ({ facebookUserId }),
   deduplicationPrefix: 'sync_facebook',
   ordering: {
@@ -97,7 +74,7 @@ const facebookSync = createSyncEnqueues({
 })
 
 const xSync = createSyncEnqueues({
-  jobName: 'syncXFriends',
+  job: FIND_YOUR_FRIENDS_SYNC_X_JOB,
   buildData: xUserId => ({ xUserId }),
   deduplicationPrefix: 'sync_x',
   ordering: {
@@ -107,7 +84,7 @@ const xSync = createSyncEnqueues({
 })
 
 const githubSync = createSyncEnqueues({
-  jobName: 'syncGithubFriends',
+  job: FIND_YOUR_FRIENDS_SYNC_GITHUB_JOB,
   buildData: githubUserId => ({ githubUserId }),
   deduplicationPrefix: 'sync_github',
   ordering: {
@@ -116,15 +93,7 @@ const githubSync = createSyncEnqueues({
   },
 })
 
-const enqueueDispatchFindYourFriendsJob = createEnqueueFunction<
-  FriendsDispatchData,
-  FindYourFriendsDispatcherJobs
->({
-  queue: findYourFriendsQueue,
-  queueName: QUEUE_NAME,
-  jobName: 'dispatchFindYourFriends',
-  defaults,
-})
+const enqueueDispatchFindYourFriendsJob = createBackgroundEnqueue(FIND_YOUR_FRIENDS_DISPATCH_JOB)
 
 export const enqueueSyncFacebookFriends = facebookSync.one
 export const enqueueSyncXFriends = xSync.one
@@ -136,9 +105,6 @@ export const enqueueBulkSyncGithubFriends = githubSync.bulk
 export function enqueueDispatchFindYourFriends(): EnqueueReturnType {
   return enqueueDispatchFindYourFriendsJob(
     {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      deduplication: { id: 'friends-dispatcher', mode: 'simple' },
-    },
+    { deduplication: { id: 'friends-dispatcher', mode: 'simple' } },
   )
 }

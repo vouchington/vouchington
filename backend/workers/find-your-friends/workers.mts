@@ -1,65 +1,62 @@
+import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import {
+  FIND_YOUR_FRIENDS_DISPATCH_JOB,
+  FIND_YOUR_FRIENDS_ENQUEUE_DISPATCH_JOB,
+  FIND_YOUR_FRIENDS_SYNC_FACEBOOK_JOB,
+  FIND_YOUR_FRIENDS_SYNC_GITHUB_JOB,
+  FIND_YOUR_FRIENDS_SYNC_X_JOB,
+} from '@queues/background/enqueues/find-your-friends-jobs'
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
-import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
-import { QUEUE_NAME } from '@queues/find-your-friends/config'
-import { processFindYourFriendsDispatcher } from './processors.mts'
+import { FIND_YOUR_FRIENDS_ORDERING } from '@queues/find-your-friends/config'
 import { syncFacebookFriends } from '@services/oauth-facebook/friends'
-import { syncXFriends } from '@services/oauth-x/friends'
 import { syncGithubFriends } from '@services/oauth-github/friends'
-import type { FindYourFriendsSyncJobs } from '@queues/find-your-friends/types'
+import { syncXFriends } from '@services/oauth-x/friends'
 import type { Job } from 'glide-mq'
+import { processFindYourFriendsDispatcher } from './processors.mts'
 
-export const findYourFriends = createWorker(
-  QUEUE_NAME,
-  (job: Job) => {
-    // oxlint-disable-next-line no-mistakes/async-call-disposition -- glide-mq awaits the value this processor returns.
-    if (job.name === 'enqueueDispatchFindYourFriends') return enqueueDispatchFindYourFriends()
-    if (job.name === 'dispatchFindYourFriends')
-      return processRetainedSweep(job, save =>
-        processFindYourFriendsDispatcher(undefined, job.data, save),
-      )
-    const orderingKey = job.opts.ordering?.key
+type Lane = keyof typeof FIND_YOUR_FRIENDS_ORDERING
 
-    switch (orderingKey) {
-      case 'sync_facebook': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncFacebookFriends': {
-            const facebookUserId = job.data?.facebookUserId
-            if (!facebookUserId) throw new Error('syncFacebookFriends: facebookUserId is required')
-            return syncFacebookFriends(facebookUserId)
-          }
-          default:
-            throw new Error(`find-your-friends sync_facebook job ${job.name} not found`)
-        }
-      }
-      case 'sync_x': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncXFriends': {
-            const xUserId = job.data?.xUserId
-            if (!xUserId) throw new Error('syncXFriends: xUserId is required')
-            return syncXFriends(xUserId)
-          }
-          default:
-            throw new Error(`find-your-friends sync_x job ${job.name} not found`)
-        }
-      }
-      case 'sync_github': {
-        switch (job.name as FindYourFriendsSyncJobs) {
-          case 'syncGithubFriends': {
-            const githubUserId = job.data?.githubUserId
-            if (!githubUserId) throw new Error('syncGithubFriends: githubUserId is required')
-            return syncGithubFriends(githubUserId)
-          }
-          default:
-            throw new Error(`find-your-friends sync_github job ${job.name} not found`)
-        }
-      }
-      default:
-        throw new Error(`Unknown ordering key: ${orderingKey}`)
-    }
-  },
-  {
-    dedicatedCommandClient: true,
-    concurrency: getWorkerConcurrency('findYourFriends', { baseline: 5 }),
-  },
-)
+/**
+ * A sync job runs only in the ordering lane it was enqueued with, because the lane carries that
+ * provider's concurrency and rate limit; a sync job without its lane would run unthrottled.
+ */
+function runInLane<T>(job: Job, lane: Lane, run: () => T): T {
+  const orderingKey = job.opts.ordering?.key
+  if (orderingKey !== FIND_YOUR_FRIENDS_ORDERING[lane].key) {
+    throw new Error(`Unknown ordering key: ${orderingKey}`)
+  }
+  return run()
+}
+
+export const findYourFriendsHandlers = [
+  backgroundHandler(
+    FIND_YOUR_FRIENDS_ENQUEUE_DISPATCH_JOB,
+    // oxlint-disable-next-line no-mistakes/async-call-disposition -- glide-mq awaits the value this handler returns.
+    () => enqueueDispatchFindYourFriends(),
+  ),
+  backgroundHandler(FIND_YOUR_FRIENDS_DISPATCH_JOB, job =>
+    processRetainedSweep(job, save => processFindYourFriendsDispatcher(undefined, job.data, save)),
+  ),
+  backgroundHandler(FIND_YOUR_FRIENDS_SYNC_FACEBOOK_JOB, job =>
+    runInLane(job, 'sync_facebook', () => {
+      const facebookUserId = job.data?.facebookUserId
+      if (!facebookUserId) throw new Error('syncFacebookFriends: facebookUserId is required')
+      return syncFacebookFriends(facebookUserId)
+    }),
+  ),
+  backgroundHandler(FIND_YOUR_FRIENDS_SYNC_X_JOB, job =>
+    runInLane(job, 'sync_x', () => {
+      const xUserId = job.data?.xUserId
+      if (!xUserId) throw new Error('syncXFriends: xUserId is required')
+      return syncXFriends(xUserId)
+    }),
+  ),
+  backgroundHandler(FIND_YOUR_FRIENDS_SYNC_GITHUB_JOB, job =>
+    runInLane(job, 'sync_github', () => {
+      const githubUserId = job.data?.githubUserId
+      if (!githubUserId) throw new Error('syncGithubFriends: githubUserId is required')
+      return syncGithubFriends(githubUserId)
+    }),
+  ),
+]

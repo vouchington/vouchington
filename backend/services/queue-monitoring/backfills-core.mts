@@ -19,6 +19,10 @@ import {
   ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
   ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
+import {
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
+} from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import { FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB } from '@queues/background/enqueues/follower-distributions-jobs'
 import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
@@ -161,16 +165,16 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'bluesky-follow-propagation',
-    queue_name: 'bluesky-follow-propagation',
-    job_name: 'backfillBlueskyFollowPropagation',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB.name,
     description: 'Reconcile follow relationships onto linked Bluesky accounts missing a receipt',
     source_table: 'relation__user__follow__user',
     trigger: createBackfillTrigger(enqueueBackfillBlueskyFollowPropagation),
   },
   {
     id: 'bluesky-disconnect-requests',
-    queue_name: 'bluesky-follow-propagation',
-    job_name: 'backfillBlueskyDisconnectRequests',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB.name,
     description: 'Re-enqueue durable Bluesky disconnect requests that have not been revoked',
     source_table: 'bluesky_linked_accounts',
     trigger: createBackfillTrigger(enqueueBackfillBlueskyDisconnectRequests),

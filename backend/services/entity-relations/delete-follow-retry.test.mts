@@ -33,12 +33,11 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
-    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
   })
 
   afterEach(async () => {
     await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
+    await removeBlueskyReconcileJobs(pendingEnqueues)
     vi.restoreAllMocks()
   })
 
@@ -149,6 +148,12 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
     ).toHaveLength(1)
   })
 })
+
+// The Bluesky reconcile jobs share the background queue with every other domain, so a test removes
+// only the jobs its own enqueues created instead of emptying the queue.
+async function removeBlueskyReconcileJobs(pending: Promise<unknown>[]): Promise<void> {
+  await removeEnqueuedJobs(pending, 'bluesky-follow-propagation.reconcileFollow')
+}
 
 function trackBulkEnqueue(
   queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },

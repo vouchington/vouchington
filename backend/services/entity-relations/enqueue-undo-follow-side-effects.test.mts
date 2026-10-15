@@ -21,6 +21,10 @@ const muteRelation = getEntityRelationMetadataOrThrow({
   predicate: 'mute',
   objectType: 'user',
 })
+// The Bluesky reconcile jobs share the background queue with every other domain: read only the jobs
+// of this file's own follower, and remove only the jobs its enqueues created.
+const RECONCILE_FOLLOW = 'bluesky-follow-propagation.reconcileFollow'
+
 const deletedPair: DeletedFollowPair = {
   subjectId: randomUUID(),
   objectId: randomUUID(),
@@ -37,14 +41,12 @@ describe('enqueueUndoFollowSideEffects', () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
-    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await clearQueues()
   })
 
   afterEach(async () => {
     await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, RECONCILE_FOLLOW)
     vi.restoreAllMocks()
-    await clearQueues()
   })
 
   it('does not enqueue for another relation', async () => {
@@ -52,7 +54,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     await settleEnqueues(pendingEnqueues)
 
     expect(await ownedActivityJobs()).toEqual([])
-    expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
+    expect(await ownedReconcileJobs()).toEqual([])
   })
 
   it('does not enqueue for an empty Follow deletion result', async () => {
@@ -60,7 +62,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     await settleEnqueues(pendingEnqueues)
 
     expect(await ownedActivityJobs()).toEqual([])
-    expect(await readAllQueueJobs(blueskyFollowPropagation)).toEqual([])
+    expect(await ownedReconcileJobs()).toEqual([])
   })
 
   it('enqueues matching ActivityPub UndoFollow and Bluesky reconciliation jobs', async () => {
@@ -78,9 +80,9 @@ describe('enqueueUndoFollowSideEffects', () => {
       targetUserId: deletedPair.objectId,
     })
 
-    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
+    const blueskyJobs = await ownedReconcileJobs()
     expect(blueskyJobs).toHaveLength(1)
-    expect(blueskyJobs[0]?.name).toBe('reconcileFollow')
+    expect(blueskyJobs[0]?.name).toBe(RECONCILE_FOLLOW)
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
       followerUserId: deletedPair.subjectId,
       followeeUserId: deletedPair.objectId,
@@ -100,7 +102,7 @@ describe('enqueueUndoFollowSideEffects', () => {
     await settleEnqueues(pendingEnqueues)
     expect(await ownedActivityJobs(legacyFollowerId)).toEqual([])
 
-    const blueskyJobs = await readAllQueueJobs(blueskyFollowPropagation)
+    const blueskyJobs = await ownedReconcileJobs(legacyFollowerId)
     expect(blueskyJobs).toHaveLength(1)
     expect(blueskyJobs[0]?.data as ReconcileFollowData).toEqual({
       followerUserId: legacyFollowerId,
@@ -109,8 +111,12 @@ describe('enqueueUndoFollowSideEffects', () => {
   })
 })
 
-async function clearQueues(): Promise<void> {
-  await blueskyFollowPropagation.obliterate({ force: true })
+async function ownedReconcileJobs(followerUserId = deletedPair.subjectId) {
+  return (await readAllQueueJobs(blueskyFollowPropagation)).filter(
+    job =>
+      job.name === RECONCILE_FOLLOW &&
+      (job.data as ReconcileFollowData).followerUserId === followerUserId,
+  )
 }
 
 async function ownedActivityJobs(sourceUserId = deletedPair.subjectId) {

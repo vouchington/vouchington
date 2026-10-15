@@ -22,11 +22,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
-    "@services/bluesky-follows": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@services/bluesky-follows": "workspace:^"
   }
 }

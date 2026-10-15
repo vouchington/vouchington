@@ -70,8 +70,10 @@ database trigger enforces the same fence for old application processes during ro
   the same pair, from a queue job, a retry, or a backfill — it never assumes a particular prior
   state, only ever reconciles.
 
-- `disconnect-request.mts` — persists unlink intent and cursor-streams every pending exact
-  generation for the registered recovery backfill.
+- `disconnect-request.mts` — persists unlink intent and lists pending exact generations one keyset
+  page at a time (`listPendingBlueskyDisconnectPage`) for the registered recovery backfill.
+- `backfill.mts` — `listBlueskyFollowPropagationCandidatePage`, one keyset page of reconcile
+  candidate pairs (`backfill_batch_size`) for the follow backfill.
 
 ## Receipt-save failure compensation
 

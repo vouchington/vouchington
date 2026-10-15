@@ -30,12 +30,11 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
-    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
   })
 
   afterEach(async () => {
     await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
+    await removeBlueskyReconcileJobs(pendingEnqueues)
     vi.restoreAllMocks()
   })
 
@@ -84,7 +83,7 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'reconcileFollow' &&
+        job.name === 'bluesky-follow-propagation.reconcileFollow' &&
         (job.data as ReconcileFollowData).followeeUserId === followeeUserId,
     )
   }
@@ -95,7 +94,7 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee], {
       origin: 'remote',
@@ -110,7 +109,7 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     const followee = await createTestUser()
     await upsertEntityRelation(follower, userFollowUserMetadata, follower, [followee])
     await settleEnqueues(pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     await softDeleteEntityRelation(follower, userFollowUserMetadata, follower, [followee])
 
@@ -119,6 +118,12 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
     expect(hasBlueskyReconcileJobFor(jobs, followee.id)).toBe(true)
   })
 })
+
+// The Bluesky reconcile jobs share the background queue with every other domain, so a test removes
+// only the jobs its own enqueues created instead of emptying the queue.
+async function removeBlueskyReconcileJobs(pending: Promise<unknown>[]): Promise<void> {
+  await removeEnqueuedJobs(pending, 'bluesky-follow-propagation.reconcileFollow')
+}
 
 function trackBulkEnqueue(
   queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },

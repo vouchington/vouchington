@@ -40,6 +40,7 @@ const background = combineBackgroundManifests([
   oauthAuthorizationExchange,
   notifications,
   activitypub,
+  findYourFriends,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [
@@ -50,7 +51,6 @@ export const SCHEDULED_JOB_MANIFESTS = [
   crawlDispatch,
   crawlReferralLinks,
   emails,
-  findYourFriends,
   heartbeat,
   contentAnalysis,
   kagiSmallweb,

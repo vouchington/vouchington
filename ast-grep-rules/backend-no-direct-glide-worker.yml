@@ -169,12 +169,12 @@ examples:
 
       export const worker = new Worker('ai_agents', run, { connection })
     isValid: false
-  - file: backend/workers/bluesky-follow-propagation/workers.mts
+  - file: backend/workers/kagi-smallweb/workers.mts
     code: |
       import { createWorker } from '@data-stores/valkey-glide-mq'
       import type { Job } from 'glide-mq'
 
-      export const worker = createWorker('bluesky-follow-propagation', (job: Job) => run(job), {
+      export const worker = createWorker('kagi-smallweb', (job: Job) => run(job), {
         concurrency: 1,
       })
     isValid: true

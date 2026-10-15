@@ -30,7 +30,9 @@
     "@workers/account-lifecycle": "workspace:^",
     "@workers/activitypub": "workspace:^",
     "@workers/article-sync": "workspace:^",
+    "@workers/bluesky-follow-propagation": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
+    "@workers/find-your-friends": "workspace:^",
     "@workers/follower-distributions": "workspace:^",
     "@workers/notifications": "workspace:^",
     "@workers/oauth-authorization-exchange": "workspace:^",
@@ -45,6 +47,7 @@
   "devDependencies": {
     "@modules/activitypub-uris": "workspace:^",
     "@modules/http-signatures": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/activitypub-delivery": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",

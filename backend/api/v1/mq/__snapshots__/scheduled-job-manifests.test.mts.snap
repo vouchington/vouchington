@@ -876,6 +876,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Dispatch "find your friends" social matching",
+        "id": "dispatchFindYourFriends",
+        "kind": "scheduled-jobs",
+        "schedule": "0 3 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "find-your-friends-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 3 * * *",
+    },
+    "schedulerId": "dispatchFindYourFriends",
+    "template": {
+      "data": {},
+      "name": "find-your-friends.enqueueDispatchFindYourFriends",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -1515,43 +1552,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "attempts": 3,
         "backoff": {
           "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch "find your friends" social matching",
-        "id": "dispatchFindYourFriends",
-        "kind": "scheduled-jobs",
-        "schedule": "0 3 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "find-your-friends-dispatch",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "find-your-friends",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 3 * * *",
-    },
-    "schedulerId": "dispatchFindYourFriends",
-    "template": {
-      "data": {},
-      "name": "enqueueDispatchFindYourFriends",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -2882,8 +2882,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch "find your friends" social matching",
     "id": "dispatchFindYourFriends",
-    "job_name": "enqueueDispatchFindYourFriends",
-    "queue_name": "find-your-friends",
+    "job_name": "find-your-friends.enqueueDispatchFindYourFriends",
+    "queue_name": "background",
     "schedule": "0 3 * * *",
     "triggerName": "enqueueDispatchFindYourFriends",
   },

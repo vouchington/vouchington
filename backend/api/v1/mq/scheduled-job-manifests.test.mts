@@ -45,7 +45,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'emails/dispatchCommunityModerationSummaryEmails',
   'emails/dispatchEngagementEmails',
   'background/entityListenerReconciliation',
-  'find-your-friends/dispatchFindYourFriends',
+  'background/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
@@ -99,8 +99,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 18 manifests and 75 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(18)
+  it('imports the exact 17 manifests and 75 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(17)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

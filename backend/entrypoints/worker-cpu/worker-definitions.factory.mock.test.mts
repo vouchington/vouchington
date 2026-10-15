@@ -16,10 +16,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => (
 
 // These set a queue-wide limit before creating the worker. The in-memory test queue has no
 // `setGlobalConcurrency`, so their real-GlideMQ tests cover them instead.
-const NEEDS_QUEUE_WIDE_LIMIT = new Set([
-  'bedrock-embeddings-batch-creation',
-  'bluesky-follow-propagation',
-])
+const NEEDS_QUEUE_WIDE_LIMIT = new Set(['bedrock-embeddings-batch-creation'])
 
 const definitions = WORKER_DEFINITIONS.filter(
   ({ queueName }) => !NEEDS_QUEUE_WIDE_LIMIT.has(queueName),

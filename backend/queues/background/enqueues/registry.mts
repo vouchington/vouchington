@@ -4,7 +4,12 @@ import { ACCOUNT_LIFECYCLE_DOMAIN, ACCOUNT_LIFECYCLE_JOBS } from './account-life
 import { ACTIVITYPUB_DOMAIN } from './activitypub-domain.mts'
 import { ACTIVITYPUB_JOBS } from './activitypub-jobs.mts'
 import { ARTICLE_SYNC_DOMAIN, ARTICLE_SYNC_JOBS } from './article-sync-jobs.mts'
+import {
+  BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
+  BLUESKY_FOLLOW_PROPAGATION_JOBS,
+} from './bluesky-follow-propagation-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
+import { FIND_YOUR_FRIENDS_DOMAIN, FIND_YOUR_FRIENDS_JOBS } from './find-your-friends-jobs.mts'
 import {
   FOLLOWER_DISTRIBUTIONS_DOMAIN,
   FOLLOWER_DISTRIBUTIONS_JOBS,
@@ -41,6 +46,8 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   NOTIFICATIONS_DOMAIN,
   ACTIVITYPUB_DOMAIN,
   FOLLOWER_DISTRIBUTIONS_DOMAIN,
+  BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
+  FIND_YOUR_FRIENDS_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -57,6 +64,8 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...NOTIFICATIONS_JOBS,
   ...ACTIVITYPUB_JOBS,
   ...FOLLOWER_DISTRIBUTIONS_JOBS,
+  ...BLUESKY_FOLLOW_PROPAGATION_JOBS,
+  ...FIND_YOUR_FRIENDS_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))
