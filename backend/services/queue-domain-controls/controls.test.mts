@@ -32,17 +32,19 @@ describe('queue domain controls', () => {
     await queueDomainControlsPubSub.closeSubscriber()
   })
 
-  it('reports an unknown domain as running and lists only domains with a control row', async () => {
+  it('reports an unknown domain as running, alone or among the domains it is listed with', async () => {
     const domain = newDomain()
+    const running = { domain, paused: false, pausedAt: null, pausedBy: null, reason: null }
+    const user = await createTestUser()
+    const paused = newDomain()
+    await pauseQueueDomain(paused, { userId: user.id })
 
-    await expect(getQueueDomainControl(domain)).resolves.toEqual({
-      domain,
-      paused: false,
-      pausedAt: null,
-      pausedBy: null,
-      reason: null,
-    })
-    expect((await listQueueDomainControls()).map(control => control.domain)).not.toContain(domain)
+    await expect(getQueueDomainControl(domain)).resolves.toEqual(running)
+    await expect(listQueueDomainControls([domain, paused])).resolves.toEqual([
+      running,
+      await getQueueDomainControl(paused),
+    ])
+    await expect(listQueueDomainControls([])).resolves.toEqual([])
   })
 
   it('pauses with the staff user and reason, keeps the first pause on a repeat, and resumes', async () => {
@@ -61,7 +63,7 @@ describe('queue domain controls', () => {
     })
     expect(paused.pausedAt).toEqual(expect.any(String))
     expect(repeated).toEqual(paused)
-    expect(await listQueueDomainControls()).toContainEqual(paused)
+    expect(await listQueueDomainControls([domain])).toEqual([paused])
 
     await expect(resumeQueueDomain(domain)).resolves.toMatchObject({ domain, paused: false })
     await expect(getQueueDomainControl(domain)).resolves.toMatchObject({

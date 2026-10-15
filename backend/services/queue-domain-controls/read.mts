@@ -23,16 +23,19 @@ export function runningQueueDomainControl(domain: string): QueueDomainControl {
   return { domain, paused: false, pausedAt: null, pausedBy: null, reason: null }
 }
 
-/** Every domain's control row; a domain with no row is running. One row per registered domain at most. */
-export async function listQueueDomainControls(): Promise<QueueDomainControl[]> {
+/** One control per requested domain, in the order given; a domain with no row is running. */
+export async function listQueueDomainControls(
+  domains: readonly string[],
+): Promise<QueueDomainControl[]> {
   const { rows } = await read<QueueDomainControlRow>(
     sql`/* listQueueDomainControls */
       SELECT domain, paused_at, paused_by_user_id, reason
       FROM queue_domain_controls
-      ORDER BY domain
+      WHERE domain = ANY(${domains})
     `,
   )
-  return rows.map(toQueueDomainControl)
+  const controls = new Map(rows.map(row => [row.domain, toQueueDomainControl(row)]))
+  return domains.map(domain => controls.get(domain) ?? runningQueueDomainControl(domain))
 }
 
 export async function getQueueDomainControl(domain: string): Promise<QueueDomainControl> {

@@ -12,8 +12,10 @@ import {
   updatePostModerationData,
 } from '@voucha/test-helpers'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
 import { listUnmoderatedImageIdPage, listUnmoderatedPostIdPage } from '../backfill.mts'
+import { openaiModerationWorkConfig } from '../work-limits.mts'
 
 describe('openai-moderation backfill pages', () => {
   let user: PrivateUser
@@ -83,5 +85,25 @@ describe('openai-moderation backfill pages', () => {
     expect(ids.has(completedUnmoderated)).toBe(true)
     expect(ids.has(pending)).toBe(false)
     expect(ids.has(moderated)).toBe(false)
+  })
+
+  it('starts from the first id without a cursor and reports a full page as having more', async () => {
+    await createTestPost({ user })
+    const image = await insertPendingTestImage(user.id)
+    await updateImageStatus(image, 'complete')
+    const restore = overrideDynamicConfigFieldsForTest(openaiModerationWorkConfig, {
+      backfill_batch_size: 1,
+    })
+    try {
+      const posts = await listUnmoderatedPostIdPage()
+      const images = await listUnmoderatedImageIdPage()
+
+      expect(posts.ids).toHaveLength(1)
+      expect(posts.hasMore).toBe(true)
+      expect(images.ids).toHaveLength(1)
+      expect(images.hasMore).toBe(true)
+    } finally {
+      restore()
+    }
   })
 })

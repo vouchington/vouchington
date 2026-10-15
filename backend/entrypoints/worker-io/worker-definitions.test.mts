@@ -89,6 +89,16 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     }
   })
 
+  it('background definition load builds the shared worker over every domain handler', async () => {
+    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'background')!
+    const worker = await definition.load()
+    try {
+      expect(worker).toBeDefined()
+    } finally {
+      await worker.close()
+    }
+  })
+
   it('cache-purge definition load resolves to the cachePurge worker', async () => {
     const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'cache-purge')!
     const worker = await definition.load()

@@ -12,8 +12,8 @@ A domain with no row, or a null `paused_at`, runs. Pause history is in `moderato
 - `pauseQueueDomain(domain, { userId, reason })` - pauses; a repeat keeps the first pause's time,
   user, and reason.
 - `resumeQueueDomain(domain)` - clears the pause columns and keeps the row.
-- `getQueueDomainControl(domain)` / `listQueueDomainControls()` - reads, with a missing row reported
-  as running.
+- `getQueueDomainControl(domain)` / `listQueueDomainControls(domains)` - reads one control per
+  requested domain, with a missing row reported as running.
 - `isQueueDomainPaused(domain)` - the worker's cached read.
 - `watchQueueDomainControls(onInvalidated?)` - subscribes a process to pause changes.
 - `invalidateQueueDomainPause(domain)` - drops one cached entry.

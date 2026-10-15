@@ -14,7 +14,6 @@ import {
   listQueueDomainControls,
   pauseQueueDomain,
   resumeQueueDomain,
-  runningQueueDomainControl,
   type QueueDomainControl,
 } from '@services/queue-domain-controls'
 import type { PrivateUser } from '@services/users/types'
@@ -50,12 +49,12 @@ export async function listManagedQueueDomains(queueName: string) {
   const cap = getDomainStatsScanCap()
   const shared = await readSharedStates(background, cap)
   const controls = new Map(
-    (await listQueueDomainControls()).map(control => [control.domain, control]),
+    (await listQueueDomainControls(BACKGROUND_DOMAINS)).map(control => [control.domain, control]),
   )
   const domains = await pMap(
     BACKGROUND_DOMAINS,
     async (domain): Promise<ManagedQueueDomain> => ({
-      ...toManagedControl(controls.get(domain) ?? runningQueueDomainControl(domain)),
+      ...toManagedControl(controls.get(domain)!),
       ...(await countDomainJobs(background, domain, cap, shared)),
     }),
     { concurrency: DOMAIN_SCAN_CONCURRENCY },
