@@ -47998,7 +47998,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -48009,7 +48009,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -48020,8 +48020,19 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
+        },
+        "email_domain_hostname_id": {
+          "collation": null,
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -48034,17 +48045,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "email_domain_hostname_id": {
-          "collation": null,
-          "comment": "Resolved provider email domain hostname identity for policy reads.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
         "linkedin_user_data": {
           "collation": null,
           "comment": "Raw JSONB profile data from LinkedIn OAuth.",
@@ -48053,7 +48053,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "linkedin_user_email_address": {
@@ -48086,7 +48086,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "updated_at": {
@@ -48097,7 +48097,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -60067,7 +60067,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -60078,7 +60078,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -60089,8 +60089,19 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
+        },
+        "email_domain_hostname_id": {
+          "collation": null,
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -60103,17 +60114,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "email_domain_hostname_id": {
-          "collation": null,
-          "comment": "Resolved provider email domain hostname identity for policy reads.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
         "microsoft_user_data": {
           "collation": null,
           "comment": "Raw JSONB profile data from Microsoft OAuth.",
@@ -60122,7 +60122,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "microsoft_user_email_address": {
@@ -60155,7 +60155,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "updated_at": {
@@ -60166,7 +60166,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "user_id": {

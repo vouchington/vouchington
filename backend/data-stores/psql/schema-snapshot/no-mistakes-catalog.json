@@ -50262,7 +50262,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "access_token_expires_at": {
           "comment": "When the access token expires.",
@@ -50272,7 +50272,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -50282,17 +50282,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
-        },
-        "id": {
-          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 10
         },
         "email_domain_hostname_id": {
           "comment": "Resolved provider email domain hostname identity for policy reads.",
@@ -50304,6 +50294,16 @@
           "nullable": true,
           "ordinalPosition": 5
         },
+        "id": {
+          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
         "linkedin_user_data": {
           "comment": "Raw JSONB profile data from LinkedIn OAuth.",
           "dataType": "jsonb",
@@ -50312,7 +50312,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "linkedin_user_email_address": {
           "comment": "Email address from the LinkedIn profile.",
@@ -50342,7 +50342,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -50352,7 +50352,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -63148,7 +63148,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "access_token_expires_at": {
           "comment": "When the access token expires.",
@@ -63158,7 +63158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -63168,17 +63168,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
-        },
-        "id": {
-          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 10
         },
         "email_domain_hostname_id": {
           "comment": "Resolved provider email domain hostname identity for policy reads.",
@@ -63190,6 +63180,16 @@
           "nullable": true,
           "ordinalPosition": 5
         },
+        "id": {
+          "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
         "microsoft_user_data": {
           "comment": "Raw JSONB profile data from Microsoft OAuth.",
           "dataType": "jsonb",
@@ -63198,7 +63198,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "microsoft_user_email_address": {
           "comment": "Email address from the Microsoft profile.",
@@ -63228,7 +63228,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -63238,7 +63238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
