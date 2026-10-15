@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createServer, connect } from 'node:net'
 import { advisoryLockPool, readPool, writePool } from './setup.mts'
-import { getRegisteredPsqlPoolSocketHandles } from '../../../test-helpers/vitest-fork-leak-diagnostics.mts'
+
+type PsqlPoolSocketHandles = { active: ReadonlySet<object>; owned: ReadonlySet<object> }
 
 describe('PostgreSQL pool metrics', () => {
   it('reports the initialized write, read, and advisory pools', () => {
@@ -59,4 +60,11 @@ function expectedPoolMetrics(pool: import('pg').Pool) {
     nonIdleOrConnecting: pool.totalCount - pool.idleCount,
     waiting: pool.waitingCount,
   }
+}
+
+function getRegisteredPsqlPoolSocketHandles(): PsqlPoolSocketHandles | null {
+  const provider = (
+    globalThis as typeof globalThis & Record<symbol, (() => PsqlPoolSocketHandles) | undefined>
+  )[Symbol.for('vitest-fork-leak-psql-pool-socket-handles')]
+  return provider?.() ?? null
 }
