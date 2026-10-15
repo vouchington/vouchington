@@ -86654,11 +86654,11 @@
         "created_at": {
           "comment": "When the domain was first paused.",
           "dataType": "timestamp with time zone",
-          "defaultExpression": "clock_timestamp()",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 6
         },
         "domain": {

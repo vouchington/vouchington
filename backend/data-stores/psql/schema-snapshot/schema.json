@@ -82459,11 +82459,11 @@
         "created_at": {
           "collation": null,
           "comment": "When the domain was first paused.",
-          "defaultExpression": "clock_timestamp()",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },

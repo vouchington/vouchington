@@ -6,15 +6,15 @@ Operator pause state of each background-queue domain. A missing row or a null pa
 
 Not partitioned — growth: bounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                              |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`          |          |           |           | Surrogate identifier; the domain is the natural key.                                                 |
-| `domain`            | `text`                     | no       |                     |          |           |           | Background-queue domain identifier from the application registry, lowercase words joined by hyphens. |
-| `paused_at`         | `timestamp with time zone` | yes      |                     |          |           |           | When the operator paused the domain. Null while the domain runs.                                     |
-| `paused_by_user_id` | `uuid`                     | yes      |                     |          |           |           | Staff user who paused the domain. Null while running, or after that user was deleted.                |
-| `reason`            | `text`                     | yes      |                     |          |           |           | Operator note explaining the pause. Null while running or when no note was given.                    |
-| `created_at`        | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | When the domain was first paused.                                                                    |
-| `updated_at`        | `timestamp with time zone` | no       | `clock_timestamp()` |          |           |           | Last pause or resume. Maintained by trigger.                                                         |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                              |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Surrogate identifier; the domain is the natural key.                                                 |
+| `domain`            | `text`                     | no       |                              |          |           |           | Background-queue domain identifier from the application registry, lowercase words joined by hyphens. |
+| `paused_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the operator paused the domain. Null while the domain runs.                                     |
+| `paused_by_user_id` | `uuid`                     | yes      |                              |          |           |           | Staff user who paused the domain. Null while running, or after that user was deleted.                |
+| `reason`            | `text`                     | yes      |                              |          |           |           | Operator note explaining the pause. Null while running or when no note was given.                    |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When the domain was first paused.                                                                    |
+| `updated_at`        | `timestamp with time zone` | no       | `clock_timestamp()`          |          |           |           | Last pause or resume. Maintained by trigger.                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
