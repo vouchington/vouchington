@@ -1,9 +1,15 @@
-import { write, read, registerPostCommitAction, withTransactionOptions } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
-import { invalidate } from '@services/entity-cache/invalidate'
+import {
+  beginTransaction,
+  write,
+  read,
+  registerPostCommitAction,
+  withTransactionOptions,
+} from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 export type HostnameProvenance = 'public' | 'private_email'
-
 export function normalizeUrlHostname(value: string): string {
   try {
     return new URL(
@@ -13,20 +19,48 @@ export function normalizeUrlHostname(value: string): string {
     return value
   }
 }
-
-export const upsertUrlHostnames = async (
+export async function upsertUrlHostnames(
   userId: string | null,
   hostnames: string[],
   options: QueryOptions = {},
   provenance: HostnameProvenance = 'public',
-): Promise<Map<string, string>> => {
+): Promise<Map<string, string>> {
+  if (options.query) return upsertUrlHostnamesWithQuery(userId, hostnames, options, provenance)
+  if (options.client)
+    return withTransactionOptions(options, query =>
+      upsertUrlHostnamesWithQuery(userId, hostnames, { query }, provenance),
+    )
+  await using transaction = await beginTransaction()
+  const result = await upsertUrlHostnamesWithQuery(
+    userId,
+    hostnames,
+    { query: transaction },
+    provenance,
+  )
+  await transaction.commit()
+  return result
+}
+/** The following staff block owns invalidation for these hostnames in this transaction. */
+export async function upsertUrlHostnamesForBlocking(
+  userId: string,
+  hostnames: string[],
+  query: TransactionQuery,
+): Promise<Map<string, string>> {
+  return upsertUrlHostnamesWithQuery(userId, hostnames, { query }, 'public', false)
+}
+async function upsertUrlHostnamesWithQuery(
+  userId: string | null,
+  hostnames: string[],
+  options: QueryOptions,
+  provenance: HostnameProvenance,
+  enqueueOwnInvalidation = true,
+): Promise<Map<string, string>> {
   const normalizedHostnames = [...new Set(hostnames.flat(Infinity).map(normalizeUrlHostname))]
 
   if (normalizedHostnames.length === 0) {
     return new Map()
   }
 
-  // Read-then-write pattern: check which hostnames already exist (from replica)
   const existingResult = await read(
     `/* upsertUrlHostnames */
     SELECT id, hostname FROM url_hostnames
@@ -40,7 +74,6 @@ export const upsertUrlHostnames = async (
     existingResult.rows.map(row => [row.hostname, row.id]),
   )
 
-  // Filter: only insert missing hostnames
   const missingHostnames = normalizedHostnames.filter(hostname => !existingMap.has(hostname))
 
   let promotedRows: Array<{ id: string; hostname: string }> = []
@@ -58,7 +91,7 @@ export const upsertUrlHostnames = async (
   }
 
   if (missingHostnames.length === 0) {
-    await invalidateChangedHostnames(promotedRows, options)
+    if (enqueueOwnInvalidation) await enqueueChangedHostnames(promotedRows, options)
     return existingMap // All exist, skip write
   }
 
@@ -121,10 +154,7 @@ export const upsertUrlHostnames = async (
     options,
   )
 
-  // A conflict can return an already blocked feed-only hostname after a replica miss.
-  // Only an actual insert can have inherited a parent block from this statement.
-  // For newly-inserted hostnames that inherited a block from a parent hostname,
-  // insert a url_hostname_blocks row so the trigger keeps url_hostnames.is_blocked in sync.
+  // Only new rows can inherit parent blocks; record those blocks for trigger consistency.
   const inheritedBlockedIds: string[] = []
   for (const row of newRows) {
     if (row.inserted && row.is_blocked) inheritedBlockedIds.push(row.id)
@@ -148,21 +178,21 @@ export const upsertUrlHostnames = async (
     )
   }
 
-  // Merge existing and new
   newRows.forEach(row => existingMap.set(row.hostname, row.id))
-  await invalidateChangedHostnames([...promotedRows, ...newRows], options)
+  if (enqueueOwnInvalidation) await enqueueChangedHostnames([...promotedRows, ...newRows], options)
   return existingMap
 }
 
-async function invalidateChangedHostnames(
+async function enqueueChangedHostnames(
   changed: Array<{ id: string; hostname: string }>,
   options: QueryOptions,
 ): Promise<void> {
   if (changed.length === 0) return
-  const action = () => invalidate.url_hostnames(...changed)
-  if (options.query || options.client) {
-    await withTransactionOptions(options, async query => registerPostCommitAction(query, action))
-    return
-  }
-  await action()
+  await withTransactionOptions(options, async query => {
+    const hostnameIds = [...new Set(changed.map(row => row.id))]
+    await enqueueHostnameCacheInvalidation(query, hostnameIds)
+    registerPostCommitAction(query, async () => {
+      await drainHostnameCacheInvalidationWork({ hostnameIds })
+    })
+  })
 }

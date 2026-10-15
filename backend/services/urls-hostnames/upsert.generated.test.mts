@@ -10,6 +10,12 @@ import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { createTestUser } from '@voucha/test-helpers'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
+import {
+  failNextHostnameCacheDeleteForTest,
+  getHostnameCacheInvalidationWorkForTest,
+  makeHostnameCacheInvalidationAvailableForTest,
+} from '@voucha/test-helpers/hostname-cache-invalidation'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -201,5 +207,31 @@ describe('upsert.generated', () => {
     })
 
     expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeTruthy()
+  })
+
+  it('retains a committed public promotion for cache retry after eviction fails', async () => {
+    const domain = `email-cache-retry-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+
+    const restoreFailure = failNextHostnameCacheDeleteForTest(hostnameId)
+    try {
+      await upsertUrlHostnames(null, [domain])
+    } finally {
+      restoreFailure()
+    }
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
+      lease_token: null,
+      attempt_count: 1,
+    })
+    await makeHostnameCacheInvalidationAvailableForTest(hostnameId)
+    expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] })).toBe(1)
+    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeInstanceOf(
+      Date,
+    )
   })
 })
