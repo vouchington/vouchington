@@ -1,0 +1,4309 @@
+{
+  "baselineCommit": "65fb7b2cf",
+  "source": "meta.api and tool input fields in api-fixtures/v1/mcp.json at 65fb7b2cf; shared-route body projections audited against its handlers and REST twins",
+  "facts": {
+    "F01": {
+      "scopes": ["moderation:agent-votes", "moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F02": {
+      "scopes": ["account-enforcement:penalize", "account-enforcement:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F03": {
+      "scopes": ["editorial:read", "editorial:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F04": {
+      "scopes": ["editorial:read", "editorial:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      }
+    },
+    "F05": {
+      "scopes": ["account-enforcement:read", "account-enforcement:suspend"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F06": {
+      "scopes": ["account-enforcement:read", "account-enforcement:vote-weight"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F07": {
+      "scopes": ["analytics:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F08": {
+      "scopes": ["editorial:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F09": {
+      "scopes": ["moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F10": {
+      "scopes": ["appeals:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F11": {
+      "scopes": ["copyright-notices:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F12": {
+      "scopes": ["disputes:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F13": {
+      "scopes": ["site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F14": {
+      "scopes": ["account-enforcement:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F15": {
+      "scopes": ["posts:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F16": {
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F17": {
+      "scopes": ["site-operations:config", "site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F18": {
+      "scopes": ["account-enforcement:read", "account-enforcement:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F19": {
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F20": {
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F21": {
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F22": {
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F23": {
+      "scopes": ["moderation:ai-rerun", "moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    "F24": {
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F25": {
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F26": {
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F27": {
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F28": {
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F29": {
+      "scopes": ["site-operations:jobs", "site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    "F30": {
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F31": {
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    "F32": {
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    "F33": {
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    "F34": {
+      "scopes": ["bookmarks:read", "bookmarks:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F35": {
+      "scopes": ["communities:read", "communities:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F36": {
+      "scopes": ["entity-relations:read", "entity-relations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F37": {
+      "scopes": ["lists:read", "lists:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F38": {
+      "scopes": ["cards:read", "cards:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F39": {
+      "scopes": ["notifications:read", "notifications:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F40": {
+      "scopes": ["profile:read", "profile:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F41": {
+      "scopes": ["point-valuations:read", "point-valuations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F42": {
+      "scopes": ["rewards-statuses:read", "rewards-statuses:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F43": {
+      "scopes": ["spending:read", "spending:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F44": {
+      "scopes": ["posts:read", "posts:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F45": {
+      "scopes": ["referral-links:read", "referral-links:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F46": {
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F47": {
+      "scopes": ["communities:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F48": {
+      "scopes": ["reference-data:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F49": {
+      "scopes": ["feeds:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F50": {
+      "scopes": ["hostnames:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F51": {
+      "scopes": ["lists:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F52": {
+      "scopes": ["cards:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F53": {
+      "scopes": ["profile:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F54": {
+      "scopes": ["preferences:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F55": {
+      "scopes": ["financial-profile:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F56": {
+      "scopes": ["notifications:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F57": {
+      "scopes": ["point-valuations:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F58": {
+      "scopes": ["rewards-statuses:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F59": {
+      "scopes": ["spending:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F60": {
+      "scopes": ["recommendations:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F61": {
+      "scopes": ["referral-links:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F62": {
+      "scopes": ["rss-feed-items:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F63": {
+      "scopes": ["rss-feeds:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F64": {
+      "scopes": ["topic-recommendations:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F65": {
+      "scopes": ["topics:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F66": {
+      "scopes": ["users:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F67": {
+      "scopes": ["web-search:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F68": {
+      "scopes": ["lists:read", "lists:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F69": {
+      "scopes": ["preferences:read", "preferences:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F70": {
+      "scopes": ["profile:read", "profile:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F71": {
+      "scopes": ["notifications:read", "notifications:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F72": {
+      "scopes": ["entity-relations:read", "entity-relations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F73": {
+      "scopes": ["entity-relations:read", "entity-relations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F74": {
+      "scopes": ["posts:read", "posts:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F75": {
+      "scopes": ["referral-links:read", "referral-links:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F76": {
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    "F77": {
+      "scopes": ["appeals:read", "appeals:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F78": {
+      "scopes": ["communities:read", "communities:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F79": {
+      "scopes": ["communities:read", "communities:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F80": {
+      "scopes": ["posts:read", "posts:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F81": {
+      "scopes": ["disputes:read", "disputes:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F82": {
+      "scopes": ["lists:read", "lists:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F83": {
+      "scopes": ["profile:read", "profile:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F84": {
+      "scopes": ["referral-links:read", "referral-links:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F85": {
+      "scopes": ["referral-links:read", "referral-links:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    "F86": {
+      "scopes": ["reports:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F87": {
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F88": {
+      "scopes": ["financial-profile:read", "financial-profile:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    }
+  },
+  "inputs": {
+    "I001": [["id"]],
+    "I002": [["category_text"]],
+    "I003": [["item_id", "story_id"]],
+    "I004": [["userId"]],
+    "I005": [["after", "limit"]],
+    "I006": [["page_id"]],
+    "I007": [["range"]],
+    "I008": [["action_type", "actor_user_id", "after", "community_id", "limit"]],
+    "I009": [[]],
+    "I010": [["after", "limit", "user_id"]],
+    "I011": [["after", "limit", "userId"]],
+    "I012": [["after", "limit", "status"]],
+    "I013": [["appeal_id"]],
+    "I014": [["job_id"]],
+    "I015": [["after", "id", "limit"]],
+    "I016": [["after", "hostname_id", "limit", "referral_program_id"]],
+    "I017": [["dispute_id"]],
+    "I018": [["namespace"]],
+    "I019": [["batch_id"]],
+    "I020": [["after", "limit", "source_flag_id", "status", "user_id"]],
+    "I021": [["after", "before", "cluster", "limit", "sort", "status"]],
+    "I022": [["after", "exclude_item_id", "limit", "story_id"]],
+    "I023": [["after", "limit", "source", "source_flag_id", "status", "user_id"]],
+    "I024": [["id", "internal_notes", "public_response"]],
+    "I025": [["id", "updates"]],
+    "I026": [["config", "namespace"]],
+    "I027": [["id", "resolution"]],
+    "I028": [["id", "status"]],
+    "I029": [["story_id", "title"]],
+    "I030": [["id", "rejection_reason"]],
+    "I031": [["id", "revocation_reason"]],
+    "I032": [["communityId", "publicMessage", "reason", "reportId", "resolveReport", "userId"]],
+    "I033": [["action", "id"]],
+    "I034": [
+      [
+        "claimant_contact",
+        "claimant_display_name",
+        "claimant_email",
+        "electronic_signature",
+        "has_accuracy_authority_under_penalty_of_perjury",
+        "has_good_faith_belief",
+        "intake_id",
+        "jurisdiction",
+        "manual_fallback_reason",
+        "rationale",
+        "recommendation_id",
+        "targets",
+        "work_description"
+      ]
+    ],
+    "I035": [["intake_id", "kind", "rationale"]],
+    "I036": [["intake_id", "kind", "rationale", "target_ids"]],
+    "I037": [["intake_id", "rationale"]],
+    "I038": [["id", "is_accepted", "rationale"]],
+    "I039": [["id", "rationale", "resolution_kind"]],
+    "I040": [["id", "intentId", "rationale"]],
+    "I041": [["capabilityId", "id", "rationale"]],
+    "I042": [["action", "id", "rationale", "restrictionId"]],
+    "I043": [["accountUserId", "rationale"]],
+    "I044": [["disposition", "id", "rationale"]],
+    "I045": [["id", "outcome", "rationale"]],
+    "I046": [["decisions", "id", "manual_fallback_reason", "rationale", "recommendation_id"]],
+    "I047": [
+      [
+        "ccb_claim_kind",
+        "commenced_at",
+        "id",
+        "is_from_original_claimant",
+        "is_same_material",
+        "proceeding_kind",
+        "rationale",
+        "received_by_designated_agent_at",
+        "target_ids"
+      ]
+    ],
+    "I048": [["action", "body_text", "id"]],
+    "I049": [["csv"]],
+    "I050": [["name"]],
+    "I051": [["id", "private_note", "reason_code", "status"]],
+    "I052": [["category_text", "topic_id"]],
+    "I053": [["body", "community_id", "userId"]],
+    "I054": [["choice", "id"]],
+    "I055": [
+      [
+        "content_selectors",
+        "crawler_type",
+        "css_selectors_to_remove",
+        "hostname_id",
+        "referral_program_id"
+      ]
+    ],
+    "I056": [["reason", "userId"]],
+    "I057": [["userId", "weight"]],
+    "I058": [["entity_id", "entity_type", "predicate"]],
+    "I059": [["community_id"]],
+    "I060": [["list_id"]],
+    "I061": [["entity_id", "item_type", "list_id"]],
+    "I062": [
+      [
+        "action",
+        "authorized_user_of_card_id",
+        "card_topic_id",
+        "closed_on",
+        "credit_limit",
+        "id",
+        "is_authorized_user",
+        "note",
+        "opened_on",
+        "received_sign_up_bonus_on"
+      ]
+    ],
+    "I063": [["notification_id"]],
+    "I064": [["link_id"]],
+    "I065": [["action", "id", "note", "rewards_program_id", "value_per_point"]],
+    "I066": [["action", "expires_on", "id", "rewards_program_status_topic_id", "started_on"]],
+    "I067": [
+      ["action", "amount", "id", "note", "spending_category_topic_id", "spending_frequency"]
+    ],
+    "I068": [["after", "limit", "q", "sort"]],
+    "I069": [["after", "community_id", "item_type", "limit"]],
+    "I070": [["after", "community_id", "limit", "role"]],
+    "I071": [["after", "community_id", "limit", "q", "sort"]],
+    "I072": [
+      [
+        "after",
+        "community",
+        "feed_type",
+        "limit",
+        "min_score_follow_topics",
+        "min_score_follow_users",
+        "post_types",
+        "q",
+        "sort",
+        "text_search_query",
+        "time_range"
+      ]
+    ],
+    "I073": [["after", "feed_type", "limit"]],
+    "I074": [
+      [
+        "after",
+        "community",
+        "feed_type",
+        "has_related_posts",
+        "limit",
+        "media_types",
+        "min_score_follow_rss_feeds",
+        "min_score_follow_topics",
+        "q",
+        "text_search_query",
+        "time_range"
+      ]
+    ],
+    "I075": [["after", "hostname", "limit", "query", "sort", "topic"]],
+    "I076": [["after", "limit", "topic"]],
+    "I077": [["after", "limit", "list_id", "media_type"]],
+    "I078": [["entity_id", "item_type"]],
+    "I079": [
+      [
+        "cards_after",
+        "cards_limit",
+        "point_valuations_after",
+        "point_valuations_limit",
+        "rewards_program_statuses_after",
+        "rewards_program_statuses_limit"
+      ]
+    ],
+    "I080": [
+      [
+        "after",
+        "limit",
+        "post_type",
+        "q",
+        "search",
+        "semantic_search_query",
+        "similar_post_id",
+        "similar_rss_feed_item_id",
+        "similar_topic_id",
+        "sort",
+        "text_search_query"
+      ]
+    ],
+    "I081": [["post_id"]],
+    "I082": [["after", "limit", "post_id"]],
+    "I083": [["limit"]],
+    "I084": [["after", "limit", "referral_program_id"]],
+    "I085": [
+      [
+        "after",
+        "limit",
+        "media_type",
+        "q",
+        "read",
+        "rss_feed_id",
+        "search",
+        "semantic_search_query",
+        "similar_post_id",
+        "similar_rss_feed_item_id",
+        "similar_topic_id",
+        "text_search_query"
+      ]
+    ],
+    "I086": [["rss_feed_item_id"]],
+    "I087": [["after", "limit", "rss_feed_item_id"]],
+    "I088": [
+      [
+        "after",
+        "apply_mutes",
+        "discoverable",
+        "enabled",
+        "feed_type",
+        "limit",
+        "q",
+        "text_search_query"
+      ]
+    ],
+    "I089": [["rss_feed_id"]],
+    "I090": [["after", "limit", "rss_feed_id"]],
+    "I091": [["crawl_id", "rss_feed_id"]],
+    "I092": [["after", "limit", "source"]],
+    "I093": [["after", "limit", "min_score", "time_range"]],
+    "I094": [
+      [
+        "after",
+        "limit",
+        "q",
+        "search",
+        "semantic_search_query",
+        "similar_post_id",
+        "similar_rss_feed_item_id",
+        "similar_topic_id",
+        "text_search_query"
+      ]
+    ],
+    "I095": [["topic_id"]],
+    "I096": [["children_after", "children_limit", "hierarchy", "topic_id"]],
+    "I097": [["topic_id_a", "topic_id_b", "vertical"]],
+    "I098": [["after", "limit", "post_type", "time_range", "topic_id"]],
+    "I099": [["after", "limit", "time_range"]],
+    "I100": [["after", "limit", "q"]],
+    "I101": [["user_id"]],
+    "I102": [["limit", "query"]],
+    "I103": [["description", "list_id", "name", "visibility"]],
+    "I104": [
+      [
+        "community_digest_frequency",
+        "is_engagement_emails_enabled",
+        "is_moderation_emails_enabled",
+        "moderation_email_cadence",
+        "moderation_email_days_of_week",
+        "moderation_email_time_of_day",
+        "moderation_email_timezone",
+        "news_digest_frequency"
+      ]
+    ],
+    "I105": [["profile_image_id", "use_display_name_from"]],
+    "I106": [["markdown"]],
+    "I107": [["handle", "link_id", "name", "url"]],
+    "I108": [
+      ["action", "entity_id", "entity_type", "object_id", "object_type", "predicate"],
+      ["action", "post_id", "tag"]
+    ],
+    "I109": [["action", "post_id", "tag"]],
+    "I110": [
+      [
+        "ai_summary_markdown",
+        "archive",
+        "broadcast",
+        "categories",
+        "data_point_vertical",
+        "declared_language",
+        "id",
+        "is_anonymous",
+        "markdown",
+        "privacy",
+        "slug",
+        "structured_data",
+        "title"
+      ]
+    ],
+    "I111": [["label", "link_id"]],
+    "I112": [
+      [
+        "example_referral_link",
+        "id",
+        "landing_page_urls",
+        "markdown",
+        "title",
+        "topic_aliases",
+        "topic_hostname",
+        "topic_hostnames",
+        "topic_markdown",
+        "topic_slug",
+        "topic_title",
+        "topic_type"
+      ]
+    ],
+    "I113": [
+      [
+        "community_memberships_visibility",
+        "country",
+        "default_post_broadcast",
+        "default_post_privacy",
+        "direct_messages_audience",
+        "followers_visibility",
+        "follows_visibility",
+        "likes_visibility",
+        "rss_feed_follows_visibility",
+        "should_import_hacker_news_discussions",
+        "topic_follows_visibility",
+        "ui_locale"
+      ]
+    ],
+    "I114": [["appeal_reason", "idempotency_key", "post_removal_kind", "target_id", "target_type"]],
+    "I115": [
+      [
+        "banner_image_id",
+        "default_language",
+        "idempotency_key",
+        "list_type",
+        "markdown",
+        "member_invites_allowed_at",
+        "member_roster_visibility",
+        "name",
+        "post_approval_required_at",
+        "profile_image_id",
+        "should_allow_data_point_posts",
+        "should_allow_review_posts",
+        "slug",
+        "visibility"
+      ]
+    ],
+    "I116": [["answers", "community_id", "idempotency_key", "message"]],
+    "I117": [
+      [
+        "broadcast",
+        "categories",
+        "community_id",
+        "data_point_vertical",
+        "declared_language",
+        "idempotency_key",
+        "images",
+        "is_anonymous",
+        "markdown",
+        "parent_post_id",
+        "post_type",
+        "privacy",
+        "review_topic_ratings",
+        "slug",
+        "structured_data",
+        "title",
+        "url",
+        "url_id"
+      ]
+    ],
+    "I118": [["claim_text", "idempotency_key", "post_id", "reason", "topic_id"]],
+    "I119": [["description", "name", "visibility"]],
+    "I120": [["handle", "link_type", "name", "url"]],
+    "I121": [["label", "referral_program_id", "url"]],
+    "I122": [["entity_id", "entity_type", "idempotency_key", "note", "reason"]],
+    "I123": [
+      [
+        "example_referral_link",
+        "idempotency_key",
+        "landing_page_urls",
+        "markdown",
+        "title",
+        "topic_aliases",
+        "topic_hostname",
+        "topic_hostnames",
+        "topic_markdown",
+        "topic_slug",
+        "topic_title",
+        "topic_type"
+      ]
+    ],
+    "I124": [
+      [
+        "credit_score_range",
+        "currency",
+        "stated_income_range",
+        "total_credit_limit",
+        "years_of_credit_history"
+      ]
+    ],
+    "I125": [["ids"]]
+  },
+  "routes": {
+    "DELETE:/api/v1/agent-moderations/:id/vote": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F01",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "configure_agent_moderation_vote",
+          "option": "clear"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/report-integrity/penalties/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F02",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "lift_integrity_penalty",
+          "option": "report_abuse"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/rss-feed-categories/rejections": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F03",
+        "inputFields": "I002",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_rss_category_rejection",
+          "option": "restore"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/stories/:storyId/items/:itemId": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I003",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_story_item",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/users/:userId/suspension": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F05",
+        "inputFields": "I004",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_user_suspension",
+          "option": "unsuspend"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/users/:userId/vote-weight": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F06",
+        "inputFields": "I004",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "configure_user_vote_weight",
+          "option": "clear"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/vote-integrity/penalties/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F02",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "lift_integrity_penalty",
+          "option": "vote_ring"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/ai-costs": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F07",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_admin_metrics",
+          "option": "ai_costs"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/landing-pages/:pageId/analytics": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I006",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_landing_page_analytics",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/moderation-analytics": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I007",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_moderation_analytics",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/modlog": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I008",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "search_moderator_actions",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/topic-claims": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_pending_topic_claims",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/users/:userId/landing-pages": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I010",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_user_landing_pages",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/admin/warnings": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I011",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_user_moderation",
+          "option": "warnings"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/appeals": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I012",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_moderation_appeal",
+          "option": "list"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F10",
+        "inputFields": "I012",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_moderation_appeals",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/appeals/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I001",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_moderation_appeal",
+          "option": "get"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F10",
+        "inputFields": "I013",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_moderation_appeals",
+          "option": "get"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/article-syncs/:jobId": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I014",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_editorial_job",
+          "option": "article_sync"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-email-intakes/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_copyright_email_intake",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-email-intakes/review-queue": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_copyright_email_intakes",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-notices/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_copyright_notice",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-notices/:id/guest-capabilities": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I015",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_copyright_guest_capabilities",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-notices/:id/participant": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_copyright_case",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_repeat_infringer_accounts",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/copyright-notices/review-queue": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F11",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_copyright_review_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/crawlers": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I016",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_crawler",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/crawlers/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_crawler",
+          "option": "get"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/disputes": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I012",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_review_dispute",
+          "option": "list"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F12",
+        "inputFields": "I012",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_review_disputes",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/disputes/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I001",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_review_dispute",
+          "option": "get"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F12",
+        "inputFields": "I017",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_review_disputes",
+          "option": "get"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/dynamic-config/namespaces": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_dynamic_config",
+          "option": "namespaces"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/dynamic-config/namespaces/:namespace": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I018",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_dynamic_config",
+          "option": "namespace"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/dynamic-config/namespaces/:namespace/history": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I018",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_dynamic_config",
+          "option": "history"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/growth-metrics": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F07",
+        "inputFields": "I007",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_admin_metrics",
+          "option": "growth"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/imports/:batchId": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I019",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_editorial_job",
+          "option": "import_batch"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/mq/backfills": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_queue_catalog",
+          "option": "backfills"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/mq/queues": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_queue_catalog",
+          "option": "queues"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/mq/scheduled-jobs": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F13",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_queue_catalog",
+          "option": "scheduled_jobs"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/mq/stats": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F07",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_admin_metrics",
+          "option": "queue_stats"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/posts/review-queue": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_post_review_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/report-integrity/flags": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F14",
+        "inputFields": "I012",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_report_integrity",
+          "option": "flags"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/report-integrity/penalties": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F14",
+        "inputFields": "I020",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_report_integrity",
+          "option": "penalties"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/reports": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I021",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_moderation_reports",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feed-categories": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I012",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_unmapped_rss_categories",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/stories/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F08",
+        "inputFields": "I022",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_editorial_story",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I022",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_story",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/users/:userId/mod-notes": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I011",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_user_moderation",
+          "option": "notes"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/users/:userId/moderation-context": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F09",
+        "inputFields": "I004",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_user_moderation",
+          "option": "context"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/vote-integrity/flags": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F14",
+        "inputFields": "I012",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_vote_integrity",
+          "option": "flags"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/vote-integrity/penalties": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F14",
+        "inputFields": "I023",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_vote_integrity",
+          "option": "penalties"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/appeals/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F16",
+        "inputFields": "I024",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "draft_review_response",
+          "option": "appeal"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/crawlers/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I025",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_crawler",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/disputes/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F16",
+        "inputFields": "I024",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "draft_review_response",
+          "option": "dispute"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/dynamic-config/namespaces/:namespace": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F17",
+        "inputFields": "I026",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_dynamic_config_namespace",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/report-integrity/flags/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F18",
+        "inputFields": "I027",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_integrity_flag",
+          "option": "report"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/reports/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F19",
+        "inputFields": "I028",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resolve_moderation_report",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/stories/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I029",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "rename_story",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/vote-integrity/flags/:id": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F18",
+        "inputFields": "I027",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_integrity_flag",
+          "option": "vote"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/admin/topic-claims/:id/rejection": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F20",
+        "inputFields": "I030",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "reject_topic_claim",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/admin/topic-claims/:id/revocation": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F20",
+        "inputFields": "I031",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "revoke_topic_claim",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/admin/topic-claims/:id/verification": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F21",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "verify_topic_claim",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/admin/warnings": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F16",
+        "inputFields": "I032",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "record_user_moderation",
+          "option": "warning"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/appeals/:id/approval": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F22",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "approve_review_response",
+          "option": "appeal"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/appeals/:id/delivery": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F21",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "deliver_review_response",
+          "option": "appeal"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/appeals/:id/resolution-drafts": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F23",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "rerun_review_resolution_draft",
+          "option": "appeal"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/appeals/:id/resolution": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F24",
+        "inputFields": "I033",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resolve_review_case",
+          "option": "appeal"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/article-syncs": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F03",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "start_article_sync",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/approvals": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F25",
+        "inputFields": "I034",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_email_intake",
+          "option": "approve"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I035",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_email_correspondence",
+          "option": "reject"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/correspondence": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I036",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_email_correspondence",
+          "option": "admit"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/rejections": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F25",
+        "inputFields": "I037",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_email_intake",
+          "option": "reject"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-email-intakes/:id/reply/replays": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I037",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "replay_copyright_email_intake_reply",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-form-intakes/:id/reviews": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I038",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_form_intake",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F27",
+        "inputFields": "I039",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resolve_copyright_legal_hold",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I040",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "replay_copyright_intent",
+          "option": "action"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F26",
+        "inputFields": "I040",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "replay_copyright_intent",
+          "option": "delivery"
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F28",
+        "inputFields": "I041",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "revoke_copyright_guest_capability",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F27",
+        "inputFields": "I042",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_restriction",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F25",
+        "inputFields": "I043",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "reinstate_copyright_repeat_infringer",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F25",
+        "inputFields": "I044",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "record_copyright_repeat_infringer_disposition",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F27",
+        "inputFields": "I045",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "record_copyright_repeat_infringer_outcome",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-submissions/:id/appeal-reviews": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F27",
+        "inputFields": "I046",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_appeal",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-submissions/:id/counter-notice-reviews": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F25",
+        "inputFields": "I038",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "review_copyright_counter_notice",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/copyright-submissions/:id/legal-hold-assessments": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F27",
+        "inputFields": "I047",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "assess_copyright_legal_hold",
+          "option": null
+        },
+        "decision": true
+      }
+    ],
+    "POST:/api/v1/disputes/:id/approval": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F22",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "approve_review_response",
+          "option": "dispute"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/disputes/:id/delivery": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F21",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "deliver_review_response",
+          "option": "dispute"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/disputes/:id/resolution-drafts": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F23",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "rerun_review_resolution_draft",
+          "option": "dispute"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/disputes/:id/resolution": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F24",
+        "inputFields": "I048",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resolve_review_case",
+          "option": "dispute"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/imports/topics": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F03",
+        "inputFields": "I049",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "import_topics",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/backfills/:id/runs": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F29",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "run_operational_job",
+          "option": "backfill"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/pause": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F30",
+        "inputFields": "I050",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "pause_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/resume": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F31",
+        "inputFields": "I050",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "resume_queue",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/queues/:name/retry-failed": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F32",
+        "inputFields": "I050",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "retry_failed_queue_jobs",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/mq/scheduled-jobs/:id/runs": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F29",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "run_operational_job",
+          "option": "scheduled"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/posts/:idOrSlug/clearances": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F22",
+        "inputFields": "I051",
+        "requestBodyFields": ["private_note", "reason_code", "status"],
+        "operation": {
+          "tool": "approve_post_clearance",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "admin_mcp",
+        "facts": "F33",
+        "inputFields": "I051",
+        "requestBodyFields": ["private_note", "reason_code", "status"],
+        "operation": {
+          "tool": "set_post_clearance",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/report-integrity/flags/:id/penalties": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F02",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "apply_integrity_penalty",
+          "option": "report_abuse"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/reports/:id/judgements": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F23",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "rerun_report_judgement",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/rss-feed-categories/assignments": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I052",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "assign_rss_category_to_topic",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/rss-feed-categories/rejections": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F03",
+        "inputFields": "I002",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_rss_category_rejection",
+          "option": "reject"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/users/:userId/mod-notes": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F16",
+        "inputFields": "I053",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "record_user_moderation",
+          "option": "note"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/vote-integrity/flags/:id/penalties": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F02",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "apply_integrity_penalty",
+          "option": "vote_ring"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/agent-moderations/:id/vote": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F01",
+        "inputFields": "I054",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "configure_agent_moderation_vote",
+          "option": "set"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/crawlers/referral-program": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I055",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_referral_program_crawler",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/stories/:storyId/items/:itemId": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F03",
+        "inputFields": "I003",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_story_item",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/stories/:storyId/official": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F04",
+        "inputFields": "I003",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_story_official_item",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/users/:userId/suspension": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F05",
+        "inputFields": "I056",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "set_user_suspension",
+          "option": "suspend"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/users/:userId/vote-weight": [
+      {
+        "surface": "admin_mcp",
+        "facts": "F06",
+        "inputFields": "I057",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "configure_user_vote_weight",
+          "option": "set"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate": [
+      {
+        "surface": "mcp",
+        "facts": "F34",
+        "inputFields": "I058",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_bookmark",
+          "option": "remove"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/communities/:idOrSlug/members": [
+      {
+        "surface": "mcp",
+        "facts": "F35",
+        "inputFields": "I059",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "leave_community",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/entity-relations/:id/vote": [
+      {
+        "surface": "mcp",
+        "facts": "F36",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "withdraw_entity_relation_vote",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/lists/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F37",
+        "inputFields": "I060",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_list_content",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/lists/:id/items/posts/:entityId": [
+      {
+        "surface": "mcp",
+        "facts": "F37",
+        "inputFields": "I061",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_list_content",
+          "option": "item"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/lists/:id/items/rss-feed-items/:entityId": [
+      {
+        "surface": "mcp",
+        "facts": "F37",
+        "inputFields": "I061",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_list_content",
+          "option": "item"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/cards/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F38",
+        "inputFields": "I062",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_cards",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/notifications/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F39",
+        "inputFields": "I063",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "delete_notification",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/profile/links/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F40",
+        "inputFields": "I064",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "delete_my_profile_link",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/rewards-program-point-valuations/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F41",
+        "inputFields": "I065",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_point_valuations",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/rewards-program-statuses/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F42",
+        "inputFields": "I066",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_rewards_statuses",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/my/spending-categories/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F43",
+        "inputFields": "I067",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_spending",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/posts/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F44",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "delete_post",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/referral-links/:linkId": [
+      {
+        "surface": "mcp",
+        "facts": "F45",
+        "inputFields": "I064",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_referral_link",
+          "option": "link"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/referral-links/:linkId/activations": [
+      {
+        "surface": "mcp",
+        "facts": "F45",
+        "inputFields": "I064",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "remove_referral_link",
+          "option": "activation"
+        },
+        "decision": false
+      }
+    ],
+    "DELETE:/api/v1/topic-recommendations/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F46",
+        "inputFields": "I001",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "withdraw_topic_recommendation",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I068",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_communities",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I059",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/counts": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I059",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_item_counts"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/domains": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I069",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I069",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I069",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/topics": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I069",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/list-items/urls": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I069",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "list_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/members": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I070",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "members"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/pinned-posts": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I059",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "pinned_posts"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/communities/:idOrSlug/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I071",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_community",
+          "option": "posts"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/countries": [
+      {
+        "surface": "mcp",
+        "facts": "F48",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_reference_data",
+          "option": "countries"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/currencies": [
+      {
+        "surface": "mcp",
+        "facts": "F48",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_reference_data",
+          "option": "currencies"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/feeds/posts/:feed_type": [
+      {
+        "surface": "mcp",
+        "facts": "F49",
+        "inputFields": "I072",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_feed",
+          "option": "posts"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/feeds/referral_links/:feed_type": [
+      {
+        "surface": "mcp",
+        "facts": "F49",
+        "inputFields": "I073",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_feed",
+          "option": "referral_links"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/feeds/rss_feed_items/:feed_type": [
+      {
+        "surface": "mcp",
+        "facts": "F49",
+        "inputFields": "I074",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_feed",
+          "option": "rss_items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/hostnames": [
+      {
+        "surface": "mcp",
+        "facts": "F50",
+        "inputFields": "I075",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_hostnames",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/hostnames/top": [
+      {
+        "surface": "mcp",
+        "facts": "F50",
+        "inputFields": "I076",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_hostnames",
+          "option": "top"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/lists": [
+      {
+        "surface": "mcp",
+        "facts": "F51",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_lists",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/lists/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F51",
+        "inputFields": "I060",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_lists",
+          "option": "get"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/lists/:id/items": [
+      {
+        "surface": "mcp",
+        "facts": "F51",
+        "inputFields": "I077",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_lists",
+          "option": "items"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/lists/contains": [
+      {
+        "surface": "mcp",
+        "facts": "F51",
+        "inputFields": "I078",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_lists",
+          "option": "containing"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/memberships/plans": [
+      {
+        "surface": "mcp",
+        "facts": "F48",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_reference_data",
+          "option": "membership_plans"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/cards": [
+      {
+        "surface": "mcp",
+        "facts": "F52",
+        "inputFields": "I005",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "get_my_cards",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F53",
+        "inputFields": "I079",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_profile",
+          "option": "overview"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/email-preferences": [
+      {
+        "surface": "mcp",
+        "facts": "F54",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_preferences",
+          "option": "email"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/financial-profile": [
+      {
+        "surface": "mcp",
+        "facts": "F55",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_my_financial_profile",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/notifications": [
+      {
+        "surface": "mcp",
+        "facts": "F56",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_notifications",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/notifications/unread": [
+      {
+        "surface": "mcp",
+        "facts": "F56",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_notifications",
+          "option": "unread"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/profile": [
+      {
+        "surface": "mcp",
+        "facts": "F53",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_profile",
+          "option": "bio"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/profile/links": [
+      {
+        "surface": "mcp",
+        "facts": "F53",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_my_profile",
+          "option": "links"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/rewards-program-point-valuations": [
+      {
+        "surface": "mcp",
+        "facts": "F57",
+        "inputFields": "I005",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "get_my_point_valuations",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F53",
+        "inputFields": "I079",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_profile",
+          "option": "overview"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/rewards-program-statuses": [
+      {
+        "surface": "mcp",
+        "facts": "F53",
+        "inputFields": "I079",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_profile",
+          "option": "overview"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F58",
+        "inputFields": "I005",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "get_my_rewards_statuses",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/my/spending-categories": [
+      {
+        "surface": "mcp",
+        "facts": "F59",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_my_spending",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/platform-stats": [
+      {
+        "surface": "mcp",
+        "facts": "F48",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_reference_data",
+          "option": "platform_stats"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I080",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_posts",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/posts/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I081",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_posts",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/posts/:idOrSlug/ancestors": [
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I081",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_posts",
+          "option": "ancestors"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/posts/:idOrSlug/descendants": [
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I082",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_posts",
+          "option": "descendants"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/recommended-topics": [
+      {
+        "surface": "mcp",
+        "facts": "F60",
+        "inputFields": "I083",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_recommended_topics",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/referral-links": [
+      {
+        "surface": "mcp",
+        "facts": "F61",
+        "inputFields": "I084",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_my_referral_links",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feed-items": [
+      {
+        "surface": "mcp",
+        "facts": "F62",
+        "inputFields": "I085",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed_item",
+          "option": "list"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feed-items/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F62",
+        "inputFields": "I086",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed_item",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feed-items/:id/follow-context": [
+      {
+        "surface": "mcp",
+        "facts": "F62",
+        "inputFields": "I086",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed_item",
+          "option": "follow_context"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feed-items/:id/votes": [
+      {
+        "surface": "mcp",
+        "facts": "F62",
+        "inputFields": "I087",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed_item",
+          "option": "votes"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I088",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_rss_feeds",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I089",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds/:id/crawls": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I090",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed",
+          "option": "crawls"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds/:id/crawls/:crawlId": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I091",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_rss_feed",
+          "option": "crawl"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds/recommended": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I092",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_rss_feeds",
+          "option": "recommended"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/rss-feeds/trending": [
+      {
+        "surface": "mcp",
+        "facts": "F63",
+        "inputFields": "I093",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_rss_feeds",
+          "option": "trending"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topic-recommendations": [
+      {
+        "surface": "mcp",
+        "facts": "F64",
+        "inputFields": "I012",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "list_my_topic_recommendations",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topics": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I094",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_topics",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topics/:id/prioritized-referral-links": [
+      {
+        "surface": "mcp",
+        "facts": "F61",
+        "inputFields": "I095",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "get_referral_links",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topics/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I096",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_topic",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topics/:idOrSlug/referral-program": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I095",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_topic",
+          "option": "referral_program"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/topics/compare": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I097",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_topic",
+          "option": "compare"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/trending-communities": [
+      {
+        "surface": "mcp",
+        "facts": "F47",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_communities",
+          "option": "trending"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/trending-posts": [
+      {
+        "surface": "mcp",
+        "facts": "F15",
+        "inputFields": "I098",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_posts",
+          "option": "trending"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/trending-referral-programs": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I005",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_topics",
+          "option": "trending_referral_programs"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/trending-topics": [
+      {
+        "surface": "mcp",
+        "facts": "F65",
+        "inputFields": "I099",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "discover_topics",
+          "option": "trending"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/users": [
+      {
+        "surface": "mcp",
+        "facts": "F66",
+        "inputFields": "I100",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "read_users",
+          "option": "search"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/users/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F54",
+        "inputFields": "I009",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_my_preferences",
+          "option": "general"
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F66",
+        "inputFields": "I101",
+        "requestBodyFields": [],
+        "operation": {
+          "tool": "read_users",
+          "option": "details"
+        },
+        "decision": false
+      }
+    ],
+    "GET:/api/v1/web-search": [
+      {
+        "surface": "mcp",
+        "facts": "F67",
+        "inputFields": "I102",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "search_web",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/lists/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F68",
+        "inputFields": "I103",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_list",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/cards/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F38",
+        "inputFields": "I062",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_cards",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/email-preferences": [
+      {
+        "surface": "mcp",
+        "facts": "F69",
+        "inputFields": "I104",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "edit_my_preferences",
+          "option": "email"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/identity": [
+      {
+        "surface": "mcp",
+        "facts": "F70",
+        "inputFields": "I105",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "edit_my_profile",
+          "option": "display_identity"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/notifications/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F71",
+        "inputFields": "I063",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "mark_notifications_read",
+          "option": "one"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/profile": [
+      {
+        "surface": "mcp",
+        "facts": "F70",
+        "inputFields": "I106",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "edit_my_profile",
+          "option": "bio"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/profile/links/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F70",
+        "inputFields": "I107",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "edit_my_profile",
+          "option": "link"
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/rewards-program-point-valuations/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F41",
+        "inputFields": "I065",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_point_valuations",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/rewards-program-statuses/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F42",
+        "inputFields": "I066",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_rewards_statuses",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/my/spending-categories/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F43",
+        "inputFields": "I067",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_spending",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/posts/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F72",
+        "inputFields": "I108",
+        "requestBodyFields": ["categories"],
+        "operation": {
+          "tool": "add_entity_relation",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F73",
+        "inputFields": "I109",
+        "requestBodyFields": ["categories"],
+        "operation": {
+          "tool": "remove_entity_relation",
+          "option": null
+        },
+        "decision": false
+      },
+      {
+        "surface": "mcp",
+        "facts": "F74",
+        "inputFields": "I110",
+        "requestBodyFields": [
+          "ai_summary_markdown",
+          "archive",
+          "broadcast",
+          "categories",
+          "data_point_vertical",
+          "declared_language",
+          "is_anonymous",
+          "markdown",
+          "privacy",
+          "slug",
+          "structured_data",
+          "title"
+        ],
+        "operation": {
+          "tool": "update_post",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/referral-links/:linkId": [
+      {
+        "surface": "mcp",
+        "facts": "F75",
+        "inputFields": "I111",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_referral_link",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/topic-recommendations/:id": [
+      {
+        "surface": "mcp",
+        "facts": "F76",
+        "inputFields": "I112",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_topic_recommendation",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PATCH:/api/v1/users/:idOrSlug": [
+      {
+        "surface": "mcp",
+        "facts": "F69",
+        "inputFields": "I113",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "edit_my_preferences",
+          "option": "general"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/appeals": [
+      {
+        "surface": "mcp",
+        "facts": "F77",
+        "inputFields": "I114",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_moderation_appeal",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities": [
+      {
+        "surface": "mcp",
+        "facts": "F78",
+        "inputFields": "I115",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_community",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/applications": [
+      {
+        "surface": "mcp",
+        "facts": "F78",
+        "inputFields": "I116",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "apply_to_community",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/members": [
+      {
+        "surface": "mcp",
+        "facts": "F79",
+        "inputFields": "I059",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "join_community",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/communities/:idOrSlug/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F80",
+        "inputFields": "I117",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_post",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/disputes": [
+      {
+        "surface": "mcp",
+        "facts": "F81",
+        "inputFields": "I118",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_review_dispute",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": [
+      {
+        "surface": "mcp",
+        "facts": "F72",
+        "inputFields": "I108",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_entity_relation",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/lists": [
+      {
+        "surface": "mcp",
+        "facts": "F82",
+        "inputFields": "I119",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_list",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/lists/:id/items/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F82",
+        "inputFields": "I061",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_list_item",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/lists/:id/items/rss-feed-items": [
+      {
+        "surface": "mcp",
+        "facts": "F82",
+        "inputFields": "I061",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_list_item",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/cards": [
+      {
+        "surface": "mcp",
+        "facts": "F38",
+        "inputFields": "I062",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_cards",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/notifications/read-all": [
+      {
+        "surface": "mcp",
+        "facts": "F71",
+        "inputFields": "I009",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "mark_notifications_read",
+          "option": "all"
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/profile/links": [
+      {
+        "surface": "mcp",
+        "facts": "F83",
+        "inputFields": "I120",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "add_my_profile_link",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/rewards-program-point-valuations": [
+      {
+        "surface": "mcp",
+        "facts": "F41",
+        "inputFields": "I065",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_point_valuations",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/rewards-program-statuses": [
+      {
+        "surface": "mcp",
+        "facts": "F42",
+        "inputFields": "I066",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_rewards_statuses",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/my/spending-categories": [
+      {
+        "surface": "mcp",
+        "facts": "F43",
+        "inputFields": "I067",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_my_spending",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/posts": [
+      {
+        "surface": "mcp",
+        "facts": "F80",
+        "inputFields": "I117",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_post",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/referral-links": [
+      {
+        "surface": "mcp",
+        "facts": "F84",
+        "inputFields": "I121",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_referral_link",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/referral-links/:linkId/activations": [
+      {
+        "surface": "mcp",
+        "facts": "F84",
+        "inputFields": "I064",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "activate_referral_link",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/referral-links/:linkId/unfurls": [
+      {
+        "surface": "mcp",
+        "facts": "F85",
+        "inputFields": "I064",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "request_referral_link_unfurl",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/reports": [
+      {
+        "surface": "mcp",
+        "facts": "F86",
+        "inputFields": "I122",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_content_report",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "POST:/api/v1/topic-recommendations": [
+      {
+        "surface": "mcp",
+        "facts": "F87",
+        "inputFields": "I123",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "create_topic_recommendation",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate": [
+      {
+        "surface": "mcp",
+        "facts": "F34",
+        "inputFields": "I058",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "manage_bookmark",
+          "option": "set"
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/my/financial-profile": [
+      {
+        "surface": "mcp",
+        "facts": "F88",
+        "inputFields": "I124",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "update_my_financial_profile",
+          "option": null
+        },
+        "decision": false
+      }
+    ],
+    "PUT:/api/v1/my/profile/links/order": [
+      {
+        "surface": "mcp",
+        "facts": "F40",
+        "inputFields": "I125",
+        "requestBodyFields": null,
+        "operation": {
+          "tool": "reorder_my_profile_links",
+          "option": null
+        },
+        "decision": false
+      }
+    ]
+  },
+  "additions": {}
+}

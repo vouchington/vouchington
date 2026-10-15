@@ -1,0 +1,69 @@
+import { expect } from 'vitest'
+
+/** Each suite verifies these names against the tools it actually called through the SDK. */
+export const sdkMergedSuccessNames = {
+  simple: [
+    'discover_communities',
+    'discover_topics',
+    'discover_rss_feeds',
+    'read_reference_data',
+    'read_rss_feed_item',
+    'read_feed',
+    'read_posts',
+    'read_hostnames',
+    'read_data_points',
+    'read_my_review_disputes',
+    'read_my_moderation_appeals',
+    'read_my_lists',
+    'read_my_profile',
+    'read_my_preferences',
+    'read_my_notifications',
+    'read_crawler',
+    'read_report_integrity',
+    'read_vote_integrity',
+    'read_moderation_appeal',
+    'read_review_dispute',
+    'read_admin_metrics',
+    'read_queue_catalog',
+    'read_dynamic_config',
+  ],
+  userFixture: [
+    'read_community',
+    'read_topic',
+    'read_rss_feed',
+    'read_users',
+    'edit_my_profile',
+    'edit_my_preferences',
+    'mark_notifications_read',
+    'remove_list_content',
+    'remove_referral_link',
+    'manage_bookmark',
+  ],
+  adminFixture: [
+    'read_editorial_job',
+    'set_rss_category_rejection',
+    'read_user_moderation',
+    'record_user_moderation',
+    'configure_user_vote_weight',
+    'set_user_suspension',
+    'review_integrity_flag',
+    'apply_integrity_penalty',
+    'lift_integrity_penalty',
+    'configure_agent_moderation_vote',
+    'draft_review_response',
+    'approve_review_response',
+    'deliver_review_response',
+    'resolve_review_case',
+    'rerun_review_resolution_draft',
+  ],
+  copyrightFixture: [
+    'review_copyright_email_intake',
+    'review_copyright_email_correspondence',
+    'replay_copyright_intent',
+  ],
+  operationalFixture: ['run_operational_job'],
+} as const
+
+export function expectSdkSuccessNames(observed: ReadonlySet<string>, expected: readonly string[]) {
+  expect([...observed].toSorted()).toEqual(expected.toSorted())
+}

@@ -6,7 +6,17 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import type { Tool, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
+import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
+import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
+import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
+import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import { createTestUser } from '@voucha/test-helpers'
+import { sdkMergedSuccessNames } from '@voucha/test-helpers/mcp-sdk-success-names'
+import {
+  sdkCatalogCases as cases,
+  connectSdkCatalog,
+  callAndValidateSdkTool as callAndValidate,
+} from '@voucha/test-helpers/mcp-sdk-catalog'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildToolResult, McpToolOutputMismatchError } from './build-tool-result.mts'
 import { buildMcpCatalog } from './catalog/build-mcp-catalog.mts'
@@ -67,6 +77,17 @@ const fixture: Tool = {
     api: null,
     outputSchema,
   },
+}
+
+async function connect(
+  testCase: Parameters<typeof connectSdkCatalog>[0],
+  account?: Parameters<typeof connectSdkCatalog>[1],
+) {
+  return connectSdkCatalog(testCase, account, async (url, fetch) => {
+    const client = new Client({ name: 'voucha-registered-catalog-test', version: '1.0.0' })
+    await client.connect(new StreamableHTTPClientTransport(url, { fetch }))
+    return client
+  })
 }
 
 describe('tool-local schema references', () => {
@@ -187,6 +208,52 @@ describe('tool-local schema references', () => {
       )
     } finally {
       await rm(root, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('official SDK against the registered MCP catalogs', () => {
+  it('accounts for a successful SDK call in every current merged group', () => {
+    const current = [
+      ...userMergedReadingGroups,
+      ...userMergedParticipationGroups,
+      ...userMergedAccountGroups,
+      ...adminMergedGroups,
+    ].map(group => group.name)
+    const covered = Object.values(sdkMergedSuccessNames).flat()
+    expect(current).toHaveLength(52)
+    expect(covered).toHaveLength(52)
+    expect([...covered].toSorted()).toEqual([...current].toSorted())
+  })
+
+  it.each(cases)('lists $server.serverName tools for the $grant grant', async testCase => {
+    const client = await connect(testCase)
+    try {
+      const listing = await client.listTools()
+      expect(listing.tools).toHaveLength(testCase.count)
+      expect(listing.tools).toEqual(
+        listMcpToolsForUser(
+          {
+            id: 'listing',
+            roles: testCase.admin ? ['administrator'] : [],
+            membership_plan: testCase.plan,
+          },
+          testCase.scopes,
+          testCase.server,
+          true,
+        ),
+      )
+    } finally {
+      await client.close()
+    }
+  })
+
+  it('validates a real referenced output schema over the user SDK', async () => {
+    const client = await connect(cases[0]!)
+    try {
+      expect(await callAndValidate(client, 'read_reference_data', 'countries', {})).toBeDefined()
+    } finally {
+      await client.close()
     }
   })
 })
