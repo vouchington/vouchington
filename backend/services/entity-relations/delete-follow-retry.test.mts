@@ -38,7 +38,7 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -49,7 +49,7 @@ describe('softDeleteEntityRelation follow-unfollow retry idempotency', () => {
   ): unknown[] {
     return jobs.filter(
       job =>
-        job.name === 'distributeActivity' &&
+        job.name === 'activitypub.distributeActivity' &&
         (job.data as DistributeActivityData).activityType === 'UndoFollow' &&
         (job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>)
           .sourceUserId === sourceUserId &&

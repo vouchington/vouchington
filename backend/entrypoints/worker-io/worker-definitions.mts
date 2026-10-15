@@ -39,10 +39,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {
-    queueName: 'activitypub',
-    load: () => import('@workers/activitypub/workers').then(module => module.activitypubWorker),
-  },
-  {
     queueName: 'bloom-filters',
     load: () => import('@workers/bloom-filters/workers').then(module => module.bloomFilters),
   },
@@ -51,23 +47,12 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
   },
   {
-    queueName: 'follower-distributions',
-    load: () =>
-      import('@workers/follower-distributions/workers').then(
-        module => module.followerDistributionsWorker,
-      ),
-  },
-  {
     queueName: 'sitemaps',
     load: () => import('@workers/sitemaps/workers').then(module => module.sitemaps),
   },
   {
     queueName: 'memberships',
     load: () => import('@workers/memberships/workers').then(module => module.memberships),
-  },
-  {
-    queueName: 'notifications',
-    load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
   },
   {
     queueName: 'spam_detection',

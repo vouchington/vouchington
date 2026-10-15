@@ -61,7 +61,7 @@ describe('openai moderation single worker', () => {
     expect(
       notificationJobs.some(
         job =>
-          job.name === 'processReconcilePostNotifications' &&
+          job.name === 'notifications.processReconcilePostNotifications' &&
           (job.data as { postId?: string }).postId === postId,
       ),
     ).toBe(true)

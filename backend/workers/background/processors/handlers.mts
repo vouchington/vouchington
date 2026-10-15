@@ -1,7 +1,10 @@
 import type { BackgroundHandler } from '@queues/background/types'
 import { accountLifecycleHandlers } from '@workers/account-lifecycle/workers'
+import { activitypubHandlers } from '@workers/activitypub/workers'
 import { articleSyncHandlers } from '@workers/article-sync/workers'
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
+import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
+import { notificationsHandlers } from '@workers/notifications/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
 import { openAiModerationHandlers } from '@workers/openai-moderation/workers'
 import { postMentionsHandlers } from '@workers/post-mentions/workers'
@@ -22,4 +25,7 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...accountLifecycleHandlers,
   ...articleSyncHandlers,
   ...oauthAuthorizationExchangeHandlers,
+  ...notificationsHandlers,
+  ...activitypubHandlers,
+  ...followerDistributionsHandlers,
 ]

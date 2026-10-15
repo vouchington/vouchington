@@ -23,6 +23,9 @@ export const BACKGROUND_DOMAINS = [
   'account-lifecycle',
   'article-sync',
   'oauth-authorization-exchange',
+  'notifications',
+  'activitypub',
+  'follower-distributions',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

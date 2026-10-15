@@ -2,19 +2,26 @@
 
 Source entrypoint: [backend/queues/notifications/README.md](../../../../../backend/queues/notifications/README.md)
 
-Glide Queue system for reconciling notifications and delivering browser push messages.
+Queue domain for reconciling notifications and delivering browser push messages.
 
 ## Queue
 
-- Queue name: `notifications`
+- Domain `notifications` of the shared [`background` queue](../background/README.md); every job is named
+  `notifications.<name>` (for example `notifications.processReconcilePostNotifications`).
+- Group `none` and baseline worker concurrency 5: no domain-wide cap and no ordering keys. Tasks rank
+  10; dispatchers, recovery, and reconcile continuations rank 100. Operators pause the domain, not the queue.
 
 ## Jobs
 
 - `reconcile-post`
   - Recomputes recipients for a single post notification target
   - Inserts missing notifications and prunes unread invalid ones
+  - Handles one page of at most `reconcile_recipient_page_size` recipients (`notifications-work-config`);
+    a full page enqueues a continuation `{ postId, afterUserId }` (job id `notifications__reconcile-post__<post>__<cursor>`,
+    priority 100) and each page prunes only the recipients inside its own user-id range
 - `reconcile-rss-feed-item`
-  - Recomputes recipients for a single RSS feed item
+  - Recomputes recipients for a single RSS feed item, one `reconcile_recipient_page_size` page per job with the
+    same `afterUserId` continuation
 - `deliver-push-intent` claims a durable intent, rechecks live notification/content eligibility, and records endpoint completion.
 - `reconcile-push-intents` runs every five minutes to re-enqueue pending or expired-lease intents.
 - `processDeliverCopyrightNotice` claims one durable in-app copyright intent and writes an
@@ -177,8 +184,8 @@ Copyright reconciliation caps pages per stage through `copyright-notices-work-co
 
 The due statutory restoration page reads candidate targets with its bounded deadline IDs in one PostgreSQL call. The worker settles deadlines in ID order after that read; each candidate still takes its placement advisory lock, notice and target row locks, and current-state revalidation before committing an intent. A failed page read retains the same retry boundary.
 
-The digest dispatch enqueue accepts an internal queue resource option. It defaults to the normal
-notifications queue and preserves the dispatch payload, retry, priority, and deduplication policy.
+The digest dispatch enqueue accepts an internal queue resource option. It defaults to the shared
+`background` queue and preserves the dispatch payload, retry, priority, and deduplication policy.
 Admission-failure tests close only a uniquely owned real queue and invoke this same producer; the
 scheduler must release its claimed lease without changing unrelated windows. This checks the SDK's
 closed-resource admission boundary, not a server-side write failure.

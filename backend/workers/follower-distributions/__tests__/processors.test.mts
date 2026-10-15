@@ -3,9 +3,12 @@ import type { Job } from 'glide-mq'
 import type {
   advanceFollowerDistributionChunkCursor,
   processFollowerDistributionChunk,
-  streamIncompleteFollowerDistributionIdBatches,
+  listIncompleteFollowerDistributionIdPage,
 } from '@services/follower-distributions'
-import type { enqueueBulkProcessFollowerDistributions } from '@queues/follower-distributions/enqueues'
+import type {
+  enqueueBackfillFollowerDistributionsContinuation,
+  enqueueBulkProcessFollowerDistributions,
+} from '@queues/follower-distributions/enqueues'
 import type { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 
 import { backfillFollowerDistributions, processFollowerDistribution } from '../processors.mts'
@@ -17,8 +20,10 @@ const mockEnqueueBulkDeliverNotificationPushIntents =
 const mockEnqueueBulkProcessFollowerDistributions =
   vi.fn<typeof enqueueBulkProcessFollowerDistributions>()
 const mockProcessFollowerDistributionChunk = vi.fn<typeof processFollowerDistributionChunk>()
-const mockStreamIncompleteFollowerDistributionIdBatches =
-  vi.fn<typeof streamIncompleteFollowerDistributionIdBatches>()
+const mockEnqueueBackfillContinuation =
+  vi.fn<typeof enqueueBackfillFollowerDistributionsContinuation>()
+const mockListIncompleteFollowerDistributionIdPage =
+  vi.fn<typeof listIncompleteFollowerDistributionIdPage>()
 
 describe('follower distribution worker processors with queue side effects', () => {
   beforeEach(() => {
@@ -42,22 +47,42 @@ describe('follower distribution worker processors with queue side effects', () =
     expect(mockAdvanceFollowerDistributionChunkCursor).not.toHaveBeenCalled()
   })
 
-  it('backfills each incomplete distribution id batch', async () => {
-    mockStreamIncompleteFollowerDistributionIdBatches.mockImplementation(async function* () {
-      yield ['distribution-1', 'distribution-2']
-      yield ['distribution-3']
+  it('backfills one page of incomplete distributions and continues from its last id', async () => {
+    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({
+      ids: ['distribution-1', 'distribution-2'],
+      hasMore: true,
     })
 
-    const result = await runBackfillFollowerDistributions()
+    const result = await runBackfillFollowerDistributions('distribution-0')
 
-    expect(result).toEqual({ enqueued: 3 })
-    expect(mockEnqueueBulkProcessFollowerDistributions).toHaveBeenNthCalledWith(1, [
+    expect(result).toEqual({ enqueued: 2, hasMore: true })
+    expect(mockListIncompleteFollowerDistributionIdPage).toHaveBeenCalledWith('distribution-0')
+    expect(mockEnqueueBulkProcessFollowerDistributions).toHaveBeenCalledWith([
       'distribution-1',
       'distribution-2',
     ])
-    expect(mockEnqueueBulkProcessFollowerDistributions).toHaveBeenNthCalledWith(2, [
-      'distribution-3',
-    ])
+    expect(mockEnqueueBackfillContinuation).toHaveBeenCalledWith('distribution-2')
+  })
+
+  it('stops after a short page without a continuation', async () => {
+    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({
+      ids: ['distribution-3'],
+      hasMore: false,
+    })
+
+    await expect(runBackfillFollowerDistributions()).resolves.toEqual({
+      enqueued: 1,
+      hasMore: false,
+    })
+    expect(mockEnqueueBackfillContinuation).not.toHaveBeenCalled()
+  })
+
+  it('enqueues nothing when no distribution is incomplete', async () => {
+    mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({ ids: [], hasMore: false })
+
+    await runBackfillFollowerDistributions()
+
+    expect(mockEnqueueBulkProcessFollowerDistributions).not.toHaveBeenCalled()
   })
 })
 
@@ -74,10 +99,10 @@ function runProcessFollowerDistribution(data: { distributionId: string }) {
   })
 }
 
-function runBackfillFollowerDistributions() {
-  return backfillFollowerDistributions({
+function runBackfillFollowerDistributions(afterId?: string) {
+  return backfillFollowerDistributions(afterId, {
+    enqueueBackfillFollowerDistributionsContinuation: mockEnqueueBackfillContinuation,
     enqueueBulkProcessFollowerDistributions: mockEnqueueBulkProcessFollowerDistributions,
-    streamIncompleteFollowerDistributionIdBatches:
-      mockStreamIncompleteFollowerDistributionIdBatches,
+    listIncompleteFollowerDistributionIdPage: mockListIncompleteFollowerDistributionIdPage,
   })
 }

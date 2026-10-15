@@ -1,5 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
-import type { CreatedNotification } from './reconcile-batches.mts'
+import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
 import { reconcilePostContentNotificationVisibility } from './content-visibility-writes.mts'
 import { getPostRouteSlug, truncateText } from './shared.mts'
 
@@ -125,13 +125,18 @@ export async function prunePostNotificationsExceptRecipients(
   isManualSendContentEligible: boolean,
   client: PoolClient,
   recipientTable: string,
+  range: RecipientPageRange,
 ): Promise<number> {
-  const prunedForContentVisibility = await reconcilePostContentNotificationVisibility(
-    postId,
-    isContentEligible,
-    isManualSendContentEligible,
-    client,
-  )
+  // Content visibility spans the whole post, so only the first page applies it.
+  const prunedForContentVisibility =
+    range.afterUserId === null
+      ? await reconcilePostContentNotificationVisibility(
+          postId,
+          isContentEligible,
+          isManualSendContentEligible,
+          client,
+        )
+      : 0
   if (!isContentEligible) return prunedForContentVisibility
 
   const { rowCount } = await client.query(
@@ -143,13 +148,15 @@ export async function prunePostNotificationsExceptRecipients(
       AND n.delivery_type = 'subscription'
       AND n.deleted_at IS NULL
       AND n.read_at IS NULL
+      AND ($2::uuid IS NULL OR n.user_id > $2)
+      AND ($3::uuid IS NULL OR n.user_id <= $3)
       AND NOT EXISTS (
         SELECT 1
         FROM ${recipientTable} recipients
         WHERE recipients.user_id = n.user_id
       )
   `,
-    [postId],
+    [postId, range.afterUserId, range.throughUserId],
   )
   return prunedForContentVisibility + (rowCount ?? 0)
 }

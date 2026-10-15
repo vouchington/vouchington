@@ -59,7 +59,7 @@ describe('community activity digest work items', () => {
         ).rejects.toThrow(/clos/i)
         expect(admission).toHaveBeenCalledTimes(1)
         expect(admission).toHaveBeenCalledWith(
-          'processCommunityActivityDigestDispatch',
+          'notifications.processCommunityActivityDigestDispatch',
           expect.objectContaining({
             windowStart: windowStart.toISOString(),
             leaseToken: expect.any(String),

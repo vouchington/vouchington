@@ -2,7 +2,8 @@
 
 Source entrypoint: [backend/workers/notifications/README.md](../../../../../../backend/workers/notifications/README.md)
 
-Worker package for notification reconciliation, delivery, and cleanup jobs.
+Worker package for notification reconciliation, delivery, and cleanup jobs. Job names are
+`notifications.<name>` in the [background queue](../../background/README.md).
 
 Durable push-intent jobs lease their effect record, recheck eligibility, and persist endpoint-level
 completion so a retry never resends an already delivered endpoint.
@@ -47,7 +48,8 @@ flowchart LR
 
 ## Exports
 
-- `notificationsWorker` - worker instance for the `notifications` queue.
+- `notificationsHandlers` - the domain's job handlers, served by the shared `background` worker
+  (no per-queue Worker). The `notifications` domain has baseline concurrency 5 and no group.
 
 ## Related
 

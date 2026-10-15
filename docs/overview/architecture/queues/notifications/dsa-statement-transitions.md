@@ -1,6 +1,6 @@
 # DSA statement submission transitions
 
-This matrix covers the durable DSA statement work item, attempt ledger, and replay path described in the [notifications queue](README.md#dsa-statement-database).
+This matrix covers the durable DSA statement work item, attempt ledger, and replay path described in the [notifications domain](README.md#dsa-statement-database).
 
 ### Durable transition matrix
 

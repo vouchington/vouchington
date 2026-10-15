@@ -22,10 +22,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/copyright-notices": "workspace:^",
@@ -33,8 +32,7 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",
-    "@services/users": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@services/users": "workspace:^"
   },
   "devDependencies": {
     "@services/modmail": "workspace:^",

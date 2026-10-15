@@ -1,5 +1,7 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
-import { followerDistributions } from '@queues/follower-distributions/queues'
+import { afterAll, describe, expect, it } from 'vitest'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
+import { FOLLOWER_DISTRIBUTIONS_PROCESS_JOB } from '@queues/background/enqueues/follower-distributions-jobs'
+import { background } from '@queues/background/queues'
 import { sendPostToFollowers } from '@services/follower-distributions'
 import {
   createTestPost,
@@ -8,23 +10,17 @@ import {
   getManualSendNotificationRowsForTest,
 } from '@voucha/test-helpers'
 import { getFollowerDistributionCursorForTest } from '@voucha/test-helpers/sql-follower-distribution'
-import { followerDistributionsWorker } from './workers.mts'
+import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
+import { createBackgroundWorker } from '../workers/create-worker.mts'
 
-const JOB_OPTIONS = { attempts: 1, removeOnComplete: true, removeOnFail: true, priority: 10 }
+const worker = createBackgroundWorker({
+  handlers: BACKGROUND_HANDLERS,
+  domains: ['follower-distributions'],
+})
 
-describe('followerDistributionsWorker', () => {
-  beforeEach(async () => {
-    await followerDistributions.obliterate({ force: true })
-  })
-
+describe('follower distribution background handlers', () => {
   afterAll(async () => {
-    await followerDistributionsWorker.close()
-  })
-
-  it('rejects unknown jobs', async () => {
-    await expect(followerDistributions.add('missingJob', {}, JOB_OPTIONS)).rejects.toThrow(
-      'Follower distribution job missingJob not found',
-    )
+    await closeAndUnregisterGlideMQInstance(worker)
   })
 
   it('hands a processFollowerDistribution job to the processor as the live job', async () => {
@@ -35,10 +31,10 @@ describe('followerDistributionsWorker', () => {
     const post = await createTestPost({ user: creator, privacy: 'public' })
     const distribution = await sendPostToFollowers(sender, post.id, { audience: 'all_followers' })
 
-    await followerDistributions.add(
-      'processFollowerDistribution',
+    await background.add(
+      FOLLOWER_DISTRIBUTIONS_PROCESS_JOB.name,
       { distributionId: distribution.distribution_id },
-      JOB_OPTIONS,
+      { attempts: 1, removeOnComplete: true, removeOnFail: true },
     )
 
     const sent = await getManualSendNotificationRowsForTest({

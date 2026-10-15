@@ -13,6 +13,11 @@ import { updateUserFields } from '@services/users'
 import { dispatchInboundActivity } from '@services/ap-inbox-activities'
 import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
 import { activitypub } from '@queues/activitypub/queues'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
+  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+} from '@queues/background/enqueues/activitypub-jobs'
 import {
   enqueueDistributeActivity,
   type DeliverActivityData,
@@ -82,7 +87,7 @@ async function createRemoteFollowerOf(userId: string) {
 async function observeJob<T extends { name: string; data: unknown }>(
   predicate: (job: T) => boolean,
 ): Promise<{ job: Promise<T>; close: () => Promise<void> }> {
-  const events = new QueueEvents('activitypub', {
+  const events = new QueueEvents(BACKGROUND_QUEUE_NAME, {
     connection: workerQueueConnection,
     prefix: workerQueuePrefix,
     lastEventId: '$',
@@ -104,7 +109,8 @@ async function findDeliveredJob(
 ): Promise<{ name: string; data: DeliverActivityData }> {
   const match = (await readAllQueueJobs(activitypub)).find(
     job =>
-      job.name === 'deliverActivity' && (job.data as DeliverActivityData).activityId === activityId,
+      job.name === ACTIVITYPUB_DELIVER_ACTIVITY_JOB.name &&
+      (job.data as DeliverActivityData).activityId === activityId,
   )
   if (!match) throw new Error(`Expected a deliverActivity job for ${activityId}`)
   return match as { name: string; data: DeliverActivityData }
@@ -156,7 +162,10 @@ async function removeOwnedActivityJobs(sourceUserId: string): Promise<void> {
     jobs
       .filter(
         job =>
-          ['distributeActivity', 'deliverActivity'].includes(job.name) &&
+          [
+            ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name,
+            ACTIVITYPUB_DELIVER_ACTIVITY_JOB.name,
+          ].includes(job.name) &&
           (job.data as { sourceUserId?: string }).sourceUserId === sourceUserId,
       )
       .map(job => job.remove()),
@@ -183,7 +192,7 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
       expect(
         jobs.some(
           job =>
-            job.name === 'distributeActivity' &&
+            job.name === ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name &&
             (job.data as { sourceUserId?: string }).sourceUserId === targetUser.id,
         ),
       ).toBe(false)
@@ -210,7 +219,7 @@ describe('ActivityPub outbound round trip (Phase C6)', () => {
       // enqueues an outbound Follow distribution for the follower's own remote audience.
       const observed = await observeJob<{ name: string; data: DistributeActivityData }>(
         job =>
-          job.name === 'distributeActivity' &&
+          job.name === ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name &&
           job.data.activityType === 'Follow' &&
           job.data.sourceUserId === sourceUser.id,
       )

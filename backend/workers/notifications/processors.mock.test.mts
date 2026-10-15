@@ -13,7 +13,7 @@ import {
   enqueueDeliverNotificationPushIntent,
   type ReconcileNotificationPushIntentsData,
 } from '@queues/notifications/enqueues'
-import { PRIORITY_DEFAULT, QUEUE_NAME } from '@queues/notifications/config'
+import { BACKGROUND_QUEUE_NAME, PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { notifications } from '@queues/notifications/queues'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
@@ -96,13 +96,13 @@ describe('notification push-intent recovery across pages', () => {
           const continuationJob = await readEnqueuedJob(notifications, firstContinuation!.enqueued)
           for (const job of firstPageJobs) {
             expect(job).toMatchObject({
-              name: 'processDeliverNotificationPushIntent',
-              opts: { priority: PRIORITY_DEFAULT },
+              name: 'notifications.processDeliverNotificationPushIntent',
+              opts: { priority: PRIORITY_TASK },
             })
           }
           expect(continuationJob).toMatchObject({
-            name: 'processReconcileNotificationPushIntents',
-            opts: { priority: PRIORITY_DEFAULT },
+            name: 'notifications.processReconcileNotificationPushIntents',
+            opts: { priority: PRIORITY_DISPATCH },
           })
           const pendingStates = fixture.notificationIds.map(notification_id => ({
             notification_id,
@@ -132,8 +132,8 @@ describe('notification push-intent recovery across pages', () => {
           expect(enqueues.filter(enqueue => enqueue.kind === 'continuation')).toHaveLength(1)
           const secondJob = await readEnqueuedJob(notifications, secondPage[0]!.enqueued)
           expect(secondJob).toMatchObject({
-            name: 'processDeliverNotificationPushIntent',
-            opts: { priority: PRIORITY_DEFAULT },
+            name: 'notifications.processDeliverNotificationPushIntent',
+            opts: { priority: PRIORITY_TASK },
           })
           for (const enqueue of firstPage.slice(0, 1)) {
             await expect(processDeliverNotificationPushIntent(enqueue.data)).resolves.toEqual({
@@ -283,7 +283,7 @@ async function deleteRecordedTestQueueJobs(enqueues: RecordedEnqueue[]): Promise
   const jobIds = settledJobs.flatMap(result =>
     result.status === 'fulfilled' ? [result.value.id] : [],
   )
-  const queue = getOrCreateQueue(QUEUE_NAME)
+  const queue = getOrCreateQueue(BACKGROUND_QUEUE_NAME)
   const ownedJobIds = new Set(jobIds)
   for (const jobId of ownedJobIds) queue.jobs.delete(jobId)
   for (let index = queue.waitingQueue.length - 1; index >= 0; index -= 1) {

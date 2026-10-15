@@ -42,7 +42,7 @@ describe('enqueueUndoFollowSideEffects', () => {
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
     vi.restoreAllMocks()
     await clearQueues()
   })
@@ -69,7 +69,7 @@ describe('enqueueUndoFollowSideEffects', () => {
 
     const activityPubJobs = await ownedActivityJobs()
     expect(activityPubJobs).toHaveLength(1)
-    expect(activityPubJobs[0]?.name).toBe('distributeActivity')
+    expect(activityPubJobs[0]?.name).toBe('activitypub.distributeActivity')
     expect(activityPubJobs[0]?.data as DistributeActivityData).toEqual({
       activityId: deletedPair.activityPubUndoIdentity?.undoActivityId,
       activityType: 'UndoFollow',

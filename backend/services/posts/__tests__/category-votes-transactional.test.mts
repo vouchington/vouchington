@@ -149,7 +149,7 @@ describe('transactional post category votes', () => {
     const countForPost = (jobs: Awaited<ReturnType<typeof notifications.getJobs>>) =>
       jobs.filter(
         job =>
-          job.name === 'processReconcilePostNotifications' &&
+          job.name === 'notifications.processReconcilePostNotifications' &&
           (job.data as { postId: string }).postId === post.id,
       ).length
     const beforeCount = countForPost(notificationsBefore)

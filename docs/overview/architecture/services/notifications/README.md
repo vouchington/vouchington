@@ -137,6 +137,11 @@ Durable browser push delivery lives in
 [`@services/notifications-push`](../notifications-push/README.md), which depends on this package
 for subscription storage and follows `web-push` as its sole delivery mechanism.
 
+Post and RSS feed item reconciliation read one page of at most `reconcile_recipient_page_size` recipients
+(after an optional `afterUserId`) and return `nextAfterUserId` when the page was full; the worker queues the
+next page. Each page inserts for its own recipients and prunes only unread notifications whose user id lies in
+that page's range, so the chain converges without a recipient set shared between jobs.
+
 Push-intent recovery reads `push_intent_recovery_page_size` from the
 [`notifications-work-config`](../../../../../backend/services/notifications/work-limits.mts)
 namespace. Each full page queues a continuation with the same timestamp snapshot and the last

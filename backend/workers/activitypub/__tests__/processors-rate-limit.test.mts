@@ -37,7 +37,7 @@ describe('ActivityPub inbox processor sender rate limit', () => {
     expect(
       jobs.some(
         job =>
-          job.name === 'processDelivery' &&
+          job.name === 'activitypub.processDelivery' &&
           (job.data as { deliveryId?: string }).deliveryId === delivery.deliveryId,
       ),
     ).toBe(true)

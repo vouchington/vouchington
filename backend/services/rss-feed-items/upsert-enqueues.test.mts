@@ -85,7 +85,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
           data: { rss_feed_item_id: itemId },
         }),
         notifications.searchJobs({
-          name: 'processReconcileRssFeedItemNotifications',
+          name: 'notifications.processReconcileRssFeedItemNotifications',
           data: { rssFeedItemId: itemId },
         }),
         contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
@@ -112,7 +112,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     await languageDetectionEnqueue
     const [notificationJobs, languageDetectionJobs] = await Promise.all([
       notifications.searchJobs({
-        name: 'processReconcileRssFeedItemNotifications',
+        name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: itemId },
       }),
       contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
@@ -180,11 +180,11 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     await languageDetectionEnqueue
     const [notificationJobs, skippedNotificationJobs, languageDetectionJobs] = await Promise.all([
       notifications.searchJobs({
-        name: 'processReconcileRssFeedItemNotifications',
+        name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: fanoutItemId },
       }),
       notifications.searchJobs({
-        name: 'processReconcileRssFeedItemNotifications',
+        name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: skippedItemId },
       }),
       contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),

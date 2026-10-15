@@ -1,52 +1,27 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB,
+  FOLLOWER_DISTRIBUTIONS_PROCESS_JOB,
+} from '@queues/background/enqueues/follower-distributions-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  FOLLOWER_DISTRIBUTIONS_BACKFILL_DEFAULTS,
-  FOLLOWER_DISTRIBUTIONS_DEFAULTS,
-  FOLLOWER_DISTRIBUTION_BACKFILL_DEDUPLICATION_TTL_MS,
-  PRIORITY_BACKFILL,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-} from './config.mts'
-import { followerDistributions } from './queues.mts'
+import { FOLLOWER_DISTRIBUTION_BACKFILL_DEDUPLICATION_TTL_MS } from './config.mts'
 
-type ProcessFollowerDistributionData = { distributionId: string }
+const enqueueProcessFollowerDistributionJob = createBackgroundEnqueue(
+  FOLLOWER_DISTRIBUTIONS_PROCESS_JOB,
+)
 
-const enqueueProcessFollowerDistributionJob = createEnqueueFunction<
-  ProcessFollowerDistributionData,
-  'processFollowerDistribution'
->({
-  defaults: FOLLOWER_DISTRIBUTIONS_DEFAULTS,
-  queue: followerDistributions,
-  queueName: QUEUE_NAME,
-  jobName: 'processFollowerDistribution',
-})
-
-const enqueueBulkProcessFollowerDistributionJobs = createBulkEnqueueFunction<
-  string,
-  ProcessFollowerDistributionData,
-  'processFollowerDistribution'
->({
-  defaults: FOLLOWER_DISTRIBUTIONS_DEFAULTS,
-  queue: followerDistributions,
-  queueName: QUEUE_NAME,
-  jobName: 'processFollowerDistribution',
-  buildJob: distributionId => ({
+const enqueueBulkProcessFollowerDistributionJobs = createBackgroundBulkEnqueue(
+  FOLLOWER_DISTRIBUTIONS_PROCESS_JOB,
+  (distributionId: string) => ({
     data: { distributionId },
     opts: processFollowerDistributionJobOptions(distributionId),
   }),
-})
+)
 
-const enqueueBackfillFollowerDistributionsJob = createEnqueueFunction<
-  Record<string, never>,
-  'backfillFollowerDistributions'
->({
-  defaults: FOLLOWER_DISTRIBUTIONS_BACKFILL_DEFAULTS,
-  queue: followerDistributions,
-  queueName: QUEUE_NAME,
-  jobName: 'backfillFollowerDistributions',
-})
+const enqueueBackfillFollowerDistributionsJob = createBackgroundEnqueue(
+  FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB,
+)
 
 export function enqueueProcessFollowerDistribution(distributionId: string): EnqueueReturnType {
   return enqueueProcessFollowerDistributionJob(
@@ -58,14 +33,11 @@ export function enqueueProcessFollowerDistribution(distributionId: string): Enqu
 export function enqueueBulkProcessFollowerDistributions(
   distributionIds: string[],
 ): EnqueueReturnType {
-  return enqueueBulkProcessFollowerDistributionJobs([...new Set(distributionIds)], {
-    priority: PRIORITY_DEFAULT,
-  })
+  return enqueueBulkProcessFollowerDistributionJobs([...new Set(distributionIds)])
 }
 
 export function enqueueBackfillFollowerDistributions(): EnqueueReturnType {
   return enqueueBackfillFollowerDistributionsJob({}, {
-    priority: PRIORITY_BACKFILL,
     deduplication: {
       id: 'backfill_follower_distributions',
       mode: 'throttle',
@@ -74,9 +46,20 @@ export function enqueueBackfillFollowerDistributions(): EnqueueReturnType {
   } satisfies Partial<JobOptions>)
 }
 
+// A continuation carries the last id of the page before it. Its job id is that cursor, so a retried
+// backfill cannot enqueue a second continuation, and a finished record releases the id.
+export function enqueueBackfillFollowerDistributionsContinuation(
+  afterId: string,
+): EnqueueReturnType {
+  return enqueueBackfillFollowerDistributionsJob({ afterId }, {
+    jobId: `backfill_follower_distributions__${afterId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  } satisfies Partial<JobOptions>)
+}
+
 function processFollowerDistributionJobOptions(distributionId: string): Partial<JobOptions> {
   return {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `process_follower_distribution__${distributionId}`,
       mode: 'debounce',

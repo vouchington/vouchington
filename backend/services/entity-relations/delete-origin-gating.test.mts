@@ -35,7 +35,7 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -45,7 +45,7 @@ describe('softDeleteEntityRelation origin gating (Phase C3 loop prevention)', ()
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'distributeActivity' &&
+        job.name === 'activitypub.distributeActivity' &&
         (job.data as DistributeActivityData).activityType === 'UndoFollow' &&
         (job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>)
           .targetUserId === targetUserId,

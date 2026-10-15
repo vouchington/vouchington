@@ -14,21 +14,13 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/entity-listeners/enqueues/schedules'),
         import('@queues/account-lifecycle/enqueues/schedules'),
         import('@queues/oauth-authorization-exchange/enqueues/schedules'),
+        import('@queues/notifications/enqueues/schedules'),
+        import('@queues/activitypub/enqueues/schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
       }
     },
-  },
-  {
-    queueName: 'activitypub',
-    load: () =>
-      import('@queues/activitypub/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'notifications',
-    load: () =>
-      import('@queues/notifications/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'urls-domains-blacklist',

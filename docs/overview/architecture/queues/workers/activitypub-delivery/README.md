@@ -2,11 +2,11 @@
 
 Source entrypoint: [backend/workers/activitypub/README.md](../../../../../../backend/workers/activitypub/README.md)
 
-The shared `activitypub` worker fans an outbound
+The shared `activitypub` domain handlers fan an outbound
 Follow/Like/Undo(Follow)/Undo(Like) social action out to a local user's remote fediverse followers
 and delivers the signed AS2 activity to each follower inbox (Phase C4).
 
-- `activitypubWorker` — worker instance for the shared `activitypub` queue.
+- `activitypubHandlers` — the `activitypub` domain's handlers in the shared `background` worker.
 - `processors/delivery.mts` — `distributeActivity` (fan-out) and `deliverActivity` (per-inbox signed
   `POST`). Both take an injectable `dependencies` object for tests, mirroring
   `@workers/follower-distributions`'s DI pattern. Both terminally discard a pre-upgrade Undo job

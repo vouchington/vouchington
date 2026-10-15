@@ -1,130 +1,58 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import type {
+  DeliverActivityData,
+  DistributeActivityData,
+} from '@queues/background/enqueues/activitypub-domain'
+import {
+  ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
+  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+} from '@queues/background/enqueues/activitypub-jobs'
+import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 import type { EnqueueReturnType } from '@voucha/types'
 import { v5 as uuidv5 } from 'uuid'
-import { ACTIVITYPUB_DELIVERY_DEFAULTS, PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
-import { activitypub } from '../queues.mts'
 
-type DistributeFollowActivityData = {
-  activityId: string
-  activityType: 'Follow'
-  sourceUserId: string
-  targetUserId: string
-}
-
-type DistributeUndoFollowActivityData = {
-  activityId: string
-  activityType: 'UndoFollow'
-  originalActivityId: string
-  sourceUserId: string
-  targetUserId: string
-}
-
-type DistributeLikeActivityData = {
-  activityId: string
-  activityType: 'Like'
-  sourceUserId: string
-  targetPostId: string
-}
-
-type DistributeUndoLikeActivityData = {
-  activityId: string
-  activityType: 'UndoLike'
-  originalActivityId: string
-  sourceUserId: string
-  targetPostId: string
-}
-
-export type DistributeActivityData =
-  | DistributeFollowActivityData
-  | DistributeUndoFollowActivityData
-  | DistributeLikeActivityData
-  | DistributeUndoLikeActivityData
-
-// Accept never goes through distributeActivity's fan-out: an inbound Follow's Accept always
-// targets exactly one already-known inbox (the sender's), never "all of some local user's
-// followers", so it is not shaped like DistributeActivityData and is not part of that union.
-type DeliverAcceptActivityData = {
-  activityId: string
-  activityType: 'Accept'
-  sourceUserId: string
-  inboxUrl: string
-  followActivityId: string
-  followActorUri: string
-}
-
-export type DeliverActivityData =
-  | (DistributeActivityData & { inboxUrl: string })
-  | DeliverAcceptActivityData
+export type { DeliverActivityData, DistributeActivityData }
 
 export type DistributeActivityInput = DistributeActivityData
 
+// One lane per activity keeps its fan-out pages and retries from running side by side.
 function getDistributeActivityOptions(data: DistributeActivityData) {
   return {
-    priority: PRIORITY_DEFAULT,
     ordering: {
-      key: `activitypub-distribute__${data.activityId}`,
+      key: entityOrderingKey('activitypub', `activitypub-distribute__${data.activityId}`),
       concurrency: 1,
     },
   }
 }
 
-const enqueueDistributeActivityJob = createEnqueueFunction<
-  DistributeActivityData,
-  'distributeActivity'
->({
-  defaults: ACTIVITYPUB_DELIVERY_DEFAULTS,
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'distributeActivity',
-})
-
-const enqueueDeliverActivityJob = createEnqueueFunction<DeliverActivityData, 'deliverActivity'>({
-  defaults: ACTIVITYPUB_DELIVERY_DEFAULTS,
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'deliverActivity',
-})
+const enqueueDistributeActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB)
+const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_ACTIVITY_JOB)
 
 // Bulk fan-out for a batch of social actions (e.g. every relation in one upsertEntityRelation
 // call): one addBulk round-trip per batch, not one enqueue per input.
-export const enqueueBulkDistributeActivity = createBulkEnqueueFunction<
-  DistributeActivityInput,
-  DistributeActivityData,
-  'distributeActivity'
->({
-  defaults: ACTIVITYPUB_DELIVERY_DEFAULTS,
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'distributeActivity',
-  buildJob: input => ({
+export const enqueueBulkDistributeActivity = createBackgroundBulkEnqueue(
+  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+  (input: DistributeActivityInput) => ({
     data: input,
     opts: getDistributeActivityOptions(input),
   }),
-})
+)
 
 // One job per follower inbox. Callers should dedupe inboxUrl within a batch before calling this —
 // see @workers/activitypub's distributeActivity processor — since the `simple`
 // deduplication key here is a defense-in-depth backstop, not the primary collapse mechanism.
-export const enqueueBulkDeliverActivity = createBulkEnqueueFunction<
-  DeliverActivityData,
-  DeliverActivityData,
-  'deliverActivity'
->({
-  defaults: ACTIVITYPUB_DELIVERY_DEFAULTS,
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'deliverActivity',
-  buildJob: data => ({
+export const enqueueBulkDeliverActivity = createBackgroundBulkEnqueue(
+  ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
+  (data: DeliverActivityData) => ({
     data,
     opts: {
-      priority: PRIORITY_DEFAULT,
       deduplication: {
         id: `deliver_${data.activityId}__${data.inboxUrl}`,
         mode: 'simple',
       },
     },
   }),
-})
+)
 
 // Fans a single social action (Follow / Like / Undo-Like) out to the acting user's remote
 // followers (Phase C4). The caller supplies the activity identity from durable PostgreSQL state,
@@ -134,7 +62,7 @@ export function enqueueDistributeActivity(input: DistributeActivityInput): Enque
 }
 
 export type DeliverAcceptActivityInput = Pick<
-  DeliverAcceptActivityData,
+  Extract<DeliverActivityData, { activityType: 'Accept' }>,
   'sourceUserId' | 'inboxUrl' | 'followActivityId' | 'followActorUri'
 >
 
@@ -166,9 +94,6 @@ export function getAcceptActivityId(
 export function enqueueDeliverAcceptActivity(input: DeliverAcceptActivityInput): EnqueueReturnType {
   return enqueueDeliverActivityJob(
     { ...input, activityId: getAcceptActivityId(input), activityType: 'Accept' },
-    {
-      priority: PRIORITY_DEFAULT,
-      deduplication: { id: `deliver_accept__${input.followActivityId}`, mode: 'simple' },
-    },
+    { deduplication: { id: `deliver_accept__${input.followActivityId}`, mode: 'simple' } },
   )
 }

@@ -93,7 +93,7 @@ gates on `isFederationEnabledForUser` and returns `404` for an opted-out or none
     C -->|yes, invalid| X401[401 no row]
     C -->|yes, valid| D[(activitypub_inbox_delivery_work_items)]
     C -->|unknown| D
-    D --> Q[activitypub queue]
+    D --> Q[background queue: activitypub domain]
     Q --> V[Fetch unknown actor and verify]
     V --> A[Rate limit and dispatch]
     A --> X[Atomically commit core effect and delete envelope]

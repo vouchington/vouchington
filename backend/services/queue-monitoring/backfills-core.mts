@@ -19,6 +19,7 @@ import {
   ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
   ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
+import { FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB } from '@queues/background/enqueues/follower-distributions-jobs'
 import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
@@ -136,8 +137,8 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'follower-distributions',
-    queue_name: 'follower-distributions',
-    job_name: 'backfillFollowerDistributions',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB.name,
     description: 'Backfill incomplete manual follower distribution jobs',
     source_table: 'follower_distributions',
     trigger: createBackfillTrigger(enqueueBackfillFollowerDistributions),

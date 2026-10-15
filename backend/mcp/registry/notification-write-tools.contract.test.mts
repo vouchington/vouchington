@@ -36,7 +36,7 @@ async function queuedDeletions(userId: string, notificationId: string) {
   const jobs = await readAllQueueJobs(notifications)
   return jobs.filter(
     job =>
-      job.name === 'processDeleteNotification' &&
+      job.name === 'notifications.processDeleteNotification' &&
       (job.data as { userId?: string; notificationId?: string }).userId === userId &&
       (job.data as { notificationId?: string }).notificationId === notificationId,
   )

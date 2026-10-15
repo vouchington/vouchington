@@ -1,32 +1,26 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
-  ACTIVITYPUB_INBOX_DEFAULTS,
-  CLEANUP_INTERVAL_MS,
-  CLEANUP_PRIORITY,
-  RECOVERY_INTERVAL_MS,
-  RECOVERY_PRIORITY,
-} from '../config.mts'
-import { activitypub } from '../queues.mts'
+  ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
+  ACTIVITYPUB_RECOVER_DELIVERIES_JOB,
+} from '@queues/background/enqueues/activitypub-jobs'
+import { CLEANUP_INTERVAL_MS, RECOVERY_INTERVAL_MS } from '../config.mts'
 import {
   enqueueCleanupExpiredActivityPubInboxDeliveries,
   enqueueRecoverActivityPubInboxDeliveries,
 } from './inbox.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest('activitypub', [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'activitypub-inbox-recovery',
     repeat: { every: RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverDeliveries',
+      name: ACTIVITYPUB_RECOVER_DELIVERIES_JOB.name,
       data: {},
-      opts: {
-        ...ACTIVITYPUB_INBOX_DEFAULTS,
-        priority: RECOVERY_PRIORITY,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...ACTIVITYPUB_RECOVER_DELIVERIES_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -42,12 +36,9 @@ export const scheduledJobManifest = defineScheduledJobManifest('activitypub', [
     schedulerId: 'activitypub-inbox-cleanup',
     repeat: { every: CLEANUP_INTERVAL_MS },
     template: {
-      name: 'cleanupExpiredDeliveries',
+      name: ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB.name,
       data: {},
-      opts: {
-        ...ACTIVITYPUB_INBOX_DEFAULTS,
-        priority: CLEANUP_PRIORITY,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -60,7 +51,3 @@ export const scheduledJobManifest = defineScheduledJobManifest('activitypub', [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(activitypub, scheduledJobManifest)
-}

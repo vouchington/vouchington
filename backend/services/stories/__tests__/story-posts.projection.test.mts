@@ -177,7 +177,7 @@ async function hasPostNotificationJob(postId: string): Promise<boolean> {
   // No `state` key: a `priority > 0` notification is `prioritized`, not `waiting`, until a worker
   // promotes it, so a `'waiting'` filter misses it.
   const jobs = await notifications.searchJobs({
-    name: 'processReconcilePostNotifications',
+    name: 'notifications.processReconcilePostNotifications',
     data: { postId },
   })
   return jobs.length > 0

@@ -31,11 +31,14 @@ describe('ActivityPub delivery enqueues', () => {
     )
     expect(jobs).toHaveLength(1)
     expect(jobs[0]).toMatchObject({
-      name: 'distributeActivity',
+      name: 'activitypub.distributeActivity',
       data,
       opts: {
         priority: 10,
-        ordering: { key: `activitypub-distribute__${data.activityId}`, concurrency: 1 },
+        ordering: {
+          key: `activitypub:activitypub-distribute__${data.activityId}`,
+          concurrency: 1,
+        },
       },
     })
     expect(jobs[0]!.opts.deduplication).toBeUndefined()
@@ -56,7 +59,7 @@ describe('ActivityPub delivery enqueues', () => {
       const activityId = (job.data as { activityId: string }).activityId
       expect(job.opts).toMatchObject({
         priority: 10,
-        ordering: { key: `activitypub-distribute__${activityId}`, concurrency: 1 },
+        ordering: { key: `activitypub:activitypub-distribute__${activityId}`, concurrency: 1 },
       })
       expect(job.opts.deduplication).toBeUndefined()
       expect(job.opts.jobId).toBeUndefined()
@@ -71,7 +74,7 @@ describe('ActivityPub delivery enqueues', () => {
 
     const jobs = (await readAllQueueJobs(activitypub)).filter(
       job =>
-        job.name === 'deliverActivity' &&
+        job.name === 'activitypub.deliverActivity' &&
         (job.data as { activityId?: string }).activityId === data.activityId,
     )
     expect(jobs).toHaveLength(1)

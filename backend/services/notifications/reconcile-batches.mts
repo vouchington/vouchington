@@ -1,42 +1,71 @@
 import { getNotificationsWorkLimit } from './work-limits.mts'
-import { randomUUID } from 'node:crypto'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import onError from '@modules/on-error'
+import {
+  createTempTableName,
+  createTempTables,
+  dispatchCreatedNotificationBatches,
+  dropTempTables,
+} from './reconcile-temp-tables.mts'
 
 export type CreatedNotification = { user_id: string; id: string }
 
 export type ReconcileNotificationsOptions = {
   batchSize?: number
+  /** Recipients per job; defaults to the `reconcile_recipient_page_size` work limit. */
+  pageSize?: number
+  /** The last recipient of the previous page; absent for the first page. */
+  afterUserId?: string
   onCreatedNotifications?: (createdNotifications: CreatedNotification[]) => Promise<void> | void
+}
+
+/** The keyset slice of recipients one job owns: ids after `afterUserId`, at most `limit`. */
+export type RecipientPage = { afterUserId: string | null; limit: number }
+
+/** The user-id range one page covers; `throughUserId` is null on the last page. */
+export type RecipientPageRange = {
+  afterUserId: string | null
+  throughUserId: string | null
+}
+
+export type ReconcileNotificationsResult = {
+  created: number
+  pruned: number
+  /** Present only when a full page may be followed by more recipients. */
+  nextAfterUserId?: string
 }
 
 type ReconcileNotificationBatchConfig = {
   batchQueryComment:
     | 'selectRssFeedItemNotificationRecipientBatch'
     | 'selectPostNotificationRecipientBatch'
-  createRecipients: (client: PoolClient, recipientTable: string) => Promise<void>
+  createRecipients: (
+    client: PoolClient,
+    recipientTable: string,
+    page: RecipientPage,
+  ) => Promise<void>
   insertBatch: (
     client: PoolClient,
     recipientIds: string[],
     createdTable: string,
   ) => Promise<CreatedNotification[]>
-  prune: (client: PoolClient, recipientTable: string) => Promise<number>
-}
-
-type CreatedNotificationCursor = {
-  lastUserId: string
-  lastNotificationId: string
+  prune: (client: PoolClient, recipientTable: string, range: RecipientPageRange) => Promise<number>
 }
 
 export async function reconcileNotificationBatches(
   config: ReconcileNotificationBatchConfig,
   options: ReconcileNotificationsOptions = {},
-): Promise<{ created: number; pruned: number }> {
+): Promise<ReconcileNotificationsResult> {
   const DEFAULT_RECONCILE_BATCH_SIZE = getNotificationsWorkLimit('reconcile_batch_size')
   const batchSize = options.batchSize ?? DEFAULT_RECONCILE_BATCH_SIZE
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
     throw new Error('batchSize must be a positive integer')
   }
+  const pageSize = options.pageSize ?? getNotificationsWorkLimit('reconcile_recipient_page_size')
+  if (!Number.isInteger(pageSize) || pageSize <= 0) {
+    throw new Error('pageSize must be a positive integer')
+  }
+  const afterUserId = options.afterUserId ?? null
 
   const client = await writePool.connect()
   const recipientTable = createTempTableName('temp_notification_reconcile_recipients')
@@ -44,9 +73,10 @@ export async function reconcileNotificationBatches(
 
   try {
     await createTempTables(client, recipientTable, createdTable)
-    await config.createRecipients(client, recipientTable)
+    await config.createRecipients(client, recipientTable, { afterUserId, limit: pageSize })
 
     let created = 0
+    let recipients = 0
     let lastUserId: string | null = null
     while (true) {
       // oxlint-disable-next-line no-await-in-loop -- each keyset page mutates session temp tables before advancing its cursor
@@ -62,11 +92,22 @@ export async function reconcileNotificationBatches(
 
       lastUserId = batch.lastUserId
       created += batch.created
+      recipients += batch.recipients
     }
 
-    const pruned = await config.prune(client, recipientTable)
-    await dispatchCreatedNotificationBatches(client, createdTable, batchSize, options)
-    return { created, pruned }
+    // A full page may be followed by more recipients: only then does this job stop at its last id.
+    const nextAfterUserId = recipients === pageSize && lastUserId ? lastUserId : undefined
+    const pruned = await config.prune(client, recipientTable, {
+      afterUserId,
+      throughUserId: nextAfterUserId ?? null,
+    })
+    await dispatchCreatedNotificationBatches(
+      client,
+      createdTable,
+      batchSize,
+      options.onCreatedNotifications,
+    )
+    return { created, pruned, ...(nextAfterUserId ? { nextAfterUserId } : {}) }
   } finally {
     await dropTempTables(client, recipientTable, createdTable).catch(onError)
     client.release()
@@ -80,7 +121,7 @@ async function createNextRecipientNotificationBatch(
   createdTable: string,
   lastUserId: string | null,
   batchSize: number,
-): Promise<{ lastUserId: string; created: number } | null> {
+): Promise<{ lastUserId: string; created: number; recipients: number } | null> {
   const query = `user_id
       FROM ${recipientTable}
       WHERE ($1::uuid IS NULL OR user_id > $1)
@@ -106,91 +147,9 @@ async function createNextRecipientNotificationBatch(
     rows.map(row => row.user_id),
     createdTable,
   )
-  return { lastUserId: rows[rows.length - 1]!.user_id, created: createdBatch.length }
-}
-
-function createTempTableName(prefix: string): string {
-  return `${prefix}_${randomUUID().replaceAll('-', '')}`
-}
-
-async function dispatchCreatedNotificationBatches(
-  client: PoolClient,
-  createdTable: string,
-  batchSize: number,
-  options: ReconcileNotificationsOptions,
-): Promise<void> {
-  if (!options.onCreatedNotifications) return
-
-  let cursor: CreatedNotificationCursor | null = null
-  while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- each callback applies backpressure before the keyset cursor advances
-    const nextCursor = await dispatchNextCreatedNotificationBatch(
-      client,
-      createdTable,
-      batchSize,
-      cursor,
-      options.onCreatedNotifications,
-    )
-    if (!nextCursor) break
-
-    cursor = nextCursor
+  return {
+    lastUserId: rows[rows.length - 1]!.user_id,
+    created: createdBatch.length,
+    recipients: rows.length,
   }
-}
-
-async function dispatchNextCreatedNotificationBatch(
-  client: PoolClient,
-  createdTable: string,
-  batchSize: number,
-  cursor: CreatedNotificationCursor | null,
-  onCreatedNotifications: NonNullable<ReconcileNotificationsOptions['onCreatedNotifications']>,
-): Promise<CreatedNotificationCursor | null> {
-  const result = await client.query<CreatedNotification>(
-    `/* selectCreatedNotificationBatch */
-      SELECT user_id, id
-      FROM ${createdTable}
-      WHERE (
-        $1::uuid IS NULL
-        OR user_id > $1
-        OR (user_id = $1 AND id > $2::uuid)
-      )
-      ORDER BY user_id, id
-      LIMIT $3
-    `,
-    [cursor?.lastUserId ?? null, cursor?.lastNotificationId ?? null, batchSize],
-  )
-  const rows: CreatedNotification[] = result.rows
-  if (rows.length === 0) return null
-
-  await onCreatedNotifications(rows)
-  const lastRow = rows[rows.length - 1]!
-  return { lastUserId: lastRow.user_id, lastNotificationId: lastRow.id }
-}
-
-async function createTempTables(
-  client: PoolClient,
-  recipientTable: string,
-  createdTable: string,
-): Promise<void> {
-  await client.query(`/* createNotificationReconcileTempTables */
-    CREATE TEMP TABLE ${recipientTable} (
-      user_id UUID PRIMARY KEY
-    )
-  `)
-  await client.query(`/* createNotificationReconcileTempTables */
-    CREATE TEMP TABLE ${createdTable} (
-      user_id UUID NOT NULL,
-      id UUID NOT NULL,
-      PRIMARY KEY (user_id, id)
-    )
-  `)
-}
-
-async function dropTempTables(
-  client: PoolClient,
-  recipientTable: string,
-  createdTable: string,
-): Promise<void> {
-  await client.query(`/* dropNotificationReconcileTempTables */
-    DROP TABLE IF EXISTS ${recipientTable}, ${createdTable}
-  `)
 }

@@ -1,19 +1,22 @@
-import type { CopyrightSweepContinuation } from './types.mts'
-/* oxlint-disable max-lines -- Notification enqueue contracts stay centralized for inventory validation. */
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
+  NOTIFICATIONS_DELETE_JOB,
+  NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
+  NOTIFICATIONS_FOLLOW_JOB,
+  NOTIFICATIONS_REFERRAL_CLICK_JOB,
+  NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
+  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
+  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
+import type { CopyrightSweepContinuation } from '@queues/background/enqueues/notifications-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT, QUEUE_NAME } from './config.mts'
-import { notifications } from './queues.mts'
+import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from './config.mts'
+
 const FIVE_MINUTES_MS = 5 * 60 * 1000
 type FollowNotificationData = { followeeId: string; followerId: string }
-type ReferralSignupData = { referrerId: string; newUserId: string }
-type ReferralClickData = { referrerId: string; landingUrl: string }
-type DeleteNotificationData = { userId: string; notificationId: string }
-type ReconcilePostNotificationData = { postId: string }
-type ReconcileRssFeedItemNotificationData = { rssFeedItemId: string }
-type CopyrightDeliveryIntentData = { intentId: string }
-type CopyrightActionIntentData = { intentId: string }
+
 export {
   enqueueReplayMediaDeliveryRegistry,
   enqueueContinueMediaDeliveryRegistryStaging,
@@ -32,15 +35,13 @@ export {
   enqueueBulkSubmitDsaStatementOfReasons,
   enqueueReconcileDsaStatementSubmissions,
 } from './enqueues/copyright-dsa-submission.mts'
-const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<
-  FollowNotificationData,
-  FollowNotificationData,
-  'processFollowNotification'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processFollowNotification',
-  buildJob: data => ({
+export * from './enqueues/community-activity-digest.mts'
+export * from './enqueues/push-intents.mts'
+export * from './enqueues/reconcile-recipients.mts'
+
+export const enqueueBulkFollowNotification = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_FOLLOW_JOB,
+  (data: FollowNotificationData) => ({
     data,
     opts: {
       deduplication: {
@@ -50,137 +51,47 @@ const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<
       },
     },
   }),
-})
-
-const enqueueReferralSignupNotificationJob = createEnqueueFunction<
-  ReferralSignupData,
-  'processReferralSignupNotification'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReferralSignupNotification',
-})
-
-const enqueueReferralClickNotificationJob = createEnqueueFunction<
-  ReferralClickData,
-  'processReferralClickNotification'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReferralClickNotification',
-})
-
-const enqueueDeleteNotificationJob = createEnqueueFunction<
-  DeleteNotificationData,
-  'processDeleteNotification'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processDeleteNotification',
-})
-
-const enqueueBulkReconcilePostNotificationJobs = createBulkEnqueueFunction<
-  ReconcilePostNotificationData,
-  ReconcilePostNotificationData,
-  'processReconcilePostNotifications'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcilePostNotifications',
-  buildJob: data => ({
-    data,
-    opts: {
-      deduplication: {
-        id: `processReconcilePostNotifications__${data.postId}`,
-        mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
-      },
-    },
-  }),
-})
-
-const enqueueBulkReconcileRssFeedItemNotificationJobs = createBulkEnqueueFunction<
-  ReconcileRssFeedItemNotificationData,
-  ReconcileRssFeedItemNotificationData,
-  'processReconcileRssFeedItemNotifications'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileRssFeedItemNotifications',
-  buildJob: data => ({
-    data,
-    opts: {
-      deduplication: {
-        id: `processReconcileRssFeedItemNotifications__${data.rssFeedItemId}`,
-        mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
-      },
-    },
-  }),
-})
-
-const enqueueDeliverCopyrightNoticeJob = createEnqueueFunction<
-  CopyrightDeliveryIntentData,
-  'processDeliverCopyrightNotice'
->({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processDeliverCopyrightNotice' })
+)
+const enqueueReferralSignupNotificationJob = createBackgroundEnqueue(
+  NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
+)
+const enqueueReferralClickNotificationJob = createBackgroundEnqueue(
+  NOTIFICATIONS_REFERRAL_CLICK_JOB,
+)
+const enqueueDeleteNotificationJob = createBackgroundEnqueue(NOTIFICATIONS_DELETE_JOB)
+const enqueueDeliverCopyrightNoticeJob = createBackgroundEnqueue(
+  NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
+)
+const enqueueReconcileCopyrightDeliveryIntentsJob = createBackgroundEnqueue(
+  NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
+)
+const enqueueApplyCopyrightActionJob = createBackgroundEnqueue(
+  NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
+)
+const enqueueReconcileCopyrightActionIntentsJob = createBackgroundEnqueue(
+  NOTIFICATIONS_RECONCILE_COPYRIGHT_ACTION_JOB,
+)
 
 /** One batched add of `enqueueDeliverCopyrightNotice` jobs, each with its own dedup id. */
-export const enqueueBulkDeliverCopyrightNotices = createBulkEnqueueFunction<
-  string,
-  CopyrightDeliveryIntentData,
-  'processDeliverCopyrightNotice'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processDeliverCopyrightNotice',
-  buildJob: intentId => ({ data: { intentId }, opts: copyrightDeliveryJobOptions(intentId) }),
-})
-
-const enqueueReconcileCopyrightDeliveryIntentsJob = createEnqueueFunction<
-  CopyrightSweepContinuation,
-  'processReconcileCopyrightDeliveryIntents'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileCopyrightDeliveryIntents',
-})
-
-const enqueueApplyCopyrightActionJob = createEnqueueFunction<
-  CopyrightActionIntentData,
-  'processApplyCopyrightAction'
->({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processApplyCopyrightAction' })
+export const enqueueBulkDeliverCopyrightNotices = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
+  (intentId: string) => ({
+    data: { intentId },
+    opts: copyrightDeliveryJobOptions(intentId),
+  }),
+)
 
 /** One batched add of `enqueueApplyCopyrightAction` jobs, each with its own dedup id. */
-export const enqueueBulkApplyCopyrightActions = createBulkEnqueueFunction<
-  string,
-  CopyrightActionIntentData,
-  'processApplyCopyrightAction'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processApplyCopyrightAction',
-  buildJob: intentId => ({ data: { intentId }, opts: copyrightActionJobOptions(intentId) }),
-})
-
-const enqueueReconcileCopyrightActionIntentsJob = createEnqueueFunction<
-  CopyrightSweepContinuation,
-  'processReconcileCopyrightActionIntents'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileCopyrightActionIntents',
-})
-
-export function enqueueBulkFollowNotification(pairs: FollowNotificationData[]): EnqueueReturnType {
-  return enqueueBulkFollowNotificationJobs(pairs, { priority: PRIORITY_DEFAULT })
-}
+export const enqueueBulkApplyCopyrightActions = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
+  (intentId: string) => ({ data: { intentId }, opts: copyrightActionJobOptions(intentId) }),
+)
 
 export function enqueueReferralSignupNotification(
   referrerId: string,
   newUserId: string,
 ): EnqueueReturnType {
   return enqueueReferralSignupNotificationJob({ referrerId, newUserId }, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processReferralSignupNotification__${referrerId}__${newUserId}`,
       mode: 'throttle',
@@ -194,7 +105,6 @@ export function enqueueReferralClickNotification(
   landingUrl: string,
 ): EnqueueReturnType {
   return enqueueReferralClickNotificationJob({ referrerId, landingUrl }, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processReferralClickNotification__${referrerId}`,
       mode: 'debounce',
@@ -203,16 +113,11 @@ export function enqueueReferralClickNotification(
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueReconcilePostNotifications(postId: string): EnqueueReturnType {
-  return enqueueBulkReconcilePostNotifications([postId])
-}
-
 export function enqueueDeleteNotification(
   userId: string,
   notificationId: string,
 ): EnqueueReturnType {
   return enqueueDeleteNotificationJob({ userId, notificationId }, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processDeleteNotification__${userId}__${notificationId}`,
       mode: 'debounce',
@@ -223,11 +128,6 @@ export function enqueueDeleteNotification(
 
 function copyrightDeliveryJobOptions(intentId: string): Partial<JobOptions> {
   return {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `copyright-delivery:${intentId}:in-app`,
       mode: 'throttle',
@@ -244,11 +144,6 @@ export function enqueueReconcileCopyrightDeliveryIntents(
   data: CopyrightSweepContinuation = {},
 ): EnqueueReturnType {
   return enqueueReconcileCopyrightDeliveryIntentsJob(data, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `copyright-delivery-reconciliation:${JSON.stringify(data)}`,
       mode: 'throttle',
@@ -259,11 +154,6 @@ export function enqueueReconcileCopyrightDeliveryIntents(
 
 function copyrightActionJobOptions(intentId: string): Partial<JobOptions> {
   return {
-    attempts: 5,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `copyright-action:${intentId}`,
       mode: 'throttle',
@@ -280,34 +170,10 @@ export function enqueueReconcileCopyrightActionIntents(
   data: CopyrightSweepContinuation = {},
 ): EnqueueReturnType {
   return enqueueReconcileCopyrightActionIntentsJob(data, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `copyright-action-reconciliation:${JSON.stringify(data)}`,
       mode: 'throttle',
       ttl: FIVE_MINUTES_MS,
     },
   })
-}
-
-export function enqueueBulkReconcilePostNotifications(postIds: string[]): EnqueueReturnType {
-  return enqueueBulkReconcilePostNotificationJobs(
-    [...new Set(postIds)].map(postId => ({ postId })),
-    { priority: PRIORITY_DEFAULT },
-  )
-}
-
-export * from './enqueues/community-activity-digest.mts'
-export * from './enqueues/push-intents.mts'
-
-export function enqueueBulkReconcileRssFeedItemNotifications(
-  rssFeedItemIds: string[],
-): EnqueueReturnType {
-  return enqueueBulkReconcileRssFeedItemNotificationJobs(
-    [...new Set(rssFeedItemIds)].map(rssFeedItemId => ({ rssFeedItemId })),
-    { priority: PRIORITY_DEFAULT },
-  )
 }

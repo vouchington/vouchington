@@ -216,7 +216,7 @@ describe('classifier run processor (real GlideMQ)', () => {
         (await readAllQueueJobs(notifications))
           .filter(
             job =>
-              job.name === 'processReconcilePostNotifications' &&
+              job.name === 'notifications.processReconcilePostNotifications' &&
               (job.data as { postId?: string }).postId === setup.post.id,
           )
           .map(job => job.remove()),

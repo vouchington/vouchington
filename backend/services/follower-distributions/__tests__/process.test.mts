@@ -33,8 +33,6 @@ import {
 
 import { processFollowerDistributionChunk } from '../process.mts'
 
-import { streamIncompleteFollowerDistributionIdBatches } from '../backfill.mts'
-
 import {
   assertDistributablePost,
   getPostRouteSlug,
@@ -267,5 +265,4 @@ describe('processFollowerDistributionChunk', () => {
   void (0 as unknown as typeof markUserFollowDeletedBeforeNowForTest)
   void (0 as unknown as typeof setPostBroadcastForTest)
   void (0 as unknown as typeof setPostDeletedForTest)
-  void (0 as unknown as typeof streamIncompleteFollowerDistributionIdBatches)
 })

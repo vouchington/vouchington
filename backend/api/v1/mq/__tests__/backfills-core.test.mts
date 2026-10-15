@@ -18,8 +18,8 @@ describe('CORE_BACKFILLS', () => {
     const backfill = CORE_BACKFILLS.find(entry => entry.id === 'follower-distributions')
 
     expect(backfill).toMatchObject({
-      queue_name: 'follower-distributions',
-      job_name: 'backfillFollowerDistributions',
+      queue_name: 'background',
+      job_name: 'follower-distributions.backfillFollowerDistributions',
       source_table: 'follower_distributions',
     })
     expect(typeof backfill?.trigger).toBe('function')

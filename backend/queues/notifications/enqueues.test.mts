@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  enqueueBulkReconcilePostNotifications,
+  enqueueContinueReconcilePostNotifications,
+  enqueueContinueReconcileRssFeedItemNotifications,
   enqueueBulkApplyCopyrightActions,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueBulkDeliverCopyrightNotices,
@@ -16,7 +19,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles action-intent reconciliation to one five-minute schedule', async () => {
     await enqueueReconcileCopyrightActionIntents()
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'processReconcileCopyrightActionIntents',
+      candidate => candidate.name === 'notifications.processReconcileCopyrightActionIntents',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
@@ -30,7 +33,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles the copyright review-target sweep to one five-minute schedule', async () => {
     await enqueueCheckCopyrightReviewTarget()
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'processCheckCopyrightReviewTarget',
+      candidate => candidate.name === 'notifications.processCheckCopyrightReviewTarget',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
@@ -44,7 +47,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles the copyright evidence retention sweep to one schedule', async () => {
     await enqueueSweepCopyrightEvidenceRetention()
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'processSweepCopyrightEvidenceRetention',
+      candidate => candidate.name === 'notifications.processSweepCopyrightEvidenceRetention',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
@@ -58,7 +61,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles DSA statement reconciliation while preserving an empty scheduler payload', async () => {
     await enqueueReconcileDsaStatementSubmissions()
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'processReconcileDsaStatementSubmissions',
+      candidate => candidate.name === 'notifications.processReconcileDsaStatementSubmissions',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
@@ -75,7 +78,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
     for (const intentId of intentIds) {
       const jobs = await notifications.searchJobs({
-        name: 'processApplyCopyrightAction',
+        name: 'notifications.processApplyCopyrightAction',
         data: { intentId },
       })
       expect(jobs).toHaveLength(1)
@@ -96,7 +99,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
     for (const intentId of intentIds) {
       const jobs = await notifications.searchJobs({
-        name: 'processDeliverCopyrightNotice',
+        name: 'notifications.processDeliverCopyrightNotice',
         data: { intentId },
       })
       expect(jobs).toHaveLength(1)
@@ -123,7 +126,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
 
     for (const mediaDeliveryRegistryRecordId of recordIds) {
       const jobs = await notifications.searchJobs({
-        name: 'processApplyMediaDeliveryRegistryRecord',
+        name: 'notifications.processApplyMediaDeliveryRegistryRecord',
         data: { mediaDeliveryRegistryRecordId },
       })
       expect(jobs).toHaveLength(1)
@@ -137,5 +140,48 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
         },
       })
     }
+  })
+
+  it('queues a reconcile continuation as its own dispatcher-priority job per cursor', async () => {
+    const postId = randomUUID()
+    const afterUserId = randomUUID()
+    await enqueueBulkReconcilePostNotifications([postId])
+    await enqueueContinueReconcilePostNotifications({ postId, afterUserId })
+    // The same cursor is one job; the root job's debounce never swallows a continuation.
+    await enqueueContinueReconcilePostNotifications({ postId, afterUserId })
+
+    const jobs = await notifications.searchJobs({
+      name: 'notifications.processReconcilePostNotifications',
+      data: { postId },
+    })
+    const continuation = jobs.filter(
+      job => (job.data as { afterUserId?: string }).afterUserId === afterUserId,
+    )
+    expect(jobs).toHaveLength(2)
+    expect(continuation).toHaveLength(1)
+    expect(continuation[0]?.id).toBe(`notifications__reconcile-post__${postId}__${afterUserId}`)
+    expect(continuation[0]?.opts).toMatchObject({
+      priority: 100,
+      removeOnComplete: true,
+      removeOnFail: true,
+    })
+    expect(
+      jobs.find(job => (job.data as { afterUserId?: string }).afterUserId === undefined)?.opts,
+    ).toMatchObject({
+      priority: 10,
+    })
+  })
+
+  it('queues an RSS feed item continuation under its own namespaced job id', async () => {
+    const rssFeedItemId = randomUUID()
+    const afterUserId = randomUUID()
+    await enqueueContinueReconcileRssFeedItemNotifications({ rssFeedItemId, afterUserId })
+
+    const job = await notifications.getJob(
+      `notifications__reconcile-rss-feed-item__${rssFeedItemId}__${afterUserId}`,
+    )
+    expect(job?.name).toBe('notifications.processReconcileRssFeedItemNotifications')
+    expect(job?.data).toEqual({ rssFeedItemId, afterUserId })
+    expect(job?.opts).toMatchObject({ priority: 100 })
   })
 })

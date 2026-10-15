@@ -182,7 +182,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     expect(
       (
         await notifications.searchJobs({
-          name: 'processReconcilePostNotifications',
+          name: 'notifications.processReconcilePostNotifications',
           data: { postId: post.id },
         })
       ).length,

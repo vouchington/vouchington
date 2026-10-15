@@ -1,30 +1,26 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import type {
+  DeliverNotificationPushData,
+  ReconcileNotificationPushIntentsData,
+} from '@queues/background/enqueues/notifications-domain'
+import {
+  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
+  NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
-import { notifications } from '../queues.mts'
+import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from '../config.mts'
 
-type DeliverNotificationPushData = { userId: string; notificationId: string }
-export type ReconcileNotificationPushIntentsData = {
-  scanBefore?: string
-  after?: { updatedAt: string; userId: string; notificationId: string }
-}
+export type { ReconcileNotificationPushIntentsData }
 const FIVE_MINUTES_MS = 5 * 60 * 1000
 
-const enqueueDeliverNotificationPushIntentJob = createEnqueueFunction<
-  DeliverNotificationPushData,
-  'processDeliverNotificationPushIntent'
->({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processDeliverNotificationPushIntent' })
+const enqueueDeliverNotificationPushIntentJob = createBackgroundEnqueue(
+  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
+)
 
-const enqueueBulkDeliverNotificationPushIntentJobs = createBulkEnqueueFunction<
-  DeliverNotificationPushData,
-  DeliverNotificationPushData,
-  'processDeliverNotificationPushIntent'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processDeliverNotificationPushIntent',
-  buildJob: data => ({
+const enqueueBulkDeliverNotificationPushIntentJobs = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
+  (data: DeliverNotificationPushData) => ({
     data,
     opts: {
       deduplication: {
@@ -34,23 +30,17 @@ const enqueueBulkDeliverNotificationPushIntentJobs = createBulkEnqueueFunction<
       },
     },
   }),
-})
+)
 
-const enqueueReconcileNotificationPushIntentsJob = createEnqueueFunction<
-  ReconcileNotificationPushIntentsData,
-  'processReconcileNotificationPushIntents'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileNotificationPushIntents',
-})
+const enqueueReconcileNotificationPushIntentsJob = createBackgroundEnqueue(
+  NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
+)
 
 export function enqueueDeliverNotificationPushIntent(
   userId: string,
   notificationId: string,
 ): EnqueueReturnType {
   return enqueueDeliverNotificationPushIntentJob({ userId, notificationId }, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processDeliverNotificationPushIntent__${userId}__${notificationId}`,
       mode: 'debounce',
@@ -67,7 +57,7 @@ export function enqueueBulkDeliverNotificationPushIntents(
       notificationsToDeliver.map(item => [`${item.userId}::${item.notificationId}`, item]),
     ).values(),
   ]
-  return enqueueBulkDeliverNotificationPushIntentJobs(deduped, { priority: PRIORITY_DEFAULT })
+  return enqueueBulkDeliverNotificationPushIntentJobs(deduped)
 }
 
 /** Chains the next distinct page in one fixed recovery snapshot. */
@@ -75,7 +65,6 @@ export function enqueueContinueNotificationPushIntentReconciliation(
   data: Required<ReconcileNotificationPushIntentsData>,
 ): EnqueueReturnType {
   return enqueueReconcileNotificationPushIntentsJob(data, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processReconcileNotificationPushIntentsContinuation__${data.scanBefore}__${data.after.updatedAt}__${data.after.userId}__${data.after.notificationId}`,
       mode: 'throttle',
@@ -86,7 +75,6 @@ export function enqueueContinueNotificationPushIntentReconciliation(
 
 export function enqueueReconcileNotificationPushIntents(): EnqueueReturnType {
   return enqueueReconcileNotificationPushIntentsJob({}, {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: 'processReconcileNotificationPushIntents',
       mode: 'throttle',

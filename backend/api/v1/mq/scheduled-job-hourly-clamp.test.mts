@@ -40,7 +40,7 @@ describe('staging hourly wake alignment', () => {
     ).toEqual({
       pattern: '0 * * * *',
     })
-    expect(staging.get('notifications/copyright-evidence-retention')).toEqual({
+    expect(staging.get('background/copyright-evidence-retention')).toEqual({
       pattern: '0 * * * *',
     })
     expect(staging.get('memberships/googlePlayOidcTrustRefresh')).toEqual({

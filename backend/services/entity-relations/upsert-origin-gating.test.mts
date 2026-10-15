@@ -28,15 +28,14 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
+    // Notifications and ActivityPub share the background queue, so one spy sees both.
     trackBulkEnqueue(notifications, pendingEnqueues)
-    trackBulkEnqueue(activitypub, pendingEnqueues)
     trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await notifications.obliterate()
     await blueskyFollowPropagation.obliterate({ force: true })
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
     vi.restoreAllMocks()
   })
 
@@ -46,7 +45,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'processFollowNotification' &&
+        job.name === 'notifications.processFollowNotification' &&
         (job.data as { followeeId: string }).followeeId === followeeId,
     )
   }
@@ -57,7 +56,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'distributeActivity' &&
+        job.name === 'activitypub.distributeActivity' &&
         (job.data as DistributeActivityData).activityType === 'Follow' &&
         (job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>)
           .targetUserId === targetUserId,

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { CLEANUP_PRIORITY, PROCESS_PRIORITY } from '../config.mts'
+import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import {
   enqueueActivityPubInboxDelivery,
   enqueueBulkActivityPubInboxDeliveries,
@@ -19,7 +19,7 @@ describe('ActivityPub inbox enqueues', () => {
     const jobs = await readAllQueueJobs(activitypub)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
-      name: 'processDelivery',
+      name: 'activitypub.processDelivery',
       data,
       opts: {
         attempts: 5,
@@ -63,7 +63,7 @@ describe('ActivityPub inbox enqueues', () => {
   it('enqueues the recovery dispatcher at low priority with throttled deduplication', async () => {
     await enqueueRecoverActivityPubInboxDeliveries()
     const jobs = await readAllQueueJobs(activitypub)
-    expect(jobs.find(job => job.name === 'recoverDeliveries')).toMatchObject({
+    expect(jobs.find(job => job.name === 'activitypub.recoverDeliveries')).toMatchObject({
       opts: {
         priority: 100,
         deduplication: {
@@ -78,10 +78,10 @@ describe('ActivityPub inbox enqueues', () => {
   it('enqueues cleanup at dispatcher priority with interval-scoped deduplication', async () => {
     await enqueueCleanupExpiredActivityPubInboxDeliveries()
     const jobs = await readAllQueueJobs(activitypub)
-    expect(jobs.find(job => job.name === 'cleanupExpiredDeliveries')).toMatchObject({
+    expect(jobs.find(job => job.name === 'activitypub.cleanupExpiredDeliveries')).toMatchObject({
       id: expect.stringMatching(/^activitypub-inbox-cleanup__\d+$/),
       opts: {
-        priority: CLEANUP_PRIORITY,
+        priority: PRIORITY_DISPATCH,
         deduplication: {
           id: 'activitypub-inbox-cleanup',
           mode: 'throttle',
@@ -89,6 +89,6 @@ describe('ActivityPub inbox enqueues', () => {
         },
       },
     })
-    expect(CLEANUP_PRIORITY).toBeGreaterThan(PROCESS_PRIORITY)
+    expect(PRIORITY_DISPATCH).toBeGreaterThan(PRIORITY_TASK)
   })
 })

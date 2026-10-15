@@ -39,14 +39,14 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
     vi.restoreAllMocks()
   })
 
   function undoFollowPairs(jobs: { name: string; data: unknown }[]): Set<string> {
     return new Set(
       jobs
-        .filter(job => job.name === 'distributeActivity')
+        .filter(job => job.name === 'activitypub.distributeActivity')
         .map(
           job =>
             job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>,
@@ -198,7 +198,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
 async function activityJobsFor(followeeId: string, followerIds: string[]) {
   const followers = new Set(followerIds)
   return (await readAllQueueJobs(activitypub)).filter(job => {
-    if (job.name !== 'distributeActivity') return false
+    if (job.name !== 'activitypub.distributeActivity') return false
     const data = job.data as Extract<
       DistributeActivityData,
       { activityType: 'Follow' | 'UndoFollow' }

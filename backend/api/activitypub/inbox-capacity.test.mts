@@ -63,7 +63,7 @@ describe('POST /ap/inbox capacity handling', () => {
     expect(response.headers['retry-after']).toBeUndefined()
     const deliveryId = await getActivityPubInboxDeliveryIdForTest(activityId)
     expect(deliveryId).toBeDefined()
-    const jobs = (await activitypub.searchJobs({ name: 'processDelivery' })).filter(
+    const jobs = (await activitypub.searchJobs({ name: 'activitypub.processDelivery' })).filter(
       job => (job.data as { deliveryId?: string }).deliveryId === deliveryId,
     )
     try {

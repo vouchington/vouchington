@@ -8,7 +8,7 @@ five minutes. Repeated changes to one scope coalesce into one repair request wit
 keys. A job expands current post, author, community, RSS, and retained tombstone scopes from
 PostgreSQL; reconciles cache, topic-rating, sitemap, and subscription-notification projections; then
 advances a generation-fenced parent cursor or exactly acknowledges the leased generation.
-Notification writes create durable push intents transactionally; the notifications queue owns push
+Notification writes create durable push intents transactionally; the notifications domain owns push
 delivery and recovery.
 
 Its old queue and `WORKER_CONCURRENCY_POST_PUBLICATION` override are gone. Every job runs under the

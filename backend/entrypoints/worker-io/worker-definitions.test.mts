@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { activitypub } from '@queues/activitypub/queues'
 import { cachePurge } from '@workers/cache-purge/workers'
 import { crawlEmbeds } from '@workers/crawl-embeds/workers'
 import { WORKER_DEFINITIONS } from './worker-definitions.mts'
@@ -33,13 +32,10 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
       ['psql', 'psql', 'psql'],
-      ['activitypub', 'activitypub', 'activitypubWorker'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
-      ['follower-distributions', 'follower-distributions', 'followerDistributionsWorker'],
       ['sitemaps', 'sitemaps', 'sitemaps'],
       ['memberships', 'memberships', 'memberships'],
-      ['notifications', 'notifications', 'notificationsWorker'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
       ['admin-imports', 'admin-imports', 'adminImports'],
@@ -95,21 +91,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       expect(worker).toBe(crawlEmbeds)
     } finally {
       await worker.close()
-    }
-  })
-
-  it('activitypub definition load resolves to its worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'activitypub')!
-    await activitypub.pause()
-    try {
-      const worker = await definition.load()
-      try {
-        expect(worker).toBeDefined()
-      } finally {
-        await worker.close()
-      }
-    } finally {
-      await activitypub.resume()
     }
   })
 })

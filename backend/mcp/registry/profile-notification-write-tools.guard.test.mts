@@ -63,7 +63,7 @@ async function snapshot(userId: string) {
     notifications: (await listNotifications(userId)).results.map(row => [row.id, row.read_at]),
     queuedDeletions: jobs.filter(
       job =>
-        job.name === 'processDeleteNotification' &&
+        job.name === 'notifications.processDeleteNotification' &&
         (job.data as { userId?: string }).userId === userId,
     ).length,
     emailPreferences: await getEmailPreferences(userId),

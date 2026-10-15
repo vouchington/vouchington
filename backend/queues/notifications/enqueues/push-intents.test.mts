@@ -5,7 +5,8 @@ import {
   enqueueReconcileNotificationPushIntents,
 } from './push-intents.mts'
 import { notifications } from '../queues.mts'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from '../config.mts'
+import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from '../config.mts'
+import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('notification push intent queue wiring', () => {
@@ -18,12 +19,12 @@ describe('notification push intent queue wiring', () => {
 
     const job = (await readAllQueueJobs(notifications)).find(
       candidate =>
-        candidate.name === 'processDeliverNotificationPushIntent' &&
+        candidate.name === 'notifications.processDeliverNotificationPushIntent' &&
         (candidate.data as { userId?: string }).userId === userId,
     )
     expect(job?.data).toEqual({ userId, notificationId })
     expect(job?.opts).toMatchObject({
-      priority: PRIORITY_DEFAULT,
+      priority: PRIORITY_TASK,
       deduplication: {
         id: `processDeliverNotificationPushIntent__${userId}__${notificationId}`,
         mode: 'debounce',
@@ -36,11 +37,11 @@ describe('notification push intent queue wiring', () => {
     await enqueueReconcileNotificationPushIntents()
 
     const job = (await readAllQueueJobs(notifications)).find(
-      candidate => candidate.name === 'processReconcileNotificationPushIntents',
+      candidate => candidate.name === 'notifications.processReconcileNotificationPushIntents',
     )
     expect(job?.data).toEqual({})
     expect(job?.opts).toMatchObject({
-      priority: PRIORITY_DEFAULT,
+      priority: PRIORITY_DISPATCH,
       deduplication: {
         id: 'processReconcileNotificationPushIntents',
         mode: 'throttle',
@@ -61,10 +62,10 @@ describe('notification push intent queue wiring', () => {
     const job = await enqueueContinueNotificationPushIntentReconciliation(data)
 
     expect(job).toMatchObject({
-      name: 'processReconcileNotificationPushIntents',
+      name: 'notifications.processReconcileNotificationPushIntents',
       data,
       opts: {
-        priority: PRIORITY_DEFAULT,
+        priority: PRIORITY_DISPATCH,
         deduplication: {
           id: `processReconcileNotificationPushIntentsContinuation__${data.scanBefore}__${data.after.updatedAt}__${data.after.userId}__${data.after.notificationId}`,
           mode: 'throttle',

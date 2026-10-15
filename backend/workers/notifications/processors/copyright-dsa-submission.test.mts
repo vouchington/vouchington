@@ -50,7 +50,7 @@ describe('DSA submission notification processor with the audited switch enabled'
     vi.stubEnv('DSA_TRANSPARENCY_DATABASE_TOKEN', 'synthetic-token')
     const id = await createTestDsaSubmission()
     const job = await readEnqueuedJob(notifications, await enqueueSubmitDsaStatementOfReasons(id))
-    expect(job.name).toBe('processSubmitDsaStatementOfReasons')
+    expect(job.name).toBe('notifications.processSubmitDsaStatementOfReasons')
     expect(job.data).toEqual({ submissionId: id })
     const fetch = fakeProvider()
     await expect(
@@ -175,7 +175,7 @@ describe('DSA statement reconciliation notification processor', () => {
     expect(enqueue).toHaveBeenCalledExactlyOnceWith([firstId, secondId])
     expect(enqueuedJobs).toMatchObject([
       {
-        name: 'processSubmitDsaStatementOfReasons',
+        name: 'notifications.processSubmitDsaStatementOfReasons',
         data: { submissionId: firstId },
         opts: {
           attempts: 3,
@@ -186,7 +186,7 @@ describe('DSA statement reconciliation notification processor', () => {
         },
       },
       {
-        name: 'processSubmitDsaStatementOfReasons',
+        name: 'notifications.processSubmitDsaStatementOfReasons',
         data: { submissionId: secondId },
         opts: {
           attempts: 3,

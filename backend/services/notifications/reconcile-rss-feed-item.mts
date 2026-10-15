@@ -3,6 +3,7 @@ import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/disco
 import sql from 'sql-template-strings'
 import {
   type ReconcileNotificationsOptions,
+  type RecipientPage,
   reconcileNotificationBatches,
 } from './reconcile-batches.mts'
 import {
@@ -24,16 +25,17 @@ export async function reconcileNotificationsForRssFeedItem(
   return reconcileNotificationBatches(
     {
       batchQueryComment: 'selectRssFeedItemNotificationRecipientBatch',
-      createRecipients: (client, recipientTable) =>
-        populateRssFeedItemNotificationRecipients(client, recipientTable, item),
+      createRecipients: (client, recipientTable, page) =>
+        populateRssFeedItemNotificationRecipients(client, recipientTable, item, page),
       insertBatch: (client, recipientIds, createdTable) =>
         insertRssFeedItemNotificationsForRecipients(item, recipientIds, client, createdTable),
-      prune: (client, recipientTable) =>
+      prune: (client, recipientTable, range) =>
         pruneRssFeedItemNotificationsExceptRecipients(
           item.rss_feed_item_id,
           item.is_content_eligible,
           client,
           recipientTable,
+          range,
         ),
     },
     options,
@@ -80,6 +82,7 @@ async function populateRssFeedItemNotificationRecipients(
   client: PoolClient,
   recipientTable: string,
   item: RssFeedItemSnapshot,
+  page: RecipientPage,
 ): Promise<void> {
   if (!item.is_content_eligible) return
 
@@ -134,10 +137,12 @@ async function populateRssFeedItemNotificationRecipients(
     SELECT DISTINCT user_id
     FROM recipients
     WHERE user_id IS NOT NULL
+      AND ($2::uuid IS NULL OR user_id > $2)
     -- no-mistakes: deadlock-safe -- random session-private temp table has no schema catalog entry.
     ORDER BY user_id
+    LIMIT $3
     ON CONFLICT (user_id) DO NOTHING
   `,
-    [item.rss_feed_item_id],
+    [item.rss_feed_item_id, page.afterUserId, page.limit],
   )
 }

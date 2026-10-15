@@ -6,72 +6,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Recover abandoned durable ActivityPub inbox envelopes",
-        "id": "activitypub-inbox-recovery",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "activitypub",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "activitypub-inbox-recovery",
-    "template": {
-      "data": {},
-      "name": "recoverDeliveries",
-      "opts": {
-        "attempts": 5,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Delete expired durable ActivityPub inbox envelopes",
-        "id": "activitypub-inbox-cleanup",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "activitypub",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "activitypub-inbox-cleanup",
-    "template": {
-      "data": {},
-      "name": "cleanupExpiredDeliveries",
-      "opts": {
-        "attempts": 5,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Re-enqueue incomplete classifier runs and dispatch unreserved requests",
         "id": "reconcileClassifierRuns",
         "kind": "scheduled-jobs",
@@ -601,6 +535,336 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 1,
           "key": "oauth-authorization-exchange:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Enqueue due public copyright DSA statement submissions",
+        "id": "copyright-dsa-statement-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-dsa-statement-reconciliation",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileDsaStatementSubmissions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Converge exact media delivery tuples to the edge registry",
+        "id": "media-delivery-registry-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "media-delivery-registry-reconciliation",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileMediaDeliveryRegistry",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright media action intents",
+        "id": "copyright-action-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightActionIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright legal delivery intents",
+        "id": "copyright-delivery-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-delivery-reconciliation",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileCopyrightDeliveryIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Page Sentry when copyright cases wait past the review target or deadlines",
+        "id": "copyright-review-target-page",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-review-target-page",
+    "template": {
+      "data": {},
+      "name": "notifications.processCheckCopyrightReviewTarget",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
+        "id": "copyright-evidence-retention",
+        "kind": "scheduled-jobs",
+        "schedule": "17 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "17 * * * *",
+    },
+    "schedulerId": "copyright-evidence-retention",
+    "template": {
+      "data": {},
+      "name": "notifications.processSweepCopyrightEvidenceRetention",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
+        "id": "notification-push-intent-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "notification-push-intent-recovery",
+    "template": {
+      "data": {},
+      "name": "notifications.processReconcileNotificationPushIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch weekly community activity notifications",
+        "id": "community-activity-digest-weekly",
+        "kind": "scheduled-jobs",
+        "schedule": "0 9 * * 1",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 9 * * 1",
+    },
+    "schedulerId": "community-activity-digest-weekly",
+    "template": {
+      "data": {},
+      "name": "notifications.processCommunityActivityDigestScheduleTick",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover abandoned durable ActivityPub inbox envelopes",
+        "id": "activitypub-inbox-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-inbox-recovery",
+    "template": {
+      "data": {},
+      "name": "activitypub.recoverDeliveries",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Delete expired durable ActivityPub inbox envelopes",
+        "id": "activitypub-inbox-cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-inbox-cleanup",
+    "template": {
+      "data": {},
+      "name": "activitypub.cleanupExpiredDeliveries",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1872,270 +2136,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Enqueue due public copyright DSA statement submissions",
-        "id": "copyright-dsa-statement-reconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "copyright-dsa-statement-reconciliation",
-    "template": {
-      "data": {},
-      "name": "processReconcileDsaStatementSubmissions",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Converge exact media delivery tuples to the edge registry",
-        "id": "media-delivery-registry-reconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "media-delivery-registry-reconciliation",
-    "template": {
-      "data": {},
-      "name": "processReconcileMediaDeliveryRegistry",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending copyright media action intents",
-        "id": "copyright-action-reconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "copyright-action-reconciliation",
-    "template": {
-      "data": {},
-      "name": "processReconcileCopyrightActionIntents",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending copyright legal delivery intents",
-        "id": "copyright-delivery-reconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "copyright-delivery-reconciliation",
-    "template": {
-      "data": {},
-      "name": "processReconcileCopyrightDeliveryIntents",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Page Sentry when copyright cases wait past the review target or deadlines",
-        "id": "copyright-review-target-page",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "copyright-review-target-page",
-    "template": {
-      "data": {},
-      "name": "processCheckCopyrightReviewTarget",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
-        "id": "copyright-evidence-retention",
-        "kind": "scheduled-jobs",
-        "schedule": "17 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "17 * * * *",
-    },
-    "schedulerId": "copyright-evidence-retention",
-    "template": {
-      "data": {},
-      "name": "processSweepCopyrightEvidenceRetention",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
-        "id": "notification-push-intent-recovery",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "notification-push-intent-recovery",
-    "template": {
-      "data": {},
-      "name": "processReconcileNotificationPushIntents",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch weekly community activity notifications",
-        "id": "community-activity-digest-weekly",
-        "kind": "scheduled-jobs",
-        "schedule": "0 9 * * 1",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "notifications",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 9 * * 1",
-    },
-    "schedulerId": "community-activity-digest-weekly",
-    "template": {
-      "data": {},
-      "name": "processCommunityActivityDigestScheduleTick",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "jobType": "createPartitions",
         "kind": "psql",
       },
@@ -2690,16 +2690,16 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
     "id": "activitypub-inbox-recovery",
-    "job_name": "recoverDeliveries",
-    "queue_name": "activitypub",
+    "job_name": "activitypub.recoverDeliveries",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverActivityPubInboxDeliveries",
   },
   {
     "description": "Delete expired durable ActivityPub inbox envelopes",
     "id": "activitypub-inbox-cleanup",
-    "job_name": "cleanupExpiredDeliveries",
-    "queue_name": "activitypub",
+    "job_name": "activitypub.cleanupExpiredDeliveries",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueCleanupExpiredActivityPubInboxDeliveries",
   },
@@ -2714,64 +2714,64 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch weekly community activity notifications",
     "id": "community-activity-digest-weekly",
-    "job_name": "processCommunityActivityDigestScheduleTick",
-    "queue_name": "notifications",
+    "job_name": "notifications.processCommunityActivityDigestScheduleTick",
+    "queue_name": "background",
     "schedule": "0 9 * * 1",
     "triggerName": "enqueueCommunityActivityDigestScheduleTick",
   },
   {
     "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
     "id": "notification-push-intent-recovery",
-    "job_name": "processReconcileNotificationPushIntents",
-    "queue_name": "notifications",
+    "job_name": "notifications.processReconcileNotificationPushIntents",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileNotificationPushIntents",
   },
   {
     "description": "Converge exact media delivery tuples to the edge registry",
     "id": "media-delivery-registry-reconciliation",
-    "job_name": "processReconcileMediaDeliveryRegistry",
-    "queue_name": "notifications",
+    "job_name": "notifications.processReconcileMediaDeliveryRegistry",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileMediaDeliveryRegistry",
   },
   {
     "description": "Re-enqueue pending copyright media action intents",
     "id": "copyright-action-reconciliation",
-    "job_name": "processReconcileCopyrightActionIntents",
-    "queue_name": "notifications",
+    "job_name": "notifications.processReconcileCopyrightActionIntents",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileCopyrightActionIntents",
   },
   {
     "description": "Re-enqueue pending copyright legal delivery intents",
     "id": "copyright-delivery-reconciliation",
-    "job_name": "processReconcileCopyrightDeliveryIntents",
-    "queue_name": "notifications",
+    "job_name": "notifications.processReconcileCopyrightDeliveryIntents",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileCopyrightDeliveryIntents",
   },
   {
     "description": "Enqueue due public copyright DSA statement submissions",
     "id": "copyright-dsa-statement-reconciliation",
-    "job_name": "processReconcileDsaStatementSubmissions",
-    "queue_name": "notifications",
+    "job_name": "notifications.processReconcileDsaStatementSubmissions",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileDsaStatementSubmissions",
   },
   {
     "description": "Page Sentry when copyright cases wait past the review target or deadlines",
     "id": "copyright-review-target-page",
-    "job_name": "processCheckCopyrightReviewTarget",
-    "queue_name": "notifications",
+    "job_name": "notifications.processCheckCopyrightReviewTarget",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueCheckCopyrightReviewTarget",
   },
   {
     "description": "Erase evidence and personal data of copyright cases past retention; no-op while off",
     "id": "copyright-evidence-retention",
-    "job_name": "processSweepCopyrightEvidenceRetention",
-    "queue_name": "notifications",
+    "job_name": "notifications.processSweepCopyrightEvidenceRetention",
+    "queue_name": "background",
     "schedule": "17 * * * *",
     "triggerName": "enqueueSweepCopyrightEvidenceRetention",
   },
