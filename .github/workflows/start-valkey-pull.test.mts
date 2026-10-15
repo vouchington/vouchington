@@ -83,7 +83,12 @@ if (args[0] === 'port') console.log('127.0.0.1:32123');
     .trim()
     .split('\n')
     .map(line => JSON.parse(line) as string[])
-  return { ...result, calls: recorded, output: await readFile(output, 'utf8') }
+  return {
+    ...result,
+    calls: recorded,
+    output: await readFile(output, 'utf8'),
+    environment: await readFile(envFile, 'utf8'),
+  }
 }
 
 describe('Valkey image acquisition and single container start', () => {
@@ -100,6 +105,8 @@ describe('Valkey image acquisition and single container start', () => {
     expect(runs[0]).toContain('--pull=never')
     expect(runs[0]?.at(-1)).toBe(image)
     expect(result.output).toBe('url=redis://127.0.0.1:32123\n')
+    expect(result.environment).toBe('VALKEY_URL=redis://127.0.0.1:32123\n')
+    expect(result.calls.filter(call => call[0] === 'logs')).toEqual([])
   })
 
   it('falls back once for missing content, retaining the first error and exact digest', async () => {
