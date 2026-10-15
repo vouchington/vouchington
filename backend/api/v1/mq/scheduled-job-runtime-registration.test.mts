@@ -30,10 +30,10 @@ import {
 } from '@queues/find-your-friends/enqueues/schedules'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import {
-  scheduledJobManifest as imagesManifest,
-  upsertSchedules as registerImages,
-} from '@queues/images/enqueues/schedules'
-import { imagesQueue } from '@queues/images/queues'
+  scheduledJobManifest as contentAnalysisManifest,
+  upsertSchedules as registerContentAnalysis,
+} from '@queues/content-analysis/enqueues/schedules'
+import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import {
   scheduledJobManifest as openAiModerationManifest,
   upsertSchedules as registerOpenAiModeration,
@@ -72,7 +72,7 @@ const REGISTRATIONS = [
   [registerCrawlDispatch, crawlDispatchQueue, crawlDispatchManifest],
   [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
-  [registerImages, imagesQueue, imagesManifest],
+  [registerContentAnalysis, contentAnalysisQueue, contentAnalysisManifest],
   [registerOpenAiModeration, openai_moderation_omni_single, openAiModerationManifest],
   [registerKagi, kagiSmallWeb, kagiManifest],
   [registerSitemaps, sitemaps, sitemapsManifest],

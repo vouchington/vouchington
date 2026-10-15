@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as imageEnqueues from '@queues/images/enqueues'
+import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import * as staydownMatches from '@services/copyright-notices/staydown-matches'
 import * as completeUploadModule from '@services/images/complete-upload'
 import { getImageByIdFromPrimary } from '@services/images/get'

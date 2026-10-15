@@ -3,7 +3,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
 
 export const processUserCreated = async ({ id }: { id: string }) => {
   await repairEntityBloomKeys('users', id)

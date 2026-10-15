@@ -444,4 +444,4 @@ async function uploadWithRetry(file: File, maxRetries = 3) {
 
 - **Service Implementation**: [../../services/images/README.md](../../../../overview/architecture/services/images/README.md)
 - **API Routes**: [./index.mts](../../../../../backend/api/v1/images/index.mts)
-- [docs/overview/architecture/queues/images/README.md](../../../../overview/architecture/queues/images/README.md)
+- [docs/overview/architecture/queues/image-uploads/README.md](../../../../overview/architecture/queues/image-uploads/README.md)

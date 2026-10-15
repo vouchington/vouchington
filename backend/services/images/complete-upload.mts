@@ -1,6 +1,6 @@
 import type { MediaBody } from '@vouchington/media'
 import { isUniqueViolation } from '@data-stores/psql'
-import { enqueueExtractImageMetadata } from '@queues/images/enqueues'
+import { enqueueExtractImageMetadata } from '@queues/image-uploads/enqueues'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'
 import { getImageByHash, getImageByIdFromPrimary } from './get.mts'

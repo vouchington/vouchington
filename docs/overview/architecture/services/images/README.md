@@ -6,7 +6,7 @@ This service handles client-side direct uploads to a dedicated staging S3 bucket
 URLs. After the client uploads to staging, the API streams and hashes the bytes, promotes those
 verified bytes to an immutable digest key in the final-images bucket, persists the hash and final
 key, and hands off image-metadata extraction (sharp) to the worker via the
-[`@queues/images`](../../queues/images/README.md) `extract-metadata` job. Sharp is
+[`@queues/image-uploads`](../../queues/image-uploads/README.md) `extract-metadata` job. Sharp is
 intentionally not loaded by the API container.
 
 [`@vouchington/media`](https://github.com/vouchington/vouchington-platform/tree/main/packages/media)
@@ -181,7 +181,7 @@ If completion or metadata processing fails, the active nonterminal row records
 `upload_started_at` is set.
 
 **Services:** `completeImageUpload()` in `complete-upload.mts` (API),
-`processExtractImageMetadata()` in [`backend/workers/images/processors/extract-metadata.mts`](../../../../../backend/workers/images/processors/extract-metadata.mts) (worker).
+`processExtractImageMetadata()` in [`backend/workers/image-uploads/processors/extract-metadata.mts`](../../../../../backend/workers/image-uploads/processors/extract-metadata.mts) (worker).
 
 ## Deduplication
 
@@ -211,7 +211,7 @@ For direct S3 uploads, the hash is calculated **after** upload because:
 ### Cleanup Abandoned Uploads
 
 **Schedule:** Every hour
-**Worker:** `@queues/images`
+**Worker:** `@queues/image-uploads`
 **Function:** `cleanupAbandonedUploads()` in [`services/images/cleanup-abandoned-uploads.mts`](../../../../../backend/services/images/cleanup-abandoned-uploads.mts)
 
 **What it does:**
@@ -322,17 +322,17 @@ original uploader.
 
 ### Job System
 
-[`@queues/images`](../../../../../backend/queues/images/) (API-safe surface):
+[`@queues/image-uploads`](../../../../../backend/queues/image-uploads/) (API-safe surface):
 
 - `config.mts` - Queue name
 - `queues.mts` - glide-mq queue instance
-- `enqueues.mts` - `enqueueCleanupAbandonedUploads` and `enqueueExtractImageMetadata`
-- `setup.mts` - Schedule hourly cleanup
+- `enqueues.mts` - `enqueueExtractImageMetadata`
+- `@queues/content-analysis/enqueues/schedules.mts` - Hourly cleanup schedule
 
-[`@workers/images`](../../../../../backend/workers/images/) (worker-only; owns `sharp`):
+[`@workers/image-uploads`](../../../../../backend/workers/image-uploads/) (worker-only; owns `sharp`):
 
 - `processors/extract-metadata.mts` - Sharp metadata extraction processor
-- `workers/images.mts` - Worker dispatching `cleanup-abandoned-uploads` and `extract-metadata`
+- `workers/image-uploads.mts` - Worker dispatching `extract-metadata`
 
 ### Database
 
@@ -378,9 +378,9 @@ curl -X POST http://localhost:3000/api/v1/images/<image_id>/completions \
 - Cleanup and recovery coverage: [`cleanup-abandoned-uploads.test.mts`](../../../../../backend/services/images/cleanup-abandoned-uploads.test.mts)
   and [`cleanup-abandoned-uploads.concurrency.test.mts`](../../../../../backend/services/images/cleanup-abandoned-uploads.concurrency.test.mts)
 - API route coverage: [`backend/api/v1/images/__tests__/index.test.mts`](../../../../../backend/api/v1/images/__tests__/index.test.mts)
-- Worker metadata coverage: [`extract-metadata.test.mts`](../../../../../backend/workers/images/processors/extract-metadata.test.mts),
-  [`extract-metadata.publication.test.mts`](../../../../../backend/workers/images/processors/__tests__/extract-metadata.publication.test.mts),
-  and [`extract-metadata.cleanup.test.mts`](../../../../../backend/workers/images/processors/__tests__/extract-metadata.cleanup.test.mts)
+- Worker metadata coverage: [`extract-metadata.test.mts`](../../../../../backend/workers/image-uploads/processors/extract-metadata.test.mts),
+  [`extract-metadata.publication.test.mts`](../../../../../backend/workers/image-uploads/processors/__tests__/extract-metadata.publication.test.mts),
+  and [`extract-metadata.cleanup.test.mts`](../../../../../backend/workers/image-uploads/processors/__tests__/extract-metadata.cleanup.test.mts)
 
 ## Monitoring
 
@@ -431,4 +431,4 @@ FROM images WHERE deleted_at IS NULL;
 ## Related
 
 - [docs/requirements/api/v1/images/README.md](../../../../requirements/api/v1/images/README.md)
-- [docs/overview/architecture/queues/images/README.md](../../queues/images/README.md)
+- [docs/overview/architecture/queues/image-uploads/README.md](../../queues/image-uploads/README.md)

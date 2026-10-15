@@ -1,7 +1,7 @@
 import { write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 // Canonical definition lives in @voucha/types/entities/image (avoids a
-// services/images <-> queues/images <-> data-stores/valkey workspace cycle:
+// services/images <-> queues/image-uploads <-> data-stores/valkey workspace cycle:
 // data-stores/valkey needs this type but must not depend on @services/images).
 import type { ImageUploadState } from '@voucha/types/entities/image'
 

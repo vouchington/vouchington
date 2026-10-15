@@ -159,7 +159,6 @@ ignores:
   - 'backend/mcp/admin/copyright-reads.test.mts'
   - 'backend/workers/ai-agents/processors/process-reconcile-copyright-agent-dispatches.real-glide.mock.test.mts'
   - 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts'
-  - 'backend/workers/images/workers/images.test.mts'
   - 'backend/workers/report-integrity/processors.test.mts'
   - 'ci/coverage-rules-scope.test.mts'
   - 'static-code-analysis/i18n-extract/route-bounds.test.mts'

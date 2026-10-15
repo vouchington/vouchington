@@ -13,7 +13,7 @@ import { deriveUploadStatus } from './get-upload-state.mts'
 
 import * as s3Module from './s3-upload-lifecycle.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { imagesQueue } from '@queues/images/queues'
+import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { randomBytes } from 'node:crypto'
 
 describe('cleanupAbandonedUploads', () => {
@@ -25,7 +25,7 @@ describe('cleanupAbandonedUploads', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    return imagesQueue.obliterate({ force: true })
+    return imageUploadsQueue.obliterate({ force: true })
   })
   it('should cleanup pending uploads older than 24 hours', async () => {
     // Create a new upload
@@ -157,7 +157,7 @@ describe('cleanupAbandonedUploads', () => {
     )
     expect(deleteSourceSpy).toHaveBeenCalledWith(expect.objectContaining({ id: result.image_id }))
     expect(await getImageById(result.image_id)).not.toBeNull()
-    const [job] = await imagesQueue.searchJobs({ data: { id: result.image_id } })
+    const [job] = await imageUploadsQueue.searchJobs({ data: { id: result.image_id } })
     expect(job?.data).toEqual({ id: result.image_id })
   })
 

@@ -1,0 +1,33 @@
+{
+  "name": "@workers/content-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/content-analysis": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
+    "@services/images": "workspace:^",
+    "@services/language-detection": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@vouchington/media": "^0.2.0",
+    "glide-mq": "^0.18.0",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@services/urls": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

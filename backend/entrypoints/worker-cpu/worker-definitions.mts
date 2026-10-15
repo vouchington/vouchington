@@ -1,6 +1,6 @@
 import type { WorkerDefinition } from '@backend/worker-runtime'
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
-import { LANGUAGE_DETECTION_QUEUE_NAME } from '@queues/language-detection/config'
+import { CONTENT_ANALYSIS_QUEUE_NAME } from '@queues/content-analysis/config'
 import { UNFURL_REFERRAL_LINKS_QUEUE_NAME } from '@queues/unfurl-referral-links/config'
 
 export const WORKER_DEFINITIONS: WorkerDefinition[] = [
@@ -30,8 +30,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
       import('@workers/unfurl-referral-links/workers').then(module => module.unfurlReferralLinks),
   },
   {
-    queueName: 'images',
-    load: () => import('@workers/images/workers').then(module => module.images),
+    queueName: 'image-uploads',
+    load: () => import('@workers/image-uploads/workers').then(module => module.imageUploads),
   },
   {
     queueName: 'ai_agents',
@@ -66,9 +66,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
       ),
   },
   {
-    queueName: LANGUAGE_DETECTION_QUEUE_NAME,
-    load: () =>
-      import('@workers/language-detection/workers').then(module => module.languageDetection),
+    queueName: CONTENT_ANALYSIS_QUEUE_NAME,
+    load: () => import('@workers/content-analysis/workers').then(module => module.contentAnalysis),
   },
   ...IO_WORKER_DEFINITIONS,
 ]

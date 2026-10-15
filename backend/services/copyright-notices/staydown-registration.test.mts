@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PRIORITY_DEFAULT } from '@queues/images/config'
-import * as imageEnqueues from '@queues/images/enqueues'
-import { imagesQueue } from '@queues/images/queues'
+import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
+import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
@@ -10,7 +9,7 @@ import { isCopyrightStaydownMatchingEnabled } from './config.mts'
 import { completeCopyrightMandatoryHumanReview } from './index.mts'
 
 /**
- * `imagesQueue` is `Queue<unknown>`. Read the image id only when the payload actually has one,
+ * `contentAnalysisQueue` is `Queue<unknown>`. Read the image id only when the payload actually has one,
  * so a staydown-hash job with another shape cannot satisfy the registration dedup id.
  */
 function registrationImageId(data: unknown): string | undefined {
@@ -45,7 +44,7 @@ async function settledRegistration<T>(run: () => Promise<T>): Promise<T> {
 async function registrationHashJobs(imageIds: readonly string[]) {
   const groups = await Promise.all(
     imageIds.map(imageId =>
-      imagesQueue.searchJobs({
+      contentAnalysisQueue.searchJobs({
         name: 'staydown-hash',
         data: { id: imageId },
       }),
@@ -55,7 +54,7 @@ async function registrationHashJobs(imageIds: readonly string[]) {
     const imageId = registrationImageId(job.data)
     return (
       imageId !== undefined &&
-      job.opts.deduplication?.id === `staydown-hash-registration-${imageId}`
+      job.opts.deduplication?.id === `content-analysis:staydown-hash:registration:${imageId}`
     )
   })
 }
@@ -70,9 +69,9 @@ async function expectRegistrationHashJobs(imageIds: readonly string[]): Promise<
   expect(jobs.map(job => job.data.id).toSorted()).toEqual(imageIds.toSorted())
   for (const job of jobs) {
     expect(job.opts).toMatchObject({
-      priority: PRIORITY_DEFAULT,
+      priority: 10,
       deduplication: {
-        id: `staydown-hash-registration-${job.data.id}`,
+        id: `content-analysis:staydown-hash:registration:${job.data.id}`,
         mode: 'simple',
       },
     })

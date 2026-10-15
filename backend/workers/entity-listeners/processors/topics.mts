@@ -6,7 +6,7 @@ import {
   enqueueBackfillCategoriesForTopicAliases,
   enqueueBackfillRssFeedCategoriesForTopicAlias,
 } from '@queues/rss-feed-maintenance/enqueues/item-categories'
-import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 
 export const processTopicCreated = async ({ id }: { id: string }) => {

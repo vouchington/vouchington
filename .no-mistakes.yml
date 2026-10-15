@@ -1334,27 +1334,27 @@ rules:
             callee: 'recoverUrlEffect',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectCommunityLanguageBatch',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectCrawlLanguageBatch',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectPostLanguageBatch',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectRssFeedItemLanguageBatch',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectTopicLanguageBatch',
           }
         - {
-            file: backend/workers/language-detection/processors.mts,
+            file: backend/workers/content-analysis/processors.mts,
             callee: 'detectUserLanguageBatch',
           }
         - {

@@ -1045,18 +1045,18 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Clean up abandoned image uploads",
-        "id": "cleanup-abandoned-uploads-schedule",
+        "id": "content-analysis:cleanup-abandoned-uploads-schedule",
         "kind": "scheduled-jobs",
         "schedule": "every 1h",
         "trigger": "[function]",
       },
     ],
-    "queueName": "images",
+    "queueName": "content-analysis",
     "registration": "parallel",
     "repeat": {
       "every": 3600000,
     },
-    "schedulerId": "cleanup-abandoned-uploads-schedule",
+    "schedulerId": "content-analysis:cleanup-abandoned-uploads-schedule",
     "template": {
       "data": {},
       "name": "cleanup-abandoned-uploads",
@@ -1067,7 +1067,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "priority": 10,
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -2749,9 +2749,9 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   },
   {
     "description": "Clean up abandoned image uploads",
-    "id": "cleanup-abandoned-uploads-schedule",
+    "id": "content-analysis:cleanup-abandoned-uploads-schedule",
     "job_name": "cleanup-abandoned-uploads",
-    "queue_name": "images",
+    "queue_name": "content-analysis",
     "schedule": "every 1h",
     "triggerName": "enqueueCleanupAbandonedUploads",
   },

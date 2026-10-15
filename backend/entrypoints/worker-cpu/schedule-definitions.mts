@@ -31,8 +31,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       ),
   },
   {
-    queueName: 'images',
-    load: () => import('@queues/images/enqueues/schedules').then(module => module.upsertSchedules),
+    queueName: 'content-analysis',
+    load: () =>
+      import('@queues/content-analysis/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'bedrock-embeddings-batch',

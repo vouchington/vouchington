@@ -21,7 +21,7 @@ import { articleSync } from '@queues/article-sync/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { followerDistributions } from '@queues/follower-distributions/queues'
-import { imagesQueue } from '@queues/images/queues'
+import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { memberships } from '@queues/memberships/queues'
 import { notifications } from '@queues/notifications/queues'
@@ -37,7 +37,7 @@ import { ban_evasion as banEvasion } from '@queues/ban-evasion/queues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
-import { language_detection as languageDetection } from '@queues/language-detection/queues'
+import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
 import { sesInboundQueue } from '@queues/ses-inbound/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
@@ -65,7 +65,7 @@ const allQueues = [
   crawlReferralLinksQueue,
   findYourFriendsQueue,
   followerDistributions,
-  imagesQueue,
+  imageUploadsQueue,
   kagiSmallWeb,
   memberships,
   notifications,
@@ -82,7 +82,7 @@ const allQueues = [
   cachePurge,
   crawlBrowserQueue,
   crawlEmbedsQueue,
-  languageDetection,
+  contentAnalysisQueue,
   oauthAuthorizationExchangeQueue,
   sesInboundQueue,
   unfurlReferralLinksQueue,

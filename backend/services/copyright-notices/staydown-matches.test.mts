@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as imageEnqueues from '@queues/images/enqueues'
+import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
   readCopyrightStaydownMatches,

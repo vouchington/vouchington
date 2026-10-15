@@ -88,9 +88,11 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | find-your-friends                            | syncGithubFriends                              | sync_github                              | 10               |
 | oauth-authorization-exchange                 | exchangeOAuthAuthorization                     | —                                        | 1                |
 | oauth-authorization-exchange                 | dispatchOAuthAuthorizationExchanges            | —                                        | 100              |
-| images                                       | cleanup-abandoned-uploads                      | —                                        | 10               |
-| images                                       | extract-metadata                               | —                                        | 5                |
-| images                                       | staydown-hash                                  | —                                        | 5                |
+| content-analysis                             | language-detection                             | —                                        | 10               |
+| content-analysis                             | backfill_*                                     | —                                        | 100              |
+| content-analysis                             | staydown-hash                                  | —                                        | 10               |
+| content-analysis                             | cleanup-abandoned-uploads                      | —                                        | 100              |
+| image-uploads                                | extract-metadata                               | —                                        | —                |
 | kagi-smallweb                                | sync                                           | —                                        | 10               |
 | memberships                                  | processStripeEvent                             | —                                        | 10               |
 | memberships                                  | recoverStripeEvents                            | —                                        | 100              |

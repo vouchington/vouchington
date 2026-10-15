@@ -49,7 +49,7 @@ describe('worker-cpu worker definitions', () => {
         '/backend/workers/unfurl-referral-links/workers.mts',
         'unfurlReferralLinks',
       ],
-      ['images', '/backend/workers/images/workers.mts', 'images'],
+      ['image-uploads', '/backend/workers/image-uploads/workers.mts', 'imageUploads'],
       ['ai_agents', '/backend/workers/ai-agents/workers.mts', 'ai_agents'],
       [
         'ai-spend-cap-rechecks',
@@ -71,11 +71,7 @@ describe('worker-cpu worker definitions', () => {
         '/backend/workers/bedrock-embeddings-batch/workers.mts',
         'bedrock_embeddings_batch',
       ],
-      [
-        'language_detection',
-        '/backend/workers/language-detection/workers.mts',
-        'languageDetection',
-      ],
+      ['content-analysis', '/backend/workers/content-analysis/workers.mts', 'contentAnalysis'],
     ] as const
     const byQueue = (name: string) =>
       cpuOnlyDefinitions.find(definition => definition.queueName === name)!
