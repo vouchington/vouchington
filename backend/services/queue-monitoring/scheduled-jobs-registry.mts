@@ -43,6 +43,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'stripeCatalogReconciliation',
   'renewalNotificationCheck',
   'blacklistDispatcher',
+  'hostnameCacheInvalidationSweep',
   'reconcileTopicAliasCategoryMappings',
   'reconcileRssFeedItemCategorySnapshots',
   'reconcile-post-publication',
