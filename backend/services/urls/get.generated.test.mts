@@ -1,7 +1,14 @@
 import { it, expect, describe } from 'vitest'
-import { getUrlByAny, getUrlById } from './get.mts'
+import { getUrlByAny, getUrlByAnyCached, getUrlById } from './get.mts'
 import { addUrl } from './upsert.mts'
-import { insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
+import {
+  createTestBlacklistSource,
+  deleteTestBlacklistSource,
+  insertTestUrl,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
+import { caches } from '@services/entity-cache/caches'
+import { syncDomainsWithDatabase } from '../urls-domains-blacklist-sync/sync-db.mts'
 
 describe('get.generated', () => {
   it('getUrlByAny returns null when URL does not exist', async () => {
@@ -62,5 +69,34 @@ describe('get.generated', () => {
     expect(url).toBeDefined()
     expect(url!.id).toBe(urlId)
     expect(url!.url).toBe(`https://${hostname}/test`)
+  })
+
+  it('reads current hostname policy while keeping the same URL cached across feed changes', async () => {
+    const hostname = `cached-url-policy-${crypto.randomUUID()}.example.com`
+    const url = await addUrl(null, `https://${hostname}/article`, { skipCreatedEvents: true })
+    if (!url) throw new Error('Expected URL fixture')
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `cached-url-${crypto.randomUUID().replaceAll(/[0-9]/g, 'a')}`,
+      url: 'https://example.com/cached-url-policy.txt',
+    })
+    try {
+      const rawUrl = await getUrlByAny(url.id)
+      if (!rawUrl) throw new Error('Expected persisted URL fixture')
+      await caches.urls.set(url.id, rawUrl)
+      expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(false)
+      const cachedUrl = await caches.urls.get(url.id)
+      expect(cachedUrl).not.toBeNull()
+
+      await syncDomainsWithDatabase(sourceId, new Response(`${hostname}\n`), 'url')
+      expect(await caches.urls.get(url.id)).toEqual(cachedUrl)
+      expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(true)
+
+      await syncDomainsWithDatabase(sourceId, new Response(''), 'url')
+      expect(await caches.urls.get(url.id)).toEqual(cachedUrl)
+      expect((await getUrlByAnyCached(url.id))?.hostname.is_blocked).toBe(false)
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
   })
 })
