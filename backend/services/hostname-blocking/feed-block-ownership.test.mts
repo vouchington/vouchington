@@ -1,4 +1,8 @@
 import { randomBytes } from 'node:crypto'
+import { beginTransaction } from '@data-stores/psql'
+import { upsertUrlHostnamesForBlocking } from '@services/urls-hostnames/upsert'
+import { lockTestHostnameNowait } from '@voucha/test-helpers/entities/hostname-feed-concurrency'
+import { v7 as uuidv7 } from 'uuid'
 import {
   createTestBlacklistSource,
   createTestUser,
@@ -11,6 +15,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { describe, expect, it } from 'vitest'
 import { blockHostname } from './block-hostname.mts'
 import { unblockHostname } from './unblock-hostname.mts'
+import { upsertAndBlockHostname } from './upsert-and-block-hostname.mts'
 
 function ownedSourceName() {
   return `feed-${randomBytes(8)
@@ -19,6 +24,30 @@ function ownedSourceName() {
 }
 
 describe('feed-owned hostname blocks', () => {
+  it('introduces a private root and older child only after staff acquires the ordered block locks', async () => {
+    const moderator = (await createTestUser({ administrator: true })) as PrivateUser
+    const hostname = `staff-introduce-${randomBytes(6).toString('hex')}.example.com`
+    const [childId, rootId] = [uuidv7(), uuidv7()].toSorted()
+    await insertTestUrlHostname({ id: childId, hostname: `child.${hostname}` })
+    await insertTestUrlHostname({ id: rootId, hostname })
+
+    await using stage = await beginTransaction()
+    await upsertUrlHostnamesForBlocking(moderator.id, [hostname], stage)
+    await using probe = await beginTransaction()
+    await lockTestHostnameNowait(rootId, probe)
+    await probe.commit()
+    await stage.commit()
+    expect((await getTestHostnameRow(rootId))?.publicly_introduced_at).toBeNull()
+
+    const result = await upsertAndBlockHostname(moderator.id, hostname)
+    expect(result.id).toBe(rootId)
+    for (const id of [childId, rootId]) {
+      const row = await getTestHostnameRow(id)
+      expect(row?.publicly_introduced_at).toBeInstanceOf(Date)
+      expect(row?.is_blocked).toBe(true)
+    }
+  })
+
   it.each(['url', 'email'] as const)(
     'manual unblock preserves an active %s feed block until its source is removed',
     async sourceType => {

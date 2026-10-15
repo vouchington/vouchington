@@ -40,13 +40,13 @@ export async function upsertUrlHostnames(
   await transaction.commit()
   return result
 }
-/** The following staff block owns invalidation for these hostnames in this transaction. */
+/** The following staff block owns public introduction and invalidation after ordered row locks. */
 export async function upsertUrlHostnamesForBlocking(
   userId: string,
   hostnames: string[],
   query: TransactionQuery,
 ): Promise<Map<string, string>> {
-  return upsertUrlHostnamesWithQuery(userId, hostnames, { query }, 'public', false)
+  return upsertUrlHostnamesWithQuery(userId, hostnames, { query }, 'private_email', false)
 }
 async function upsertUrlHostnamesWithQuery(
   userId: string | null,

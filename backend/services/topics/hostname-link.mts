@@ -11,7 +11,8 @@ import { normalizeHostname } from '@ts-shared/utils/urls'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 type TopicHostnameLinkValidation = {
   topic_exists: boolean
   hostname_exists: boolean
@@ -66,34 +67,25 @@ async function clearOtherHostnameLinks(
 async function updateTopicHostnameId(
   topicId: string,
   hostnameId: string | null,
-  options: QueryOptions = {},
+  query: TransactionQuery,
 ): Promise<void> {
-  await write(
-    sql`/* updateTopicHostnameId */
+  await query(sql`/* updateTopicHostnameId */
       UPDATE topics
       SET hostname_id = ${hostnameId}::uuid
       WHERE id = ${topicId}
-    `,
-    options,
-  )
+    `)
   if (hostnameId) {
-    const { rows } = await write<{ id: string; hostname: string }>(
-      sql`/* updateTopicHostnameId:promotePublic */
+    const { rows } = await query<{ id: string }>(sql`/* updateTopicHostnameId:promotePublic */
         UPDATE url_hostnames
         SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
         WHERE id = ${hostnameId}::uuid AND publicly_introduced_at IS NULL
-        RETURNING id, hostname`,
-      options,
-    )
+        RETURNING id`)
     if (rows.length > 0) {
-      const action = () => invalidate.url_hostnames(...rows)
-      if (options.query || options.client) {
-        await withTransactionOptions(options, async query =>
-          registerPostCommitAction(query, action),
-        )
-      } else {
-        await action()
-      }
+      const hostnameIds = rows.map(row => row.id)
+      await enqueueHostnameCacheInvalidation(query, hostnameIds)
+      registerPostCommitAction(query, async () => {
+        await drainHostnameCacheInvalidationWork({ hostnameIds })
+      })
     }
   }
 }
@@ -154,8 +146,10 @@ export async function linkHostnameToSourceTopic(
   hostnameId: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  await clearOtherHostnameLinks(topicId, hostnameId, options)
-  await updateTopicHostnameId(topicId, hostnameId, options)
+  return withTopicHostnameTransaction(options, async query => {
+    await clearOtherHostnameLinks(topicId, hostnameId, { query })
+    await updateTopicHostnameId(topicId, hostnameId, query)
+  })
 }
 
 export async function assertTopicHasHostname(
@@ -184,13 +178,19 @@ export async function setTopicHostnameLink(
   hostnameId: string | null,
   options: QueryOptions = {},
 ): Promise<void> {
-  const run = async (query: TransactionQuery): Promise<void> => {
+  return withTopicHostnameTransaction(options, async query => {
     const transaction = { query }
     if (hostnameId) await assertTopicHostnameLinkIsValid(topicId, hostnameId, transaction)
     await clearOtherHostnameLinks(topicId, hostnameId, transaction)
-    await updateTopicHostnameId(topicId, hostnameId, transaction)
+    await updateTopicHostnameId(topicId, hostnameId, query)
     if (hostnameId) await assignHostnameToTopic(topicId, hostnameId, transaction)
-  }
+  })
+}
+
+async function withTopicHostnameTransaction(
+  options: QueryOptions,
+  run: (query: TransactionQuery) => Promise<void>,
+): Promise<void> {
   if (options.query || options.client) return withTransactionOptions(options, run)
   await using transaction = await beginTransaction()
   await run(transaction)
