@@ -1,13 +1,35 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { beginTransaction, read } from '@data-stores/psql'
+import {
+  beginTransaction,
+  read,
+  withTransactionOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 
 /** Seeds an unreferenced pair to exercise bounded orphan cleanup without a live owner. */
-export async function seedTestRetainedMediaOrphan(input: {
+type RetainedMediaOrphan = {
   imageId: string
   placementId: string
   bindingFamily: 'post' | 'surface'
-}): Promise<void> {
+}
+
+export async function seedTestRetainedMediaOrphan(
+  input: RetainedMediaOrphan,
+  borrowedQuery?: TransactionQuery,
+): Promise<void> {
+  if (borrowedQuery)
+    return withTransactionOptions({ query: borrowedQuery }, query =>
+      seedRetainedMediaOrphan(query, input),
+    )
   await using query = await beginTransaction()
+  await seedRetainedMediaOrphan(query, input)
+  await query.commit()
+}
+
+async function seedRetainedMediaOrphan(
+  query: TransactionQuery,
+  input: RetainedMediaOrphan,
+): Promise<void> {
   const { rows: uploaders } = await query<{ id: string }>(
     '/* seedTestRetainedMediaOrphan:uploader */ INSERT INTO retained_user_identities (id) VALUES (uuidv7()) RETURNING id',
   )
@@ -21,7 +43,6 @@ export async function seedTestRetainedMediaOrphan(input: {
     ),
     [input.placementId, input.imageId, input.bindingFamily],
   )
-  await query.commit()
 }
 
 export async function hasTestRetainedImageIdentity(imageId: string): Promise<boolean> {
@@ -32,8 +53,11 @@ export async function hasTestRetainedImageIdentity(imageId: string): Promise<boo
   return (rowCount ?? 0) > 0
 }
 
-export async function hasTestRetainedMediaBinding(placementId: string): Promise<boolean> {
-  const { rowCount } = await read(
+export async function hasTestRetainedMediaBinding(
+  placementId: string,
+  query?: TransactionQuery,
+): Promise<boolean> {
+  const { rowCount } = await (query ?? read)(
     '/* hasTestRetainedMediaBinding */ SELECT placement_id FROM retained_image_placement_bindings WHERE placement_id = $1',
     [placementId],
   )
