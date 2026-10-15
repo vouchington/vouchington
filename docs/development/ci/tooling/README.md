@@ -69,6 +69,12 @@ exhausted.
 - <a id="trivy-database-preparation-contract"></a>[Trivy database preparation contract](reference-trivy-database-preparation-contract.md)
 - <a id="inline-workflow-shell-footguns-actionlint--shellcheck"></a>[Inline-workflow shell footguns (actionlint + shellcheck)](reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
 
+The root Vitest [effective-project admission guard](../../quality/static-code-analysis/README.md#effective-vitest-project-timeout-admission)
+also validates selected-project test and hook settings for unwrapped CLI and public SDK runs
+that load the repository root configuration, after framework normalization. `node ci/check-effective-vitest-timeouts.mts` checks its normal
+project participation and finite pre-setup rejection controls outside Vitest. Individual test,
+hook, and fixture overrides and later runtime changes remain separate enforcement frontiers.
+
 The `with-node-test-options` wrapper validates direct `vitest` / `vitest.mjs` commands and
 `node <path>/vitest.mjs` when the script immediately follows `node`. The project-group runner
 validates its forwarded Vitest options after its existing leading-separator normalization.

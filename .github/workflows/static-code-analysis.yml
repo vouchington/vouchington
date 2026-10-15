@@ -97,6 +97,9 @@ jobs:
       - name: Check Vitest ownership table
         run: node ci/vitest/generate-ownership-table.mts --check
         timeout-minutes: 2
+      - name: Check effective Vitest timeout admission
+        run: node ci/check-effective-vitest-timeouts.mts
+        timeout-minutes: 2
       - name: dependency-cruiser
         timeout-minutes: 5
         run: |

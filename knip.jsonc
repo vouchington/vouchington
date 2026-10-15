@@ -16,6 +16,9 @@
         "test-helpers/glide-mq-vitest-shim.mts",
         // Reached only through backend-data-stores' string-valued Vitest `runner` config.
         "test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts",
+        // Copied into owned scratch and loaded by the finite public Vitest CI controls.
+        "test-helpers/fixtures/effective-timeout-cap/case.mts",
+        "test-helpers/fixtures/effective-timeout-cap/setup.mts",
       ],
       "project": [
         ".github/workflows/**/*.mts",
