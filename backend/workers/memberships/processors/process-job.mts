@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { deferPostgresConnectionTimeout } from '@modules/queue-errors'
 import type { MembershipsJobs } from '@queues/memberships/types'
 import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
@@ -102,7 +103,11 @@ async function dispatchMembershipRefundReconciliation(): Promise<void> {
   )
 }
 
-export async function processMembershipJob(job: Job, processors = PROCESSORS): Promise<void> {
+export function processMembershipJob(job: Job, processors = PROCESSORS): Promise<void> {
+  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job, processors))
+}
+
+async function dispatchMembershipJob(job: Job, processors: MembershipJobProcessors): Promise<void> {
   switch (job.name as MembershipsJobs) {
     case 'deliverMembershipEntitlementEffects':
       await processors.deliverMembershipEntitlementEffects()

@@ -12537,6 +12537,9 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@modules/stripe':
         specifier: workspace:^
         version: link:../../modules/stripe
@@ -12766,6 +12769,9 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql

@@ -17,6 +17,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@queues/psql": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",

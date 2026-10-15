@@ -36,6 +36,9 @@ executes division by zero through its owned raw client, checks PostgreSQL's `220
 the aborted transaction to a service callback. The query wrapper has not cached that setup error,
 so the service's actual SQL reaches PostgreSQL and receives `25P02`. Use it to verify propagation
 without partial writes; resource disposal rolls the transaction back afterward.
+[`createTestPostgresConnectionWaitPool`](../../../../backend/test-helpers/postgres-connection-wait.mts)
+provides a real pg-pool probe and an optional held client for worker connection-wait regressions;
+the helper owns the SQL and pool setup so worker tests exercise only queue behavior.
 The [PostgreSQL row-contract probe](../../../../backend/test-helpers/data-stores/psql/query-row-contract.mts) keeps its read-only SQL
 and explicit projection type inside a focused helper. Its owning PSQL test imports that helper by
 relative path, following other PSQL tests without adding a `@data-stores/psql` →
