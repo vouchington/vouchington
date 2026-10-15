@@ -1207,6 +1207,7 @@
   "overrides": [
     {
       "files": [
+        "**/.husky/**/*.{mts,ts,tsx}",
         "**/ci/**/*.{mts,ts,tsx}",
         "**/dev/**/*.{mts,ts,tsx}",
         "**/static-code-analysis/**/*.{mts,ts,tsx}"

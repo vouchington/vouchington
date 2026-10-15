@@ -16,14 +16,16 @@ in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 ## Tooling Vitest timeout overrides
 
 The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest calls in `ci/`,
-`dev/`, and `static-code-analysis/`, including aliased registrars, same-file expressions,
+`dev/`, `static-code-analysis/`, and `.husky/`, including aliased registrars, same-file expressions,
 individual tests, hooks, and runtime timeout updates. Unresolved admitted timeout carriers
 fail rather than silently escaping the cap. The normal Oxlint gate owns enforcement;
 `ci/vitest-timeout-policy.test.mts` exercises finite accepted and rejected inputs.
 
-This scoped activation does not change project defaults, activate a global runtime cap, or
-remove the frozen ast-grep baseline outside tooling. The five-second project-default rollout
-and cross-file configuration/runtime enforcement remain separate work.
+The `git-hooks` project declares five-second test and hook defaults. Longer individual
+tests or hooks require explicit overrides within the thirty-second ceiling.
+`ci/vitest-tooling-project-defaults.test.mts` checks the resolved project contract.
+Other project defaults, global runtime enforcement, and the frozen ast-grep baseline outside
+this scope remain separate rollout work.
 
 ## Full-schema generation in Vitest
 
