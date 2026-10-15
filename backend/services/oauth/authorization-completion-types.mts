@@ -40,6 +40,7 @@ export type CompletionRow = {
   x_user_id: string | null
   github_user_id: string | null
   linkedin_account_id: string | null
+  microsoft_account_id: string | null
   result_kind: 'authenticated' | 'mfa_required' | 'connected' | null
   result_user_id: string | null
   result_device_id: string | null

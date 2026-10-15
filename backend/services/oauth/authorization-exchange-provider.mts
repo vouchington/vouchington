@@ -12,6 +12,7 @@ import type {
 import type { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import type { upsertGithubAccount } from '@services/oauth-github'
 import type { upsertLinkedInAccount } from '@services/oauth-linkedin'
+import type { upsertMicrosoftAccount } from '@services/oauth-microsoft'
 import type { upsertXAccount } from '@services/oauth-x'
 
 export type OAuthAuthorizationExchangeDependencies = {
@@ -22,6 +23,7 @@ export type OAuthAuthorizationExchangeDependencies = {
   upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
   upsertGithub: typeof upsertGithubAccount
   upsertLinkedIn: typeof upsertLinkedInAccount
+  upsertMicrosoft: typeof upsertMicrosoftAccount
   upsertX: typeof upsertXAccount
   rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
   releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
@@ -42,10 +44,16 @@ export async function exchangeClaimedOAuthAuthorization(
   signal: AbortSignal,
 ): Promise<void> {
   const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
-  const codeVerifier =
+  const providerInput =
     authorization.provider === 'facebook' || authorization.provider === 'linkedin'
-      ? undefined
-      : dependencies.decryptVerifier(authorization.id, authorization.pkce_verifier_ciphertext)
+      ? { provider: authorization.provider, codeVerifier: undefined }
+      : {
+          provider: authorization.provider,
+          codeVerifier: dependencies.decryptVerifier(
+            authorization.id,
+            authorization.pkce_verifier_ciphertext,
+          ),
+        }
   await ownership?.persist(authorization.exchange_claim_id, true)
   admission.armed = ownership !== undefined
   signal.throwIfAborted()
@@ -56,20 +64,21 @@ export async function exchangeClaimedOAuthAuthorization(
     authorizationClaimId: authorization.exchange_claim_id,
     signal,
   }
-  switch (authorization.provider) {
+  switch (providerInput.provider) {
     case 'facebook':
       await dependencies.upsertFacebook(code, authorization.redirect_uri, completionOptions)
       break
     case 'x':
-      if (codeVerifier === undefined)
-        throw new Error('X provider admission requires its PKCE verifier')
-      await dependencies.upsertX(code, authorization.redirect_uri, codeVerifier, completionOptions)
+      await dependencies.upsertX(
+        code,
+        authorization.redirect_uri,
+        providerInput.codeVerifier,
+        completionOptions,
+      )
       break
     case 'github':
-      if (codeVerifier === undefined)
-        throw new Error('GitHub provider admission requires its PKCE verifier')
       await dependencies.upsertGithub(code, authorization.redirect_uri, {
-        codeVerifier,
+        codeVerifier: providerInput.codeVerifier,
         ...completionOptions,
       })
       break
@@ -80,5 +89,14 @@ export async function exchangeClaimedOAuthAuthorization(
         undefined,
         completionOptions,
       )
+      break
+    case 'microsoft':
+      await dependencies.upsertMicrosoft(
+        code,
+        authorization.redirect_uri,
+        providerInput.codeVerifier,
+        completionOptions,
+      )
+      break
   }
 }

@@ -1,10 +1,10 @@
 'use client'
 
 import { beginOAuthAuthorization, type OAuthBrokerPurpose } from '@/lib/api/client'
-import type { OAuthProvider } from '@/types/user'
+import type { BrokerOAuthProvider } from './oauth-broker-provider'
 import { OAuthCancelledError } from './oauth-error'
 
-export type BrokerOAuthProvider = Extract<OAuthProvider, 'facebook' | 'x' | 'github' | 'linkedin'>
+export type { BrokerOAuthProvider } from './oauth-broker-provider'
 
 type BrokerLockManager = Pick<LockManager, 'request'>
 

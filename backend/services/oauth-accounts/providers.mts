@@ -90,6 +90,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataConflictStrategy: 'replace',
     hasTokenColumns: true,
     hasRefreshToken: true,
+    accountIdColumn: 'id',
   },
   github: {
     table: 'github_accounts',

@@ -13,7 +13,8 @@ export async function completeOAuthAuthorizationExchange(
     provider !== 'facebook' &&
     provider !== 'x' &&
     provider !== 'github' &&
-    provider !== 'linkedin'
+    provider !== 'linkedin' &&
+    provider !== 'microsoft'
   ) {
     throw new Error(`OAuth authorization broker does not support ${provider}`)
   }
@@ -22,6 +23,7 @@ export async function completeOAuthAuthorizationExchange(
     x: 'x_user_id',
     github: 'github_user_id',
     linkedin: 'linkedin_account_id',
+    microsoft: 'microsoft_account_id',
   }[provider]
   const { rowCount } = await query(
     `/* completeOAuthAuthorizationExchange */ UPDATE oauth_authorizations

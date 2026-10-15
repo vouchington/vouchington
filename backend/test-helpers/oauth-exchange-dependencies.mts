@@ -36,6 +36,10 @@ export function createTestOAuthExchangeDependencies(
       if (provider === 'linkedin' && providerFailure) throw providerFailure
       return successfulAccount
     }),
+    upsertMicrosoft: vi.fn<ExchangeDependencies['upsertMicrosoft']>(async () => {
+      if (provider === 'microsoft' && providerFailure) throw providerFailure
+      return successfulAccount
+    }),
     upsertX: vi.fn<ExchangeDependencies['upsertX']>(async () => {
       if (provider === 'x' && providerFailure) throw providerFailure
       return successfulAccount

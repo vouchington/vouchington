@@ -63,7 +63,7 @@ export const GENERAL_FINITE_VALUES = {
     'refresh_family_revoked',
     'refresh_reuse_detected',
   ],
-  oauth_authorization_providers: ['facebook', 'x', 'github', 'linkedin'],
+  oauth_authorization_providers: ['facebook', 'x', 'github', 'linkedin', 'microsoft'],
   oauth_authorization_purposes: ['authenticate', 'connect'],
   oauth_authorization_statuses: [
     'pending',

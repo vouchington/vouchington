@@ -1,6 +1,7 @@
 'use client'
 
 import { getBrowserRuntimePublicConfig, getOAuthProviders } from '@/lib/runtime-public-config'
+import { isOAuthBrokerProvider } from '@/lib/auth/oauth-broker-provider'
 import { useConfiguredOAuthProviders } from '@/components/auth/use-configured-oauth-providers'
 import type { OAuthAccountInfo, OAuthProvider } from '@/types/user'
 import { OAuthConnection } from './oauth-connection'
@@ -34,11 +35,7 @@ export function OAuthConnectionsSection({ accounts }: Props) {
           initialAccount={accounts[provider]}
           providerConfigured={configuredProviders.includes(provider)}
           brokerEnabled={
-            (provider === 'facebook' ||
-              provider === 'x' ||
-              provider === 'github' ||
-              provider === 'linkedin') &&
-            Boolean(brokerCapabilities[provider]?.modes.web)
+            isOAuthBrokerProvider(provider) && Boolean(brokerCapabilities[provider]?.modes.web)
           }
         />
       ))}

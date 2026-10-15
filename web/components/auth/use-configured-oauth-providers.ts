@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getConfiguredOAuthProviders, type OAuthProvidersResponse } from '@/lib/api/client'
+import { isOAuthBrokerProvider } from '@/lib/auth/oauth-broker-provider'
 import onError from '@/lib/on-error'
 import type { OAuthProvider } from '@/types/user'
 
@@ -43,10 +44,7 @@ export function useConfiguredOAuthProviders(runtimePublicProviders: OAuthProvide
     providers: configuration.providers.filter(
       provider =>
         runtimePublicProviders.includes(provider) ||
-        ((provider === 'facebook' ||
-          provider === 'x' ||
-          provider === 'github' ||
-          provider === 'linkedin') &&
+        (isOAuthBrokerProvider(provider) &&
           Boolean(configuration.broker_capabilities[provider]?.modes.web)),
     ),
     brokerCapabilities: configuration.broker_capabilities,

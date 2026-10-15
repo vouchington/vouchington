@@ -27,6 +27,7 @@ async function exchangeMicrosoftAuthorizationCode(
   code: string,
   redirectUri: string,
   codeVerifier: string,
+  signal?: AbortSignal,
 ): Promise<MicrosoftTokenResponse> {
   if (!MICROSOFT_CLIENT_ID || !MICROSOFT_CLIENT_SECRET) {
     throw new Error('MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET must be defined')
@@ -44,6 +45,7 @@ async function exchangeMicrosoftAuthorizationCode(
       client_secret: MICROSOFT_CLIENT_SECRET,
       code_verifier: codeVerifier,
     }).toString(),
+    signal,
   })
   if (!response.ok) {
     throw createHttpError(502, `Microsoft token exchange failed: ${response.status}`)
@@ -52,10 +54,14 @@ async function exchangeMicrosoftAuthorizationCode(
 }
 
 /* no-mistakes: integration=oauth */
-async function fetchMicrosoftUser(accessToken: string): Promise<MicrosoftUserData> {
+async function fetchMicrosoftUser(
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<MicrosoftUserData> {
   const response = await fetch('https://graph.microsoft.com/v1.0/me', {
     dispatcher: getExternalRequestDispatcher(),
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal,
   })
   if (!response.ok) {
     throw createHttpError(502, `Microsoft Graph /me request failed: ${response.status}`)
@@ -67,15 +73,25 @@ export async function upsertMicrosoftAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string,
+  options: {
+    authorizationId?: string
+    authorizationClaimId?: string
+    signal?: AbortSignal
+  } = {},
 ): Promise<OAuthAccount> {
-  const tokenResponse = await exchangeMicrosoftAuthorizationCode(code, redirectUri, codeVerifier)
+  const tokenResponse = await exchangeMicrosoftAuthorizationCode(
+    code,
+    redirectUri,
+    codeVerifier,
+    options.signal,
+  )
   if (tokenResponse.error) {
     throw createHttpError(502, 'OAuth token exchange failed', {
       cause: new Error(tokenResponse.error_description ?? tokenResponse.error),
     })
   }
 
-  const msUser = await fetchMicrosoftUser(tokenResponse.access_token)
+  const msUser = await fetchMicrosoftUser(tokenResponse.access_token, options.signal)
   const email = msUser.mail ?? null
   const providerUserData: Record<string, unknown> = {}
   if (msUser.displayName) providerUserData.name = msUser.displayName
@@ -87,9 +103,16 @@ export async function upsertMicrosoftAccount(
     ? new Date(Date.now() + tokenResponse.expires_in * 1000)
     : undefined
 
-  return upsertOAuthAccount('microsoft', msUser.id, email, providerUserData, {
-    accessToken: tokenResponse.access_token,
-    refreshToken: tokenResponse.refresh_token,
-    accessTokenExpiresAt: expiresAt,
-  })
+  return upsertOAuthAccount(
+    'microsoft',
+    msUser.id,
+    email,
+    providerUserData,
+    {
+      accessToken: tokenResponse.access_token,
+      refreshToken: tokenResponse.refresh_token,
+      accessTokenExpiresAt: expiresAt,
+    },
+    options,
+  )
 }

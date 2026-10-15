@@ -123,4 +123,24 @@ describe('OAuthConnectionsSection', () => {
       'connect',
     )
   })
+
+  it('uses the advertised Microsoft web broker without exposing a browser client ID', async () => {
+    mockGetConfiguredOAuthProviders.mockResolvedValue({
+      providers: ['microsoft'],
+      broker_capabilities: {
+        microsoft: {
+          version: 1,
+          modes: { web: true, native: false },
+          purposes: ['authenticate', 'connect'],
+        },
+      },
+    })
+
+    render(<OAuthConnectionsSection accounts={emptyAccounts} />)
+
+    expect(await screen.findByRole('button', { name: 'Connect microsoft' })).toHaveAttribute(
+      'data-broker-purpose',
+      'connect',
+    )
+  })
 })

@@ -1,5 +1,5 @@
-import { assertWhitelistedSqlIdentifier } from '@data-stores/psql'
-import { providerTableConfigs } from '@services/oauth-accounts'
+import { assertWhitelistedSqlIdentifier } from '@data-stores/psql/sql-fragments'
+import { providerTableConfigs } from '@services/oauth-accounts/providers'
 import type { BrokerOAuthProvider } from './broker-config.mts'
 
 const authorizationAccountIdentifiers = {
@@ -31,6 +31,14 @@ const authorizationAccountIdentifiers = {
     authorizationAccountColumn: 'linkedin_account_id',
     emailColumn: 'linkedin_user_email_address',
     dataColumn: 'linkedin_user_data',
+  },
+  microsoft: {
+    table: 'microsoft_accounts',
+    providerUserIdColumn: 'microsoft_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'microsoft_account_id',
+    emailColumn: 'microsoft_user_email_address',
+    dataColumn: 'microsoft_user_data',
   },
 } as const satisfies Record<
   BrokerOAuthProvider,

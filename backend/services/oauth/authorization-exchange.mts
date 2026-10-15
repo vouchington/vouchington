@@ -11,6 +11,7 @@ import { settleOAuthAuthorizationExchangeClaim } from './authorization-exchange-
 import { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import { upsertGithubAccount } from '@services/oauth-github'
 import { upsertLinkedInAccount } from '@services/oauth-linkedin'
+import { upsertMicrosoftAccount } from '@services/oauth-microsoft'
 import { upsertXAccount } from '@services/oauth-x'
 import {
   decryptOAuthAuthorizationCode,
@@ -39,6 +40,7 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   upsertFacebook: upsertFacebookAuthorizationCodeAccount,
   upsertGithub: upsertGithubAccount,
   upsertLinkedIn: upsertLinkedInAccount,
+  upsertMicrosoft: upsertMicrosoftAccount,
   upsertX: upsertXAccount,
   rejectExhausted: rejectExhaustedOAuthAuthorizationExchange,
   releaseClaim: releaseOAuthAuthorizationExchangeClaim,

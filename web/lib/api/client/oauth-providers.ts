@@ -1,5 +1,6 @@
 'use client'
 
+import type { BrokerOAuthProvider } from '@/lib/auth/oauth-broker-provider'
 import type { OAuthProvider } from '@/types/user'
 import { clientApi } from './instance'
 
@@ -7,7 +8,7 @@ export interface OAuthProvidersResponse {
   providers: OAuthProvider[]
   broker_capabilities: Partial<
     Record<
-      Extract<OAuthProvider, 'facebook' | 'x' | 'github' | 'linkedin'>,
+      BrokerOAuthProvider,
       {
         version: 1
         modes: { web: boolean; native: boolean }

@@ -1,4 +1,4 @@
-import { FACEBOOK_GRAPHQL_VERSION } from '@voucha/config'
+import { FACEBOOK_GRAPHQL_VERSION, MICROSOFT_TENANT_ID } from '@voucha/config'
 import type { BrokerCallbackMode, BrokerOAuthProvider } from './broker-config.mts'
 
 export function buildProviderAuthorizationUrl(options: {
@@ -46,6 +46,18 @@ export function buildProviderAuthorizationUrl(options: {
         scope: 'openid profile email',
         ...(options.callbackMode === 'native' ? { enable_extended_login: 'true' } : {}),
       })
+    case 'microsoft':
+      return withQuery(
+        `https://login.microsoftonline.com/${MICROSOFT_TENANT_ID || 'common'}/oauth2/v2.0/authorize`,
+        {
+          ...shared,
+          client_id: options.clientId,
+          scope: 'openid profile email User.Read',
+          response_mode: 'query',
+          code_challenge: options.codeChallenge,
+          code_challenge_method: 'S256',
+        },
+      )
   }
 }
 

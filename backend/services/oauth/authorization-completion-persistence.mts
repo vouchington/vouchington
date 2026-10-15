@@ -3,7 +3,7 @@ import { hashToken } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
 import type { OAuthAccount } from '@services/oauth-accounts'
 import { getPrivateUserByAny } from '@services/users'
-import { getAuthorizationAccountIdentifiers } from './authorization-account-identifiers.mts'
+import { getAuthorizationAccount } from './authorization-account-lookup.mts'
 import { assertCompletionProof, safeEqual } from './authorization-completion-proof.mts'
 import type {
   CompletionRow,
@@ -11,6 +11,8 @@ import type {
   PersistedOAuthAuthorizationCompletion,
   StoredOAuthAuthorizationCompletion,
 } from './authorization-completion-types.mts'
+
+export { getAuthorizationAccount }
 
 const COMPLETION_TOKEN_HASH_PURPOSE = 'oauth-authorization-broker:completion'
 
@@ -80,30 +82,6 @@ function isAuthenticatedCompletionReplay(
     authorization.result_device_id === options.deviceId &&
     authorization.result_session_id === options.sessionId
   )
-}
-
-export async function getAuthorizationAccount(
-  authorization: CompletionRow,
-  query: TransactionQuery,
-): Promise<OAuthAccount> {
-  const config = getAuthorizationAccountIdentifiers(authorization.provider)
-  const accountId = authorization[config.authorizationAccountColumn as keyof CompletionRow]
-  if (typeof accountId !== 'string') {
-    throw new Error('Completed OAuth exchange has no provider account')
-  }
-  const { rows } = await query(
-    `/* getAuthorizationAccount */ SELECT
-       user_id,
-       ${config.providerUserIdColumn} AS provider_user_id,
-       ${config.emailColumn} AS provider_user_email_address,
-       ${config.dataColumn} AS provider_user_data
-     FROM ${config.table}
-     WHERE ${config.accountIdColumn} = $1`,
-    [accountId],
-  )
-  const account = rows[0] as OAuthAccount | undefined
-  if (!account) throw new Error('Completed OAuth provider account is missing')
-  return account
 }
 
 export async function persistCompletionResult(

@@ -1,7 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
-import { FACEBOOK_APP_ID, GITHUB_CLIENT_ID, LINKEDIN_CLIENT_ID, X_CLIENT_ID } from '@voucha/config'
+import {
+  FACEBOOK_APP_ID,
+  GITHUB_CLIENT_ID,
+  LINKEDIN_CLIENT_ID,
+  MICROSOFT_CLIENT_ID,
+  X_CLIENT_ID,
+} from '@voucha/config'
 import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
 import {
@@ -179,6 +185,7 @@ function getProviderClientId(provider: BrokerOAuthProvider): string {
     x: X_CLIENT_ID,
     github: GITHUB_CLIENT_ID,
     linkedin: LINKEDIN_CLIENT_ID,
+    microsoft: MICROSOFT_CLIENT_ID,
   }
   const clientId = clientIds[provider]
   if (!clientId) throw new Error(`${provider} OAuth client ID is not configured`)

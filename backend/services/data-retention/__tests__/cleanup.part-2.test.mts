@@ -9,6 +9,7 @@ import {
   setOAuthAccountCreatedAt,
 } from '@voucha/test-helpers'
 import { oauthProviders, providerTableConfigs } from '@services/oauth/providers'
+import { insertTestMicrosoftOAuthAccount } from '@voucha/test-helpers/entities/microsoft-oauth-accounts'
 import { cleanupOrphanedOAuthAccounts } from '../cleanup.mts'
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import {
@@ -152,6 +153,60 @@ describe('orphaned OAuth account cleanup', () => {
     )
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       linkedin_account_id: activeAccount.account_id,
+    })
+  }, 30_000)
+
+  it('preserves an old orphaned Microsoft account during its active broker completion', async () => {
+    const window = createTestRetentionWindow()
+    const activeProviderId = `retained-microsoft-${createRandomString(12)}`
+    const unrelatedProviderId = `unrelated-microsoft-${createRandomString(12)}`
+    const activeAccount = await insertTestMicrosoftOAuthAccount(
+      activeProviderId,
+      v7({ msecs: window.firstEligibleDate.getTime() }),
+    )
+    const unrelatedAccount = await insertTestMicrosoftOAuthAccount(
+      unrelatedProviderId,
+      v7({ msecs: window.secondEligibleDate.getTime() }),
+    )
+    if (!activeAccount.account_id || !unrelatedAccount.account_id) {
+      throw new Error('Microsoft test accounts must return their internal IDs')
+    }
+    const authorizationId = v7()
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        microsoftUserIds: [activeProviderId, unrelatedProviderId],
+      })
+    })
+
+    const now = new Date()
+    await insertTestOAuthAuthorization({
+      id: authorizationId,
+      provider: 'microsoft',
+      status: 'completion_ready',
+      microsoftAccountId: activeAccount.account_id,
+      callbackReceivedAt: now,
+      completionReadyAt: now,
+      expiresAt: new Date(now.getTime() + 10 * 60_000),
+    })
+
+    await expect(
+      deleteOrphanedOAuthAccountBatch(
+        'microsoft_accounts',
+        'microsoft_user_id',
+        window.upperBoundDate,
+        2,
+        window.lowerBoundDate,
+      ),
+    ).resolves.toBe(1)
+    await expect(oauthAccountExistsByProviderUserId('microsoft', activeProviderId)).resolves.toBe(
+      true,
+    )
+    await expect(
+      oauthAccountExistsByProviderUserId('microsoft', unrelatedProviderId),
+    ).resolves.toBe(false)
+    await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
+      microsoft_account_id: activeAccount.account_id,
     })
   }, 30_000)
 

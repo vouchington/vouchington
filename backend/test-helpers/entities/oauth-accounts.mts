@@ -24,6 +24,7 @@ export async function insertTestOAuthAccount(
     RETURNING
       user_id,
       ${config.providerUserIdColumn} AS provider_user_id,
+      ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
       ${config.emailColumn} AS provider_user_email_address,
       ${config.dataColumn} AS provider_user_data
   `

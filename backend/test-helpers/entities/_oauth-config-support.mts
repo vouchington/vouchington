@@ -16,6 +16,7 @@ export type OAuthProvider =
 
 export type OAuthAccount = {
   user_id: string | null
+  account_id?: string
   provider_user_id: string
   provider_user_email_address: string | null
   provider_user_data: Record<string, unknown>
@@ -29,6 +30,7 @@ type OAuthTableConfig = {
   dataColumn: string
   hasTokenColumns: boolean
   hasRefreshToken: boolean
+  accountIdColumn?: string
 }
 
 export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
@@ -85,6 +87,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'microsoft_user_data',
     hasTokenColumns: true,
     hasRefreshToken: true,
+    accountIdColumn: 'id',
   },
   github: {
     table: 'github_accounts',
