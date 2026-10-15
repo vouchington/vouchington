@@ -38,10 +38,11 @@ export function AudienceField({
       </legend>
       <Select
         value={broadcast}
-        onValueChange={(value: PostBroadcast) => {
-          setBroadcast(value)
-          if (value === 'everyone') setPrivacy('public')
-          if (isCommunityPost && value === 'users') setPrivacy('private')
+        onValueChange={value => {
+          const broadcastValue = value as PostBroadcast
+          setBroadcast(broadcastValue)
+          if (broadcastValue === 'everyone') setPrivacy('public')
+          if (isCommunityPost && broadcastValue === 'users') setPrivacy('private')
         }}
       >
         <SelectTrigger
@@ -104,7 +105,7 @@ export function VisibilityField({
       </legend>
       <Select
         value={privacy}
-        onValueChange={(value: PostPrivacy) => setPrivacy(value)}
+        onValueChange={value => setPrivacy(value as PostPrivacy)}
       >
         <SelectTrigger
           aria-labelledby='post-visibility-label'

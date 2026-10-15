@@ -536,7 +536,9 @@ export function ModQueue({
                   </h3>
                   <Select
                     value={effectiveReportSort}
-                    onValueChange={handleReportSortChange}
+                    onValueChange={value =>
+                      handleReportSortChange(value as ModerationReportSortParam)
+                    }
                   >
                     <SelectTrigger
                       className='h-9 w-[180px]'
