@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import type { BackgroundDomain } from '../config.mts'
 import type {
   BackgroundDomainDefinition,
   BackgroundJobDefinition,
@@ -49,6 +50,11 @@ function domainOrdering(domain: BackgroundDomainDefinition): Pick<JobOptions, 'o
   return {
     ordering: { key: domain.domain, concurrency, ...(rateLimit ? { rateLimit } : {}) },
   }
+}
+
+/** A namespaced per-entity ordering key for a domain whose group kind is `entity`. */
+export function entityOrderingKey(domain: BackgroundDomain, entity: string): string {
+  return `${domain}:${entity}`
 }
 
 function assertPositiveInteger(label: string, value: number): void {
