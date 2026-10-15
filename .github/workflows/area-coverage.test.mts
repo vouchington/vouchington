@@ -141,6 +141,26 @@ describe('area coverage wiring', () => {
     expect(clausesOf(codecov.if)).toContain("needs.changes.outputs.area-tooling == 'true'")
   })
 
+  // `contains(needs.*.result, 'success')` matches when every producer was skipped, so backend and
+  // web were checking out Codecov runners that downloaded zero LCOV. Compare each producer result.
+  it.each(['backend', 'web'] as const)(
+    'starts $area codecov only after a producing suite succeeds',
+    area => {
+      const { jobs } = areas.find(({ area: name }) => name === area)!
+      const [, codecov] = jobCalling(jobs, codecovWorkflow)
+      const successClause = clausesOf(codecov.if).find(clause =>
+        clause.includes(".result == 'success'"),
+      )
+
+      expect(codecov.if).not.toContain("contains(needs.*.result, 'success')")
+      expect(successClause).toBe(
+        `(${needsOf(codecov)
+          .map(id => `needs.${id}.result == 'success'`)
+          .join(' || ')})`,
+      )
+    },
+  )
+
   // Each queued entry was already gated at its pull request, and the combined queued range would
   // charge it with other entries' lines, adding a job per area and an ejection path. Queue runs
   // still upload every suite's LCOV to Codecov.

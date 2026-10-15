@@ -161,12 +161,14 @@ jobs:
       actions: read
       contents: read
 
-  # Informational; the `backend` gate does not wait on it.
+  # Informational; the `backend` gate does not wait on it. Compare each producer:
+  # contains(needs.*.result, 'success') is true when every producer was skipped.
   codecov:
     needs: [test-backend-modules, test-backend-unit]
     if: >-
       !cancelled() &&
-      contains(needs.*.result, 'success') &&
+      (needs.test-backend-modules.result == 'success' ||
+      needs.test-backend-unit.result == 'success') &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     uses: ./.github/workflows/ci-upload-codecov.yml

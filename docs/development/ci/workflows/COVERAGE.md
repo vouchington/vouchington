@@ -4,7 +4,9 @@ Each selected area workflow produces full LCOV for every suite it runs. Its `cov
 that LCOV and, on pull requests only, enforces the patch-coverage rules owned by that area; skipped
 areas pass their gate.
 The independent `codecov` job uploads the same full LCOV under the suite's carryforward flag and
-remains informational.
+remains informational. Backend and web start it only after at least one producing suite succeeds,
+so a skipped area does not check out a runner to upload nothing. A flag that was not uploaded
+carries forward.
 
 Full LCOV uploads are retained for one day and are the only coverage artifact handoff. Area
 coverage is self-contained: it does not project sparse patch reports, exchange coverage manifests,
