@@ -16,8 +16,6 @@ import {
 } from './processors/inbox.mts'
 import { isFinalActivityPubInboxAttempt } from './processors/inbox-job.mts'
 
-export { isFinalActivityPubInboxAttempt } from './processors/inbox-job.mts'
-
 export const activitypubHandlers = [
   backgroundHandler(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB, processDistributeActivityJob),
   backgroundHandler(ACTIVITYPUB_DELIVER_ACTIVITY_JOB, job => processDeliverActivityJob(job)),
