@@ -29,7 +29,7 @@ Allow users to connect or disconnect other accounts:
 
 OAuth connect buttons use proper provider branding (see [OAuth provider buttons](../navigation/reference-components-patterns.md#oauth-provider-buttons)).
 
-Facebook, X, and GitHub use the same server-begun broker contract on web, Swift, and .NET when the
+Facebook, X, GitHub, and LinkedIn use the same server-begun broker contract on web, Swift, and .NET when the
 corresponding advertised client-mode capability is enabled. Web completes with a path-scoped
 HttpOnly cookie. Native clients persist the in-flight flow and proof verifier in secure storage,
 resume after a cold launch, and reject a custom-scheme token that lacks the proof verifier.

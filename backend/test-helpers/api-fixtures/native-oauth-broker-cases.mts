@@ -18,6 +18,11 @@ const brokerCapabilities = {
     modes: { web: true, native: true },
     purposes: ['authenticate', 'connect'],
   },
+  linkedin: {
+    version: 1,
+    modes: { web: true, native: true },
+    purposes: ['authenticate', 'connect'],
+  },
 }
 
 const nativeConsumers = ['swift-core', 'swift-ui', 'dotnet-core'] as const
@@ -31,7 +36,7 @@ export const nativeOAuthBrokerApiFixtureCases: ApiFixtureCase[] = [
     auth: 'none',
     status: 200,
     body: {
-      providers: ['facebook', 'x', 'github'],
+      providers: ['facebook', 'x', 'github', 'linkedin'],
       broker_capabilities: brokerCapabilities,
     },
     consumers: [...nativeConsumers],

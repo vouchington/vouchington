@@ -4890,8 +4890,6 @@ rules:
           reason: 'replaced by #2512'
         - object: 'constraint:identity_document_types.identity_document_types_pkey'
           reason: 'replaced by #2513'
-        - object: 'constraint:linkedin_accounts.linkedin_accounts_pkey'
-          reason: 'replaced by #2512'
         - object: 'constraint:membership_ineligible_purchase_reversal_refund_observations.pk_mipr_succeeded_refund_observations'
           reason: 'replaced by #2516'
         - object: 'constraint:microsoft_accounts.microsoft_accounts_pkey'

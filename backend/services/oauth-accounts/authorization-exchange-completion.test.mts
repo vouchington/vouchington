@@ -48,6 +48,27 @@ describe('completeOAuthAuthorizationExchange', () => {
       claimId,
     ])
   })
+
+  it('binds a LinkedIn account to the same fenced completion update', async () => {
+    const authorizationId = randomUUID()
+    const claimId = randomUUID()
+    const query = queryWithRowCount(1)
+
+    await completeOAuthAuthorizationExchange(
+      'linkedin',
+      authorizationId,
+      claimId,
+      '00000000-0000-7000-8000-000000000123',
+      query,
+    )
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('linkedin_account_id = $2'), [
+      authorizationId,
+      '00000000-0000-7000-8000-000000000123',
+      'linkedin',
+      claimId,
+    ])
+  })
 })
 
 function queryWithRowCount(rowCount: number): TransactionQuery {

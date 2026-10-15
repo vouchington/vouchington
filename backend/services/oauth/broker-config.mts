@@ -3,7 +3,7 @@ import createHttpError from 'http-errors'
 import { getConfiguredOAuthProviders } from './config.mts'
 import type { OAuthProvider } from './providers.mts'
 
-export const BROKER_OAUTH_PROVIDERS = ['facebook', 'x', 'github'] as const
+export const BROKER_OAUTH_PROVIDERS = ['facebook', 'x', 'github', 'linkedin'] as const
 export const BROKER_CALLBACK_MODES = ['web', 'native'] as const
 export const BROKER_PURPOSES = ['authenticate', 'connect'] as const
 
@@ -20,6 +20,8 @@ const fieldTypes = {
   x_native_enabled: 'boolean',
   github_web_enabled: 'boolean',
   github_native_enabled: 'boolean',
+  linkedin_web_enabled: 'boolean',
+  linkedin_native_enabled: 'boolean',
 } as const
 
 const defaultFields = {
@@ -29,6 +31,8 @@ const defaultFields = {
   x_native_enabled: false,
   github_web_enabled: false,
   github_native_enabled: false,
+  linkedin_web_enabled: false,
+  linkedin_native_enabled: false,
 } as const satisfies Record<BrokerFlagKey, false>
 
 export const oauthAuthorizationBrokerConfig = new DynamicConfig({

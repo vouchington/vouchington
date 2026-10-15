@@ -12,8 +12,11 @@ const allowedOAuthCleanupIdentifiers = new Set([...oauthProviderUserIdColumnByTa
 const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
   ['facebook_accounts', 'facebook_user_id'],
   ['github_accounts', 'github_user_id'],
+  ['linkedin_accounts', 'linkedin_account_id'],
   ['x_accounts', 'x_user_id'],
 ])
+const oauthAccountIdColumnByTable = new Map([['linkedin_accounts', 'id']])
+const allowedOAuthAccountIdIdentifiers = new Set([...allowedOAuthCleanupIdentifiers, 'id'])
 export async function cleanupSoftDeletedUserBatch(
   cutoffDate: Date,
   batchSize: number,
@@ -140,6 +143,11 @@ export async function deleteOrphanedOAuthAccountBatch(
   const authorizationProviderUserIdColumn =
     oauthAuthorizationProviderUserIdColumnByAccountTable.get(validatedTable)
   if (authorizationProviderUserIdColumn) {
+    const validatedAccountIdColumn = assertWhitelistedSqlIdentifier(
+      oauthAccountIdColumnByTable.get(validatedTable) ?? validatedProviderUserIdColumn,
+      allowedOAuthAccountIdIdentifiers,
+      'OAuth account reference column',
+    )
     query
       .append(sql` AND NOT EXISTS (
         SELECT 1
@@ -149,7 +157,7 @@ export async function deleteOrphanedOAuthAccountBatch(
       .append(sql` = `)
       .append(validatedTable)
       .append(sql`.`)
-      .append(validatedProviderUserIdColumn).append(sql`
+      .append(validatedAccountIdColumn).append(sql`
           AND active_authorization.expires_at > CURRENT_TIMESTAMP
       )`)
   }

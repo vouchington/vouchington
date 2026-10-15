@@ -63,6 +63,7 @@ export async function upsertOAuthAccount(
         refresh_token_ciphertext = EXCLUDED.refresh_token_ciphertext,
         access_token_expires_at = EXCLUDED.access_token_expires_at
       RETURNING
+        ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
         user_id,
         ${config.providerUserIdColumn} AS provider_user_id,
         ${config.emailColumn} AS provider_user_email_address,
@@ -93,6 +94,7 @@ export async function upsertOAuthAccount(
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         access_token_expires_at = EXCLUDED.access_token_expires_at
       RETURNING
+        ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
         user_id,
         ${config.providerUserIdColumn} AS provider_user_id,
         ${config.emailColumn} AS provider_user_email_address,
@@ -118,6 +120,7 @@ export async function upsertOAuthAccount(
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
         ${config.dataColumn} = ${providerDataUpdate}
       RETURNING
+        ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
         user_id,
         ${config.providerUserIdColumn} AS provider_user_id,
         ${config.emailColumn} AS provider_user_email_address,
@@ -149,7 +152,7 @@ export async function upsertOAuthAccount(
       provider,
       options.authorizationId,
       options.authorizationClaimId,
-      account.provider_user_id,
+      account.account_id ?? account.provider_user_id,
       transactionQuery,
     )
     await transactionQuery.commit()

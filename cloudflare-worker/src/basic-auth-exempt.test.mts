@@ -26,11 +26,15 @@ describe('isBasicAuthExemptRequest', () => {
   })
 
   it('exempts only GET requests to supported OAuth broker callbacks', () => {
-    for (const provider of ['facebook', 'x', 'github']) {
+    for (const provider of ['facebook', 'x', 'github', 'linkedin']) {
       expect(isBasicAuthExemptRequest('GET', `/auth/callback/${provider}/broker`)).toBe(true)
+      expect(isBasicAuthExemptRequest('GET', `/auth/callback/${provider}/broker/`)).toBe(true)
+      expect(isBasicAuthExemptRequest('POST', `/auth/callback/${provider}/broker`)).toBe(false)
+      expect(isBasicAuthExemptRequest('HEAD', `/auth/callback/${provider}/broker`)).toBe(false)
     }
-    expect(isBasicAuthExemptRequest('POST', '/auth/callback/facebook/broker')).toBe(false)
     expect(isBasicAuthExemptRequest('GET', '/auth/callback/google/broker')).toBe(false)
+    expect(isBasicAuthExemptRequest('GET', '/auth/callback/linkedin/brokered')).toBe(false)
+    expect(isBasicAuthExemptRequest('GET', '/auth/callback/linkedin/broker/extra')).toBe(false)
   })
 
   it('does not exempt the root', () => {

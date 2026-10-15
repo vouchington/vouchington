@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebook/index.mts'
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
+import { upsertLinkedInAccount } from '../services/oauth-linkedin/index.mts'
 import { upsertXAccount } from '../services/oauth-x/index.mts'
 import { processOAuthAuthorizationExchange } from '../services/oauth/authorization-exchange.mts'
 import {
@@ -54,6 +55,7 @@ export async function captureTestOAuthExchangeMutationFailure(
       decryptVerifier: decryptOAuthAuthorizationPkceVerifier,
       upsertFacebook: upsertFacebookAuthorizationCodeAccount,
       upsertGithub: upsertGithubAccount,
+      upsertLinkedIn: upsertLinkedInAccount,
       upsertX: upsertXAccount,
       async rejectExhausted(id, claimedId) {
         let rejected: boolean

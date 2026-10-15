@@ -6,22 +6,24 @@ LinkedIn OAuth accounts linked to users. Stores profile data and encrypted OAuth
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| ----------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `user_id`                     | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `linkedin_user_id`            | `text`                     | no       |                     |          |           |           | LinkedIn's unique user identifier (primary key).                    |
-| `linkedin_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the LinkedIn profile.                            |
-| `linkedin_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from LinkedIn OAuth.                         |
-| `access_token_ciphertext`     | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 access token ciphertext for LinkedIn API calls. |
-| `refresh_token_ciphertext`    | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.   |
-| `access_token_expires_at`     | `timestamp with time zone` | yes      |                     |          |           |           | When the access token expires.                                      |
-| `created_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
-| `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
+| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity used by durable OAuth authorization references. |
+| `user_id`                     | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.      |
+| `linkedin_user_id`            | `text`                     | no       |                              |          |           |           | LinkedIn's unique external user identifier.                              |
+| `linkedin_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the LinkedIn profile.                                 |
+| `linkedin_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from LinkedIn OAuth.                              |
+| `access_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for LinkedIn API calls.      |
+| `refresh_token_ciphertext`    | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.        |
+| `access_token_expires_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the access token expires.                                           |
+| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                          |
+| `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
 
-**Primary key:** `PRIMARY KEY (linkedin_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `linkedin_accounts_linkedin_user_id_key`: `UNIQUE (linkedin_user_id)`
 
 **Check constraints:**
 _none_
@@ -36,7 +38,8 @@ _none_
 - `idx_linkedin_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_linkedin_accounts__orphan_retention_cleanup ON public.linkedin_accounts USING btree (created_at, linkedin_user_id) WHERE (user_id IS NULL)`
 - `idx_linkedin_accounts__token_expires_at`: `CREATE INDEX idx_linkedin_accounts__token_expires_at ON public.linkedin_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_linkedin_accounts__user_id`: `CREATE UNIQUE INDEX idx_linkedin_accounts__user_id ON public.linkedin_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
-- `linkedin_accounts_pkey`: `CREATE UNIQUE INDEX linkedin_accounts_pkey ON public.linkedin_accounts USING btree (linkedin_user_id)`
+- `linkedin_accounts_linkedin_user_id_key`: `CREATE UNIQUE INDEX linkedin_accounts_linkedin_user_id_key ON public.linkedin_accounts USING btree (linkedin_user_id)`
+- `linkedin_accounts_pkey`: `CREATE UNIQUE INDEX linkedin_accounts_pkey ON public.linkedin_accounts USING btree (id)`
 
 **Triggers:**
 

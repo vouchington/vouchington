@@ -53,6 +53,7 @@ describe('OAuth authorization broker callback', () => {
       facebook: { scope: 'email,user_friends', pkce: false },
       x: { scope: 'tweet.read users.read follows.read offline.access', pkce: true },
       github: { scope: 'read:user user:email', pkce: true },
+      linkedin: { scope: 'openid profile email', pkce: false },
     } as const
 
     for (const [provider, expected] of Object.entries(expectations)) {
@@ -61,6 +62,7 @@ describe('OAuth authorization broker callback', () => {
         buildProviderAuthorizationUrl({
           clientId: `${provider}-client-id`,
           provider: provider as keyof typeof expectations,
+          callbackMode: 'web',
           redirectUri,
           state: 'opaque-state',
           codeChallenge: 'Z'.repeat(43),
@@ -70,6 +72,7 @@ describe('OAuth authorization broker callback', () => {
       expect(url.searchParams.get('redirect_uri')).toBe(redirectUri)
       expect(Boolean(url.searchParams.get('code_challenge'))).toBe(expected.pkce)
       expect(url.searchParams.get('code_challenge_method')).toBe(expected.pkce ? 'S256' : null)
+      expect(url.searchParams.has('enable_extended_login')).toBe(false)
     }
   })
 
@@ -158,15 +161,47 @@ describe('OAuth authorization broker callback', () => {
       exchange_claim_id: null,
     })
   })
+
+  it('persists a LinkedIn account and fenced completion in one transaction', async () => {
+    const cleanup = registerCleanup()
+    const flowId = await insertTestOAuthAuthorization({ provider: 'linkedin' })
+    cleanup.authorizationIds.push(flowId)
+    const claimId = randomUUID()
+    await markTestOAuthAuthorizationExchanging(flowId, claimId)
+    const providerUserId = `broker-linkedin-${randomUUID()}`
+    cleanup.linkedinUserIds.push(providerUserId)
+
+    const account = await upsertOAuthAccount(
+      'linkedin',
+      providerUserId,
+      null,
+      { name: 'LinkedIn Member' },
+      { accessToken: 'synthetic-access-token' },
+      { authorizationId: flowId, authorizationClaimId: claimId },
+    )
+    expect(account.account_id).toMatch(/^[0-9a-f-]{36}$/)
+
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'completion_ready',
+      linkedin_account_id: account.account_id,
+      callback_code_ciphertext: null,
+      exchange_claim_id: null,
+    })
+  })
 })
 
 type BrokerTestCleanup = {
   authorizationIds: string[]
   githubUserIds: string[]
+  linkedinUserIds: string[]
 }
 
 function registerCleanup(): BrokerTestCleanup {
-  const cleanup: BrokerTestCleanup = { authorizationIds: [], githubUserIds: [] }
+  const cleanup: BrokerTestCleanup = {
+    authorizationIds: [],
+    githubUserIds: [],
+    linkedinUserIds: [],
+  }
   onTestFinished(async () => {
     await deleteTestOAuthAuthorizationFixtures(cleanup)
   })

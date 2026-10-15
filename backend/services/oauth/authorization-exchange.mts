@@ -10,6 +10,7 @@ export type {
 import { settleOAuthAuthorizationExchangeClaim } from './authorization-exchange-disposition.mts'
 import { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import { upsertGithubAccount } from '@services/oauth-github'
+import { upsertLinkedInAccount } from '@services/oauth-linkedin'
 import { upsertXAccount } from '@services/oauth-x'
 import {
   decryptOAuthAuthorizationCode,
@@ -37,6 +38,7 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   decryptVerifier: decryptOAuthAuthorizationPkceVerifier,
   upsertFacebook: upsertFacebookAuthorizationCodeAccount,
   upsertGithub: upsertGithubAccount,
+  upsertLinkedIn: upsertLinkedInAccount,
   upsertX: upsertXAccount,
   rejectExhausted: rejectExhaustedOAuthAuthorizationExchange,
   releaseClaim: releaseOAuthAuthorizationExchangeClaim,

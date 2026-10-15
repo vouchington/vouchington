@@ -7,10 +7,10 @@
 Prerequisites:
 
 - Dev server running (`./dev/tmux`)
-- Test accounts for Facebook, X, and GitHub
+- Test accounts for Facebook, X, GitHub, and LinkedIn
 - The provider credentials under test configured in `~/voucha.env`
 - The provider and client mode enabled under the `oauth-authorization-broker` dynamic config key;
-  all six provider/mode fields default to `false`
+  all eight provider/mode fields default to `false`
 - For legacy Facebook fallback testing only, `NEXT_PUBLIC_META_APP_ID` set in `web/.env.local`
 
 ---
@@ -25,7 +25,7 @@ Prerequisites:
 ### Brokered provider login flow
 
 1. Visit `/login` (logged out)
-2. Click **Continue with Facebook**, **Continue with X**, or **Continue with GitHub**
+2. Click **Continue with Facebook**, **Continue with X**, **Continue with GitHub**, or **Continue with LinkedIn**
 3. Confirm a blank popup opens synchronously, then navigates to the provider
 4. Approve the provider authorization
 5. Confirm the popup completes on the Voucha callback page, closes, and the opener redirects to `/`
@@ -43,7 +43,7 @@ Prerequisites:
 
 ### Native broker resume
 
-1. Start Facebook, X, or GitHub authentication in a native client
+1. Start Facebook, X, GitHub, or LinkedIn authentication in a native client
 2. Background or terminate the app before approving the provider
 3. Approve the provider authorization and reopen through the custom-scheme callback
 4. Confirm the app restores the secure pending authorization and completes exactly once
@@ -97,12 +97,14 @@ Prerequisites:
 
 1. Log in (via email OTP or test user API)
 2. Visit `/my/identity`
-3. Scroll to the Facebook, X, or GitHub section
+3. Scroll to the Facebook, X, GitHub, or LinkedIn section
 4. Click its connect button
 5. Approve the provider popup
 6. Confirm the section shows the provider identity with a "Connected" badge
 7. Reload and confirm the connected state persists
-8. Replay the completion and confirm friend synchronization is scheduled only once
+8. Replay the completion and confirm it does not create a second connection. For Facebook, X, and
+   GitHub, also confirm friend synchronization is scheduled only once; LinkedIn has no friend-sync
+   enqueue path.
 
 #### When already connected
 

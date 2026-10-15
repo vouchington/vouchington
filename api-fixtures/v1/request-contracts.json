@@ -29686,7 +29686,7 @@
       "required": ["plus", "pro"],
       "type": "object"
     },
-    "Record__facebook_____x_____github____version__1__modes__Record__web_____native___boolean__purposes__readonly___authenticate_____connect_______": {
+    "Record__facebook_____x_____github_____linkedin____version__1__modes__Record__web_____native___boolean__purposes__readonly___authenticate_____connect_______": {
       "additionalProperties": false,
       "properties": {
         "facebook": {
@@ -29729,6 +29729,26 @@
           "required": ["modes", "purposes", "version"],
           "type": "object"
         },
+        "linkedin": {
+          "additionalProperties": false,
+          "properties": {
+            "modes": {
+              "$ref": "#/components/schemas/Record__web_____native__boolean"
+            },
+            "purposes": {
+              "items": {
+                "enum": ["authenticate", "connect"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "version": {
+              "const": 1
+            }
+          },
+          "required": ["modes", "purposes", "version"],
+          "type": "object"
+        },
         "x": {
           "additionalProperties": false,
           "properties": {
@@ -29750,7 +29770,7 @@
           "type": "object"
         }
       },
-      "required": ["facebook", "github", "x"],
+      "required": ["facebook", "github", "linkedin", "x"],
       "type": "object"
     },
     "Record__web_____native__boolean": {

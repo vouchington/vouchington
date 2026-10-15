@@ -48,6 +48,45 @@
       }
     },
     {
+      "id": "linkedin-oauth-broker",
+      "title": "LinkedIn brokered authentication and account connection",
+      "domain": "Account",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/security/AUTH.md",
+        "docs/requirements/users/USER_SETTINGS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "authentication (email otp / passkey / apple / mfa)"
+        },
+        {
+          "table": "B",
+          "surface": "auth / account"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/auth/oauth-broker-button.tsx",
+            "web/app/(my)/my/identity/page.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/auth/__tests__/login-form.linkedin.mock.test.tsx",
+            "web/components/my/__tests__/oauth-connections-section.mock.test.tsx"
+          ]
+        },
+        "swift": { "status": "none", "uiEvidence": [], "behaviorTests": [] },
+        "dotnet": { "status": "none", "uiEvidence": [], "behaviorTests": [] }
+      },
+      "gap": {
+        "summary": "The default-disabled LinkedIn broker has web login and connection coverage, but the paired Swift and .NET provider controls and flows are not on native main. Client issue #274 owns enabled, disabled, failure, retry, and connected-state evidence before native parity can be claimed.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/274"
+      }
+    },
+    {
       "id": "voting",
       "title": "Semantic voting",
       "domain": "Content",

@@ -35,7 +35,7 @@ describe('routing', () => {
     }
   })
 
-  it.each(['facebook', 'x', 'github'])(
+  it.each(['facebook', 'x', 'github', 'linkedin'])(
     'routes the %s OAuth broker callback to its canonical backend path',
     provider => {
       const pathname = `/auth/callback/${provider}/broker`

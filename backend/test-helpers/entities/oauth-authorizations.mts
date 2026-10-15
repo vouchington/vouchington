@@ -4,8 +4,9 @@ import { read, write } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { seedTestOAuthExchangeAttempts } from './oauth-exchange-attempts.mts'
+export { deleteTestOAuthAuthorizationFixtures } from './oauth-authorization-fixture-cleanup.mts'
 
-type TestOAuthAuthorizationProvider = 'facebook' | 'github' | 'x'
+type TestOAuthAuthorizationProvider = 'facebook' | 'github' | 'x' | 'linkedin'
 type TestOAuthAuthorizationPurpose = 'authenticate' | 'connect'
 type TestOAuthAuthorizationCallbackMode = 'native' | 'web'
 type TestOAuthAuthorizationStatus =
@@ -28,6 +29,7 @@ export type TestOAuthAuthorizationRow = {
   facebook_user_id: string | null
   github_user_id: string | null
   x_user_id: string | null
+  linkedin_account_id: string | null
   result_kind: string | null
   result_user_id: string | null
   result_device_id: string | null
@@ -67,6 +69,10 @@ export async function insertTestOAuthAuthorization(
 ): Promise<string> {
   const id = options.id ?? uuidv7()
   const provider = options.provider ?? 'github'
+  const linkedinAccountId =
+    provider === 'linkedin' && options.providerUserId
+      ? await getLinkedInAccountId(options.providerUserId)
+      : null
   const completionTokenHash = options.completionToken
     ? hashToken(`oauth-authorization-broker:completion:${id}`, options.completionToken)
     : null
@@ -78,7 +84,8 @@ export async function insertTestOAuthAuthorization(
        exchange_started_at, exchange_claim_id, completion_proof_challenge,
        completion_token_hash, completion_token_ciphertext, facebook_user_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
-       result_session_id, completion_ready_at, completed_at, expires_at, updated_at
+       result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
+       linkedin_account_id
      )
      VALUES (
        $1, $2, $3, $4,
@@ -86,7 +93,7 @@ export async function insertTestOAuthAuthorization(
        CASE WHEN $5::text = 'expired' THEN $28::timestamptz END,
        $6, $7, $8, $9, $10, 'test-pkce-ciphertext',
        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
-       $25, $26, $27, $28
+       $25, $26, $27, $28, $29
      )`,
     [
       id,
@@ -119,6 +126,7 @@ export async function insertTestOAuthAuthorization(
       options.completedAt ?? null,
       options.expiresAt ?? new Date(Date.now() + 10 * 60_000),
       options.updatedAt ?? new Date(),
+      linkedinAccountId,
     ],
   )
   await seedTestOAuthExchangeAttempts(id, options)
@@ -132,12 +140,21 @@ export async function getTestOAuthAuthorization(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_user_id,
-       github_user_id, x_user_id, result_kind, result_user_id, result_device_id, result_session_id
+       github_user_id, x_user_id, linkedin_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],
   )
   return rows[0] ?? null
+}
+
+async function getLinkedInAccountId(providerUserId: string): Promise<string> {
+  const { rows } = await read<{ id: string }>(
+    `/* getTestLinkedInAccountId */ SELECT id FROM linkedin_accounts WHERE linkedin_user_id = $1`,
+    [providerUserId],
+  )
+  if (!rows[0]) throw new Error('LinkedIn test account must exist before authorization fixture')
+  return rows[0].id
 }
 
 export async function markTestOAuthAuthorizationExchanging(
@@ -151,33 +168,6 @@ export async function markTestOAuthAuthorizationExchanging(
          exchange_claim_id = $2
      WHERE id = $1`,
     [authorizationId, claimId],
-  )
-}
-
-export async function deleteTestOAuthAuthorizationFixtures(fixtures: {
-  authorizationIds?: string[]
-  facebookUserIds?: string[]
-  githubUserIds?: string[]
-  xUserIds?: string[]
-  userIds?: string[]
-}): Promise<void> {
-  await deleteRowsByIds('oauth_authorizations', 'id', fixtures.authorizationIds)
-  await deleteRowsByIds('github_accounts', 'github_user_id', fixtures.githubUserIds)
-  await deleteRowsByIds('facebook_accounts', 'facebook_user_id', fixtures.facebookUserIds)
-  await deleteRowsByIds('x_accounts', 'x_user_id', fixtures.xUserIds)
-  await deleteRowsByIds('users', 'id', fixtures.userIds)
-}
-
-async function deleteRowsByIds(
-  table: 'oauth_authorizations' | 'facebook_accounts' | 'github_accounts' | 'users' | 'x_accounts',
-  column: 'facebook_user_id' | 'github_user_id' | 'id' | 'x_user_id',
-  ids: string[] | undefined,
-): Promise<void> {
-  if (!ids?.length) return
-  await write(
-    `/* deleteTestOAuthAuthorizationFixtures */ DELETE FROM ${table}
-     WHERE ${column} = ANY($1::${column === 'id' ? 'uuid' : 'text'}[])`,
-    [ids],
   )
 }
 

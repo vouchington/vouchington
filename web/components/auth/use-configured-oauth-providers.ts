@@ -43,7 +43,10 @@ export function useConfiguredOAuthProviders(runtimePublicProviders: OAuthProvide
     providers: configuration.providers.filter(
       provider =>
         runtimePublicProviders.includes(provider) ||
-        ((provider === 'facebook' || provider === 'x' || provider === 'github') &&
+        ((provider === 'facebook' ||
+          provider === 'x' ||
+          provider === 'github' ||
+          provider === 'linkedin') &&
           Boolean(configuration.broker_capabilities[provider]?.modes.web)),
     ),
     brokerCapabilities: configuration.broker_capabilities,

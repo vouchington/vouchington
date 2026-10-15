@@ -1,12 +1,12 @@
 -- edited-in-place: pre-launch, never deployed to production
--- Shared browser/native OAuth authorization broker for Facebook, X, and GitHub.
+-- Shared browser/native OAuth authorization broker for Facebook, X, GitHub, and LinkedIn.
 
 -- This table was not deployed by an earlier migration. A branch-local database that ran the
 -- pre-launch 0582 draft must be rebuilt rather than silently retaining that superseded schema.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE oauth_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  provider oauth_authorization_providers NOT NULL CHECK (provider IN ('facebook', 'x', 'github')),
+  provider oauth_authorization_providers NOT NULL CHECK (provider IN ('facebook', 'x', 'github', 'linkedin')),
   purpose oauth_authorization_purposes NOT NULL CHECK (purpose IN ('authenticate', 'connect')),
   callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
   status oauth_authorization_statuses GENERATED ALWAYS AS (
@@ -33,6 +33,7 @@ CREATE TABLE oauth_authorizations (
   facebook_user_id TEXT REFERENCES facebook_accounts(facebook_user_id) ON DELETE CASCADE,
   x_user_id TEXT REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   github_user_id TEXT REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
+  linkedin_account_id UUID,
   result_kind oauth_authorization_result_kinds CHECK (result_kind IS NULL OR result_kind IN ('authenticated', 'mfa_required', 'connected')),
   result_user_id UUID REFERENCES users ON DELETE CASCADE,
   result_device_id UUID,
@@ -57,11 +58,12 @@ CREATE TABLE oauth_authorizations (
     (callback_mode = 'native' AND completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$')
     OR (callback_mode = 'web' AND completion_proof_challenge IS NULL)
   ),
-  CHECK (num_nonnulls(facebook_user_id, x_user_id, github_user_id) <= 1),
+  CHECK (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) <= 1),
   CHECK (
-    (provider = 'facebook' AND x_user_id IS NULL AND github_user_id IS NULL)
-    OR (provider = 'x' AND facebook_user_id IS NULL AND github_user_id IS NULL)
-    OR (provider = 'github' AND facebook_user_id IS NULL AND x_user_id IS NULL)
+    (provider = 'facebook' AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL)
+    OR (provider = 'x' AND facebook_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL)
+    OR (provider = 'github' AND facebook_user_id IS NULL AND x_user_id IS NULL AND linkedin_account_id IS NULL)
+    OR (provider = 'linkedin' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL)
   ),
   CHECK (
     status NOT IN ('callback_received', 'exchanging', 'completion_ready', 'completed')
@@ -72,7 +74,7 @@ CREATE TABLE oauth_authorizations (
     OR (
       completion_ready_at IS NOT NULL
       AND callback_code_ciphertext IS NULL
-      AND num_nonnulls(facebook_user_id, x_user_id, github_user_id) = 1
+      AND num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id) = 1
     )
   ),
   CHECK (
@@ -116,6 +118,14 @@ CREATE TABLE oauth_authorizations (
   )
 );
 
+ALTER TABLE oauth_authorizations
+  ADD CONSTRAINT oauth_authorizations_linkedin_account_id_fkey
+  FOREIGN KEY (linkedin_account_id) REFERENCES linkedin_accounts(id)
+  ON DELETE CASCADE NOT VALID;
+
+ALTER TABLE oauth_authorizations
+  VALIDATE CONSTRAINT oauth_authorizations_linkedin_account_id_fkey;
+
 CREATE OR REPLACE TRIGGER trigger_oauth_authorizations_updated_at
 BEFORE UPDATE ON oauth_authorizations
 FOR EACH ROW
@@ -154,11 +164,15 @@ CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__github_user
 ON oauth_authorizations (github_user_id)
 WHERE github_user_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__linkedin_account
+ON oauth_authorizations (linkedin_account_id)
+WHERE linkedin_account_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__result_user
 ON oauth_authorizations (result_user_id)
 WHERE result_user_id IS NOT NULL;
 
-COMMENT ON TABLE oauth_authorizations IS 'Durable server-begun OAuth state machine shared by web and native Facebook, X, and GitHub authentication and account connection.';
+COMMENT ON TABLE oauth_authorizations IS 'Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, and LinkedIn authentication and account connection.';
 COMMENT ON COLUMN oauth_authorizations.provider IS 'Provider selected at begin time; callback and completion derive it only from this durable record.';
 COMMENT ON COLUMN oauth_authorizations.purpose IS 'authenticate creates or resumes a Voucha session; connect links the provider account to the authenticated initiating user.';
 COMMENT ON COLUMN oauth_authorizations.callback_mode IS 'web uses an HttpOnly completion cookie; native uses a bearer token plus the app-held proof verifier.';
@@ -177,6 +191,7 @@ COMMENT ON COLUMN oauth_authorizations.completion_token_ciphertext IS 'Authentic
 COMMENT ON COLUMN oauth_authorizations.facebook_user_id IS 'Facebook account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.x_user_id IS 'X account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.github_user_id IS 'GitHub account produced by a successful exchange; parent deletion cascades the authorization.';
+COMMENT ON COLUMN oauth_authorizations.linkedin_account_id IS 'Internal LinkedIn account row produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.result_kind IS 'Durable completion outcome: authenticated, MFA required, or connected.';
 COMMENT ON COLUMN oauth_authorizations.result_user_id IS 'Voucha user receiving the completion result; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.result_device_id IS 'Authenticated result device UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.';

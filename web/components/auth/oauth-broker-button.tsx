@@ -12,6 +12,7 @@ const providerLabels: Record<BrokerOAuthProvider, string> = {
   facebook: 'Facebook',
   x: 'X',
   github: 'GitHub',
+  linkedin: 'LinkedIn',
 }
 
 let activeBrokerProvider: BrokerOAuthProvider | null = null

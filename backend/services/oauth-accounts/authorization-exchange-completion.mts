@@ -6,16 +6,22 @@ export async function completeOAuthAuthorizationExchange(
   provider: OAuthProvider,
   authorizationId: string,
   authorizationClaimId: string,
-  providerUserId: string,
+  providerAccountId: string,
   query: TransactionQuery,
 ): Promise<void> {
-  if (provider !== 'facebook' && provider !== 'x' && provider !== 'github') {
+  if (
+    provider !== 'facebook' &&
+    provider !== 'x' &&
+    provider !== 'github' &&
+    provider !== 'linkedin'
+  ) {
     throw new Error(`OAuth authorization broker does not support ${provider}`)
   }
   const providerIdColumn = {
     facebook: 'facebook_user_id',
     x: 'x_user_id',
     github: 'github_user_id',
+    linkedin: 'linkedin_account_id',
   }[provider]
   const { rowCount } = await query(
     `/* completeOAuthAuthorizationExchange */ UPDATE oauth_authorizations
@@ -27,7 +33,7 @@ export async function completeOAuthAuthorizationExchange(
        AND provider = $3
        AND status = 'callback_received'
        AND exchange_claim_id = $4`,
-    [authorizationId, providerUserId, provider, authorizationClaimId],
+    [authorizationId, providerAccountId, provider, authorizationClaimId],
   )
   if (rowCount !== 1) {
     throw createHttpError(409, 'OAuth authorization exchange is no longer active')

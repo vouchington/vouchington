@@ -1025,14 +1025,15 @@ COMMENT ON COLUMN x_accounts.friends_synced_at IS 'When the user''s X (Twitter) 
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS linkedin_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  linkedin_user_id TEXT PRIMARY KEY,
+  linkedin_user_id TEXT NOT NULL UNIQUE,
   linkedin_user_email_address TEXT,
   linkedin_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
   refresh_token_ciphertext TEXT,
   access_token_expires_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -1058,8 +1059,9 @@ ON linkedin_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
 
 COMMENT ON TABLE linkedin_accounts IS 'LinkedIn OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
+COMMENT ON COLUMN linkedin_accounts.id IS 'Internal UUIDv7 identity used by durable OAuth authorization references.';
 COMMENT ON COLUMN linkedin_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN linkedin_accounts.linkedin_user_id IS 'LinkedIn''s unique user identifier (primary key).';
+COMMENT ON COLUMN linkedin_accounts.linkedin_user_id IS 'LinkedIn''s unique external user identifier.';
 COMMENT ON COLUMN linkedin_accounts.linkedin_user_email_address IS 'Email address from the LinkedIn profile.';
 COMMENT ON COLUMN linkedin_accounts.linkedin_user_data IS 'Raw JSONB profile data from LinkedIn OAuth.';
 COMMENT ON COLUMN linkedin_accounts.access_token_ciphertext IS 'Encrypted OAuth 2.0 access token ciphertext for LinkedIn API calls.';

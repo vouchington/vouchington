@@ -11,6 +11,7 @@ import type {
 } from './authorization-broker.mts'
 import type { upsertFacebookAuthorizationCodeAccount } from '@services/oauth-facebook'
 import type { upsertGithubAccount } from '@services/oauth-github'
+import type { upsertLinkedInAccount } from '@services/oauth-linkedin'
 import type { upsertXAccount } from '@services/oauth-x'
 
 export type OAuthAuthorizationExchangeDependencies = {
@@ -20,6 +21,7 @@ export type OAuthAuthorizationExchangeDependencies = {
   decryptVerifier: typeof decryptOAuthAuthorizationPkceVerifier
   upsertFacebook: typeof upsertFacebookAuthorizationCodeAccount
   upsertGithub: typeof upsertGithubAccount
+  upsertLinkedIn: typeof upsertLinkedInAccount
   upsertX: typeof upsertXAccount
   rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
   releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
@@ -41,7 +43,7 @@ export async function exchangeClaimedOAuthAuthorization(
 ): Promise<void> {
   const code = dependencies.decryptCode(authorization.id, authorization.callback_code_ciphertext)
   const codeVerifier =
-    authorization.provider === 'facebook'
+    authorization.provider === 'facebook' || authorization.provider === 'linkedin'
       ? undefined
       : dependencies.decryptVerifier(authorization.id, authorization.pkce_verifier_ciphertext)
   await ownership?.persist(authorization.exchange_claim_id, true)
@@ -70,5 +72,13 @@ export async function exchangeClaimedOAuthAuthorization(
         codeVerifier,
         ...completionOptions,
       })
+      break
+    case 'linkedin':
+      await dependencies.upsertLinkedIn(
+        code,
+        authorization.redirect_uri,
+        undefined,
+        completionOptions,
+      )
   }
 }

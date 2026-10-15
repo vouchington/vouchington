@@ -12,7 +12,7 @@ rerun criteria that are not fully managed by CI.
 | [bedrock-batch-dlq-purge.md](bedrock-batch-dlq-purge.md)                       | Diagnose and purge the `bedrock-batch-dlq` SQS dead-letter queue                                               |
 | [cloudflare-worker-staging-auth.md](cloudflare-worker-staging-auth.md)         | Enable, rotate, and disable the HTTP basic-auth gate on `staging.voucha.ai`                                    |
 | [fediverse-staging-interop.md](fediverse-staging-interop.md)                   | Validate public ActivityPub discovery, follow lifecycle, Accept delivery, transport, and unsupported workflows |
-| [oauth-authorization-broker-rollout.md](oauth-authorization-broker-rollout.md) | Roll out the shared Facebook, X, and GitHub broker by provider and client mode                                 |
+| [oauth-authorization-broker-rollout.md](oauth-authorization-broker-rollout.md) | Roll out the shared Facebook, X, GitHub, and LinkedIn broker by provider and client mode                       |
 | [private-docs-site.md](private-docs-site.md)                                   | Launch and operate private docs on `docs.voucha.ai` and isolated Storybook on Cloudflare Pages                 |
 | [review-succession-history-audit.md](review-succession-history-audit.md)       | Run and interpret the read-only historical review-succession audit                                             |
 | [staging-turnstile-always-approve.md](staging-turnstile-always-approve.md)     | Enable and disable the staging Turnstile always-approve kill switch for MCP QA                                 |
