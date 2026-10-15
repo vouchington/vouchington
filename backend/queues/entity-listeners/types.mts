@@ -1,7 +1,6 @@
 export type {
   CreateTopicUpdates,
   EntityReconciliationDispatchData,
-  ProcessPostCreatedJobData,
   ReconcileEntityData,
   UserLoginContext,
 } from '@queues/background/enqueues/entity-listeners-payloads'

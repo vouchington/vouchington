@@ -79,6 +79,7 @@ type ReconcileEntityBatchDependencies = {
   reconcileEntity: (data: ReconcileEntityData) => Promise<void>
 }
 
+/** @internal Exported for the reconciliation tests. */
 export async function reconcileEntityBatches(
   batches: AsyncIterable<ReconcileEntityData[]>,
   completedThrough: Date,
