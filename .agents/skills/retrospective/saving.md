@@ -108,6 +108,8 @@ Optional arguments: `repositories`, `sourceEventId`, `category`, and `dryRun`. A
 compose and validate without writing, then save the exact `markdown` the dry run returned (not a
 second `compose`, which can recompose a different document and conflict on `sourceEventId`) with the
 same `repositories` argument the preview used; the returned document does not carry that list.
+A `markdown` save cannot carry `compose.knownSensitiveValues`, so never put a known sensitive value
+in `feedbackCoverage.sources`, `category`, or any other argument besides the composer input.
 When the front matter repeats `session_id`, `work_outcome`, `feedback_coverage`, or `repositories`,
 each must equal the argument. Delivery mode is never read from the document.
 
