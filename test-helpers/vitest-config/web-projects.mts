@@ -117,9 +117,10 @@ export const webProjects: TestProjectConfiguration[] = [
   {
     extends: true,
     test: {
-      ...defaultTestBudget,
       isolate: false,
       name: 'lambdas',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['lambdas/**/*.test.mts'],
       exclude: [
         '**/node_modules/**',
@@ -133,13 +134,14 @@ export const webProjects: TestProjectConfiguration[] = [
   {
     extends: true,
     test: {
-      ...defaultTestBudget,
       env: {
         S3_BUCKET_IMAGES: 'test-images',
         S3_BUCKET_RENDERS: 'test-renders',
       },
       isolate: false,
       name: 'lambdas-portability',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['lambdas/dev-server.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', 'lambdas/**/node_modules/**'],
     },
@@ -147,13 +149,14 @@ export const webProjects: TestProjectConfiguration[] = [
   {
     extends: true,
     test: {
-      ...defaultTestBudget,
       env: {
         S3_BUCKET_IMAGES: 'test-images',
         S3_BUCKET_RENDERS: 'test-renders',
       },
       isolate: true,
       name: 'lambdas-mocks',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['lambdas/**/*.mock.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', 'lambdas/**/node_modules/**'],
     },
