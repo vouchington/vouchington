@@ -20,6 +20,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@queues/urls-domains-blacklist": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@services/urls-domains-blacklist-sync": "workspace:^",
     "glide-mq": "^0.18.0"

@@ -20,10 +20,13 @@ import { persistDomainDiff } from './sync-db-domain-diff.mts'
 import {
   ADDED_DOMAINS_TABLE,
   REMOVED_DOMAINS_TABLE,
-  invalidateChangedHostnameCaches,
+  enqueueChangedHostnameCaches,
 } from './sync-cache.mts'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
 const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
 const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'
+type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 async function* generateDomainCsvRows(response: Response): AsyncGenerator<string> {
   for await (const domain of readNormalizedDomains(response)) {
     yield `"${domain.replaceAll('"', '""')}"\n`
@@ -35,14 +38,18 @@ export async function syncDomainsWithDatabase(
   sourceType: 'url' | 'email' = 'url',
   bloomRebuildDependencies: BloomRebuildDependencies = defaultBloomRebuildDependencies,
 ): Promise<SyncBlacklistSourceResult> {
+  await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
   let result: SyncBlacklistSourceResult
   try {
     await stageDesiredDomains(client, response)
     await using transaction = await beginTransaction({ client })
-    result = await applyDesiredDomains(transaction, sourceId, sourceType)
+    const applied = await applyDesiredDomains(transaction, sourceId, sourceType)
+    result = applied.result
     await transaction.commit()
-    await invalidateChangedHostnameCaches(client).catch(onError)
+    await drainHostnameCacheInvalidationWork({ hostnameIds: applied.inlineHostnameIds }).catch(
+      onError,
+    )
   } finally {
     await dropSyncTempTables(client).catch(onError)
     client.release()
@@ -78,7 +85,7 @@ async function applyDesiredDomains(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
-): Promise<SyncBlacklistSourceResult> {
+): Promise<AppliedDomainDiff> {
   await prepareDomainDiff(query, sourceId, sourceType)
   return applyPreparedDomainDiff(query, sourceId, sourceType)
 }
@@ -139,7 +146,7 @@ async function applyPreparedDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
-): Promise<SyncBlacklistSourceResult> {
+): Promise<AppliedDomainDiff> {
   const [{ rows: addedRows }, { rows: removedRows }] = await Promise.all([
     query<{ count: string }>(
       `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${ADDED_DOMAINS_TABLE}`,
@@ -149,10 +156,14 @@ async function applyPreparedDomainDiff(
     ),
   ])
   await persistDomainDiff(query, sourceId, sourceType)
+  const inlineHostnameIds = await enqueueChangedHostnameCaches(query)
   return {
-    skipped: false,
-    domainsAdded: Number(addedRows[0]?.count ?? 0),
-    domainsRemoved: Number(removedRows[0]?.count ?? 0),
+    result: {
+      skipped: false,
+      domainsAdded: Number(addedRows[0]?.count ?? 0),
+      domainsRemoved: Number(removedRows[0]?.count ?? 0),
+    },
+    inlineHostnameIds,
   }
 }
 async function dropSyncTempTables(client: PoolClient): Promise<void> {

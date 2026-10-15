@@ -3,6 +3,9 @@
 Source entrypoint: [backend/queues/urls-domains-blacklist/README.md](../../../../../backend/queues/urls-domains-blacklist/README.md)
 
 This system manages domain blacklists for URLs and email addresses using a two-level dispatcher pattern.
+It also runs a bounded, scheduled drain of durable hostname-policy cache invalidations. Feed sync,
+manual block, and manual unblock enqueue hostname IDs with their database changes; each successful
+eviction clears only the claimed generation. The sweep retries work left by cache failures.
 
 ## Architecture
 

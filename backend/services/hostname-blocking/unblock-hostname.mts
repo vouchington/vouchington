@@ -1,12 +1,9 @@
-import { beginTransaction, withTransactionOptions, read } from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
-
-type BlockedHostname = {
-  id: string
-  hostname: string
-}
 
 export async function unblockHostname(
   adminUserId: string,
@@ -26,6 +23,7 @@ export async function unblockHostname(
         AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
       RETURNING url_hostname_id
     `)
+    if (updateRows.length > 0) await enqueueHostnameCacheInvalidation(query, [hostnameId])
     return updateRows
   }
   const rows =
@@ -33,17 +31,8 @@ export async function unblockHostname(
       ? await withTransactionOptions(options, run)
       : await unblockHostnameInOwnedTransaction(run)
 
-  if (rows.length > 0) {
-    const { rows: hostnameRows } = await read(
-      sql`/* unblockHostname:getHostname */
-      SELECT id, hostname FROM url_hostnames WHERE id = ${hostnameId}
-    `,
-      options,
-    )
-    if (hostnameRows.length > 0) {
-      await invalidate.url_hostnames(hostnameRows[0] as BlockedHostname)
-    }
-  }
+  if (rows.length > 0 && !options.query && !options.client)
+    await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
 }
 
 async function unblockHostnameInOwnedTransaction(

@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
+    'url_hostname_cache_invalidation_work_items',
+    'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
+  ],
+  [
     'copyright_notice_form_screening_work_items',
     'One current execution per intake; completing or failing an attempt deletes its current work.',
   ],

@@ -1,5 +1,12 @@
 # Entities Cache
 
+Hostname-policy invalidation uses `url_hostname_cache_invalidation_work_items`. Writers enqueue the
+changed hostname ID in their policy transaction. A bounded post-commit pass and scheduled sweep
+evict both the hostname and email-domain-validation caches, then acknowledge only their own lease
+and generation. Failure leaves the row for a later claim. Rows older than the hostname cache TTL
+are pruned in bounded pages; a cache fill delayed beyond that TTL remains an existing cache-layer
+limit rather than an invalidation-work guarantee.
+
 Source entrypoint: [backend/services/entity-cache/README.md](../../../../../backend/services/entity-cache/README.md)
 
 ## Purpose

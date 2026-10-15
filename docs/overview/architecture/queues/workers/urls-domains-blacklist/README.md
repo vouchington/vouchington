@@ -2,7 +2,9 @@
 
 Source entrypoint: [backend/workers/urls-domains-blacklist/README.md](../../../../../../backend/workers/urls-domains-blacklist/README.md)
 
-Worker package for URL domain blacklist dispatcher and source sync jobs.
+Worker package for URL domain blacklist dispatcher, source sync, and the five-minute
+bounded hostname-policy cache invalidation sweep. The sweep recovers committed work
+whose inline eviction failed or whose lease expired.
 
 ## Exports
 

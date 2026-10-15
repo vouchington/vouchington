@@ -6591,6 +6591,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -13113,6 +13116,9 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist

@@ -13,12 +13,47 @@ import { resolveEmailDomainHostnameId } from '../email-address-validator/email-d
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
 import { getUrlHostnameById } from '../urls-hostnames/get.mts'
 import { caches } from '@services/entity-cache/caches'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import {
+  makeHostnameCacheInvalidationAvailableForTest,
+  getHostnameCacheInvalidationWorkForTest,
+  failNextHostnameCacheDeleteForTest,
+} from '@voucha/test-helpers/hostname-cache-invalidation'
 import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
 describe('sync-db', () => {
+  it('keeps both added and removed hostname invalidations durable when inline eviction fails', async () => {
+    const suffix = crypto.randomUUID()
+    const domain = `sync-failure-${suffix}.example.com`
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `sync-failure-${randomSourceSuffix()}`,
+      url: 'https://example.com/sync-failure.txt',
+    })
+    try {
+      for (const feed of [`${domain}\n`, '']) {
+        const restoreFailure = failNextHostnameCacheDeleteForTest(hostnameId)
+        try {
+          await syncDomainsWithDatabase(sourceId, new Response(feed))
+        } finally {
+          restoreFailure()
+        }
+        expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
+          attempt_count: 1,
+          lease_token: null,
+        })
+        await makeHostnameCacheInvalidationAvailableForTest(hostnameId)
+        expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] })).toBe(1)
+      }
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+  })
+
   it('retains an inherited administrator block when a child first arrives from a URL feed', async () => {
     const suffix = crypto.randomUUID()
     const parent = `admin-parent-${suffix}.example.com`

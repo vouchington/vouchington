@@ -1,34 +1,34 @@
-import type { PoolClient } from '@data-stores/psql'
-import { invalidate } from '@services/entity-cache/invalidate'
-import { caches } from '@services/entity-cache/caches'
+import type { TransactionQuery } from '@data-stores/psql'
 import { getEntityCacheWorkLimit } from '@services/entity-cache/work-limits'
 
 export const ADDED_DOMAINS_TABLE = 'tmp_domain_blacklist_added_domains'
 export const REMOVED_DOMAINS_TABLE = 'tmp_domain_blacklist_removed_domains'
 
-/** Consume committed feed changes by indexed keyset while their session temp tables still exist. */
-export async function invalidateChangedHostnameCaches(client: PoolClient): Promise<void> {
-  const batchSize = getEntityCacheWorkLimit('delete_keys_per_batch')
-  let after = ''
-  for (;;) {
-    // oxlint-disable-next-line no-await-in-loop -- the indexed keyset query reads one bounded batch at a time.
-    const { rows } = await client.query<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
-      `/* invalidateChangedHostnameCaches */
-      SELECT domain FROM (
-        SELECT domain FROM ${ADDED_DOMAINS_TABLE} WHERE domain > $1::text
-        UNION ALL
-        SELECT domain FROM ${REMOVED_DOMAINS_TABLE} WHERE domain > $1::text
+/** Persist both added and removed hostname identities while the staged diff still exists. */
+export async function enqueueChangedHostnameCaches(query: TransactionQuery): Promise<string[]> {
+  const { rows } = await query<{ url_hostname_id: string }>(
+    `/* enqueueChangedHostnameCaches */
+    WITH persisted AS (
+      INSERT INTO url_hostname_cache_invalidation_work_items (url_hostname_id)
+      SELECT DISTINCT hostname.id
+      FROM (
+        SELECT domain FROM ${ADDED_DOMAINS_TABLE}
+        UNION
+        SELECT domain FROM ${REMOVED_DOMAINS_TABLE}
       ) changed
-      ORDER BY domain LIMIT $2::int`,
-      [after, batchSize],
+      JOIN url_hostnames hostname ON hostname.hostname = changed.domain
+      ON CONFLICT (url_hostname_id) DO UPDATE SET
+        generation = url_hostname_cache_invalidation_work_items.generation + 1,
+        enqueued_at = CURRENT_TIMESTAMP,
+        available_at = CURRENT_TIMESTAMP,
+        attempt_count = 0,
+        lease_token = NULL,
+        leased_at = NULL,
+        lease_expires_at = NULL
+      RETURNING url_hostname_id
     )
-    if (rows.length === 0) return
-    const domains = rows.map(row => row.domain)
-    // oxlint-disable-next-line no-await-in-loop -- invalidate committed batches before advancing the cursor.
-    await Promise.all([
-      invalidate.url_hostnames(...domains),
-      caches.email_domain_validation.invalidateCacheGetByAny(...domains),
-    ])
-    after = rows.at(-1)!.domain
-  }
+    SELECT url_hostname_id FROM persisted ORDER BY url_hostname_id LIMIT $1::int`,
+    [getEntityCacheWorkLimit('delete_keys_per_batch')],
+  )
+  return rows.map(row => row.url_hostname_id)
 }

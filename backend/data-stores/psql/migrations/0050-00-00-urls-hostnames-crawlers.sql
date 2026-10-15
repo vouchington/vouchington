@@ -92,6 +92,40 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
 
 COMMENT ON COLUMN url_hostnames.publicly_introduced_at IS 'First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.';
 
+-- One durable cache repair per live hostname. A newer generation fences stale workers.
+CREATE TABLE IF NOT EXISTS url_hostname_cache_invalidation_work_items (
+  url_hostname_id UUID PRIMARY KEY REFERENCES url_hostnames(id) ON DELETE CASCADE,
+  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
+  enqueued_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_token UUID,
+  leased_at TIMESTAMPTZ,
+  lease_expires_at TIMESTAMPTZ,
+  attempt_count INT NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  CONSTRAINT chk_url_hostname_cache_invalidation_work_items__lease CHECK (
+    (lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+    OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at IS NOT NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__available
+  ON url_hostname_cache_invalidation_work_items (available_at, url_hostname_id)
+  WHERE lease_token IS NULL;
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__lease_expiry
+  ON url_hostname_cache_invalidation_work_items (lease_expires_at, url_hostname_id)
+  WHERE lease_token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__enqueued_at
+  ON url_hostname_cache_invalidation_work_items (enqueued_at, url_hostname_id)
+  WHERE lease_token IS NULL;
+COMMENT ON TABLE url_hostname_cache_invalidation_work_items IS 'One coalesced durable invalidation for both hostname-policy caches; completion deletes the current generation.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.url_hostname_id IS 'Live hostname whose cached policy must be evicted.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.generation IS 'Re-enqueue generation that fences an older lease completion.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.enqueued_at IS 'Time of the latest policy change, used for cache-TTL pruning.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.available_at IS 'Earliest time an unleased worker may claim this invalidation.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.lease_token IS 'Opaque worker ownership token required for completion or failure.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.leased_at IS 'Time the current invalidation lease began.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.lease_expires_at IS 'Time after which another worker may reclaim the lease.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.attempt_count IS 'Claims of this current generation; re-enqueue resets the count.';
+
 -- These address tables are created before url_hostnames; each stores the domain identity
 -- resolved when the address is written, and never copies the hostname's block state.
 ALTER TABLE user_email_addresses

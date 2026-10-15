@@ -5,6 +5,7 @@ export const PRIORITY_DISPATCHER = 100
 export const URLS_DOMAINS_BLACKLIST_ORDERING = {
   dispatcher: { key: 'dispatcher', concurrency: 1 },
   sync: { key: 'sync', concurrency: 5 },
+  cacheInvalidation: { key: 'cache-invalidation', concurrency: 1 },
 } as const
 
 export const URLS_DOMAINS_BLACKLIST_DEFAULTS = {

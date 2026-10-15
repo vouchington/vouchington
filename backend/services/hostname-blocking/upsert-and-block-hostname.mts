@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import onError from '@modules/on-error'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import createHttpError from 'http-errors'
 import {
@@ -21,14 +22,10 @@ export async function upsertAndBlockHostname(
   const hostnameMap = await upsertUrlHostnames(adminUserId, [hostname], { query })
   const hostnameId = hostnameMap.get(hostname)
   if (!hostnameId) throw createHttpError(500, 'Failed to upsert hostname')
-  const { result, hostnames, creatorIds } = await blockHostnameInTransaction(
-    adminUserId,
-    hostnameId,
-    query,
-  )
+  const { result, creatorIds } = await blockHostnameInTransaction(adminUserId, hostnameId, query)
   await query.commit()
 
-  await invalidate.url_hostnames(...hostnames)
+  await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
   enqueueBlockHostnameVoteWeightRecalculation(creatorIds)
   return { id: hostnameId, result }
 }

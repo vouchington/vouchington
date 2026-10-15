@@ -18,6 +18,8 @@ Blocks a hostname and all its subdomains atomically in a transaction:
 `options.penalizeCreators = false` is used by automated Google Web Risk blocks. Those blocks still soft-delete matching relations and block subdomains, but do not apply the initial creator penalty.
 
 After the transaction, enqueues vote weight recalculation for all affected users.
+Blocking and unblocking enqueue affected hostname IDs in the same transaction. An inline bounded
+cache pass runs after commit; the scheduled blacklist worker resumes failed eviction work.
 
 Domain blacklist sync stores each input domain with a `url_hostname_id` and projects a source-owned
 history row. URL sources affect crawl policy; email-only sources affect email eligibility without
