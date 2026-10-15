@@ -4934,8 +4934,6 @@ rules:
           reason: 'replaced by #2512'
         - object: 'constraint:identity_document_types.identity_document_types_pkey'
           reason: 'replaced by #2513'
-        - object: 'constraint:membership_ineligible_purchase_reversal_refund_observations.pk_mipr_succeeded_refund_observations'
-          reason: 'replaced by #2516'
         - object: 'constraint:migrations.migrations_pkey'
           reason: 'owned by the migration runner'
         - object: 'constraint:oauth_authorizations.oauth_authorizations_facebook_user_id_fkey'
