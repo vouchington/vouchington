@@ -136,8 +136,10 @@ jobs:
         run: node backend/scripts/explain-analyze/pruning/run.mts
       - name: Convert native pruning coverage with published c8
         timeout-minutes: 1
+        # Use c8's declared public CLI entrypoint: Knip treats the bare c8 binary as a
+        # child-command wrapper and otherwise mistakes its report subcommand for a binary.
         run: >-
-          pnpm exec c8 report
+          node node_modules/c8/bin/c8.js report
           --temp-directory backend/scripts/explain-analyze/output/pruning-v8
           --reports-dir backend/scripts/explain-analyze/output/retirement-coverage
           --reporter json --reporter json-summary --reporter lcovonly

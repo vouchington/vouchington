@@ -115,7 +115,7 @@ describe('native pruning coverage artifacts', () => {
     const converter = steps.find(
       step => step.name === 'Convert native pruning coverage with published c8',
     )
-    expect(converter?.run).toContain('pnpm exec c8 report')
+    expect(converter?.run).toContain('node node_modules/c8/bin/c8.js report')
     expect(converter?.run).toContain('--reporter lcovonly')
     expect(converter?.run).toContain('--extension .mts')
     expect(converter?.run).toContain('backend/scripts/explain-analyze/output/retirement-coverage')
