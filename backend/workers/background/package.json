@@ -25,7 +25,6 @@
     "@queues/post-mentions": "workspace:^",
     "@queues/post-publication": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
-    "@queues/story-post-related-url-projections": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
     "@workers/openai-moderation": "workspace:^",

@@ -11898,9 +11898,6 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
-      '@queues/story-post-related-url-projections':
-        specifier: workspace:^
-        version: link:../../queues/story-post-related-url-projections
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
