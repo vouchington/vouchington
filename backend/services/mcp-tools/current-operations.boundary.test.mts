@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { SCOPE_DEFINITIONS, withScopePrerequisites, type ApiScope } from '@modules/scopes'
 import { createTestUser } from '@voucha/test-helpers'
 import { issueTestUserMcpCredential } from '@voucha/test-helpers/mcp-user-credentials'
+import { deleteRouteRateLimitKeys } from '@voucha/test-helpers/services/route-rate-limits/test-support'
 import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   readTestMcpCallAuditEvents,
@@ -19,6 +20,7 @@ import {
   isRouteRateLimitEnabled,
 } from '../route-rate-limits/config.mts'
 import { buildRateLimitKeys } from '../route-rate-limits/identity.mts'
+import type { RateLimitIdentities } from '../route-rate-limits/types.mts'
 import { routeRateLimiters } from '../route-rate-limits/check.mts'
 import { chargeMcpToolCalls } from '../../api/mcp-route-rate-limit-helpers.mts'
 import { callMcpTool } from './call-tool.mts'
@@ -48,16 +50,16 @@ function call(row: OperationCase, input: Record<string, unknown>, id: number) {
 function selectedConfig(row: OperationCase) {
   return row.surface === 'mcp' ? USER_MCP_SERVER_CONFIG : ADMIN_MCP_SERVER_CONFIG
 }
-function counter(routeKey: string, identities: { ip: string }) {
+function counter(routeKey: string, identities: RateLimitIdentities) {
   const category = getRouteConfig(routeKey).category
   return routeRateLimiters[category].get(buildRateLimitKeys(routeKey, identities))
 }
 async function expectCounts(
   routeKeys: readonly string[],
-  identities: { ip: string },
+  identities: RateLimitIdentities,
   count: number,
 ) {
-  for (const key of routeKeys) expect(await counter(key, identities)).toEqual([count])
+  for (const key of routeKeys) expect(await counter(key, identities)).toEqual([count, count])
 }
 async function persistAndCheck(
   row: OperationCase,
@@ -129,9 +131,23 @@ describe('every current MCP operation: planning, real route charge, and durable 
     const actor =
       row.surface === 'admin_mcp' ? adminActor : userActors[CASES.indexOf(row) % userActors.length]!
     const config = selectedConfig(row)
-    const identities = { ip: `2001:db8:2497::${randomUUID()}` }
+    const identities = {
+      ip: `2001:db8:2497::${randomUUID()}`,
+      ...(actor.credential.credential === 'api_key'
+        ? { apiKeyId: actor.credential.apiKeyId }
+        : { userId: actor.user.id }),
+    }
     const routeKeys = [...new Set(row.routes)]
     const keyToInspect = routeKeys.length ? routeKeys : [SENTINEL_ROUTE]
+    for (const key of keyToInspect) {
+      expect(buildRateLimitKeys(key, identities)).toEqual([
+        `ip:${identities.ip}:${key}`,
+        actor.credential.credential === 'api_key'
+          ? `apikey:${actor.credential.apiKeyId}:${key}`
+          : `uid:${actor.user.id}:${key}`,
+      ])
+      await deleteRouteRateLimitKeys(key, identities)
+    }
     await expectCounts(keyToInspect, identities, 0)
 
     const acceptedPlan = planMcpCalls(call(row, row.input, 1), actor.user, ALL_SCOPES, config, true)

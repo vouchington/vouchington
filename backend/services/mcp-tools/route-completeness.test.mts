@@ -178,9 +178,8 @@ const sameContract = (left: BaselineRecord, right: ReturnType<typeof currentReco
   (left.method === 'GET' || isDeepStrictEqual(left.inputFields, right.inputFields))
 
 describe('MCP route completeness from baseline facts', () => {
-  it('requires PR provenance for each explicitly added route', () => {
-    for (const [route, addition] of Object.entries(baselineData.additions)) {
-      expect(baselineData.routes).not.toHaveProperty(route)
+  it('requires PR provenance for each explicitly added route contract', () => {
+    for (const addition of Object.values(baselineData.additions)) {
       expect(Number.isInteger(addition.pullRequest) && addition.pullRequest > 0).toBe(true)
       expect(addition.contracts.length).toBeGreaterThan(0)
     }
@@ -286,10 +285,11 @@ describe('MCP route completeness from baseline facts', () => {
     }
   })
 
-  it('has no duplicate route contract facts in the baseline or current source', () => {
-    const identity = (entry: { surface: string; method: string; path: string; facts: unknown }) =>
-      JSON.stringify([entry.surface, entry.method, entry.path, entry.facts])
-    const baselineKeys = baseline.records.map(identity)
+  it('has no duplicate contracts across the baseline, additions, or current source', () => {
+    const identity = (
+      entry: Pick<BaselineRecord, 'surface' | 'method' | 'path' | 'facts' | 'inputFields'>,
+    ) => JSON.stringify([entry.surface, entry.method, entry.path, entry.facts, entry.inputFields])
+    const baselineKeys = expectedRecords.map(identity)
     const currentKeys = currentRecords().map(identity)
     expect(new Set(baselineKeys).size).toBe(baselineKeys.length)
     expect(new Set(currentKeys).size).toBe(currentKeys.length)
