@@ -3,7 +3,7 @@
 Source entrypoint: [backend/services/queue-domain-controls/README.md](../../../../../backend/services/queue-domain-controls/README.md)
 
 Operator pause state for the domains of the [background queue](../../queues/background/README.md),
-stored in `queue_domain_controls` (one optional row per domain: `paused_at`, `paused_by`, `reason`).
+stored in `queue_domain_controls` (one optional row per domain: `paused_at`, `paused_by_user_id`, `reason`).
 A domain with no row, or a null `paused_at`, runs. Pause history is in `moderator_actions`
 (`queue_pause` and `queue_resume`, with the domain in `metadata`).
 

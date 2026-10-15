@@ -23,12 +23,12 @@ export async function pauseQueueDomain(
 ): Promise<QueueDomainControl> {
   const { rows } = await write<QueueDomainControlRow>(
     sql`/* pauseQueueDomain */
-      INSERT INTO queue_domain_controls (domain, paused_at, paused_by, reason)
+      INSERT INTO queue_domain_controls (domain, paused_at, paused_by_user_id, reason)
       VALUES (${domain}, clock_timestamp(), ${input.userId}, ${input.reason ?? null})
       ON CONFLICT (domain) DO UPDATE
-        SET paused_at = EXCLUDED.paused_at, paused_by = EXCLUDED.paused_by, reason = EXCLUDED.reason
+        SET paused_at = EXCLUDED.paused_at, paused_by_user_id = EXCLUDED.paused_by_user_id, reason = EXCLUDED.reason
         WHERE queue_domain_controls.paused_at IS NULL
-      RETURNING domain, paused_at, paused_by, reason
+      RETURNING domain, paused_at, paused_by_user_id, reason
     `,
   )
   announceQueueDomainChange(domain)
@@ -40,7 +40,7 @@ export async function resumeQueueDomain(domain: string): Promise<QueueDomainCont
   await write(
     sql`/* resumeQueueDomain */
       UPDATE queue_domain_controls
-      SET paused_at = NULL, paused_by = NULL, reason = NULL
+      SET paused_at = NULL, paused_by_user_id = NULL, reason = NULL
       WHERE domain = ${domain} AND paused_at IS NOT NULL
     `,
   )

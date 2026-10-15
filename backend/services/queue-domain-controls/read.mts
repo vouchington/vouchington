@@ -5,7 +5,7 @@ import type { QueueDomainControl } from './types.mts'
 export type QueueDomainControlRow = {
   domain: string
   paused_at: Date | null
-  paused_by: string | null
+  paused_by_user_id: string | null
   reason: string | null
 }
 
@@ -14,7 +14,7 @@ export function toQueueDomainControl(row: QueueDomainControlRow): QueueDomainCon
     domain: row.domain,
     paused: row.paused_at !== null,
     pausedAt: row.paused_at?.toISOString() ?? null,
-    pausedBy: row.paused_by,
+    pausedBy: row.paused_by_user_id,
     reason: row.reason,
   }
 }
@@ -27,7 +27,7 @@ export function runningQueueDomainControl(domain: string): QueueDomainControl {
 export async function listQueueDomainControls(): Promise<QueueDomainControl[]> {
   const { rows } = await read<QueueDomainControlRow>(
     sql`/* listQueueDomainControls */
-      SELECT domain, paused_at, paused_by, reason
+      SELECT domain, paused_at, paused_by_user_id, reason
       FROM queue_domain_controls
       ORDER BY domain
     `,
@@ -38,7 +38,7 @@ export async function listQueueDomainControls(): Promise<QueueDomainControl[]> {
 export async function getQueueDomainControl(domain: string): Promise<QueueDomainControl> {
   const { rows } = await read<QueueDomainControlRow>(
     sql`/* getQueueDomainControl */
-      SELECT domain, paused_at, paused_by, reason
+      SELECT domain, paused_at, paused_by_user_id, reason
       FROM queue_domain_controls
       WHERE domain = ${domain}
     `,
