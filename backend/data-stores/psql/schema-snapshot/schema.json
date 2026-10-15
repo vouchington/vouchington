@@ -119525,6 +119525,228 @@
       },
       "uniqueConstraints": {}
     },
+    "url_hostname_cache_invalidation_work_items": {
+      "checkConstraints": {
+        "chk_url_hostname_cache_invalidation_work_items__lease": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL))))",
+        "url_hostname_cache_invalidation_work_items_attempt_count_check": "CHECK ((attempt_count >= 0))",
+        "url_hostname_cache_invalidation_work_items_generation_check": "CHECK ((generation > 0))"
+      },
+      "columns": {
+        "attempt_count": {
+          "collation": null,
+          "comment": "Claims of this current generation; re-enqueue resets the count.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "available_at": {
+          "collation": null,
+          "comment": "Earliest time an unleased worker may claim this invalidation.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "enqueued_at": {
+          "collation": null,
+          "comment": "Time of the latest policy change, used for cache-TTL pruning.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "generation": {
+          "collation": null,
+          "comment": "Re-enqueue generation that fences an older lease completion.",
+          "defaultExpression": "1",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": "Time after which another worker may reclaim the lease.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token required for completion or failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": "Time the current invalidation lease began.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "url_hostname_id": {
+          "collation": null,
+          "comment": "Live hostname whose cached policy must be evicted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "One coalesced durable invalidation for both hostname-policy caches; completion deletes the current generation.",
+      "foreignKeys": {
+        "url_hostname_cache_invalidation_work_items_url_hostname_id_fkey": {
+          "columns": ["url_hostname_id"],
+          "definition": "FOREIGN KEY (url_hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_url_hostname_cache_invalidation_work_items__available": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__available ON public.url_hostname_cache_invalidation_work_items USING btree (available_at, url_hostname_id) WHERE (lease_token IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "available_at",
+              "descending": false,
+              "expression": "available_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_cache_invalidation_work_items__enqueued_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__enqueued_at ON public.url_hostname_cache_invalidation_work_items USING btree (enqueued_at, url_hostname_id) WHERE (lease_token IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "enqueued_at",
+              "descending": false,
+              "expression": "enqueued_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_cache_invalidation_work_items__lease_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__lease_expiry ON public.url_hostname_cache_invalidation_work_items USING btree (lease_expires_at, url_hostname_id) WHERE (lease_token IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "url_hostname_cache_invalidation_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hostname_cache_invalidation_work_items_pkey ON public.url_hostname_cache_invalidation_work_items USING btree (url_hostname_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_hostname_id"],
+        "definition": "PRIMARY KEY (url_hostname_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "url_hostnames": {
       "checkConstraints": {
         "chk_url_hostnames_votes_count_down": "CHECK ((votes_count_down >= 0))",
