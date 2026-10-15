@@ -21,8 +21,9 @@ runs:
         VALKEY_CONTAINER: voucha-valkey
       run: |
         set -euo pipefail
-        docker run -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
-          "$VALKEY_IMAGE" >/dev/null
+        pulled_image="$(bash "$GITHUB_WORKSPACE/ci/pull-valkey-image.sh" "$VALKEY_IMAGE")"
+        docker run --pull=never -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
+          "$pulled_image" >/dev/null
         # Valkey has no readiness event to wait on, so poll `valkey-cli ping` under a hard deadline.
         if ! timeout 60 sh -c 'until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done' "$VALKEY_CONTAINER"; then
           echo "::error::Valkey did not answer PING within 60s"

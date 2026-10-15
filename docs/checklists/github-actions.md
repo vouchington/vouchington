@@ -41,7 +41,13 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
   Dockerfile `FROM` and `# syntax=` lines, and the buildx BuildKit image. Anonymous Docker Hub
   pulls from hosted runners hit its rate limit and eject unrelated merge-queue entries
   ([#2653](https://github.com/vouchington/vouchington/issues/2653)); the mirror needs no
-  credentials and serves the pinned digest unchanged.
+  credentials and serves the pinned digest unchanged. The [Valkey acquisition helper](../development/ci/tooling/README.md)
+  may fall back once to Docker Hub with the exact same repository, version, and digest only when
+  the explicit mirror pull exits 1 with a recognized final `unknown blob` error (bare or
+  image-configuration download failure). Docker’s implicit `run` pull reported these errors as
+  exit 125; container creation itself is never retried.
+  Preserve both attempt logs and fail closed for authentication, network, timeout, and other errors;
+  this exception does not permit mutable-tag fallback or job reruns.
 - **Docker host ports** — normally let Docker allocate the host-side port (use `-p "127.0.0.1::<container_port>"`); never hardcode a literal host port. A workflow that needs coordination inside one job may use `ci/allocate-browser-safe-ports.py`. Allocate immediately before binding and let the allocator print and exit; GitHub-hosted jobs are single-tenant VMs, so do not add port holds, reapers, or collision diagnostics. A caller that can choose a new port may reallocate once on `EADDRINUSE`.
 - **Script portability** — CI runs on Linux. Scripts shared with local development must also support macOS hosts. In shared scripts, avoid Bash features unavailable in macOS `/bin/bash` 3.2 unless the caller explicitly installs and invokes a newer shell.
 - **Binary downloads** — when downloading binary archives, include the tool version or resolved revision in the downloaded filename/directory so updates cannot reuse stale generic `/tmp` paths.
