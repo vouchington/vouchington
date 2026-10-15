@@ -35,11 +35,26 @@ describe('artifact-upload-outcome.mts call sites', () => {
   it('all use the identical run string and a well-formed env block', () => {
     const steps = outcomeSteps()
 
-    // Twelve full-LCOV uploads across the twelve producer workflows (the live-provider
+    // Thirteen full-LCOV uploads, including native migrations (the live-provider
     // credentialed job publishes none).
     // A correctly-shaped new producer legitimately bumps these counts — update them deliberately
     // rather than treating the failure as a defect.
-    expect(steps).toHaveLength(12)
+    expect(steps).toHaveLength(13)
+    expect(steps.map(step => step.env?.SUITE).toSorted()).toEqual([
+      'backend-modules',
+      'backend-native-migrations',
+      'backend-shard-${{ matrix.shard }}',
+      'cloudflare-worker',
+      'lambdas',
+      'portability-linux',
+      'tooling',
+      'ts-shared',
+      'web-api-shard-${{ matrix.shard }}',
+      'web-integration-shard-${{ matrix.shard }}',
+      'web-shard-${{ matrix.shard }}',
+      'web-storybook',
+      'web-storybook-browser',
+    ])
 
     for (const step of steps) {
       expect(step.run).toBe(EXPECTED_RUN)

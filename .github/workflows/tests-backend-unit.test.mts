@@ -84,8 +84,11 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
     expect(workflow).toContain(backendCommand)
+    expect(
+      runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
+    ).toHaveLength(1)
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
