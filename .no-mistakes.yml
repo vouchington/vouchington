@@ -4122,6 +4122,7 @@ rules:
     options:
       maxMinutes: 10
       rejectStepExceedingJob: true
+      rejectJobAtOrAboveStepSum: true
       allow:
         # Steps sum to 15m; cap 14m is below it; healthy runtime ~1m (max 0.8m, n=5).
         - job: '.github/workflows/checks-static.yml#static-lambdas'

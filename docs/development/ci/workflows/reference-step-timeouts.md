@@ -10,8 +10,8 @@ The `github-actions-step-timeouts` no-mistakes rule enforces a positive numeric
 `timeout-minutes` on every executable step in authored workflows, with a 30-minute maximum.
 The existing job-timeout rule also rejects steps whose budgets exceed their job's deadline.
 Every job's `timeout-minutes` is also strictly less than the sum of its steps' `timeout-minutes`
-(no additive exception); `job-timeout-bounds.test.mts` enforces this for every job with two or more
-bounded steps.
+(no additive exception); the `github-actions-job-timeouts` rule's `rejectJobAtOrAboveStepSum` option
+enforces this.
 
 Timeouts are **fail-fast** — they should catch hung steps quickly, not accommodate every worst-case retry scenario. When in doubt, set a tighter timeout rather than a looser one.
 

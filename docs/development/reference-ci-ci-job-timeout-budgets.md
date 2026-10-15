@@ -14,10 +14,9 @@ job timeout bounds unhealthy end-to-end execution. The Docker image jobs intenti
 reserve the worst-case ceiling of every sequential step. This is a universal rule with no
 additive exception: every job's `timeout-minutes` is strictly less than the sum of its steps'
 `timeout-minutes` and at least its largest step. Never size a job as the step sum plus headroom,
-and never raise a job cap because a step was added. A job with a single bounded step has no valid
-range, so it is exempt until the shared `github-actions-job-timeouts` rule decides how to treat
-it ([no-mistakes#1963](https://github.com/jonathanong/no-mistakes/issues/1963));
-`job-timeout-bounds.test.mts` enforces the rule locally for every other job.
+and never raise a job cap because a step was added. The `github-actions-job-timeouts` no-mistakes
+rule enforces this with `rejectJobAtOrAboveStepSum` and `rejectStepExceedingJob` in
+[.no-mistakes.yml](../../.no-mistakes.yml).
 
 ### GitHub-hosted re-derivation
 
@@ -54,8 +53,9 @@ Area coverage producers upload full LCOV directly to GitHub artifacts and their 
 downloads it in the same run. Job timeout ceilings are enforced generically by the
 `github-actions-job-timeouts` `no-mistakes` rule rather than a dedicated structural guard.
 
-Workflow tests assert the exact job and critical-step ceilings where a job's budget matters, and
-`job-timeout-bounds.test.mts` asserts the universal relationship across every workflow.
+Workflow tests assert the exact job and critical-step ceilings where a job's budget matters; the
+`rejectJobAtOrAboveStepSum` option of that rule asserts the universal relationship across every
+workflow.
 
 The `static-web` job adopts the fail-fast relationship. It produces the shared web build that every
 Web suite waits on, and healthy runs finish in under four minutes, so its cap stays at the
