@@ -39,7 +39,7 @@ Spec-level aliased, default, namespace and locally extended registration flows a
 source rule. It recognizes the shared `helpers/test.mts` barrel and the tag spec's actual
 `./tag-voting-helpers.mts` import path. For fixture barrels, it also rejects direct `await import` and `require`, deferred
 import bindings and assignments, `.then` access, and imports in a directly awaited `Promise.all`
-array. Type-only imports remain allowed. Computed and transitive
+array. Parentheses and TypeScript `as` or `satisfies` wrappers around those runtime imports do not make them safe; both all-hook phases retain the same restriction. Type-only imports remain allowed. Computed and transitive
 import flows are not a complete static provenance boundary. Use static named imports from the
 shared barrel and keep the guard first in the original inline callback. The ordinary automatic test fixture remains
 idempotent with this guard. Server readiness and external protocol deadlines are unchanged.
