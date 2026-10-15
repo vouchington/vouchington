@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueRecoverMicrosoftStoreSources,
 } from '@queues/memberships/enqueues'
+import { enqueueRecoverMicrosoftStoreSources } from '@queues/memberships/enqueues/microsoft-store'
 import { memberships } from '@queues/memberships/queues'
 import {
   createMembershipVerification,

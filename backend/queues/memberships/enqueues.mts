@@ -15,16 +15,12 @@ export {
 } from './enqueues/google-play-jobs.mts'
 export {
   enqueueProcessGooglePlayNotification,
-  enqueueRecoverGooglePlayNotifications,
-  enqueueRecoverGooglePlayActiveSources,
   enqueueAcknowledgeGooglePlayPurchase,
-  enqueueRecoverGooglePlayAcknowledgements,
   enqueueRefreshGooglePlayOidcTrust,
 } from './enqueues/google-play.mts'
 export {
   enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
-  enqueueRecoverMicrosoftStoreSources,
 } from './enqueues/microsoft-store.mts'
 export {
   enqueueBulkProcessStripeEvents,
