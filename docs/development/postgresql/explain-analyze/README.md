@@ -4,6 +4,23 @@ Source entrypoint: [backend/scripts/explain-analyze/README.md](../../../../backe
 
 A development tool for profiling SQL query plans across key service queries. [Suite rule R4](../../tests.md#test-suite-rules) puts realistic data sizes, query plans, wall time, heap, and pool checks here. Unit tests cross the same boundary with the smallest fixture.
 
+## Monthly-retirement server controls
+
+The existing `pruning/run.mts` non-unit CI command runs the three retirement server contracts
+inside its freshly generated owned sibling database. They verify real embedding-entity cleanup,
+crawl-pointer clearing and FK cascades, plus rollback of a blocked crawl retirement while the
+independent RSS partition still retires. Each control owns a separate schema and awaits its
+transactions and schema cleanup; partial completed-control names remain in the pruning artifact.
+The Vitest file checks only the production writer's emitted SQL/order and identifier rejection.
+Those pure checks do not claim FK, rollback or catalog execution proof. The real controls must
+pass before the existing pruning plans, and strict all-settled pool cleanup precedes sibling-database
+deletion. The existing workflow also archives native V8 execution data under `output/pruning-v8`.
+Published `c8` converts that data with its normal source-map handling into LCOV, JSON and summary
+files in `output/retirement-coverage`, archived by the existing EXPLAIN artifact step. These are
+not the blocking area's uploaded LCOV input. R12 still requires the actual measured before/after
+line and branch comparison, including both the pure module and these real server controls;
+raw capture or a configured converter alone is not a preservation result.
+
 ## Usage
 
 ### 1. Seed test data

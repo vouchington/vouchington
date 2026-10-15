@@ -10,6 +10,7 @@ type Step = {
   env?: Record<string, string>
   name?: string
   run?: string
+  with?: { path?: string }
 }
 
 type Workflow = {
@@ -100,5 +101,26 @@ printf '%s\\n' "$utc_day" "$local_day"
 
     expect(job.env?.[ANCHOR_ENV]).toBeUndefined()
     expect(job.steps.filter(candidate => candidate.env?.[ANCHOR_ENV] !== undefined)).toEqual([])
+  })
+})
+
+describe('native pruning coverage artifacts', () => {
+  it('retains native pruning and retirement V8 coverage in the existing uploaded output', () => {
+    const { steps } = explainAnalyzeJob()
+    const pruning = steps[stepIndexRunning(steps, 'explain-analyze/pruning/run.mts')]
+    expect(pruning?.env?.NODE_DISABLE_COMPILE_CACHE).toBe('1')
+    expect(pruning?.env?.NODE_V8_COVERAGE).toBe(
+      '${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8',
+    )
+    const converter = steps.find(
+      step => step.name === 'Convert native pruning coverage with published c8',
+    )
+    expect(converter?.run).toContain('pnpm exec c8 report')
+    expect(converter?.run).toContain('--reporter lcovonly')
+    expect(converter?.run).toContain('--extension .mts')
+    expect(converter?.run).toContain('backend/scripts/explain-analyze/output/retirement-coverage')
+    expect(steps.find(step => step.name === 'Upload EXPLAIN ANALYZE results')?.with?.path).toBe(
+      'backend/scripts/explain-analyze/output/',
+    )
   })
 })

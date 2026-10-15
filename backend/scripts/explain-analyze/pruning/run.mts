@@ -45,7 +45,8 @@ async function runPruningProof(): Promise<void> {
 
   const name = createPruningDatabaseName()
   const results: ExplainResult[] = []
-  const evidence: Record<string, unknown> = { database: name, results }
+  const retirementControls: string[] = []
+  const evidence: Record<string, unknown> = { database: name, results, retirementControls }
   const outputDirectory = join(import.meta.dirname, '..', 'output')
   const outputPath = join(
     outputDirectory,
@@ -58,7 +59,7 @@ async function runPruningProof(): Promise<void> {
 
   let owned: OwnedPruningDatabase | undefined
   let closePools: (() => Promise<void>) | undefined
-  let failure: unknown
+  const errors: unknown[] = []
   try {
     owned = await createOwnedPruningDatabase(runPsql, sourceUrl, name, database => {
       owned = database
@@ -75,12 +76,32 @@ async function runPruningProof(): Promise<void> {
 
     // Production psql imports capture the URLs at module load; every import below is deliberately
     // after the owned URL override, including service imports reached through capture.mts.
-    const { gracefulShutdown } = await import('@data-stores/graceful-shutdown')
-    closePools = gracefulShutdown
-    const { write } = await import('@data-stores/psql')
+    const { shutdownDataStoresForOneOffCommand } = await import('@data-stores/graceful-shutdown')
+    const { write, writePool, readPool, advisoryLockPool } = await import('@data-stores/psql')
+    closePools = () =>
+      shutdownDataStoresForOneOffCommand({
+        onGracefulShutdownPSQL: async () => {
+          const settled = await Promise.allSettled(
+            [writePool, readPool, advisoryLockPool].map(pool =>
+              Promise.resolve().then(() => pool.end()),
+            ),
+          )
+          const failures = settled.flatMap(result =>
+            result.status === 'rejected' ? [result.reason] : [],
+          )
+          if (failures.length)
+            throw new AggregateError(failures, 'Pruning PostgreSQL pool closure failed', {
+              cause: failures[0],
+            })
+        },
+      })
     const { attachProofRanges } = await import('./partitions.mts')
     const { seedPruningProof, assertPruningFixturePlacement } = await import('./seed.mts')
     const { capturePruningProof } = await import('./capture.mts')
+    const { assertMonthlyRetirementControls } = await import('./retirement-controls.mts')
+    await assertMonthlyRetirementControls(owned.name, name => retirementControls.push(name))
+    if (retirementControls.length !== 3)
+      throw new Error('Expected all three native retirement controls')
     await attachProofRanges(write)
     migrationAbort.signal.throwIfAborted()
     await seedPruningProof()
@@ -95,28 +116,42 @@ async function runPruningProof(): Promise<void> {
       throw new Error(`pruning proof expected 20 plans, got ${results.length}`)
     console.log(`Pruning proof passed ${results.length} forced custom/generic plans`)
   } catch (err) {
-    failure = err
+    errors.push(err)
     evidence.error = err instanceof Error ? err.message : stringFromUnknown(err)
   } finally {
     try {
-      try {
-        await mkdir(outputDirectory, { recursive: true })
-        await writeFile(outputPath, JSON.stringify(evidence, null, 2))
-        console.log(`Pruning proof artifact: ${outputPath}`)
-      } finally {
-        try {
-          await closePools?.()
-        } finally {
-          await owned?.drop()
-        }
-      }
-    } finally {
-      process.off('SIGINT', interrupt)
-      process.off('SIGTERM', interrupt)
+      await mkdir(outputDirectory, { recursive: true })
+      await writeFile(outputPath, JSON.stringify(evidence, null, 2))
+      console.log(`Pruning proof artifact: ${outputPath}`)
+    } catch (err) {
+      errors.push(err)
     }
+    try {
+      await closePools?.()
+    } catch (err) {
+      errors.push(err)
+    }
+    try {
+      await owned?.drop()
+    } catch (err) {
+      errors.push(err)
+    }
+    try {
+      evidence.errors = errors.map(error =>
+        error instanceof Error
+          ? { name: error.name, message: error.message }
+          : stringFromUnknown(error),
+      )
+      await writeFile(outputPath, JSON.stringify(evidence, null, 2))
+    } catch (err) {
+      errors.push(err)
+    }
+    process.off('SIGINT', interrupt)
+    process.off('SIGTERM', interrupt)
   }
-  if (failure instanceof Error) throw failure
-  if (failure !== undefined) throw new Error(stringFromUnknown(failure))
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1)
+    throw new AggregateError(errors, 'Pruning proof and cleanup failed', { cause: errors[0] })
 }
 
 if (libpqOverrideKeys.some(key => process.env[key] !== undefined)) {

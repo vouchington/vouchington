@@ -139,6 +139,7 @@
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
     "agent-blackboard": "^0.6.1",
+    "c8": "^12.0.0",
     "csv-parse": "^7.0.3",
     "dependency-cruiser": "^18.5.0",
     "eslint-plugin-no-mistakes": "^0.90.0",

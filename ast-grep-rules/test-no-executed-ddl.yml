@@ -60,8 +60,6 @@ ignores:
   - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
   - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
   - 'backend/test-helpers/injected-failures.mts'
-  - 'backend/test-helpers/monthly-partition-retirement-schema.mts'
-  - 'backend/test-helpers/monthly-partition-retirement.mts'
 rule:
   any:
     - kind: string
