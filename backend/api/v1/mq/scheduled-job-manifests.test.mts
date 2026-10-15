@@ -91,6 +91,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
+  'urls-domains-blacklist/hostnameCacheInvalidationSweep',
   'background/userDeletionRecovery',
   'background/dailyVoteWeightRecalculation',
 ].toSorted()
@@ -98,7 +99,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 19 manifests and 75 live jobs', () => {
+  it('imports the exact 19 manifests and 76 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(19)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
