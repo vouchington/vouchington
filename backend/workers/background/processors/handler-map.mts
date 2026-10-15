@@ -5,6 +5,7 @@ import type { BackgroundHandler } from '@queues/background/types'
 /**
  * Maps job names to handlers, rejecting a registered job without one, a handler without a
  * registered job, and a job handled twice, so a name can never reach the wrong code or no code.
+ * A worker that serves only some `domains` needs handlers for those domains alone.
  */
 export function buildHandlerMap(
   handlers: readonly BackgroundHandler[],
@@ -20,10 +21,11 @@ export function buildHandlerMap(
   for (const name of byName.keys()) {
     if (!registered.has(name)) throw new Error(`Handler ${name} has no registered job`)
   }
-  for (const name of registered) {
-    if (!byName.has(name)) throw new Error(`Background job ${name} has no handler`)
+  const served = domains ? new Set<string>(domains) : undefined
+  for (const job of BACKGROUND_JOBS) {
+    if (served && !served.has(job.domain)) continue
+    if (!byName.has(job.name)) throw new Error(`Background job ${job.name} has no handler`)
   }
-  if (!domains) return byName
-  const served = new Set<string>(domains)
+  if (!served) return byName
   return new Map([...byName].filter(([, handler]) => served.has(handler.job.domain)))
 }

@@ -1,5 +1,6 @@
 import type { BackgroundDomain } from '../backend/queues/background/config.mts'
-import { BACKGROUND_HANDLERS } from '../backend/workers/background/processors/handlers.mts'
+import { entityListenersHandlers } from '../backend/workers/entity-listeners/workers.mts'
+import { voteAggregationHandlers } from '../backend/workers/vote-aggregation/workers.mts'
 import { createBackgroundWorker } from '../backend/workers/background/workers/create-worker.mts'
 
 type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
@@ -40,10 +41,13 @@ function yieldToOtherBackgroundWorkers(worker: SharedBackgroundWorker): void {
  * every importer observes one worker. Later calls return the first worker whatever they pass.
  */
 export function startSharedBackgroundWorker(
-  domains: readonly BackgroundDomain[],
+  domains: readonly Extract<BackgroundDomain, 'vote-aggregation' | 'entity-listeners'>[],
 ): SharedBackgroundWorker {
   if (!sharedWorker) {
-    sharedWorker = createBackgroundWorker({ handlers: BACKGROUND_HANDLERS, domains })
+    sharedWorker = createBackgroundWorker({
+      handlers: [...voteAggregationHandlers, ...entityListenersHandlers],
+      domains,
+    })
     yieldToOtherBackgroundWorkers(sharedWorker)
   }
   return sharedWorker
