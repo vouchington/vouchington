@@ -101,6 +101,8 @@ describe('PostgreSQL pool metrics', () => {
         readPsqlPoolSocketHandles,
         waitForTurn: async () => {
           if (!secondConnection) secondConnection = pool.connect()
+          // The positive control owns a completed handshake, not a race against the sampler's cap.
+          await secondConnection
           await (waitForTurn as () => Promise<void>)()
         },
       })
@@ -119,6 +121,27 @@ describe('PostgreSQL pool metrics', () => {
       const growthHandles = [...result.snapshot.tcpSocketHandles].filter(
         handle => !baselineHandles?.has(handle),
       )
+      const diagnostics = {
+        observationCount: result.observations.length,
+        observations: result.observations.map((observation, index) => {
+          return {
+            index,
+            tcpSockets: observation.tcpSockets,
+            connectWraps: observation.connectWraps,
+            tcpHandleCount: observation.tcpSocketHandles.size,
+            ownedAtEndCount: [...observation.tcpSocketHandles].filter(handle =>
+              currentHandles?.owned.has(handle),
+            ).length,
+            pools: observation.psqlPoolMetrics,
+          }
+        }),
+        poolHandles: poolHandles.map(handle => ({
+          inSnapshot: result.snapshot.tcpSocketHandles.has(handle),
+          active: currentHandles?.active.has(handle) ?? false,
+          owned: currentHandles?.owned.has(handle) ?? false,
+        })),
+      }
+      if (!result.coalesced) console.error('Pool handshake observations', diagnostics)
       expect(result.coalesced).toBe(true)
       expect(growthHandles).toContain(poolHandles[1])
       expect(growthHandles.every(handle => currentHandles?.owned.has(handle))).toBe(true)
