@@ -23,12 +23,25 @@ describe('Auto Harness session classification', () => {
     },
   )
 
+  it.each(['harness.example.com', 'harness.example.com:8443'])(
+    'accepts the session URL on a configured HTTPS origin: %s',
+    origin => {
+      const body = POINTER.replace('d2itfsupognuru.cloudfront.net', origin)
+      expect(rule({ ...COMMENT, body })).toMatchObject({ suppress: true, autoResolve: true })
+    },
+  )
+
   it.each([
     `${POINTER}\n\nFound an authorization issue.`,
     `Found an authorization issue.\n\n${POINTER}`,
     POINTER.replace('<!-- auto-harness-session:sess-1234abcd -->', ''),
     POINTER.replace('auto-harness-session:sess-1234abcd', 'auto-harness-session:sess-abcd1234'),
-    POINTER.replace('d2itfsupognuru.cloudfront.net', 'example.com'),
+    POINTER.replace('https://', 'http://'),
+    POINTER.replace('d2itfsupognuru.cloudfront.net', 'user:tests+abc123@voucha.ai'),
+    POINTER.replace('d2itfsupognuru.cloudfront.net', ':tests+def456@voucha.ai'),
+    POINTER.replace('d2itfsupognuru.cloudfront.net', 'example.com:invalid'),
+    POINTER.replace('d2itfsupognuru.cloudfront.net', 'example.com\\extra'),
+    POINTER.replace('/sessions/', '/extra/sessions/'),
     '<!-- auto-harness-session:sess-1234abcd -->',
   ])('keeps findings and incomplete or mismatched pointers visible', body => {
     expect(rule({ ...COMMENT, body })).toBeNull()

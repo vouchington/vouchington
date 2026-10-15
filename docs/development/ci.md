@@ -173,15 +173,18 @@ The canonical workflow contract is [Auto Harness automation](ci/workflows/refere
 with accepted residuals and the operator-authenticated incident-response drain control in the
 [security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
 
-PR shepherding enables every bundled [bot-comment classifier](https://github.com/jonathanong/pr-shepherd/blob/main/docs/configuration.md#classifystandard--default-)
+PR shepherding configures bundled [bot-comment classifiers](https://github.com/jonathanong/pr-shepherd/blob/main/docs/configuration.md#classifystandard--default-)
 through [`.pr-shepherdrc.yml`](../../.pr-shepherdrc.yml), with automatic minimization for rules
-that request it. Vendor notice formats determine suppression; an author's identity alone does not
+that request it. Gemini, Sourcery, and Kilo notices remain visible until the narrowed upstream
+rules are released and adopted; their current broad patterns can hide appended findings.
+Vendor notice formats determine suppression; an author's identity alone does not
 make substantive feedback disposable. Codecov report comments can arrive before all coverage
 uploads finish, so coverage checks determine actionable failures. General notice rules and their
 counterexamples belong in pr-shepherd rather than repository-local classifiers.
 The repository-local [Auto Harness classifier](../../.pr-shepherd/classification/auto-harness-session.mts)
 suppresses and automatically minimizes our session-only GitHub Actions comments. It requires the
-exact session link and matching marker; additional feedback remains visible to the agent.
+exact HTTPS session-link format and matching marker across configured origins; additional feedback
+remains visible to the agent.
 
 Automation Fix Main accepts push failures from the publisher workflows and schedule/manual failures
 only from the exact same-repository `Nightly` workflow on `main`. It revalidates the same completed
