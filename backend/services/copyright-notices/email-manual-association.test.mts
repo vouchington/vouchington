@@ -15,6 +15,7 @@ import {
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { describe, expect, it } from 'vitest'
+import { runWithCapturedQueries } from '../../data-stores/psql/query-capture.mts'
 import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
 import {
   associateCopyrightEmailIntakeWithNotice,
@@ -37,6 +38,20 @@ describe('manual copyright email association', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation(true, 'uk')
+
+    expect(await getCopyrightNoticeAssociationTarget(moderator, noticeId)).toBeUndefined()
+    await expect(
+      associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
+    ).rejects.toMatchObject({ status: 422 })
+    expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual([])
+    expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
+  })
+
+  it('does not strand a reply on an other-jurisdiction notice', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    const intake = await createManualReply()
+    const noticeId = await createCopyrightNoticeForManualAssociation(true, 'other')
 
     expect(await getCopyrightNoticeAssociationTarget(moderator, noticeId)).toBeUndefined()
     await expect(
@@ -160,6 +175,9 @@ describe('manual copyright email association', () => {
     const preflight = new Promise<void>(resolve => {
       resolvePreflight = resolve
     })
+    let reviewsFromThreading: Awaited<
+      ReturnType<typeof readCopyrightEmailManualAssociationReview>
+    > = []
     const dispose = installSharedDbScopeObserver(event => {
       if (
         event.operation === 'associateCopyrightEmailIntakePreflight' &&
@@ -169,13 +187,11 @@ describe('manual copyright email association', () => {
         resolvePreflight()
     })
     try {
-      const association = associateCopyrightEmailIntakeWithNotice(
-        moderator,
-        intake.id,
-        noticeId,
-      ).then(
-        () => new Error('Manual association unexpectedly won'),
-        err => err,
+      const association = runWithCapturedQueries(async () =>
+        associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId).then(
+          () => new Error('Manual association unexpectedly won'),
+          err => err,
+        ),
       )
       await preflight
       expect(
@@ -189,16 +205,26 @@ describe('manual copyright email association', () => {
         ),
       ).toBe(true)
       await threading.commit()
-      await expect(association).resolves.toMatchObject({
-        status: 409,
-        code: 'copyright_email_thread_changed',
-      })
+      reviewsFromThreading = await readCopyrightEmailManualAssociationReview(intake.id)
+      const { result, queries } = await association
+      expect(result).toMatchObject({ status: 409, code: 'copyright_email_thread_changed' })
+      expect(
+        queries.some(query =>
+          query.text.includes('associateCopyrightEmailIntakeWithNotice:lockIntake'),
+        ),
+      ).toBe(true)
+      expect(
+        queries.filter(query =>
+          query.text.includes('associateCopyrightEmailIntakeWithNotice:lockNotice'),
+        ),
+      ).toEqual([])
     } finally {
       dispose()
     }
     expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([
       { copyright_notice_id: noticeId, link_kind: 'thread' },
     ])
+    expect(await readCopyrightEmailManualAssociationReview(intake.id)).toEqual(reviewsFromThreading)
     expect(await readCopyrightEmailManualAssociationEvent(intake.id)).toEqual([])
   })
 

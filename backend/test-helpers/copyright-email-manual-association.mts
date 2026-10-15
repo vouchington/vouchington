@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 /** The smallest accepted case row for a staff association boundary. */
 export async function createCopyrightNoticeForManualAssociation(
   accepted = true,
-  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk' = 'us_dmca',
+  jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk' | 'other' = 'us_dmca',
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
     /* createCopyrightNoticeForManualAssociation */

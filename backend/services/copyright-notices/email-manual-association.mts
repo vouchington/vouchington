@@ -64,13 +64,18 @@ export async function associateCopyrightEmailIntakeWithNotice(
     SELECT id FROM copyright_notice_email_intakes WHERE id = ${intakeId} FOR UPDATE
   `)
   assert(lockedIntakes[0], 404, 'Copyright email intake not found')
+  // Erasure updates only intakes already linked to its case. A link committed
+  // while this lock was pending must be rejected before waiting for that case.
+  const lockedDecision = await readIntakeDecision(transaction, intakeId)
+  if (!lockedDecision || lockedDecision.linked || lockedDecision.reviewed)
+    throw copyrightEmailThreadChangedError()
   const { rows: lockedNotices } = await transaction<{ id: string; jurisdiction: string }>(sql`
     /* associateCopyrightEmailIntakeWithNotice:lockNotice */
     SELECT id, jurisdiction FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
   assert(lockedNotices[0], 404, 'Copyright notice not found')
   assert(
-    lockedNotices[0].jurisdiction !== 'uk',
+    lockedNotices[0].jurisdiction === 'us_dmca' || lockedNotices[0].jurisdiction === 'eu_dsa',
     422,
     'Correspondence kind does not apply to this jurisdiction',
   )
