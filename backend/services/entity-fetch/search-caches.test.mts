@@ -1,27 +1,55 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
+import { ANONYMOUS_SEARCH_CACHE_PREFIXES } from '@services/entity-cache/anonymous-search-prefixes'
 import { invalidateAnonymousSearchCaches, searchCommunitiesCached } from './search-caches.mts'
 import { createRandomString, createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 
+const LIVE_ANONYMOUS_SEARCH_PREFIXES = [
+  'post_ids_anon',
+  'topic_ids_anon',
+  'rss_feeds_anon',
+  'rss_feed_items_anon',
+  'communities_anon',
+  'trending_topics_anon',
+  'url_hostnames_anon_v2',
+  'top_hostnames_anon',
+  'trending_rss_feeds_anon',
+  'trending_posts_anon',
+  'trending_communities_anon',
+  'platform_stats_anon',
+] as const
+
+const RETIRED_ANONYMOUS_SEARCH_PREFIXES = ['urls_anon', 'url_hostnames_anon'] as const
+
 describe('invalidateAnonymousSearchCaches', () => {
-  it('clears anonymous search cache prefixes without clearing unrelated caches', async () => {
+  it('clears every live anonymous search prefix and leaves retired prefixes', async () => {
     const suffix = randomBytes(4).toString('hex')
-    const searchKey = `cache:trending_topics_anon:test-${suffix}`
-    const unrelatedKey = `cache:test_unrelated:test-${suffix}`
+    const liveKeys = LIVE_ANONYMOUS_SEARCH_PREFIXES.map(prefix => `cache:${prefix}:sweep-${suffix}`)
+    const retiredKeys = RETIRED_ANONYMOUS_SEARCH_PREFIXES.map(
+      prefix => `cache:${prefix}:sweep-${suffix}`,
+    )
+    const unrelatedKey = `cache:test_unrelated:sweep-${suffix}`
 
     try {
       await Promise.all([
-        cacheValkeyClient.set(searchKey, 'stale'),
+        ...liveKeys.map(key => cacheValkeyClient.set(key, 'stale')),
+        ...retiredKeys.map(key => cacheValkeyClient.set(key, 'keep')),
         cacheValkeyClient.set(unrelatedKey, 'keep'),
       ])
 
       await invalidateAnonymousSearchCaches()
 
-      expect(await cacheValkeyClient.get(searchKey)).toBeNull()
+      expect([...ANONYMOUS_SEARCH_CACHE_PREFIXES]).toEqual([...LIVE_ANONYMOUS_SEARCH_PREFIXES])
+      for (const key of liveKeys) {
+        expect(await cacheValkeyClient.get(key)).toBeNull()
+      }
+      for (const key of retiredKeys) {
+        expect(await cacheValkeyClient.get(key)).toBe('keep')
+      }
       expect(await cacheValkeyClient.get(unrelatedKey)).toBe('keep')
     } finally {
-      await cacheValkeyClient.unlink([searchKey, unrelatedKey])
+      await cacheValkeyClient.unlink([...liveKeys, ...retiredKeys, unrelatedKey])
     }
   })
 

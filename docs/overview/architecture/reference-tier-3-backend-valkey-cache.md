@@ -30,14 +30,26 @@ topic detail responses and are not written into the shared entity cache.
 
 Cached wrappers for list/search queries, used for logged-out users only. Config: `backend/services/entity-cache/search-cache.mts`.
 
-| Cache           | Key prefix             | TTL |
-| --------------- | ---------------------- | --- |
-| Post IDs        | `post_ids_anon`        | 60s |
-| Topic IDs       | `topic_ids_anon`       | 60s |
-| RSS feeds       | `rss_feeds_anon`       | 60s |
-| RSS feed items  | `rss_feed_items_anon`  | 60s |
-| Trending topics | `trending_topics_anon` | 60s |
-| URLs            | `urls_anon`            | 60s |
-| URL hostnames   | `url_hostnames_anon`   | 60s |
+| Cache                | Key prefix                  | TTL |
+| -------------------- | --------------------------- | --- |
+| Post IDs             | `post_ids_anon`             | 60s |
+| Topic IDs            | `topic_ids_anon`            | 60s |
+| RSS feeds            | `rss_feeds_anon`            | 60s |
+| RSS feed items       | `rss_feed_items_anon`       | 60s |
+| Communities          | `communities_anon`          | 60s |
+| Trending topics      | `trending_topics_anon`      | 60s |
+| URL hostnames        | `url_hostnames_anon_v2`     | 60s |
+| Top hostnames        | `top_hostnames_anon`        | 60s |
+| Trending RSS feeds   | `trending_rss_feeds_anon`   | 60s |
+| Trending posts       | `trending_posts_anon`       | 60s |
+| Trending communities | `trending_communities_anon` | 60s |
+| Platform stats       | `platform_stats_anon`       | 60s |
 
 Search cache TTL aligns with `HTTP_CACHE_SHORT_MAX_AGE_SECONDS` (60s). Cache keys use SHA-256 hashing of stable-serialized options for deterministic, case-sensitive keys.
+
+Those prefixes are `ANONYMOUS_SEARCH_CACHE_PREFIXES` in
+`backend/services/entity-cache/anonymous-search-prefixes.mts`.
+`invalidateAnonymousSearchCaches` sweeps that list, and RSS feed search imports
+`RSS_FEEDS_ANON_CACHE` from the same module. `GET /api/v1/urls` requires authentication and has no
+anonymous search prefix. Hostname search uses `url_hostnames_anon_v2`. Single URL and URL hostname
+entity caches stay on the 24h entity TTLs above.
