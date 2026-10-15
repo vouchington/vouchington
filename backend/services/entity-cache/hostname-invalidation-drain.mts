@@ -27,21 +27,22 @@ export async function drainHostnameCacheInvalidationWork(
   const limit = getEntityCacheWorkLimit('delete_keys_per_batch')
   const hostnameIds = options.hostnameIds
   const claimed = await pruneAndClaimHostnameCacheInvalidations(limit, hostnameIds)
+  if (claimed.length === 0) return 0
   let firstFailure: Error | undefined
-  const succeeded: ClaimedHostname[] = []
-  const failed: ClaimedHostname[] = []
-  for (const item of claimed) {
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- cache eviction is bounded by the claimed page.
-      await (options.evict ?? evictHostnamePolicyCaches)(item)
-      succeeded.push(item)
-    } catch (err) {
-      failed.push(item)
-      firstFailure ??= err instanceof Error ? err : new Error(String(err))
+  try {
+    if (options.evict) {
+      for (const item of claimed) {
+        // oxlint-disable-next-line no-await-in-loop -- test-injected eviction follows the claimed page.
+        await options.evict(item)
+      }
+    } else {
+      await evictHostnamePolicyCaches(claimed)
     }
+  } catch (err) {
+    firstFailure = err instanceof Error ? err : new Error(String(err))
   }
-  if (succeeded.length > 0) await acknowledgeHostnameCacheInvalidations(succeeded)
-  if (failed.length > 0) await deferHostnameCacheInvalidations(failed)
+  if (firstFailure) await deferHostnameCacheInvalidations(claimed)
+  else await acknowledgeHostnameCacheInvalidations(claimed)
   if (firstFailure) throw firstFailure
   return claimed.length
 }
@@ -154,11 +155,11 @@ async function claimHostnameCacheInvalidations(
   return rows
 }
 
-async function evictHostnamePolicyCaches(item: ClaimedHostname): Promise<void> {
-  const keys = [item.url_hostname_id, item.hostname]
+async function evictHostnamePolicyCaches(items: ClaimedHostname[]): Promise<void> {
+  const keys = items.flatMap(item => [item.url_hostname_id, item.hostname])
   await deleteFromCachesInChunks([
     { cache: caches.url_hostnames, keys },
-    { cache: caches.email_domain_validation, keys: [item.hostname] },
+    { cache: caches.email_domain_validation, keys: items.map(item => item.hostname) },
   ])
   await enqueueBulkPurgeCacheTags(keys.map(hostnameTag))
 }

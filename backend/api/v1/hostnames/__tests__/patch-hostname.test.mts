@@ -192,6 +192,20 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: false }).expect(204)
   })
 
+  it('introduces a private email hostname on an unblock-only PATCH', async () => {
+    const parent = `unblock-private-${crypto.randomUUID()}.example.com`
+    const parentId = await insertTestUrlHostname({ hostname: parent, is_blocked: true })
+    const id = await resolveEmailDomainHostnameId(`owner@child.${parent}`)
+    if (!id) throw new Error('Expected private hostname')
+    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeNull()
+
+    const request = createRequest()
+    await request.authenticateAs(adminUser!)
+    await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: false }).expect(204)
+    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameById(parentId))?.is_blocked).toBe(true)
+  })
+
   it('updates should_ignore_robots_txt and returns 204', async () => {
     const id = await insertTestUrlHostname({
       hostname: `patch-ignore-robots-${Date.now()}.example.com`,

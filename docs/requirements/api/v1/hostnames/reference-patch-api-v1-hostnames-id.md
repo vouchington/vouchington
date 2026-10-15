@@ -20,7 +20,8 @@ Returns 200 with: `{ blocked_hostname_count, soft_deleted_relation_count, penali
 
 ### Unblocking (`blocked: false`)
 
-Simple field update — no penalty revocation, no relation restoration. Returns 204.
+Lifts eligible staff-owned blocks and introduces an email-only hostname to public history in the
+same transaction. It does not revoke penalties or restore relations. Returns 204.
 
 ### Ongoing penalty for new attempts
 
@@ -31,3 +32,5 @@ After a hostname is blocked, any user who tries to add an entity relation to a U
 Returns 204 with no body for `crawlable`, `should_follow_link_rel`, `should_ignore_robots_txt`, and
 `unreliable_status_codes` changes. `unreliable_status_codes` marks RSS fetch 4xx statuses as
 retryable instead of soft-deleting feeds on the hostname; `null` clears the hostname override.
+Staff updates introduce an email-only hostname to public history. Cache invalidations are recorded
+with the update and drained after commit, so a failed cache eviction remains available for retry.

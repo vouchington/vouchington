@@ -160,7 +160,7 @@ app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
     // Remove blocked from changes so updateUrlHostname doesn't try to set it
     const { is_blocked: _b, ...rest } = changes
     if (Object.keys(rest).length > 0) {
-      await updateUrlHostname(ctx.params.id!, rest, { introducePublicly: true })
+      await updateUrlHostname(ctx.params.id!, rest)
     }
     ctx.setStatus(204)
     return

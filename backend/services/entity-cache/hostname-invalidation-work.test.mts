@@ -191,11 +191,23 @@ describe('durable hostname cache invalidation', () => {
     const rows = await Promise.all([ownHostname(), ownHostname(), ownHostname()])
     const ids = rows.map(row => row.id)
     for (const id of ids) await enqueue(id)
+    for (const row of rows) {
+      await caches.url_hostnames.set(row.id, row)
+      await caches.email_domain_validation.set(row.hostname, { success: true })
+    }
     const restore = overrideDynamicConfigFieldsForTest(entityCacheWorkConfig, {
       delete_keys_per_batch: 2,
     })
     try {
       expect(await drainHostnameCacheInvalidationWork({ hostnameIds: ids })).toBe(2)
+      expect(
+        (await Promise.all(rows.map(row => caches.url_hostnames.get(row.id)))).filter(Boolean),
+      ).toHaveLength(1)
+      expect(
+        (
+          await Promise.all(rows.map(row => caches.email_domain_validation.get(row.hostname)))
+        ).filter(Boolean),
+      ).toHaveLength(1)
       expect(
         (await Promise.all(ids.map(getHostnameCacheInvalidationWorkForTest))).filter(Boolean),
       ).toHaveLength(1)

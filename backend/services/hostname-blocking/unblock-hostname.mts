@@ -14,6 +14,16 @@ export async function unblockHostname(
     await query(sql`/* unblockHostname:lock */
       SELECT pg_advisory_xact_lock(hashtextextended(${hostnameId}, 0))
     `)
+    // Match the block flow's hostname-before-block-row order.
+    await query(sql`/* unblockHostname:lockHostname */
+      SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE
+    `)
+    const { rows: introducedRows } = await query(sql`/* unblockHostname:introduce */
+      UPDATE url_hostnames
+      SET publicly_introduced_at = CURRENT_TIMESTAMP
+      WHERE id = ${hostnameId} AND publicly_introduced_at IS NULL
+      RETURNING id
+    `)
     const { rows: updateRows } = await query(sql`/* unblockHostname */
       UPDATE url_hostname_blocks
       SET lifted_at = CURRENT_TIMESTAMP,
@@ -23,21 +33,22 @@ export async function unblockHostname(
         AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
       RETURNING url_hostname_id
     `)
-    if (updateRows.length > 0) await enqueueHostnameCacheInvalidation(query, [hostnameId])
-    return updateRows
+    const changed = introducedRows.length > 0 || updateRows.length > 0
+    if (changed) await enqueueHostnameCacheInvalidation(query, [hostnameId])
+    return changed
   }
-  const rows =
+  const changed =
     options.query || options.client
       ? await withTransactionOptions(options, run)
       : await unblockHostnameInOwnedTransaction(run)
 
-  if (rows.length > 0 && !options.query && !options.client)
+  if (changed && !options.query && !options.client)
     await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
 }
 
 async function unblockHostnameInOwnedTransaction(
-  run: (query: TransactionQuery) => Promise<unknown[]>,
-): Promise<unknown[]> {
+  run: (query: TransactionQuery) => Promise<boolean>,
+): Promise<boolean> {
   await using transaction = await beginTransaction()
   const result = await run(transaction)
   await transaction.commit()
