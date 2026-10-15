@@ -1,4 +1,4 @@
-import { afterEach, vi } from 'vitest'
+import { vi } from 'vitest'
 
 type RetainedCopyrightAgentJob = {
   name: string
@@ -10,21 +10,6 @@ type RetainedCopyrightAgentJob = {
 type CopyrightAgentEnqueueRecoveryDependencies = {
   getJob(id: string, options: { excludeData: true }): Promise<RetainedCopyrightAgentJob | null>
   enqueue(id: string): Promise<void>
-}
-
-type AgentQueue = {
-  add(...args: never[]): Promise<unknown>
-}
-
-/** Call inside the enqueue-recovery `describe` so spies stay inside that suite. */
-export function restoreCopyrightAgentEnqueueSpies(): void {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-}
-
-export function spyOnCopyrightAgentEnqueue(queue: AgentQueue) {
-  return vi.spyOn(queue, 'add').mockResolvedValue({} as never)
 }
 
 export function failedCopyrightAgentEnqueueRecovery(jobName: string): {

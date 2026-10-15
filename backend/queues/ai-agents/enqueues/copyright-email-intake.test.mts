@@ -3,30 +3,38 @@ import {
   enqueueCopyrightEmailIntakeAndWait,
   enqueueOrRetryCopyrightEmailIntake,
 } from './copyright-email-intake.mts'
+import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import {
   completedCopyrightAgentEnqueueRecovery,
   failedCopyrightAgentEnqueueRecovery,
-  restoreCopyrightAgentEnqueueSpies,
-  spyOnCopyrightAgentEnqueue,
 } from '../../../test-helpers/copyright-agent-enqueue-recovery-tests.mts'
 
 describe('copyright email intake enqueue recovery', () => {
-  restoreCopyrightAgentEnqueueSpies()
-
-  it('creates an ordered, deduplicated extraction job', async () => {
+  it('persists an ordered, deduplicated extraction job', async () => {
     const intakeId = crypto.randomUUID()
-    const add = spyOnCopyrightAgentEnqueue(ai_agents)
-    await enqueueCopyrightEmailIntakeAndWait(intakeId)
-    expect(add).toHaveBeenCalledWith(
-      'copyright-email-intake',
-      { intake_id: intakeId },
-      expect.objectContaining({
-        jobId: `copyright_email_intake_${intakeId}`,
-        deduplication: { id: `copyright_email_intake_${intakeId}`, mode: 'simple' },
-        ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },
-      }),
-    )
+    const jobId = `copyright_email_intake_${intakeId}`
+    try {
+      await enqueueCopyrightEmailIntakeAndWait(intakeId)
+      // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
+      // Valkey deduplication or ordering.
+      await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
+        id: jobId,
+        name: 'copyright-email-intake',
+        data: { intake_id: intakeId },
+        opts: {
+          attempts: AI_AGENTS_DEFAULTS.attempts,
+          backoff: AI_AGENTS_DEFAULTS.backoff,
+          priority: AGENT_PRIORITY['copyright-email-intake'],
+          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
+          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: { key: jobId, concurrency: 1 },
+        },
+      })
+    } finally {
+      await (await ai_agents.getJob(jobId))?.remove()
+    }
   })
 
   it('retries a retained failed extraction job', async () => {
