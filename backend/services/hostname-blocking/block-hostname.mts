@@ -95,6 +95,14 @@ async function blockHostnameWithQuery(
   const escapedForLike = targetHostname.replace(/[%_\\]/g, char => `\\${char}`)
   const subdomainPattern = `%.${escapedForLike}`
 
+  // Feed projection locks affected hostname rows by UUID. Take the same locks
+  // before either staff block insert can invoke the projection trigger.
+  await query(sql`/* blockHostname_lockAffectedHostnames */
+      SELECT id FROM url_hostnames
+      WHERE id = ${hostnameId} OR hostname LIKE ${subdomainPattern} ESCAPE '\\'
+      ORDER BY id FOR UPDATE
+    `)
+
   // A staff block introduces the target and its subdomains to public hostname history.
   await query(sql`/* blockHostname_introduceHostnames */
       UPDATE url_hostnames
