@@ -3,6 +3,9 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { countEuTransparencyReportsBy } from '@voucha/test-helpers/data-stores/psql/copyright-eu-reports'
 import { useDsaTransparencyReports } from '@voucha/test-helpers/dsa-switches'
 import { describe, expect, it } from 'vitest'
+import { readEuCopyrightTransparencyFigures } from '@services/copyright-notices/eu-reporting'
+import { createTestEuNoticeWithOwnedApproval } from '@voucha/test-helpers/copyright-owned-policy-receipt'
+import { readTestDsaReceiptApproval } from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
 import { withdrawCopyrightJurisdictionPolicyApproval } from '@services/copyright-notices/jurisdiction-policy'
 import {
   approveJurisdictionPolicy,
@@ -54,7 +57,36 @@ describe('DSA copyright transparency report GET', () => {
     expect(await countEuTransparencyReportsBy(staff.id)).toBe(reportCount)
 
     const approval = await approveJurisdictionPolicy(administrator, 'eu_dsa')
-    await seedPendingTerritorialNotice('eu_dsa', claimant)
+    const foreignNoticeId = await seedPendingTerritorialNotice('eu_dsa', claimant)
+    const owned = await createTestEuNoticeWithOwnedApproval(administrator, claimant)
+    expect(owned.noticeId).not.toBe(foreignNoticeId)
+    await expect(readTestDsaReceiptApproval(owned.noticeId)).resolves.toEqual({
+      approval_id: owned.approvalId,
+      withdrawal_id: null,
+    })
+    const withdrawal = await withdrawCopyrightJurisdictionPolicyApproval(
+      administrator,
+      owned.approvalId,
+    )
+    await expect(readTestDsaReceiptApproval(owned.noticeId)).resolves.toEqual({
+      approval_id: owned.approvalId,
+      withdrawal_id: withdrawal.id,
+    })
+    // The scoped business reader must include this receipt even after its own approval is withdrawn.
+    const figures = await readEuCopyrightTransparencyFigures(
+      staff,
+      new Date(periodStart),
+      new Date(periodEnd),
+      [owned.noticeId],
+    )
+    expect(figures.receipt_count).toBe(1)
+    const foreignFigures = await readEuCopyrightTransparencyFigures(
+      staff,
+      new Date(periodStart),
+      new Date(periodEnd),
+      [foreignNoticeId],
+    )
+    expect(foreignFigures.receipt_count).toBe(1)
     await withdrawCopyrightJurisdictionPolicyApproval(administrator, approval.id)
 
     const after = await staffRequest.get(reportPath(undefined, periodStart, periodEnd)).expect(200)
