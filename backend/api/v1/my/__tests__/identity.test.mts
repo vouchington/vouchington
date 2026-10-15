@@ -1,4 +1,3 @@
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -271,7 +270,6 @@ describe('PATCH /api/v1/my/email-addresses/:email (set primary)', () => {
   void (0 as unknown as typeof insertTestOAuthAccount)
   void (0 as unknown as typeof connectTestOAuthAccount)
   void (0 as unknown as typeof createRandomString)
-  void (0 as unknown as typeof onceEntityListenerCompleted)
   void (0 as unknown as typeof connectOAuthAccountToUser)
   void (0 as unknown as typeof updateUserFields)
 })

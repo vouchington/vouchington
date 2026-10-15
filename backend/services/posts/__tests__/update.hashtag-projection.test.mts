@@ -13,10 +13,8 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getPostByAnyCached } from '../../entity-fetch/get.mts'
-import {
-  onceEntityListenerActive,
-  onceEntityListenerCompleted,
-} from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
+import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-listener-admission-read'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
 import { getOrderedHashtagAliasClaims } from '../hashtags.mts'
@@ -180,15 +178,12 @@ describe('updatePost hashtag projection', () => {
       post_type: 'discussion',
       title: `Committed update #before-${suffix}`,
     })
-    const updateCompleted = onceEntityListenerCompleted('processPostUpdated', post!.id)
+    await withEntityListenerCompletion(
+      [{ jobName: 'processPostUpdated', entityId: post!.id }],
+      () => updatePost(creator, post!, { markdown: `#after-${suffix}` }),
+    )
 
-    await updatePost(creator, post!, { markdown: `#after-${suffix}` })
-
-    // onceEntityListenerCompleted only resolves once the processPostUpdated job for this exact
-    // post ID reaches the queue's completed state, so awaiting it already proves the edit
-    // scheduled and ran the listener. Also confirm the hashtag-bearing edit that triggered it
-    // actually landed, so a broken enqueue path can't pass silently some other way.
-    await updateCompleted
+    // The original admission must identify this post's real terminal job, not retained queue history.
     const sources = await getPostHashtagSourcesForTest(post!.id)
     expect(sources).toEqual(
       expect.arrayContaining([
@@ -204,22 +199,29 @@ describe('updatePost hashtag projection', () => {
       slug: `listener-category-${suffix}`,
       createdById: creator.id,
     })
-    const post = await createPost(creator, WEB_PROVENANCE, {
-      post_type: 'discussion',
-      title: `Listener category update ${suffix}`,
-    })
-    const listenerActive = onceEntityListenerActive('processPostUpdated', post!.id)
-    const update = updatePost(creator, post!, {
-      categories: [{ type: 'topic', topic_id: topicId }],
-    })
-
-    await listenerActive
-
-    const observedPost = await getPostByAny(post!.id, { readOnly: false })
-    expect(observedPost!.post_explicit_categories).toEqual(
-      expect.arrayContaining([expect.objectContaining({ type: 'topic', topic_id: topicId })]),
+    const slug = `listener-category-update-${crypto.randomUUID()}`
+    const post = await withEntityListenerCompletion(
+      [{ jobName: 'processPostCreated', postSlug: slug }],
+      () =>
+        createPost(creator, WEB_PROVENANCE, {
+          post_type: 'discussion',
+          slug,
+          title: `Listener category update ${suffix}`,
+        }),
     )
-    await update
+    await withEntityListenerAdmissionRead(
+      { jobName: 'processPostUpdated', entityId: post!.id },
+      () =>
+        updatePost(creator, post!, {
+          categories: [{ type: 'topic', topic_id: topicId }],
+        }),
+      async () => {
+        const observedPost = await getPostByAny(post!.id, { readOnly: false })
+        expect(observedPost!.post_explicit_categories).toEqual(
+          expect.arrayContaining([expect.objectContaining({ type: 'topic', topic_id: topicId })]),
+        )
+      },
+    )
   })
 
   it('invalidates a cached post after finalizing its hashtag votes', async () => {

@@ -107,11 +107,25 @@ Agent and manual community unpublish lock-order cases share
 [`expectUnpublishHoldsPublicationLockWhileWaitingOnReview`](../../../../backend/test-helpers/entities/community-post-review-publication-lock.mts).
 Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
-## `onceEntityListenerCompleted`
+## Owned entity-listener completion
 
-[`onceEntityListenerCompleted`](../../../../backend/test-helpers/workers/entity-listeners/test-support.mts)
-can accept an already drained worker or historical completion. Concurrent calls with `Promise.all`
-do not establish that a mutation admitted new owned work.
+[`withEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-completion.mts)
+registers the canonical admission observer and terminal source before the mutation. It retains the
+original enqueue promises and exact returned job IDs, then joins growing owned post-commit,
+admission, and terminal work before detaching. A drained worker or an unrelated retained completion
+is not evidence that the action admitted its required job. Creation fixtures bind a fresh owned
+slug to the producer's real post ID through the existing post-commit event. One shared 15-second
+deadline bounds these observations; test-finished teardown aborts pending observation before joining
+cleanup. An expired observation reports incomplete work as failure, not producer cancellation or a
+successful drain, and the owner still releases its held dispatch and closes its observer.
+
+The category-ordering scenario uses
+[`withEntityListenerAdmissionRead`](../../../../backend/test-helpers/entity-listener-admission-read.mts)
+after joining its fresh post's creation terminal. It holds only the canonical fork-owned testing
+worker's new dispatch with public `pause(true)`, observes the real `added` job and original factory
+promise, completes the writer read, and resumes before joining the action and terminal work.
+An asynchronous `active` listener is not awaited by the SDK and does not prove this ordering.
+This boundary rejects other providers; it makes no native cross-process queue-pause claim.
 
 For the `processUserUpdated` mutation boundary, use
 [`withTestEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-transition.mts):

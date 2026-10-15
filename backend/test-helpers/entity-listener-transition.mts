@@ -2,7 +2,7 @@ import { onTestFinished, vi } from 'vitest'
 import * as userEnqueues from '@queues/entity-listeners/enqueues/users'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 // Register the real processor and its test-context error handler once per module.
-import './workers/entity-listeners/test-support.mts'
+import './entity-listener-completion.mts'
 
 type QueueAdd = ReturnType<typeof entitiesListeners.add>
 

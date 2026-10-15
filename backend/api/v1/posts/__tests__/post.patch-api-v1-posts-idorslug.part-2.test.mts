@@ -1,5 +1,4 @@
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'
@@ -103,6 +102,5 @@ describe('post', () => {
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof onceEntityListenerCompleted)
   void (0 as unknown as typeof getMinUUIDv7ForDate)
 })
