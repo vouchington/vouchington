@@ -1,9 +1,24 @@
+import { backgroundQueueConfig, backgroundQueueMaxValues } from '@queues/background/config'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth-github/work-limits'
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@workers/ses-inbound/work-limits'
 
 export const backgroundWorkEntries4 = [
+  defineBoundedWorkNamespace({
+    namespace: 'background-queue-config',
+    config: backgroundQueueConfig,
+    label: 'Background queue',
+    maxValues: backgroundQueueMaxValues,
+    descriptions: {
+      pause_recheck_ms:
+        'Milliseconds a job of a paused domain waits before it re-checks its domain.',
+      pause_cache_ms:
+        'Milliseconds a worker trusts a domain pause state before it reads PostgreSQL.',
+      domain_stats_scan_cap:
+        'Jobs scanned per domain and state for one operator domain-stats request.',
+    },
+  }),
   defineBoundedWorkNamespace({
     namespace: 'ses-inbound-work-config',
     config: sesInboundWorkConfig,

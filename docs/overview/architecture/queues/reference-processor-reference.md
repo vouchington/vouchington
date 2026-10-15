@@ -6,6 +6,14 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 
 | Queue                                        | Processor                                      | Group Keys                               | Default Priority |
 | -------------------------------------------- | ---------------------------------------------- | ---------------------------------------- | ---------------- |
+| background                                   | ses-inbound.process                            | ses-inbound                              | 10               |
+| background                                   | ses-inbound.reconcile                          | ses-inbound                              | 100              |
+| background                                   | openai-moderation.post                         | openai-moderation                        | 10               |
+| background                                   | openai-moderation.image                        | openai-moderation                        | 10               |
+| background                                   | openai-moderation.backfill_posts               | openai-moderation                        | 100              |
+| background                                   | openai-moderation.backfill_images              | openai-moderation                        | 100              |
+| background                                   | openai-moderation.reconcile_image_quarantines  | openai-moderation                        | 100              |
+| background                                   | openai-moderation.reconcile_post_moderation    | openai-moderation                        | 100              |
 | crawl_browser                                | crawl_browser                                  | —                                        | 10               |
 | account-lifecycle                            | processExportRequest                           | —                                        | 10               |
 | account-lifecycle                            | processCleanupExpiredExports                   | —                                        | 10               |
@@ -133,10 +141,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | bedrock_embeddings_nova_multimodal_v1_single | post                                           | —                                        | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | topic                                          | —                                        | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | rss_feed_item                                  | —                                        | 10               |
-| openai_moderation_omni_single                | post                                           | —                                        | 10               |
-| openai_moderation_omni_single                | image                                          | —                                        | 10               |
-| openai_moderation_omni_single                | reconcile_image_quarantines                    | —                                        | 100              |
-| openai_moderation_omni_single                | reconcile_post_moderation                      | —                                        | 100              |
 | post-mentions                                | processPostMentions                            | —                                        | 10               |
 | psql                                         | runMigrations                                  | —                                        | 10               |
 | psql                                         | runViews                                       | —                                        | 10               |

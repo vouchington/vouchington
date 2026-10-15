@@ -1,10 +1,18 @@
-import type { OpenAIModerationOmniSingleJob } from '@queues/openai-moderation/types'
+import {
+  OPENAI_MODERATION_BACKFILL_IMAGES_JOB,
+  OPENAI_MODERATION_BACKFILL_POSTS_JOB,
+  OPENAI_MODERATION_IMAGE_JOB,
+  OPENAI_MODERATION_POST_JOB,
+  OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB,
+  OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB,
+} from '@queues/background/enqueues/openai-moderation-jobs'
 import {
   upsertPostOpenAIModeration,
   upsertImageOpenAIModeration,
   markPostOpenAIModerationNoContent,
-  streamUnmoderatedPostIdBatches,
-  streamUnmoderatedImageIdBatches,
+  listUnmoderatedPostIdPage,
+  listUnmoderatedImageIdPage,
+  type BackfillIdPage,
   reconcilePendingImageQuarantines,
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
@@ -23,21 +31,23 @@ import {
 } from '@services/post-clearance'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import {
+  enqueueBackfillImageModerationContinuation,
+  enqueueBackfillPostModerationContinuation,
   enqueueCreatePostModerationBatch,
   enqueueCreateImageModerationBatch,
   enqueueCreatePostModeration,
 } from '@queues/openai-moderation/enqueues'
 import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
 
-type OpenAIModerationJobData = { id?: string }
+type OpenAIModerationJobData = { id?: string; afterId?: string }
 
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
   scope?: { postIds?: readonly string[]; imageIds?: readonly string[] },
 ): Promise<unknown> {
   try {
-    switch (job.name as OpenAIModerationOmniSingleJob) {
-      case 'post': {
+    switch (job.name) {
+      case OPENAI_MODERATION_POST_JOB.name: {
         if (!job.data.id) throw new Error('Post job requires id in job.data')
         const post = await getPostByAny(job.data.id, { readOnly: false })
         if (!post) return null
@@ -73,31 +83,26 @@ export async function handleOpenAIModerationOmniSingleJob(
           throw err
         }
       }
-      case 'image': {
+      case OPENAI_MODERATION_IMAGE_JOB.name: {
         if (!job.data.id) throw new Error('Image job requires id in job.data')
         const result = await upsertImageOpenAIModeration(job.data.id)
         return { success: true, ...result }
       }
-      case 'backfill_posts': {
-        let enqueued = 0
-        // Stream IDs over a single pg-cursor and bulk-enqueue one addBulk per batch.
-        for await (const ids of streamUnmoderatedPostIdBatches()) {
-          await enqueueCreatePostModerationBatch(ids)
-          enqueued += ids.length
-        }
-        return { enqueued }
-      }
-      case 'backfill_images': {
-        let enqueued = 0
-        for await (const ids of streamUnmoderatedImageIdBatches()) {
-          await enqueueCreateImageModerationBatch(ids)
-          enqueued += ids.length
-        }
-        return { enqueued }
-      }
-      case 'reconcile_image_quarantines':
+      case OPENAI_MODERATION_BACKFILL_POSTS_JOB.name:
+        return await runBackfillPage(job.data.afterId, {
+          listPage: listUnmoderatedPostIdPage,
+          enqueueBatch: enqueueCreatePostModerationBatch,
+          enqueueContinuation: enqueueBackfillPostModerationContinuation,
+        })
+      case OPENAI_MODERATION_BACKFILL_IMAGES_JOB.name:
+        return await runBackfillPage(job.data.afterId, {
+          listPage: listUnmoderatedImageIdPage,
+          enqueueBatch: enqueueCreateImageModerationBatch,
+          enqueueContinuation: enqueueBackfillImageModerationContinuation,
+        })
+      case OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name:
         return await reconcilePendingImageQuarantines(scope?.imageIds)
-      case 'reconcile_post_moderation': {
+      case OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name: {
         const reconciliation = await reconcilePostModerationWork(100, scope?.postIds)
         await Promise.all(
           reconciliation.due.map(({ post_id: postId, source }) =>
@@ -118,6 +123,22 @@ export async function handleOpenAIModerationOmniSingleJob(
   } catch (err: unknown) {
     return handleOpenAIRateLimit(err)
   }
+}
+
+// One bounded page per dispatcher run. The continuation ranks behind the moderation jobs this page
+// just enqueued, so no more than one page of them ever waits.
+async function runBackfillPage(
+  afterId: string | undefined,
+  page: {
+    listPage: (afterId?: string) => Promise<BackfillIdPage>
+    enqueueBatch: (ids: string[]) => Promise<unknown>
+    enqueueContinuation: (afterId: string) => Promise<unknown>
+  },
+): Promise<{ enqueued: number; hasMore: boolean }> {
+  const { ids, hasMore } = await page.listPage(afterId)
+  await page.enqueueBatch(ids)
+  if (hasMore) await page.enqueueContinuation(ids.at(-1)!)
+  return { enqueued: ids.length, hasMore }
 }
 
 function classifyModerationError(error: unknown): string {

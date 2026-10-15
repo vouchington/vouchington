@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSqsConsumer, type SqsConsumerPort, type SqsMessage } from '@backend/worker-runtime'
-import { sesInboundQueue } from '@queues/ses-inbound/queues'
+import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
+import { background } from '@queues/background/queues'
 import {
   createSesInboundProcessJobId,
   getSesInboundProcessJobOptions,
@@ -65,7 +66,7 @@ describe('processSesInboundSqsMessage', () => {
     const jobIds = createdJobIds.splice(0)
     await Promise.all(
       jobIds.map(async jobId => {
-        const job = await sesInboundQueue.getJob(jobId)
+        const job = await background.getJob(jobId)
         await job?.remove()
       }),
     )
@@ -101,9 +102,9 @@ describe('processSesInboundSqsMessage', () => {
     expect(deletedMessage).toEqual(message)
     expect(deleteCalls).toEqual([message.receiptHandle])
     for (const { sesMessageId, objectKey, jobId } of records) {
-      const job = await sesInboundQueue.getJob(jobId)
+      const job = await background.getJob(jobId)
       expect(job).toMatchObject({
-        name: 'processInboundEmail',
+        name: SES_INBOUND_PROCESS_JOB.name,
         data: { sesMessageId, objectKey },
       })
     }
@@ -126,8 +127,11 @@ describe('processSesInboundSqsMessage', () => {
     await processSesInboundSqsMessage(message)
     await expect(processSesInboundSqsMessage(message)).resolves.toBeUndefined()
 
-    const job = await sesInboundQueue.getJob(jobId)
-    expect(job).toMatchObject({ name: 'processInboundEmail', data: { sesMessageId, objectKey } })
+    const job = await background.getJob(jobId)
+    expect(job).toMatchObject({
+      name: SES_INBOUND_PROCESS_JOB.name,
+      data: { sesMessageId, objectKey },
+    })
   })
 
   it('acks a mixed event and enqueues only its copyright object', async () => {
@@ -156,11 +160,11 @@ describe('processSesInboundSqsMessage', () => {
       await consumer.close()
 
       expect(deleteCalls).toEqual([message.receiptHandle])
-      expect(await sesInboundQueue.getJob(copyrightJobId)).toMatchObject({
-        name: 'processInboundEmail',
+      expect(await background.getJob(copyrightJobId)).toMatchObject({
+        name: SES_INBOUND_PROCESS_JOB.name,
         data: { objectKey: copyrightKey },
       })
-      expect(await sesInboundQueue.getJob(legacyJobId)).toBeNull()
+      expect(await background.getJob(legacyJobId)).toBeNull()
       expect(log).toHaveBeenCalledExactlyOnceWith(
         JSON.stringify({ bucket: BUCKET, objectKey: legacyKey }),
       )
@@ -229,7 +233,7 @@ describe('processSesInboundSqsMessage', () => {
       await expect(
         processSesInboundSqsMessage(s3EventMessage([objectCreatedRecord(objectKey)])),
       ).rejects.toMatchObject({ status: 422 })
-      expect(await sesInboundQueue.getJob(jobId)).toBeNull()
+      expect(await background.getJob(jobId)).toBeNull()
     },
   )
 

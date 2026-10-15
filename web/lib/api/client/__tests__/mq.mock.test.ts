@@ -13,11 +13,15 @@ vi.mock(
 
 import {
   fetchBackfills,
+  fetchQueueDomains,
   fetchQueueStats,
   fetchQueues,
   fetchScheduledJobs,
   pauseQueue,
+  pauseQueueDomain,
   resumeQueue,
+  resumeQueueDomain,
+  retryFailedDomainJobs,
   triggerBackfill,
   triggerScheduledJob,
 } from '../mq'
@@ -183,5 +187,59 @@ describe('mq client — backfills', () => {
         '/api/v1/mq/backfills/backfill%20with%20spaces%2Fslashes/runs',
       )
     })
+  })
+})
+
+describe('mq client — domains', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('GETs the encoded queue domains endpoint', async () => {
+    const mockResponse = { domains: [] }
+    mockGet.mockResolvedValueOnce(mockResponse)
+
+    const result = await fetchQueueDomains('back ground')
+
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/mq/queues/back%20ground/domains')
+    expect(result).toEqual(mockResponse)
+  })
+
+  it('POSTs pause without a body when no reason is given', async () => {
+    mockPost.mockResolvedValueOnce({ success: true })
+
+    await pauseQueueDomain('background', 'ses-inbound')
+
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/mq/queues/background/domains/ses-inbound/pause')
+  })
+
+  it('POSTs pause with the reason and encodes the domain', async () => {
+    mockPost.mockResolvedValueOnce({ success: true })
+
+    await pauseQueueDomain('background', 'a/b', 'provider outage')
+
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/mq/queues/background/domains/a%2Fb/pause', {
+      reason: 'provider outage',
+    })
+  })
+
+  it('POSTs the resume endpoint', async () => {
+    mockPost.mockResolvedValueOnce({ success: true })
+
+    await resumeQueueDomain('background', 'ses-inbound')
+
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/mq/queues/background/domains/ses-inbound/resume')
+  })
+
+  it('POSTs the retry-failed endpoint', async () => {
+    const mockResponse = { success: true, retried: 3 }
+    mockPost.mockResolvedValueOnce(mockResponse)
+
+    const result = await retryFailedDomainJobs('background', 'openai-moderation')
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/api/v1/mq/queues/background/domains/openai-moderation/retry-failed',
+    )
+    expect(result).toEqual(mockResponse)
   })
 })

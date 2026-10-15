@@ -6,6 +6,7 @@ import type {
   Tool,
   ToolAnnotations,
   ToolApiEndpoint,
+  ToolMeta,
   ToolOutputSchema,
 } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from '../private-user.mts'
@@ -18,7 +19,12 @@ type AdminToolConfig<TArgs> = {
   name: string
   description: string
   scope: ApiScope
-  api: ToolApiEndpoint
+  /** One REST endpoint, or several when an option selects which twin the call runs. */
+  api: ToolApiEndpoint | readonly ToolApiEndpoint[]
+  /** Picks the REST route a call exercises when `api` lists several, so only its limits are charged. */
+  selectApi?: ToolMeta['selectApi']
+  /** Picks the output schema a call must satisfy when `outputSchema` is a union of the routes' shapes. */
+  selectOutputSchema?: ToolMeta['selectOutputSchema']
   parameters: Record<string, unknown>
   outputSchema: ToolOutputSchema
   annotations: ToolAnnotations
@@ -43,7 +49,9 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
         admin_mcp: prerequisite ? [prerequisite as ApiScope, config.scope] : [config.scope],
       },
       annotations: config.annotations,
-      api: [config.api],
+      api: Array.isArray(config.api) ? [...config.api] : [config.api],
+      ...(config.selectApi ? { selectApi: config.selectApi } : {}),
+      ...(config.selectOutputSchema ? { selectOutputSchema: config.selectOutputSchema } : {}),
       outputSchema: adminOutputSchema(config.outputSchema) as ToolOutputSchema,
       ...(config.switch ? { switch: config.switch } : {}),
       ...(config.auditRationale ? { auditRationale: true } : {}),

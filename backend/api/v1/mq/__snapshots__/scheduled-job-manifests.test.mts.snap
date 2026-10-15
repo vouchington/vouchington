@@ -295,6 +295,129 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover copyright intake emails still present in S3",
+        "id": "ses-inbound-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "ses-inbound-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "ses-inbound-reconciliation",
+    "template": {
+      "data": {},
+      "name": "ses-inbound.reconcile",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "ses-inbound",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Retry pending CSAM image quarantine transfers",
+        "id": "reconcile-image-quarantines",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "sequential",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "reconcile-image-quarantines",
+    "template": {
+      "data": {},
+      "name": "openai-moderation.reconcile_image_quarantines",
+      "opts": {
+        "attempts": 1,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 50,
+          "key": "openai-moderation",
+          "rateLimit": {
+            "duration": 1000,
+            "max": 10,
+          },
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Retry or fail closed unresolved post moderation work",
+        "id": "reconcile-post-moderation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "sequential",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "reconcile-post-moderation",
+    "template": {
+      "data": {},
+      "name": "openai-moderation.reconcile_post_moderation",
+      "opts": {
+        "attempts": 1,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 50,
+          "key": "openai-moderation",
+          "rateLimit": {
+            "duration": 1000,
+            "max": 10,
+          },
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -1847,72 +1970,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Retry pending CSAM image quarantine transfers",
-        "id": "reconcile-image-quarantines",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "openai_moderation_omni_single",
-    "registration": "sequential",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "reconcile-image-quarantines",
-    "template": {
-      "data": {},
-      "name": "reconcile_image_quarantines",
-      "opts": {
-        "attempts": 1,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Retry or fail closed unresolved post moderation work",
-        "id": "reconcile-post-moderation",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "openai_moderation_omni_single",
-    "registration": "sequential",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "reconcile-post-moderation",
-    "template": {
-      "data": {},
-      "name": "reconcile_post_moderation",
-      "opts": {
-        "attempts": 1,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "backfillId": "oauth-authorization-exchange-dispatch",
         "kind": "backfill",
       },
@@ -2298,47 +2355,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Recover copyright intake emails still present in S3",
-        "id": "ses-inbound-reconciliation",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "ses-inbound-reconciliation",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "ses_inbound",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "ses-inbound-reconciliation",
-    "template": {
-      "data": {},
-      "name": "reconcileInboundEmail",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "ses-inbound-reconciliation",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Nightly sitemap backfill for the week",
         "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
         "kind": "scheduled-jobs",
@@ -2667,8 +2683,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Recover copyright intake emails still present in S3",
     "id": "ses-inbound-reconciliation",
-    "job_name": "reconcileInboundEmail",
-    "queue_name": "ses_inbound",
+    "job_name": "ses-inbound.reconcile",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueSesInboundReconcile",
   },
@@ -2795,16 +2811,16 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Retry pending CSAM image quarantine transfers",
     "id": "reconcile-image-quarantines",
-    "job_name": "reconcile_image_quarantines",
-    "queue_name": "openai_moderation_omni_single",
+    "job_name": "openai-moderation.reconcile_image_quarantines",
+    "queue_name": "background",
     "schedule": "every 1m",
     "triggerName": "enqueueReconcileImageQuarantines",
   },
   {
     "description": "Retry or fail closed unresolved post moderation work",
     "id": "reconcile-post-moderation",
-    "job_name": "reconcile_post_moderation",
-    "queue_name": "openai_moderation_omni_single",
+    "job_name": "openai-moderation.reconcile_post_moderation",
+    "queue_name": "background",
     "schedule": "every 1m",
     "triggerName": "enqueueReconcilePostModeration",
   },

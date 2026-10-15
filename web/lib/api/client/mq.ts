@@ -78,3 +78,57 @@ export function fetchBackfills(): Promise<{ backfills: Backfill[] }> {
 export function triggerBackfill(id: string): Promise<{ success: boolean }> {
   return clientApi.post<{ success: boolean }>(`/api/v1/mq/backfills/${encodeURIComponent(id)}/runs`)
 }
+
+export interface DomainStateCount {
+  count: number
+  complete: boolean
+}
+
+export interface QueueDomain {
+  domain: string
+  paused: boolean
+  paused_at: string | null
+  paused_by: string | null
+  reason: string | null
+  waiting: DomainStateCount
+  active: DomainStateCount
+  delayed: DomainStateCount
+  completed: DomainStateCount
+  failed: DomainStateCount
+}
+
+function domainPath(queueName: string, domain: string): string {
+  return `/api/v1/mq/queues/${encodeURIComponent(queueName)}/domains/${encodeURIComponent(domain)}`
+}
+
+export function fetchQueueDomains(queueName: string): Promise<{ domains: QueueDomain[] }> {
+  return clientApi.get<{ domains: QueueDomain[] }>(
+    `/api/v1/mq/queues/${encodeURIComponent(queueName)}/domains`,
+  )
+}
+
+export function pauseQueueDomain(
+  queueName: string,
+  domain: string,
+  reason?: string | null,
+): Promise<{ success: boolean }> {
+  const path = `${domainPath(queueName, domain)}/pause`
+  if (reason === undefined) return clientApi.post<{ success: boolean }>(path)
+  return clientApi.post<{ success: boolean }>(path, { reason })
+}
+
+export function resumeQueueDomain(
+  queueName: string,
+  domain: string,
+): Promise<{ success: boolean }> {
+  return clientApi.post<{ success: boolean }>(`${domainPath(queueName, domain)}/resume`)
+}
+
+export function retryFailedDomainJobs(
+  queueName: string,
+  domain: string,
+): Promise<{ success: boolean; retried: number }> {
+  return clientApi.post<{ success: boolean; retried: number }>(
+    `${domainPath(queueName, domain)}/retry-failed`,
+  )
+}

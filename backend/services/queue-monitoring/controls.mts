@@ -3,6 +3,7 @@ import { recordStaffOperation } from '@services/moderator-actions'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanAccessQueueStats } from './authorization.mts'
+import { queueHasDomains } from './domains.mts'
 import { QUEUE_NAMES, findQueueByName } from './queue-inventory.mts'
 import {
   getAllQueueStats,
@@ -28,6 +29,7 @@ export async function setManagedQueuePaused(
 ) {
   assertOperator(currentUser)
   const queue = requireQueue(name)
+  assert(!queueHasDomains(name), 400, 'Pause a domain of this queue, not the whole queue')
   if ((await queue.isPaused()) === paused) return { success: true as const }
   await recordStaffOperation(
     currentUser.id,
@@ -43,6 +45,7 @@ export async function setManagedQueuePaused(
 export async function retryManagedQueueFailedJobs(currentUser: PrivateUser, name: string) {
   assertOperator(currentUser)
   const queue = requireQueue(name)
+  assert(!queueHasDomains(name), 400, 'Retry the failed jobs of one domain of this queue')
   const result = await recordStaffOperation(
     currentUser.id,
     {

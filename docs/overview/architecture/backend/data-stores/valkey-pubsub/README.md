@@ -14,7 +14,7 @@ shutdown.
   subscriber for a channel namespace. `closeSubscriber()` only closes an idle client; the owner
   `close()` is shutdown-only and safely tears down active subscriptions and the publisher.
 - Domain facades: `imageStatePubSub`, `dataRequestPubSub`, `articleSyncPubSub`,
-  and `publishImportProgress` / `subscribeImportProgress` — one per
+  `queueDomainControlsPubSub` (pause changes for [background queue domains](../../../services/queue-domain-controls/README.md); not an SSE fanout), and `publishImportProgress` / `subscribeImportProgress` — one per
   `channel-pubsub.mts` consumer.
 
 ## Related

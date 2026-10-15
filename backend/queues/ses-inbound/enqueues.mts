@@ -1,33 +1,26 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { createHash } from 'node:crypto'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
 import {
   assertSesInboundReconcileJobData,
-  SES_INBOUND_PROCESS_JOB_NAME,
-  SES_INBOUND_QUEUE_NAME,
-  SES_INBOUND_RECONCILE_JOB_NAME,
   getSesInboundProcessJobOptions,
   type SesInboundProcessJobData,
-  type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  SES_INBOUND_RECONCILE_INTERVAL_MS,
-  SES_INBOUND_RECONCILE_ORDERING,
-  SES_INBOUND_RECONCILE_PRIORITY,
-} from './config.mts'
+import { SES_INBOUND_RECONCILE_INTERVAL_MS } from './config.mts'
 import { sesInboundQueue } from './queues.mts'
 
-export const enqueueBulkSesInboundProcess = createBulkEnqueueFunction<
-  SesInboundProcessJobData,
-  SesInboundProcessJobData,
-  typeof SES_INBOUND_PROCESS_JOB_NAME
->({
-  queue: sesInboundQueue,
-  queueName: SES_INBOUND_QUEUE_NAME,
-  jobName: SES_INBOUND_PROCESS_JOB_NAME,
-  buildJob: data => ({ data, opts: getSesInboundProcessJobOptions(data) }),
-})
+/** Retained failed process jobs read per reconciliation run; the queue's failure retention bounds them. */
+const RETAINED_FAILED_JOB_LIMIT = 1_000
+
+export const enqueueBulkSesInboundProcess = createBackgroundBulkEnqueue(
+  SES_INBOUND_PROCESS_JOB,
+  (data: SesInboundProcessJobData) => ({ data, opts: getSesInboundProcessJobOptions(data) }),
+)
 
 export type RetryableSesInboundJob = {
   id: string
@@ -42,7 +35,13 @@ type SesInboundRecoveryDependencies = {
 
 const recoveryDependencies: SesInboundRecoveryDependencies = {
   enqueueBulk: enqueueBulkSesInboundProcess,
-  getFailedJobs: () => sesInboundQueue.getJobs('failed', 0, -1, { excludeData: true }),
+  getFailedJobs: () =>
+    sesInboundQueue.searchJobs({
+      state: 'failed',
+      name: SES_INBOUND_PROCESS_JOB.name,
+      limit: RETAINED_FAILED_JOB_LIMIT,
+      excludeData: true,
+    }),
 }
 
 export function readRetainedFailedSesInboundProcessJobs(): Promise<RetryableSesInboundJob[]> {
@@ -67,20 +66,13 @@ async function retryFailedSesInboundProcessJobs(
 ): Promise<number> {
   const processJobIds = new Set(inputs.map(input => getSesInboundProcessJobOptions(input).jobId))
   const retryableJobs = failedJobs.filter(
-    job => job.name === SES_INBOUND_PROCESS_JOB_NAME && processJobIds.has(job.id),
+    job => job.name === SES_INBOUND_PROCESS_JOB.name && processJobIds.has(job.id),
   )
   await Promise.all(retryableJobs.map(job => job.retry()))
   return retryableJobs.length
 }
 
-const enqueueReconcileJob = createEnqueueFunction<
-  SesInboundReconcileJobData,
-  typeof SES_INBOUND_RECONCILE_JOB_NAME
->({
-  queue: sesInboundQueue,
-  queueName: SES_INBOUND_QUEUE_NAME,
-  jobName: SES_INBOUND_RECONCILE_JOB_NAME,
-})
+const enqueueReconcileJob = createBackgroundEnqueue(SES_INBOUND_RECONCILE_JOB)
 
 export function enqueueSesInboundReconcileContinuation(
   continuationToken: string,
@@ -92,8 +84,6 @@ export function enqueueSesInboundReconcileContinuation(
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
     jobId: `ses_inbound_reconcile_continuation__${digest}`,
-    priority: SES_INBOUND_RECONCILE_PRIORITY,
-    ordering: SES_INBOUND_RECONCILE_ORDERING,
     // Release a terminal token claim so a later scheduled sweep can resume after exhausted retries.
     removeOnComplete: true,
     removeOnFail: true,
@@ -104,8 +94,6 @@ export function enqueueSesInboundReconcile(): EnqueueReturnType {
   const bucket = Math.floor(Date.now() / SES_INBOUND_RECONCILE_INTERVAL_MS)
   return enqueueReconcileJob({}, {
     jobId: `ses_inbound_reconcile__${bucket}`,
-    priority: SES_INBOUND_RECONCILE_PRIORITY,
-    ordering: SES_INBOUND_RECONCILE_ORDERING,
     deduplication: {
       id: 'ses_inbound_reconcile',
       mode: 'throttle',

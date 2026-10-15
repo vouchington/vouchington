@@ -33,7 +33,7 @@ async function insertPendingPost(): Promise<string> {
 }
 
 function makeJob(id: string): Job<{ id: string }> {
-  return { data: { id }, name: 'post' } as Job<{ id: string }>
+  return { data: { id }, name: 'openai-moderation.post' } as Job<{ id: string }>
 }
 
 describe('openai moderation post job under a provider rate limit', () => {

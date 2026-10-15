@@ -17,8 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background": "workspace:^",
     "glide-mq": "^0.18.0"
   }
 }

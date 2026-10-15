@@ -1,0 +1,35 @@
+{
+  "name": "@workers/background",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared io background worker that dispatches by job name through the domain registry",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/background": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
+    "@queues/ses-inbound": "workspace:^",
+    "@services/queue-domain-controls": "workspace:^",
+    "@workers/openai-moderation": "workspace:^",
+    "@workers/ses-inbound": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

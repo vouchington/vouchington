@@ -11,32 +11,18 @@ import {
   updateImageStatus,
   updatePostModerationData,
 } from '@voucha/test-helpers'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import type { PrivateUser } from '@services/users/types'
-import { streamUnmoderatedImageIdBatches, streamUnmoderatedPostIdBatches } from '../backfill.mts'
+import { listUnmoderatedImageIdPage, listUnmoderatedPostIdPage } from '../backfill.mts'
 
-// Drains a batch-yielding stream into a flat set of ids, and records the per-batch
-// sizes so we can assert the stream yields arrays (one addBulk per batch).
-async function drainStream(
-  stream: AsyncGenerator<string[], void, unknown>,
-): Promise<{ ids: Set<string>; batchSizes: number[] }> {
-  const ids = new Set<string>()
-  const batchSizes: number[] = []
-  for await (const batch of stream) {
-    expect(Array.isArray(batch)).toBe(true)
-    batchSizes.push(batch.length)
-    for (const id of batch) ids.add(id)
-  }
-  return { ids, batchSizes }
-}
-
-describe('openai-moderation backfill streams', () => {
+describe('openai-moderation backfill pages', () => {
   let user: PrivateUser
 
   beforeAll(async () => {
     user = await createTestUser()
   })
 
-  it('streamUnmoderatedPostIdBatches includes never-moderated, content-changed, and no-content-then-edited posts; excludes up-to-date posts', async () => {
+  it('listUnmoderatedPostIdPage includes never-moderated, content-changed, and no-content-then-edited posts; excludes up-to-date posts', async () => {
     // Never moderated — input_sha256 NULL, content_sha256 set → DISTINCT → included
     const unmoderated = await createTestPost({ user })
     // No-content-then-edited — the prior version remains complete but the new content hash is not.
@@ -71,17 +57,19 @@ describe('openai-moderation backfill streams', () => {
       false,
     )
 
-    const { ids, batchSizes } = await drainStream(streamUnmoderatedPostIdBatches())
+    const page = await listUnmoderatedPostIdPage(uuidBefore(unmoderated.id))
+    const ids = new Set(page.ids)
 
     expect(ids.has(unmoderated.id)).toBe(true)
     expect(ids.has(noContentEdited.id)).toBe(true)
     expect(ids.has(contentChanged.id)).toBe(true)
     expect(ids.has(upToDate.id)).toBe(false)
-    // Batches are arrays bounded by the batch size
-    expect(batchSizes.every(n => n > 0 && n <= 500)).toBe(true)
+    // A page holds at most the configured batch size, in id order
+    expect(page.ids.length).toBeLessThanOrEqual(500)
+    expect(page.ids).toEqual(page.ids.toSorted())
   })
 
-  it('streamUnmoderatedImageIdBatches includes completed-upload unmoderated images, excludes pending and moderated', async () => {
+  it('listUnmoderatedImageIdPage includes completed-upload unmoderated images, excludes pending and moderated', async () => {
     // Completed upload, never moderated → included
     const completedUnmoderated = await insertPendingTestImage(user.id)
     await updateImageStatus(completedUnmoderated, 'complete')
@@ -90,7 +78,7 @@ describe('openai-moderation backfill streams', () => {
     // Already moderated (insertTestImage sets openai_omni_moderation_created_at + completed upload) → excluded
     const moderated = await insertTestImage(user.id)
 
-    const { ids } = await drainStream(streamUnmoderatedImageIdBatches())
+    const ids = new Set((await listUnmoderatedImageIdPage(uuidBefore(completedUnmoderated))).ids)
 
     expect(ids.has(completedUnmoderated)).toBe(true)
     expect(ids.has(pending)).toBe(false)

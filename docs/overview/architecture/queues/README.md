@@ -23,6 +23,14 @@ The [URL/domain blacklist queue](urls-domains-blacklist/README.md) runs a five-m
 bounded sweep of durable hostname-policy cache invalidations after sync, staff block,
 and unblock writers enqueue changed hostname IDs in PostgreSQL.
 
+## Background queue
+
+[`background`](background/README.md) is the shared IO queue for background domains of the same
+shape, served by one [worker](workers/background/README.md) that dispatches by `<domain>.<name>`
+through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-inbound` and
+`openai-moderation`; the remaining io queues follow under
+[#2855](https://github.com/vouchington/vouchington/issues/2855).
+
 ## Vote aggregation
 
 [`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity in one ranked-priority IO queue. The single worker dispatches by the unchanged job names and retains election ordering lanes.

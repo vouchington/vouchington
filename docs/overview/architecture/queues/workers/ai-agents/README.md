@@ -97,7 +97,7 @@ per-call reporting would silently discard everything but the final response's to
 [`@agents/_shared` exports](../../../ai-agents/_shared/reference-exports.md) (`runWithJobTokenAccumulator`)
 for the accumulator's throw-safety guarantee.
 
-This wiring is scoped to this worker only. The `openai_moderation_omni_single` worker
+This wiring is scoped to this worker only. The `openai-moderation` domain handlers
 (`backend/workers/openai-moderation/`) calls the OpenAI **Moderations** endpoint
 (`backend/modules/openai-utils/moderate.mts` → `openai.moderations.create()`), not the Responses
 API — that endpoint returns no token usage at all

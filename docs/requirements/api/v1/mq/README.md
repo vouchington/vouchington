@@ -18,18 +18,22 @@ flowchart LR
 
 ## Endpoints
 
-| Method | Route                                  | Authentication   | Description                           |
-| ------ | -------------------------------------- | ---------------- | ------------------------------------- |
-| GET    | `/api/v1/mq/stats`                     | Required (admin) | Get aggregated queue statistics       |
-| GET    | `/api/v1/mq/queues`                    | Required (admin) | List all queues with individual stats |
-| GET    | `/api/v1/mq/stream`                    | Required (admin) | SSE stream of real-time queue stats   |
-| GET    | `/api/v1/mq/scheduled-jobs`            | Required (admin) | List all triggerable scheduled jobs   |
-| GET    | `/api/v1/mq/backfills`                 | Required (admin) | List all registered backfill entries  |
-| POST   | `/api/v1/mq/backfills/:id/runs`        | Required (admin) | Trigger a backfill by registry ID     |
-| POST   | `/api/v1/mq/queues/:name/pause`        | Required (admin) | Pause a queue                         |
-| POST   | `/api/v1/mq/queues/:name/resume`       | Required (admin) | Resume a paused queue                 |
-| POST   | `/api/v1/mq/queues/:name/retry-failed` | Required (admin) | Retry all failed jobs in a queue      |
-| POST   | `/api/v1/mq/scheduled-jobs/:id/runs`   | Required (admin) | Manually trigger a scheduled job      |
+| Method | Route                                                  | Authentication   | Description                           |
+| ------ | ------------------------------------------------------ | ---------------- | ------------------------------------- |
+| GET    | `/api/v1/mq/stats`                                     | Required (admin) | Get aggregated queue statistics       |
+| GET    | `/api/v1/mq/queues`                                    | Required (admin) | List all queues with individual stats |
+| GET    | `/api/v1/mq/stream`                                    | Required (admin) | SSE stream of real-time queue stats   |
+| GET    | `/api/v1/mq/scheduled-jobs`                            | Required (admin) | List all triggerable scheduled jobs   |
+| GET    | `/api/v1/mq/backfills`                                 | Required (admin) | List all registered backfill entries  |
+| POST   | `/api/v1/mq/backfills/:id/runs`                        | Required (admin) | Trigger a backfill by registry ID     |
+| GET    | `/api/v1/mq/queues/:name/domains`                      | Required (admin) | List a shared queue's domains         |
+| POST   | `/api/v1/mq/queues/:name/domains/:domain/pause`        | Required (admin) | Pause one domain of a shared queue    |
+| POST   | `/api/v1/mq/queues/:name/domains/:domain/resume`       | Required (admin) | Resume one domain                     |
+| POST   | `/api/v1/mq/queues/:name/domains/:domain/retry-failed` | Required (admin) | Retry a domain's failed jobs          |
+| POST   | `/api/v1/mq/queues/:name/pause`                        | Required (admin) | Pause a queue                         |
+| POST   | `/api/v1/mq/queues/:name/resume`                       | Required (admin) | Resume a paused queue                 |
+| POST   | `/api/v1/mq/queues/:name/retry-failed`                 | Required (admin) | Retry all failed jobs in a queue      |
+| POST   | `/api/v1/mq/scheduled-jobs/:id/runs`                   | Required (admin) | Manually trigger a scheduled job      |
 
 ## Authorization
 
@@ -72,7 +76,7 @@ in two buckets there.
 
 ## POST /api/v1/mq/queues/:name/pause
 
-Pauses the named queue.
+Pauses the named queue. The `background` queue is paused per [domain](reference-domain-routes.md) instead.
 
 Response: `{ success: boolean }`
 
@@ -87,6 +91,11 @@ Response: `{ success: boolean }`
 Retries all failed jobs in the named queue.
 
 Response: `{ success: boolean, retried: number }`
+
+## Domain routes
+
+The shared `background` queue is controlled per domain through four additive routes, so its
+whole-queue `pause` and `retry-failed` answer 400. See [domain routes](reference-domain-routes.md).
 
 ## GET /api/v1/mq/scheduled-jobs
 

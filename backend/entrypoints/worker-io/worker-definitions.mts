@@ -2,6 +2,16 @@ import type { WorkerDefinition } from '@backend/worker-runtime'
 
 export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
+    queueName: 'background',
+    load: async () => {
+      const [{ createBackgroundWorker }, { BACKGROUND_HANDLERS }] = await Promise.all([
+        import('@workers/background/workers/create-worker'),
+        import('@workers/background/processors/handlers'),
+      ])
+      return createBackgroundWorker({ handlers: BACKGROUND_HANDLERS })
+    },
+  },
+  {
     queueName: 'story-post-related-url-projections',
     load: () =>
       import('@workers/story-post-related-url-projections/workers').then(
@@ -46,13 +56,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'crawl_embeds',
     load: () => import('@workers/crawl-embeds/workers').then(module => module.crawlEmbeds),
-  },
-  {
-    queueName: 'openai_moderation_omni_single',
-    load: () =>
-      import('@workers/openai-moderation/workers').then(
-        module => module.openai_moderation_omni_single,
-      ),
   },
   {
     queueName: 'post-mentions',
@@ -127,10 +130,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'kagi-smallweb',
     load: () => import('@workers/kagi-smallweb/workers').then(module => module.kagiSmallWeb),
-  },
-  {
-    queueName: 'ses_inbound',
-    load: () => import('@workers/ses-inbound/workers').then(module => module.sesInboundWorker),
   },
   {
     queueName: 'bluesky-follow-propagation',

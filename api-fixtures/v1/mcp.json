@@ -27766,7 +27766,7 @@
           "tool": {
             "name": "pause_queue",
             "title": "Pause queue",
-            "description": "Pause a managed queue. Repeating the current state is a no-op.",
+            "description": "Pause a managed queue. Pass `domain` to pause one domain of `background`, which has no whole-queue pause, with an optional `reason` note. Repeating the current state is a no-op.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -27774,6 +27774,16 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 2000
+                },
+                "domain": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
                 }
               },
               "required": ["name"],
@@ -27804,6 +27814,10 @@
             {
               "method": "POST",
               "path": "/api/v1/mq/queues/:name/pause"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/mq/queues/:name/domains/:domain/pause"
             }
           ]
         },
@@ -27811,11 +27825,16 @@
           "tool": {
             "name": "resume_queue",
             "title": "Resume queue",
-            "description": "Resume a managed queue. Repeating the current state is a no-op.",
+            "description": "Resume a managed queue. Pass `domain` to resume one domain of `background`, which has no whole-queue resume. Repeating the current state is a no-op.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "domain": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 2000
@@ -27849,6 +27868,10 @@
             {
               "method": "POST",
               "path": "/api/v1/mq/queues/:name/resume"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/mq/queues/:name/domains/:domain/resume"
             }
           ]
         },
@@ -27856,11 +27879,16 @@
           "tool": {
             "name": "retry_failed_queue_jobs",
             "title": "Retry failed queue jobs",
-            "description": "Retry at most the first 100 failed jobs in a managed queue.",
+            "description": "Retry at most the first 100 failed jobs in a managed queue. Pass `domain` to retry one domain of `background`.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "domain": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 2000
@@ -27897,6 +27925,10 @@
             {
               "method": "POST",
               "path": "/api/v1/mq/queues/:name/retry-failed"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/mq/queues/:name/domains/:domain/retry-failed"
             }
           ]
         },
@@ -38113,7 +38145,7 @@
           "tool": {
             "name": "read_queue_catalog",
             "title": "Read Queue Catalog",
-            "description": "queues: List managed queues and their current statistics.\nscheduled_jobs: List registered, manually triggerable scheduled jobs.\nbackfills: List registered backfill operations.",
+            "description": "queues: List managed queues and their current statistics. With `domains_of` (a shared queue such as `background`), list its domains with pause state and capped job counts; `complete: false` means a lower bound.\nscheduled_jobs: List registered, manually triggerable scheduled jobs.\nbackfills: List registered backfill operations.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -38124,7 +38156,16 @@
                       "enum": ["queues"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "type": "object",
+                      "properties": {
+                        "domains_of": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": [],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -38170,53 +38211,130 @@
               "type": "object",
               "anyOf": [
                 {
-                  "additionalProperties": false,
-                  "properties": {
-                    "queues": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "active": {
-                            "type": "number"
+                  "type": "object",
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "queues": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "active": {
+                                "type": "number"
+                              },
+                              "completed": {
+                                "type": "number"
+                              },
+                              "delayed": {
+                                "type": "number"
+                              },
+                              "failed": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "paused": {
+                                "type": "boolean"
+                              },
+                              "waiting": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "active",
+                              "completed",
+                              "delayed",
+                              "failed",
+                              "name",
+                              "paused",
+                              "waiting"
+                            ],
+                            "type": "object"
                           },
-                          "completed": {
-                            "type": "number"
-                          },
-                          "delayed": {
-                            "type": "number"
-                          },
-                          "failed": {
-                            "type": "number"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "paused": {
-                            "type": "boolean"
-                          },
-                          "waiting": {
-                            "type": "number"
-                          }
+                          "type": "array"
                         },
-                        "required": [
-                          "active",
-                          "completed",
-                          "delayed",
-                          "failed",
-                          "name",
-                          "paused",
-                          "waiting"
-                        ],
-                        "type": "object"
+                        "total": {
+                          "type": "number"
+                        }
                       },
-                      "type": "array"
+                      "required": ["queues", "total"],
+                      "type": "object"
                     },
-                    "total": {
-                      "type": "number"
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "domains": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "active": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "completed": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "delayed": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "domain": {
+                                "type": "string"
+                              },
+                              "failed": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "paused": {
+                                "type": "boolean"
+                              },
+                              "paused_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "paused_by": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "reason": {
+                                "$ref": "#/$defs/S2"
+                              },
+                              "waiting": {
+                                "$ref": "#/$defs/S1"
+                              }
+                            },
+                            "required": [
+                              "active",
+                              "completed",
+                              "delayed",
+                              "domain",
+                              "failed",
+                              "paused",
+                              "paused_at",
+                              "paused_by",
+                              "reason",
+                              "waiting"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": ["domains"],
+                      "type": "object"
                     }
-                  },
-                  "required": ["queues", "total"],
-                  "type": "object"
+                  ]
                 },
                 {
                   "additionalProperties": false,
@@ -38226,14 +38344,7 @@
                         "additionalProperties": false,
                         "properties": {
                           "description": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
+                            "$ref": "#/$defs/S2"
                           },
                           "id": {
                             "type": "string"
@@ -38265,14 +38376,7 @@
                         "additionalProperties": false,
                         "properties": {
                           "description": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
+                            "$ref": "#/$defs/S2"
                           },
                           "id": {
                             "type": "string"
@@ -38296,7 +38400,32 @@
                   "required": ["backfills"],
                   "type": "object"
                 }
-              ]
+              ],
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "count": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["complete", "count"],
+                  "type": "object"
+                },
+                "S2": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             },
             "annotations": {
               "readOnlyHint": true,
@@ -38312,6 +38441,10 @@
             {
               "method": "GET",
               "path": "/api/v1/mq/queues"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/mq/queues/:name/domains"
             },
             {
               "method": "GET",

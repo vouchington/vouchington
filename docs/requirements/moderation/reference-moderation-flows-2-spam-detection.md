@@ -35,7 +35,7 @@ bounded score/signal evidence remains private to moderation staff.
 
 **Images:** Flagged images are **automatically deleted** (`backend/services/openai-moderation/images.mts`)
 
-**Queue:** `openai_moderation_omni_single` (concurrency 5, rate limit 10/sec)
+**Queue:** `openai-moderation` domain of the `background` queue (rate limit 10/sec)
 
 **Database:** post outcomes use `post_moderation_versions`, `post_moderation_attempts`, and
 `post_moderation_dispositions`. Image moderation continues to use `images.openai_omni_moderation_*`.

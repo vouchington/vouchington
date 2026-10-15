@@ -11,8 +11,8 @@ message via `enqueueBulkSesInboundProcess()` from `@queues/ses-inbound/enqueues`
 stable job ID still deduplicates redelivery, and the SQS message is acknowledged only after the
 bulk enqueue succeeds. It acknowledges legacy
 `incoming/` events without enqueuing a job, logging only the bucket and object key. Inbound-email
-business logic stays in `backend/workers/ses-inbound` (the `ses_inbound` glide-mq
-worker/reconciler).
+business logic stays in `backend/workers/ses-inbound` (the `ses-inbound` domain handlers
+of the [background worker](../background/README.md)).
 
 ## Exports
 

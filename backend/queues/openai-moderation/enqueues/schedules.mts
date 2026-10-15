@@ -1,26 +1,28 @@
-import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import type { JobOptions } from 'glide-mq'
-import { MODERATION_OMNI_SINGLE_QUEUE_NAME, PRIORITY_RECONCILIATION } from '../config.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB,
+  OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB,
+} from '@queues/background/enqueues/openai-moderation-jobs'
 import { enqueueReconcileImageQuarantines, enqueueReconcilePostModeration } from '../enqueues.mts'
-import { openai_moderation_omni_single } from '../queues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(MODERATION_OMNI_SINGLE_QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'reconcile-image-quarantines',
     registration: 'sequential',
     repeat: { every: 60_000 },
     template: {
-      name: 'reconcile_image_quarantines',
+      name: OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name,
       data: {},
-      opts: {
-        ...ENQUEUE_BASE_DEFAULTS,
-        attempts: 1,
-        priority: PRIORITY_RECONCILIATION,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.options,
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      }),
     },
     operatorSurfaces: [
       {
@@ -37,13 +39,14 @@ export const scheduledJobManifest = defineScheduledJobManifest(MODERATION_OMNI_S
     registration: 'sequential',
     repeat: { every: 60_000 },
     template: {
-      name: 'reconcile_post_moderation',
+      name: OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name,
       data: {},
-      opts: {
-        ...ENQUEUE_BASE_DEFAULTS,
-        attempts: 1,
-        priority: PRIORITY_RECONCILIATION,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.options,
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      }),
     },
     operatorSurfaces: [
       {
@@ -56,7 +59,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(MODERATION_OMNI_S
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(openai_moderation_omni_single, scheduledJobManifest)
-}

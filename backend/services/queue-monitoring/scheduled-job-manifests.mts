@@ -1,4 +1,5 @@
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { combineBackgroundManifests } from '@queues/background/enqueues/schedules'
 import { scheduledJobManifest as accountLifecycle } from '@queues/account-lifecycle/enqueues/schedules'
 import { scheduledJobManifest as activitypub } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
@@ -27,10 +28,14 @@ import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-refe
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 
+// Background domains register through one combined manifest, so the catalog lists that manifest.
+const background = combineBackgroundManifests([sesInbound, openaiModeration])
+
 export const SCHEDULED_JOB_MANIFESTS = [
   accountLifecycle,
   activitypub,
   aiAgents,
+  background,
   bedrockEmbeddingsBatch,
   bloomFilters,
   crawlDispatch,
@@ -43,13 +48,11 @@ export const SCHEDULED_JOB_MANIFESTS = [
   kagiSmallweb,
   memberships,
   notifications,
-  openaiModeration,
   oauthAuthorizationExchange,
   postPublication,
   psql,
   rssFeeds,
   rssFeedMaintenance,
-  sesInbound,
   sitemaps,
   storyPostRelatedUrlProjections,
   unfurlReferralLinks,

@@ -14,6 +14,7 @@ flowchart TD
 ## Modules
 
 - **authorization.mts** — `currentUserCanAccessQueueStats()` admin role check
+- **domains.mts** and **domain-stats.mts** — per-domain stats, pause, resume, and failed-job retry for a shared queue (the [background queue](../../queues/background/README.md)). `listManagedQueueDomains(queueName)` returns each domain's pause state and `{ count, complete }` per state from a capped scan of the domain's own job names, read fresh on every call; `setManagedQueueDomainPaused` and `retryManagedQueueDomainFailedJobs` record one staff operation per change. The whole-queue controls in `controls.mts` reject a queue that has domains.
 - Queue statistics, bounded waiting-age reads, and cache/Lua implementation live in [the GlideMQ data store](../../backend/data-stores/valkey-glide-mq/README.md).
 - **publish-cloudwatch.mts** — bounded class-level depth/staleness publisher
 
@@ -31,7 +32,8 @@ No owned database tables. Reads live queue state directly from GlideMQ (Valkey-b
 - Queue stats (waiting, active, delayed, completed, failed counts) are fetched via the GlideMQ client API.
   `delayed` is the scheduled set: unpromoted priority jobs, future delays and backoff retries.
 - `oldestWaitingAgeMs` reads one oldest waiting job without loading the backlog.
-- Paused state is tracked per-queue in the queue's Valkey key space.
+- Paused state is tracked per-queue in the queue's Valkey key space. A domain's pause state lives in `queue_domain_controls`, owned by [`@services/queue-domain-controls`](../queue-domain-controls/README.md).
+- Per-domain counts are partial by design: a name-filtered scan capped by the `domain_stats_scan_cap` field, with `complete: false` when it stopped at the cap. Active jobs are bucketed from one `getJobs('active')` read because GlideMQ's name search cannot see an active priority job.
 
 The worker-cpu registers one five-minute publisher through the universal `heartbeat` queue. It
 writes only `GlideMQWaiting` and `GlideMQOldestWaitingAge`, each with one `QueueClass` dimension

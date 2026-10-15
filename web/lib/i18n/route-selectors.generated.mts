@@ -14,7 +14,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/admin/modlog", selectorId: "web.route.5d65abfcb49b98a0.f6cc10c1517033bc", hasMembership: true },
   { pattern: "/admin/oauth-clients", selectorId: "web.route.b500dae3153f6d8c.32ba1ed7a516ee86", hasMembership: true },
   { pattern: "/admin/postgresql", selectorId: "web.route.68196528bb41f8e4.fa9601d03b15af18", hasMembership: true },
-  { pattern: "/admin/queues", selectorId: "web.route.810a90778cfe5da6.fd68176fd9da1fb0", hasMembership: true },
+  { pattern: "/admin/queues", selectorId: "web.route.810a90778cfe5da6.2b2e26d554c5d8f8", hasMembership: true },
   { pattern: "/admin/topic-claims", selectorId: "web.route.139d536f5af97a41.2c0c86fb1b76cc7a", hasMembership: true },
   { pattern: "/admin/valkey", selectorId: "web.route.669a33444624b5a4.32042a38e7c4d98f", hasMembership: true },
   { pattern: "/appeals", selectorId: "web.route.badce6ec57f5faca.29a00b959ea09486", hasMembership: true },

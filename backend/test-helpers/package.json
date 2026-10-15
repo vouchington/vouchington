@@ -46,6 +46,7 @@
     "@modules/structured-decisions": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/post-publication": "workspace:^",

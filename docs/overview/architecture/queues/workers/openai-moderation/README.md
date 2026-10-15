@@ -6,24 +6,23 @@ Worker package for OpenAI moderation jobs.
 
 ## Exports
 
-- `openai_moderation_omni_single` - worker instance for the `openai_moderation_omni_single` queue.
+- `openAiModerationHandlers` (`handlers.mts`) - one handler per `openai-moderation` job, registered
+  with the [background worker](../background/README.md). `handleOpenAIModerationOmniSingleJob`
+  switches on the registry job name.
 
-The default instance uses
-[`createOpenAIModerationOmniSingleWorker`](../../../../../../backend/workers/openai-moderation/processors/create-omni-single-worker.mts).
-The native queue
-[test](../../../../../../backend/workers/openai-moderation/workers/openai_moderation_omni_single.real-glide.mock.test.mts)
-uses an owned prefix and verifies the persisted failure for an image job without an id.
+The native queue tests under `backend/workers/background/__tests__` verify the domain group's rate
+limit and pause behavior; `workers/__tests__/workers.test.mts` covers the handler against real
+PostgreSQL.
 
 ## Provider rate limits
 
 An OpenAI 429 requeues the job after the provider's `Retry-After` (a minute when it sent none,
-clamped to 1 second through 15 minutes) without consuming a queue attempt. The delay rides on
-GlideMQ's `RateLimitError` (`handleOpenAIRateLimit`), so every replica that receives a 429 honors it;
-the worker no longer calls `worker.rateLimit()`, which only paused one process. The queue's
-`limiter` also idles the replica that received the 429 for that delay, which includes the
-`reconcile_*` and backfill jobs sharing the worker. They are scheduled sweeps and resume afterwards.
-Without the delay the signal fell back to the 1-second limiter duration, so a 429 was retried about
-once a second.
+clamped to 1 second through 15 minutes) without consuming a queue attempt. The handler raises
+`handleOpenAIRateLimit`'s `RateLimitError`; the background worker's processor converts it into
+`job.rateLimitGroup`, so the delay rides on the job and every replica that receives a 429 honors it.
+The `openai-moderation` group waits for that delay, which includes the `reconcile_*` and backfill
+jobs of the domain, but no other domain on the shared worker stops: a raw `RateLimitError` would
+idle the whole worker, which is why it never reaches GlideMQ.
 
 ## CSAM quarantine transfer
 
@@ -68,5 +67,5 @@ competing job. The requeued job then claims the same attempt number again.
 
 ## Related
 
-- Queue surface: [../../queues/openai-moderation/README.md](../../openai-moderation/README.md)
+- Queue surface: [../../openai-moderation/README.md](../../openai-moderation/README.md)
 - Worker entrypoint: [../../entrypoints/worker-io/README.md](../../../backend/entrypoints/worker-io/README.md)

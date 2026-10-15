@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import {
   fetchBackfills,
+  fetchQueueDomains,
   fetchQueues,
   fetchScheduledJobs,
   triggerBackfill,
@@ -88,6 +89,7 @@ vi.mock(
 
 vi.mock(import('@/lib/api/client/mq'), () => ({
   fetchBackfills: vi.fn<VitestLooseMock>(),
+  fetchQueueDomains: vi.fn<VitestLooseMock>(),
   fetchQueues: vi.fn<VitestLooseMock>(),
   fetchScheduledJobs: vi.fn<VitestLooseMock>(),
   pauseQueue: vi.fn<VitestLooseMock>(),
@@ -97,6 +99,7 @@ vi.mock(import('@/lib/api/client/mq'), () => ({
 }))
 
 const mockFetchBackfills = vi.mocked(fetchBackfills)
+const mockFetchQueueDomains = vi.mocked(fetchQueueDomains)
 const mockFetchQueues = vi.mocked(fetchQueues)
 const mockFetchScheduledJobs = vi.mocked(fetchScheduledJobs)
 const mockTriggerBackfill = vi.mocked(triggerBackfill)
@@ -126,6 +129,7 @@ export {
   createBackfill,
   createScheduledJob,
   mockFetchBackfills,
+  mockFetchQueueDomains,
   mockFetchQueues,
   mockFetchScheduledJobs,
   mockTriggerBackfill,

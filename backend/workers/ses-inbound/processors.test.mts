@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { SES_INBOUND_RECONCILE_JOB_NAME } from '@ts-shared/ses-inbound-contract'
+import {
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { sesInboundWorkConfig } from './work-limits.mts'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
@@ -44,7 +47,7 @@ describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
           level: 'warning',
           tags: {
             reason: 'scheduled_job_config_missing',
-            jobName: SES_INBOUND_RECONCILE_JOB_NAME,
+            jobName: SES_INBOUND_RECONCILE_JOB.name,
             missingEnvVar: 'S3_BUCKET_SES_INBOUND',
           },
         },
@@ -131,7 +134,7 @@ describe('SES inbound reconciliation pages', () => {
     try {
       const failedJob = {
         id: 'failed-process',
-        name: 'processInboundEmail',
+        name: SES_INBOUND_PROCESS_JOB.name,
         retry: vi.fn<() => Promise<void>>(),
       }
       const failedJobs = [failedJob]

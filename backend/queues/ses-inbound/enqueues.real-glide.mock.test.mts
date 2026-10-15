@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import {
   getSesInboundProcessJobOptions,
-  SES_INBOUND_PROCESS_JOB_NAME,
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
+import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { enqueueOrRetryBulkSesInboundProcess } from './enqueues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -39,7 +39,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
 
     try {
       const options = { ...getSesInboundProcessJobOptions(data), attempts: 1 }
-      const job = await queue.add(SES_INBOUND_PROCESS_JOB_NAME, data, options)
+      const job = await queue.add(SES_INBOUND_PROCESS_JOB.name, data, options)
       if (!job) throw new Error('Expected the failed test job to be created')
       await failedSettled.promise
       expect(await job.getState()).toBe('failed')
@@ -50,7 +50,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
           enqueueBulk: async inputs =>
             queue.addBulk(
               inputs.map(input => ({
-                name: SES_INBOUND_PROCESS_JOB_NAME,
+                name: SES_INBOUND_PROCESS_JOB.name,
                 data: input,
                 opts: getSesInboundProcessJobOptions(input),
               })),

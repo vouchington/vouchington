@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { findQueueByName } from '@services/queue-monitoring/queue-inventory'
+import { getQueueDomainControl, resumeQueueDomain } from '@services/queue-domain-controls'
 import {
   getDynamicConfigNamespace,
   listDynamicConfigNamespaceHistory,
@@ -75,6 +76,53 @@ describe('registered operational writes on disposable CI boundaries', () => {
       if (before) await queue.pause()
       else await queue.resume()
     }
+  })
+  it('controls one domain of the shared background queue through the same tools', async () => {
+    expect(workerQueuePrefix).toBe(prefix)
+    const admin = await createTestUserDirect({ administrator: true })
+    const domain = 'ses-inbound'
+    try {
+      // `list_queues` is the `queues` option of the merged `read_queue_catalog` tool.
+      const listed = await invoke(admin, 'read_queue_catalog', {
+        option: 'queues',
+        arguments: { domains_of: 'background' },
+      })
+      expect(listed.isError).not.toBe(true)
+      expect(listed.structuredContent).toMatchObject({
+        domains: expect.arrayContaining([expect.objectContaining({ domain, paused: false })]),
+      })
+
+      const args = { name: 'background', domain, reason: 'upstream outage' }
+      expect((await invoke(admin, 'pause_queue', args)).isError).not.toBe(true)
+      expect((await invoke(admin, 'pause_queue', args)).isError).not.toBe(true)
+      await expect(getQueueDomainControl(domain)).resolves.toMatchObject({
+        paused: true,
+        pausedBy: admin.id,
+        reason: 'upstream outage',
+      })
+      await expectOperation(admin.id, 'queue_pause')
+      expect(
+        (await invoke(admin, 'resume_queue', { name: 'background', domain })).isError,
+      ).not.toBe(true)
+      await expect(getQueueDomainControl(domain)).resolves.toMatchObject({ paused: false })
+      expect(
+        (await invoke(admin, 'retry_failed_queue_jobs', { name: 'background', domain })).isError,
+      ).not.toBe(true)
+    } finally {
+      await resumeQueueDomain(domain)
+    }
+  })
+  it('rejects a reason without a domain and a whole-queue pause of the background queue', async () => {
+    expect(workerQueuePrefix).toBe(prefix)
+    const admin = await createTestUserDirect({ administrator: true })
+    expect(
+      (await invoke(admin, 'pause_queue', { name: 'psql', reason: 'no domain' })).isError,
+    ).toBe(true)
+    expect((await invoke(admin, 'pause_queue', { name: 'background' })).isError).toBe(true)
+    expect(
+      (await invoke(admin, 'pause_queue', { name: 'background', domain: 'not-a-domain' })).isError,
+    ).toBe(true)
+    expect(await readStaffActionHistory(admin.id)).toEqual([])
   })
   it.each(['pause_queue', 'resume_queue', 'retry_failed_queue_jobs'])(
     'rejects %s on an unknown queue without history',

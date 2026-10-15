@@ -1,5 +1,6 @@
 import { recordScheduledJobConfigMissing } from '@modules/on-error'
 import { UnrecoverableError } from '@modules/queue-errors'
+import { SES_INBOUND_RECONCILE_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import {
   enqueueOrRetryBulkSesInboundProcess,
   enqueueSesInboundReconcileContinuation,
@@ -12,7 +13,6 @@ import {
   assertSesInboundProcessJobData,
   assertSesInboundReconcileJobData,
   getSesMessageIdFromObjectKey,
-  SES_INBOUND_RECONCILE_JOB_NAME,
   type SesInboundProcessJobData,
   type SesInboundReconcileJobData,
 } from '@ts-shared/ses-inbound-contract'
@@ -86,7 +86,7 @@ export async function reconcileSesInboundEmails(
   // throwing, which would be retried and logged as an error every five minutes. Ingest of a real
   // email still fails on a missing bucket because that job only exists once mail arrived.
   if (!readSesInboundBucket()) {
-    recordScheduledJobConfigMissing(SES_INBOUND_RECONCILE_JOB_NAME, 'S3_BUCKET_SES_INBOUND')
+    recordScheduledJobConfigMissing(SES_INBOUND_RECONCILE_JOB.name, 'S3_BUCKET_SES_INBOUND')
     return { enqueued: 0, hasMore: false }
   }
   const listCopyrightObjects =

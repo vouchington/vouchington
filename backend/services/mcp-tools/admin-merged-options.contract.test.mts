@@ -49,11 +49,14 @@ function sample(schema: Record<string, unknown>, root: Record<string, unknown>):
 const cases = adminMergedGroups.flatMap(group =>
   group.options.map(entry => {
     const parameters = entry.source.schema.parameters as Record<string, unknown>
+    const args = sample(parameters, parameters) as Record<string, unknown>
+    // A source whose arguments pick among its REST routes charges only the route they select.
+    const routes = entry.source.meta?.selectApi?.(args) ?? entry.source.meta?.api ?? []
     return {
       target: group.name,
       option: entry.option,
-      args: sample(parameters, parameters) as Record<string, unknown>,
-      routes: (entry.source.meta?.api ?? []).map(toRouteKey),
+      args,
+      routes: routes.map(toRouteKey),
       switched: entry.source.meta?.switch === 'copyright.mcpDecisionTools',
     }
   }),

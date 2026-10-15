@@ -458,6 +458,19 @@ Native delivery is tracked by
 [vouchington-clients#202](https://github.com/vouchington/vouchington-clients/issues/202); this
 repository does not edit `vouchington-clients`.
 
+## Queue domain controls handoff
+
+The shared `background` queue adds four admin-only routes and no change to an existing shape:
+`GET /api/v1/mq/queues/:name/domains` (per-domain `paused`, `paused_at`, `paused_by`, `reason`, and
+`waiting`, `active`, `delayed`, `completed`, `failed` as `{ count, complete }`), and
+`POST .../domains/:domain/pause` (optional `{ reason }` body), `.../resume`, and `.../retry-failed`.
+`GET /api/v1/mq/queues` keeps exact queue-wide totals and now lists `background` as one queue. A
+`complete: false` count is a lower bound, so clients show `count+` and compose all copy; the API
+returns codes, numbers, and ids only. The web admin queues page renders the domain table. The native
+Engineering queues pages need no change to keep working, because the existing fields are untouched;
+a native domain view is a dependent `vouchington-clients` task that waits for this producer and
+does not gate the Vouchington milestone. Vouchington has not launched, so there is no shim.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed

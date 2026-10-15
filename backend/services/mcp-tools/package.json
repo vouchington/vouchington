@@ -21,6 +21,7 @@
     "@services/api-keys": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/openai-agents": "workspace:^",
+    "@services/queue-domain-controls": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/mcp": "workspace:^",
     "@voucha/types": "workspace:^",
