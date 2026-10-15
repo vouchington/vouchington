@@ -1,21 +1,42 @@
 import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import type { QueryExecutor } from '@data-stores/psql'
 import {
   createTestShadowAuditFixtures,
   insertAuditPost,
   withTestShadowAuditCheckpoint,
 } from '@voucha/test-helpers/post-publication-shadow-audit-fixtures'
 import { describe, expect, it } from 'vitest'
+import { runPostPublicationShadowAudit } from './shadow-audit.mts'
+import { postPublicationWorkMaxValues } from './work-limits.mts'
 
 const shadowAuditSource = readFileSync(new URL('./shadow-audit.mts', import.meta.url), 'utf8')
 
 describe('post publication shadow audit checkpoints', () => {
-  it('bounds both indexed audit sources before union materialization', () => {
+  it('bounds both indexed audit sources before union materialization', async () => {
     expect(shadowAuditSource).toContain(
       'SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${postIdentityIds}::uuid[] IS NULL OR id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
     )
     expect(shadowAuditSource).toContain(
       'SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${postIdentityIds}::uuid[] IS NULL OR post_identity_id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id',
     )
+    let calls = 0
+    const query: QueryExecutor = async () => {
+      calls += 1
+      throw new Error('Unexpected audit query')
+    }
+    // Input entries, not stored fixtures: rejecting the hard ceiling must admit no query.
+    const postIdentityIds = Array<string>(
+      postPublicationWorkMaxValues.shadow_audit_page_size + 1,
+    ).fill(randomUUID())
+    for (const dryRun of [true, false]) {
+      await expect(
+        runPostPublicationShadowAudit({ dryRun, postIdentityIds }, { query }),
+      ).rejects.toThrow(
+        'Post publication shadow audit selection exceeds its bounded source ceiling',
+      )
+    }
+    expect(calls).toBe(0)
   })
 
   it('resets the durable checkpoint after the final partial repair page', async () => {
