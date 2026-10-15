@@ -1,3 +1,7 @@
+import {
+  readClassifierHealthClockForTest,
+  readClassifierFeedItemClockForTest,
+} from '@voucha/test-helpers/classifier-health-clock'
 import { createAutotaggerRunAdapter } from '../autotagger/index.mts'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createStoryClusteringRunAdapter } from '../stories/index.mts'
@@ -35,7 +39,6 @@ import {
 import { readClassifierRunHealth } from './health.mts'
 
 const HOUR_MS = 60 * 60 * 1000
-const inHours = (hours: number) => new Date(Date.now() + hours * HOUR_MS)
 
 describe('classifier run health: the oldest incomplete run (real PG)', () => {
   it('is the first run that can still finish, counted with every other', async () => {
@@ -43,11 +46,12 @@ describe('classifier run health: the oldest incomplete run (real PG)', () => {
     const first = await reserveSyntheticRun(setup)
     await reserveSyntheticRun(await overNewSyntheticPost(setup))
 
-    const fresh = await readClassifierRunHealth(setup.adapter, new Date())
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const fresh = await readClassifierRunHealth(setup.adapter, clock.fresh)
     expect(fresh.oldestIncompleteRun).toMatchObject({ id: first.runId, total: 2 })
     expect(fresh.oldestIncompleteRun!.ageMs).toBeLessThan(60_000)
 
-    const stuck = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const stuck = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
     expect(stuck.oldestIncompleteRun).toMatchObject({ id: first.runId, total: 2 })
     expect(stuck.oldestIncompleteRun!.ageMs).toBeGreaterThan(CLASSIFIER_RUN_AGE_ALARM_MS)
   })
@@ -61,11 +65,12 @@ describe('classifier run health: the oldest incomplete run (real PG)', () => {
     await requestSyntheticRun(setup, await reviseSyntheticPost(setup.post.id))
     const replacement = await supersedeStaleClassifierRun(setup.adapter, replaced)
 
-    const health = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const health = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
 
     expect(health.oldestIncompleteRun).toMatchObject({ id: replacement!.runId, total: 1 })
     await markClassifierRunTerminalForTest(replacement!.runId, 'attempts-exhausted')
-    const none = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const none = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
     expect(none.oldestIncompleteRun).toBeNull()
   })
 
@@ -73,7 +78,8 @@ describe('classifier run health: the oldest incomplete run (real PG)', () => {
     const setup = await createSyntheticFixture()
     await reserveSyntheticRun(await createSyntheticFixture())
 
-    const health = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const health = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
 
     expect(health.oldestIncompleteRun).toBeNull()
   })
@@ -85,12 +91,13 @@ describe('classifier run health: the oldest pending request (real PG)', () => {
     await requestSyntheticRun(setup)
     const [request] = await getSubjectClassifierRunRequestFacts(setup.subject, setup.slug)
 
-    const stuck = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const stuck = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
     expect(stuck.oldestPendingRequest).toMatchObject({ id: request!.id, total: 1 })
     expect(stuck.oldestPendingRequest!.ageMs).toBeGreaterThan(CLASSIFIER_REQUEST_AGE_ALARM_MS)
 
     await reserveSyntheticRun(setup)
-    const reserved = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const reserved = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
     expect(reserved.oldestPendingRequest).toBeNull()
   })
 
@@ -100,7 +107,8 @@ describe('classifier run health: the oldest pending request (real PG)', () => {
     await requestSyntheticRun(setup)
     await reserveClassifierRun(setup.adapter, setup.subject)
 
-    const health = await readClassifierRunHealth(setup.adapter, inHours(27))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const health = await readClassifierRunHealth(setup.adapter, clock.afterHours(27))
 
     expect(health.oldestPendingRequest).toBeNull()
   })
@@ -115,7 +123,8 @@ describe('classifier run health: terminal counts (real PG)', () => {
     await reserveEndedSyntheticRun(setup, 'provider-error')
     await reserveSyntheticRun(setup)
 
-    const { terminal } = await readClassifierRunHealth(setup.adapter, new Date())
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.afterHours(0))
 
     expect(terminal).toEqual({
       completed: 1,
@@ -133,7 +142,8 @@ describe('classifier run health: terminal counts (real PG)', () => {
     await requestSyntheticRun(setup, await reviseSyntheticPost(setup.post.id))
     await supersedeStaleClassifierRun(setup.adapter, replaced)
 
-    const { terminal } = await readClassifierRunHealth(setup.adapter, new Date())
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const { terminal } = await readClassifierRunHealth(setup.adapter, clock.afterHours(0))
 
     expect(terminal).toMatchObject({ superseded: 1, incomplete: 1, failedTotal: 0 })
   })
@@ -142,10 +152,11 @@ describe('classifier run health: terminal counts (real PG)', () => {
     const setup = await createSyntheticFixture()
     await reserveEndedSyntheticRun(setup, 'sweep-bound-exceeded')
 
-    const inside = await readClassifierRunHealth(setup.adapter, inHours(1))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const inside = await readClassifierRunHealth(setup.adapter, clock.afterHours(1))
     const outside = await readClassifierRunHealth(
       setup.adapter,
-      new Date(Date.now() + CLASSIFIER_TERMINAL_WINDOW_MS + HOUR_MS),
+      clock.afterHours(CLASSIFIER_TERMINAL_WINDOW_MS / HOUR_MS + 1),
     )
 
     expect(inside.terminal.failed).toEqual({ 'sweep-bound-exceeded': 1 })
@@ -182,7 +193,8 @@ describe('classifier run health: eligible feed items with no request (real PG)',
     await requestFeedItemClassifierRuns(items.requested, [adapter.slug])
     await softDeleteRssFeedItemForTest(items.deleted.itemId)
 
-    return readClassifierRunHealth(adapter, inHours(2), scopeOf(items))
+    const clock = await readClassifierFeedItemClockForTest(items.lost.itemId)
+    return readClassifierRunHealth(adapter, clock.afterHours(2), scopeOf(items))
   }
 
   it('reports a story clustering item no producer requested, and only that one', async () => {
@@ -206,7 +218,8 @@ describe('classifier run health: eligible feed items with no request (real PG)',
     await softDeleteRssFeedItemForTest(items.requested.itemId)
     await softDeleteRssFeedItemForTest(items.deleted.itemId)
 
-    const health = await readClassifierRunHealth(adapter, inHours(2), scopeOf(items))
+    const clock = await readClassifierFeedItemClockForTest(items.lost.itemId)
+    const health = await readClassifierRunHealth(adapter, clock.afterHours(2), scopeOf(items))
 
     expect(health.unrequestedFeedItems).toEqual({ total: 0, oldestAgeMs: 0 })
   })
@@ -216,8 +229,9 @@ describe('classifier run health: eligible feed items with no request (real PG)',
     const items = await feedItems()
     const scope = { rssFeedItemIds: [items.lost.itemId] }
 
-    const early = await readClassifierRunHealth(adapter, new Date(), scope)
-    const late = await readClassifierRunHealth(adapter, inHours(2), scope)
+    const clock = await readClassifierFeedItemClockForTest(items.lost.itemId)
+    const early = await readClassifierRunHealth(adapter, clock.fresh, scope)
+    const late = await readClassifierRunHealth(adapter, clock.afterHours(2), scope)
 
     expect(early.unrequestedFeedItems).toEqual({ total: 0, oldestAgeMs: 0 })
     expect(late.unrequestedFeedItems?.total).toBe(1)
@@ -227,7 +241,8 @@ describe('classifier run health: eligible feed items with no request (real PG)',
   it('is not asked of a classifier whose producers do not cover every item', async () => {
     const setup = await createSyntheticFixture()
 
-    const health = await readClassifierRunHealth(setup.adapter, inHours(2))
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const health = await readClassifierRunHealth(setup.adapter, clock.afterHours(2))
 
     expect(health.unrequestedFeedItems).toBeNull()
   })
