@@ -41,7 +41,9 @@ export async function blockHostname(
       : await blockHostnameInOwnedTransaction(run)
 
   if (!options.query && !options.client)
-    await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
+    await drainHostnameCacheInvalidationWork({
+      hostnameIds: txResult.hostnames.map(hostname => hostname.id),
+    }).catch(onError)
 
   if (options.penalizeCreators !== false) {
     void enqueueBulkRecalculateUserVoteWeight(txResult.creatorIds, true)

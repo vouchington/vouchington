@@ -14,6 +14,21 @@ import { blockHostname, blockHostnameInTransaction } from './block-hostname.mts'
 import { unblockHostname } from './unblock-hostname.mts'
 
 describe('staff hostname policy cache invalidation', () => {
+  it('drains cached subdomains after a committed parent block', async () => {
+    const moderator = await createTestUser({ administrator: true })
+    const parent = `staff-parent-block-${crypto.randomUUID()}.example.com`
+    const parentId = await insertTestUrlHostname({ hostname: parent })
+    const childId = await insertTestUrlHostname({ hostname: `child.${parent}` })
+    expect((await getUrlHostnameByAnyCached(parentId))?.is_blocked).toBe(false)
+    expect((await getUrlHostnameByAnyCached(childId))?.is_blocked).toBe(false)
+
+    await blockHostname(moderator.id, parentId, { penalizeCreators: false })
+
+    expect((await getUrlHostnameByAnyCached(parentId))?.is_blocked).toBe(true)
+    expect((await getUrlHostnameByAnyCached(childId))?.is_blocked).toBe(true)
+    expect(await getHostnameCacheInvalidationWorkForTest(childId)).toBeNull()
+  })
+
   it('retains committed block and unblock work after inline cache failure', async () => {
     const moderator = await createTestUser({ administrator: true })
     const hostnameId = await insertTestUrlHostname({
