@@ -1,7 +1,5 @@
 import type { FeedbackReference } from 'vouchington-tooling/agent-blackboard'
 
-import { isValidSessionId } from '../agent-session-id/valid-id.mts'
-
 const FRONT_MATTER_DELIMITER = '---'
 
 export type FrontMatterFields = {
@@ -68,9 +66,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
   if (sessionId !== undefined && (typeof sessionId !== 'string' || sessionId.trim() === '')) {
     throw new Error('retrospective doc front matter "session_id" field must be a non-empty string')
   }
-  if (sessionId !== undefined && !isValidSessionId(sessionId.trim())) {
-    throw new Error('retrospective doc front matter "session_id" field must be a valid session id')
-  }
+  // The server validates the session id and rejects a session_id that differs from it.
   const references = (values: unknown[], field: string): FeedbackReference[] =>
     values.map(value => {
       if (

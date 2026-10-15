@@ -97,7 +97,6 @@ describe('validateRetrospective', () => {
   it.each([
     ['work_outcome: "success"', 'both work_outcome and feedback_coverage'],
     ['session_id: ""', '"session_id" field must be a non-empty string'],
-    ['session_id: "bad id"', '"session_id" field must be a valid session id'],
   ])('rejects front matter %s', (line, message) => {
     const { errors } = validateRetrospective(input(doc([line])))
     expect(errors).toEqual([expect.stringContaining(message)])
@@ -122,6 +121,12 @@ describe('validateRetrospective', () => {
       'feedback_coverage: {"status":"partial","sources":[],"droppedCount":0}',
     ]
     expect(validateRetrospective(input(doc(lines)))).toEqual({ errors: [] })
+  })
+
+  it('accepts a session id with the dots and colons blackboard ids allow', () => {
+    const sessionId = 'codex:thread.1'
+    const markdown = doc([`session_id: "${sessionId}"`])
+    expect(validateRetrospective(input(markdown, { sessionId }))).toEqual({ errors: [] })
   })
 
   it('rejects a missing front-matter block', () => {
