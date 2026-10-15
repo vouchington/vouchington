@@ -5,7 +5,7 @@ Source entrypoint: [ci/README.md](../../../../ci/README.md)
 CI-local reproduction and workflow support scripts. Run commands from the worktree root.
 
 The [Valkey starter](../../../../.github/actions/start-valkey/action.yml) owns the image pin.
-[`pull-valkey-image.sh`](../../../../ci/pull-valkey-image.sh) first acquires that image from the mirror.
+[`pull-image.sh`](../../../../.github/actions/start-valkey/pull-image.sh) first acquires that image from the mirror.
 Only a final bare `unknown blob` or image-configuration download `unknown blob` error with explicit
 pull exit 1 permits one Docker Hub fallback with the same
 repository, version, and digest. Each pull is bounded; both attempt logs remain in the runner's
