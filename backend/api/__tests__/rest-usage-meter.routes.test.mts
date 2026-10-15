@@ -1,10 +1,13 @@
-import { ServerResponse } from 'node:http'
-
-import { describe, expect, it, vi } from 'vitest'
-import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { routeRateLimitConfig, selectUsageQuota, settleUsage } from '@services/route-rate-limits'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import { readApiUsageRows } from '@voucha/test-helpers/api-usage-analytics'
+import {
+  holdOwnedResponseUsageCharge,
+  withResponseUsageSettlements,
+} from '@voucha/test-helpers/usage-settlement'
+import { onResponseUsageSettlement, type ResponseUsageSettlement } from '../usage-meter-helpers.mts'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -13,7 +16,7 @@ import {
   useRestUsageMetering,
 } from '@voucha/test-helpers/rest-usage-meter'
 
-const BASE = '/api/v1/__tests__/rest-usage-user'
+const BASE = `/api/v1/__tests__/rest-usage-user-${crypto.randomUUID()}`
 registerRestUsageRoutes(BASE)
 
 async function signedIn(plan?: 'plus') {
@@ -22,43 +25,6 @@ async function signedIn(plan?: 'plus') {
   const request = createRequest()
   await request.authenticateAs(user)
   return { user, request }
-}
-
-// settleUsage is discarded on response close. Charged responses await limiter.add before the
-// analytics write; refusals write synchronously inside that same close listener.
-async function settleMeteredResponses<T>(run: () => Promise<T>): Promise<T> {
-  const gates: Promise<void>[] = []
-  const add = vi.spyOn(RateLimiter.prototype, 'add')
-  const once = ServerResponse.prototype.once
-  const onceSpy = vi.spyOn(ServerResponse.prototype, 'once').mockImplementation(function (
-    this: ServerResponse,
-    event,
-    listener,
-  ) {
-    if (event !== 'close' || typeof listener !== 'function') {
-      return once.call(this, event, listener as () => void)
-    }
-    const gate = Promise.withResolvers<void>()
-    gates.push(gate.promise)
-    return once.call(this, 'close', (...args: unknown[]) => {
-      const started = add.mock.results.length
-      Reflect.apply(listener, this, args)
-      const settledAdds = add.mock.results
-        .slice(started)
-        .flatMap(result => (result.type === 'return' ? [result.value as Promise<unknown>] : []))
-      void Promise.allSettled(settledAdds).then(() => {
-        gate.resolve()
-      })
-    })
-  })
-  try {
-    const result = await run()
-    await Promise.all(gates)
-    return result
-  } finally {
-    onceSpy.mockRestore()
-    add.mockRestore()
-  }
 }
 
 async function userQuotaSize(userId: string) {
@@ -93,7 +59,7 @@ describe('REST usage metering for a signed-in user', () => {
     const { user, request } = await signedIn()
     const writer = await signedIn()
 
-    await settleMeteredResponses(async () => {
+    await withResponseUsageSettlements(BASE, async () => {
       await request.get(`${BASE}/ok`).expect(200)
       await writer.request.post(`${BASE}/write`).send({}).expect(202)
     })
@@ -132,7 +98,7 @@ describe('REST usage metering for a signed-in user', () => {
   it.each(['ok', 'loaded'])('sizes the quota by membership plan on a %s route', async route => {
     const { user, request } = await signedIn('plus')
 
-    await settleMeteredResponses(() => request.get(`${BASE}/${route}`).expect(200))
+    await withResponseUsageSettlements(BASE, () => request.get(`${BASE}/${route}`).expect(200))
 
     const [row] = await readApiUsageRows(user.id)
     expect(row).toMatchObject({ plan: 'plus', scope_class: 'read' })
@@ -144,7 +110,7 @@ describe('REST usage metering for a signed-in user', () => {
   it('charges a served 2xx and 4xx but never an actual 5xx', async () => {
     const { user, request } = await signedIn()
 
-    await settleMeteredResponses(async () => {
+    await withResponseUsageSettlements(BASE, async () => {
       await request.get(`${BASE}/ok`).expect(200)
       await request.get(`${BASE}/missing`).expect(404)
       await request.get(`${BASE}/boom`).expect(500)
@@ -163,7 +129,7 @@ describe('REST usage metering for a signed-in user', () => {
   it('meters once however many times a route applies the limit', async () => {
     const { user, request } = await signedIn()
 
-    await settleMeteredResponses(() => request.get(`${BASE}/twice`).expect(200))
+    await withResponseUsageSettlements(BASE, () => request.get(`${BASE}/twice`).expect(200))
 
     expect(await readApiUsageRows(user.id)).toHaveLength(1)
     expect(await userQuotaSize(user.id)).toBe(1)
@@ -173,7 +139,7 @@ describe('REST usage metering for a signed-in user', () => {
     const { user, request } = await signedIn()
     const quota = await spendWriteQuota(user.id)
 
-    const limited = await settleMeteredResponses(() =>
+    const limited = await withResponseUsageSettlements(BASE, () =>
       request.post(`${BASE}/write`).send({}).expect(429),
     )
 
@@ -184,18 +150,24 @@ describe('REST usage metering for a signed-in user', () => {
     const rows = await readApiUsageRows(user.id)
     expect(rows.some(row => Number(row.status_code) === 429)).toBe(true)
     expect(rows.reduce((units, row) => units + Number(row.units), 0)).toBe(quota.limit)
-    // The refusal charged nothing, and a read request is still inside its larger allowance.
-    await request.get(`${BASE}/ok`).expect(200)
-    // Signing out stays possible while the allowance is spent.
-    await request.delete('/api/v1/session').expect(200)
-    // A different user keeps a full allowance.
-    const other = await signedIn()
-    await other.request.post(`${BASE}/write`).send({}).expect(202)
+    await withResponseUsageSettlements(
+      BASE,
+      async () => {
+        // The refusal charged nothing, and a read request is still inside its larger allowance.
+        await request.get(`${BASE}/ok`).expect(200)
+        // Signing out stays possible while the allowance is spent.
+        await request.delete('/api/v1/session').expect(200)
+        // A different user keeps a full allowance.
+        const other = await signedIn()
+        await other.request.post(`${BASE}/write`).send({}).expect(202)
+      },
+      { ownedUserIds: [user.id] },
+    )
   })
 
   it('does not meter at all while route rate limiting is off', async () => {
     const { user, request } = await signedIn()
-    await settleMeteredResponses(async () => {
+    await withResponseUsageSettlements(BASE, async () => {
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
       await request.get(`${BASE}/ok`).expect(200)
       overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
@@ -205,5 +177,42 @@ describe('REST usage metering for a signed-in user', () => {
     const [row, ...rest] = await readApiUsageRows(user.id)
     expect(rest).toEqual([])
     expect(row).toMatchObject({ status_code: 404 })
+  })
+
+  it('keeps its real settlement pending after HTTP close until the owned charge finishes', async () => {
+    const { user, request } = await signedIn()
+    const privateQuery = crypto.randomUUID()
+    const charge = holdOwnedResponseUsageCharge(user.id)
+    let receipt: ResponseUsageSettlement | undefined
+    let off = () => {}
+    onTestFinished(() => {
+      charge.release()
+      off()
+    })
+    off = onResponseUsageSettlement(event => {
+      if (event.ownerUserId === user.id) receipt = event
+      return undefined
+    })
+    await withResponseUsageSettlements(
+      BASE,
+      async () => {
+        await request.get(`${BASE}/ok?private=${privateQuery}`).expect(200)
+        await charge.entered
+        expect(receipt).toMatchObject({ pathname: `${BASE}/ok`, ownerUserId: user.id })
+        expect(receipt).not.toHaveProperty('request')
+        expect(JSON.stringify(receipt)).not.toContain(privateQuery)
+        expect(JSON.stringify(receipt)).not.toContain(request.authCookie)
+        const completion = receipt!.completion
+        await expect(
+          Promise.race([completion.then(() => 'settled'), charge.entered.then(() => 'blocked')]),
+        ).resolves.toBe('blocked')
+        charge.release()
+        await expect(completion).resolves.toEqual({ status: 'fulfilled', value: undefined })
+      },
+      { release: charge.release },
+    )
+    const rows = await readApiUsageRows(user.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ status_code: 200, units: 1, user_id: user.id })
   })
 })

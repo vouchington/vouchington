@@ -54,3 +54,15 @@ once is still metered once per request.
 The meter is `backend/api/rest-usage-meter.mts`. It shares the settle-on-response-close hook in
 `backend/api/usage-meter-helpers.mts` with the MCP routes, and the quota, policy, and settlement
 code in `backend/services/route-rate-limits/`.
+
+The shared close hook exposes `onResponseUsageSettlement` before response close. Each receipt
+contains only the URL pathname (without query/fragment) and validated owner user ID (or null),
+never headers, cookies, body, socket, or the HTTP request object. It settles only after that response's quota charge and
+analytics enqueue finish (or a headerless disconnect is skipped). This is not analytics delivery
+or persistence: the analytics backend's flush owns that boundary. Observers register before the
+request, drain owned receipts before detaching, and must not persist correlation metadata. Observer
+failures cannot reject the HTTP response; raw settlement and observer/reporting failures remain
+available in the receipt. REST quota tests use unique route prefixes and these receipts instead
+of polling analytics or inferring completion from global response/limiter spies. A focused
+regression holds only its owned real limiter charge to prove that HTTP completion alone does
+not settle the receipt; foreign limiter calls delegate unchanged.

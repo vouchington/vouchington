@@ -537,8 +537,13 @@ REST usage-quota suites share `@voucha/test-helpers/rest-usage-meter`.
 write routes a suite calls, all under its own `base` so two suites on one app never collide. Call
 `useRestUsageMetering(analyticsPrefix)` inside a `describe`: route rate limiting is off under test,
 so it switches the kill switch on for each test, restores the config afterward, and starts a local
-analytics directory. `waitForUsageRows(userId, count)` and `waitForAnonymousUsageRows(count)` wait
-for the `api_usage` rows, which land just after the response closes, and `usageQuotaKeys()` lists
+analytics directory. `withResponseUsageSettlements(base, action, options)` from
+`@voucha/test-helpers/usage-settlement` registers before HTTP effects and joins the actual
+response-close quota/analytics promises before a single row read and backend flush. It observes
+only the unique route prefix or `options.ownedUserIds` (including session requests), drains all
+started actions/receipts before detaching, and registers timeout cleanup before observation.
+`options.release` releases owned fault-control gates before draining on assertion or timeout.
+`usageQuotaKeys()` lists
 every usage-quota Valkey key so a test can prove no IP, device, or session id reached one. Valkey
 and the analytics directory are shared across forks, so assert on a user's own bucket and rows;
 anonymous rows have no owner, so count them relative to a prior read. The row readers live in
